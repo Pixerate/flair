@@ -36,7 +36,7 @@ export class MotionAiGenerator {
 
     const systemPrompt = `You are an expert motion graphics designer producing Apple Motion (.motn) composition specs.
 Analyze the user's prompt requirements carefully and generate a complete, vivid MotionSpec object.
-Choose an appropriate template architecture ("scratch", "snap", "atmospheric", "pulse", "splash", "swarm", "3d-trailer"). Default to "scratch" to build a brand new custom template from scratch based on the prompt.
+Choose an appropriate template architecture ("snap", "atmospheric", "pulse", "splash", "swarm", "3d-trailer", "scratch"). Choose "snap" for bold pop-overs, "atmospheric" for cyberpunk/ambient, "pulse" for dynamic motions, "splash" for high energy, "swarm" for minimalist, "3d-trailer" for cinematic 3D.
 Ensure bold color choices, appropriate fonts (like Impact, Helvetica-Bold, Arial-Black), and catchy text for title, subtitle, and badges.`;
 
     try {

@@ -102,6 +102,11 @@ export class MotionCompiler {
 	<manufacturer>Apple</manufacturer>
 	<version>1</version>
 </factory>
+<factory id="14" uuid="0000000000000000000000000000000e">
+	<description>Text Node</description>
+	<manufacturer>Apple</manufacturer>
+	<version>1</version>
+</factory>
 
 <scene>
 	<canvas>
@@ -112,21 +117,33 @@ export class MotionCompiler {
 		<timeRange offset="0" duration="${totalFrames}"/>
 		<backgroundColor red="${bgColor.red}" green="${bgColor.green}" blue="${bgColor.blue}" alpha="${bgColor.alpha}"/>
 	</canvas>${mediaXml}
-	<scenenode name="Title Here" id="1001" factoryID="2" version="1">
+	<scenenode name="Title Here" id="1001" factoryID="14" version="4">
 		<text>${titleText}</text>
-		<font type="0">${spec.typography.titleFont}</font>
+		<style name="Style" id="10011" factoryID="1">
+			<font type="0">${spec.typography.titleFont}</font>
+			<parameter name="Size" id="3" flags="16777296" default="48" value="140"/>
+		</style>
 	</scenenode>
-	<scenenode name="Subtitle" id="1002" factoryID="2" version="1">
+	<scenenode name="Subtitle" id="1002" factoryID="14" version="4">
 		<text>${subtitleText}</text>
-		<font type="0">${spec.typography.subtitleFont}</font>
+		<style name="Style" id="10021" factoryID="1">
+			<font type="0">${spec.typography.subtitleFont}</font>
+			<parameter name="Size" id="3" flags="16777296" default="48" value="60"/>
+		</style>
 	</scenenode>
-	<scenenode name="Title Information 1" id="1003" factoryID="2" version="1">
+	<scenenode name="Title Information 1" id="1003" factoryID="14" version="4">
 		<text>${badge1}</text>
-		<font type="0">${spec.typography.badgeFont}</font>
+		<style name="Style" id="10031" factoryID="1">
+			<font type="0">${spec.typography.badgeFont}</font>
+			<parameter name="Size" id="3" flags="16777296" default="48" value="45"/>
+		</style>
 	</scenenode>
-	<scenenode name="Title Information 2" id="1004" factoryID="2" version="1">
+	<scenenode name="Title Information 2" id="1004" factoryID="14" version="4">
 		<text>${badge2}</text>
-		<font type="0">${spec.typography.badgeFont}</font>
+		<style name="Style" id="10041" factoryID="1">
+			<font type="0">${spec.typography.badgeFont}</font>
+			<parameter name="Size" id="3" flags="16777296" default="48" value="45"/>
+		</style>
 	</scenenode>
 </scene>
 </ozml>`;
