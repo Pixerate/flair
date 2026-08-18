@@ -22,7 +22,11 @@ export class MotionAiGenerator {
       );
     }
     this.jsonService = new JsonGenerationService(options.vertexClient, {
-      modelName: options.modelName || 'gemini-3.6-flash',
+      modelName:
+        options.modelName ||
+        process.env.VERTEX_MODEL ||
+        process.env.GEMINI_MODEL ||
+        'gemini-2.5-flash',
       client: 'flair',
     });
   }
