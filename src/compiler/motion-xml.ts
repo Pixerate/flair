@@ -1,12 +1,25 @@
 import fs from 'fs';
 import path from 'path';
 import { MotionSpec, ColorSpec, MotionSpecSchema } from '../types/spec.js';
+import { validateMotionXmlFonts } from '../services/font-validator.js';
 
 export interface NormalizedColor {
   red: number;
   green: number;
   blue: number;
   alpha: number;
+}
+
+export interface CompileOptions {
+  /**
+   * Whether to check that all fonts referenced in the output XML are installed on the host system.
+   * Defaults to true.
+   */
+  validateFonts?: boolean;
+  /**
+   * Custom font availability checker function (useful for tests or non-macOS environments).
+   */
+  fontChecker?: (fontName: string) => boolean;
 }
 
 /**
@@ -54,9 +67,10 @@ export class MotionCompiler {
    * Compiles a MotionSpec into a valid Apple Motion XML (.motn) file.
    * 
    * @param spec Input composition specification.
+   * @param options Optional compilation flags.
    * @returns Compiled XML string.
    */
-  public compile(spec: MotionSpec): string {
+  public compile(spec: MotionSpec, options?: CompileOptions): string {
     const validatedSpec = MotionSpecSchema.parse(spec);
     
     if (!fs.existsSync(this.baseTemplatePath)) {
@@ -106,6 +120,15 @@ export class MotionCompiler {
     xml = xml.replace(/<duration>\d+<\/duration>/, `<duration>${totalFrames}</duration>`);
     xml = xml.replace(/<timeRange offset="0" duration="\d+"\/>/, `<timeRange offset="0" duration="${totalFrames}"/>`);
     xml = xml.replace(/<frameRate>\d+<\/frameRate>/, `<frameRate>${validatedSpec.canvas.fps}</frameRate>`);
+
+    // 7. Verify system fonts referenced in compiled Motion file
+    const shouldValidateFonts = options?.validateFonts ?? true;
+    if (shouldValidateFonts) {
+      validateMotionXmlFonts(xml, {
+        allowMissing: false,
+        customChecker: options?.fontChecker,
+      });
+    }
 
     return xml;
   }

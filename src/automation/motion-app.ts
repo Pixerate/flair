@@ -103,23 +103,37 @@ export class MotionAppAutomation {
     await this.openProject(absProjectPath);
     await new Promise((res) => setTimeout(res, 2000));
 
-    // Trigger Export Movie dialog via AppleScript shortcut Cmd+E
+    // Ensure Motion is active and trigger Export Movie dialog
+    const outputDir = path.dirname(absOutputPath);
+    const outputExt = path.extname(absOutputPath);
+    const outputFilename = path.basename(absOutputPath, outputExt);
+
     const scriptLines = [
+      'tell application "Motion" to activate',
+      'delay 1.0',
       'tell application "System Events"',
       '  tell process "Motion"',
-      '    set frontmost to true',
-      '    delay 1.0',
-      '    keystroke "e" using {command down}',
-      '    delay 1.0',
-      '    key code 36', // Press Enter to confirm preset
-      '    delay 1.0',
-      '    keystroke "g" using {command down, shift down}', // Go to folder in save sheet
-      '    delay 0.5',
-      `    keystroke ${JSON.stringify(path.dirname(absOutputPath))}`,
-      '    delay 0.5',
-      '    key code 36',
-      '    delay 0.5',
-      '    key code 36', // Save file
+      '    try',
+      '      click menu item "Export Movie (default)…" of menu of menu item "Share" of menu "File" of menu bar item "File" of menu bar 1',
+      '    on error',
+      '      keystroke "e" using {command down}',
+      '    end try',
+      '    delay 1.5',
+      '    if exists button "Next…" of window 1 then',
+      '      click button "Next…" of window 1',
+      '      delay 1.5',
+      '    end if',
+      '    if exists sheet 1 of window 1 then',
+      '      keystroke "g" using {command down, shift down}',
+      '      delay 1.0',
+      `      keystroke ${JSON.stringify(outputDir)}`,
+      '      delay 1.0',
+      '      key code 36',
+      '      delay 1.0',
+      `      set value of text field 1 of sheet 1 of window 1 to ${JSON.stringify(outputFilename)}`,
+      '      delay 0.5',
+      '      click button "Save" of sheet 1 of window 1',
+      '    end if',
       '  end tell',
       'end tell',
     ];
@@ -127,5 +141,21 @@ export class MotionAppAutomation {
     const args = scriptLines.map((l) => `-e ${JSON.stringify(l)}`).join(' ');
     const command = `osascript ${args}`;
     await execAsync(command);
+
+    // Wait for output video file to be rendered to disk
+    let pollCount = 30; // Wait up to 30s
+    while (pollCount > 0) {
+      if (fs.existsSync(absOutputPath)) {
+        const stat = fs.statSync(absOutputPath);
+        if (stat.size > 100000) {
+          console.log(`✅ Rendered video verified at: ${absOutputPath} (${stat.size} bytes)`);
+          return;
+        }
+      }
+      await new Promise((res) => setTimeout(res, 1000));
+      pollCount--;
+    }
+
+    throw new Error(`Rendered video file was not found at expected location after rendering: ${absOutputPath}`);
   }
 }
