@@ -126,119 +126,128 @@ export class MotionCompiler {
 		<backgroundColor red="${bgColor.red}" green="${bgColor.green}" blue="${bgColor.blue}" alpha="${bgColor.alpha}"/>
 	</canvas>${mediaXml}
 
-	<!-- Net-New Pop-over Card -->
-	<scenenode name="Pop-over Card" id="2001" factoryID="3" version="1">
-		<parameter name="Transform" id="100" flags="4112">
-			<parameter name="Position" id="101" flags="4112">
-				<parameter name="X" id="1" flags="16" default="0" value="0"/>
-				<parameter name="Y" id="2" flags="16" default="0" value="20"/>
-			</parameter>
-			<parameter name="Scale" id="103" flags="4112">
-				<parameter name="X" id="1" flags="16" default="1" value="1.3"/>
-				<parameter name="Y" id="2" flags="16" default="1" value="0.55"/>
-			</parameter>
-		</parameter>
-		<parameter name="Object" id="2" flags="4112">
-			<parameter name="Shape Style" id="301" flags="4112">
-				<parameter name="Fill Color" id="1" flags="4112">
-					<parameter name="Red" id="1" flags="16" default="1" value="${secondaryColor.red}"/>
-					<parameter name="Green" id="2" flags="16" default="1" value="${secondaryColor.green}"/>
-					<parameter name="Blue" id="3" flags="16" default="1" value="${secondaryColor.blue}"/>
-				</parameter>
-			</parameter>
-		</parameter>
-	</scenenode>
+	<scenenode name="Main Group" id="1000" factoryID="1" version="1">
+		<timing in="0" out="${totalFrames}" offset="0"/>
 
-	<!-- Title Layer -->
-	<scenenode name="Title Here" id="1001" factoryID="14" version="4">
-		<text>${titleText}</text>
-		<style name="Style" id="10011" factoryID="1">
-			<font type="0">${spec.typography.titleFont}</font>
-			<parameter name="Size" id="3" flags="16777296" default="48" value="120"/>
-			<parameter name="Face" id="11" flags="4112">
-				<parameter name="Enable" id="1" flags="16" default="1" value="1"/>
-				<parameter name="Color" id="2" flags="4112">
-					<parameter name="Red" id="1" flags="16" default="1" value="${primaryColor.red}"/>
-					<parameter name="Green" id="2" flags="16" default="1" value="${primaryColor.green}"/>
-					<parameter name="Blue" id="3" flags="16" default="1" value="${primaryColor.blue}"/>
+		<!-- Pop-over Shape Card -->
+		<scenenode name="Pop-over Card" id="2001" factoryID="3" version="1">
+			<timing in="0" out="${totalFrames}" offset="0"/>
+			<parameter name="Transform" id="100" flags="4112">
+				<parameter name="Position" id="101" flags="4112">
+					<parameter name="X" id="1" flags="16" default="0" value="0"/>
+					<parameter name="Y" id="2" flags="16" default="0" value="20"/>
+				</parameter>
+				<parameter name="Scale" id="103" flags="4112">
+					<parameter name="X" id="1" flags="16" default="1" value="1.3"/>
+					<parameter name="Y" id="2" flags="16" default="1" value="0.55"/>
 				</parameter>
 			</parameter>
-		</style>
-		<parameter name="Transform" id="100" flags="4112">
-			<parameter name="Position" id="101" flags="4112">
-				<parameter name="X" id="1" flags="16" default="0" value="0"/>
-				<parameter name="Y" id="2" flags="16" default="0" value="60"/>
+			<parameter name="Object" id="2" flags="4112">
+				<parameter name="Shape Style" id="301" flags="4112">
+					<parameter name="Fill Color" id="1" flags="4112">
+						<parameter name="Red" id="1" flags="16" default="1" value="${secondaryColor.red}"/>
+						<parameter name="Green" id="2" flags="16" default="1" value="${secondaryColor.green}"/>
+						<parameter name="Blue" id="3" flags="16" default="1" value="${secondaryColor.blue}"/>
+					</parameter>
+				</parameter>
 			</parameter>
-		</parameter>
-	</scenenode>
+		</scenenode>
 
-	<!-- Subtitle Layer -->
-	<scenenode name="Subtitle" id="1002" factoryID="14" version="4">
-		<text>${subtitleText}</text>
-		<style name="Style" id="10021" factoryID="1">
-			<font type="0">${spec.typography.subtitleFont}</font>
-			<parameter name="Size" id="3" flags="16777296" default="48" value="50"/>
-			<parameter name="Face" id="11" flags="4112">
-				<parameter name="Enable" id="1" flags="16" default="1" value="1"/>
-				<parameter name="Color" id="2" flags="4112">
-					<parameter name="Red" id="1" flags="16" default="1" value="${primaryColor.red}"/>
-					<parameter name="Green" id="2" flags="16" default="1" value="${primaryColor.green}"/>
-					<parameter name="Blue" id="3" flags="16" default="1" value="${primaryColor.blue}"/>
+		<!-- Title Layer -->
+		<scenenode name="Title Here" id="1001" factoryID="14" version="4">
+			<timing in="0" out="${totalFrames}" offset="0"/>
+			<text>${titleText}</text>
+			<style name="Style" id="10011" factoryID="1">
+				<font type="0">${spec.typography.titleFont}</font>
+				<parameter name="Size" id="3" flags="16777296" default="48" value="120"/>
+				<parameter name="Face" id="11" flags="4112">
+					<parameter name="Enable" id="1" flags="16" default="1" value="1"/>
+					<parameter name="Color" id="2" flags="4112">
+						<parameter name="Red" id="1" flags="16" default="1" value="${primaryColor.red}"/>
+						<parameter name="Green" id="2" flags="16" default="1" value="${primaryColor.green}"/>
+						<parameter name="Blue" id="3" flags="16" default="1" value="${primaryColor.blue}"/>
+					</parameter>
+				</parameter>
+			</style>
+			<parameter name="Transform" id="100" flags="4112">
+				<parameter name="Position" id="101" flags="4112">
+					<parameter name="X" id="1" flags="16" default="0" value="0"/>
+					<parameter name="Y" id="2" flags="16" default="0" value="60"/>
 				</parameter>
 			</parameter>
-		</style>
-		<parameter name="Transform" id="100" flags="4112">
-			<parameter name="Position" id="101" flags="4112">
-				<parameter name="X" id="1" flags="16" default="0" value="0"/>
-				<parameter name="Y" id="2" flags="16" default="0" value="-30"/>
-			</parameter>
-		</parameter>
-	</scenenode>
+		</scenenode>
 
-	<!-- Badge 1 Layer -->
-	<scenenode name="Title Information 1" id="1003" factoryID="14" version="4">
-		<text>${badge1}</text>
-		<style name="Style" id="10031" factoryID="1">
-			<font type="0">${spec.typography.badgeFont}</font>
-			<parameter name="Size" id="3" flags="16777296" default="48" value="40"/>
-			<parameter name="Face" id="11" flags="4112">
-				<parameter name="Enable" id="1" flags="16" default="1" value="1"/>
-				<parameter name="Color" id="2" flags="4112">
-					<parameter name="Red" id="1" flags="16" default="1" value="${accentColor.red}"/>
-					<parameter name="Green" id="2" flags="16" default="1" value="${accentColor.green}"/>
-					<parameter name="Blue" id="3" flags="16" default="1" value="${accentColor.blue}"/>
+		<!-- Subtitle Layer -->
+		<scenenode name="Subtitle" id="1002" factoryID="14" version="4">
+			<timing in="0" out="${totalFrames}" offset="0"/>
+			<text>${subtitleText}</text>
+			<style name="Style" id="10021" factoryID="1">
+				<font type="0">${spec.typography.subtitleFont}</font>
+				<parameter name="Size" id="3" flags="16777296" default="48" value="50"/>
+				<parameter name="Face" id="11" flags="4112">
+					<parameter name="Enable" id="1" flags="16" default="1" value="1"/>
+					<parameter name="Color" id="2" flags="4112">
+						<parameter name="Red" id="1" flags="16" default="1" value="${primaryColor.red}"/>
+						<parameter name="Green" id="2" flags="16" default="1" value="${primaryColor.green}"/>
+						<parameter name="Blue" id="3" flags="16" default="1" value="${primaryColor.blue}"/>
+					</parameter>
+				</parameter>
+			</style>
+			<parameter name="Transform" id="100" flags="4112">
+				<parameter name="Position" id="101" flags="4112">
+					<parameter name="X" id="1" flags="16" default="0" value="0"/>
+					<parameter name="Y" id="2" flags="16" default="0" value="-30"/>
 				</parameter>
 			</parameter>
-		</style>
-		<parameter name="Transform" id="100" flags="4112">
-			<parameter name="Position" id="101" flags="4112">
-				<parameter name="X" id="1" flags="16" default="0" value="0"/>
-				<parameter name="Y" id="2" flags="16" default="0" value="-130"/>
-			</parameter>
-		</parameter>
-	</scenenode>
+		</scenenode>
 
-	<!-- Badge 2 Layer -->
-	<scenenode name="Title Information 2" id="1004" factoryID="14" version="4">
-		<text>${badge2}</text>
-		<style name="Style" id="10041" factoryID="1">
-			<font type="0">${spec.typography.badgeFont}</font>
-			<parameter name="Size" id="3" flags="16777296" default="48" value="40"/>
-			<parameter name="Face" id="11" flags="4112">
-				<parameter name="Enable" id="1" flags="16" default="1" value="1"/>
-				<parameter name="Color" id="2" flags="4112">
-					<parameter name="Red" id="1" flags="16" default="1" value="${accentColor.red}"/>
-					<parameter name="Green" id="2" flags="16" default="1" value="${accentColor.green}"/>
-					<parameter name="Blue" id="3" flags="16" default="1" value="${accentColor.blue}"/>
+		<!-- Badge 1 Layer -->
+		<scenenode name="Title Information 1" id="1003" factoryID="14" version="4">
+			<timing in="0" out="${totalFrames}" offset="0"/>
+			<text>${badge1}</text>
+			<style name="Style" id="10031" factoryID="1">
+				<font type="0">${spec.typography.badgeFont}</font>
+				<parameter name="Size" id="3" flags="16777296" default="48" value="40"/>
+				<parameter name="Face" id="11" flags="4112">
+					<parameter name="Enable" id="1" flags="16" default="1" value="1"/>
+					<parameter name="Color" id="2" flags="4112">
+						<parameter name="Red" id="1" flags="16" default="1" value="${accentColor.red}"/>
+						<parameter name="Green" id="2" flags="16" default="1" value="${accentColor.green}"/>
+						<parameter name="Blue" id="3" flags="16" default="1" value="${accentColor.blue}"/>
+					</parameter>
+				</parameter>
+			</style>
+			<parameter name="Transform" id="100" flags="4112">
+				<parameter name="Position" id="101" flags="4112">
+					<parameter name="X" id="1" flags="16" default="0" value="0"/>
+					<parameter name="Y" id="2" flags="16" default="0" value="-130"/>
 				</parameter>
 			</parameter>
-		</style>
-		<parameter name="Transform" id="100" flags="4112">
-			<parameter name="Position" id="101" flags="4112">
-				<parameter name="X" id="1" flags="16" default="0" value="0"/>
-				<parameter name="Y" id="2" flags="16" default="0" value="-180"/>
+		</scenenode>
+
+		<!-- Badge 2 Layer -->
+		<scenenode name="Title Information 2" id="1004" factoryID="14" version="4">
+			<timing in="0" out="${totalFrames}" offset="0"/>
+			<text>${badge2}</text>
+			<style name="Style" id="10041" factoryID="1">
+				<font type="0">${spec.typography.badgeFont}</font>
+				<parameter name="Size" id="3" flags="16777296" default="48" value="40"/>
+				<parameter name="Face" id="11" flags="4112">
+					<parameter name="Enable" id="1" flags="16" default="1" value="1"/>
+					<parameter name="Color" id="2" flags="4112">
+						<parameter name="Red" id="1" flags="16" default="1" value="${accentColor.red}"/>
+						<parameter name="Green" id="2" flags="16" default="1" value="${accentColor.green}"/>
+						<parameter name="Blue" id="3" flags="16" default="1" value="${accentColor.blue}"/>
+					</parameter>
+				</parameter>
+			</style>
+			<parameter name="Transform" id="100" flags="4112">
+				<parameter name="Position" id="101" flags="4112">
+					<parameter name="X" id="1" flags="16" default="0" value="0"/>
+					<parameter name="Y" id="2" flags="16" default="0" value="-180"/>
+				</parameter>
 			</parameter>
-		</parameter>
+		</scenenode>
 	</scenenode>
 </scene>
 </ozml>`;
