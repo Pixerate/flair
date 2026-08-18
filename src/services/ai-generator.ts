@@ -4,8 +4,6 @@ import { MotionSpec, MotionSpecSchema } from '../types/spec.js';
 export interface MotionAiGeneratorOptions {
   /** Vertex AI / Gemini client or Vertex instance passed to @pixerate/ai-core */
   vertexClient: any;
-  /** Vertex model name (defaults to gemini-3.6-flash) */
-  modelName?: string;
 }
 
 /**
@@ -21,10 +19,7 @@ export class MotionAiGenerator {
         'Vertex AI client is required for MotionAiGenerator. Ensure valid Vertex AI credentials are provided.'
       );
     }
-    const optionsObj = options.modelName
-      ? { modelName: options.modelName, client: 'flair' as const }
-      : { client: 'flair' as const };
-    this.jsonService = new JsonGenerationService(options.vertexClient, optionsObj);
+    this.jsonService = new JsonGenerationService(options.vertexClient, { client: 'flair' });
   }
 
   /**

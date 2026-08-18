@@ -61,12 +61,7 @@ program
           location: process.env.GCP_LOCATION || 'us-central1',
         });
 
-        const aiGenerator = new MotionAiGenerator({
-          vertexClient,
-          ...(process.env.VERTEX_MODEL || process.env.GEMINI_MODEL
-            ? { modelName: process.env.VERTEX_MODEL || process.env.GEMINI_MODEL }
-            : {}),
-        });
+        const aiGenerator = new MotionAiGenerator({ vertexClient });
         spec = await aiGenerator.generateSpecFromPrompt(options.prompt);
         if (options.media) {
           spec.bgMedia = options.media;
