@@ -21,14 +21,10 @@ export class MotionAiGenerator {
         'Vertex AI client is required for MotionAiGenerator. Ensure valid Vertex AI credentials are provided.'
       );
     }
-    this.jsonService = new JsonGenerationService(options.vertexClient, {
-      modelName:
-        options.modelName ||
-        process.env.VERTEX_MODEL ||
-        process.env.GEMINI_MODEL ||
-        'gemini-2.5-flash',
-      client: 'flair',
-    });
+    const optionsObj = options.modelName
+      ? { modelName: options.modelName, client: 'flair' as const }
+      : { client: 'flair' as const };
+    this.jsonService = new JsonGenerationService(options.vertexClient, optionsObj);
   }
 
   /**
@@ -45,6 +41,7 @@ export class MotionAiGenerator {
 
     const systemPrompt = `You are an expert motion graphics designer producing Apple Motion (.motn) composition specs.
 Analyze the user's prompt requirements carefully and generate a complete, vivid MotionSpec object.
+Choose an appropriate template architecture ("scratch", "snap", "atmospheric", "pulse", "splash", "swarm", "3d-trailer"). Default to "scratch" to build a brand new custom template from scratch based on the prompt.
 Ensure bold color choices, appropriate fonts (like Impact, Helvetica-Bold, Arial-Black), and catchy text for title, subtitle, and badges.`;
 
     try {

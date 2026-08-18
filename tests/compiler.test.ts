@@ -103,4 +103,77 @@ describe('MotionCompiler', () => {
     expect(xml).toContain('<path>file://');
     expect(xml).toContain('test-bg.png</path>');
   });
+
+  it('compiles a template from scratch when template is set to scratch', () => {
+    const compiler = new MotionCompiler();
+    const spec: MotionSpec = {
+      title: 'SCRATCH TEMPLATE TEST',
+      template: 'scratch',
+      badges: ['BADGE A'],
+      style: 'neubrutalist',
+      palette: {
+        backgroundColor: '#000000',
+        primaryColor: '#FFFFFF',
+        secondaryColor: '#FF0000',
+        accentColor: '#00FF00',
+        borderColor: '#000000',
+      },
+      canvas: {
+        width: 1920,
+        height: 1080,
+        durationSeconds: 10,
+        fps: 30,
+      },
+      typography: {
+        titleFont: 'Impact',
+        subtitleFont: 'Arial-Black',
+        badgeFont: 'Helvetica-Bold',
+      },
+      animation: {
+        entrance: 'pop-overshoot',
+        wiggleIntensity: 0.5,
+      },
+    };
+
+    const xml = compiler.compile(spec);
+    expect(xml).toContain('<!DOCTYPE ozxmlscene>');
+    expect(xml).toContain('<text>SCRATCH TEMPLATE TEST</text>');
+    expect(xml).toContain('Impact');
+  });
+
+  it('resolves system templates dynamically based on template spec property', () => {
+    const compiler = new MotionCompiler();
+    const spec: MotionSpec = {
+      title: 'ATMOSPHERIC TEMPLATE TEST',
+      template: 'atmospheric',
+      badges: [],
+      style: 'cyberpunk',
+      palette: {
+        backgroundColor: '#050510',
+        primaryColor: '#00FFCC',
+        secondaryColor: '#FF0077',
+        accentColor: '#FFFF00',
+        borderColor: '#000000',
+      },
+      canvas: {
+        width: 1920,
+        height: 1080,
+        durationSeconds: 5,
+        fps: 30,
+      },
+      typography: {
+        titleFont: 'Impact',
+        subtitleFont: 'Arial-Black',
+        badgeFont: 'Helvetica-Bold',
+      },
+      animation: {
+        entrance: 'pop-overshoot',
+        wiggleIntensity: 0.5,
+      },
+    };
+
+    const xml = compiler.compile(spec);
+    expect(xml).toContain('<!DOCTYPE ozxmlscene>');
+    expect(xml).toContain('ATMOSPHERIC TEMPLATE TEST');
+  });
 });

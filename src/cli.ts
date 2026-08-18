@@ -63,7 +63,9 @@ program
 
         const aiGenerator = new MotionAiGenerator({
           vertexClient,
-          modelName: process.env.VERTEX_MODEL || process.env.GEMINI_MODEL,
+          ...(process.env.VERTEX_MODEL || process.env.GEMINI_MODEL
+            ? { modelName: process.env.VERTEX_MODEL || process.env.GEMINI_MODEL }
+            : {}),
         });
         spec = await aiGenerator.generateSpecFromPrompt(options.prompt);
         if (options.media) {
