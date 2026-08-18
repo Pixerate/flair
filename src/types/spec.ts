@@ -87,11 +87,12 @@ export const MotionSpecSchema = z.object({
   badges: z.array(z.string()).default(['SYSTEM ERROR // 100% RAW', 'VER 2.0 // NO CAP']),
   /** Optional background media image or video file path */
   bgMedia: z.string().optional().describe('Absolute or relative file path to background image or video asset'),
-  /** Motion template style choice ("snap", "atmospheric", "pulse", "splash", "swarm", "3d-trailer", "scratch") */
+  /** Motion template style choice ("scratch" or built-in template preset) */
   template: z
-    .enum(['snap', 'atmospheric', 'pulse', 'splash', 'swarm', '3d-trailer', 'scratch'])
-    .default('snap')
-    .describe('Base motion template style architecture ("snap", "atmospheric", "pulse", "splash", "swarm", "3d-trailer", "scratch")'),
+    .string()
+    .optional()
+    .default('scratch')
+    .describe('Base motion template architecture ("scratch" to generate net-new file from scratch, or preset template name)'),
   /** Design aesthetic style preset */
   style: z.enum(['neubrutalist', 'cyberpunk', 'minimalist', 'retro', 'synthwave', 'bold-clean']).default('neubrutalist'),
   /** Color palette settings */
