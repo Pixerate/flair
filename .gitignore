@@ -1,0 +1,7 @@
+node_modules/
+dist/
+*.motn
+*.mov
+*.mp4
+test-bg.svg
+test-spec.json
