@@ -2,7 +2,8 @@ import http from 'http';
 import { spawn } from 'child_process';
 import fs from 'fs';
 import path from 'path';
-import type { ControlValue } from '../shader/controls.js';
+import { findChrome } from '@pixerate/circus/capture';
+import { parseControls, controlValue, type ControlValue } from '../shader/controls.js';
 
 export interface ExportOptions {
   /** GLSL fragment shader source */
@@ -20,7 +21,7 @@ export interface ExportOptions {
 
 /**
  * Renders a shader animation frame-by-frame headlessly via hardware-accelerated WebGL2
- * and encodes to an animated GIF or MP4 video using ffmpeg.
+ * and encodes to an animated GIF or MP4 video using ffmpeg and @pixerate/circus browser integration.
  */
 export async function exportMotionGraphic(options: ExportOptions): Promise<string> {
   const {
@@ -40,6 +41,22 @@ export async function exportMotionGraphic(options: ExportOptions): Promise<strin
   const totalFrames = Math.max(1, Math.round(duration * fps));
 
   fs.mkdirSync(path.dirname(resolvedOut), { recursive: true });
+
+  // Compute effective control values: declared defaults merged with user overrides
+  const controls = parseControls(source);
+  const effectiveValues: Record<string, ControlValue> = {};
+  for (const ctrl of controls) {
+    effectiveValues[ctrl.name] = controlValue(ctrl, values);
+  }
+  for (const [k, v] of Object.entries(values)) {
+    effectiveValues[k] = v;
+  }
+
+  // Locate Chrome using @pixerate/circus
+  const chromeBin = process.env.CHROME_BIN || process.env.CHROME_PATH || findChrome();
+  if (!chromeBin) {
+    throw new Error('Google Chrome binary not found. Please install Chrome or set CHROME_PATH.');
+  }
 
   const ffmpegArgs = [
     '-y',
@@ -73,6 +90,7 @@ export async function exportMotionGraphic(options: ExportOptions): Promise<strin
   return new Promise((resolve, reject) => {
     let currentFrame = 0;
     let chromeProc: any = null;
+    const userDataDir = `/tmp/flair-chrome-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
     ffmpeg.on('error', (err) => {
       cleanup();
@@ -94,7 +112,7 @@ export async function exportMotionGraphic(options: ExportOptions): Promise<strin
 
       if (url.pathname === '/') {
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-        res.end(renderPageHtml(source, values, width, height, fps, totalFrames));
+        res.end(renderPageHtml(source, effectiveValues, width, height, fps, totalFrames));
         return;
       }
 
@@ -139,24 +157,33 @@ export async function exportMotionGraphic(options: ExportOptions): Promise<strin
       try {
         server.close();
       } catch {}
+      try {
+        if (fs.existsSync(userDataDir)) {
+          fs.rmSync(userDataDir, { recursive: true, force: true });
+        }
+      } catch {}
     }
 
     server.listen(0, '127.0.0.1', () => {
       const addr = server.address() as any;
       const port = addr.port;
 
-      const chromeBin =
-        process.env.CHROME_BIN ||
-        '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-
       chromeProc = spawn(chromeBin, [
         '--headless=new',
+        `--user-data-dir=${userDataDir}`,
+        `--window-size=${width},${height}`,
         '--use-gl=angle',
         '--use-angle=metal',
         '--enable-webgl',
         '--disable-gpu-sandbox',
+        '--no-first-run',
+        '--no-default-browser-check',
+        '--disable-background-networking',
+        '--disable-extensions',
         `http://127.0.0.1:${port}/`,
-      ]);
+      ], {
+        stdio: 'ignore'
+      });
 
       chromeProc.on('error', (err: any) => {
         cleanup();
@@ -271,7 +298,6 @@ void main() {
       if (uRes) gl.uniform2f(uRes, ${width}, ${height});
       if (iRes) gl.uniform3f(iRes, ${width}, ${height}, 1.0);
 
-      // Helper to parse hex color to [r,g,b]
       function parseColor(c) {
         if (typeof c === 'string' && c.startsWith('#')) {
           const hex = c.slice(1);
@@ -286,13 +312,13 @@ void main() {
         return c;
       }
 
-      // Apply initial control values
       const vals = ${jsonValues};
       for (const [k, rawV] of Object.entries(vals)) {
         const v = parseColor(rawV);
         const loc = gl.getUniformLocation(prog, k);
         if (loc) {
           if (typeof v === 'number') gl.uniform1f(loc, v);
+          else if (typeof v === 'boolean') gl.uniform1i(loc, v ? 1 : 0);
           else if (Array.isArray(v)) {
             if (v.length === 2) gl.uniform2fv(loc, v);
             else if (v.length === 3) gl.uniform3fv(loc, v);

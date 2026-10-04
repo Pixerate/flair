@@ -26,6 +26,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@pixerate/circus": "file:../pixerate-circus",
     "commander": "^12.0.0",
     "gifenc": "^1.0.3"
   },
