@@ -1,0 +1,70 @@
+{
+  "name": "vertigo-title-sequence",
+  "title": "Vertigo Title Sequence",
+  "description": "Homage to Saul Bass and Alfred Hitchcock: Opening eye close-up, stark monochrome spirals, and bold typographic title reveal.",
+  "stage": {
+    "width": 1920,
+    "height": 1080
+  },
+  "media": {
+    "vertigoShader": {
+      "type": "shader",
+      "source": "./examples/vertigo.frag"
+    }
+  },
+  "shots": [
+    {
+      "title": "The Gaze",
+      "caption": "A stark, high-contrast close-up of a woman's face and piercing gaze, bathed in monochrome and deep technicolor noir crimson.",
+      "camera": { "x": 480, "y": 270, "width": 960, "height": 540 },
+      "hold": 2800,
+      "effects": [
+        {
+          "type": "media",
+          "id": "vertigoSequence",
+          "media": "vertigoShader"
+        }
+      ]
+    },
+    {
+      "title": "The Vortex",
+      "caption": "The camera penetrates the pupil, dissolving reality into stark black-and-white graphic forms. Hypnotic Whitney Spirograph spirals expand outward.",
+      "camera": { "x": 0, "y": 0, "width": 1920, "height": 1080 },
+      "hold": 3400,
+      "effects": [
+        {
+          "type": "shimmer",
+          "id": "spiralShimmer",
+          "ids": ["stage"]
+        }
+      ]
+    },
+    {
+      "title": "The Title",
+      "caption": "The vortex draws the eye relentlessly toward the center before the bold, stark title 'VERTIGO' appears with kinetic offset.",
+      "camera": { "x": 0, "y": 0, "width": 1920, "height": 1080 },
+      "hold": 2500,
+      "run": [
+        {
+          "type": "element",
+          "element": {
+            "id": "titleCard",
+            "type": "rectangle",
+            "x": 660,
+            "y": 440,
+            "width": 600,
+            "height": 200,
+            "text": "VERTIGO"
+          }
+        }
+      ],
+      "effects": [
+        {
+          "type": "glow",
+          "id": "titleGlow",
+          "ids": ["titleCard"]
+        }
+      ]
+    }
+  ]
+}
