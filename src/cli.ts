@@ -2,139 +2,185 @@
 import { Command } from 'commander';
 import path from 'path';
 import fs from 'fs';
-import { createVertex } from '@ai-sdk/google-vertex';
-import { MotionCompiler } from './compiler/motion-xml.js';
-import { MotionAiGenerator } from './services/ai-generator.js';
-import { MotionAppAutomation } from './automation/motion-app.js';
-import { MotionSpecSchema, MotionSpec } from './types/spec.js';
+import { exec } from 'child_process';
+import { parseControls, standaloneHtml, type ControlValue } from './shader/index.js';
+import { validateScene, simulateScene, standaloneSceneHtml, type Scene } from './scene/index.js';
 
 const program = new Command();
 
 program
   .name('flair')
-  .description('AI-powered Apple Motion (.motn) generator and desktop automation CLI')
-  .version('1.0.0');
+  .description('Generative motion graphics, animation directing & bespoke WebGL shader engine')
+  .version('2.0.0');
+
+// ==========================================
+// Shader Commands
+// ==========================================
+program
+  .command('controls <shaderPath>')
+  .description('Inspect and parse @control declarations in a WebGL shader file')
+  .option('--json', 'Output controls as JSON', false)
+  .action((shaderPath, options) => {
+    const fullPath = path.resolve(process.cwd(), shaderPath);
+    if (!fs.existsSync(fullPath)) {
+      console.error(`Error: Shader file not found at: ${fullPath}`);
+      process.exit(1);
+    }
+
+    const source = fs.readFileSync(fullPath, 'utf-8');
+    const controls = parseControls(source);
+
+    if (options.json) {
+      console.log(JSON.stringify(controls, null, 2));
+      return;
+    }
+
+    if (controls.length === 0) {
+      console.log(`No @control annotations found in ${path.basename(shaderPath)}.`);
+      return;
+    }
+
+    console.log(`Controls in ${path.basename(shaderPath)} (${controls.length}):`);
+    for (const c of controls) {
+      const defVal = Array.isArray(c.default) ? `[${c.default.join(', ')}]` : String(c.default);
+      console.log(
+        `  • ${c.name} (${c.type}): "${c.label}" | default=${defVal} | range=[${c.min}, ${c.max}] (line ${c.line})`
+      );
+    }
+  });
 
 program
-  .command('generate')
-  .description('Generate an Apple Motion project (.motn) from a prompt or spec JSON file')
-  .option('-p, --prompt <prompt>', 'Natural language prompt requirement')
-  .option('-s, --spec <specFile>', 'Path to a JSON file containing a MotionSpec')
-  .option('-m, --media <mediaPath>', 'Path to background image or video asset')
-  .option('-o, --out <outputPath>', 'Output .motn file path', './output.motn')
-  .option('--open', 'Keep project open in Motion.app after generation', false)
-  .action(async (options) => {
-    try {
-      const automation = new MotionAppAutomation();
-      const wasRunning = await automation.isMotionRunning();
+  .command('html <shaderPath>')
+  .description('Generate a self-contained standalone HTML page running the shader')
+  .option('-t, --title <title>', 'Page title')
+  .option('-o, --out <outputPath>', 'Output HTML path')
+  .option('-v, --values <jsonOrFile>', 'Control values as JSON string or path to JSON file')
+  .option('--open', 'Open generated HTML page in default browser', false)
+  .action((shaderPath, options) => {
+    const fullPath = path.resolve(process.cwd(), shaderPath);
+    if (!fs.existsSync(fullPath)) {
+      console.error(`Error: Shader file not found at: ${fullPath}`);
+      process.exit(1);
+    }
 
-      let spec: MotionSpec;
+    const source = fs.readFileSync(fullPath, 'utf-8');
+    const title = options.title || path.basename(shaderPath, path.extname(shaderPath));
 
-      if (options.spec) {
-        const specPath = path.resolve(process.cwd(), options.spec);
-        if (!fs.existsSync(specPath)) {
-          console.error(`Error: Spec file not found at ${specPath}`);
-          process.exit(1);
+    let values: Record<string, ControlValue> = {};
+    if (options.values) {
+      try {
+        if (fs.existsSync(options.values)) {
+          values = JSON.parse(fs.readFileSync(options.values, 'utf-8'));
+        } else {
+          values = JSON.parse(options.values);
         }
-        const jsonRaw = fs.readFileSync(specPath, 'utf-8');
-        spec = MotionSpecSchema.parse(JSON.parse(jsonRaw));
-        if (options.media) {
-          spec.bgMedia = options.media;
-        }
-        console.log(`Loaded MotionSpec from file: ${specPath}`);
-      } else if (options.prompt) {
-        console.log(`Generating MotionSpec using Vertex AI for prompt: "${options.prompt}"...`);
-        
-        const projectId =
-          process.env.GOOGLE_VERTEX_PROJECT ||
-          process.env.GCP_PROJECT ||
-          process.env.GOOGLE_CLOUD_PROJECT;
-
-        if (!projectId) {
-          throw new Error(
-            'Google Vertex AI project is missing. Set GOOGLE_VERTEX_PROJECT or GCP_PROJECT environment variable.'
-          );
-        }
-
-        const vertexClient = createVertex({
-          project: projectId,
-          location: process.env.GCP_LOCATION || 'us-central1',
-        });
-
-        const aiGenerator = new MotionAiGenerator({ vertexClient });
-        spec = await aiGenerator.generateSpecFromPrompt(options.prompt);
-        if (options.media) {
-          spec.bgMedia = options.media;
-        }
-        console.log('Successfully generated MotionSpec via Vertex AI.');
-      } else {
-        console.error('Error: Either --prompt or --spec must be provided.');
+      } catch (err: any) {
+        console.error(`Error parsing values: ${err.message}`);
         process.exit(1);
       }
+    }
 
-      const compiler = new MotionCompiler();
-      const xmlOutput = compiler.compile(spec);
+    const htmlContent = standaloneHtml(title, source, values);
+    const outputPath = path.resolve(
+      process.cwd(),
+      options.out || `${path.basename(shaderPath, path.extname(shaderPath))}.html`
+    );
 
-      const outputPath = path.resolve(process.cwd(), options.out);
+    fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+    fs.writeFileSync(outputPath, htmlContent, 'utf-8');
+    console.log(`Generated standalone shader page at: ${outputPath}`);
+
+    if (options.open) {
+      exec(`open "${outputPath}"`);
+    }
+  });
+
+// ==========================================
+// Scene Directing Commands
+// ==========================================
+const sceneCmd = program
+  .command('scene')
+  .description('Direct, validate, simulate, and render multi-shot animated scenes');
+
+sceneCmd
+  .command('validate <sceneFile>')
+  .description('Validate scene JSON structure, camera framing, and effect IDs')
+  .action((sceneFile) => {
+    const fullPath = path.resolve(process.cwd(), sceneFile);
+    if (!fs.existsSync(fullPath)) {
+      console.error(`Error: Scene file not found at: ${fullPath}`);
+      process.exit(1);
+    }
+
+    try {
+      const scene: Scene = JSON.parse(fs.readFileSync(fullPath, 'utf-8'));
+      const issues = validateScene(scene);
+      if (issues.length === 0) {
+        console.log(`✅ Scene "${scene.name}" is valid (${scene.shots.length} shots).`);
+      } else {
+        console.warn(`Found ${issues.length} issue(s) in "${scene.name}":`);
+        for (const iss of issues) {
+          const loc = iss.shot === 0 ? 'Scene' : `Shot ${iss.shot}`;
+          console.warn(`  • [${loc}] ${iss.message}`);
+        }
+        process.exit(1);
+      }
+    } catch (err: any) {
+      console.error(`Error reading scene: ${err.message}`);
+      process.exit(1);
+    }
+  });
+
+sceneCmd
+  .command('review <sceneFile>')
+  .alias('preview')
+  .description('Simulate scene off-screen and generate timing breakdown & diagnostic review')
+  .action(async (sceneFile) => {
+    const fullPath = path.resolve(process.cwd(), sceneFile);
+    if (!fs.existsSync(fullPath)) {
+      console.error(`Error: Scene file not found at: ${fullPath}`);
+      process.exit(1);
+    }
+
+    try {
+      const scene: Scene = JSON.parse(fs.readFileSync(fullPath, 'utf-8'));
+      const { review } = await simulateScene(scene);
+      console.log(review.markdown);
+    } catch (err: any) {
+      console.error(`Error reviewing scene: ${err.message}`);
+      process.exit(1);
+    }
+  });
+
+sceneCmd
+  .command('html <sceneFile>')
+  .description('Generate standalone interactive web player for the scene')
+  .option('-o, --out <outputPath>', 'Output HTML path')
+  .option('--open', 'Open generated HTML in browser', false)
+  .action((sceneFile, options) => {
+    const fullPath = path.resolve(process.cwd(), sceneFile);
+    if (!fs.existsSync(fullPath)) {
+      console.error(`Error: Scene file not found at: ${fullPath}`);
+      process.exit(1);
+    }
+
+    try {
+      const scene: Scene = JSON.parse(fs.readFileSync(fullPath, 'utf-8'));
+      const htmlContent = standaloneSceneHtml(scene);
+      const outputPath = path.resolve(
+        process.cwd(),
+        options.out || `${scene.name || 'scene'}.html`
+      );
+
       fs.mkdirSync(path.dirname(outputPath), { recursive: true });
-      fs.writeFileSync(outputPath, xmlOutput, 'utf-8');
-      console.log(`Successfully compiled Apple Motion project to: ${outputPath}`);
-
-      // Validate project by opening in Motion.app
-      console.log('Validating project in Motion.app...');
-      await automation.openProject(outputPath);
+      fs.writeFileSync(outputPath, htmlContent, 'utf-8');
+      console.log(`Generated standalone scene player at: ${outputPath}`);
 
       if (options.open) {
-        await automation.playTimeline();
-        console.log('Motion.app active and playback started.');
-      } else if (!wasRunning) {
-        // Auto-close Motion.app after validation if it was not running prior
-        console.log('Validation complete. Auto-closing Motion.app...');
-        await new Promise((res) => setTimeout(res, 1500));
-        await automation.quitMotion();
-        console.log('Motion.app closed.');
+        exec(`open "${outputPath}"`);
       }
     } catch (err: any) {
-      console.error(`Error: ${err?.message || String(err)}`);
-      process.exit(1);
-    }
-  });
-
-program
-  .command('render <motnPath>')
-  .description('Instruct Motion.app to render an Apple Motion project (.motn) to an MP4 video file')
-  .option('-o, --out <outputPath>', 'Destination MP4 video file path', './output.mp4')
-  .action(async (motnPath, options) => {
-    try {
-      const automation = new MotionAppAutomation();
-      const wasRunning = await automation.isMotionRunning();
-
-      console.log(`Rendering ${motnPath} to ${options.out}...`);
-      await automation.renderProject(motnPath, options.out);
-      console.log(`Render command issued for: ${options.out}`);
-
-      if (!wasRunning) {
-        await new Promise((res) => setTimeout(res, 3000));
-        await automation.quitMotion();
-      }
-    } catch (err: any) {
-      console.error(`Error rendering Motion project: ${err?.message || String(err)}`);
-      process.exit(1);
-    }
-  });
-
-program
-  .command('open <motnPath>')
-  .description('Open an existing Apple Motion file (.motn) in Motion.app and start playback')
-  .action(async (motnPath) => {
-    try {
-      const fullPath = path.resolve(process.cwd(), motnPath);
-      const automation = new MotionAppAutomation();
-      await automation.openProject(fullPath);
-      await automation.playTimeline();
-      console.log(`Opened ${fullPath} in Motion.app.`);
-    } catch (err: any) {
-      console.error(`Error opening Motion file: ${err?.message || String(err)}`);
+      console.error(`Error generating scene HTML: ${err.message}`);
       process.exit(1);
     }
   });

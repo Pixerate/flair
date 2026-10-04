@@ -1,13 +1,8 @@
-// --- Types & Schemas ---
-export * from './types/spec.js';
+/**
+ * Flair: Generative motion graphics, animation directing & WebGL shader engine.
+ */
 
-// --- Compiler ---
-export * from './compiler/motion-xml.js';
-
-// --- AI & Validation Services ---
-export * from './services/ai-generator.js';
-export * from './services/font-validator.js';
-
-// --- Automation ---
-export * from './automation/motion-app.js';
-
+export * from './shader/index.js';
+export * from './time/index.js';
+export * from './scene/index.js';
+export * from './agent/index.js';

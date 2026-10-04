@@ -21,9 +21,9 @@ Before declaring any change complete:
    npm test
    ```
 4. **End-to-End CLI Verification**:
-   Test generating and rendering a project file using the CLI:
+   Test inspecting controls or generating standalone HTML using the CLI:
    ```bash
-   node ./dist/cli.js generate --spec ./test-spec.json --out ./test-output.motn
+   node ./dist/cli.js controls ./tests/fixtures/sample.frag
    ```
 
 ---
@@ -49,12 +49,12 @@ Upon successful completion and full test verification of any feature, fix, or up
    ```bash
    git push origin main
    ```
-   *(Note: If pushing to a tracking remote requires sandbox bypass, run with `BypassSandbox: true`)*.
 
 ---
 
 ## 3. Code Standards & Architecture
 
-- **Strict Error Handling**: Do not write offline fallbacks or silent suppressions for Vertex AI / GCP credential errors. Throw clear, explicit errors detailing missing credentials.
-- **Motion XML Integrity**: Always maintain full ozml factory compliance in `MotionCompiler` when modifying `.motn` XML outputs to prevent Motion.app load failures.
-- **Documentation**: Keep `README.md` and JSDoc annotations up to date whenever modifying `MotionSpecSchema`, CLI options, or automation behaviors.
+- **Pure TypeScript & Lightweight**: Maintain zero heavy runtime dependencies where possible. Keep core shader, animation, and geometric logic testable without a real GPU (using mock WebGL context).
+- **Line-Numbered Error Reporting**: Shader compilation and parsing errors must maintain exact line numbers matching user/agent source code (`#line 1` convention).
+- **Source as Single Source of Truth**: Uniforms annotated with `// @control` define the parameter surface and defaults.
+- **Documentation**: Keep `README.md` and JSDoc annotations up to date whenever modifying shader compilers, renderers, or CLI options.

@@ -1,0 +1,77 @@
+{
+  "name": "sample-pipeline",
+  "title": "Real-time Pipeline Overview",
+  "description": "Demonstrating camera moves, shader background, and procedural effects",
+  "stage": {
+    "width": 1920,
+    "height": 1080
+  },
+  "media": {
+    "plasma": {
+      "type": "shader",
+      "source": "// @control float speed \"Animation Speed\" [0.1, 5.0] = 1.0\nuniform float speed;\nvoid mainImage(out vec4 fragColor, in vec2 fragCoord) {\n  vec2 uv = fragCoord / u_resolution.xy;\n  float v = sin(uv.x * 10.0 + u_time * speed) * cos(uv.y * 10.0 + u_time * speed);\n  fragColor = vec4(0.1 + 0.1 * v, 0.2 + 0.2 * v, 0.4 + 0.3 * v, 1.0);\n}"
+    }
+  },
+  "shots": [
+    {
+      "title": "Ingestion Layer",
+      "caption": "Events stream directly into our high-throughput ingestion buffer.",
+      "camera": { "x": 0, "y": 0, "width": 1920, "height": 1080 },
+      "hold": 800,
+      "run": [
+        {
+          "type": "element",
+          "element": {
+            "id": "ingest",
+            "type": "rectangle",
+            "x": 300,
+            "y": 400,
+            "width": 400,
+            "height": 280,
+            "text": "Kafka Ingest"
+          }
+        }
+      ],
+      "effects": [
+        {
+          "type": "media",
+          "id": "bgShader",
+          "media": "plasma"
+        },
+        {
+          "type": "glow",
+          "id": "ingestGlow",
+          "ids": ["ingest"]
+        }
+      ]
+    },
+    {
+      "title": "Compute Cluster",
+      "caption": "Workers scale dynamically to process concurrent partitions.",
+      "camera": { "x": 800, "y": 300, "width": 1000, "height": 600 },
+      "hold": 900,
+      "run": [
+        {
+          "type": "element",
+          "element": {
+            "id": "compute",
+            "type": "rectangle",
+            "x": 900,
+            "y": 400,
+            "width": 500,
+            "height": 280,
+            "text": "Stream Workers"
+          }
+        }
+      ],
+      "effects": [
+        {
+          "type": "burst",
+          "id": "workBurst",
+          "ids": ["compute"]
+        }
+      ],
+      "stopEffects": ["ingestGlow"]
+    }
+  ]
+}
