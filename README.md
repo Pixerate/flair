@@ -170,6 +170,18 @@ for (let i = 0; i < 60; i++) {
 frames.dispose();
 ```
 
+## Architecture & Separation of Concerns
+
+There is an intentional, decoupled boundary between **Flair** and **`@pixerate/ai-core`**:
+
+| Responsibility | Flair 🎨 | @pixerate/ai-core 🧠 |
+| :--- | :--- | :--- |
+| **Domain** | Motion graphics, WebGL2 shaders, scene directing & simulation | AI orchestration, model reasoning & agent workflows |
+| **Runtime Dependencies** | Pure TypeScript, zero LLM SDKs, zero vendor locks | AI SDKs (Google Vertex, Anthropic, OpenAI), provider clients |
+| **Scene & Shader Specs** | Defines `Scene`, `Shot`, `Effect`, `@control`, `ManualClock` | Generates GLSL shaders & scene manifests from user prompts |
+| **Validation & Simulation** | Provides `validateScene`, `simulateScene`, camera layout checks | Analyzes validation issues and generates iterative corrections |
+| **Agent Tool Surfaces** | Exports declarative tool schemas (`FLAIR_AGENT_TOOLS`) and `applySceneTool` state machine | Executes the LLM agent loop that invokes those tools |
+
 ---
 
 ## Verification & Tests
@@ -179,3 +191,4 @@ npm run typecheck
 npm test
 npm run build
 ```
+

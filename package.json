@@ -26,11 +26,8 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@ai-sdk/google-vertex": "^5.0.4",
-    "@pixerate/ai-core": "file:../pixerate-ai-core",
     "commander": "^12.0.0",
-    "gifenc": "^1.0.3",
-    "zod": "^3.22.4"
+    "gifenc": "^1.0.3"
   },
   "devDependencies": {
     "@types/node": "^20.12.7",
