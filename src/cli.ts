@@ -95,6 +95,66 @@ program
     }
   });
 
+program
+  .command('export <shaderPath>')
+  .description('Export shader animation to an animated GIF or MP4 video')
+  .requiredOption('-o, --out <outputPath>', 'Output file path (.gif or .mp4)')
+  .option('-w, --width <width>', 'Canvas width', '720')
+  .option('-h, --height <height>', 'Canvas height', '720')
+  .option('--fps <fps>', 'Frames per second', '30')
+  .option('-d, --duration <duration>', 'Duration in seconds', '3')
+  .option('-v, --values <jsonOrFile>', 'Control values as JSON string or file')
+  .action(async (shaderPath, options) => {
+    const fullPath = path.resolve(process.cwd(), shaderPath);
+    if (!fs.existsSync(fullPath)) {
+      console.error(`Error: Shader file not found at: ${fullPath}`);
+      process.exit(1);
+    }
+
+    const source = fs.readFileSync(fullPath, 'utf-8');
+
+    let values: Record<string, ControlValue> = {};
+    if (options.values) {
+      try {
+        if (fs.existsSync(options.values)) {
+          values = JSON.parse(fs.readFileSync(options.values, 'utf-8'));
+        } else {
+          values = JSON.parse(options.values);
+        }
+      } catch (err: any) {
+        console.error(`Error parsing values: ${err.message}`);
+        process.exit(1);
+      }
+    }
+
+    const width = parseInt(options.width, 10);
+    const height = parseInt(options.height, 10);
+    const fps = parseInt(options.fps, 10);
+    const duration = parseFloat(options.duration);
+
+    console.log(`Rendering ${duration}s (${duration * fps} frames at ${width}x${height}, ${fps}fps) to ${options.out}...`);
+
+    try {
+      const { exportMotionGraphic } = await import('./export/index.js');
+      const savedPath = await exportMotionGraphic({
+        source,
+        values,
+        outputPath: options.out,
+        width,
+        height,
+        fps,
+        duration,
+        onProgress: (frame, total) => {
+          process.stdout.write(`\rRendering frame ${frame}/${total} (${Math.round((frame / total) * 100)}%)`);
+        },
+      });
+      console.log(`\n✅ Successfully exported motion graphic to: ${savedPath}`);
+    } catch (err: any) {
+      console.error(`\nExport failed: ${err.message}`);
+      process.exit(1);
+    }
+  });
+
 // ==========================================
 // Scene Directing Commands
 // ==========================================
