@@ -1,4 +1,4 @@
-import type { Rect } from './geometry.js';
+import { type Rect, type SceneElement, boundsOf } from './geometry.js';
 
 export interface Stage {
   width: number;
@@ -47,6 +47,100 @@ export function frame(rect: Rect, stage: Stage): View {
   }
   const zoom = Math.min(stage.width / rect.width, boardHeight(stage) / rect.height);
   return viewAt(rect.x + rect.width / 2, rect.y + rect.height / 2, zoom, stage);
+}
+
+export interface FramingOptions {
+  /** Proportional padding added to all sides (e.g., 0.15 for 15%). Default: 0.15 */
+  padding?: number;
+  /** Minimum width in scene units. */
+  minWidth?: number;
+  /** Minimum height in scene units. */
+  minHeight?: number;
+}
+
+/**
+ * Calculates a camera framing rectangle that encloses target elements
+ * while preserving the stage aspect ratio and applying optional margin padding.
+ */
+export function calculateFramingRect(
+  elements: readonly SceneElement[],
+  stage: Stage,
+  options: FramingOptions = {},
+): Rect {
+  const activeElements = elements.filter((e) => !e.isDeleted);
+  const targetH = boardHeight(stage);
+  const stageAspect = stage.width / Math.max(1, targetH);
+
+  if (activeElements.length === 0) {
+    return {
+      x: 0,
+      y: 0,
+      width: stage.width,
+      height: targetH,
+    };
+  }
+
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+
+  for (const el of activeElements) {
+    const b = boundsOf(el);
+    if (b.x < minX) minX = b.x;
+    if (b.y < minY) minY = b.y;
+    if (b.x + b.width > maxX) maxX = b.x + b.width;
+    if (b.y + b.height > maxY) maxY = b.y + b.height;
+  }
+
+  let width = maxX - minX;
+  let height = maxY - minY;
+
+  // Apply padding (default 15%)
+  const padding = options.padding ?? 0.15;
+  if (padding > 0) {
+    const padX = width * padding;
+    const padY = height * padding;
+    minX -= padX;
+    minY -= padY;
+    width += padX * 2;
+    height += padY * 2;
+  }
+
+  // Apply min dimensions
+  if (options.minWidth && width < options.minWidth) {
+    const diff = options.minWidth - width;
+    minX -= diff / 2;
+    width = options.minWidth;
+  }
+  if (options.minHeight && height < options.minHeight) {
+    const diff = options.minHeight - height;
+    minY -= diff / 2;
+    height = options.minHeight;
+  }
+
+  // Preserve stage aspect ratio centered around midpoint
+  const currentAspect = width / Math.max(1, height);
+  if (currentAspect < stageAspect) {
+    // Taller than stage: expand width
+    const targetWidth = height * stageAspect;
+    const diff = targetWidth - width;
+    minX -= diff / 2;
+    width = targetWidth;
+  } else if (currentAspect > stageAspect) {
+    // Wider than stage: expand height
+    const targetHeight = width / stageAspect;
+    const diff = targetHeight - height;
+    minY -= diff / 2;
+    height = targetHeight;
+  }
+
+  return {
+    x: minX,
+    y: minY,
+    width,
+    height,
+  };
 }
 
 /**

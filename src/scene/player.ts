@@ -6,13 +6,15 @@ import {
   DEFAULT_STAGE,
   easeInOutCubic,
   frame,
+  calculateFramingRect,
   viewAt,
   type Stage,
   type View,
 } from './camera.js';
 import { checkShot } from './check.js';
 import { effectGone, type RunningEffect } from './effects.js';
-import type { SceneElement } from './geometry.js';
+import { evaluateBehavior } from './behavior.js';
+import type { Rect, SceneElement } from './geometry.js';
 import { reviewScene, type Review, type ShotLog } from './report.js';
 import {
   isDeleteCommand,
@@ -142,7 +144,27 @@ export async function playScene(
 
     // Camera move
     if (shot.camera) {
-      const targetView = frame(shot.camera, stage);
+      let targetRect: Rect;
+      if ('frame' in shot.camera) {
+        const frameIds = new Set(shot.camera.frame);
+        const targetElements = board.elements().filter((el) => frameIds.has(el.id));
+        if (targetElements.length === 0 && shot.run) {
+          for (const cmd of shot.run) {
+            if (isElementCommand(cmd) && frameIds.has(cmd.element.id)) {
+              targetElements.push(cmd.element);
+            }
+          }
+        }
+        targetRect = calculateFramingRect(targetElements, stage, {
+          padding: shot.camera.padding,
+          minWidth: shot.camera.minWidth,
+          minHeight: shot.camera.minHeight,
+        });
+      } else {
+        targetRect = shot.camera;
+      }
+
+      const targetView = frame(targetRect, stage);
       if (idx === 0) {
         board.setView(targetView);
       } else {
@@ -199,9 +221,42 @@ export async function playScene(
       ? checkShot(shot, board.elements(), board.getView(), stage, shot.title)
       : { framing: [], overlaps: [], edges: [], underTitle: [] };
 
-    // Hold dwell time
+    // Hold dwell time and active behaviors
     const holdMs = shot.hold ?? 800;
-    await clock.sleep(holdMs);
+    const behaviors = shot.behaviors ?? [];
+    if (behaviors.length > 0) {
+      const initialProps = new Map<string, number>();
+      for (const b of behaviors) {
+        const key = `${b.target}:${b.property}`;
+        const el = board.elements().find((e) => e.id === b.target);
+        if (el && typeof (el as any)[b.property] === 'number') {
+          initialProps.set(key, (el as any)[b.property]);
+        } else {
+          initialProps.set(key, 0);
+        }
+      }
+
+      const stepMs = 50;
+      const steps = Math.max(1, Math.round(holdMs / stepMs));
+      const actualStepMs = holdMs / steps;
+      const durationSec = holdMs / 1000;
+
+      for (let s = 1; s <= steps; s++) {
+        await clock.sleep(actualStepMs);
+        const elapsedSec = (s * actualStepMs) / 1000;
+        for (const b of behaviors) {
+          const baseVal = initialProps.get(`${b.target}:${b.property}`) ?? 0;
+          const nextVal = evaluateBehavior(b, elapsedSec, durationSec, baseVal);
+          board.runCommand({
+            type: 'update',
+            id: b.target,
+            props: { [b.property]: nextVal },
+          });
+        }
+      }
+    } else {
+      await clock.sleep(holdMs);
+    }
 
     const shotEnd = clock.now() - begin;
 

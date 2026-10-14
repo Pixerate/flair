@@ -2,6 +2,7 @@ import type { Scene, SceneMedia, Shot } from '../scene/types.js';
 import { validateScene, type SceneIssue } from '../scene/validate.js';
 import { simulateScene } from '../scene/player.js';
 import type { Review } from '../scene/report.js';
+import { applyRig, setRigWidget } from '../scene/rig.js';
 
 export interface AgentToolDefinition {
   name: string;
@@ -114,6 +115,22 @@ export const FLAIR_AGENT_TOOLS: AgentToolDefinition[] = [
       additionalProperties: false,
     },
   },
+  {
+    name: 'set_rig_widget',
+    description: 'Adjusts a high-level creative rig widget (slider, popup, or toggle) and propagates parameters to shaders and elements.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'Rig widget identifier/name.' },
+        value: {
+          type: ['number', 'string', 'boolean'],
+          description: 'New value (number for slider, string for popup, boolean for toggle).',
+        },
+      },
+      required: ['name', 'value'],
+      additionalProperties: false,
+    },
+  },
 ];
 
 export type SceneToolResult =
@@ -203,6 +220,19 @@ export async function applySceneTool(
     case 'preview_scene': {
       const { review } = await simulateScene(scene);
       return { ok: true, scene, issues: validateScene(scene), review };
+    }
+
+    case 'set_rig_widget': {
+      if (!scene.rig || !scene.rig.widgets || !scene.rig.widgets[input.name]) {
+        return { ok: false, error: `Scene does not have a rig widget named "${input.name}".` };
+      }
+      try {
+        const updatedRig = setRigWidget(scene.rig, input.name, input.value);
+        const newScene = applyRig(updatedRig, scene);
+        return { ok: true, scene: newScene, issues: validateScene(newScene) };
+      } catch (err: any) {
+        return { ok: false, error: err.message || String(err) };
+      }
     }
 
     default:

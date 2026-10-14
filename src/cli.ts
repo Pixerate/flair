@@ -96,18 +96,53 @@ program
   });
 
 program
-  .command('export <shaderPath>')
-  .description('Export shader animation to an animated GIF or MP4 video')
-  .requiredOption('-o, --out <outputPath>', 'Output file path (.gif or .mp4)')
+  .command('export <targetOrShader> [extraPath] [outputPath]')
+  .description('Export shader animation (GIF/MP4) or scene to Apple Motion ozml 4.0 (.motn)')
+  .option('-o, --out <outputPath>', 'Output file path')
   .option('-w, --width <width>', 'Canvas width', '720')
   .option('-h, --height <height>', 'Canvas height', '720')
   .option('--fps <fps>', 'Frames per second', '30')
   .option('-d, --duration <duration>', 'Duration in seconds', '3')
   .option('-v, --values <jsonOrFile>', 'Control values as JSON string or file')
-  .action(async (shaderPath, options) => {
+  .action(async (targetOrShader, extraPath, outputPath, options) => {
+    if (targetOrShader === 'motn') {
+      const sceneFile = extraPath;
+      if (!sceneFile) {
+        console.error('Error: Please provide a scene JSON file to export: flair export motn <scene.json> [output.motn]');
+        process.exit(1);
+      }
+      const fullPath = path.resolve(process.cwd(), sceneFile);
+      if (!fs.existsSync(fullPath)) {
+        console.error(`Error: Scene file not found at: ${fullPath}`);
+        process.exit(1);
+      }
+      try {
+        const scene: Scene = JSON.parse(fs.readFileSync(fullPath, 'utf-8'));
+        const { exportMotn } = await import('./export/index.js');
+        const xml = exportMotn(scene, { frameRate: parseInt(options.fps, 10) });
+        const destination = path.resolve(
+          process.cwd(),
+          options.out || outputPath || `${scene.name || 'scene'}.motn`
+        );
+        fs.mkdirSync(path.dirname(destination), { recursive: true });
+        fs.writeFileSync(destination, xml, 'utf-8');
+        console.log(`✅ Successfully exported Apple Motion scene to: ${destination}`);
+      } catch (err: any) {
+        console.error(`Error exporting scene to .motn: ${err.message}`);
+        process.exit(1);
+      }
+      return;
+    }
+
+    const shaderPath = targetOrShader;
     const fullPath = path.resolve(process.cwd(), shaderPath);
     if (!fs.existsSync(fullPath)) {
       console.error(`Error: Shader file not found at: ${fullPath}`);
+      process.exit(1);
+    }
+
+    if (!options.out) {
+      console.error('Error: Output file path required (-o, --out <outputPath>)');
       process.exit(1);
     }
 
@@ -241,6 +276,34 @@ sceneCmd
       }
     } catch (err: any) {
       console.error(`Error generating scene HTML: ${err.message}`);
+      process.exit(1);
+    }
+  });
+
+sceneCmd
+  .command('motn <sceneFile> [outFile]')
+  .description('Export scene to Apple Motion ozml 4.0 XML (.motn) document')
+  .option('--fps <fps>', 'Target frame rate', '30')
+  .action(async (sceneFile, outFile, options) => {
+    const fullPath = path.resolve(process.cwd(), sceneFile);
+    if (!fs.existsSync(fullPath)) {
+      console.error(`Error: Scene file not found at: ${fullPath}`);
+      process.exit(1);
+    }
+
+    try {
+      const scene: Scene = JSON.parse(fs.readFileSync(fullPath, 'utf-8'));
+      const { exportMotn } = await import('./export/index.js');
+      const xml = exportMotn(scene, { frameRate: parseInt(options.fps, 10) });
+      const destination = path.resolve(
+        process.cwd(),
+        outFile || `${scene.name || 'scene'}.motn`
+      );
+      fs.mkdirSync(path.dirname(destination), { recursive: true });
+      fs.writeFileSync(destination, xml, 'utf-8');
+      console.log(`✅ Successfully exported Apple Motion scene to: ${destination}`);
+    } catch (err: any) {
+      console.error(`Error exporting scene to .motn: ${err.message}`);
       process.exit(1);
     }
   });

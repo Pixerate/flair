@@ -48,7 +48,11 @@ export function validateScene(scene: Scene): SceneIssue[] {
 
     // Check camera
     if (shot.camera) {
-      if (shot.camera.width <= 0 || shot.camera.height <= 0) {
+      if ('frame' in shot.camera) {
+        if (!Array.isArray(shot.camera.frame) || shot.camera.frame.length === 0) {
+          say(shotNum, 'Dynamic camera framing requires a non-empty frame array of element IDs.');
+        }
+      } else if (shot.camera.width <= 0 || shot.camera.height <= 0) {
         say(shotNum, 'Camera rectangle width and height must be positive.');
       }
     }

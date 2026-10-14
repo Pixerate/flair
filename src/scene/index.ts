@@ -7,3 +7,6 @@ export * from './validate.js';
 export * from './report.js';
 export * from './player.js';
 export * from './standalone.js';
+export * from './behavior.js';
+export * from './rig.js';
+export * from './replicator.js';
