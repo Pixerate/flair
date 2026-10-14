@@ -23,6 +23,15 @@
 - **Live Canvas Previews (`ShaderRenderer`)**: Interactive preview canvas with play/pause, seek, speed controls, mouse interaction, and automatic fallback on compilation errors.
 - **Pooled Thumbnails (`ThumbnailPool`)**: Share a single WebGL2 context across dozens of animated cards/thumbnails.
 - **Looping GIFs & Standalone HTML**: Export self-contained HTML pages or encode looping animated GIFs via `gifenc`.
+- **Procedural Transitions Engine**: 8 high-performance WebGL & CPU transitions (`linearWipe`, `radialIris`, `blockDissolve`, `gridWipe`, `glassWipe`, `twister`, `lightLeak`, `crossZoom`) with GPU fragment shader generators and softening controls.
+- **Perceptual Color Science & Grading**: Oklab / Oklch color space conversions, perceptually uniform gradient blending, ASC CDL grading (Slope, Offset, Power, Saturation), Lift/Gamma/Gain, Vibrance with skin tone protection, and Kelvin white balance presets.
+- **Constant-Velocity Spatial Motion Paths**: Multi-segment cubic Bezier paths parameterized by arc length for jitter-free constant-velocity movement, auto-orient heading tangent calculation, normal vectors, curvature, and After Effects keyframe easing.
+- **Multi-Format Export & NLE Interchange**:
+  - **Lottie JSON**: Standard Lottie v5.5.2 vector animation export with After Effects cubic tangent ease curves.
+  - **Apple Motion (.motn)**: Native ozml 4.0 project generation.
+  - **Final Cut Pro 7 XML (xmeml v4)**: Industry-standard timeline interchange for Premiere Pro, DaVinci Resolve, and Final Cut Pro with video tracks, generator titles, and sequence markers.
+  - **CMX 3600 EDL**: Edit Decision List export compatible with Avid, DaVinci Resolve, Lightworks, and Premiere.
+
 
 ---
 
@@ -67,6 +76,18 @@ npx flair scene review ./my-scene.json
 
 # Generate an interactive standalone web player for the scene
 npx flair scene html ./my-scene.json --out ./player.html --open
+
+# Export scene vector animation to Lottie JSON
+npx flair scene lottie ./my-scene.json ./output.json
+
+# Export timeline to Final Cut Pro 7 XML (for Premiere Pro & DaVinci Resolve)
+npx flair scene fcp7 ./my-scene.json ./timeline.xml
+
+# Export Edit Decision List to CMX 3600 EDL
+npx flair scene edl ./my-scene.json ./timeline.edl
+
+# Export scene to Apple Motion (.motn)
+npx flair scene motn ./my-scene.json ./scene.motn
 ```
 
 ---

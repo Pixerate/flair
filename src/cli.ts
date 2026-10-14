@@ -105,10 +105,10 @@ program
   .option('-d, --duration <duration>', 'Duration in seconds', '3')
   .option('-v, --values <jsonOrFile>', 'Control values as JSON string or file')
   .action(async (targetOrShader, extraPath, outputPath, options) => {
-    if (targetOrShader === 'motn') {
+    if (targetOrShader === 'motn' || targetOrShader === 'lottie' || targetOrShader === 'fcp7' || targetOrShader === 'edl') {
       const sceneFile = extraPath;
       if (!sceneFile) {
-        console.error('Error: Please provide a scene JSON file to export: flair export motn <scene.json> [output.motn]');
+        console.error(`Error: Please provide a scene JSON file to export: flair export ${targetOrShader} <scene.json> [output]`);
         process.exit(1);
       }
       const fullPath = path.resolve(process.cwd(), sceneFile);
@@ -118,17 +118,34 @@ program
       }
       try {
         const scene: Scene = JSON.parse(fs.readFileSync(fullPath, 'utf-8'));
-        const { exportMotn } = await import('./export/index.js');
-        const xml = exportMotn(scene, { frameRate: parseInt(options.fps, 10) });
+        const { exportMotn, exportLottie, exportFcp7Xml, exportCmx3600Edl } = await import('./export/index.js');
+        const fps = parseInt(options.fps, 10);
+
+        let content: string;
+        let ext: string;
+        if (targetOrShader === 'motn') {
+          content = exportMotn(scene, { frameRate: fps });
+          ext = 'motn';
+        } else if (targetOrShader === 'lottie') {
+          content = JSON.stringify(exportLottie(scene, { frameRate: fps }), null, 2);
+          ext = 'json';
+        } else if (targetOrShader === 'fcp7') {
+          content = exportFcp7Xml(scene, { frameRate: fps });
+          ext = 'xml';
+        } else {
+          content = exportCmx3600Edl(scene, { frameRate: fps });
+          ext = 'edl';
+        }
+
         const destination = path.resolve(
           process.cwd(),
-          options.out || outputPath || `${scene.name || 'scene'}.motn`
+          options.out || outputPath || `${scene.name || 'scene'}.${ext}`
         );
         fs.mkdirSync(path.dirname(destination), { recursive: true });
-        fs.writeFileSync(destination, xml, 'utf-8');
-        console.log(`✅ Successfully exported Apple Motion scene to: ${destination}`);
+        fs.writeFileSync(destination, content, 'utf-8');
+        console.log(`✅ Successfully exported ${targetOrShader.toUpperCase()} to: ${destination}`);
       } catch (err: any) {
-        console.error(`Error exporting scene to .motn: ${err.message}`);
+        console.error(`Error exporting scene to ${targetOrShader}: ${err.message}`);
         process.exit(1);
       }
       return;
@@ -307,5 +324,94 @@ sceneCmd
       process.exit(1);
     }
   });
+
+sceneCmd
+  .command('lottie <sceneFile> [outFile]')
+  .description('Export scene vector shapes and animations to Lottie JSON')
+  .option('--fps <fps>', 'Target frame rate', '30')
+  .action(async (sceneFile, outFile, options) => {
+    const fullPath = path.resolve(process.cwd(), sceneFile);
+    if (!fs.existsSync(fullPath)) {
+      console.error(`Error: Scene file not found at: ${fullPath}`);
+      process.exit(1);
+    }
+
+    try {
+      const scene: Scene = JSON.parse(fs.readFileSync(fullPath, 'utf-8'));
+      const { exportLottie } = await import('./export/index.js');
+      const animation = exportLottie(scene, { frameRate: parseInt(options.fps, 10) });
+      const destination = path.resolve(
+        process.cwd(),
+        outFile || `${scene.name || 'scene'}.json`
+      );
+      fs.mkdirSync(path.dirname(destination), { recursive: true });
+      fs.writeFileSync(destination, JSON.stringify(animation, null, 2), 'utf-8');
+      console.log(`✅ Successfully exported Lottie animation to: ${destination}`);
+    } catch (err: any) {
+      console.error(`Error exporting scene to Lottie: ${err.message}`);
+      process.exit(1);
+    }
+  });
+
+sceneCmd
+  .command('fcp7 <sceneFile> [outFile]')
+  .description('Export scene timeline and markers to Final Cut Pro 7 XML (xmeml v4)')
+  .option('--fps <fps>', 'Target frame rate', '30')
+  .action(async (sceneFile, outFile, options) => {
+    const fullPath = path.resolve(process.cwd(), sceneFile);
+    if (!fs.existsSync(fullPath)) {
+      console.error(`Error: Scene file not found at: ${fullPath}`);
+      process.exit(1);
+    }
+
+    try {
+      const scene: Scene = JSON.parse(fs.readFileSync(fullPath, 'utf-8'));
+      const { exportFcp7Xml } = await import('./export/index.js');
+      const xml = exportFcp7Xml(scene, { frameRate: parseInt(options.fps, 10) });
+      const destination = path.resolve(
+        process.cwd(),
+        outFile || `${scene.name || 'scene'}.xml`
+      );
+      fs.mkdirSync(path.dirname(destination), { recursive: true });
+      fs.writeFileSync(destination, xml, 'utf-8');
+      console.log(`✅ Successfully exported FCP7 XML to: ${destination}`);
+    } catch (err: any) {
+      console.error(`Error exporting scene to FCP7 XML: ${err.message}`);
+      process.exit(1);
+    }
+  });
+
+sceneCmd
+  .command('edl <sceneFile> [outFile]')
+  .description('Export scene edit decision list to standard CMX 3600 EDL')
+  .option('--fps <fps>', 'Target frame rate', '30')
+  .option('--reel <reel>', 'Reel name identifier', 'AX')
+  .action(async (sceneFile, outFile, options) => {
+    const fullPath = path.resolve(process.cwd(), sceneFile);
+    if (!fs.existsSync(fullPath)) {
+      console.error(`Error: Scene file not found at: ${fullPath}`);
+      process.exit(1);
+    }
+
+    try {
+      const scene: Scene = JSON.parse(fs.readFileSync(fullPath, 'utf-8'));
+      const { exportCmx3600Edl } = await import('./export/index.js');
+      const edl = exportCmx3600Edl(scene, {
+        frameRate: parseInt(options.fps, 10),
+        reel: options.reel,
+      });
+      const destination = path.resolve(
+        process.cwd(),
+        outFile || `${scene.name || 'scene'}.edl`
+      );
+      fs.mkdirSync(path.dirname(destination), { recursive: true });
+      fs.writeFileSync(destination, edl, 'utf-8');
+      console.log(`✅ Successfully exported CMX 3600 EDL to: ${destination}`);
+    } catch (err: any) {
+      console.error(`Error exporting scene to CMX 3600 EDL: ${err.message}`);
+      process.exit(1);
+    }
+  });
+
 
 program.parse(process.argv);

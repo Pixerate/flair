@@ -10,3 +10,5 @@ export * from './standalone.js';
 export * from './behavior.js';
 export * from './rig.js';
 export * from './replicator.js';
+export * from './motionpath.js';
+
