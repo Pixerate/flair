@@ -71,16 +71,10 @@ export type Behavior =
   | OvershootBehavior
   | ThrowBehavior;
 
-/**
- * Deterministic pseudo-random float generator from integer seed.
- */
-function pseudoRandom(seed: number): number {
-  const x = Math.sin(seed * 12.9898 + 78.233) * 43758.5453;
-  return x - Math.floor(x);
-}
+import { fractalWiggle } from '../time/noise.js';
 
 /**
- * Computes smooth organic 1D multi-octave gradient wander.
+ * Computes smooth organic 1D multi-octave C2 noise wander matching AE wiggle.
  */
 function evaluateWriggle(
   t: number,
@@ -89,20 +83,7 @@ function evaluateWriggle(
   octaves = 3,
   seed = 42,
 ): number {
-  let val = 0;
-  let currentFreq = freq;
-  let currentAmp = 1.0;
-  let totalAmp = 0;
-
-  for (let i = 0; i < octaves; i++) {
-    const phase = pseudoRandom(seed + i * 101) * Math.PI * 2;
-    val += Math.sin(2 * Math.PI * currentFreq * t + phase) * currentAmp;
-    totalAmp += currentAmp;
-    currentFreq *= 2.0;
-    currentAmp *= 0.5;
-  }
-
-  return (val / totalAmp) * amount;
+  return fractalWiggle(freq, amount, octaves, 0.5, t, seed, 0);
 }
 
 /**

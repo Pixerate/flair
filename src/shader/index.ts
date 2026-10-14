@@ -51,3 +51,10 @@ export {
 export { ShaderFrames, type RenderOptions, type ShaderFramesOptions } from "./frames.js";
 export { recordGif, type GifOptions } from "./gif.js";
 export { standaloneHtml, type StandaloneOptions } from "./standalone.js";
+export {
+  type BlendMode,
+  type ColorRgba,
+  ALL_BLEND_MODES,
+  blendRgba,
+  getGlslBlendFunction,
+} from "./blend.js";
