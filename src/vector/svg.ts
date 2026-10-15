@@ -315,6 +315,8 @@ export interface SvgPlayerOptions extends SvgViewOptions {
   speed?: number;
   /** Step start times in ms, for pictures that change on steps (default none). */
   steps?: readonly number[];
+  /** Pause the animation loop when scrolled out of view via IntersectionObserver (default false). */
+  pauseWhenHidden?: boolean;
 }
 
 /**
@@ -332,6 +334,8 @@ export class SvgPlayer {
   private last = 0;
   private playing = false;
   private disposed = false;
+  private wasPlayingBeforeHidden = false;
+  private intersectionObserver?: IntersectionObserver;
 
   constructor(
     private readonly container: HTMLElement,
@@ -346,6 +350,25 @@ export class SvgPlayer {
     this.view = svgView(motion, options);
     container.appendChild(this.view.element);
     this.view.draw(0, this.steps);
+
+    if (options.pauseWhenHidden && typeof IntersectionObserver !== "undefined") {
+      this.intersectionObserver = new IntersectionObserver(([entry]) => {
+        if (!entry) return;
+        if (entry.isIntersecting) {
+          if (this.wasPlayingBeforeHidden) {
+            this.wasPlayingBeforeHidden = false;
+            this.play();
+          }
+        } else {
+          if (this.playing) {
+            this.wasPlayingBeforeHidden = true;
+            this.pause();
+          }
+        }
+      });
+      this.intersectionObserver.observe(this.view.element);
+    }
+
     if (options.autoplay ?? true) this.play();
   }
 
@@ -389,6 +412,7 @@ export class SvgPlayer {
   dispose(): void {
     this.disposed = true;
     this.playing = false;
+    this.intersectionObserver?.disconnect();
     this.view.element.remove();
   }
 

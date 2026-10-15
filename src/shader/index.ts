@@ -58,7 +58,12 @@ export {
   type CompileResult,
   type FrameState,
 } from "./program.js";
-export { ShaderRenderer, type CompileStatus, type RendererStats } from "./renderer.js";
+export {
+  ShaderRenderer,
+  type CompileStatus,
+  type RendererStats,
+  type ShaderRendererOptions,
+} from "./renderer.js";
 export {
   registerThumbnail,
   sharedThumbnailPool,
