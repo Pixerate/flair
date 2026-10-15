@@ -14,11 +14,12 @@
  */
 
 /** The uniform types a control can have. */
-export type ControlType = "float" | "int" | "bool" | "vec2" | "vec3" | "vec4" | "sampler2D";
+export type ControlType = "float" | "int" | "bool" | "vec2" | "vec3" | "vec4" | "sampler2D" | "text";
 
 /**
  * A control's value: a number (`float`, `int`), a boolean (`bool`), the
- * components of a vector, or an image URL (`sampler2D`; "" for none).
+ * components of a vector, an image URL (`sampler2D`; "" for none), or a
+ * string (`text`, vector effects only: shaders cannot take text).
  */
 export type ControlValue = number | boolean | number[] | string;
 
@@ -52,7 +53,7 @@ export interface ControlDef {
 
 const DECLARATION =
   /^\s*uniform\s+(float|int|bool|vec2|vec3|vec4|sampler2D)\s+([A-Za-z_]\w*)\s*;\s*\/\/\s*@control\b(.*)$/;
-const ATTRIBUTE = /([a-z]+)(?:=("[^"]*"|\S+))?/gi;
+const ATTRIBUTE = /([a-z]+)(?:=("[^"]*"|'[^']*'|\S+))?/gi;
 
 const COMPONENTS: Record<ControlType, number> = {
   float: 1,
@@ -62,9 +63,10 @@ const COMPONENTS: Record<ControlType, number> = {
   vec3: 3,
   vec4: 4,
   sampler2D: 1,
+  text: 1,
 };
 
-/** The number of components a control type has: 1 for scalars, `bool` and `sampler2D`, else the vector size. */
+/** The number of components a control type has: 1 for scalars, `bool`, `sampler2D` and `text`, else the vector size. */
 export function componentCount(type: ControlType): number {
   return COMPONENTS[type];
 }
@@ -113,7 +115,7 @@ export function rgbToHex(rgb: number[]): string {
 function parseDefault(raw: string | undefined, type: ControlType, color: boolean): ControlValue {
   const n = COMPONENTS[type];
   if (type === "bool") return raw === "true" || raw === "1";
-  if (type === "sampler2D") return raw ?? "";
+  if (type === "sampler2D" || type === "text") return raw ?? "";
   // Without a default, numbers start at 0 and colours at white.
   if (raw === undefined) return n === 1 ? 0 : Array.from({ length: n }, () => (color ? 1 : 0));
   if (color && raw.startsWith("#")) {
@@ -130,6 +132,45 @@ function parseDefault(raw: string | undefined, type: ControlType, color: boolean
 }
 
 /**
+ * A control from its declaration's attributes (the text after `@control`):
+ * `min`, `max`, `step`, `default`, `label`, `color`, and for images `filter`
+ * and `wrap`. Values with spaces are quoted, in double or single quotes.
+ * Shared by shader sources and vector effects' `{{name: type …}}` placeholders.
+ */
+export function controlFromDeclaration(name: string, type: ControlType, attributes: string, line: number): ControlDef {
+  const attrs: Record<string, string | undefined> = {};
+  for (const a of attributes.matchAll(ATTRIBUTE)) {
+    attrs[a[1]!.toLowerCase()] = a[2]?.replace(/^(["'])(.*)\1$/s, "$2");
+  }
+  const color = "color" in attrs && (type === "vec3" || type === "vec4");
+  const num = (v: string | undefined, fallback: number) =>
+    v !== undefined && Number.isFinite(Number(v)) ? Number(v) : fallback;
+  const min = num(attrs.min, 0);
+  const rawMax = num(attrs.max, type === "int" ? 10 : 1);
+  const max = rawMax > min ? rawMax : min + 1;
+  const control: ControlDef = {
+    name,
+    type,
+    label: attrs.label ?? humanise(name),
+    color,
+    min,
+    max,
+    step: num(attrs.step, type === "int" ? 1 : (max - min) / 200),
+    default: parseDefault(attrs.default, type, color),
+    line,
+  };
+  if (type === "sampler2D") {
+    const pick = <T extends string>(v: string | undefined, options: readonly T[]): T =>
+      options.find((o) => o === v?.toLowerCase()) ?? options[0]!;
+    control.texture = {
+      filter: pick(attrs.filter, ["mipmap", "linear", "nearest"] as const),
+      wrap: pick(attrs.wrap, ["repeat", "clamp", "mirror"] as const),
+    };
+  }
+  return control;
+}
+
+/**
  * The controls a source declares, in source order. A uniform declared twice
  * counts once (the first wins). Unknown attributes are ignored, and missing
  * or malformed ones fall back to defaults: `min=0`, `max=1` (10 for `int`),
@@ -141,39 +182,8 @@ export function parseControls(source: string): ControlDef[] {
   source.split("\n").forEach((text, index) => {
     const m = DECLARATION.exec(text);
     if (!m || seen.has(m[2]!)) return;
-    const type = m[1] as ControlType;
-    const name = m[2]!;
-    seen.add(name);
-    const attrs: Record<string, string | undefined> = {};
-    for (const a of m[3]!.matchAll(ATTRIBUTE)) {
-      attrs[a[1]!.toLowerCase()] = a[2]?.replace(/^"|"$/g, "");
-    }
-    const color = "color" in attrs && (type === "vec3" || type === "vec4");
-    const num = (v: string | undefined, fallback: number) =>
-      v !== undefined && Number.isFinite(Number(v)) ? Number(v) : fallback;
-    const min = num(attrs.min, 0);
-    const rawMax = num(attrs.max, type === "int" ? 10 : 1);
-    const max = rawMax > min ? rawMax : min + 1;
-    const control: ControlDef = {
-      name,
-      type,
-      label: attrs.label ?? humanise(name),
-      color,
-      min,
-      max,
-      step: num(attrs.step, type === "int" ? 1 : (max - min) / 200),
-      default: parseDefault(attrs.default, type, color),
-      line: index + 1,
-    };
-    if (type === "sampler2D") {
-      const pick = <T extends string>(v: string | undefined, options: readonly T[]): T =>
-        options.find((o) => o === v?.toLowerCase()) ?? options[0]!;
-      control.texture = {
-        filter: pick(attrs.filter, ["mipmap", "linear", "nearest"] as const),
-        wrap: pick(attrs.wrap, ["repeat", "clamp", "mirror"] as const),
-      };
-    }
-    controls.push(control);
+    seen.add(m[2]!);
+    controls.push(controlFromDeclaration(m[2]!, m[1] as ControlType, m[3]!, index + 1));
   });
   return controls;
 }
@@ -186,7 +196,7 @@ export function controlValue(
   const v = values?.[control.name];
   if (v === undefined) return control.default;
   if (control.type === "bool") return typeof v === "boolean" ? v : control.default;
-  if (control.type === "sampler2D") return typeof v === "string" ? v : control.default;
+  if (control.type === "sampler2D" || control.type === "text") return typeof v === "string" ? v : control.default;
   const n = COMPONENTS[control.type];
   if (n === 1) return typeof v === "number" ? v : control.default;
   return Array.isArray(v) && v.length === n ? v : control.default;
@@ -213,6 +223,9 @@ export function checkControlValue(control: ControlDef, raw: unknown): ControlChe
     return typeof raw === "string" && (raw === "" || isImageUrl(raw))
       ? { ok: true, value: raw }
       : fail(`${control.name} takes an image URL: https://…, data:image/… or blob:….`);
+  }
+  if (control.type === "text") {
+    return typeof raw === "string" ? { ok: true, value: raw } : fail(`${control.name} takes text.`);
   }
   if (control.color && typeof raw === "string") {
     const rgb = hexToRgb(raw);

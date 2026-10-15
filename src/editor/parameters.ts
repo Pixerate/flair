@@ -40,6 +40,8 @@ export function parameterFieldFor(control: ControlDef, options: EffectParameterO
       return { ...base, type: "number", min: control.min, max: control.max, step: control.step, default: Number(control.default) };
     case "sampler2D":
       return { ...base, type: "image", default: String(control.default), ...(options.images && { options: options.images }) };
+    case "text":
+      return { ...base, type: "text", default: String(control.default) };
     default: {
       const value = control.default as number[];
       if (control.color) {

@@ -1,5 +1,6 @@
 import type { Scene, Shot } from '../scene/types.js';
-import { DEFAULT_STAGE, CAMERA_MS } from '../scene/camera.js';
+import { DEFAULT_STAGE, CAMERA_MS, boardHeight, centreOf, projectPoint, type View } from '../scene/camera.js';
+import { cameraSamples, cameraTrack, sceneStage, type CameraSample } from '../scene/cameratrack.js';
 
 export interface Fcp7ExportOptions {
   /** Timeline timebase / frame rate (default 30). */
@@ -139,9 +140,81 @@ export function timecodeToFrames(
   return (hh * 3600 + mm * 60 + ss) * roundedFps + ff;
 }
 
+const r4 = (n: number) => Math.round(n * 10000) / 10000;
+
+const CORNERS = [
+  ['ulcorner', 'Upper Left', 0, 0],
+  ['urcorner', 'Upper Right', 1, 0],
+  ['lrcorner', 'Lower Right', 1, 1],
+  ['llcorner', 'Lower Left', 0, 1],
+] as const;
+
+/**
+ * Where the camera puts a full-frame clip's corners, as FCP's Distort
+ * offsets from the middle of the frame (fractions of its size, ±0.5 when
+ * untouched): a corner pin draws the camera's zoom, pan and 3D angle
+ * exactly for a flat picture of the stage.
+ */
+function cornerPins(view: View, stage: ReturnType<typeof sceneStage>): [number, number][] {
+  const w = stage.width;
+  const h = boardHeight(stage);
+  return CORNERS.map(([, , cx, cy]) => {
+    const p = projectPoint(view, stage, [cx * w, cy * h]) ?? [cx * w, cy * h];
+    return [r4((p[0] - w / 2) / w), r4((p[1] - h / 2) / h)];
+  });
+}
+
+/**
+ * The Distort and Motion Blur filters that play a shot's camera on its clip
+ * (the clip being a flat render of the whole stage), keyed at frames in the
+ * clip; nothing when the camera never leaves the full frame.
+ */
+function cameraFilters(samples: readonly CameraSample[], stage: ReturnType<typeof sceneStage>, startFrame: number, motionBlur: number, indent: string): string[] {
+  const pins = samples.map((x) => cornerPins(x.view, stage));
+  const untouched = pins.every((corners) => corners.every(([hz, vt], i) => hz === (CORNERS[i]![2] - 0.5) && vt === (CORNERS[i]![3] - 0.5)));
+  const lines: string[] = [];
+  if (!untouched) {
+    lines.push(`${indent}<filter>`, `${indent}  <effect>`, `${indent}    <name>Distort</name>`, `${indent}    <effectid>deformation</effectid>`, `${indent}    <effectcategory>motion</effectcategory>`, `${indent}    <effecttype>motion</effecttype>`, `${indent}    <mediatype>video</mediatype>`);
+    CORNERS.forEach(([id, name], i) => {
+      lines.push(`${indent}    <parameter>`, `${indent}      <parameterid>${id}</parameterid>`, `${indent}      <name>${name}</name>`);
+      const point = (k: number) => `<value><horiz>${pins[k]![i]![0]}</horiz><vert>${pins[k]![i]![1]}</vert></value>`;
+      if (samples.length === 1) lines.push(`${indent}      ${point(0)}`);
+      else samples.forEach((x, k) => lines.push(`${indent}      <keyframe><when>${x.frame - startFrame}</when>${point(k)}</keyframe>`));
+      lines.push(`${indent}    </parameter>`);
+    });
+    lines.push(`${indent}  </effect>`, `${indent}</filter>`);
+  }
+  if (motionBlur > 0) {
+    lines.push(
+      `${indent}<filter>`,
+      `${indent}  <effect>`,
+      `${indent}    <name>Motion Blur</name>`,
+      `${indent}    <effectid>motionblur</effectid>`,
+      `${indent}    <effectcategory>motion</effectcategory>`,
+      `${indent}    <effecttype>motion</effecttype>`,
+      `${indent}    <mediatype>video</mediatype>`,
+      `${indent}    <parameter>`,
+      `${indent}      <parameterid>duration</parameterid>`,
+      `${indent}      <name>% Blur</name>`,
+      `${indent}      <value>${Math.round(Math.min(1000, motionBlur * 250))}</value>`,
+      `${indent}    </parameter>`,
+      `${indent}    <parameter>`,
+      `${indent}      <parameterid>samples</parameterid>`,
+      `${indent}      <name>Samples</name>`,
+      `${indent}      <value>8</value>`,
+      `${indent}    </parameter>`,
+      `${indent}  </effect>`,
+      `${indent}</filter>`,
+    );
+  }
+  return lines;
+}
+
 /**
  * Serializes a Flair Scene into Apple Final Cut Pro 7 XML Interchange Format (xmeml v4).
- * Compatible with Premiere Pro, DaVinci Resolve, and Final Cut Pro.
+ * Compatible with Premiere Pro, DaVinci Resolve, and Final Cut Pro. Each
+ * shot's camera (zoom, pan and 3D angle) is a keyframed Distort corner pin
+ * on its clip, with Motion Blur when the shot's move blurs.
  */
 export function exportFcp7Xml(scene: Scene, options: Fcp7ExportOptions = {}): string {
   const frameRate = options.frameRate ?? 30;
@@ -159,6 +232,15 @@ export function exportFcp7Xml(scene: Scene, options: Fcp7ExportOptions = {}): st
   const timings = calculateShotTimings(scene, frameRate);
   const totalFrames = timings.length > 0 ? timings[timings.length - 1].endFrame : 0;
   const startFrameOffset = timecodeToFrames(timecodeStart, frameRate);
+  const stage = sceneStage(scene);
+  const samples = scene.shots.some((s) => s.camera) ? cameraSamples(scene, frameRate) : [];
+  // A shot's camera keys: its own, after the view it starts from (the last key before it).
+  const shotSamples = (index: number, startFrame: number): CameraSample[] => {
+    const own = samples.filter((x) => x.shot === index);
+    const before = samples.filter((x) => x.shot < index).at(-1);
+    if (own.length === 0) return before ? [{ ...before, frame: startFrame, shot: index }] : [];
+    return own[0]!.frame > startFrame && before ? [{ ...before, frame: startFrame, shot: index }, ...own] : own;
+  };
 
   const lines: string[] = [];
 
@@ -287,6 +369,8 @@ export function exportFcp7Xml(scene: Scene, options: Fcp7ExportOptions = {}): st
     lines.push('                </parameter>');
     lines.push('              </effect>');
     lines.push('            </filter>');
+    const keys = shotSamples(index, startFrame);
+    if (keys.length > 0) lines.push(...cameraFilters(keys, stage, startFrame, shot.camera?.motionBlur ?? 0, '            '));
     lines.push('          </clipitem>');
   });
 
@@ -341,8 +425,22 @@ export function exportFcp7Xml(scene: Scene, options: Fcp7ExportOptions = {}): st
   return lines.join('\n');
 }
 
+/** A camera view as a line an editor can follow: "zoom 1.6x on (800, 450), tilt 35°, turn -15°, motion blur 1.5". */
+function describeCamera(view: View, motionBlur: number, stage: ReturnType<typeof sceneStage>): string {
+  const [cx, cy] = centreOf(view, stage);
+  const parts = [`zoom ${r4(view.zoom).toFixed(2)}x on (${Math.round(cx)}, ${Math.round(cy)})`];
+  if (view.tilt) parts.push(`tilt ${r4(view.tilt)}°`);
+  if (view.turn) parts.push(`turn ${r4(view.turn)}°`);
+  if (view.roll) parts.push(`roll ${r4(view.roll)}°`);
+  if (view.perspective) parts.push(`perspective ${view.perspective}`);
+  if (motionBlur > 0) parts.push(`motion blur ${motionBlur}`);
+  return parts.join(', ');
+}
+
 /**
  * Serializes a Flair Scene into standard CMX 3600 Edit Decision List (EDL).
+ * The format has no transforms, so each shot's camera is written as a
+ * `* CAMERA:` comment.
  * Fully readable by DaVinci Resolve, Premiere Pro, Avid, and Lightworks.
  */
 export function exportCmx3600Edl(scene: Scene, options: EdlExportOptions = {}): string {
@@ -355,6 +453,7 @@ export function exportCmx3600Edl(scene: Scene, options: EdlExportOptions = {}): 
 
   const timings = calculateShotTimings(scene, frameRate);
   let recordFrame = timecodeToFrames(startTc, timebase, dropFrame);
+  const track = scene.shots.some((s) => s.camera) ? cameraTrack(scene) : undefined;
 
   const lines: string[] = [];
   lines.push(`TITLE: ${title}`);
@@ -379,6 +478,9 @@ export function exportCmx3600Edl(scene: Scene, options: EdlExportOptions = {}): 
     if (shot.caption) {
       lines.push(`* COMMENT: ${shot.caption}`);
     }
+    // CMX 3600 has no transforms, so the camera is a note for the editor.
+    const camera = track?.[index];
+    if (camera && shot.camera) lines.push(`* CAMERA: ${describeCamera(camera.to, camera.motionBlur, sceneStage(scene))}`);
     lines.push('');
   });
 

@@ -1,5 +1,5 @@
 import type { SvgAnimation } from "../vector/motion.js";
-import { colorControl, numberControl, type VectorEffect } from "./types.js";
+import type { VectorEffect } from "./types.js";
 
 export const spinner: VectorEffect = {
   kind: "vector",
@@ -9,9 +9,8 @@ export const spinner: VectorEffect = {
   category: "loader",
   tags: ["loader", "ui", "minimal"],
   hold: 0,
-  controls: [colorControl("accent", "#6366F1", "Arc"), colorControl("track", "#E5E7EB", "Track"), numberControl("width", 8, 2, 20, "Stroke width", 1)],
   motion: {
-    svg: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="38" fill="none" stroke="{{track}}" stroke-width="{{width}}"/><g id="spin" transform="rotate(0 50 50)"><circle id="arc" cx="50" cy="50" r="38" fill="none" stroke="{{accent}}" stroke-width="{{width}}" stroke-linecap="round" pathLength="1" stroke-dasharray="0.25 1"/></g></svg>`,
+    svg: `<svg viewBox="0 0 100 100"><!-- {{accent: color default=#6366F1 label='Arc'}} {{track: color default=#E5E7EB label='Track'}} {{width: float min=2 max=20 default=8 step=1 label='Stroke width'}} --><circle cx="50" cy="50" r="38" fill="none" stroke="{{track}}" stroke-width="{{width}}"/><g id="spin" transform="rotate(0 50 50)"><circle id="arc" cx="50" cy="50" r="38" fill="none" stroke="{{accent}}" stroke-width="{{width}}" stroke-linecap="round" pathLength="1" stroke-dasharray="0.25 1"/></g></svg>`,
     animate: [
       { id: "spin", attrs: { transform: ["rotate(0 50 50)", "rotate(720 50 50)"] }, ms: 1600, ease: "linear" },
       { id: "arc", attrs: { "stroke-dasharray": ["0.08 1", "0.6 1"] }, ms: 800, ease: "in-out" },
@@ -28,9 +27,8 @@ export const bouncingDots: VectorEffect = {
   category: "loader",
   tags: ["loader", "chat", "typing", "ui"],
   hold: 0,
-  controls: [colorControl("accent", "#0EA5E9", "Dots"), numberControl("height", 18, 4, 30, "Bounce height", 1)],
   motion: {
-    svg: `<svg viewBox="0 0 120 60"><circle id="a" cx="30" cy="40" r="9" fill="{{accent}}"/><circle id="b" cx="60" cy="40" r="9" fill="{{accent}}"/><circle id="c" cx="90" cy="40" r="9" fill="{{accent}}"/></svg>`,
+    svg: `<svg viewBox="0 0 120 60"><!-- {{accent: color default=#0EA5E9 label='Dots'}} {{height: float min=4 max=30 default=18 step=1 label='Bounce height'}} --><circle id="a" cx="30" cy="40" r="9" fill="{{accent}}"/><circle id="b" cx="60" cy="40" r="9" fill="{{accent}}"/><circle id="c" cx="90" cy="40" r="9" fill="{{accent}}"/></svg>`,
     animate: ["a", "b", "c"].flatMap((id, i): SvgAnimation[] => [
       { id, attrs: { transform: ["translate(0 0)", "translate(0 -{{height}})"] }, delay: i * 150, ms: 250, ease: "out" as const },
       { id, attrs: { transform: ["translate(0 -{{height}})", "translate(0 0)"] }, delay: i * 150 + 250, ms: 250, ease: "in-out" as const },
@@ -47,15 +45,9 @@ export const progressRing: VectorEffect = {
   description: "A ring filling up to a percentage while the number counts with it.",
   category: "data",
   tags: ["progress", "kpi", "dashboard", "loader"],
-  controls: [
-    colorControl("accent", "#22C55E", "Ring"),
-    colorControl("track", "#E5E7EB", "Track"),
-    colorControl("text", "#111827", "Text"),
-    numberControl("value", 72, 0, 100, "Percent", 1),
-  ],
   derived: (v) => ({ fraction: Math.min(1, Math.max(0, Number(v.value) / 100)) }),
   motion: {
-    svg: `<svg viewBox="0 0 120 120" font-family="system-ui, sans-serif"><circle cx="60" cy="60" r="48" fill="none" stroke="{{track}}" stroke-width="10"/><circle id="ring" cx="60" cy="60" r="48" fill="none" stroke="{{accent}}" stroke-width="10" stroke-linecap="round" transform="rotate(-90 60 60)"/><text id="label" x="60" y="68" text-anchor="middle" font-size="24" font-weight="700" fill="{{text}}">0%</text></svg>`,
+    svg: `<svg viewBox="0 0 120 120" font-family="system-ui, sans-serif"><!-- {{accent: color default=#22C55E label='Ring'}} {{track: color default=#E5E7EB label='Track'}} {{text: color default=#111827 label='Text'}} {{value: float min=0 max=100 default=72 step=1 label='Percent'}} --><circle cx="60" cy="60" r="48" fill="none" stroke="{{track}}" stroke-width="10"/><circle id="ring" cx="60" cy="60" r="48" fill="none" stroke="{{accent}}" stroke-width="10" stroke-linecap="round" transform="rotate(-90 60 60)"/><text id="label" x="60" y="68" text-anchor="middle" font-size="24" font-weight="700" fill="{{text}}">0%</text></svg>`,
     animate: [
       { id: "ring", draw: [0, "{{fraction}}"] as unknown as [number, number], ms: 1600, ease: "out" },
       { id: "label", count: [0, "{{value}}"] as unknown as [number, number], format: "{n}%", ms: 1600, ease: "out" },
@@ -71,9 +63,8 @@ export const pulsePing: VectorEffect = {
   category: "loader",
   tags: ["live", "notification", "location", "status"],
   hold: 0,
-  controls: [colorControl("accent", "#EF4444", "Colour")],
   motion: {
-    svg: `<svg viewBox="0 0 100 100"><circle id="r1" cx="50" cy="50" r="8" fill="none" stroke="{{accent}}" stroke-width="3"/><circle id="r2" cx="50" cy="50" r="8" fill="none" stroke="{{accent}}" stroke-width="3"/><circle cx="50" cy="50" r="9" fill="{{accent}}"/></svg>`,
+    svg: `<svg viewBox="0 0 100 100"><!-- {{accent: color default=#EF4444 label='Colour'}} --><circle id="r1" cx="50" cy="50" r="8" fill="none" stroke="{{accent}}" stroke-width="3"/><circle id="r2" cx="50" cy="50" r="8" fill="none" stroke="{{accent}}" stroke-width="3"/><circle cx="50" cy="50" r="9" fill="{{accent}}"/></svg>`,
     animate: [
       { id: "r1", attrs: { r: [8, 44], opacity: [0.9, 0], "stroke-width": [4, 1] }, ms: 1400, ease: "out" },
       { id: "r2", attrs: { r: [8, 44], opacity: [0.9, 0], "stroke-width": [4, 1] }, delay: 700, ms: 1400, ease: "out" },
@@ -89,9 +80,8 @@ export const successCheck: VectorEffect = {
   category: "icon",
   tags: ["success", "confirmation", "ui", "feedback"],
   hold: 1200,
-  controls: [colorControl("accent", "#16A34A", "Colour"), numberControl("width", 6, 2, 12, "Stroke width", 1)],
   motion: {
-    svg: `<svg viewBox="0 0 100 100"><g id="badge" transform="translate(50 50) scale(1) translate(-50 -50)"><circle id="circle" cx="50" cy="50" r="40" fill="none" stroke="{{accent}}" stroke-width="{{width}}" stroke-linecap="round" transform="rotate(-90 50 50)"/><path id="tick" d="M31 52 L44 64 L70 37" fill="none" stroke="{{accent}}" stroke-width="{{width}}" stroke-linecap="round" stroke-linejoin="round"/></g></svg>`,
+    svg: `<svg viewBox="0 0 100 100"><!-- {{accent: color default=#16A34A label='Colour'}} {{width: float min=2 max=12 default=6 step=1 label='Stroke width'}} --><g id="badge" transform="translate(50 50) scale(1) translate(-50 -50)"><circle id="circle" cx="50" cy="50" r="40" fill="none" stroke="{{accent}}" stroke-width="{{width}}" stroke-linecap="round" transform="rotate(-90 50 50)"/><path id="tick" d="M31 52 L44 64 L70 37" fill="none" stroke="{{accent}}" stroke-width="{{width}}" stroke-linecap="round" stroke-linejoin="round"/></g></svg>`,
     animate: [
       { id: "circle", draw: true, ms: 600, ease: "in-out" },
       { id: "tick", draw: true, delay: 500, ms: 400, ease: "out" },
@@ -109,9 +99,8 @@ export const errorCross: VectorEffect = {
   category: "icon",
   tags: ["error", "failure", "ui", "feedback"],
   hold: 1200,
-  controls: [colorControl("accent", "#DC2626", "Colour"), numberControl("width", 6, 2, 12, "Stroke width", 1)],
   motion: {
-    svg: `<svg viewBox="0 0 100 100"><g id="badge" transform="translate(0 0)"><circle id="circle" cx="50" cy="50" r="40" fill="none" stroke="{{accent}}" stroke-width="{{width}}" stroke-linecap="round" transform="rotate(-90 50 50)"/><path id="a" d="M36 36 L64 64" fill="none" stroke="{{accent}}" stroke-width="{{width}}" stroke-linecap="round"/><path id="b" d="M64 36 L36 64" fill="none" stroke="{{accent}}" stroke-width="{{width}}" stroke-linecap="round"/></g></svg>`,
+    svg: `<svg viewBox="0 0 100 100"><!-- {{accent: color default=#DC2626 label='Colour'}} {{width: float min=2 max=12 default=6 step=1 label='Stroke width'}} --><g id="badge" transform="translate(0 0)"><circle id="circle" cx="50" cy="50" r="40" fill="none" stroke="{{accent}}" stroke-width="{{width}}" stroke-linecap="round" transform="rotate(-90 50 50)"/><path id="a" d="M36 36 L64 64" fill="none" stroke="{{accent}}" stroke-width="{{width}}" stroke-linecap="round"/><path id="b" d="M64 36 L36 64" fill="none" stroke="{{accent}}" stroke-width="{{width}}" stroke-linecap="round"/></g></svg>`,
     animate: [
       { id: "circle", draw: true, ms: 600, ease: "in-out" },
       { id: "a", draw: true, delay: 500, ms: 250, ease: "out" },
@@ -131,9 +120,8 @@ export const heartbeat: VectorEffect = {
   category: "icon",
   tags: ["health", "like", "love", "pulse"],
   hold: 300,
-  controls: [colorControl("accent", "#F43F5E", "Heart"), colorControl("line", "#94A3B8", "Line")],
   motion: {
-    svg: `<svg viewBox="0 0 200 120"><g id="heart" transform="translate(100 46) scale(1)"><path d="M0 22 C-30 0 -30 -26 -10 -26 C-3 -26 0 -20 0 -16 C0 -20 3 -26 10 -26 C30 -26 30 0 0 22Z" fill="{{accent}}"/></g><path id="ecg" d="M10 100 H70 L80 86 L90 112 L100 76 L110 104 L118 100 H190" fill="none" stroke="{{line}}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/></svg>`,
+    svg: `<svg viewBox="0 0 200 120"><!-- {{accent: color default=#F43F5E label='Heart'}} {{line: color default=#94A3B8 label='Line'}} --><g id="heart" transform="translate(100 46) scale(1)"><path d="M0 22 C-30 0 -30 -26 -10 -26 C-3 -26 0 -20 0 -16 C0 -20 3 -26 10 -26 C30 -26 30 0 0 22Z" fill="{{accent}}"/></g><path id="ecg" d="M10 100 H70 L80 86 L90 112 L100 76 L110 104 L118 100 H190" fill="none" stroke="{{line}}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/></svg>`,
     animate: [
       { id: "heart", attrs: { transform: ["translate(100 46) scale(1)", "translate(100 46) scale(1.18)"] }, ms: 120, ease: "out" },
       { id: "heart", attrs: { transform: ["translate(100 46) scale(1.18)", "translate(100 46) scale(1)"] }, delay: 120, ms: 160, ease: "in-out" },
@@ -152,14 +140,6 @@ export const barChart: VectorEffect = {
   category: "data",
   tags: ["chart", "dashboard", "report", "explainer"],
   hold: 1500,
-  controls: [
-    colorControl("accent", "#6366F1", "Bars"),
-    colorControl("text", "#334155", "Text"),
-    numberControl("a", 40, 0, 100, "Bar 1", 1),
-    numberControl("b", 65, 0, 100, "Bar 2", 1),
-    numberControl("c", 50, 0, 100, "Bar 3", 1),
-    numberControl("d", 90, 0, 100, "Bar 4", 1),
-  ],
   derived: (v) =>
     Object.fromEntries(
       ["a", "b", "c", "d"].flatMap((k) => {
@@ -171,7 +151,7 @@ export const barChart: VectorEffect = {
       }),
     ),
   motion: {
-    svg: `<svg viewBox="0 0 240 160" font-family="system-ui, sans-serif"><line x1="20" y1="140" x2="220" y2="140" stroke="{{text}}" stroke-opacity="0.3" stroke-width="2"/>${["a", "b", "c", "d"]
+    svg: `<svg viewBox="0 0 240 160" font-family="system-ui, sans-serif"><!-- {{accent: color default=#6366F1 label='Bars'}} {{text: color default=#334155 label='Text'}} {{a: float min=0 max=100 default=40 step=1 label='Bar 1'}} {{b: float min=0 max=100 default=65 step=1 label='Bar 2'}} {{c: float min=0 max=100 default=50 step=1 label='Bar 3'}} {{d: float min=0 max=100 default=90 step=1 label='Bar 4'}} --><line x1="20" y1="140" x2="220" y2="140" stroke="{{text}}" stroke-opacity="0.3" stroke-width="2"/>${["a", "b", "c", "d"]
       .map(
         (k, i) =>
           `<g id="bar-${k}" transform="translate(${40 + i * 48} 140) scale(1 0)"><rect x="0" y="-1" width="32" height="1" rx="0.02" fill="{{accent}}"/></g><text id="label-${k}" x="${56 + i * 48}" y="132" text-anchor="middle" font-size="12" fill="{{text}}" opacity="0">0</text>`,
@@ -193,9 +173,8 @@ export const lineChart: VectorEffect = {
   category: "data",
   tags: ["chart", "trend", "growth", "dashboard"],
   hold: 1500,
-  controls: [colorControl("accent", "#0EA5E9", "Line"), colorControl("grid", "#CBD5E1", "Grid")],
   motion: {
-    svg: `<svg viewBox="0 0 240 140"><defs><linearGradient id="fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{{accent}}" stop-opacity="0.35"/><stop offset="1" stop-color="{{accent}}" stop-opacity="0"/></linearGradient></defs><g stroke="{{grid}}" stroke-width="1"><line x1="20" y1="30" x2="220" y2="30"/><line x1="20" y1="70" x2="220" y2="70"/><line x1="20" y1="110" x2="220" y2="110"/></g><path id="area" d="M20 110 L60 92 L100 98 L140 64 L180 70 L220 30 L220 120 L20 120Z" fill="url(#fill)" opacity="0"/><path id="trend" d="M20 110 L60 92 L100 98 L140 64 L180 70 L220 30" fill="none" stroke="{{accent}}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/><circle id="marker" r="5" fill="#fff" stroke="{{accent}}" stroke-width="3"/></svg>`,
+    svg: `<svg viewBox="0 0 240 140"><!-- {{accent: color default=#0EA5E9 label='Line'}} {{grid: color default=#CBD5E1 label='Grid'}} --><defs><linearGradient id="fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{{accent}}" stop-opacity="0.35"/><stop offset="1" stop-color="{{accent}}" stop-opacity="0"/></linearGradient></defs><g stroke="{{grid}}" stroke-width="1"><line x1="20" y1="30" x2="220" y2="30"/><line x1="20" y1="70" x2="220" y2="70"/><line x1="20" y1="110" x2="220" y2="110"/></g><path id="area" d="M20 110 L60 92 L100 98 L140 64 L180 70 L220 30 L220 120 L20 120Z" fill="url(#fill)" opacity="0"/><path id="trend" d="M20 110 L60 92 L100 98 L140 64 L180 70 L220 30" fill="none" stroke="{{accent}}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/><circle id="marker" r="5" fill="#fff" stroke="{{accent}}" stroke-width="3"/></svg>`,
     animate: [
       { id: "trend", draw: true, ms: 1400, ease: "in-out" },
       { id: "marker", along: "trend", ms: 1400, ease: "in-out" },
@@ -212,13 +191,8 @@ export const statCounter: VectorEffect = {
   category: "data",
   tags: ["kpi", "number", "headline", "explainer"],
   hold: 1500,
-  controls: [
-    colorControl("accent", "#F59E0B", "Accent"),
-    colorControl("text", "#0F172A", "Text"),
-    numberControl("value", 1250, 0, 100000, "Value", 1),
-  ],
   motion: {
-    svg: `<svg viewBox="0 0 240 120" font-family="system-ui, sans-serif"><text id="number" x="120" y="62" text-anchor="middle" font-size="44" font-weight="800" fill="{{text}}">0</text><path id="underline" d="M60 78 H180" stroke="{{accent}}" stroke-width="6" stroke-linecap="round"/><text id="caption" x="120" y="104" text-anchor="middle" font-size="13" fill="{{text}}" opacity="0">happy customers</text></svg>`,
+    svg: `<svg viewBox="0 0 240 120" font-family="system-ui, sans-serif"><!-- {{accent: color default=#F59E0B label='Accent'}} {{text: color default=#0F172A label='Text'}} {{value: float min=0 max=100000 default=1250 step=1 label='Value'}} {{caption: text default='happy customers' label='Caption'}} --><text id="number" x="120" y="62" text-anchor="middle" font-size="44" font-weight="800" fill="{{text}}">0</text><path id="underline" d="M60 78 H180" stroke="{{accent}}" stroke-width="6" stroke-linecap="round"/><text id="caption" x="120" y="104" text-anchor="middle" font-size="13" fill="{{text}}" opacity="0">{{caption}}</text></svg>`,
     animate: [
       { id: "number", count: [0, "{{value}}"] as unknown as [number, number], ms: 1500, ease: "out" },
       { id: "underline", draw: true, delay: 300, ms: 900, ease: "in-out" },
@@ -235,9 +209,8 @@ export const route: VectorEffect = {
   category: "data",
   tags: ["map", "travel", "delivery", "journey"],
   hold: 1200,
-  controls: [colorControl("accent", "#8B5CF6", "Route"), colorControl("pin", "#0F172A", "Pins")],
   motion: {
-    svg: `<svg viewBox="0 0 240 150"><path id="path" d="M30 120 C60 40 120 140 150 70 S210 30 210 30" fill="none" stroke="{{accent}}" stroke-width="4" stroke-linecap="round"/><circle cx="30" cy="120" r="7" fill="{{pin}}"/><g id="end" opacity="0"><circle cx="210" cy="30" r="9" fill="{{pin}}"/><circle cx="210" cy="30" r="3.5" fill="#fff"/></g><g id="traveller"><circle r="7" fill="{{accent}}"/><circle r="3" fill="#fff"/></g></svg>`,
+    svg: `<svg viewBox="0 0 240 150"><!-- {{accent: color default=#8B5CF6 label='Route'}} {{pin: color default=#0F172A label='Pins'}} --><path id="path" d="M30 120 C60 40 120 140 150 70 S210 30 210 30" fill="none" stroke="{{accent}}" stroke-width="4" stroke-linecap="round"/><circle cx="30" cy="120" r="7" fill="{{pin}}"/><g id="end" opacity="0"><circle cx="210" cy="30" r="9" fill="{{pin}}"/><circle cx="210" cy="30" r="3.5" fill="#fff"/></g><g id="traveller"><circle r="7" fill="{{accent}}"/><circle r="3" fill="#fff"/></g></svg>`,
     animate: [
       { id: "path", draw: true, ms: 1800, ease: "in-out" },
       { id: "traveller", along: "path", ms: 1800, ease: "in-out" },
@@ -254,7 +227,6 @@ export const blobMorph: VectorEffect = {
   category: "organic",
   tags: ["shape", "background", "playful", "brand"],
   hold: 0,
-  controls: [colorControl("colorA", "#F472B6", "Colour A"), colorControl("colorB", "#818CF8", "Colour B")],
   motion: (() => {
     const shapes = [
       "M100 30 C140 30 170 60 170 100 C170 140 140 170 100 170 C60 170 30 140 30 100 C30 60 60 30 100 30Z",
@@ -263,7 +235,7 @@ export const blobMorph: VectorEffect = {
     ];
     const step = 1200;
     return {
-      svg: `<svg viewBox="0 0 200 200"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="{{colorA}}"/><stop offset="1" stop-color="{{colorB}}"/></linearGradient></defs><path id="blob" d="${shapes[0]}" fill="url(#g)"/></svg>`,
+      svg: `<svg viewBox="0 0 200 200"><!-- {{colorA: color default=#F472B6 label='Colour A'}} {{colorB: color default=#818CF8 label='Colour B'}} --><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="{{colorA}}"/><stop offset="1" stop-color="{{colorB}}"/></linearGradient></defs><path id="blob" d="${shapes[0]}" fill="url(#g)"/></svg>`,
       animate: shapes.map((d, i) => ({
         id: "blob",
         attrs: { d: [d, shapes[(i + 1) % shapes.length]!] as [string, string] },
@@ -283,9 +255,8 @@ export const signature: VectorEffect = {
   category: "icon",
   tags: ["handwriting", "draw-on", "personal", "reveal"],
   hold: 1500,
-  controls: [colorControl("ink", "#1E293B", "Ink"), numberControl("width", 3, 1, 8, "Pen width", 0.5)],
   motion: {
-    svg: `<svg viewBox="0 0 260 120"><path id="sig" d="M20 80 C40 20 60 20 55 70 C52 95 70 95 85 60 C95 40 100 75 110 70 C120 65 125 40 135 55 C145 70 150 75 165 50 C175 35 185 60 190 65 C200 75 215 40 240 45" fill="none" stroke="{{ink}}" stroke-width="{{width}}" stroke-linecap="round" stroke-linejoin="round"/><path id="dash" d="M70 100 Q140 92 220 98" fill="none" stroke="{{ink}}" stroke-width="{{width}}" stroke-linecap="round"/></svg>`,
+    svg: `<svg viewBox="0 0 260 120"><!-- {{ink: color default=#1E293B label='Ink'}} {{width: float min=1 max=8 default=3 step=0.5 label='Pen width'}} --><path id="sig" d="M20 80 C40 20 60 20 55 70 C52 95 70 95 85 60 C95 40 100 75 110 70 C120 65 125 40 135 55 C145 70 150 75 165 50 C175 35 185 60 190 65 C200 75 215 40 240 45" fill="none" stroke="{{ink}}" stroke-width="{{width}}" stroke-linecap="round" stroke-linejoin="round"/><path id="dash" d="M70 100 Q140 92 220 98" fill="none" stroke="{{ink}}" stroke-width="{{width}}" stroke-linecap="round"/></svg>`,
     animate: [
       { id: "sig", draw: true, ms: 1800, ease: "in-out" },
       { id: "dash", draw: true, delay: 1700, ms: 400, ease: "out" },
@@ -301,7 +272,6 @@ export const equalizer: VectorEffect = {
   category: "loader",
   tags: ["music", "audio", "voice", "now-playing"],
   hold: 0,
-  controls: [colorControl("accent", "#10B981", "Bars")],
   motion: (() => {
     const heights = [
       [0.3, 0.9, 0.5, 0.3],
@@ -312,7 +282,7 @@ export const equalizer: VectorEffect = {
     ];
     const beat = 250;
     return {
-      svg: `<svg viewBox="0 0 100 100">${heights
+      svg: `<svg viewBox="0 0 100 100"><!-- {{accent: color default=#10B981 label='Bars'}} -->${heights
         .map((_, i) => `<g id="bar${i}" transform="translate(${14 + i * 16} 85) scale(1 ${heights[i]![0]})"><rect x="0" y="-70" width="10" height="70" rx="5" fill="{{accent}}"/></g>`)
         .join("")}</svg>`,
       animate: heights.flatMap((h, i) =>
@@ -336,7 +306,6 @@ export const confetti: VectorEffect = {
   category: "icon",
   tags: ["celebration", "success", "party", "reward"],
   hold: 400,
-  controls: [colorControl("a", "#F43F5E", "Colour A"), colorControl("b", "#FACC15", "Colour B"), colorControl("c", "#22D3EE", "Colour C")],
   motion: (() => {
     const pieces = Array.from({ length: 18 }, (_, i) => {
       const angle = (i / 18) * Math.PI * 2 + (i % 3) * 0.2;
@@ -347,7 +316,7 @@ export const confetti: VectorEffect = {
       return { i, x, y, spin, fill: ["{{a}}", "{{b}}", "{{c}}"][i % 3]! };
     });
     return {
-      svg: `<svg viewBox="0 0 200 200">${pieces
+      svg: `<svg viewBox="0 0 200 200"><!-- {{a: color default=#F43F5E label='Colour A'}} {{b: color default=#FACC15 label='Colour B'}} {{c: color default=#22D3EE label='Colour C'}} -->${pieces
         .map((p) => `<rect id="p${p.i}" x="-4" y="-2" width="8" height="4" rx="1" fill="${p.fill}" transform="translate(100 110) rotate(0)" opacity="0"/>`)
         .join("")}</svg>`,
       animate: pieces.flatMap((p): SvgAnimation[] => [
@@ -373,6 +342,166 @@ export const confetti: VectorEffect = {
   })(),
 };
 
+
+/** Flow network's nodes and links, left to right, with the critical path through them. */
+const NODES: Record<string, [number, number]> = {
+  s: [40, 120], a: [120, 60], b: [120, 180], c: [280, 50], d: [290, 130], e: [280, 200], t: [360, 120],
+};
+const HUB: [number, number] = [200, 120];
+const link = ([x1, y1]: [number, number], [x2, y2]: [number, number]) => {
+  const mid = (x1 + x2) / 2;
+  return `M${x1} ${y1} C${mid} ${y1} ${mid} ${y2} ${x2} ${y2}`;
+};
+const LINKS: { from: [number, number]; to: [number, number]; column: number }[] = [
+  { from: NODES.s!, to: NODES.a!, column: 0 },
+  { from: NODES.s!, to: NODES.b!, column: 0 },
+  { from: NODES.a!, to: HUB, column: 1 },
+  { from: NODES.b!, to: HUB, column: 1 },
+  { from: HUB, to: NODES.c!, column: 2 },
+  { from: HUB, to: NODES.d!, column: 2 },
+  { from: HUB, to: NODES.e!, column: 2 },
+  { from: NODES.c!, to: NODES.t!, column: 3 },
+  { from: NODES.d!, to: NODES.t!, column: 3 },
+  { from: NODES.e!, to: NODES.t!, column: 3 },
+];
+const CRITICAL = [NODES.s!, NODES.b!, HUB, NODES.c!, NODES.t!]
+  .map((p, i, all) => (i === 0 ? "" : link(all[i - 1]!, p).replace(/^M[\d.]+ [\d.]+ /, i === 1 ? `M${all[0]![0]} ${all[0]![1]} ` : "")))
+  .filter(Boolean)
+  .join(" ");
+/** The column a node is reached in, so it appears as the links arrive. */
+const NODE_COLUMN: Record<string, number> = { s: 0, a: 1, b: 1, c: 3, d: 3, e: 3, t: 4 };
+const COLUMN_MS = 280;
+const PATH_START = 1500;
+const PATH_MS = 1800;
+
+export const flowNetwork: VectorEffect = {
+  kind: "vector",
+  id: "flow-network",
+  name: "Flow network",
+  description: "A node graph linking up, then a glowing critical path racing through it to a pulsing hub.",
+  category: "data",
+  tags: ["network", "graph", "dag", "workflow", "tech", "explainer"],
+  hold: 1200,
+  presets: [
+    { name: "Light", values: { background: [0.93, 0.95, 0.96], link: [0.37, 0.72, 0.69], path: [0.96, 0.62, 0.04], ink: [0.2, 0.25, 0.33] } },
+    { name: "Neon", values: { background: [0.04, 0.02, 0.1], link: [0.13, 0.83, 0.93], path: [0.96, 0.45, 0.71], ink: [0.85, 0.85, 1] } },
+  ],
+  motion: {
+    svg: `<svg viewBox="0 0 400 240" font-family="system-ui, sans-serif"><!-- {{label: text default='Critical path' label='Hub label'}} {{background: color default=#0B1220 label='Background'}} {{link: color default=#4FD1C5 label='Links'}} {{path: color default=#F5A524 label='Critical path'}} {{ink: color default=#CBD5E1 label='Label'}} {{glow: float min=0 max=6 default=2.5 step=0.5 label='Glow'}} --><defs><filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="{{glow}}" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><rect width="400" height="240" fill="{{background}}"/>${LINKS.map(
+      (l, i) => `<path id="l${i}" d="${link(l.from, l.to)}" fill="none" stroke="{{link}}" stroke-width="1.6" stroke-opacity="0.75" filter="url(#glow)"/>`,
+    ).join("")}<path id="crit" d="${CRITICAL}" fill="none" stroke="{{path}}" stroke-width="3" stroke-linecap="round" filter="url(#glow)"/>${[0, 1]
+      .map((i) => `<circle id="ring${i}" cx="${HUB[0]}" cy="${HUB[1]}" r="10" fill="none" stroke="{{link}}" stroke-width="2" opacity="0"/>`)
+      .join("")}${Object.entries(NODES)
+      .map(([id, [x, y]]) => `<circle id="n${id}" cx="${x}" cy="${y}" r="6" fill="{{background}}" stroke="{{link}}" stroke-width="2.5" filter="url(#glow)" opacity="0"/>`)
+      .join("")}<g id="hub" opacity="0"><circle cx="${HUB[0]}" cy="${HUB[1]}" r="13" fill="{{link}}" fill-opacity="0.25" stroke="{{link}}" stroke-width="2" filter="url(#glow)"/><circle cx="${HUB[0]}" cy="${HUB[1]}" r="6" fill="{{link}}"/></g><text id="caption" x="${HUB[0]}" y="${HUB[1] + 34}" text-anchor="middle" font-size="12" font-weight="600" fill="{{ink}}" opacity="0">{{label}}</text>${[0, 1, 2]
+      .map((i) => `<circle id="pkt${i}" r="2.5" fill="{{link}}" filter="url(#glow)" opacity="0"/>`)
+      .join("")}<circle id="comet" r="5" fill="#FFFFFF" stroke="{{path}}" stroke-width="2" filter="url(#glow)" opacity="0"/></svg>`,
+    animate: [
+      ...LINKS.map((l, i): SvgAnimation => ({ id: `l${i}`, draw: true, delay: l.column * COLUMN_MS, ms: 500, ease: "out" })),
+      ...Object.keys(NODES).map((id): SvgAnimation => ({ id: `n${id}`, attrs: { opacity: [0, 1] }, delay: Math.max(0, NODE_COLUMN[id]! * COLUMN_MS - 120), ms: 250 })),
+      { id: "hub", attrs: { opacity: [0, 1] }, delay: 2 * COLUMN_MS - 120, ms: 300 },
+      { id: "caption", attrs: { opacity: [0, 1], y: [HUB[1] + 40, HUB[1] + 34] }, delay: 2 * COLUMN_MS, ms: 400, ease: "out" },
+      // Data packets drift along a few links while the path waits.
+      ...[3, 5, 8].map((link, i): SvgAnimation[] => [
+        { id: `pkt${i}`, attrs: { opacity: [0, 1] }, delay: 1000 + i * 150, ms: 150 },
+        { id: `pkt${i}`, along: `l${link}`, delay: 1000 + i * 150, ms: 1100, ease: "in-out" },
+        { id: `pkt${i}`, attrs: { opacity: [1, 0] }, delay: 2000 + i * 150, ms: 200 },
+      ]).flat(),
+      { id: "crit", draw: true, delay: PATH_START, ms: PATH_MS, ease: "in-out" },
+      { id: "comet", attrs: { opacity: [0, 1] }, delay: PATH_START, ms: 150 },
+      { id: "comet", along: "crit", delay: PATH_START, ms: PATH_MS, ease: "in-out" },
+      { id: "comet", attrs: { opacity: [1, 0] }, delay: PATH_START + PATH_MS, ms: 300 },
+      // Rings pulse out from the hub as the comet passes it, halfway along.
+      ...[0, 1].map((i): SvgAnimation => ({
+        id: `ring${i}`,
+        attrs: { r: [10, 52], opacity: [0.9, 0], "stroke-width": [3, 0.5] },
+        delay: PATH_START + PATH_MS / 2 + i * 350,
+        ms: 1200,
+        ease: "out",
+      })),
+    ],
+  },
+};
+
+/** Drip text's drips: where each leaves the word, as a fraction of its width, and how it runs. */
+const DRIP_TOP = 106;
+const DRIPS = [
+  { at: 0.067, width: 11, length: 34, delay: 0, ms: 1500 },
+  { at: 0.18, width: 8, length: 18, delay: 260, ms: 1100 },
+  { at: 0.3, width: 13, length: 50, delay: 120, ms: 1800 },
+  { at: 0.453, width: 9, length: 22, delay: 380, ms: 1200 },
+  { at: 0.587, width: 10, length: 28, delay: 200, ms: 1400 },
+  { at: 0.693, width: 12, length: 42, delay: 60, ms: 1700 },
+  { at: 0.793, width: 11, length: 32, delay: 300, ms: 1500 },
+];
+
+export const dripText: VectorEffect = {
+  kind: "vector",
+  id: "drip-text",
+  name: "Drip text",
+  description: "A chunky outlined title popping in, then oozing slime drips from its letters.",
+  category: "icon",
+  tags: ["title", "text", "drip", "slime", "y2k", "headline"],
+  hold: 1200,
+  presets: [
+    { name: "Slime", values: { fill: [0.55, 0.93, 0.25], outline: [0.06, 0.2, 0.04], shine: [0.85, 1, 0.7] } },
+    { name: "Molten gold", values: { fill: [1, 0.78, 0.2], outline: [0.35, 0.16, 0], shine: [1, 0.96, 0.75], drip: 1.5 } },
+  ],
+  // The word is stretched to a width set by its length (textLength), so the drips land under its letters in any font.
+  derived: (v) => {
+    const letters = Math.max(1, Array.from(String(v.word).trim()).length);
+    const width = Math.min(380, letters * 75);
+    const left = 200 - width / 2;
+    return {
+      width,
+      ...Object.fromEntries(
+        DRIPS.flatMap((d, i) => {
+          const x = Math.round((left + d.at * width) * 10) / 10;
+          const length = Math.round(d.length * Number(v.drip) * 10) / 10;
+          return [
+            [`x${i}`, x],
+            [`left${i}`, x - d.width / 2],
+            [`shine${i}`, x - d.width * 0.25],
+            [`len${i}`, length],
+            [`tip${i}`, DRIP_TOP + length],
+          ];
+        }),
+      ),
+    };
+  },
+  motion: (() => {
+    const word = `<text x="200" y="120" text-anchor="middle" textLength="{{width}}" lengthAdjust="spacingAndGlyphs" font-family="'Arial Black', Impact, system-ui, sans-serif" font-size="104" font-weight="900" stroke-linejoin="round"`;
+    const drips = (layer: "o" | "f", paint: string) =>
+      DRIPS.map(
+        (d, i) =>
+          `<rect id="${layer}r${i}" x="{{left${i}}}" y="${DRIP_TOP}" width="${d.width}" height="0" rx="${d.width / 2}" ${paint}/><circle id="${layer}c${i}" cx="{{x${i}}}" cy="${DRIP_TOP}" r="${d.width * 0.72}" ${paint}/>`,
+      ).join("");
+    const outline = `fill="{{outline}}" stroke="{{outline}}" stroke-width="{{stroke}}"`;
+    const pop = (from: number, to: number) =>
+      [`translate(200 100) scale(${from}) translate(-200 -100)`, `translate(200 100) scale(${to}) translate(-200 -100)`] as [string, string];
+    return {
+      svg: `<svg viewBox="0 0 400 200"><!-- {{word: text default=SLOP label='Word'}} {{fill: color default=#FF7EB6 label='Fill'}} {{outline: color default=#3A0A2C label='Outline'}} {{shine: color default=#FFD1E6 label='Shine'}} {{drip: float min=0.2 max=2 default=1 label='Drip length'}} {{stroke: float min=0 max=14 default=7 step=0.5 label='Outline width'}} --><g id="word" transform="${pop(0.6, 1)[0]}" opacity="0">${drips("o", outline)}${word} fill="none" stroke="{{outline}}" stroke-width="{{stroke}}">{{word}}</text>${drips("f", `fill="{{fill}}"`)}${word} fill="{{fill}}">{{word}}</text>${DRIPS.map(
+        (d, i) => `<circle id="s${i}" cx="{{shine${i}}}" cy="${DRIP_TOP}" r="${d.width * 0.2}" fill="{{shine}}" opacity="0"/>`,
+      ).join("")}</g></svg>`,
+      animate: [
+        { id: "word", attrs: { transform: pop(0.6, 1.08), opacity: [0, 1] }, ms: 260, ease: "out" },
+        { id: "word", attrs: { transform: pop(1.08, 1) }, delay: 260, ms: 200, ease: "in-out" },
+        ...DRIPS.flatMap((d, i): SvgAnimation[] => {
+          const at = { delay: 400 + d.delay, ms: d.ms, ease: "in-out" as const };
+          const tip = `{{tip${i}}}` as unknown as number;
+          return [
+            ...(["o", "f"] as const).flatMap((layer): SvgAnimation[] => [
+              { id: `${layer}r${i}`, attrs: { height: [0, `{{len${i}}}` as unknown as number] }, ...at },
+              { id: `${layer}c${i}`, attrs: { cy: [DRIP_TOP, tip] }, ...at },
+            ]),
+            { id: `s${i}`, attrs: { cy: [DRIP_TOP, tip], opacity: [0, 0.9] }, ...at },
+          ];
+        }),
+      ],
+    };
+  })(),
+};
+
 export const vectorEffects: VectorEffect[] = [
   spinner,
   bouncingDots,
@@ -389,4 +518,6 @@ export const vectorEffects: VectorEffect[] = [
   signature,
   confetti,
   blobMorph,
+  dripText,
+  flowNetwork,
 ];

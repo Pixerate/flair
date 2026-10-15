@@ -227,3 +227,117 @@ uniform vec3 uTint;     // @control color default=#FFFFFF label="Tint"`,
 }`,
   ),
 };
+
+export const neonCircuit: ShaderEffect = {
+  kind: "shader",
+  id: "neon-circuit",
+  name: "Neon circuit",
+  description: "Glowing neon traces routed up a circuit board, with pulses of light racing along them.",
+  category: "pattern",
+  tags: ["background", "neon", "circuit", "tech", "80s", "vaporwave"],
+  source: glsl(
+    `// Neon circuit: glowing traces climbing a board in rounded jogs, with pulses running along them.
+uniform vec3 uBackground; // @control color default=#170A2E label="Background"
+uniform vec3 uColorA;     // @control color default=#FF5FA2 label="Trace A"
+uniform vec3 uColorB;     // @control color default=#43E5FF label="Trace B"
+uniform vec3 uColorC;     // @control color default=#FFD23F label="Trace C"
+uniform vec3 uColorD;     // @control color default=#9D7BFF label="Trace D"
+uniform float uLanes;     // @control min=4 max=40 default=14 label="Lanes"
+uniform float uDensity;   // @control min=0.1 max=1 default=0.7 label="Density"
+uniform float uWidth;     // @control min=0.04 max=0.4 default=0.16 label="Line width"
+uniform float uGlow;      // @control min=0 max=2 default=1 label="Glow"
+uniform float uSpeed;     // @control min=0 max=3 default=1 label="Pulse speed"
+uniform float uPulses;    // @control min=0 max=1 default=0.5 label="Pulses"
+uniform float uScroll;    // @control min=-2 max=2 default=0.4 label="Scroll"
+uniform float uGrid;      // @control min=0 max=1 default=0.3 label="Grid"`,
+    HASH,
+    `// Each trace k owns lanes 3k..3k+2 and climbs in runs of RUN lanes, jogging
+// sideways between them on rounded corners, so traces never cross.
+const float RUN = 2.5;
+const float RADIUS = 0.35;
+
+float laneOf(float k, float j) {
+  return 3.0 * k + floor(hash12(vec2(k, j) + 0.37) * 3.0) + 0.5;
+}
+
+vec3 traceColor(float k) {
+  float h = hash12(vec2(k, 7.3));
+  return h < 0.25 ? uColorA : h < 0.5 ? uColorB : h < 0.75 ? uColorC : uColorD;
+}
+
+// Distance to a quarter circle of RADIUS round c, in the quadrant whose signs are q.
+float arcDist(vec2 p, vec2 c, vec2 q) {
+  vec2 d = p - c;
+  return d.x * q.x >= 0.0 && d.y * q.y >= 0.0 ? abs(length(d) - RADIUS) : 1e5;
+}
+
+// Trace k's run j: distance from p to its climb (x) and how far up it p is (y), then
+// the same for its jog into run j + 1 (z, w), measured along the run.
+vec4 run(vec2 p, float k, float j) {
+  float x0 = laneOf(k, j - 1.0);
+  float x1 = laneOf(k, j);
+  float x2 = laneOf(k, j + 1.0);
+  float y0 = j * RUN;
+  float y1 = y0 + RUN;
+  float lo = y0 + (x0 == x1 ? 0.0 : RADIUS);
+  float hi = y1 - (x2 == x1 ? 0.0 : RADIUS);
+  vec4 r = vec4(length(p - vec2(x1, clamp(p.y, lo, hi))), p.y - y0, 1e5, 0.0);
+  if (x2 != x1) {
+    float sx = sign(x2 - x1);
+    float h = length(p - vec2(clamp(p.x, min(x1, x2) + RADIUS, max(x1, x2) - RADIUS), y1));
+    h = min(h, arcDist(p, vec2(x1 + sx * RADIUS, y1 - RADIUS), vec2(-sx, 1.0)));
+    h = min(h, arcDist(p, vec2(x2 - sx * RADIUS, y1 + RADIUS), vec2(sx, -1.0)));
+    r.zw = vec2(h, RUN + abs(p.x - x1));
+  }
+  return r;
+}
+
+// How bright a pulse is at s along run j of trace k: a bright head with a fading tail.
+// A pulse crosses one run per cycle and carries on into the next with the next cycle.
+float pulseAt(float k, float j, float s) {
+  float cycle = iTime * uSpeed * 1.5 + hash12(vec2(k, 8.8));
+  float behind = fract(cycle) * (RUN + abs(laneOf(k, j + 1.0) - laneOf(k, j))) - s;
+  float lit = step(hash12(vec2(k, floor(cycle) - j)), uPulses);
+  return lit * (behind >= 0.0 ? exp(-behind * 0.8) : exp(behind * 30.0));
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  float px = uLanes / iResolution.y;
+  vec2 p = fragCoord * px;
+  p.y += iTime * uScroll;
+
+  vec2 g = abs(fract(p / 1.5) - 0.5);
+  float grid = 1.0 - smoothstep(0.0, px * 1.5, (0.5 - max(g.x, g.y)) * 1.5);
+  vec3 light = uColorD * 0.12 * uGrid * grid;
+
+  float home = floor(p.x / 3.0);
+  for (int i = -1; i <= 1; i++) {
+    float k = home + float(i);
+    if (hash12(vec2(k, 1.9)) > uDensity) continue;
+    vec2 q = vec2(p.x, p.y + hash12(vec2(k, 4.1)) * RUN);
+    float jq = floor(q.y / RUN);
+    float w = uWidth * 0.5;
+    // The trace's nearest point lights it; each piece's pulse lights only round that piece.
+    float d = 1e5;
+    float pulse = 0.0;
+    for (int b = -1; b <= 1; b++) {
+      float j = jq + float(b);
+      vec4 r = run(q, k, j);
+      d = min(d, min(r.x, r.z));
+      pulse = max(pulse, pulseAt(k, j, r.y) * exp(-r.x / uWidth));
+      if (r.z < 1e4) pulse = max(pulse, pulseAt(k, j, r.w) * exp(-r.z / uWidth));
+    }
+    float core = 1.0 - smoothstep(w - px, w + px, d);
+    float glow = uGlow * (0.5 * exp(-d / uWidth) + 0.2 * exp(-d / (uWidth * 5.0)));
+    vec3 c = traceColor(k);
+    light += c * (core * 0.8 + glow + uGlow * pulse) + mix(c, vec3(1.0), 0.7) * core * pulse * 3.0;
+  }
+  fragColor = vec4(uBackground + (1.0 - exp(-light * 1.4)), 1.0);
+}`,
+  ),
+  presets: [
+    { name: "Mainframe", values: { uBackground: [0.0, 0.04, 0.02], uColorA: [0.2, 1, 0.45], uColorB: [0.1, 0.75, 0.35], uColorC: [0.6, 1, 0.7], uColorD: [0.1, 0.5, 0.25] } },
+    { name: "Blueprint", values: { uBackground: [0.02, 0.06, 0.16], uColorA: [0.35, 0.75, 1], uColorB: [0.6, 0.9, 1], uColorC: [1, 1, 1], uColorD: [0.25, 0.45, 0.9], uGlow: 0.6, uPulses: 0.3 } },
+    { name: "Dense", values: { uLanes: 26, uDensity: 1, uWidth: 0.12, uPulses: 0.8 } },
+  ],
+};

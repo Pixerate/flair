@@ -19,20 +19,20 @@ Flair gives products a library of good-looking, configurable visual effects (her
 
 ### Core Capabilities
 
-- 🎨 **Effect catalog (`@pixerate/flair/catalog`)**: 59 effects, each with controls and presets. There are 44 WebGL2 shaders (gradients, organic textures, patterns, light, space, retro, image effects, transitions) and 15 animated SVG effects (loaders, status icons, charts, counters). [Browse them live](https://pixerate.github.io/flair/).
+- 🎨 **Effect catalog (`@pixerate/flair/catalog`)**: 63 effects, each with controls and presets. There are 46 WebGL2 shaders (gradients, organic textures, patterns, light, space, retro, image effects, transitions) and 17 animated SVG effects (loaders, status icons, titles, charts, counters, node graphs). [Browse them live](https://pixerate.github.io/flair/).
 - ⚡ **Shader engine**:
   - Shadertoy-style GLSL ES 3.00 fragment shaders, with controls declared in the source (`// @control`), including image inputs.
   - Compile errors come back with line numbers that match the source.
   - Live previews (`ShaderRenderer`) and many animated thumbnails on one context (`ThumbnailPool`).
   - Frames at exact times (`ShaderFrames`), looping GIFs, and standalone HTML pages.
-- ✒️ **Vector motion (`@pixerate/flair/vector`)**: animated SVG described as data. It covers attribute tweens, draw-on strokes, motion along paths, counters and view zooms. Every frame is a pure function of time (`svgFrame`), and `SvgPlayer` plays it.
+- ✒️ **Vector motion (`@pixerate/flair/vector`)**: animated SVG described as data. Catalog vector effects declare their controls in the picture (`{{name: type …}}`), text included. It covers attribute tweens, draw-on strokes, motion along paths, counters and view zooms. Every frame is a pure function of time (`svgFrame`), and `SvgPlayer` plays it.
 - 🎛️ **Effect editor (`@pixerate/flair/editor`)**:
   - A headless editor for an effect's source, values, keyframes, presets and timeline.
   - Built on [`@pixerate/editor`](https://github.com/Pixerate/editor)'s undo history and command registry, with no UI framework assumed.
 - 🤖 **Agent-native, bring your own model**:
   - Every editing action is a command, and the commands are exposed as MCP-shaped tools.
   - Ships instructions for the model. The host supplies the model, keys and agent loop.
-- 🎬 **Directing and interchange**: multi-shot scenes with camera moves, procedural effects, validation and fast headless simulation. Also blend modes, Oklab colour and grading, retiming, timecode, and export to Lottie, Apple Motion, FCP7 XML and CMX 3600 EDL.
+- 🎬 **Directing and interchange**: multi-shot scenes with camera moves (3D tilt and motion blur included), procedural effects, validation and fast headless simulation. Also blend modes, Oklab colour and grading, retiming, timecode, and export to Lottie, Apple Motion, FCP7 XML and CMX 3600 EDL.
 
 ---
 
@@ -41,7 +41,7 @@ Flair gives products a library of good-looking, configurable visual effects (her
 | Import | What it provides | Runtime dependencies |
 | :--- | :--- | :--- |
 | `@pixerate/flair` | Shader engine, vector motion, time and easing, colour, blending, transitions, scenes, interchange exporters | None (browser-safe) |
-| `@pixerate/flair/catalog` | `EFFECTS`, `getEffect`, `findEffects`, `effectDefaults`, `renderVectorEffect`, GLSL helpers, sample images | None |
+| `@pixerate/flair/catalog` | `EFFECTS`, `getEffect`, `findEffects`, `effectDefaults`, `renderVectorEffect`, `vectorControls`, GLSL helpers, sample images | None |
 | `@pixerate/flair/vector` | `SvgMotion`, `svgFrame`, `svgView`, `SvgPlayer`, `svgMotionIssues` | None |
 | `@pixerate/flair/editor` | `EffectEditor`, effect documents, keyframe tracks, renderer bindings, parameter-panel binding, agent tools and instructions | `@pixerate/editor` ≥ 0.29 (optional peer; only its dependency-free `/history`, `/commands`, `/tools`, `/animation` and `/parameters` subpaths) |
 | `@pixerate/flair/node` | `exportMotionGraphic`: renders a shader to GIF/MP4 through headless Chrome and ffmpeg | Node.js |
@@ -55,7 +55,7 @@ The `flair` CLI inspects shaders, writes standalone pages and directs scenes (se
 ```mermaid
 graph TD
   subgraph Effects["Effects (no dependencies)"]
-    Catalog["catalog: 59 effects + presets"]
+    Catalog["catalog: 63 effects + presets"]
     Shader["shader engine: controls, compile, render, GIF, HTML"]
     Vector["vector motion: SvgMotion, SvgPlayer"]
     Time["time: clocks, easing, keyframes, noise"]
@@ -118,6 +118,15 @@ if (spinner.kind === "vector") {
 ```
 
 Find effects with `findEffects({ text: "glow", category: "light", kind: "shader" })`. Each effect has an `id`, `name`, `description`, `category`, `tags` and optional `presets`. Image effects default to built-in sample pictures, so they look right before you set `uImage` to your own URL.
+
+A vector effect declares its controls in its picture, the way a shader declares its uniforms: the first `{{name: type …}}` declares a control (`float`, `int`, `bool`, `color` or `text`, with `@control`'s attributes; quote values with spaces in single quotes), and every `{{name}}` is filled with its value. Declarations can sit in an XML comment, which is dropped when the picture is filled in, and text is escaped, so any words are safe:
+
+```ts
+const title = { motion: { svg: `<svg viewBox="0 0 200 60"><!-- {{title: text default='Hello' label='Title'}} {{ink: color default=#6366F1}} --><text x="10" y="40" fill="{{ink}}">{{title}}</text></svg>` } };
+vectorControls(title.motion); // [{ name: "title", type: "text", default: "Hello", … }, { name: "ink", type: "vec3", color: true, … }]
+renderVectorEffect(title, { title: "Fish & chips" }); // …<text …>Fish &amp; chips</text>…
+renderVectorEffect(getEffect("drip-text")!, { word: "UNSTOPPABLE" }); // drips follow the word
+```
 
 ### 2. Write your own shader
 
@@ -208,18 +217,45 @@ Every change is one undo step, and refusals come back as messages the model can 
 
 ---
 
+## 🎬 Camera moves
+
+A shot's `camera` frames a box (`{ x, y, width, height }`) or elements (`{ frame: ["card"] }`), and can turn in 3D and blur while it moves, like the product-video swoop onto a tilted screen:
+
+```json
+{ "camera": { "frame": ["dashboard"], "tilt": 35, "turn": -15, "motionBlur": 1.5 } }
+```
+
+- `tilt` leans the board back (top away, like a desk seen from above), `turn` swings it round its vertical axis (left side nearer when positive), `roll` rolls it clockwise. Tilt and turn go up to ±75°.
+- `perspective` is the lens distance as a multiple of the stage width (1.2 by default). Lower values look more dramatic.
+- `motionBlur` (0 to 3, with 1 as natural) blurs the move in proportion to its speed, so the blur peaks mid-move and clears when the camera settles. A pan streaks along its direction (`View.blurAngle`), while a zoom or turn blurs in every direction.
+- Angles carry over to later shots until a shot changes them. `{ "camera": { "tilt": 0, "turn": 0 } }` flattens the board in place.
+
+`playScene` hands boards views with these fields (`View.tilt`, `View.blur`, `View.blurAngle`, …). For renderers:
+- `cameraTransform(view, stage, width)` gives the CSS `transform` for a board layer.
+- `cameraBlur(...)` gives the `stdDeviation` for an SVG `feGaussianBlur` that streaks, and `cameraFilter(...)` gives a CSS `blur()`.
+- `projectPoint` gives where a scene point lands on screen.
+- `cameraTrack` and `cameraSamples` lay the camera out on a timeline.
+
+The standalone player (`flair scene html`) plays all of it. Layout checks (framing, edges, text size, the title) are judged on screen, where the angle puts each element.
+
+The exporters carry the camera too:
+- **Lottie:** a "Camera" null layer that the element layers hang off. When the camera is angled, it is a 3D layer with an AE camera (lottie-web draws it with its `html` renderer).
+- **Apple Motion:** a keyframed "Camera" group around the shots.
+- **FCP7 XML:** a keyframed Distort corner pin on each shot's clip, plus Motion Blur.
+- **EDL:** a `* CAMERA:` note, since CMX 3600 has no transforms.
+
 ## 🎨 The catalog
 
 | Category | Effects |
 | :--- | :--- |
 | gradient | mesh gradient, aurora, gradient flow, conic sweep, silk |
 | organic | liquid marble, smoke, lava lamp, plasma, caustics, flames, blob morph |
-| pattern | dot wave, Truchet flow, hex pulse, living cells, moiré rings, kaleidoscope, stripes |
-| light / space | bokeh, god rays, sparkles, neon ripple, warp starfield, nebula, event horizon |
+| pattern | dot wave, Truchet flow, hex pulse, living cells, moiré rings, kaleidoscope, stripes, neon circuit |
+| light / space | bokeh, god rays, sparkles, neon ripple, light ribbons, warp starfield, nebula, event horizon |
 | retro | synthwave, digital rain, dithered gradient, TV static |
 | image | ripple, glitch, duotone, halftone, pixel reveal, CRT screen, film look |
 | transition | wipe, iris, block dissolve, grid wipe, glass wipe, twister, light leak, cross zoom |
-| loader / icon / data | spinner, bouncing dots, pulse ping, equalizer, progress ring, bar chart, line chart, stat counter, route, success check, error cross, heartbeat, signature, confetti |
+| loader / icon / data | spinner, bouncing dots, pulse ping, equalizer, progress ring, bar chart, line chart, stat counter, route, success check, error cross, heartbeat, signature, confetti, drip text, flow network |
 
 Every shader is self-contained and compiles on WebGL2. Open [`#check`](https://pixerate.github.io/flair/#check) on the demo to compile the catalog on your own GPU.
 

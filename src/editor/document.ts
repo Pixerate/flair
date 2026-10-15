@@ -5,16 +5,20 @@
  * diffed, and written by an agent.
  */
 
-import { getEffect, renderVectorEffect, vectorControlDef } from "../catalog/index.js";
+import { getEffect, renderVectorEffect, vectorControlIssues, vectorEffectControls } from "../catalog/index.js";
 import type { EffectDefinition, EffectPreset, VectorControl } from "../catalog/types.js";
 import { checkControlValue, controlValue, parseControls, type ControlDef, type ControlValue } from "../shader/controls.js";
 import { svgMotionIssues, type SvgMotion } from "../vector/motion.js";
 import { evaluateTrack, isEasing, normalizeKeyframes, type Track } from "./timeline.js";
 
-/** What is being edited: a fragment shader, or an animated SVG with declared controls. */
+/**
+ * What is being edited: a fragment shader, or an animated SVG. Both declare
+ * their controls in themselves (`// @control`, `{{name: type …}}`); a vector
+ * effect's optional `controls` list is for pictures written before that.
+ */
 export type EffectSource =
   | { kind: "shader"; source: string }
-  | { kind: "vector"; motion: SvgMotion; controls: VectorControl[]; hold?: number };
+  | { kind: "vector"; motion: SvgMotion; controls?: VectorControl[]; hold?: number };
 
 export interface EffectDocument {
   /** Format version (1). */
@@ -64,7 +68,12 @@ export function createEffectDocument(from?: string | EffectDefinition | { source
     effect:
       effect.kind === "shader"
         ? { kind: "shader", source: effect.source }
-        : { kind: "vector", motion: structuredClone(effect.motion), controls: effect.controls.map((c) => ({ ...c })), hold: effect.hold },
+        : {
+            kind: "vector",
+            motion: structuredClone(effect.motion),
+            ...(effect.controls && { controls: effect.controls.map((c) => ({ ...c })) }),
+            hold: effect.hold,
+          },
     values: {},
     tracks: {},
     duration: effect.kind === "shader" && effect.loop ? Math.round(effect.loop * 1000) : DEFAULT_DURATION,
@@ -80,7 +89,7 @@ function blankDocument(name: string, source: string): EffectDocument {
 /** The document's controls. */
 export function documentControls(doc: EffectDocument): ControlDef[] {
   if (doc.effect.kind === "shader") return parseControls(doc.effect.source);
-  return doc.effect.controls.map((c, i) => vectorControlDef(c, i + 1));
+  return vectorEffectControls(doc.effect);
 }
 
 /** Every control's value at `time` (ms): its track if it has one, else the picked value, else its default. */
@@ -132,7 +141,7 @@ export function documentIssues(doc: EffectDocument): string[] {
   for (const preset of doc.presets) for (const [name, value] of Object.entries(preset.values)) check(`preset "${preset.name}"`, name, value);
   if (doc.effect.kind === "vector") {
     const motion = motionAt(doc, 0)!;
-    issues.push(...svgMotionIssues(motion));
+    issues.push(...vectorControlIssues(doc.effect.motion), ...svgMotionIssues(motion));
     if (/\{\{[^}]+\}\}/.test(JSON.stringify(motion))) issues.push("the picture has placeholders no control fills");
   }
   return issues;
@@ -158,7 +167,7 @@ export function parseEffectDocument(input: string | unknown): { ok: true; docume
   else if (effect.kind === "vector") {
     const v = effect as Partial<Extract<EffectSource, { kind: "vector" }>>;
     if (!v.motion || typeof v.motion.svg !== "string") errors.push("`effect.motion.svg` must be a string");
-    if (!Array.isArray(v.controls)) errors.push("`effect.controls` must be a list");
+    if (v.controls !== undefined && !Array.isArray(v.controls)) errors.push("`effect.controls` must be a list");
   }
   const isRecord = (v: unknown) => !!v && typeof v === "object" && !Array.isArray(v);
   if (o.values !== undefined && !isRecord(o.values)) errors.push("`values` must be an object");

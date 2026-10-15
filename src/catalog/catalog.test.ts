@@ -11,6 +11,8 @@ import {
   renderVectorEffect,
   SAMPLE_IMAGES,
   SHADER_EFFECTS,
+  vectorControlIssues,
+  vectorControls,
 } from "./index.js";
 
 describe("catalog", () => {
@@ -60,6 +62,69 @@ describe("catalog", () => {
       expect(JSON.stringify(motion)).not.toMatch(/\{\{/);
     },
   );
+
+  it.each(EFFECTS.filter((e) => e.kind === "vector").map((e) => [e.id, e] as const))(
+    "vector %s declares its controls in its picture",
+    (_, effect) => {
+      if (effect.kind !== "vector") return;
+      expect(effect.controls).toBeUndefined();
+      expect(vectorControlIssues(effect.motion)).toEqual([]);
+      expect(vectorControls(effect.motion).length).toBeGreaterThan(0);
+    },
+  );
+
+  it("reads vector controls from {{name: type …}} placeholders", () => {
+    const controls = vectorControls({
+      svg: `<svg viewBox="0 0 10 10"><!-- {{size: float min=1 max=9 default=4 step=0.5 label='Size'}} --><text fill="{{ink: color default=#FF0000}}">{{title: text default='Hello there' label="Title"}}</text><rect width="{{size}}"/></svg>`,
+      animate: [{ id: "x", attrs: { opacity: [0, "{{on: bool default=true}}"] } }],
+    });
+    expect(controls.map((c) => [c.name, c.type, c.default])).toEqual([
+      ["size", "float", 4],
+      ["ink", "vec3", [1, 0, 0]],
+      ["title", "text", "Hello there"],
+      ["on", "bool", true],
+    ]);
+    expect(controls[0]).toMatchObject({ min: 1, max: 9, step: 0.5, label: "Size" });
+    expect(controls[1]!.color).toBe(true);
+    expect(controls[2]!.label).toBe("Title");
+    expect(vectorControlIssues({ svg: `<svg>{{a: vec5}}{{b: float}}{{b: float default=2}}</svg>` })).toEqual([
+      "{{a: vec5}}: a control's type is one of float, int, bool, color, text",
+      '"b" is declared twice; declare it once and write {{b}} everywhere else',
+    ]);
+  });
+
+  it("fills text safely, drops comments and keeps whole placeholders typed", () => {
+    const motion = renderVectorEffect(
+      {
+        motion: {
+          svg: `<svg viewBox="0 0 10 10"><!-- {{n: float default=3}} --><text>{{t: text default=hi}}</text><g data-t="{{t}}"/></svg>`,
+          animate: [{ id: "x", attrs: { r: [0, "{{n}}"], d: ["M0 0", "M{{n}} 0"] } }],
+        },
+      },
+      { t: `Fish & "chips" <b>--` },
+    );
+    expect(motion.svg).toBe(`<svg viewBox="0 0 10 10"><text>Fish &amp; &quot;chips&quot; &lt;b&gt;--</text><g data-t="Fish &amp; &quot;chips&quot; &lt;b&gt;--"/></svg>`);
+    expect(motion.animate![0]!.attrs!.r).toEqual([0, 3]);
+    expect(motion.animate![0]!.attrs!.d).toEqual(["M0 0", "M3 0"]);
+  });
+
+  it("still takes controls listed outside the picture", () => {
+    const effect = { motion: { svg: `<svg viewBox="0 0 1 1" fill="{{c}}"/>` }, controls: [{ name: "c", type: "vec3" as const, color: true, default: [0, 0, 1] }] };
+    expect(renderVectorEffect(effect).svg).toContain('fill="#0000ff"');
+    expect(renderVectorEffect(effect, { c: "#00ff00" }).svg).toContain('fill="#00ff00"');
+  });
+
+  it("drip text writes any word, with its drips under it", () => {
+    const drip = getEffect("drip-text")!;
+    if (drip.kind !== "vector") throw new Error("vector expected");
+    expect(effectControls(drip).find((c) => c.name === "word")).toMatchObject({ type: "text", default: "SLOP" });
+    const short = renderVectorEffect(drip, { word: "OK" }).svg;
+    const long = renderVectorEffect(drip, { word: "UNSTOPPABLE" }).svg;
+    expect(short).toContain(">OK</text>");
+    expect(short).toContain('textLength="150"');
+    expect(long).toContain('textLength="380"');
+    expect(svgMotionIssues(renderVectorEffect(drip, { word: "Slop & Co" }))).toEqual([]);
+  });
 
   it("fills vector controls: colours as hex, numbers as numbers, derived values too", () => {
     const ring = getEffect("progress-ring")!;

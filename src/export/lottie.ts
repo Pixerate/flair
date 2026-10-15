@@ -7,7 +7,8 @@
  */
 
 import type { Scene } from '../scene/types.js';
-import { DEFAULT_STAGE, CAMERA_MS } from '../scene/camera.js';
+import { DEFAULT_STAGE, CAMERA_MS, DEFAULT_PERSPECTIVE, boardHeight, centreOf, isAngled, type View } from '../scene/camera.js';
+import { cameraSamples, sceneStage } from '../scene/cameratrack.js';
 import { isElementCommand, isUpdateCommand } from '../scene/types.js';
 import type { KeyframeEase } from '../time/keyframe.js';
 
@@ -34,7 +35,11 @@ export interface LottieTransform {
   p: LottieAnimatable<[number, number, number], [number, number, number]>; // position
   a: LottieAnimatable<[number, number, number], [number, number, number]>; // anchor
   s: LottieAnimatable<[number, number, number], [number, number, number]>; // scale
-  r: LottieAnimatable<number, [number]>; // rotation
+  r?: LottieAnimatable<number, [number]>; // rotation (2D layers)
+  or?: LottieAnimatable<[number, number, number]>; // orientation (3D layers: players expect it with rx/ry/rz)
+  rx?: LottieAnimatable<number, [number]>; // X rotation (3D layers)
+  ry?: LottieAnimatable<number, [number]>; // Y rotation (3D layers)
+  rz?: LottieAnimatable<number, [number]>; // Z rotation (3D layers)
   o: LottieAnimatable<number, [number]>; // opacity
 }
 
@@ -48,8 +53,12 @@ export interface LottieShapeItem {
 export interface LottieLayer {
   ddd: 0 | 1;
   ind: number;
-  ty: number; // 0 = precomp, 1 = solid, 2 = image, 3 = null, 4 = shape, 5 = text
+  ty: number; // 0 = precomp, 1 = solid, 2 = image, 3 = null, 4 = shape, 5 = text, 13 = camera
   nm: string;
+  /** Index of the parent layer: element layers hang off the camera rig. */
+  parent?: number;
+  /** Camera layers: perspective (the AE camera's zoom), in px. */
+  pe?: LottieAnimatable<number, [number]>;
   sr: number;
   ks: LottieTransform;
   ao: 0 | 1;
@@ -71,7 +80,7 @@ export interface LottieAnimation {
   w: number;
   h: number;
   nm: string;
-  ddd: 0;
+  ddd: 0 | 1;
   assets: unknown[];
   layers: LottieLayer[];
 }
@@ -105,8 +114,88 @@ export function createLottieEase(
   };
 }
 
+/** Linear keyframes for a sampled value, or a static value when it never changes. */
+function sampled<T extends number | number[]>(samples: { t: number; v: T }[]): LottieAnimatable<T, any> {
+  const same = samples.every((x) => JSON.stringify(x.v) === JSON.stringify(samples[0]!.v));
+  if (same) return { a: 0, k: samples[0]!.v };
+  const keys = samples.map((x, i) => {
+    const s = (Array.isArray(x.v) ? x.v : [x.v]) as number[];
+    return i < samples.length - 1 ? { t: x.t, s, o: { x: 0, y: 0 }, i: { x: 1, y: 1 } } : { t: x.t, s };
+  });
+  return { a: 1, k: keys as LottieKeyframe<any>[] };
+}
+
+const r3 = (n: number) => Math.round(n * 1000) / 1000;
+
 /**
- * Serializes a Flair Scene into standard Lottie JSON animation.
+ * The scene's camera as layers: a null "Camera" rig the element layers hang
+ * off (its anchor is the camera's centre, its scale the zoom and, in 3D, its
+ * rotations the angle), and, when the camera is ever angled, an AE camera
+ * whose zoom is the perspective distance. Sampled every other frame during
+ * moves, so the eased path and perspective come through. Lottie has no
+ * motion blur, so that is left out.
+ */
+function cameraLayers(scene: Scene, fr: number, totalFrames: number): { layers: LottieLayer[]; rig: number; ddd: 0 | 1 } | null {
+  if (!scene.shots.some((s) => s.camera)) return null;
+  const stage = sceneStage(scene);
+  const samples = cameraSamples(scene, fr).map((x) => ({ t: x.frame, view: x.view }));
+  const ddd: 0 | 1 = samples.some((x) => isAngled(x.view)) ? 1 : 0;
+  const w = stage.width;
+  const h = boardHeight(stage);
+  const at = <T extends number | number[]>(fn: (v: View) => T) => sampled(samples.map((x) => ({ t: x.t, v: fn(x.view) })));
+  const ks: LottieTransform = {
+    a: at((v) => {
+      const [cx, cy] = centreOf(v, stage);
+      return [r3(cx), r3(cy), 0] as [number, number, number];
+    }) as LottieTransform['a'],
+    p: { a: 0, k: [w / 2, h / 2, 0] },
+    s: at((v) => [r3(v.zoom * 100), r3(v.zoom * 100), 100] as [number, number, number]) as LottieTransform['s'],
+    o: { a: 0, k: 100 },
+  };
+  // AE turns the other way round X and Y from CSS (its z points into the screen).
+  if (ddd) {
+    ks.or = { a: 0, k: [0, 0, 0] };
+    ks.rx = at((v) => r3(0 - (v.tilt ?? 0)));
+    ks.ry = at((v) => r3(0 - (v.turn ?? 0)));
+    ks.rz = at((v) => r3(v.roll ?? 0));
+  } else ks.r = at((v) => r3(v.roll ?? 0));
+  const layers: LottieLayer[] = [];
+  if (ddd) {
+    const distance = at((v) => r3((v.perspective ?? DEFAULT_PERSPECTIVE) * w));
+    const d0 = (DEFAULT_PERSPECTIVE * w) as number;
+    layers.push({
+      ddd: 1,
+      ind: 1,
+      ty: 13,
+      nm: 'Camera Lens',
+      sr: 1,
+      pe: distance,
+      ks: {
+        p: { a: 0, k: [w / 2, h / 2, -d0] },
+        a: { a: 0, k: [w / 2, h / 2, 0] },
+        s: { a: 0, k: [100, 100, 100] },
+        or: { a: 0, k: [0, 0, 0] },
+        rx: { a: 0, k: 0 },
+        ry: { a: 0, k: 0 },
+        rz: { a: 0, k: 0 },
+        o: { a: 0, k: 100 },
+      },
+      ao: 0,
+      ip: 0,
+      op: totalFrames,
+      st: 0,
+      bm: 0,
+    });
+  }
+  const rig = layers.length + 1;
+  layers.push({ ddd, ind: rig, ty: 3, nm: 'Camera', sr: 1, ks, ao: 0, ip: 0, op: totalFrames, st: 0, bm: 0 });
+  return { layers, rig, ddd };
+}
+
+/**
+ * Serializes a Flair Scene into standard Lottie JSON animation. A scene
+ * with a camera gets a camera rig the element layers hang off, in 3D (with
+ * an AE camera) when the camera is angled.
  */
 export function exportLottie(scene: Scene, options: LottieExportOptions = {}): LottieAnimation {
   const fr = options.frameRate ?? 30;
@@ -218,9 +307,10 @@ export function exportLottie(scene: Scene, options: LottieExportOptions = {}): L
     }
   }
 
-  // Build Lottie layers
-  const layers: LottieLayer[] = [];
-  let layerIndex = 1;
+  // Build Lottie layers: the camera first, then the elements hanging off its rig.
+  const camera = cameraLayers(scene, fr, totalFrames);
+  const layers: LottieLayer[] = camera ? [...camera.layers] : [];
+  let layerIndex = layers.length + 1;
 
   for (const track of tracks.values()) {
     const isPosAnimated = track.posKeyframes.length > 1;
@@ -277,8 +367,9 @@ export function exportLottie(scene: Scene, options: LottieExportOptions = {}): L
     ];
 
     layers.push({
-      ddd: 0,
+      ddd: camera?.ddd ?? 0,
       ind: layerIndex++,
+      ...(camera && { parent: camera.rig }),
       ty: 4, // Shape layer
       nm: track.id,
       sr: 1,
@@ -300,7 +391,7 @@ export function exportLottie(scene: Scene, options: LottieExportOptions = {}): L
     w: width,
     h: height,
     nm: scene.name || 'Flair Animation',
-    ddd: 0,
+    ddd: camera?.ddd ?? 0,
     assets: [],
     layers,
   };

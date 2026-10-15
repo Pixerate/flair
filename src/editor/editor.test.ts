@@ -129,6 +129,12 @@ describe("EffectEditor", () => {
     expect(editor.document.values.uHot).toEqual([0.85, 1, 1]);
     expect(editor.setSource(editor.document.effect.kind === "shader" ? editor.document.effect.source.replace("Speed", "Pace") : "").ok).toBe(true);
     expect(editor.setMotion({ svg: "<svg/>" }).ok).toBe(false);
+    const drip = createEffectEditor({ from: "drip-text" });
+    expect(drip.setMotion({ svg: `<svg viewBox="0 0 10 10"><text>{{title: text default=Hi}}</text></svg>` }).ok).toBe(true);
+    expect(drip.controls.map((c) => c.name)).toEqual(["title"]);
+    expect(drip.setValue("title", "Hello").ok).toBe(true);
+    expect(drip.setValue("title", 3).ok).toBe(false);
+    expect(drip.getState().values.title).toBe("Hello");
     editor.reportCompile({ ok: false, errors: [{ line: 3, message: "boom" }] });
     expect(editor.getState().compile).toEqual({ ok: false, errors: [{ line: 3, message: "boom" }] });
     editor.undo();
@@ -229,6 +235,7 @@ describe("parameters", () => {
     const plasma = createEffectEditor({ from: "plasma" });
     expect(parameterSchemaFor(plasma.controls).fields.find((f) => f.id === "uPhase")).toMatchObject({ type: "vector", size: 3 });
     expect(parameterSchemaFor(createEffectEditor({ from: "lava-lamp" }).controls).fields.find((f) => f.id === "uCount")).toMatchObject({ type: "int" });
+    expect(parameterSchemaFor(createEffectEditor({ from: "drip-text" }).controls).fields.find((f) => f.id === "word")).toMatchObject({ type: "text", default: "SLOP" });
   });
 
   it("keeps a parameters controller in step with the editor, both ways", async () => {

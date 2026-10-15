@@ -1,12 +1,36 @@
+import { CAMERA_MS, type Stage, type View } from './camera.js';
+import { CAMERA_STEP_MS, cameraAt, cameraTrack, sceneStage } from './cameratrack.js';
+import type { SceneElement } from './geometry.js';
 import type { Scene } from './types.js';
+
+/** What the standalone player shows for one shot: the camera's move into it and the elements on stage. */
+interface ShotPlan {
+  /** The camera at each step of its move into the shot (one view when it does not move). */
+  move: View[];
+  elements: SceneElement[];
+}
+
+/** Each shot's camera move and elements, worked out the way `playScene` plays them. */
+function planShots(scene: Scene, stage: Stage): ShotPlan[] {
+  return cameraTrack(scene).map((entry) => {
+    // The player's steps: the last one lands on the shot's view, with no blur.
+    const steps = Math.round(entry.moveMs / CAMERA_STEP_MS);
+    const move = Array.from({ length: Math.max(0, steps - 1) }, (_, i) => cameraAt(entry, (i + 1) * CAMERA_STEP_MS, stage));
+    move.push(entry.to);
+    return { move, elements: entry.elements };
+  });
+}
 
 /**
  * Generates a self-contained, standalone HTML player for an animated scene.
- * Includes interactive playback controls, camera panning/zooming, title and caption rendering,
- * and embedded WebGL fragment shaders for bespoke motion graphics.
+ * Includes interactive playback controls, camera moves (panning, zooming,
+ * 3D angles and motion blur), title and caption rendering, and embedded
+ * WebGL fragment shaders for bespoke motion graphics.
  */
 export function standaloneSceneHtml(scene: Scene): string {
+  const stage = sceneStage(scene);
   const serializedScene = JSON.stringify(scene).replace(/</g, '\\u003c');
+  const serializedPlan = JSON.stringify({ stage, cameraMs: CAMERA_MS, shots: planShots(scene, stage) }).replace(/</g, '\\u003c');
   const title = scene.title || scene.name;
 
   return `<!DOCTYPE html>
@@ -33,7 +57,7 @@ export function standaloneSceneHtml(scene: Scene): string {
       position: relative;
       width: 100%;
       max-width: 1200px;
-      aspect-ratio: 16 / 9;
+      aspect-ratio: ${stage.width} / ${stage.height};
       background: #000;
       border-radius: 12px;
       overflow: hidden;
@@ -47,6 +71,12 @@ export function standaloneSceneHtml(scene: Scene): string {
       width: 100%;
       height: 100%;
       overflow: hidden;
+    }
+    .board {
+      position: absolute;
+      inset: 0;
+      transform-origin: 50% 50%;
+      will-change: transform, filter;
     }
     canvas.layer {
       position: absolute;
@@ -144,7 +174,8 @@ export function standaloneSceneHtml(scene: Scene): string {
   <div class="player-container">
     <div class="viewport" id="viewport">
       <canvas id="shaderCanvas" class="layer"></canvas>
-      <canvas id="sceneCanvas" class="layer"></canvas>
+      <div id="board" class="board"><canvas id="sceneCanvas" class="layer"></canvas></div>
+      <svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="motionBlur" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur id="motionBlurAmount" stdDeviation="0 0"/></filter></svg>
       <div id="titleEl" class="overlay-title"></div>
       <div id="captionEl" class="overlay-caption"></div>
     </div>
@@ -161,6 +192,9 @@ export function standaloneSceneHtml(scene: Scene): string {
 
   <script>
     const scene = ${serializedScene};
+    // Each shot's camera move (zoom, scroll, 3D angle and blur at each step) and elements, worked out in advance.
+    const plan = ${serializedPlan};
+    const boardEl = document.getElementById('board');
     const sceneCanvas = document.getElementById('sceneCanvas');
     const shaderCanvas = document.getElementById('shaderCanvas');
     const ctx = sceneCanvas.getContext('2d');
@@ -174,7 +208,8 @@ export function standaloneSceneHtml(scene: Scene): string {
 
     let currentShotIdx = 0;
     let isPlaying = false;
-    let shotStartTime = 0;
+    let shotStartTime = performance.now();
+    let moveFrom = performance.now();
     let gl = null;
     let shaderProgram = null;
 
@@ -256,64 +291,98 @@ export function standaloneSceneHtml(scene: Scene): string {
       progressEl.style.width = pct + '%';
     }
 
+    // The camera at time 'now': a step of the current shot's move, or where it settled.
+    function cameraNow(now) {
+      const move = plan.shots[currentShotIdx].move;
+      const u = Math.min(1, (now - moveFrom) / plan.cameraMs);
+      return move[Math.min(move.length - 1, Math.floor(u * move.length))];
+    }
+
+    function applyCamera(view) {
+      const w = boardEl.clientWidth || plan.stage.width;
+      const angled = view.tilt || view.turn || view.roll;
+      boardEl.style.transform = angled
+        ? 'perspective(' + (view.perspective || 1.2) * w + 'px) rotateX(' + (view.tilt || 0) + 'deg) rotateY(' + (view.turn || 0) + 'deg) rotateZ(' + (view.roll || 0) + 'deg)'
+        : 'none';
+      // Motion blur streaks along a pan (taken back through the roll, as the board is blurred before it turns).
+      const blur = (view.blur || 0) * w / plan.stage.width;
+      if (blur >= 0.05) {
+        let sx = blur, sy = blur;
+        if (view.blurAngle !== undefined) {
+          const a = (view.blurAngle - (view.roll || 0)) * Math.PI / 180;
+          sx = Math.max(blur * 0.15, blur * Math.abs(Math.cos(a)));
+          sy = Math.max(blur * 0.15, blur * Math.abs(Math.sin(a)));
+        }
+        document.getElementById('motionBlurAmount').setAttribute('stdDeviation', sx.toFixed(2) + ' ' + sy.toFixed(2));
+        boardEl.style.filter = 'url(#motionBlur)';
+      } else {
+        boardEl.style.filter = 'none';
+      }
+    }
+
     function draw() {
-      const now = performance.now() / 1000;
-      renderShader(now);
+      const now = performance.now();
+      renderShader(now / 1000);
 
+      const view = cameraNow(now);
+      applyCamera(view);
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, sceneCanvas.width, sceneCanvas.height);
-      ctx.save();
-      const shot = scene.shots[currentShotIdx];
+      const k = (sceneCanvas.width / plan.stage.width) * view.zoom;
+      ctx.setTransform(k, 0, 0, k, k * view.scrollX, k * view.scrollY);
 
-      // Draw shot elements
-      if (shot && shot.run) {
-        for (const cmd of shot.run) {
-          if (cmd.type === 'element' && cmd.element) {
-            const el = cmd.element;
-            ctx.fillStyle = el.backgroundColor || 'rgba(59, 130, 246, 0.4)';
-            ctx.strokeStyle = el.strokeColor || '#3b82f6';
-            ctx.lineWidth = 3;
-            ctx.strokeRect(el.x, el.y, el.width, el.height);
-            ctx.fillRect(el.x, el.y, el.width, el.height);
-
-            if (el.text) {
-              ctx.fillStyle = '#fff';
-              ctx.font = '24px sans-serif';
-              ctx.fillText(el.text, el.x + 16, el.y + 40);
-            }
-          }
+      for (const el of plan.shots[currentShotIdx].elements) {
+        ctx.fillStyle = el.backgroundColor || 'rgba(59, 130, 246, 0.4)';
+        ctx.strokeStyle = el.strokeColor || '#3b82f6';
+        ctx.lineWidth = 3;
+        ctx.fillRect(el.x, el.y, el.width, el.height);
+        ctx.strokeRect(el.x, el.y, el.width, el.height);
+        if (el.text) {
+          ctx.fillStyle = '#fff';
+          ctx.font = '24px sans-serif';
+          ctx.fillText(el.text, el.x + 16, el.y + 40);
         }
       }
-      ctx.restore();
 
-      if (isPlaying) {
+      // Playing moves on to the next shot once this one's move and hold are over.
+      const shot = scene.shots[currentShotIdx];
+      if (isPlaying && now - shotStartTime > plan.cameraMs + (shot.hold ?? 800) && currentShotIdx < scene.shots.length - 1) {
+        goTo(currentShotIdx + 1, true);
+      }
+      if (isPlaying || now - moveFrom < plan.cameraMs) {
         requestAnimationFrame(draw);
       }
+    }
+
+    // Shows a shot: forwards it plays the camera's move into it, otherwise it cuts.
+    function goTo(idx, animate) {
+      currentShotIdx = idx;
+      shotStartTime = performance.now();
+      moveFrom = animate ? shotStartTime : shotStartTime - plan.cameraMs;
+      updateShotUI();
+      requestAnimationFrame(draw);
     }
 
     playBtn.addEventListener('click', () => {
       isPlaying = !isPlaying;
       playBtn.textContent = isPlaying ? 'Pause' : 'Play';
-      if (isPlaying) requestAnimationFrame(draw);
+      // The current shot counts as settled, so its hold runs from now.
+      if (isPlaying) {
+        shotStartTime = performance.now() - plan.cameraMs;
+        requestAnimationFrame(draw);
+      }
     });
 
     prevBtn.addEventListener('click', () => {
-      if (currentShotIdx > 0) {
-        currentShotIdx--;
-        updateShotUI();
-        draw();
-      }
+      if (currentShotIdx > 0) goTo(currentShotIdx - 1, false);
     });
 
     nextBtn.addEventListener('click', () => {
-      if (currentShotIdx < scene.shots.length - 1) {
-        currentShotIdx++;
-        updateShotUI();
-        draw();
-      }
+      if (currentShotIdx < scene.shots.length - 1) goTo(currentShotIdx + 1, true);
     });
 
-    updateShotUI();
-    draw();
+    window.addEventListener('resize', () => requestAnimationFrame(draw));
+    goTo(0, false);
   </script>
 </body>
 </html>`;
