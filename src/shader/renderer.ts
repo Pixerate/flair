@@ -49,6 +49,7 @@ export class ShaderRenderer {
   private frame = 0;
   private fpsFrames = 0;
   private fpsSince = 0;
+  private ownsCanvas = false;
   private resizeObserver: ResizeObserver;
   private mouse: [number, number, number, number] = [0, 0, 0, 0];
   private disposed = false;
@@ -68,11 +69,21 @@ export class ShaderRenderer {
   /** Called when an image control's URL cannot be loaded; the control shows black. */
   onImageError?: (error: ImageLoadError) => void;
 
-  /** Creates a canvas in `host` (with `className`) and starts the animation loop. Size the canvas with CSS. */
-  constructor(host: HTMLElement, className = "") {
-    const canvas = document.createElement("canvas");
-    canvas.className = className;
-    host.appendChild(canvas);
+  /**
+   * Creates a canvas in `target` (with `className`), or attaches to an existing
+   * `HTMLCanvasElement`, and starts the animation loop. Size the canvas with CSS.
+   */
+  constructor(target: HTMLElement | HTMLCanvasElement, className = "") {
+    let canvas: HTMLCanvasElement;
+    if (target instanceof HTMLCanvasElement || ("tagName" in target && target.tagName === "CANVAS")) {
+      canvas = target as HTMLCanvasElement;
+      if (className) canvas.className = className;
+    } else {
+      canvas = document.createElement("canvas");
+      if (className) canvas.className = className;
+      target.appendChild(canvas);
+      this.ownsCanvas = true;
+    }
     this.canvas = canvas;
     this.gl = createContext(canvas, true);
     this.textures = this.gl && this.textureCache(this.gl);
@@ -206,7 +217,7 @@ export class ShaderRenderer {
     // Free the context now rather than waiting for GC (browsers cap live contexts).
     this.gl?.getExtension("WEBGL_lose_context")?.loseContext();
     this.gl = null;
-    this.canvas.remove();
+    if (this.ownsCanvas) this.canvas.remove();
   }
 
   private resize() {
