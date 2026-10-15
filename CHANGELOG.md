@@ -1,5 +1,11 @@
 # @pixerate/flair
 
+## 0.6.0
+
+### Minor Changes
+
+- bd247bf: Add `playOnEnter` option to `SvgPlayer` and `ShaderRenderer`, plus new `timeline-track` vector effect
+
 ## 0.5.0
 
 ### Minor Changes
