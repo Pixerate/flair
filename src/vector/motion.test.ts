@@ -9,6 +9,7 @@ import {
   SVG_PICTURE,
   svgFrame,
   svgMotionIssues,
+  writtenText,
   type SvgAnimation,
 } from "./motion.js";
 
@@ -200,5 +201,34 @@ describe("formatCount", () => {
     expect(formatCount(21.6, { format: "{n}%" })).toBe("22%");
     expect(formatCount(1.25, { decimals: 1 })).toBe("1.3");
     expect(formatCount(1.25, { decimals: 2, format: "${n}" })).toBe("$1.25");
+  });
+});
+
+describe("writtenText", () => {
+  it("writes letters in turn, with a caret until it is done", () => {
+    expect(writtenText("Hello", 0)).toBe("");
+    expect(writtenText("Hello", 0.4, { caret: "|" })).toBe("He|");
+    expect(writtenText("Hello", 1, { caret: "|" })).toBe("Hello");
+    expect(writtenText("héllo 👋", 1)).toBe("héllo 👋");
+    expect(Array.from(writtenText("ab👋", 0.67)).length).toBe(2);
+  });
+
+  it("scrambles the unwritten letters from a pool, the same at the same time", () => {
+    const a = writtenText("DECODE IT", 0.34, { scramble: "#%", timeMs: 120 });
+    expect(a.slice(0, 3)).toBe("DEC");
+    expect(a[6]).toBe(" ");
+    expect([...a.slice(3)].filter((c) => c !== " ").every((c) => "#%".includes(c))).toBe(true);
+    expect(writtenText("DECODE IT", 0.34, { scramble: "#%", timeMs: 120 })).toBe(a);
+  });
+
+  it("is driven by write animations in svgFrame and checked by svgMotionIssues", () => {
+    const anim = { id: "t", write: "Hi there", caret: "▌", ms: 800, ease: "linear" as const };
+    expect(svgFrame([anim], [], 400).get("t")!.text).toBe("Hi t▌");
+    expect(svgFrame([anim], [], 900).get("t")!.text).toBe("Hi there");
+    const svg = `<svg viewBox="0 0 10 10"><text id="t"/></svg>`;
+    expect(svgMotionIssues({ svg, animate: [anim] })).toEqual([]);
+    expect(svgMotionIssues({ svg, animate: [{ id: "t", caret: "|" }] })).toContain(
+      "animate[0]: `scramble` and `caret` go with `write`",
+    );
   });
 });

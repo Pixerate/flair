@@ -41,3 +41,56 @@ export const SAMPLE_IMAGES = {
   city: svgDataUrl(CITY),
   portrait: svgDataUrl(PORTRAIT),
 } as const;
+
+/** Roughly how wide a character is in a bold sans-serif, in ems, for fitting text without measuring it. */
+function charWidth(c: string): number {
+  if (/[iIjl.,:;'!|`]/.test(c)) return 0.3;
+  if (/[\sfrt()[\]\-]/.test(c)) return 0.4;
+  if (/[MW@%]/.test(c)) return 0.94;
+  if (/[mw]/.test(c)) return 0.88;
+  if (/[A-Z&#]/.test(c)) return 0.74;
+  if (/[0-9]/.test(c)) return 0.58;
+  if (/[a-z]/.test(c)) return 0.6;
+  // Wide scripts (CJK, kana, hangul) and emoji take about a full em.
+  return /[ᄀ-ᅟ⺀-꓏가-힣豈-﫿︰-﹏＀-｠]|\p{Extended_Pictographic}/u.test(c) ? 1 : 0.64;
+}
+
+/** About how wide `text` is in ems in a bold sans-serif (letters are code points). */
+export function textWidthEm(text: string): number {
+  return Array.from(text).reduce((sum, c) => sum + charWidth(c), 0);
+}
+
+const escapeXml = (text: string) =>
+  text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+
+export interface TextImageOptions {
+  /** CSS font family (default a heavy system sans-serif). */
+  font?: string;
+  /** Font weight (default 900). */
+  weight?: number | string;
+  /** Font size in the picture's units; by default as large as fits. */
+  size?: number;
+  /** The picture's size (default 1024 × 256). */
+  width?: number;
+  height?: number;
+}
+
+/**
+ * A line of text, white on transparent, as an SVG `data:` URL for an image
+ * control (the shader text effects use its alpha as a letter mask). The text
+ * is centred and fitted to the picture (1024 × 256 by default): the font
+ * size comes from its length, and `textLength` stretches it to the width
+ * that size predicts, so any text fills about the same box in any font.
+ * Takes any Unicode text.
+ */
+export function textImage(text: string, options: TextImageOptions = {}): string {
+  const width = options.width ?? 1024;
+  const height = options.height ?? 256;
+  const ems = Math.max(0.5, textWidthEm(text));
+  const size = options.size ?? Math.min(height * 0.78, (width * 0.9) / ems);
+  const length = Math.min(width * 0.96, ems * size);
+  const font = options.font ?? "'Arial Black', 'Helvetica Neue', Helvetica, Arial, system-ui, sans-serif";
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}"><text x="${width / 2}" y="${height / 2}" dy="0.35em" text-anchor="middle" textLength="${+length.toFixed(1)}" lengthAdjust="spacingAndGlyphs" font-family="${escapeXml(font)}" font-weight="${escapeXml(String(options.weight ?? 900))}" font-size="${+size.toFixed(1)}" fill="#fff">${escapeXml(text)}</text></svg>`;
+  // UTF-8 percent-encoded rather than base64 (btoa only takes Latin-1); quotes and brackets are encoded too, so it is safe unquoted.
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg).replace(/['()*!]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`)}`;
+}

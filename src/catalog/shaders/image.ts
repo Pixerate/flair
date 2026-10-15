@@ -8,7 +8,7 @@ import type { ShaderEffect } from "../types.js";
  * image control is bound to a 1 × 1 placeholder), so effects show something
  * before an image is chosen.
  */
-const PICTURE = `
+export const PICTURE = `
 vec3 testCard(vec2 uv) {
   vec3 sky = mix(vec3(0.98, 0.62, 0.42), vec3(0.24, 0.32, 0.72), uv.y);
   float sun = smoothstep(0.16, 0.15, length((uv - vec2(0.65, 0.58)) * vec2(1.6, 1.0)));

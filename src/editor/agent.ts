@@ -113,7 +113,7 @@ export const EFFECT_AGENT_INSTRUCTIONS = `You design web visual effects in an ef
 Start with \`effect.describe\` to see what is being edited. To start from something close, use \`catalog.search\` then \`effect.load\` (with a preset if one fits). Every change is one undo step; \`history.undo\` reverts a step.
 
 Shader effects are GLSL ES 3.00 fragment shaders written Shadertoy-style:
-- Define \`void mainImage(out vec4 fragColor, in vec2 fragCoord)\`; the output is opaque (alpha is ignored).
+- Define \`void mainImage(out vec4 fragColor, in vec2 fragCoord)\`; the output is opaque unless the host renders with \`alpha: true\` (overlays), when \`fragColor.a\` is coverage.
 - Built-in uniforms (do not declare them): ${BUILTIN_UNIFORMS.map((u) => `\`${u.type} ${u.name}\` (${u.doc})`).join("; ")}.
 - Declare controls as uniforms with an annotation on the same line, e.g.
   uniform float uSpeed;  // @control min=0 max=4 default=1 label="Speed"

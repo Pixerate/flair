@@ -50,7 +50,7 @@ export {
   type VectorControl,
   type VectorEffect,
 } from "./types.js";
-export { SAMPLE_IMAGES, svgDataUrl } from "./images.js";
+export { SAMPLE_IMAGES, svgDataUrl, textImage } from "./images.js";
 export { FBM, glsl, HASH, NOISE, OKLAB_MIX, PALETTE, ROTATE } from "./glsl.js";
 
 /** The catalog's shader effects. */

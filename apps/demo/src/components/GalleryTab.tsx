@@ -1,20 +1,29 @@
 import { useEffect, useRef, useState } from "react";
-import { sharedThumbnailPool, SvgPlayer } from "@pixerate/flair";
+import { sharedThumbnailPool, SvgPlayer, ThumbnailPool } from "@pixerate/flair";
 import {
   EFFECT_CATEGORIES,
   effectDefaults,
   findEffects,
   renderVectorEffect,
+  SAMPLE_IMAGES,
   type EffectCategory,
   type EffectDefinition,
 } from "@pixerate/flair/catalog";
 import { CameraMoves } from "./CameraMoves";
 
+let overlayPool: ThumbnailPool | undefined;
+
+/** Overlays draw on transparent canvases, over a picture, so they show what they add. */
+function poolFor(effect: Extract<EffectDefinition, { kind: "shader" }>): ThumbnailPool {
+  if (!effect.transparent) return sharedThumbnailPool();
+  return (overlayPool ??= new ThumbnailPool({ alpha: true }));
+}
+
 function ShaderThumb({ effect }: { effect: Extract<EffectDefinition, { kind: "shader" }> }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const [failed, setFailed] = useState(false);
   useEffect(() => {
-    const handle = sharedThumbnailPool().register(canvas.current!, effect.source, effectDefaults(effect), (ok) => setFailed(!ok));
+    const handle = poolFor(effect).register(canvas.current!, effect.source, effectDefaults(effect), (ok) => setFailed(!ok));
     return () => handle.dispose();
   }, [effect]);
   return (
@@ -31,7 +40,7 @@ function VectorThumb({ effect }: { effect: Extract<EffectDefinition, { kind: "ve
     const player = new SvgPlayer(host.current!, renderVectorEffect(effect, effectDefaults(effect)), { hold: effect.hold });
     return () => player.dispose();
   }, [effect]);
-  return <div ref={host} className="absolute inset-[12%]" />;
+  return <div ref={host} className={effect.category === "overlay" ? "absolute inset-0" : "absolute inset-[12%]"} />;
 }
 
 function EffectCard({ effect, onOpen }: { effect: EffectDefinition; onOpen: () => void }) {
@@ -40,7 +49,8 @@ function EffectCard({ effect, onOpen }: { effect: EffectDefinition; onOpen: () =
       onClick={onOpen}
       className="group text-left rounded-xl border border-slate-800 bg-slate-900 overflow-hidden hover:border-violet-500/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet-500 transition"
     >
-      <div className={`relative aspect-video ${effect.kind === "vector" ? "bg-slate-100" : "bg-black"}`}>
+      <div className={`relative aspect-video ${effect.kind === "vector" && effect.category !== "overlay" ? "bg-slate-100" : "bg-black"}`}>
+        {effect.category === "overlay" && <img src={SAMPLE_IMAGES.city} alt="" className="absolute inset-0 h-full w-full object-cover" />}
         {effect.kind === "shader" ? <ShaderThumb effect={effect} /> : <VectorThumb effect={effect} />}
         <span className="absolute top-2 left-2 rounded bg-black/60 px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-slate-200">
           {effect.kind}
@@ -67,8 +77,8 @@ export function GalleryTab({ onOpen }: { onOpen: (id: string) => void }) {
       <section className="rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-900 via-slate-900 to-violet-950/40 p-6">
         <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Visual effects for the web, ready to drop in.</h1>
         <p className="mt-2 max-w-3xl text-slate-400">
-          {findEffects().length} effects: WebGL2 shaders (backgrounds, textures, light, image treatments, transitions) and animated SVG
-          (loaders, icons, charts). Each has controls and presets; open one to edit it, keyframe it, or hand it to an agent.
+          {findEffects().length} effects: WebGL2 shaders (backgrounds, textures, light, image treatments, overlays, text fills, transitions) and animated SVG
+          (loaders, icons, titles, charts). Each has controls and presets; open one to edit it, keyframe it, or hand it to an agent.
         </p>
         <pre className="mt-4 overflow-x-auto rounded-lg bg-slate-950 border border-slate-800 p-3 text-sm text-slate-300">
           <code>{`import { ShaderRenderer } from "@pixerate/flair";
