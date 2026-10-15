@@ -181,7 +181,7 @@ export class EffectEditor {
     return ok;
   }
 
-  /** Replaces a vector effect's picture (and optionally its controls). */
+  /** Replaces a vector effect's picture, whose `{{name: type …}}` placeholders declare its controls (and optionally a `controls` list). */
   setMotion(motion: SvgMotion, controls?: Extract<EffectDocument["effect"], { kind: "vector" }>["controls"]): EditResult {
     if (this.doc.effect.kind !== "vector") return fail("This is a shader effect; use setSource.");
     this.commit("Edit picture", { ...this.doc, effect: { ...this.doc.effect, motion, controls: controls ?? this.doc.effect.controls } });
@@ -238,17 +238,17 @@ export class EffectEditor {
     return ok;
   }
 
-  /** Random values in each control's range (colours anywhere), for exploring. */
+  /** Random values in each control's range (colours anywhere), for exploring. Images and text keep theirs. */
   randomize(names?: readonly string[], random: () => number = Math.random): EditResult {
     const values: Record<string, ControlValue> = {};
     for (const control of this.controls) {
-      if (names ? !names.includes(control.name) : control.type === "sampler2D") continue;
+      if (names ? !names.includes(control.name) : control.type === "sampler2D" || control.type === "text") continue;
       const pick = () => {
         const v = control.min + random() * (control.max - control.min);
         return control.type === "int" ? Math.round(v) : +v.toFixed(3);
       };
       if (control.type === "bool") values[control.name] = random() < 0.5;
-      else if (control.type === "sampler2D") continue;
+      else if (control.type === "sampler2D" || control.type === "text") continue;
       else if (control.color) values[control.name] = Array.from({ length: control.type === "vec4" ? 4 : 3 }, () => +random().toFixed(3));
       else if (control.type === "float" || control.type === "int") values[control.name] = pick();
       else values[control.name] = Array.from({ length: Number(control.type.slice(3)) }, pick);

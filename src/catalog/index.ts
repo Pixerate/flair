@@ -4,7 +4,8 @@
  *
  * - Browsing: `EFFECTS`, `getEffect`, `findEffects`, `EFFECT_CATEGORIES`.
  * - Controls: `effectControls`, `effectDefaults`.
- * - Vector effects: `renderVectorEffect` fills in their controls.
+ * - Vector effects: their pictures declare their controls (`vectorControls`),
+ *   and `renderVectorEffect` fills them in.
  *
  * @packageDocumentation
  */
@@ -25,7 +26,7 @@ import { blackHole, bokeh, godRays, nebula, neonRipple, sparkles, starfield } fr
 import { caustics, flames, lavaLamp, marble, plasma, smoke } from "./shaders/organic.js";
 import { barberStripes, dotWave, hexPulse, kaleidoscope, moire, neonCircuit, truchet, voronoi } from "./shaders/patterns.js";
 import { digitalRain, pixelSunset, synthwaveGrid, tvStatic } from "./shaders/retro.js";
-import { EFFECT_CATEGORIES, vectorControlDef, type EffectCategory, type EffectDefinition, type ShaderEffect } from "./types.js";
+import { EFFECT_CATEGORIES, vectorEffectControls, type EffectCategory, type EffectDefinition, type ShaderEffect } from "./types.js";
 import { vectorEffects } from "./vector.js";
 
 export {
@@ -33,7 +34,11 @@ export {
   EFFECT_CATEGORIES,
   numberControl,
   renderVectorEffect,
+  VECTOR_CONTROL_TYPES,
   vectorControlDef,
+  vectorControlIssues,
+  vectorControls,
+  vectorEffectControls,
   type EffectCategory,
   type EffectDefinition,
   type EffectPreset,
@@ -121,7 +126,7 @@ export function findEffects(query: EffectQuery = {}): EffectDefinition[] {
 
 /** An effect's controls: a shader's `@control` uniforms, or a vector effect's declared controls. */
 export function effectControls(effect: EffectDefinition): ControlDef[] {
-  return effect.kind === "shader" ? parseControls(effect.source) : effect.controls.map((c, i) => vectorControlDef(c, i + 1));
+  return effect.kind === "shader" ? parseControls(effect.source) : vectorEffectControls(effect);
 }
 
 /** An effect's values: each control's default, overridden by `values` (and a preset by name, when given). */

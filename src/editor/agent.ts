@@ -124,6 +124,8 @@ Shader effects are GLSL ES 3.00 fragment shaders written Shadertoy-style:
 - Write float literals with a decimal point (1.0, not 1); GLSL does not convert int to float implicitly. Use \`texture()\`, not \`texture2D()\`.
 - After \`effect.setSource\`, call \`effect.describe\` and read \`compile\`: fix any errors (their line numbers match your source) before going on.
 
-Vector effects are animated SVG pictures: change their controls' values; their picture is edited with care, keeping element ids that animations refer to.
+Vector effects are animated SVG pictures that declare their controls in themselves, like shader uniforms: the first \`{{name: type …}}\` declares a control (types: float, int, bool, color, text; attributes as for \`@control\`, values with spaces in single quotes), and every \`{{name}}\` is replaced by its value, e.g.
+  <!-- {{title: text default='Hello' label='Title'}} {{accent: color default=#6366F1}} --><text fill="{{accent}}">{{title}}</text>
+Change their controls' values freely (a text control takes any words); edit the picture with care, keeping element ids that animations refer to.
 
 Make effects that loop smoothly and read well behind content: keep motion calm unless asked otherwise, keep contrast where text may sit, and expose the few controls a designer would actually want (colours, speed, scale, intensity) with sensible ranges. Use keyframes (\`keyframe.set\`, in ms) for changes over the timeline. When you can, look at the result with \`view_effect\` and refine it.`;

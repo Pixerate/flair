@@ -22,7 +22,7 @@ const easingSchema = {
 
 const valueSchema = {
   description:
-    'A control value: a number (float, int), true/false (bool), an array of numbers (vec2–vec4; colours 0–1), a "#RRGGBB" colour, or an image URL (sampler2D).',
+    'A control value: a number (float, int), true/false (bool), an array of numbers (vec2–vec4; colours 0–1), a "#RRGGBB" colour, an image URL (sampler2D), or a string (text).',
 } as const;
 
 /** A summary of the editor's state for agents: the document, controls, values at the playhead, issues and compile errors. */
@@ -33,13 +33,13 @@ export function describeEditor(editor: EffectEditor) {
     name: doc.name,
     basedOn: doc.basedOn,
     kind: doc.effect.kind,
-    ...(doc.effect.kind === "shader" ? { source: doc.effect.source } : { motion: doc.effect.motion, vectorControls: doc.effect.controls }),
+    ...(doc.effect.kind === "shader" ? { source: doc.effect.source } : { motion: doc.effect.motion, ...(doc.effect.controls && { vectorControls: doc.effect.controls }) }),
     controls: state.controls.map((c) => ({
       name: c.name,
       type: c.type,
       label: c.label,
       ...(c.color && { color: true }),
-      ...(c.type !== "bool" && c.type !== "sampler2D" && { min: c.min, max: c.max, step: c.step }),
+      ...(c.type !== "bool" && c.type !== "sampler2D" && c.type !== "text" && { min: c.min, max: c.max, step: c.step }),
       default: c.default,
     })),
     values: state.values,
