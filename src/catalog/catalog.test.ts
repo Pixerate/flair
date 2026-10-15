@@ -200,4 +200,75 @@ describe("catalog", () => {
     expect(kinetic).toMatch(/id="l2"[^>]*>!</);
     expect(kinetic).toMatch(/id="l3"[^>]*><\/text>/);
   });
+
+  it("gives the image morphs two pictures and a progress control", () => {
+    for (const id of ["feature-morph", "silhouette-morph", "transition-liquid-morph", "transition-displacement", "transition-luma", "transition-particle-swap", "transition-ink-bleed"]) {
+      const effect = getEffect(id)!;
+      expect(effect, id).toBeDefined();
+      const names = effectControls(effect).map((c) => c.name);
+      expect(names, id).toEqual(expect.arrayContaining(["uFrom", "uTo", "uAnimate", "uProgress"]));
+      expect(effect.kind === "shader" && effect.loop, id).toBe(4);
+    }
+    expect(effectDefaults(getEffect("feature-morph")!)).toMatchObject({ uFrom: SAMPLE_IMAGES.portrait, uTo: SAMPLE_IMAGES.portrait2, uFromA: [0.461, 0.583] });
+    expect(effectDefaults(getEffect("silhouette-morph")!, { preset: "Hello → World" }).uTo).toBe(textImage("WORLD"));
+    for (const key of ["portrait2", "logo", "heart"] as const) expect(SAMPLE_IMAGES[key]).toMatch(/^data:image\/svg\+xml;base64,/);
+  });
+});
+
+describe("morph effects", () => {
+  const NUMBER = /-?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?/gi;
+  const skeleton = (d: unknown) => String(d).replace(NUMBER, "#");
+  const render = (id: string, values: Record<string, unknown> = {}) => {
+    const effect = getEffect(id)!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    return renderVectorEffect(effect, values as never);
+  };
+  /** Every `d` change blends: both ends have one structure. */
+  const blends = (motion: ReturnType<typeof render>) => {
+    for (const a of motion.animate ?? []) if (a.attrs?.d) expect(skeleton(a.attrs.d[0])).toBe(skeleton(a.attrs.d[1]));
+  };
+
+  it.each(findEffects({ category: "morph", kind: "vector" }).map((e) => [e.id] as const))("%s morphs shapes of one structure", (id) => {
+    blends(render(id));
+  });
+
+  it("shape morph fits any paths to its picture and falls back on unreadable ones", () => {
+    const motion = render("shape-morph", { from: "M0 0 H1000 V500 H0 Z M200 100 H400 V400 H200 Z", to: "m5 5 l1 0 l0 1z" });
+    blends(motion);
+    const numbers = String(motion.animate![0]!.attrs!.d[0]).match(NUMBER)!.map(Number);
+    expect(Math.min(...numbers)).toBeGreaterThanOrEqual(11.9);
+    expect(Math.max(...numbers)).toBeLessThanOrEqual(88.1);
+    const broken = render("shape-morph", { from: "not a path", to: "M0 0 X" });
+    expect(svgMotionIssues(broken)).toEqual([]);
+    expect(broken.animate![0]!.attrs!.d).toEqual(render("shape-morph").animate![0]!.attrs!.d);
+  });
+
+  it("icon toggle morphs every pair", () => {
+    for (let pair = 0; pair <= 4; pair++) {
+      const motion = render("icon-toggle", { pair });
+      expect(svgMotionIssues(motion)).toEqual([]);
+      blends(motion);
+    }
+  });
+
+  it("particle morph keeps one dot per element whatever the shapes", () => {
+    for (const to of ["M0 0 H10 V10 H0 Z M20 0 H30 V10 H20 Z M40 0 H50 V10 H40 Z", "M0 0 L100 0", "nonsense"]) {
+      const motion = render("particle-morph", { to });
+      expect(svgMotionIssues(motion)).toEqual([]);
+      expect(motion.svg.match(/<circle id="p\d+"/g)).toHaveLength(48);
+      expect(JSON.stringify(motion)).not.toMatch(/\{\{|NaN|undefined/);
+    }
+  });
+
+  it("digit morph counts through at most a few numbers, up or down", () => {
+    for (const [from, to] of [[12, 20], [9999, 0], [98, 103], [5, 5], [0, 7]]) {
+      const motion = render("digit-morph", { from, to });
+      expect(svgMotionIssues(motion)).toEqual([]);
+      expect(JSON.stringify(motion)).not.toMatch(/\{\{|NaN|undefined/);
+      blends(motion);
+    }
+    // 98 → 103 shows a hundreds digit only from 100 on.
+    const slot = render("digit-morph", { from: 98, to: 103 }).animate!.filter((a) => a.id === "s1");
+    expect(slot.map((a) => a.attrs!.opacity)).toEqual([[0, 0], [0, 1], [1, 1], [1, 1], [1, 1], [1, 1], [1, 1], [1, 1], [1, 0]]);
+  });
 });
