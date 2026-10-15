@@ -1,5 +1,11 @@
 # @pixerate/flair
 
+## 0.13.1
+
+### Patch Changes
+
+- 2196487: `ThumbnailPool` compiles at most one new thumbnail shader per frame, so a row of thumbnails scrolling into view no longer stalls a single frame.
+
 ## 0.13.0
 
 ### Minor Changes
