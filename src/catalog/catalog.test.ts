@@ -300,7 +300,7 @@ describe("interaction effects", () => {
   });
 });
 
-describe("interaction effects", () => {
+describe("interaction vector effects", () => {
   const effects = findEffects({ category: "interaction", kind: "vector" });
   const render = (effect: (typeof effects)[number], values: Record<string, unknown> = {}) => {
     if (effect.kind !== "vector") throw new Error("vector expected");
