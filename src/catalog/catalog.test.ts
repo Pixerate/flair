@@ -369,3 +369,207 @@ describe("interaction vector effects", () => {
     }
   });
 });
+
+describe("timewarp effects", () => {
+  const timewarp = findEffects({ category: "timewarp" });
+
+  it("include the echoes, rewinds, freezes and the clock", () => {
+    const ids = timewarp.map((e) => e.id);
+    for (const id of ["time-echo", "chrono-split", "time-slice", "rewind", "bullet-time", "time-tunnel", "speed-ramp", "stutter-freeze", "time-lapse-clock"])
+      expect(ids).toContain(id);
+    for (const effect of timewarp) expect(effect.tags).toContain("time");
+  });
+
+  it("shaders take an image and draw opaque", () => {
+    for (const effect of timewarp) {
+      if (effect.kind !== "shader") continue;
+      expect(effect.transparent).toBeFalsy();
+      expect(effectControls(effect).find((c) => c.name === "uImage")).toMatchObject({ type: "sampler2D" });
+      expect(effect.source).not.toMatch(/uniform\s+vec4\s+(iPointer|iClicks)/);
+    }
+    const bullet = getEffect("bullet-time")!;
+    expect(bullet.kind === "shader" && bullet.source).toMatch(/\biClicks\[0\]/);
+  });
+
+  it("time-lapse clock turns its hands whole turns and ends the sky where it began", () => {
+    const effect = getEffect("time-lapse-clock")!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    const motion = renderVectorEffect(effect, { day: "#112233" } as never);
+    const turns = (id: string) => motion.animate!.filter((a) => a.id === id).map((a) => a.attrs!.transform);
+    expect(turns("minute")).toEqual([["rotate(0 100 100)", "rotate(4320 100 100)"]]);
+    expect(turns("hour")).toEqual([["rotate(0 100 100)", "rotate(360 100 100)"]]);
+    const sky = motion.animate!.filter((a) => a.id === "sky").map((a) => a.attrs!.fill);
+    expect(sky[0]![0]).toBe("#112233");
+    expect(sky.at(-1)![1]).toBe("#112233");
+    expect(motion.svg).toContain('fill="#112233"');
+  });
+});
+
+describe("pyrotechnics", () => {
+  const pyro = findEffects({ category: "pyrotechnics" });
+
+  it("has the fireworks, sparks, explosions and smoke", () => {
+    const ids = pyro.map((e) => e.id);
+    for (const id of ["fireworks", "sparkler", "explosion", "spark-fountain", "roman-candle", "fuse-burn", "smoke-bomb", "light-show", "firework-burst"])
+      expect(ids).toContain(id);
+    for (const effect of pyro) expect(effect.tags).toContain("pyro");
+  });
+
+  it("draws the shaders as transparent overlays, all but the opaque light show", () => {
+    for (const effect of pyro) {
+      if (effect.kind !== "shader") continue;
+      expect(effect.transparent ?? false, effect.id).toBe(effect.id !== "light-show");
+    }
+  });
+
+  it("fires fireworks and explosions at clicks, and moves the sparkler with the pointer", () => {
+    for (const id of ["fireworks", "explosion"]) {
+      const effect = getEffect(id)!;
+      expect(effect.kind === "shader" && effect.source, id).toMatch(/\biClicks\[/);
+    }
+    const sparkler = getEffect("sparkler")!;
+    expect(sparkler.kind === "shader" && sparkler.source).toMatch(/\biPointer\b/);
+  });
+});
+
+describe("melt effects", () => {
+  const NUMBER = /-?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?/gi;
+  const skeleton = (d: unknown) => String(d).replace(NUMBER, "#");
+
+  it("include drips, haze, wax, text, liquify, a clock, lava and vector melts", () => {
+    const ids = findEffects({ category: "melt" }).map((e) => e.id);
+    for (const id of ["drip-melt", "heat-haze", "wax-melt", "melting-text", "liquify", "dali-clock", "lava-flow", "ice-cube-melt", "candle"]) expect(ids).toContain(id);
+    for (const effect of findEffects({ category: "melt" })) expect(effect.tags).toContain("melt");
+  });
+
+  it("loops the melt-and-reform shaders, with a still progress control", () => {
+    for (const id of ["drip-melt", "wax-melt", "melting-text"]) {
+      const effect = getEffect(id)!;
+      expect(effect.kind === "shader" && effect.loop, id).toBe(8);
+      expect(effectControls(effect).map((c) => c.name), id).toEqual(expect.arrayContaining(["uAnimate", "uProgress"]));
+    }
+    expect(effectDefaults(getEffect("melting-text")!).uText).toBe(textImage("MELT"));
+    expect(effectDefaults(getEffect("wax-melt")!).uMask).toBe(textImage("WAX"));
+    const text = getEffect("melting-text")!;
+    expect(text.kind === "shader" && text.transparent).toBe(true);
+    expect(effectDefaults(text).uBackgroundAlpha).toBe(0);
+    // Liquify reads the pointer built-in without declaring it.
+    const liquify = getEffect("liquify")!;
+    expect(liquify.kind === "shader" && liquify.source).toMatch(/\biPointer\b/);
+    expect(liquify.kind === "shader" && liquify.source).not.toMatch(/uniform\s+vec4\s+iPointer/);
+  });
+
+  it.each([["ice-cube-melt"], ["candle"]])("%s blends every change and ends where it starts", (id) => {
+    const effect = getEffect(id)!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    const motion = renderVectorEffect(effect, effectDefaults(effect));
+    for (const a of motion.animate ?? []) for (const [name, [from, to]] of Object.entries(a.attrs ?? {}))
+        if (!String(from).startsWith("#")) expect(skeleton(from), `${id} ${a.id} ${name}`).toBe(skeleton(to));
+    // Each attribute's last change returns it to its first value, so the loop is seamless.
+    const first = new Map<string, unknown>();
+    const last = new Map<string, unknown>();
+    const timed = [...(motion.animate ?? [])].map((a, i) => ({ a, i })).sort((x, y) => (x.a.delay ?? 0) - (y.a.delay ?? 0) || x.i - y.i);
+    for (const { a } of timed)
+      for (const [name, [from, to]] of Object.entries(a.attrs ?? {})) {
+        const key = `${a.id}.${name}`;
+        if (!first.has(key)) first.set(key, from);
+        last.set(key, to);
+      }
+    for (const [key, value] of first) expect(last.get(key), key).toEqual(value);
+  });
+});
+
+describe("electric effects", () => {
+  const electric = findEffects({ category: "electric" });
+
+  it("has the lightning, arcs, plasma, sparks and icons", () => {
+    const ids = electric.map((e) => e.id);
+    for (const id of ["lightning", "tesla-arc", "plasma-ball", "electric-border", "electric-text", "jacobs-ladder", "short-circuit", "power-surge", "electric-field", "zap-icon", "power-button", "battery-charge"])
+      expect(ids).toContain(id);
+    for (const effect of electric) expect(effect.tags).toContain("electric");
+  });
+
+  it("draws the overlays transparent and the rest opaque", () => {
+    const overlays = ["lightning", "tesla-arc", "electric-border", "short-circuit"];
+    for (const effect of electric) {
+      if (effect.kind !== "shader") continue;
+      expect(effect.transparent ?? false, effect.id).toBe(overlays.includes(effect.id));
+    }
+  });
+
+  it("strikes at clicks and follows the pointer", () => {
+    const lightning = getEffect("lightning")!;
+    expect(lightning.kind === "shader" && lightning.source).toMatch(/\biClicks\[/);
+    for (const id of ["tesla-arc", "plasma-ball", "electric-field"]) {
+      const effect = getEffect(id)!;
+      expect(effect.kind === "shader" && effect.source, id).toMatch(/\biPointer\b/);
+      expect(effect.kind === "shader" && effect.source, id).not.toMatch(/uniform\s+vec4\s+(iPointer|iClicks)/);
+    }
+  });
+
+  it("power button turns on with its first click and back off with its second", () => {
+    const effect = getEffect("power-button")!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    const motion = renderVectorEffect(effect, effectDefaults(effect));
+    expect(motion.animate!.every((a) => a.step === 1 || a.step === 2)).toBe(true);
+    const at = (clicks: number[], ms: number) => JSON.stringify([...svgFrame(motion.animate!, clicks, ms)].sort());
+    const start = at([], 0);
+    expect(at([0], 5000)).not.toBe(start);
+    expect(at([0, 5000], 10000)).toBe(start);
+  });
+
+  it("battery counts up to a full charge", () => {
+    const effect = getEffect("battery-charge")!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    const motion = renderVectorEffect(effect, effectDefaults(effect));
+    expect(motion.animate!.find((a) => a.count)!.count).toEqual([0, 100]);
+  });
+});
+
+describe("pixel effects", () => {
+  const SHADERS = ["image-8bit", "gameboy-screen", "pixel-fire", "pixel-landscape", "outrun-road", "palette-cycle", "raster-bars", "loading-stripes", "pixel-water"];
+  const VECTORS = ["pixel-text", "coin-spin", "space-invader", "pixel-heart-health", "chomp-loader"];
+
+  it("are retro and tagged pixel or retro", () => {
+    for (const id of [...SHADERS, ...VECTORS]) {
+      const effect = getEffect(id)!;
+      expect(effect, id).toBeDefined();
+      expect(effect.category, id).toBe("retro");
+      expect(effect.tags.some((t) => t === "pixel" || t === "retro"), id).toBe(true);
+    }
+    for (const id of VECTORS) {
+      const effect = getEffect(id)!;
+      expect(effect.kind === "vector" && effect.motion.svg, id).toContain('shape-rendering="crispEdges"');
+    }
+  });
+
+  it("8-bit has a preset per palette", () => {
+    const effect = getEffect("image-8bit")!;
+    expect(effect.presets!.map((p) => p.values.uPalette)).toEqual([0, 1, 2, 3, 4, 5]);
+  });
+
+  it("pixel dissolve is a looping two-image transition", () => {
+    const effect = getEffect("transition-pixel-dissolve")!;
+    expect(effect.category).toBe("transition");
+    expect(effect.tags).toEqual(expect.arrayContaining(["transition", "pixel"]));
+    expect(effectControls(effect).map((c) => c.name)).toEqual(expect.arrayContaining(["uFrom", "uTo", "uAnimate", "uProgress"]));
+    expect(effect.kind === "shader" && effect.loop).toBe(4);
+  });
+
+  it("pixel text draws any text as one path per letter, cut to its slots", () => {
+    const effect = getEffect("pixel-text")!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    for (const text of ["A", "", "Hello, world & <co>!", "Café 日本 🎉", "A VERY LONG TITLE INDEED"]) {
+      const motion = renderVectorEffect(effect, { text });
+      expect(svgMotionIssues(motion)).toEqual([]);
+      expect(JSON.stringify(motion)).not.toMatch(/\{\{|NaN|undefined/);
+      expect(motion.svg.match(/<g id="g\d+"/g)).toHaveLength(16);
+    }
+    const hi = renderVectorEffect(effect, { text: "Hi" }).svg;
+    // H's path is drawn; the slots after the text are empty.
+    expect(hi).toMatch(/<g id="g0"[^>]*><path[^>]*d="M0 0h1v1h-1zM4 0h1v1h-1z/);
+    expect(hi).toMatch(/<g id="g2"[^>]*><path[^>]*d="M0 0"/);
+    const delays = renderVectorEffect(effect, { stagger: 100 }).animate!.filter((a) => a.id === "g3").map((a) => a.delay);
+    expect(delays).toEqual([300, 300, 560, 670]);
+  });
+});

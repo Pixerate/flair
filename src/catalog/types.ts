@@ -23,6 +23,10 @@ export type EffectCategory =
   | "text"
   | "morph"
   | "interaction"
+  | "pyrotechnics"
+  | "timewarp"
+  | "melt"
+  | "electric"
   | "transition"
   | "loader"
   | "data"
@@ -41,6 +45,10 @@ export const EFFECT_CATEGORIES: readonly EffectCategory[] = [
   "text",
   "morph",
   "interaction",
+  "pyrotechnics",
+  "timewarp",
+  "melt",
+  "electric",
   "transition",
   "loader",
   "data",
