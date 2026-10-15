@@ -29,6 +29,8 @@ export interface RendererStats {
 
 export interface ShaderRendererOptions {
   className?: string;
+  /** Enable a transparent WebGL drawing buffer so shader alpha (`fragColor.a`) composites over the page (default false). */
+  alpha?: boolean;
   /** Pause rendering when scrolled out of view via IntersectionObserver (default false). */
   pauseWhenHidden?: boolean;
   /** Start playing at once (default true). Set to false to start paused. */
@@ -49,6 +51,7 @@ export interface ShaderRendererOptions {
 export class ShaderRenderer {
   readonly canvas: HTMLCanvasElement;
   private gl: WebGL2RenderingContext | null;
+  private readonly alpha: boolean;
   private shader: CompiledShader | null = null;
   private textures: TextureCache | null = null;
   private controls: ControlDef[] = [];
@@ -100,7 +103,8 @@ export class ShaderRenderer {
       this.ownsCanvas = true;
     }
     this.canvas = canvas;
-    this.gl = createContext(canvas, true);
+    this.alpha = Boolean(opts.alpha);
+    this.gl = createContext(canvas, true, this.alpha);
     this.textures = this.gl && this.textureCache(this.gl);
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(canvas);
@@ -379,7 +383,7 @@ export class ShaderRenderer {
 
   private onRestored = () => {
     resetGlCaches();
-    this.gl = createContext(this.canvas, true);
+    this.gl = createContext(this.canvas, true, this.alpha);
     this.textures = this.gl && this.textureCache(this.gl);
     this.setSource(this.source);
     this.onContextLost?.(false);

@@ -249,6 +249,15 @@ export function lerpAttr(a: string | number, b: string | number, u: number): str
   return u < 0.5 ? sa : sb;
 }
 
+/** Formats a number for a count animation (`{n}` stands for the rounded number). */
+export function formatCount(
+  value: number,
+  options: { decimals?: number; format?: string } = {},
+): string {
+  const n = value.toFixed(options.decimals ?? 0);
+  return (options.format ?? "{n}").replace("{n}", n);
+}
+
 const startOf = (a: SvgAnimation, steps: readonly number[]) => {
   const s = stepStart(steps, a.step ?? 0);
   return s === undefined ? Infinity : s + (a.delay ?? 0);
@@ -310,8 +319,7 @@ export function svgFrame(
       frame.draw = a + (b - a) * u;
     } else {
       const [a, b] = anim.count!;
-      const n = (a + (b - a) * u).toFixed(anim.decimals ?? 0);
-      frame.text = (anim.format ?? "{n}").replace("{n}", n);
+      frame.text = formatCount(a + (b - a) * u, anim);
     }
     frames.set(id, frame);
   }

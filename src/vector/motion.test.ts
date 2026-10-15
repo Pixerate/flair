@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  formatCount,
   lerpAttr,
   lerpData,
   stepData,
@@ -191,4 +192,13 @@ describe("svgMotionIssues", () => {
   function grow(): SvgAnimation {
     return { id: "bar", attrs: { height: [0, 40] } };
   }
+});
+
+describe("formatCount", () => {
+  it("rounds integers, keeps decimal places, and supports string templates", () => {
+    expect(formatCount(21.4)).toBe("21");
+    expect(formatCount(21.6, { format: "{n}%" })).toBe("22%");
+    expect(formatCount(1.25, { decimals: 1 })).toBe("1.3");
+    expect(formatCount(1.25, { decimals: 2, format: "${n}" })).toBe("$1.25");
+  });
 });

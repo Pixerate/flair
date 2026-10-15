@@ -46,9 +46,11 @@ describe("wrapSource", () => {
     expect(wrapped).toContain(`#line 1\n${source}\n`);
   });
 
-  it("calls mainImage from main and writes an opaque colour", () => {
+  it("calls mainImage from main and writes a clamped alpha colour", () => {
     expect(wrapped).toMatch(/void main\(\) \{[\s\S]*mainImage\(flair_color, gl_FragCoord\.xy\);/);
-    expect(wrapped).toContain("flair_FragColor = vec4(flair_color.rgb, 1.0);");
+    expect(wrapped).toContain(
+      "flair_FragColor = vec4(flair_color.rgb, clamp(flair_color.a, 0.0, 1.0));",
+    );
   });
 
   it("drops a #version line from the user's source", () => {
@@ -351,12 +353,12 @@ describe("createContext", () => {
     });
   });
 
-  it("can preserve the drawing buffer, and passes null through", () => {
+  it("can preserve the drawing buffer and enable alpha, and passes null through", () => {
     const canvas = { getContext: vi.fn(() => null) } as unknown as HTMLCanvasElement;
-    expect(createContext(canvas, true)).toBeNull();
+    expect(createContext(canvas, true, true)).toBeNull();
     expect(canvas.getContext).toHaveBeenCalledWith(
       "webgl2",
-      expect.objectContaining({ preserveDrawingBuffer: true }),
+      expect.objectContaining({ preserveDrawingBuffer: true, alpha: true }),
     );
   });
 });
