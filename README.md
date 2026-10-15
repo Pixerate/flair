@@ -19,7 +19,7 @@ Flair gives products a library of good-looking, configurable visual effects (her
 
 ### Core Capabilities
 
-- 🎨 **Effect catalog (`@pixerate/flair/catalog`)**: 59 effects, each with controls and presets. There are 44 WebGL2 shaders (gradients, organic textures, patterns, light, space, retro, image effects, transitions) and 15 animated SVG effects (loaders, status icons, charts, counters). [Browse them live](https://pixerate.github.io/flair/).
+- 🎨 **Effect catalog (`@pixerate/flair/catalog`)**: 61 effects, each with controls and presets. There are 45 WebGL2 shaders (gradients, organic textures, patterns, light, space, retro, image effects, transitions) and 16 animated SVG effects (loaders, status icons, titles, charts, counters). [Browse them live](https://pixerate.github.io/flair/).
 - ⚡ **Shader engine**:
   - Shadertoy-style GLSL ES 3.00 fragment shaders, with controls declared in the source (`// @control`), including image inputs.
   - Compile errors come back with line numbers that match the source.
@@ -55,7 +55,7 @@ The `flair` CLI inspects shaders, writes standalone pages and directs scenes (se
 ```mermaid
 graph TD
   subgraph Effects["Effects (no dependencies)"]
-    Catalog["catalog: 59 effects + presets"]
+    Catalog["catalog: 61 effects + presets"]
     Shader["shader engine: controls, compile, render, GIF, HTML"]
     Vector["vector motion: SvgMotion, SvgPlayer"]
     Time["time: clocks, easing, keyframes, noise"]
@@ -214,12 +214,12 @@ Every change is one undo step, and refusals come back as messages the model can 
 | :--- | :--- |
 | gradient | mesh gradient, aurora, gradient flow, conic sweep, silk |
 | organic | liquid marble, smoke, lava lamp, plasma, caustics, flames, blob morph |
-| pattern | dot wave, Truchet flow, hex pulse, living cells, moiré rings, kaleidoscope, stripes |
+| pattern | dot wave, Truchet flow, hex pulse, living cells, moiré rings, kaleidoscope, stripes, neon circuit |
 | light / space | bokeh, god rays, sparkles, neon ripple, warp starfield, nebula, event horizon |
 | retro | synthwave, digital rain, dithered gradient, TV static |
 | image | ripple, glitch, duotone, halftone, pixel reveal, CRT screen, film look |
 | transition | wipe, iris, block dissolve, grid wipe, glass wipe, twister, light leak, cross zoom |
-| loader / icon / data | spinner, bouncing dots, pulse ping, equalizer, progress ring, bar chart, line chart, stat counter, route, success check, error cross, heartbeat, signature, confetti |
+| loader / icon / data | spinner, bouncing dots, pulse ping, equalizer, progress ring, bar chart, line chart, stat counter, route, success check, error cross, heartbeat, signature, confetti, drip text |
 
 Every shader is self-contained and compiles on WebGL2. Open [`#check`](https://pixerate.github.io/flair/#check) on the demo to compile the catalog on your own GPU.
 

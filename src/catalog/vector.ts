@@ -373,6 +373,83 @@ export const confetti: VectorEffect = {
   })(),
 };
 
+
+/** Where drip text's drips leave the letters (the word spans x 50–350, baseline 120). */
+const DRIP_TOP = 106;
+const DRIPS = [
+  { x: 70, width: 11, length: 34, delay: 0, ms: 1500 },
+  { x: 104, width: 8, length: 18, delay: 260, ms: 1100 },
+  { x: 140, width: 13, length: 50, delay: 120, ms: 1800 },
+  { x: 186, width: 9, length: 22, delay: 380, ms: 1200 },
+  { x: 226, width: 10, length: 28, delay: 200, ms: 1400 },
+  { x: 258, width: 12, length: 42, delay: 60, ms: 1700 },
+  { x: 288, width: 11, length: 32, delay: 300, ms: 1500 },
+];
+
+export const dripText: VectorEffect = {
+  kind: "vector",
+  id: "drip-text",
+  name: "Drip text",
+  description: "A chunky outlined title popping in, then oozing slime drips from its letters.",
+  category: "icon",
+  tags: ["title", "text", "drip", "slime", "y2k", "headline"],
+  hold: 1200,
+  controls: [
+    colorControl("fill", "#FF7EB6", "Fill"),
+    colorControl("outline", "#3A0A2C", "Outline"),
+    colorControl("shine", "#FFD1E6", "Shine"),
+    numberControl("drip", 1, 0.2, 2, "Drip length"),
+    numberControl("stroke", 7, 0, 14, "Outline width", 0.5),
+  ],
+  presets: [
+    { name: "Slime", values: { fill: [0.55, 0.93, 0.25], outline: [0.06, 0.2, 0.04], shine: [0.85, 1, 0.7] } },
+    { name: "Molten gold", values: { fill: [1, 0.78, 0.2], outline: [0.35, 0.16, 0], shine: [1, 0.96, 0.75], drip: 1.5 } },
+  ],
+  // Each drip's length and where its bulb ends up, scaled by the drip control.
+  derived: (v) =>
+    Object.fromEntries(
+      DRIPS.flatMap((d, i) => {
+        const length = Math.round(d.length * Number(v.drip) * 10) / 10;
+        return [
+          [`len${i}`, length],
+          [`tip${i}`, DRIP_TOP + length],
+        ];
+      }),
+    ),
+  motion: (() => {
+    // The word is pinned to 300 units wide (textLength), so drips sit under the same letters in any font.
+    const word = `<text x="200" y="120" text-anchor="middle" textLength="300" lengthAdjust="spacingAndGlyphs" font-family="'Arial Black', Impact, system-ui, sans-serif" font-size="104" font-weight="900" stroke-linejoin="round"`;
+    const drips = (layer: "o" | "f", paint: string) =>
+      DRIPS.map(
+        (d, i) =>
+          `<rect id="${layer}r${i}" x="${d.x - d.width / 2}" y="${DRIP_TOP}" width="${d.width}" height="0" rx="${d.width / 2}" ${paint}/><circle id="${layer}c${i}" cx="${d.x}" cy="${DRIP_TOP}" r="${d.width * 0.72}" ${paint}/>`,
+      ).join("");
+    const outline = `fill="{{outline}}" stroke="{{outline}}" stroke-width="{{stroke}}"`;
+    const pop = (from: number, to: number) =>
+      [`translate(200 100) scale(${from}) translate(-200 -100)`, `translate(200 100) scale(${to}) translate(-200 -100)`] as [string, string];
+    return {
+      svg: `<svg viewBox="0 0 400 200"><g id="word" transform="${pop(0.6, 1)[0]}" opacity="0">${drips("o", outline)}${word} fill="none" stroke="{{outline}}" stroke-width="{{stroke}}">SLOP</text>${drips("f", `fill="{{fill}}"`)}${word} fill="{{fill}}">SLOP</text>${DRIPS.map(
+        (d, i) => `<circle id="s${i}" cx="${d.x - d.width * 0.25}" cy="${DRIP_TOP}" r="${d.width * 0.2}" fill="{{shine}}" opacity="0"/>`,
+      ).join("")}</g></svg>`,
+      animate: [
+        { id: "word", attrs: { transform: pop(0.6, 1.08), opacity: [0, 1] }, ms: 260, ease: "out" },
+        { id: "word", attrs: { transform: pop(1.08, 1) }, delay: 260, ms: 200, ease: "in-out" },
+        ...DRIPS.flatMap((d, i): SvgAnimation[] => {
+          const at = { delay: 400 + d.delay, ms: d.ms, ease: "in-out" as const };
+          const tip = `{{tip${i}}}` as unknown as number;
+          return [
+            ...(["o", "f"] as const).flatMap((layer): SvgAnimation[] => [
+              { id: `${layer}r${i}`, attrs: { height: [0, `{{len${i}}}` as unknown as number] }, ...at },
+              { id: `${layer}c${i}`, attrs: { cy: [DRIP_TOP, tip] }, ...at },
+            ]),
+            { id: `s${i}`, attrs: { cy: [DRIP_TOP, tip], opacity: [0, 0.9] }, ...at },
+          ];
+        }),
+      ],
+    };
+  })(),
+};
+
 export const vectorEffects: VectorEffect[] = [
   spinner,
   bouncingDots,
@@ -389,4 +466,5 @@ export const vectorEffects: VectorEffect[] = [
   signature,
   confetti,
   blobMorph,
+  dripText,
 ];

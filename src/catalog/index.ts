@@ -23,7 +23,7 @@ import {
 } from "./shaders/image.js";
 import { blackHole, bokeh, godRays, nebula, neonRipple, sparkles, starfield } from "./shaders/light.js";
 import { caustics, flames, lavaLamp, marble, plasma, smoke } from "./shaders/organic.js";
-import { barberStripes, dotWave, hexPulse, kaleidoscope, moire, truchet, voronoi } from "./shaders/patterns.js";
+import { barberStripes, dotWave, hexPulse, kaleidoscope, moire, neonCircuit, truchet, voronoi } from "./shaders/patterns.js";
 import { digitalRain, pixelSunset, synthwaveGrid, tvStatic } from "./shaders/retro.js";
 import { EFFECT_CATEGORIES, vectorControlDef, type EffectCategory, type EffectDefinition, type ShaderEffect } from "./types.js";
 import { vectorEffects } from "./vector.js";
@@ -64,6 +64,7 @@ export const SHADER_EFFECTS: readonly ShaderEffect[] = [
   moire,
   kaleidoscope,
   barberStripes,
+  neonCircuit,
   bokeh,
   godRays,
   sparkles,
