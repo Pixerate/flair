@@ -20,6 +20,7 @@ export type EffectCategory =
   | "image"
   | "overlay"
   | "text"
+  | "morph"
   | "transition"
   | "loader"
   | "data"
@@ -36,6 +37,7 @@ export const EFFECT_CATEGORIES: readonly EffectCategory[] = [
   "image",
   "overlay",
   "text",
+  "morph",
   "transition",
   "loader",
   "data",
