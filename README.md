@@ -43,7 +43,8 @@ Flair gives products a library of good-looking, configurable visual effects (her
 | :--- | :--- | :--- |
 | `@pixerate/flair` | Shader engine, vector motion, time and easing, colour, blending, transitions, scenes, interchange exporters | None (browser-safe) |
 | `@pixerate/flair/catalog` | `EFFECTS`, `getEffect`, `findEffects`, `effectDefaults`, `renderVectorEffect`, `vectorControls`, GLSL helpers, sample images, `textImage` | None |
-| `@pixerate/flair/vector` | `SvgMotion`, `svgFrame`, `svgView`, `SvgPlayer`, `animateCount`, `formatCount`, `morphPaths`, `morphSequence`, `svgMotionIssues` | None |
+| `@pixerate/flair/vector` | `SvgMotion`, `svgFrame`, `svgView`, `SvgPlayer`, `svgFrameMarkup`, `svgViewBox`, `animateCount`, `formatCount`, `morphPaths`, `morphSequence`, `svgMotionIssues` | None |
+| `@pixerate/flair/react` | `<VectorEffect>`, `<SvgPlayerView>`: vector effects as React components, server-rendered as a still | `react` ≥ 18 (optional peer) |
 | `@pixerate/flair/editor` | `EffectEditor`, effect documents, keyframe tracks, renderer bindings, parameter-panel binding, agent tools and instructions | `@pixerate/editor` ≥ 0.29 (optional peer; only its dependency-free `/history`, `/commands`, `/tools`, `/animation` and `/parameters` subpaths) |
 | `@pixerate/flair/node` | `exportMotionGraphic`: renders a shader to GIF/MP4 through headless Chrome and ffmpeg | Node.js |
 
@@ -137,6 +138,25 @@ Effects that show a picture (image, transition, morph, time-warp and the like) t
 Overlay shaders (`category: "overlay"`) have `transparent: true`: they write coverage to `fragColor.a` and draw nothing elsewhere, so render them with `new ShaderRenderer(host, { alpha: true })` (or `new ThumbnailPool({ alpha: true })`) and lay the canvas over a picture, video or page. Interaction effects answer the pointer. Interactive shaders read `iPointer` and `iClicks`, so they work in any `ShaderRenderer` with no wiring, and play an idle demo when nobody is pointing (turn off "Demo when idle" to stop it). Vector micro-interactions carry a `trigger`: pass it to the player, `new SvgPlayer(host, renderVectorEffect(effect), { trigger: effect.trigger })`. A hover or press trigger plays to the end while hovered or held and back again after; a click trigger plays the next step on each click, so toggles turn on and off. Hosts can drive them too, with `player.setActive(on)` and `player.advance()` (from a keyboard handler, say).
 
 To morph between any two SVG shapes, `morphPaths(from, to)` (from `@pixerate/flair/vector`) returns two paths with one structure, so `attrs: { d: [a, b] }` blends them point by point: curves and arcs are read, pieces are paired by position and size, and a piece with no partner grows from or shrinks to a point (draw them with `fill-rule="evenodd"`). `morphSequence` does the same for three or more shapes. `feature-morph` morphs two photos from five matching points, and `silhouette-morph` morphs any two silhouettes or logos (or words, through `textImage`).
+
+### React
+
+`@pixerate/flair/react` wraps the player, so a page needs no ref, effect or dispose of its own. `<VectorEffect>` plays a catalog vector effect by id, `<SvgPlayerView>` any `SvgMotion`:
+
+```tsx
+import { VectorEffect } from "@pixerate/flair/react";
+
+<h1>
+  Stop the <VectorEffect id="drip-text" values={{ word: "Slop", inline: true, font: "inherit" }} loop={false} />
+</h1>;
+```
+
+- **Server rendering**: both render a still of the last frame as markup (`"first"` for hover and press triggers; set `poster` for another), sized from the viewBox, so the page hydrates with the picture in place. The `SvgPlayer` takes over after mount and is disposed on unmount.
+- **Reduced motion**: under `prefers-reduced-motion: reduce` the still stays. `reducedMotion="always"` or `"never"` overrides it.
+- **Size**: a block as wide as its container, with the viewBox's aspect ratio. With `inline` (or an effect whose `inline` control is on, like drip text's) it is an `inline-block` 0.72em high, sitting on the baseline like a capital letter; pass a CSS length to `inline` for another height.
+- **Props**: player options (`loop`, `autoplay`, `speed`, `hold`, `trigger`, `steps`, `pauseWhenHidden`, `playOnEnter`, `clock` …), `values` and `preset` for an effect, `onPlayer` for the player itself, and any `<span>` attribute (`elementId` sets the host's `id` on `<VectorEffect>`). Values are compared by content, so an inline object does not restart it; pass `<SvgPlayerView>` a memoised `motion`.
+
+Without React, `svgFrameMarkup(motion, { at: "last" })` (from `@pixerate/flair/vector`) gives the same still as safe `<svg>` markup with no DOM, for any server or framework.
 
 `shader-text` fills letters from a text image: set its `uText` control to `textImage("Your title", { weight: 900 })`, a transparent SVG `data:` URL of any Unicode text.
 

@@ -6,6 +6,7 @@
  * - Frames as pure functions: `svgFrame`, `lerpAttr`, `lerpData`, `stepData`.
  * - Shape morphing: `morphPaths`, `morphSequence` (any paths → paths that blend).
  * - Drawing: `parseSvg` (sanitised), `svgView`, `SvgPlayer`.
+ * - Stills without a DOM (server rendering, reduced motion): `svgFrameMarkup`, `svgViewBox`.
  *
  * @packageDocumentation
  */
@@ -46,6 +47,12 @@ export {
   type SvgView,
   type SvgViewOptions,
 } from "./svg.js";
+export {
+  parseViewBox,
+  svgFrameMarkup,
+  svgViewBox,
+  type SvgFrameMarkupOptions,
+} from "./static.js";
 export {
   computeBoxFit,
   layoutStack,
