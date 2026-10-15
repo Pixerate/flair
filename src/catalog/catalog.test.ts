@@ -128,6 +128,21 @@ describe("catalog", () => {
     expect(svgMotionIssues(renderVectorEffect(drip, { word: "Slop & Co" }))).toEqual([]);
   });
 
+  it("drip text takes a font and sits inline on the baseline", () => {
+    const drip = getEffect("drip-text")!;
+    if (drip.kind !== "vector") throw new Error("vector expected");
+    const block = renderVectorEffect(drip).svg;
+    expect(block).toContain('viewBox="0 0 400 200" overflow="hidden"');
+    expect(block).toContain(`font-family="Arial Black, Impact, system-ui, sans-serif"`);
+    expect(block).toContain('font-weight="900"');
+    const inline = renderVectorEffect(drip, { word: "SLOP", inline: true, font: "inherit", weight: 400 }).svg;
+    // The word's capitals only: cap height (y 45) down to its baseline (y 120).
+    expect(inline).toContain('viewBox="50 45 300 75" overflow="visible"');
+    expect(inline).toContain('font-family="inherit"');
+    expect(inline).toContain('font-weight="400"');
+    expect(renderVectorEffect(drip, { font: `'Rubik Wet Paint', cursive` }).svg).toContain(`font-family="&#39;Rubik Wet Paint&#39;, cursive"`);
+  });
+
   it("fills vector controls: colours as hex, numbers as numbers, derived values too", () => {
     const ring = getEffect("progress-ring")!;
     if (ring.kind !== "vector") throw new Error("vector expected");
