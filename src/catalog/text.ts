@@ -40,6 +40,30 @@ const MONO = `ui-monospace, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monos
 const MONO_EM = 0.6;
 const HEAVY = `'Arial Black', 'Helvetica Neue', Impact, system-ui, sans-serif`;
 const SANS = `system-ui, 'Helvetica Neue', Arial, sans-serif`;
+const SCRIPT = `'Pacifico', 'Brush Script MT', 'Segoe Script', 'Snell Roundhand', cursive`;
+
+/** Text effects' cap height, in ems: near enough for the heavy, plain, monospace and script faces they use. */
+const CAP = 0.72;
+
+/**
+ * The controls every text effect shares, declared after its own: its
+ * typeface (`font` takes any CSS font-family, `inherit` the surrounding
+ * text's), and `inline`, which sets it in a line of text (see {@link frame}).
+ */
+const typeface = (font: string, weight: number) =>
+  `{{font: text default="${font}" label='Font'}} {{weight: int min=100 max=900 default=${weight} step=100 label='Weight'}} {{inline: bool default=false label='Inline'}}`;
+
+/**
+ * What a text effect's picture frames: its whole 400 × 200 stage, or with
+ * `inline` just its text, from cap height down to the baseline, so it sits
+ * on the line like a word would. Inline, the backdrop goes and everything
+ * else (glows, underlines, drops) spills over the text around it.
+ */
+function frame(v: Record<string, unknown>, left: number, width: number, base: number, size: number) {
+  return v.inline
+    ? { viewBox: `${r1(left)} ${r1(base - size * CAP)} ${r1(width)} ${r1(size * CAP)}`, overflow: "visible", backdrop: 0 }
+    : { viewBox: "0 0 400 200", overflow: "hidden", backdrop: 1 };
+}
 
 /** The caret's blinks after typing: on and off every 500 ms. */
 const BLINKS = 7;
@@ -62,17 +86,19 @@ export const typewriter: VectorEffect = {
     const size = r1(Math.min(44, 340 / ((count + 1) * MONO_EM)));
     const left = r1(200 - ((count + 1) * MONO_EM * size) / 2);
     const typing = Math.round(count * Number(v.pace));
+    const base = r1(100 + size * 0.35);
     return {
+      ...frame(v, left, (count + 1) * MONO_EM * size, base, size),
       size,
       left,
-      base: r1(100 + size * 0.35),
+      base,
       end: r1(left + count * MONO_EM * size),
       typing,
       ...Object.fromEntries(Array.from({ length: BLINKS }, (_, k) => [`blink${k}`, typing + k * 500])),
     };
   },
   motion: {
-    svg: `<svg viewBox="0 0 400 200"><!-- {{text: text default='Hello, world.' label='Text'}} {{paper: color default=#111827 label='Background'}} {{ink: color default=#F9FAFB label='Text colour'}} {{pace: float min=30 max=300 default=90 step=5 label='Ms per letter'}} --><rect width="400" height="200" fill="{{paper}}"/><text id="typed" x="{{left}}" y="{{base}}" font-family="${MONO}" font-size="{{size}}" fill="{{ink}}" xml:space="preserve">{{text}}</text><text id="caret" x="{{end}}" y="{{base}}" font-family="${MONO}" font-size="{{size}}" fill="{{ink}}" opacity="0">▌</text></svg>`,
+    svg: `<svg viewBox="{{viewBox}}" overflow="{{overflow}}"><!-- {{text: text default='Hello, world.' label='Text'}} {{paper: color default=#111827 label='Background'}} {{ink: color default=#F9FAFB label='Text colour'}} {{pace: float min=30 max=300 default=90 step=5 label='Ms per letter'}} ${typeface(MONO, 400)} --><rect width="400" height="200" fill="{{paper}}" opacity="{{backdrop}}"/><text id="typed" x="{{left}}" y="{{base}}" font-family="{{font}}" font-size="{{size}}" font-weight="{{weight}}" fill="{{ink}}" xml:space="preserve">{{text}}</text><text id="caret" x="{{end}}" y="{{base}}" font-family="{{font}}" font-size="{{size}}" font-weight="{{weight}}" fill="{{ink}}" opacity="0">▌</text></svg>`,
     animate: [
       { id: "typed", write: "{{text}}", caret: "▌", ms: n("typing"), ease: "linear" },
       // Hidden while the writer shows its own caret, then blinking where it stopped.
@@ -98,10 +124,10 @@ export const scrambleText: VectorEffect = {
     const size = r1(Math.min(60, 360 / (count * MONO_EM)));
     const width = r1(count * MONO_EM * size);
     const base = r1(100 + size * 0.35);
-    return { size, base, barX: r1(200 - width / 2), barY: r1(base + size * 0.3), barW: width, decode: Math.round(count * Number(v.pace)), glowWide: Number(v.glow) * 2 };
+    return { size, base, barX: r1(200 - width / 2), barY: r1(base + size * 0.3), barW: width, decode: Math.round(count * Number(v.pace)), glowWide: Number(v.glow) * 2, ...frame(v, 200 - width / 2, width, base, size) };
   },
   motion: {
-    svg: `<svg viewBox="0 0 400 200"><!-- {{text: text default='ACCESS GRANTED' label='Text'}} {{glyphs: text default='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#%&@$*+' label='Scramble glyphs'}} {{background: color default=#05070D label='Background'}} {{ink: color default=#E2E8F0 label='Text colour'}} {{accent: color default=#22D3EE label='Accent'}} {{pace: float min=20 max=250 default=70 step=5 label='Ms per letter'}} {{glow: float min=0 max=6 default=2 step=0.5 label='Glow'}} --><defs><filter id="glow" x="-20%" y="-50%" width="140%" height="200%"><feGaussianBlur stdDeviation="{{glowWide}}" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><rect width="400" height="200" fill="{{background}}"/><text id="word" x="200" y="{{base}}" text-anchor="middle" font-family="${MONO}" font-size="{{size}}" font-weight="700" fill="{{ink}}" filter="url(#glow)" xml:space="preserve">{{text}}</text><rect id="bar" x="{{barX}}" y="{{barY}}" width="0" height="3" fill="{{accent}}"/></svg>`,
+    svg: `<svg viewBox="{{viewBox}}" overflow="{{overflow}}"><!-- {{text: text default='ACCESS GRANTED' label='Text'}} {{glyphs: text default='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#%&@$*+' label='Scramble glyphs'}} {{background: color default=#05070D label='Background'}} {{ink: color default=#E2E8F0 label='Text colour'}} {{accent: color default=#22D3EE label='Accent'}} {{pace: float min=20 max=250 default=70 step=5 label='Ms per letter'}} {{glow: float min=0 max=6 default=2 step=0.5 label='Glow'}} ${typeface(MONO, 700)} --><defs><filter id="glow" x="-20%" y="-50%" width="140%" height="200%"><feGaussianBlur stdDeviation="{{glowWide}}" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><rect width="400" height="200" fill="{{background}}" opacity="{{backdrop}}"/><text id="word" x="200" y="{{base}}" text-anchor="middle" font-family="{{font}}" font-size="{{size}}" font-weight="{{weight}}" fill="{{ink}}" filter="url(#glow)" xml:space="preserve">{{text}}</text><rect id="bar" x="{{barX}}" y="{{barY}}" width="0" height="3" fill="{{accent}}"/></svg>`,
     animate: [
       // Pure noise for a moment (the scramble runs before the change starts), then it decodes.
       { id: "word", write: "{{text}}", scramble: "{{glyphs}}", delay: 500, ms: n("decode"), ease: "linear" },
@@ -134,6 +160,7 @@ export const kineticStagger: VectorEffect = {
     const base = 100 + size * 0.35;
     const stagger = Number(v.stagger);
     const out: Record<string, string | number> = {
+      ...frame(v, 200 - (ems * size) / 2, ems * size, base, size),
       size: r1(size),
       base: r1(base),
       rise: r1(base - size * 0.1),
@@ -155,10 +182,10 @@ export const kineticStagger: VectorEffect = {
     return out;
   },
   motion: {
-    svg: `<svg viewBox="0 0 400 200"><!-- {{text: text default='Kinetic' label='Text'}} {{background: color default=#F8FAFC label='Background'}} {{ink: color default=#0F172A label='Text colour'}} {{accent: color default=#F43F5E label='Underline'}} {{stagger: float min=20 max=200 default=55 step=5 label='Ms between letters'}} --><rect width="400" height="200" fill="{{background}}"/>${Array.from(
+    svg: `<svg viewBox="{{viewBox}}" overflow="{{overflow}}"><!-- {{text: text default='Kinetic' label='Text'}} {{background: color default=#F8FAFC label='Background'}} {{ink: color default=#0F172A label='Text colour'}} {{accent: color default=#F43F5E label='Underline'}} {{stagger: float min=20 max=200 default=55 step=5 label='Ms between letters'}} ${typeface(HEAVY, 900)} --><rect width="400" height="200" fill="{{background}}" opacity="{{backdrop}}"/>${Array.from(
       { length: SLOTS },
       (_, i) =>
-        `<text id="l${i}" text-anchor="middle" transform="translate({{x${i}}} {{drop}}) rotate(-28) scale(0.3)" opacity="0" font-family="${HEAVY}" font-size="{{size}}" font-weight="900" fill="{{ink}}">{{c${i}}}</text>`,
+        `<text id="l${i}" text-anchor="middle" transform="translate({{x${i}}} {{drop}}) rotate(-28) scale(0.3)" opacity="0" font-family="{{font}}" font-size="{{size}}" font-weight="{{weight}}" fill="{{ink}}">{{c${i}}}</text>`,
     ).join("")}<rect id="line" x="{{lineX}}" y="{{lineY}}" width="0" height="6" rx="3" fill="{{accent}}"/></svg>`,
     animate: [
       ...Array.from({ length: SLOTS }, (_, i): SvgAnimation[] => [
@@ -193,8 +220,9 @@ export const neonSign: VectorEffect = {
   derived: (v) => {
     const letters = lettersOf(v.text);
     const k = Math.min(Math.max(0, Math.round(Number(v.faulty)) - 1), Math.max(0, letters.length - 1));
-    const { size, length } = fit(String(v.text), 340, 84);
+    const { size, length, left } = fit(String(v.text), 340, 84);
     return {
+      ...frame(v, left, length, 100 + size * 0.3, size),
       head: letters.slice(0, k).join(""),
       mid: letters[k] ?? "",
       tail: letters.slice(k + 1).join(""),
@@ -206,13 +234,13 @@ export const neonSign: VectorEffect = {
     };
   },
   motion: ((): SvgMotion => {
-    const word = `x="200" y="{{base}}" text-anchor="middle" textLength="{{length}}" lengthAdjust="spacingAndGlyphs" font-family="'Pacifico', 'Brush Script MT', 'Segoe Script', 'Snell Roundhand', cursive" font-size="{{size}}"`;
+    const word = `x="200" y="{{base}}" text-anchor="middle" textLength="{{length}}" lengthAdjust="spacingAndGlyphs" font-family="{{font}}" font-size="{{size}}" font-weight="{{weight}}"`;
     const runs = (id: string) => `<tspan>{{head}}</tspan><tspan id="${id}">{{mid}}</tspan><tspan>{{tail}}</tspan>`;
     // Start-up: the tubes catch, drop out and catch again.
     const startUp = [[0, 0], [150, 0.85], [210, 0], [330, 1], [390, 0.15], [450, 1], [620, 0.35], [680, 1]] as const;
     const buzz = [[0, 1], [1300, 0.15], [1350, 1], [1420, 0.2], [1520, 1], [2100, 0.1], [2160, 1], [2230, 0.25], [2280, 1]] as const;
     return {
-      svg: `<svg viewBox="0 0 400 200"><!-- {{text: text default='Open late' label='Text'}} {{tube: color default=#FF3DA5 label='Tube'}} {{wall: color default=#120612 label='Wall'}} {{glow: float min=0.5 max=8 default=3.5 step=0.5 label='Glow'}} {{faulty: int min=1 max=24 default=6 label='Buzzing letter'}} --><defs><filter id="neon" x="-30%" y="-80%" width="160%" height="260%"><feGaussianBlur in="SourceGraphic" stdDeviation="{{glow}}" result="near"/><feGaussianBlur in="SourceGraphic" stdDeviation="{{far}}" result="far"/><feMerge><feMergeNode in="far"/><feMergeNode in="far"/><feMergeNode in="near"/><feMergeNode in="SourceGraphic"/></feMerge></filter><filter id="haze" x="-50%" y="-100%" width="200%" height="300%"><feGaussianBlur stdDeviation="30"/></filter></defs><rect width="400" height="200" fill="{{wall}}"/><g id="sign" opacity="0"><ellipse cx="200" cy="100" rx="170" ry="55" fill="{{tube}}" opacity="0.18" filter="url(#haze)"/><text ${word} fill="{{tube}}" stroke="{{tube}}" stroke-width="1.5" filter="url(#neon)">${runs("buzzGlow")}</text><text ${word} fill="{{core}}">${runs("buzzCore")}</text></g></svg>`,
+      svg: `<svg viewBox="{{viewBox}}" overflow="{{overflow}}"><!-- {{text: text default='Open late' label='Text'}} {{tube: color default=#FF3DA5 label='Tube'}} {{wall: color default=#120612 label='Wall'}} {{glow: float min=0.5 max=8 default=3.5 step=0.5 label='Glow'}} {{faulty: int min=1 max=24 default=6 label='Buzzing letter'}} ${typeface(SCRIPT, 400)} --><defs><filter id="neon" x="-30%" y="-80%" width="160%" height="260%"><feGaussianBlur in="SourceGraphic" stdDeviation="{{glow}}" result="near"/><feGaussianBlur in="SourceGraphic" stdDeviation="{{far}}" result="far"/><feMerge><feMergeNode in="far"/><feMergeNode in="far"/><feMergeNode in="near"/><feMergeNode in="SourceGraphic"/></feMerge></filter><filter id="haze" x="-50%" y="-100%" width="200%" height="300%"><feGaussianBlur stdDeviation="30"/></filter></defs><rect width="400" height="200" fill="{{wall}}" opacity="{{backdrop}}"/><g id="sign" opacity="0"><ellipse cx="200" cy="100" rx="170" ry="55" fill="{{tube}}" opacity="0.18" filter="url(#haze)"/><text ${word} fill="{{tube}}" stroke="{{tube}}" stroke-width="1.5" filter="url(#neon)">${runs("buzzGlow")}</text><text ${word} fill="{{core}}">${runs("buzzCore")}</text></g></svg>`,
       animate: [
         ...holds("sign", "opacity", startUp),
         // fill-opacity rather than opacity: browsers ignore opacity on a <tspan>.
@@ -236,11 +264,11 @@ export const strokeDrawText: VectorEffect = {
   ],
   // <text> takes no pathLength, so `draw` cannot measure it: the dash grows instead, longer than any letter's outline.
   derived: (v) => {
-    const { size, length } = fit(String(v.text), 360, 100);
-    return { size, length, base: r1(100 + size * 0.35), dash: Math.round(size * 6) };
+    const { size, length, left } = fit(String(v.text), 360, 100);
+    return { size, length, base: r1(100 + size * 0.35), dash: Math.round(size * 6), ...frame(v, left, length, 100 + size * 0.35, size) };
   },
   motion: {
-    svg: `<svg viewBox="0 0 400 200"><!-- {{text: text default='Draw' label='Text'}} {{background: color default=#FFFBF5 label='Background'}} {{outline: color default=#1E293B label='Outline'}} {{fill: color default=#F97316 label='Fill'}} {{width: float min=0.5 max=6 default=2 step=0.5 label='Outline width'}} {{fillOpacity: float min=0 max=1 default=1 label='Fill opacity'}} --><rect width="400" height="200" fill="{{background}}"/><text id="word" x="200" y="{{base}}" text-anchor="middle" textLength="{{length}}" lengthAdjust="spacingAndGlyphs" font-family="${HEAVY}" font-size="{{size}}" font-weight="900" fill="{{fill}}" fill-opacity="0" stroke="{{outline}}" stroke-width="{{width}}" stroke-linejoin="round" stroke-dasharray="0 {{dash}}">{{text}}</text></svg>`,
+    svg: `<svg viewBox="{{viewBox}}" overflow="{{overflow}}"><!-- {{text: text default='Draw' label='Text'}} {{background: color default=#FFFBF5 label='Background'}} {{outline: color default=#1E293B label='Outline'}} {{fill: color default=#F97316 label='Fill'}} {{width: float min=0.5 max=6 default=2 step=0.5 label='Outline width'}} {{fillOpacity: float min=0 max=1 default=1 label='Fill opacity'}} ${typeface(HEAVY, 900)} --><rect width="400" height="200" fill="{{background}}" opacity="{{backdrop}}"/><text id="word" x="200" y="{{base}}" text-anchor="middle" textLength="{{length}}" lengthAdjust="spacingAndGlyphs" font-family="{{font}}" font-size="{{size}}" font-weight="{{weight}}" fill="{{fill}}" fill-opacity="0" stroke="{{outline}}" stroke-width="{{width}}" stroke-linejoin="round" stroke-dasharray="0 {{dash}}">{{text}}</text></svg>`,
     animate: [
       { id: "word", attrs: { "stroke-dasharray": ["0 {{dash}}", "{{dash}} 0"] }, ms: 2000, ease: "in-out" },
       { id: "word", attrs: { "fill-opacity": [0, n("fillOpacity")] }, delay: 1500, ms: 700, ease: "out" },
@@ -263,6 +291,7 @@ export const splitReveal: VectorEffect = {
   derived: (v) => {
     const { size, length, left } = fit(String(v.text), 360, 88);
     return {
+      ...frame(v, left, length, 100 + size * 0.36, size),
       size,
       length,
       base: r1(100 + size * 0.36),
@@ -273,9 +302,9 @@ export const splitReveal: VectorEffect = {
     };
   },
   motion: ((): SvgMotion => {
-    const word = `<text x="200" y="{{base}}" text-anchor="middle" textLength="{{length}}" lengthAdjust="spacingAndGlyphs" font-family="${SANS}" font-size="{{size}}" font-weight="800" fill="{{ink}}">{{text}}</text>`;
+    const word = `<text x="200" y="{{base}}" text-anchor="middle" textLength="{{length}}" lengthAdjust="spacingAndGlyphs" font-family="{{font}}" font-size="{{size}}" font-weight="{{weight}}" fill="{{ink}}">{{text}}</text>`;
     return {
-      svg: `<svg viewBox="0 0 400 200"><!-- {{text: text default='Chapter One' label='Text'}} {{caption: text default='The beginning' label='Caption'}} {{background: color default=#0F172A label='Background'}} {{ink: color default=#F8FAFC label='Text colour'}} {{line: color default=#38BDF8 label='Line'}} --><defs><clipPath id="above"><rect width="400" height="100"/></clipPath><clipPath id="below"><rect y="100" width="400" height="100"/></clipPath></defs><rect width="400" height="200" fill="{{background}}"/><g clip-path="url(#above)"><g id="top" transform="translate(0 {{shift}})">${word}</g></g><g clip-path="url(#below)"><g id="bottom" transform="translate(0 -{{shift}})">${word}</g></g><path id="line" d="M{{lineX1}} 100 H{{lineX2}}" stroke="{{line}}" stroke-width="2.5" stroke-linecap="round"/><text id="caption" x="200" y="{{captionY}}" text-anchor="middle" font-family="${SANS}" font-size="13" letter-spacing="3" fill="{{ink}}" opacity="0">{{caption}}</text></svg>`,
+      svg: `<svg viewBox="{{viewBox}}" overflow="{{overflow}}"><!-- {{text: text default='Chapter One' label='Text'}} {{caption: text default='The beginning' label='Caption'}} {{background: color default=#0F172A label='Background'}} {{ink: color default=#F8FAFC label='Text colour'}} {{line: color default=#38BDF8 label='Line'}} ${typeface(SANS, 800)} --><defs><clipPath id="above"><rect width="400" height="100"/></clipPath><clipPath id="below"><rect y="100" width="400" height="100"/></clipPath></defs><rect width="400" height="200" fill="{{background}}" opacity="{{backdrop}}"/><g clip-path="url(#above)"><g id="top" transform="translate(0 {{shift}})">${word}</g></g><g clip-path="url(#below)"><g id="bottom" transform="translate(0 -{{shift}})">${word}</g></g><path id="line" d="M{{lineX1}} 100 H{{lineX2}}" stroke="{{line}}" stroke-width="2.5" stroke-linecap="round"/><text id="caption" x="200" y="{{captionY}}" text-anchor="middle" font-family="{{font}}" font-size="13" letter-spacing="3" fill="{{ink}}" opacity="0">{{caption}}</text></svg>`,
       animate: [
         { id: "line", draw: true, ms: 600, ease: "in-out" },
         { id: "top", attrs: { transform: ["translate(0 {{shift}})", "translate(0 0)"] }, delay: 450, ms: 800, ease: "out" },
@@ -308,6 +337,7 @@ export const highlighter: VectorEffect = {
     const x1 = 400 - left + size * 0.2;
     const y = base - size * 0.3;
     return {
+      ...frame(v, left, length, base, size),
       size,
       length,
       base: r1(base),
@@ -318,7 +348,7 @@ export const highlighter: VectorEffect = {
     };
   },
   motion: {
-    svg: `<svg viewBox="0 0 400 200"><!-- {{text: text default='Ship it faster' label='Phrase'}} {{background: color default=#FFFFFF label='Background'}} {{ink: color default=#111827 label='Text colour'}} {{marker: color default=#FDE047 label='Marker'}} --><rect width="400" height="200" fill="{{background}}"/><g transform="rotate(-1.2 200 100)" opacity="0.9"><path id="swipe" d="{{swipe}}" fill="none" stroke="{{marker}}" stroke-width="{{thick}}"/><path id="ragged" d="{{ragged}}" fill="none" stroke="{{marker}}" stroke-width="{{thin}}" stroke-linecap="round"/></g><text id="phrase" x="200" y="{{base}}" text-anchor="middle" textLength="{{length}}" lengthAdjust="spacingAndGlyphs" font-family="${SANS}" font-size="{{size}}" font-weight="700" fill="{{ink}}" opacity="0">{{text}}</text></svg>`,
+    svg: `<svg viewBox="{{viewBox}}" overflow="{{overflow}}"><!-- {{text: text default='Ship it faster' label='Phrase'}} {{background: color default=#FFFFFF label='Background'}} {{ink: color default=#111827 label='Text colour'}} {{marker: color default=#FDE047 label='Marker'}} ${typeface(SANS, 700)} --><rect width="400" height="200" fill="{{background}}" opacity="{{backdrop}}"/><g transform="rotate(-1.2 200 100)" opacity="0.9"><path id="swipe" d="{{swipe}}" fill="none" stroke="{{marker}}" stroke-width="{{thick}}"/><path id="ragged" d="{{ragged}}" fill="none" stroke="{{marker}}" stroke-width="{{thin}}" stroke-linecap="round"/></g><text id="phrase" x="200" y="{{base}}" text-anchor="middle" textLength="{{length}}" lengthAdjust="spacingAndGlyphs" font-family="{{font}}" font-size="{{size}}" font-weight="{{weight}}" fill="{{ink}}" opacity="0">{{text}}</text></svg>`,
     animate: [
       { id: "phrase", attrs: { opacity: [0, 1] }, ms: 300, ease: "out" },
       { id: "swipe", draw: true, delay: 350, ms: 650, ease: "in-out" },
@@ -356,6 +386,8 @@ export const wordCycle: VectorEffect = {
     const step = size * 1.3;
     const wx = left + (lead + 0.3) * size;
     return {
+      ...frame(v, left, total * size, base, size),
+      bold: Math.min(900, Number(v.weight) + 100),
       size: r1(size),
       base: r1(base),
       px: r1(left),
@@ -377,10 +409,10 @@ export const wordCycle: VectorEffect = {
     };
   },
   motion: {
-    svg: `<svg viewBox="0 0 400 200"><!-- {{prefix: text default='We build' label='Lead-in'}} {{word1: text default=apps label='Word 1'}} {{word2: text default=brands label='Word 2'}} {{word3: text default=websites label='Word 3'}} {{word4: text default=games label='Word 4'}} {{background: color default=#FFFFFF label='Background'}} {{ink: color default=#0F172A label='Text colour'}} {{accent: color default=#6366F1 label='Accent'}} --><defs><clipPath id="window"><rect x="{{clipX}}" y="{{clipY}}" width="{{clipW}}" height="{{clipH}}"/></clipPath></defs><rect width="400" height="200" fill="{{background}}"/><text x="{{px}}" y="{{base}}" textLength="{{plen}}" lengthAdjust="spacingAndGlyphs" font-family="${SANS}" font-size="{{size}}" font-weight="700" fill="{{ink}}">{{prefix}}</text><g clip-path="url(#window)"><g id="reel" transform="translate(0 -0)">${Array.from(
+    svg: `<svg viewBox="{{viewBox}}" overflow="{{overflow}}"><!-- {{prefix: text default='We build' label='Lead-in'}} {{word1: text default=apps label='Word 1'}} {{word2: text default=brands label='Word 2'}} {{word3: text default=websites label='Word 3'}} {{word4: text default=games label='Word 4'}} {{background: color default=#FFFFFF label='Background'}} {{ink: color default=#0F172A label='Text colour'}} {{accent: color default=#6366F1 label='Accent'}} ${typeface(SANS, 700)} --><defs><clipPath id="window"><rect x="{{clipX}}" y="{{clipY}}" width="{{clipW}}" height="{{clipH}}"/></clipPath></defs><rect width="400" height="200" fill="{{background}}" opacity="{{backdrop}}"/><text x="{{px}}" y="{{base}}" textLength="{{plen}}" lengthAdjust="spacingAndGlyphs" font-family="{{font}}" font-size="{{size}}" font-weight="{{weight}}" fill="{{ink}}">{{prefix}}</text><g clip-path="url(#window)"><g id="reel" transform="translate(0 -0)">${Array.from(
       { length: CYCLE_WORDS + 1 },
       (_, k) =>
-        `<text x="{{wx}}" y="{{y${k}}}" textLength="{{len${k}}}" lengthAdjust="spacingAndGlyphs" font-family="${SANS}" font-size="{{size}}" font-weight="800" fill="{{accent}}">{{w${k % CYCLE_WORDS}}}</text>`,
+        `<text x="{{wx}}" y="{{y${k}}}" textLength="{{len${k}}}" lengthAdjust="spacingAndGlyphs" font-family="{{font}}" font-size="{{size}}" font-weight="{{bold}}" fill="{{accent}}">{{w${k % CYCLE_WORDS}}}</text>`,
     ).join("")}</g></g><rect id="under" x="{{wx}}" y="{{underY}}" width="{{len0}}" height="4" rx="2" fill="{{accent}}"/></svg>`,
     animate: Array.from({ length: CYCLE_WORDS }, (_, i): SvgAnimation[] => {
       const at = { delay: (i + 1) * SHOW_MS + i * ROLL_MS, ms: ROLL_MS, ease: "in-out" as const };
@@ -410,14 +442,14 @@ export const liquidFill: VectorEffect = {
   ],
   // The surface starts under the letters and ends above their caps.
   derived: (v) => {
-    const { size, length } = fit(String(v.text), 360, 110);
+    const { size, length, left } = fit(String(v.text), 360, 110);
     const base = 100 + size * 0.36;
-    return { size, length, base: r1(base), low: r1(base + 12), high: r1(base - size * 0.82 - 12) };
+    return { ...frame(v, left, length, base, size), size, length, base: r1(base), low: r1(base + 12), high: r1(base - size * 0.82 - 12) };
   },
   motion: ((): SvgMotion => {
-    const word = `x="200" y="{{base}}" text-anchor="middle" textLength="{{length}}" lengthAdjust="spacingAndGlyphs" font-family="${HEAVY}" font-size="{{size}}" font-weight="900"`;
+    const word = `x="200" y="{{base}}" text-anchor="middle" textLength="{{length}}" lengthAdjust="spacingAndGlyphs" font-family="{{font}}" font-size="{{size}}" font-weight="{{weight}}"`;
     return {
-      svg: `<svg viewBox="0 0 400 200"><!-- {{text: text default='FILL' label='Text'}} {{background: color default=#FFFFFF label='Background'}} {{empty: color default=#E0F2FE label='Empty'}} {{liquid: color default=#0284C7 label='Liquid'}} {{liquid2: color default=#38BDF8 label='Liquid sweep'}} --><defs><clipPath id="letters"><text ${word}>{{text}}</text></clipPath><linearGradient id="liq" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="400" y2="0" spreadMethod="repeat"><stop offset="0" stop-color="{{liquid}}"/><stop offset="0.5" stop-color="{{liquid2}}"/><stop offset="1" stop-color="{{liquid}}"/></linearGradient></defs><rect width="400" height="200" fill="{{background}}"/><text ${word} fill="{{empty}}" stroke="{{liquid}}" stroke-width="1.5" stroke-opacity="0.5">{{text}}</text><g clip-path="url(#letters)"><g id="level" transform="translate(0 {{low}})"><path id="back" d="${WAVE}" fill="{{liquid}}" opacity="0.45" transform="translate(-50 -5)"/><path id="wave" d="${WAVE}" fill="url(#liq)" transform="translate(0 0)"/></g></g></svg>`,
+      svg: `<svg viewBox="{{viewBox}}" overflow="{{overflow}}"><!-- {{text: text default='FILL' label='Text'}} {{background: color default=#FFFFFF label='Background'}} {{empty: color default=#E0F2FE label='Empty'}} {{liquid: color default=#0284C7 label='Liquid'}} {{liquid2: color default=#38BDF8 label='Liquid sweep'}} ${typeface(HEAVY, 900)} --><defs><clipPath id="letters"><text ${word}>{{text}}</text></clipPath><linearGradient id="liq" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="400" y2="0" spreadMethod="repeat"><stop offset="0" stop-color="{{liquid}}"/><stop offset="0.5" stop-color="{{liquid2}}"/><stop offset="1" stop-color="{{liquid}}"/></linearGradient></defs><rect width="400" height="200" fill="{{background}}" opacity="{{backdrop}}"/><text ${word} fill="{{empty}}" stroke="{{liquid}}" stroke-width="1.5" stroke-opacity="0.5">{{text}}</text><g clip-path="url(#letters)"><g id="level" transform="translate(0 {{low}})"><path id="back" d="${WAVE}" fill="{{liquid}}" opacity="0.45" transform="translate(-50 -5)"/><path id="wave" d="${WAVE}" fill="url(#liq)" transform="translate(0 0)"/></g></g></svg>`,
       animate: [
         { id: "level", attrs: { transform: ["translate(0 {{low}})", "translate(0 {{high}})"] }, ms: 2800, ease: "out" },
         { id: "wave", attrs: { transform: ["translate(0 0)", "translate(-200 0)"] }, ms: 3000, ease: "linear" },
@@ -463,13 +495,14 @@ export const glitchText: VectorEffect = {
     { name: "Vapor", values: { left: [1, 0.3, 0.85], right: [0.4, 0.6, 1], background: [0.08, 0.02, 0.12], amount: 1.4 } },
   ],
   derived: (v) => {
-    const { size, length } = fit(String(v.text), 340, 100);
+    const { size, length, left } = fit(String(v.text), 340, 100);
     const base = 100 + size * 0.36;
     const top = base - size * 0.78;
     const cuts = [0, ...BANDS.map((f) => r1(top + f * (base - top))), 200];
     const unit = size * Number(v.amount);
     const shift = ([x, y]: number[]) => `translate(${r1(x! * unit)} ${r1(y! * unit)})`;
     return {
+      ...frame(v, left, length, base, size),
       size,
       length,
       base: r1(base),
@@ -485,13 +518,13 @@ export const glitchText: VectorEffect = {
   },
   motion: ((): SvgMotion => {
     const word = (paint: string) =>
-      `<text x="200" y="{{base}}" text-anchor="middle" textLength="{{length}}" lengthAdjust="spacingAndGlyphs" font-family="${HEAVY}" font-size="{{size}}" font-weight="900" ${paint}>{{text}}</text>`;
+      `<text x="200" y="{{base}}" text-anchor="middle" textLength="{{length}}" lengthAdjust="spacingAndGlyphs" font-family="{{font}}" font-size="{{size}}" font-weight="{{weight}}" ${paint}>{{text}}</text>`;
     const jumps = (id: string, value: (k: number) => string) =>
       GLITCH.map((key, k): SvgAnimation => ({ id, attrs: { transform: [value(k), value(k)] }, delay: key.at, ms: 0 }));
     return {
-      svg: `<svg viewBox="0 0 400 200"><!-- {{text: text default='GLITCH' label='Text'}} {{background: color default=#07070B label='Background'}} {{ink: color default=#F5F5F5 label='Text colour'}} {{left: color default=#FF0040 label='Red copy'}} {{right: color default=#00F0FF label='Cyan copy'}} {{amount: float min=0 max=3 default=1 step=0.1 label='Intensity'}} --><defs>${[0, 1, 2, 3]
+      svg: `<svg viewBox="{{viewBox}}" overflow="{{overflow}}"><!-- {{text: text default='GLITCH' label='Text'}} {{background: color default=#07070B label='Background'}} {{ink: color default=#F5F5F5 label='Text colour'}} {{left: color default=#FF0040 label='Red copy'}} {{right: color default=#00F0FF label='Cyan copy'}} {{amount: float min=0 max=3 default=1 step=0.1 label='Intensity'}} ${typeface(HEAVY, 900)} --><defs>${[0, 1, 2, 3]
         .map((b) => `<clipPath id="slice${b}"><rect x="-100" y="{{cut${b}}}" width="600" height="{{band${b}}}"/></clipPath>`)
-        .join("")}</defs><rect width="400" height="200" fill="{{background}}"/><g id="red" style="mix-blend-mode:screen">${word(`fill="{{left}}"`)}</g><g id="cyan" style="mix-blend-mode:screen">${word(`fill="{{right}}"`)}</g>${[0, 1, 2, 3]
+        .join("")}</defs><rect width="400" height="200" fill="{{background}}" opacity="{{backdrop}}"/><g id="red" style="mix-blend-mode:screen">${word(`fill="{{left}}"`)}</g><g id="cyan" style="mix-blend-mode:screen">${word(`fill="{{right}}"`)}</g>${[0, 1, 2, 3]
         .map((b) => `<g clip-path="url(#slice${b})"><g id="s${b}">${word(`fill="{{ink}}"`)}</g></g>`)
         .join("")}</svg>`,
       animate: [
@@ -522,13 +555,14 @@ export const extrudedText: VectorEffect = {
   ],
   // Each layer sits a step further back along the extrude direction, shaded from the side colour to the shadow.
   derived: (v) => {
-    const { size, length } = fit(String(v.text), 320, 96);
+    const { size, length, left } = fit(String(v.text), 320, 96);
     const step = size * 0.03 * Number(v.depth);
     const at = (deg: number, i: number) => {
       const a = (deg * Math.PI) / 180;
       return `translate(${r1(Math.cos(a) * step * i)} ${r1(Math.sin(a) * step * i)})`;
     };
     return {
+      ...frame(v, left, length, 92 + size * 0.35, size),
       size,
       length,
       base: r1(92 + size * 0.35),
@@ -546,10 +580,10 @@ export const extrudedText: VectorEffect = {
   },
   motion: ((): SvgMotion => {
     const word = (paint: string) =>
-      `x="200" y="{{base}}" text-anchor="middle" textLength="{{length}}" lengthAdjust="spacingAndGlyphs" font-family="${HEAVY}" font-size="{{size}}" font-weight="900" stroke-linejoin="round" ${paint}`;
+      `x="200" y="{{base}}" text-anchor="middle" textLength="{{length}}" lengthAdjust="spacingAndGlyphs" font-family="{{font}}" font-size="{{size}}" font-weight="{{weight}}" stroke-linejoin="round" ${paint}`;
     const layers = Array.from({ length: LAYERS }, (_, k) => LAYERS - k);
     return {
-      svg: `<svg viewBox="0 0 400 200"><!-- {{text: text default='RETRO' label='Text'}} {{background: color default=#FFE8C2 label='Background'}} {{face: color default=#FFD23F label='Face'}} {{outline: color default=#1A1423 label='Outline'}} {{side: color default=#EE4266 label='Extrude'}} {{shade: color default=#3B1F2B label='Shadow'}} {{depth: float min=0.2 max=2 default=1 step=0.1 label='Depth'}} --><rect width="400" height="200" fill="{{background}}"/>${layers
+      svg: `<svg viewBox="{{viewBox}}" overflow="{{overflow}}"><!-- {{text: text default='RETRO' label='Text'}} {{background: color default=#FFE8C2 label='Background'}} {{face: color default=#FFD23F label='Face'}} {{outline: color default=#1A1423 label='Outline'}} {{side: color default=#EE4266 label='Extrude'}} {{shade: color default=#3B1F2B label='Shadow'}} {{depth: float min=0.2 max=2 default=1 step=0.1 label='Depth'}} ${typeface(HEAVY, 900)} --><rect width="400" height="200" fill="{{background}}" opacity="{{backdrop}}"/>${layers
         .map((i) => `<text id="e${i}" transform="translate(0 0)" ${word(`fill="{{fill${i}}}" stroke="{{fill${i}}}" stroke-width="2"`)}>{{text}}</text>`)
         .join("")}<text ${word(`fill="{{face}}" stroke="{{outline}}" stroke-width="2.5" paint-order="stroke"`)}>{{text}}</text></svg>`,
       animate: layers.flatMap((i): SvgAnimation[] => [

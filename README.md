@@ -134,7 +134,7 @@ animateCount({
 
 With `loop: false` a player plays once and stays on its last frame (like CSS `animation-fill-mode: forwards`); add `hideWhenPaused` to hide it at the end instead.
 
-Drip text can sit inside a heading. Set `inline: true` and the picture frames just the word, from cap height to baseline, while its outline and drips spill over the text around it. Give its container `display: inline-block`, `height: 0.72em` and the viewBox's aspect ratio. `font` and `weight` set its typeface, and `font: "inherit"` takes the heading's:
+Text effects (`category: "text"`) can sit inside a heading. Set `inline: true` and the picture frames just the text, from cap height to baseline. Its backdrop goes, and outlines, glows, underlines and drips spill over the text around it. Give its container `display: inline-block`, `height: 0.72em` and the viewBox's aspect ratio. Every text effect takes `font` and `weight`, and `font: "inherit"` takes the heading's. Effects whose default text is light on a dark backdrop need an ink colour that shows on your page:
 
 ```ts
 const motion = renderVectorEffect(getEffect("drip-text") as VectorEffect, { word: "Slop", inline: true, font: "inherit" });

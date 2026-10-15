@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { checkControlValue, parseControls } from "../shader/controls.js";
 import { svgFrame, svgMotionIssues } from "../vector/motion.js";
 import { svgDuration } from "../vector/svg.js";
+import type { VectorEffect } from "./types.js";
 import {
   EFFECT_CATEGORIES,
   EFFECTS,
@@ -232,6 +233,24 @@ describe("catalog", () => {
       }
     },
   );
+
+  it("every text effect takes a font and weight, and sits inline on the baseline", () => {
+    const texts = findEffects({ kind: "vector", category: "text" }) as VectorEffect[];
+    expect(texts.length).toBeGreaterThan(10);
+    for (const effect of texts) {
+      expect(effectControls(effect).map((c) => c.name), effect.id).toEqual(expect.arrayContaining(["font", "weight", "inline"]));
+      const block = renderVectorEffect(effect).svg;
+      expect(block, effect.id).toMatch(/^<svg viewBox="0 0 400 200" overflow="hidden"/);
+      const inline = renderVectorEffect(effect, { inline: true, font: "inherit", weight: 300 });
+      expect(inline.svg, effect.id).toMatch(/^<svg viewBox="[\d.-]+ [\d.-]+ [\d.]+ [\d.]+" overflow="visible"/);
+      expect(inline.svg, effect.id).not.toContain('viewBox="0 0 400 200"');
+      // Every word takes the font, and no backdrop covers the line.
+      expect(inline.svg.match(/font-family="([^"]*)"/g)!.every((f) => f === 'font-family="inherit"'), effect.id).toBe(true);
+      expect(inline.svg, effect.id).toContain('font-weight="300"');
+      expect(inline.svg, effect.id).not.toMatch(/<rect width="400" height="200"[^>]*opacity="1"/);
+      expect(svgMotionIssues(inline), effect.id).toEqual([]);
+    }
+  });
 
   it("typewriter writes its text with a caret, kinetic stagger one letter per slot", () => {
     const typed = renderVectorEffect(getEffect("typewriter") as never, { text: "Hi there" });
