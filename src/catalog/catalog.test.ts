@@ -155,4 +155,11 @@ describe("catalog", () => {
     expect(effectDefaults(getEffect("image-glitch")!).uImage).toBe(SAMPLE_IMAGES.landscape);
     expect(SAMPLE_IMAGES.landscape).toMatch(/^data:image\/svg\+xml;base64,/);
   });
+
+  it("exposes background alpha and sparsity controls on sparkles and bokeh", () => {
+    const sparkles = getEffect("sparkles")!;
+    const bokeh = getEffect("bokeh")!;
+    expect(effectDefaults(sparkles)).toMatchObject({ uBackgroundAlpha: 1, uChance: 1 });
+    expect(effectDefaults(bokeh)).toMatchObject({ uBackgroundAlpha: 1 });
+  });
 });
