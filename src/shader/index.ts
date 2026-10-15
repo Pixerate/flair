@@ -19,6 +19,7 @@ export {
   controlValue,
   describeValue,
   hexToRgb,
+  parseColor,
   humanise,
   imageUrls,
   isImageUrl,

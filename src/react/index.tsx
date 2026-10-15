@@ -25,7 +25,7 @@ import { renderVectorEffect, type VectorEffect as VectorEffectDefinition } from 
 import type { ControlValue } from "../shader/controls.js";
 import type { Clock } from "../time/clock.js";
 import type { SvgMotion } from "../vector/motion.js";
-import { svgFrameMarkup, svgViewBox } from "../vector/static.js";
+import { svgFrameMarkup, svgInlineLayout, svgViewBox } from "../vector/static.js";
 import { SvgPlayer, type SvgTrigger } from "../vector/svg.js";
 
 // Layout effects swap the still for the player before paint; on a server neither runs.
@@ -56,7 +56,11 @@ export interface SvgPlayerViewProps extends Omit<HTMLAttributes<HTMLSpanElement>
   trigger?: SvgTrigger;
   /** Pause while scrolled out of view. */
   pauseWhenHidden?: boolean;
-  /** Wait to start until scrolled into view. */
+  /**
+   * Wait to start until scrolled into view. Default `true` when it plays once
+   * (`loop={false}`, no trigger), so a one-shot further down the page does not
+   * finish before anyone sees it; `false` plays at mount.
+   */
   playOnEnter?: boolean;
   /** Hide the picture while paused or reset. */
   hideWhenPaused?: boolean;
@@ -85,6 +89,13 @@ export interface SvgPlayerViewProps extends Omit<HTMLAttributes<HTMLSpanElement>
    * as wide as its container with the viewBox's aspect ratio.
    */
   inline?: boolean | string;
+  /**
+   * With `inline`, keep room for what spills past the word (descenders,
+   * outlines, glows, drips): a margin of the picture's `data-overhang` (see
+   * `svgInlineLayout`), so the lines around it make space instead of being
+   * painted over. Default `false`.
+   */
+  contain?: boolean;
 }
 
 function prefersReducedMotion(): boolean {
@@ -92,11 +103,17 @@ function prefersReducedMotion(): boolean {
 }
 
 /** The host's size from the picture's viewBox, so the still and the player take the same room. */
-function hostStyle(svg: string, inline: boolean | string | undefined, style?: CSSProperties): CSSProperties {
+function hostStyle(svg: string, inline: boolean | string | undefined, contain: boolean | undefined, style?: CSSProperties): CSSProperties {
   const box = svgViewBox(svg);
   const aspectRatio = box ? `${box[2]} / ${box[3]}` : undefined;
+  const spill = inline && contain ? svgInlineLayout(svg)?.overhang : undefined;
   const base: CSSProperties = inline
-    ? { display: "inline-block", height: typeof inline === "string" ? inline : CAP_HEIGHT, aspectRatio }
+    ? {
+        display: "inline-block",
+        height: typeof inline === "string" ? inline : CAP_HEIGHT,
+        aspectRatio,
+        ...(spill && { margin: `${spill.top}em ${spill.right}em ${spill.bottom}em ${spill.left}em` }),
+      }
     : { display: "block", aspectRatio };
   return { position: "relative", ...base, ...style };
 }
@@ -127,6 +144,7 @@ export function SvgPlayerView(props: SvgPlayerViewProps) {
     poster,
     reducedMotion = "user",
     inline,
+    contain,
     style,
     ...rest
   } = props;
@@ -140,6 +158,8 @@ export function SvgPlayerView(props: SvgPlayerViewProps) {
   const at = poster ?? (trigger === "hover" || trigger === "press" ? "first" : "last");
   const markup = useMemo(() => svgFrameMarkup(motion, { at, steps }) ?? "", [motion, at, steps]);
   const stepsKey = steps?.join(",");
+  // A one-shot waits until it is seen.
+  const enter = playOnEnter ?? (loop === false && !trigger);
 
   useIsomorphicLayoutEffect(() => {
     const host = mount.current;
@@ -154,7 +174,7 @@ export function SvgPlayerView(props: SvgPlayerViewProps) {
       steps,
       trigger,
       pauseWhenHidden,
-      playOnEnter,
+      playOnEnter: enter,
       hideWhenPaused,
       clock,
       onPick: (id) => callbacks.current.onPick?.(id),
@@ -171,14 +191,14 @@ export function SvgPlayerView(props: SvgPlayerViewProps) {
     };
     // `speed` is applied below without remaking; `steps` by value.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [motion, loop, autoplay, hold, duration, stepsKey, trigger, pauseWhenHidden, playOnEnter, hideWhenPaused, clock, reducedMotion]);
+  }, [motion, loop, autoplay, hold, duration, stepsKey, trigger, pauseWhenHidden, enter, hideWhenPaused, clock, reducedMotion]);
 
   useEffect(() => {
     player.current?.setSpeed(speed ?? 1);
   }, [speed]);
 
   return (
-    <span {...rest} style={hostStyle(motion.svg, inline, style)}>
+    <span {...rest} style={hostStyle(motion.svg, inline, contain, style)}>
       <span ref={still} aria-hidden="true" style={LAYER} dangerouslySetInnerHTML={{ __html: markup }} />
       <span ref={mount} style={LAYER} />
     </span>

@@ -30,7 +30,7 @@ import { renderVectorEffect, type VectorEffect as VectorEffectDefinition } from 
 import type { ControlValue } from "../shader/controls.js";
 import type { Clock } from "../time/clock.js";
 import type { SvgMotion } from "../vector/motion.js";
-import { svgFrameMarkup, svgViewBox } from "../vector/static.js";
+import { svgFrameMarkup, svgInlineLayout, svgViewBox } from "../vector/static.js";
 import { SvgPlayer, type SvgTrigger } from "../vector/svg.js";
 
 /** Cap height of a heavy sans, as a share of its font size: what an inline word is framed to. */
@@ -62,7 +62,11 @@ export interface SvgPlayerParams {
   trigger?: SvgTrigger;
   /** Pause while scrolled out of view. */
   pauseWhenHidden?: boolean;
-  /** Wait to start until scrolled into view. */
+  /**
+   * Wait to start until scrolled into view. Default `true` when it plays once
+   * (`loop: false`, no trigger), so a one-shot further down the page does not
+   * finish before anyone sees it; `false` plays at mount.
+   */
   playOnEnter?: boolean;
   /** Hide the picture while paused or reset. */
   hideWhenPaused?: boolean;
@@ -91,6 +95,13 @@ export interface SvgPlayerParams {
    * viewBox's aspect ratio.
    */
   inline?: boolean | string;
+  /**
+   * With `inline`, keep room for what spills past the word (descenders,
+   * outlines, glows, drips): a margin of the picture's `data-overhang` (see
+   * `svgInlineLayout`), so the lines around it make space instead of being
+   * painted over. Default `false`.
+   */
+  contain?: boolean;
 }
 
 /** A catalog vector effect by id (or the effect itself), with its values. */
@@ -129,13 +140,14 @@ interface Resolved {
   hold?: number;
   trigger?: SvgTrigger;
   inline?: boolean | string;
+  contain?: boolean;
 }
 
 /** Remembers the last motion made from an effect, so values compared by content do not remake it. */
 type MotionCache = { key: string; effect: VectorEffectDefinition; motion: SvgMotion };
 
 function resolve(params: VectorEffectParams, cache?: { current?: MotionCache }): Resolved {
-  if (params.motion) return { motion: params.motion, hold: params.hold, trigger: params.trigger, inline: params.inline };
+  if (params.motion) return { motion: params.motion, hold: params.hold, trigger: params.trigger, inline: params.inline, contain: params.contain };
   const { id, values, preset } = params as VectorEffectByIdParams;
   const effect = typeof id === "string" ? getEffect(id) : id;
   if (!effect || effect.kind !== "vector")
@@ -154,11 +166,12 @@ function resolve(params: VectorEffectParams, cache?: { current?: MotionCache }):
     hold: params.hold ?? effect.hold,
     trigger: params.trigger ?? effect.trigger,
     inline: params.inline ?? values?.inline === true,
+    contain: params.contain,
   };
 }
 
 /** The host's sizing from the picture's viewBox, so the still and the player take the same room. */
-function hostStyle(svg: string, inline: boolean | string | undefined): [string, string][] {
+function hostStyle(svg: string, inline: boolean | string | undefined, contain?: boolean): [string, string][] {
   const box = svgViewBox(svg);
   const style: [string, string][] = [
     ["position", "relative"],
@@ -166,8 +179,13 @@ function hostStyle(svg: string, inline: boolean | string | undefined): [string, 
   ];
   if (inline) style.push(["height", typeof inline === "string" ? inline : CAP_HEIGHT]);
   if (box) style.push(["aspect-ratio", `${box[2]} / ${box[3]}`]);
+  const spill = inline && contain ? svgInlineLayout(svg)?.overhang : undefined;
+  if (spill) style.push(["margin", `${spill.top}em ${spill.right}em ${spill.bottom}em ${spill.left}em`]);
   return style;
 }
+
+/** Whether to wait until scrolled into view: as asked, else when it plays once. */
+const enters = (r: Resolved, p: SvgPlayerParams) => p.playOnEnter ?? (p.loop === false && !r.trigger);
 
 function stillMarkup(r: Resolved, params: SvgPlayerParams): string {
   const at = params.poster ?? (r.trigger === "hover" || r.trigger === "press" ? "first" : "last");
@@ -185,7 +203,7 @@ export function vectorEffectStill(params: VectorEffectParams): VectorEffectStill
   const r = resolve(params);
   return {
     markup: `<span ${STILL_ATTR} aria-hidden="true" style="${LAYER}">${stillMarkup(r, params)}</span>`,
-    style: hostStyle(r.motion.svg, r.inline)
+    style: hostStyle(r.motion.svg, r.inline, r.contain)
       .map(([k, v]) => `${k}: ${v}`)
       .join("; "),
   };
@@ -206,7 +224,7 @@ function playerKey(r: Resolved, p: SvgPlayerParams): unknown[] {
     p.steps?.join(","),
     r.trigger,
     p.pauseWhenHidden,
-    p.playOnEnter,
+    enters(r, p),
     p.hideWhenPaused,
     p.clock,
     p.reducedMotion ?? "user",
@@ -222,8 +240,8 @@ function playerKey(r: Resolved, p: SvgPlayerParams): unknown[] {
  * destroy. A still from {@link vectorEffectStill} in the element is hidden
  * while the player runs and shown again after; without one, the action makes
  * its own (so reduced motion still shows the picture) and sizes the element
- * from the viewBox, leaving alone any of `position`, `display`, `height` and
- * `aspect-ratio` the element's style already sets.
+ * from the viewBox, leaving alone any of `position`, `display`, `height`,
+ * `aspect-ratio` and `margin` the element's style already sets.
  *
  * For an attachment, `{@attach fromAction(vectorEffect, () => params)}`
  * (`fromAction` is from `svelte/attachments`). Throws when `id` is not a
@@ -260,7 +278,7 @@ export function vectorEffect(node: HTMLElement, initial: VectorEffectParams): Ac
   observer?.observe(node, { childList: true });
 
   const size = () => {
-    const style = hostStyle(resolved.motion.svg, resolved.inline);
+    const style = hostStyle(resolved.motion.svg, resolved.inline, resolved.contain);
     for (const [prop, value] of style) {
       if (!sized.has(prop) && node.style.getPropertyValue(prop)) continue;
       node.style.setProperty(prop, value);
@@ -303,7 +321,7 @@ export function vectorEffect(node: HTMLElement, initial: VectorEffectParams): Ac
       steps: params.steps,
       trigger: resolved.trigger,
       pauseWhenHidden: params.pauseWhenHidden,
-      playOnEnter: params.playOnEnter,
+      playOnEnter: enters(resolved, params),
       hideWhenPaused: params.hideWhenPaused,
       clock: params.clock,
       // The latest params' callback, without remaking the player.

@@ -44,12 +44,14 @@ import { digitalRain, pixelSunset, synthwaveGrid, tvStatic } from "./shaders/ret
 import { textShaders } from "./shaders/text.js";
 import { imageTreatments } from "./shaders/treatments.js";
 import { textEffects } from "./text.js";
-import { EFFECT_CATEGORIES, vectorEffectControls, type EffectCategory, type EffectDefinition, type ShaderEffect } from "./types.js";
+import { CURRENT_COLOR, EFFECT_CATEGORIES, isCurrentColor, vectorEffectControls, type EffectCategory, type EffectDefinition, type ShaderEffect } from "./types.js";
 import { vectorEffects } from "./vector.js";
 
 export {
   colorControl,
+  CURRENT_COLOR,
   EFFECT_CATEGORIES,
+  isCurrentColor,
   numberControl,
   renderVectorEffect,
   VECTOR_CONTROL_TYPES,
@@ -165,5 +167,7 @@ export function effectDefaults(
 ): Record<string, ControlValue> {
   const preset = options.preset ? effect.presets?.find((p) => p.name === options.preset)?.values : undefined;
   const merged = { ...preset, ...options.values };
-  return Object.fromEntries(effectControls(effect).map((c) => [c.name, controlValue(c, merged)]));
+  // A vector effect's colours may also follow the text around it.
+  const keep = (c: ControlDef) => effect.kind === "vector" && c.color && isCurrentColor(merged[c.name]);
+  return Object.fromEntries(effectControls(effect).map((c) => [c.name, keep(c) ? CURRENT_COLOR : controlValue(c, merged)]));
 }

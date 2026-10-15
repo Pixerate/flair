@@ -5,6 +5,7 @@ import {
   controlValue,
   describeValue,
   hexToRgb,
+  parseColor,
   humanise,
   imageUrls,
   isImageUrl,
@@ -328,7 +329,7 @@ describe("coerceControlValue", () => {
     expect(coerceControlValue(speed, Infinity)).toBe("uSpeed takes a number.");
     expect(coerceControlValue(center, [1])).toBe("uCenter takes 2 numbers.");
     expect(coerceControlValue(center, [1, "2"])).toBe("uCenter takes 2 numbers.");
-    expect(coerceControlValue(tint, "blue")).toBe('uTint takes a colour like "#77C16A".');
+    expect(coerceControlValue(tint, "blue")).toBe('uTint takes a colour like "#77C16A", "rgb(119 193 106)" or "hsl(110 40% 59%)".');
     expect(coerceControlValue(tint, [1, 2])).toBe(
       'uTint takes 3 numbers (or a colour like "#77C16A").',
     );
@@ -383,5 +384,28 @@ describe("describeValue", () => {
 
   it("passes booleans through", () => {
     expect(describeValue(one("uniform bool uC; // @control"), true)).toBe(true);
+  });
+});
+
+describe("parseColor", () => {
+  it("reads hex, rgb() and hsl() colours", () => {
+    expect(parseColor("#000")).toEqual([0, 0, 0]);
+    expect(parseColor("#FFFFFF")).toEqual([1, 1, 1]);
+    expect(parseColor("#ff000080")![3]).toBeCloseTo(0.502);
+    expect(parseColor("#f00f")).toEqual([1, 0, 0]);
+    expect(parseColor("rgb(255, 0, 51)")).toEqual([1, 0, 0.2]);
+    expect(parseColor("rgb(100% 0% 0% / 50%)")).toEqual([1, 0, 0, 0.5]);
+    expect(parseColor("rgba(0,0,255,0.25)")).toEqual([0, 0, 1, 0.25]);
+    expect(parseColor("hsl(120 100% 50%)")!.map((n) => +n.toFixed(3))).toEqual([0, 1, 0]);
+    expect(parseColor("hsl(0deg, 0%, 50%)")!.map((n) => +n.toFixed(3))).toEqual([0.5, 0.5, 0.5]);
+    for (const bad of ["red", "currentColor", "#12", "rgb(1 2)", "hsl(a b c)", ""]) expect(parseColor(bad), bad).toBeNull();
+  });
+
+  it("lets colour controls take CSS colours, through controlValue and checkControlValue", () => {
+    const tint = { name: "tint", type: "vec3", color: true, label: "Tint", min: 0, max: 1, step: 0.01, default: [1, 1, 1], line: 1 } as const;
+    expect(controlValue(tint as never, { tint: "#000" })).toEqual([0, 0, 0]);
+    expect(controlValue(tint as never, { tint: "nonsense" })).toEqual([1, 1, 1]);
+    expect(checkControlValue(tint as never, "rgb(255 0 0)")).toEqual({ ok: true, value: [1, 0, 0] });
+    expect(checkControlValue({ ...tint, type: "vec4", default: [1, 1, 1, 1] } as never, "#ff000080")).toMatchObject({ ok: true });
   });
 });

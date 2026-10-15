@@ -134,12 +134,17 @@ animateCount({
 
 With `loop: false` a player plays once and stays on its last frame (like CSS `animation-fill-mode: forwards`); add `hideWhenPaused` to hide it at the end instead.
 
-Text effects (`category: "text"`) can sit inside a heading. Set `inline: true` and the picture frames just the text, from cap height to baseline. Its backdrop goes, and outlines, glows, underlines and drips spill over the text around it. Give its container `display: inline-block`, `height: 0.72em` and the viewBox's aspect ratio. Every text effect takes `font` and `weight`, and `font: "inherit"` takes the heading's. Effects whose default text is light on a dark backdrop need an ink colour that shows on your page:
+Text effects (`category: "text"`) can sit inside a heading:
+
+- **`inline: true`** frames just the text, from cap height to baseline. The backdrop is hidden, and outlines, glows, underlines and drips spill over the text around it. Inline text keeps its full size at any length: the picture gets wider instead of the text shrinking. Give the container `display: inline-block`, `height: 0.72em` and the viewBox's aspect ratio.
+- **Overhang**: each text effect writes `data-overhang="top right bottom left"` (in ems) on its `<svg>`, saying how far it reaches past its box when it comes to rest. `svgInlineLayout(motion.svg)` (from `@pixerate/flair/vector`) reads the aspect ratio and the overhang. Use the overhang as a margin to keep room for drips and glows.
+- **Typeface**: every text effect takes `font` and `weight`, and `font: "inherit"` uses the heading's font.
+- **Colour**: colour controls take any CSS hex, `rgb()` or `hsl()` colour, or `currentColor` to follow the text colour around it, so one effect suits light and dark themes. Effects whose default text is light on a dark backdrop need an ink colour that shows on your page.
 
 ```ts
-const motion = renderVectorEffect(getEffect("drip-text") as VectorEffect, { word: "Slop", inline: true, font: "inherit" });
-const [, , w, h] = motion.svg.match(/viewBox="([^"]+)"/)![1]!.split(" ").map(Number);
-Object.assign(host.style, { display: "inline-block", height: "0.72em", aspectRatio: `${w} / ${h}` });
+const motion = renderVectorEffect(getEffect("drip-text") as VectorEffect, { word: "Slop", inline: true, font: "inherit", outline: "currentColor" });
+const { aspectRatio, overhang: o } = svgInlineLayout(motion.svg)!;
+Object.assign(host.style, { display: "inline-block", height: "0.72em", aspectRatio: `${aspectRatio}`, margin: `${o.top}em ${o.right}em ${o.bottom}em ${o.left}em` });
 new SvgPlayer(host, motion, { loop: false });
 ```
 
@@ -165,7 +170,8 @@ import { VectorEffect } from "@pixerate/flair/react";
 
 - **Server rendering**: both render a still of the last frame as markup (`"first"` for hover and press triggers; set `poster` for another), sized from the viewBox, so the page hydrates with the picture in place. The `SvgPlayer` takes over after mount and is disposed on unmount.
 - **Reduced motion**: under `prefers-reduced-motion: reduce` the still stays. `reducedMotion="always"` or `"never"` overrides it.
-- **Size**: a block as wide as its container, with the viewBox's aspect ratio. With `inline` (or an effect whose `inline` control is on, like drip text's) it is an `inline-block` 0.72em high, sitting on the baseline like a capital letter; pass a CSS length to `inline` for another height.
+- **Size**: a block as wide as its container, with the viewBox's aspect ratio. With `inline` (or an effect whose `inline` control is on) it is an `inline-block` 0.72em high, sitting on the baseline like a capital letter; pass a CSS length to `inline` for another height. Add `contain` to keep room for what spills past the text (a margin of its overhang).
+- **Plays when seen**: an effect that plays once (`loop={false}`, no trigger) waits until it is scrolled into view, so one further down the page doesn't finish before anyone sees it. Pass `playOnEnter={false}` to start at mount.
 - **Props**: player options (`loop`, `autoplay`, `speed`, `hold`, `trigger`, `steps`, `pauseWhenHidden`, `playOnEnter`, `clock` …), `values` and `preset` for an effect, `onPlayer` for the player itself, and any `<span>` attribute (`elementId` sets the host's `id` on `<VectorEffect>`). Values are compared by content, so an inline object does not restart it; pass `<SvgPlayerView>` a memoised `motion`.
 
 Without React or Svelte, `svgFrameMarkup(motion, { at: "last" })` (from `@pixerate/flair/vector`) gives the same still as safe `<svg>` markup with no DOM, for any server or framework.
@@ -186,7 +192,7 @@ Without React or Svelte, `svgFrameMarkup(motion, { at: "last" })` (from `@pixera
 <h1>Stop the <span use:vectorEffect={params} style={still.style}>{@html still.markup}</span></h1>
 ```
 
-- **Params**: the React props, as one object: `id` with `values` and `preset`, or `motion`; player options; `poster`, `reducedMotion`, `inline`, `onPlayer`. A change remakes the player (values by content; `speed` without remaking), and it is disposed when the element goes.
+- **Params**: the React props, as one object: `id` with `values` and `preset`, or `motion`; player options; `poster`, `reducedMotion`, `inline`, `contain`, `onPlayer`. An effect that plays once waits until it is scrolled into view, as in React. A change remakes the player (values by content; `speed` without remaking), and it is disposed when the element goes.
 - **Still**: `markup` is the still's layer and `style` the host's size from the viewBox, with the same rules as React. The action hides the still while the player runs and keeps it under `prefers-reduced-motion`. Without `vectorEffectStill` it makes its own still and sizes the element on the client.
 - **Attachments**: `{@attach fromAction(vectorEffect, () => params)}`, with `fromAction` from `svelte/attachments`.
 

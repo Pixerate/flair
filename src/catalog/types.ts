@@ -232,12 +232,22 @@ export function vectorControlDef(control: VectorControl, line = 0): ControlDef {
   };
 }
 
+/** What a vector effect's colour control takes to paint in the surrounding text's colour (CSS `color`). */
+export const CURRENT_COLOR = "currentColor";
+
+/** Whether a colour value is `currentColor` (in any case), which vector effects keep as it is. */
+export function isCurrentColor(value: unknown): value is string {
+  return typeof value === "string" && value.trim().toLowerCase() === "currentcolor";
+}
+
 /**
  * A vector effect's motion with its controls filled in. A string that is
  * only a placeholder (an animation's `"{{width}}"`) becomes the value
  * itself, so numbers stay numbers; elsewhere a placeholder becomes its text,
  * escaped in the markup so any text is safe to show. Comments are dropped
- * from the markup. Colours also take "#RRGGBB"; missing values, and values a
+ * from the markup. Colours also take CSS colours (see `parseColor`) and
+ * `currentColor`, which paints in the surrounding text's colour (`derived`
+ * then sees the string "currentColor"); missing values, and values a
  * control cannot take, use defaults. Placeholders no control or derived
  * value fills stay put.
  */
@@ -249,6 +259,11 @@ export function renderVectorEffect(
   const placeholders = new Map<string, string | number | boolean>();
   for (const control of vectorEffectControls(effect)) {
     const given = values[control.name];
+    if (control.color && isCurrentColor(given)) {
+      filled[control.name] = CURRENT_COLOR;
+      placeholders.set(control.name, CURRENT_COLOR);
+      continue;
+    }
     const check = given === undefined ? undefined : checkControlValue(control, given);
     filled[control.name] = check?.ok ? check.value : control.default;
     placeholders.set(control.name, written(control, filled[control.name]!));

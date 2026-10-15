@@ -50,8 +50,10 @@ export {
 export {
   parseViewBox,
   svgFrameMarkup,
+  svgInlineLayout,
   svgViewBox,
   type SvgFrameMarkupOptions,
+  type SvgInlineLayout,
 } from "./static.js";
 export {
   computeBoxFit,
