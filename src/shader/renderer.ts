@@ -7,6 +7,7 @@ import {
   type CompileError,
   type CompiledShader,
 } from "./program.js";
+import { PointerTracker } from "./pointer.js";
 import { TextureCache, type ImageLoadError } from "./textures.js";
 
 /** Whether the latest source compiled, and if not, why. */
@@ -68,6 +69,8 @@ export class ShaderRenderer {
   private wasPlayingBeforeHidden = false;
   private hasEnteredViewport = false;
   private mouse: [number, number, number, number] = [0, 0, 0, 0];
+  /** `iPointer` and `iClicks`. */
+  private pointer = new PointerTracker();
   private disposed = false;
   /** The latest source's status. */
   status: CompileStatus = { ok: true, errors: [] };
@@ -142,6 +145,8 @@ export class ShaderRenderer {
     canvas.addEventListener("webglcontextrestored", this.onRestored);
     canvas.addEventListener("pointerdown", this.onPointerDown);
     canvas.addEventListener("pointermove", this.onPointerMove);
+    canvas.addEventListener("pointerenter", this.onPointerEnter);
+    canvas.addEventListener("pointerleave", this.onPointerLeave);
     window.addEventListener("pointerup", this.onPointerUp);
     this.resize();
     this.raf = requestAnimationFrame(this.tick);
@@ -209,6 +214,7 @@ export class ShaderRenderer {
   /** Back to `iTime` 0 and frame 0. */
   restart() {
     this.time = 0;
+    this.pointer.clear();
     this.frame = 0;
     this.render();
     this.emit();
@@ -216,6 +222,8 @@ export class ShaderRenderer {
 
   /** Jumps to `time` seconds (not below 0) and draws it. */
   seek(time: number) {
+    // Clicks are stamped with iTime: going back would replay them.
+    if (time < this.time) this.pointer.clear();
     this.time = Math.max(0, time);
     this.render();
     this.emit();
@@ -260,6 +268,8 @@ export class ShaderRenderer {
     this.canvas.removeEventListener("webglcontextrestored", this.onRestored);
     this.canvas.removeEventListener("pointerdown", this.onPointerDown);
     this.canvas.removeEventListener("pointermove", this.onPointerMove);
+    this.canvas.removeEventListener("pointerenter", this.onPointerEnter);
+    this.canvas.removeEventListener("pointerleave", this.onPointerLeave);
     window.removeEventListener("pointerup", this.onPointerUp);
     if (this.gl && this.shader) this.gl.deleteProgram(this.shader.program);
     this.textures?.dispose();
@@ -295,6 +305,8 @@ export class ShaderRenderer {
         delta,
         frame: this.frame,
         mouse: this.mouse,
+        pointer: this.pointer.pointer(this.time),
+        clicks: this.pointer.clicksAt(this.time),
       },
       this.textures ?? undefined,
     );
@@ -358,17 +370,32 @@ export class ShaderRenderer {
   private onPointerDown = (e: PointerEvent) => {
     const [x, y] = this.toPixels(e);
     this.mouse = [x, y, x, y];
+    this.pointer.down(x, y, this.time);
     if (!this.playing) this.render();
   };
 
   private onPointerMove = (e: PointerEvent) => {
-    if (this.mouse[2] <= 0 || e.buttons === 0) return;
     const [x, y] = this.toPixels(e);
+    this.pointer.move(x, y);
+    if (this.mouse[2] <= 0 || e.buttons === 0) {
+      if (!this.playing) this.render();
+      return;
+    }
     this.mouse = [x, y, this.mouse[2], this.mouse[3]];
     if (!this.playing) this.render();
   };
 
+  private onPointerEnter = (e: PointerEvent) => {
+    this.pointer.move(...this.toPixels(e));
+    this.pointer.hover(true, this.time);
+  };
+
+  private onPointerLeave = () => {
+    this.pointer.hover(false, this.time);
+  };
+
   private onPointerUp = () => {
+    this.pointer.up(this.time);
     if (this.mouse[2] > 0)
       this.mouse = [this.mouse[0], this.mouse[1], -this.mouse[2], -Math.abs(this.mouse[3])];
   };

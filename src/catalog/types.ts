@@ -8,6 +8,7 @@ import {
   type ControlValue,
 } from "../shader/controls.js";
 import type { SvgMotion } from "../vector/motion.js";
+import type { SvgTrigger } from "../vector/svg.js";
 
 /** What an effect is for, used to group the catalog. */
 export type EffectCategory =
@@ -21,6 +22,7 @@ export type EffectCategory =
   | "overlay"
   | "text"
   | "morph"
+  | "interaction"
   | "transition"
   | "loader"
   | "data"
@@ -38,6 +40,7 @@ export const EFFECT_CATEGORIES: readonly EffectCategory[] = [
   "overlay",
   "text",
   "morph",
+  "interaction",
   "transition",
   "loader",
   "data",
@@ -111,6 +114,12 @@ export interface VectorEffect extends EffectBase {
   derived?: (values: Record<string, ControlValue>) => Record<string, string | number>;
   /** Ms to rest on the last frame before it loops (default 600). */
   hold?: number;
+  /**
+   * Plays in answer to the pointer rather than on a loop: pass it to
+   * `SvgPlayer` (`{ trigger: effect.trigger }`). Click-triggered pictures
+   * change on steps, each click playing the next.
+   */
+  trigger?: SvgTrigger;
 }
 
 export type EffectDefinition = ShaderEffect | VectorEffect;

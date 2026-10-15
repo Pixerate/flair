@@ -25,7 +25,9 @@ import {
 import { blackHole, bokeh, godRays, lightRibbons, nebula, neonRipple, sparkles, starfield } from "./shaders/light.js";
 import { caustics, flames, lavaLamp, marble, plasma, smoke } from "./shaders/organic.js";
 import { barberStripes, dotWave, hexPulse, kaleidoscope, moire, neonCircuit, truchet, voronoi } from "./shaders/patterns.js";
+import { interactionEffects } from "./interaction.js";
 import { morphEffects } from "./morph.js";
+import { interactionShaders } from "./shaders/interaction.js";
 import { morphShaders } from "./shaders/morph.js";
 import { overlayEffects } from "./shaders/overlay.js";
 import { digitalRain, pixelSunset, synthwaveGrid, tvStatic } from "./shaders/retro.js";
@@ -99,11 +101,12 @@ export const SHADER_EFFECTS: readonly ShaderEffect[] = [
   ...overlayEffects,
   ...textShaders,
   ...morphShaders,
+  ...interactionShaders,
   ...transitions,
 ];
 
 /** Every effect in the catalog, shaders first, grouped by category. */
-export const EFFECTS: readonly EffectDefinition[] = [...SHADER_EFFECTS, ...vectorEffects, ...textEffects, ...morphEffects].sort(
+export const EFFECTS: readonly EffectDefinition[] = [...SHADER_EFFECTS, ...vectorEffects, ...textEffects, ...morphEffects, ...interactionEffects].sort(
   (a, b) => EFFECT_CATEGORIES.indexOf(a.category) - EFFECT_CATEGORIES.indexOf(b.category),
 );
 
