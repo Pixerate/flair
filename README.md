@@ -45,6 +45,7 @@ Flair gives products a library of good-looking, configurable visual effects (her
 | `@pixerate/flair/catalog` | `EFFECTS`, `getEffect`, `findEffects`, `effectDefaults`, `renderVectorEffect`, `vectorControls`, GLSL helpers, sample images, `textImage` | None |
 | `@pixerate/flair/vector` | `SvgMotion`, `svgFrame`, `svgView`, `SvgPlayer`, `svgFrameMarkup`, `svgViewBox`, `animateCount`, `formatCount`, `morphPaths`, `morphSequence`, `svgMotionIssues` | None |
 | `@pixerate/flair/react` | `<VectorEffect>`, `<SvgPlayerView>`: vector effects as React components, server-rendered as a still | `react` ≥ 18 (optional peer) |
+| `@pixerate/flair/svelte` | `vectorEffect` action, `vectorEffectStill`: vector effects in Svelte, server-rendered as a still | `svelte` ≥ 5 (optional peer; types only) |
 | `@pixerate/flair/editor` | `EffectEditor`, effect documents, keyframe tracks, renderer bindings, parameter-panel binding, agent tools and instructions | `@pixerate/editor` ≥ 0.29 (optional peer; only its dependency-free `/history`, `/commands`, `/tools`, `/animation` and `/parameters` subpaths) |
 | `@pixerate/flair/node` | `exportMotionGraphic`: renders a shader to GIF/MP4 through headless Chrome and ffmpeg | Node.js |
 
@@ -167,7 +168,27 @@ import { VectorEffect } from "@pixerate/flair/react";
 - **Size**: a block as wide as its container, with the viewBox's aspect ratio. With `inline` (or an effect whose `inline` control is on, like drip text's) it is an `inline-block` 0.72em high, sitting on the baseline like a capital letter; pass a CSS length to `inline` for another height.
 - **Props**: player options (`loop`, `autoplay`, `speed`, `hold`, `trigger`, `steps`, `pauseWhenHidden`, `playOnEnter`, `clock` …), `values` and `preset` for an effect, `onPlayer` for the player itself, and any `<span>` attribute (`elementId` sets the host's `id` on `<VectorEffect>`). Values are compared by content, so an inline object does not restart it; pass `<SvgPlayerView>` a memoised `motion`.
 
-Without React, `svgFrameMarkup(motion, { at: "last" })` (from `@pixerate/flair/vector`) gives the same still as safe `<svg>` markup with no DOM, for any server or framework.
+Without React or Svelte, `svgFrameMarkup(motion, { at: "last" })` (from `@pixerate/flair/vector`) gives the same still as safe `<svg>` markup with no DOM, for any server or framework.
+
+### Svelte
+
+`@pixerate/flair/svelte` does the same for Svelte 5, as plain TypeScript (no `.svelte` files, so nothing to compile). The `vectorEffect` action plays an effect by `id` (or any `motion`) in its element, and `vectorEffectStill` gives the server-rendered still:
+
+```svelte
+<script>
+  import { vectorEffect, vectorEffectStill } from "@pixerate/flair/svelte";
+
+  let { word = "Slop" } = $props();
+  const params = $derived({ id: "drip-text", values: { word, inline: true, font: "inherit" }, loop: false });
+  const still = $derived(vectorEffectStill(params));
+</script>
+
+<h1>Stop the <span use:vectorEffect={params} style={still.style}>{@html still.markup}</span></h1>
+```
+
+- **Params**: the React props, as one object: `id` with `values` and `preset`, or `motion`; player options; `poster`, `reducedMotion`, `inline`, `onPlayer`. A change remakes the player (values by content; `speed` without remaking), and it is disposed when the element goes.
+- **Still**: `markup` is the still's layer and `style` the host's size from the viewBox, with the same rules as React. The action hides the still while the player runs and keeps it under `prefers-reduced-motion`. Without `vectorEffectStill` it makes its own still and sizes the element on the client.
+- **Attachments**: `{@attach fromAction(vectorEffect, () => params)}`, with `fromAction` from `svelte/attachments`.
 
 `shader-text` fills letters from a text image: set its `uText` control to `textImage("Your title", { weight: 900 })`, a transparent SVG `data:` URL of any Unicode text.
 

@@ -7,6 +7,7 @@ export default defineConfig({
     "editor/index": "src/editor/index.ts",
     "vector/index": "src/vector/index.ts",
     "react/index": "src/react/index.tsx",
+    "svelte/index": "src/svelte/index.ts",
     node: "src/node.ts",
     cli: "src/cli.ts",
   },
@@ -16,5 +17,5 @@ export default defineConfig({
   clean: true,
   // Shared modules go in chunks, so classes are one copy across entries (instanceof keeps working).
   splitting: true,
-  external: ["@pixerate/editor", "react", "react-dom"],
+  external: ["@pixerate/editor", "react", "react-dom", "svelte"],
 });
