@@ -343,6 +343,86 @@ export const confetti: VectorEffect = {
 };
 
 
+/** Flow network's nodes and links, left to right, with the critical path through them. */
+const NODES: Record<string, [number, number]> = {
+  s: [40, 120], a: [120, 60], b: [120, 180], c: [280, 50], d: [290, 130], e: [280, 200], t: [360, 120],
+};
+const HUB: [number, number] = [200, 120];
+const link = ([x1, y1]: [number, number], [x2, y2]: [number, number]) => {
+  const mid = (x1 + x2) / 2;
+  return `M${x1} ${y1} C${mid} ${y1} ${mid} ${y2} ${x2} ${y2}`;
+};
+const LINKS: { from: [number, number]; to: [number, number]; column: number }[] = [
+  { from: NODES.s!, to: NODES.a!, column: 0 },
+  { from: NODES.s!, to: NODES.b!, column: 0 },
+  { from: NODES.a!, to: HUB, column: 1 },
+  { from: NODES.b!, to: HUB, column: 1 },
+  { from: HUB, to: NODES.c!, column: 2 },
+  { from: HUB, to: NODES.d!, column: 2 },
+  { from: HUB, to: NODES.e!, column: 2 },
+  { from: NODES.c!, to: NODES.t!, column: 3 },
+  { from: NODES.d!, to: NODES.t!, column: 3 },
+  { from: NODES.e!, to: NODES.t!, column: 3 },
+];
+const CRITICAL = [NODES.s!, NODES.b!, HUB, NODES.c!, NODES.t!]
+  .map((p, i, all) => (i === 0 ? "" : link(all[i - 1]!, p).replace(/^M[\d.]+ [\d.]+ /, i === 1 ? `M${all[0]![0]} ${all[0]![1]} ` : "")))
+  .filter(Boolean)
+  .join(" ");
+/** The column a node is reached in, so it appears as the links arrive. */
+const NODE_COLUMN: Record<string, number> = { s: 0, a: 1, b: 1, c: 3, d: 3, e: 3, t: 4 };
+const COLUMN_MS = 280;
+const PATH_START = 1500;
+const PATH_MS = 1800;
+
+export const flowNetwork: VectorEffect = {
+  kind: "vector",
+  id: "flow-network",
+  name: "Flow network",
+  description: "A node graph linking up, then a glowing critical path racing through it to a pulsing hub.",
+  category: "data",
+  tags: ["network", "graph", "dag", "workflow", "tech", "explainer"],
+  hold: 1200,
+  presets: [
+    { name: "Light", values: { background: [0.93, 0.95, 0.96], link: [0.37, 0.72, 0.69], path: [0.96, 0.62, 0.04], ink: [0.2, 0.25, 0.33] } },
+    { name: "Neon", values: { background: [0.04, 0.02, 0.1], link: [0.13, 0.83, 0.93], path: [0.96, 0.45, 0.71], ink: [0.85, 0.85, 1] } },
+  ],
+  motion: {
+    svg: `<svg viewBox="0 0 400 240" font-family="system-ui, sans-serif"><!-- {{label: text default='Critical path' label='Hub label'}} {{background: color default=#0B1220 label='Background'}} {{link: color default=#4FD1C5 label='Links'}} {{path: color default=#F5A524 label='Critical path'}} {{ink: color default=#CBD5E1 label='Label'}} {{glow: float min=0 max=6 default=2.5 step=0.5 label='Glow'}} --><defs><filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="{{glow}}" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><rect width="400" height="240" fill="{{background}}"/>${LINKS.map(
+      (l, i) => `<path id="l${i}" d="${link(l.from, l.to)}" fill="none" stroke="{{link}}" stroke-width="1.6" stroke-opacity="0.75" filter="url(#glow)"/>`,
+    ).join("")}<path id="crit" d="${CRITICAL}" fill="none" stroke="{{path}}" stroke-width="3" stroke-linecap="round" filter="url(#glow)"/>${[0, 1]
+      .map((i) => `<circle id="ring${i}" cx="${HUB[0]}" cy="${HUB[1]}" r="10" fill="none" stroke="{{link}}" stroke-width="2" opacity="0"/>`)
+      .join("")}${Object.entries(NODES)
+      .map(([id, [x, y]]) => `<circle id="n${id}" cx="${x}" cy="${y}" r="6" fill="{{background}}" stroke="{{link}}" stroke-width="2.5" filter="url(#glow)" opacity="0"/>`)
+      .join("")}<g id="hub" opacity="0"><circle cx="${HUB[0]}" cy="${HUB[1]}" r="13" fill="{{link}}" fill-opacity="0.25" stroke="{{link}}" stroke-width="2" filter="url(#glow)"/><circle cx="${HUB[0]}" cy="${HUB[1]}" r="6" fill="{{link}}"/></g><text id="caption" x="${HUB[0]}" y="${HUB[1] + 34}" text-anchor="middle" font-size="12" font-weight="600" fill="{{ink}}" opacity="0">{{label}}</text>${[0, 1, 2]
+      .map((i) => `<circle id="pkt${i}" r="2.5" fill="{{link}}" filter="url(#glow)" opacity="0"/>`)
+      .join("")}<circle id="comet" r="5" fill="#FFFFFF" stroke="{{path}}" stroke-width="2" filter="url(#glow)" opacity="0"/></svg>`,
+    animate: [
+      ...LINKS.map((l, i): SvgAnimation => ({ id: `l${i}`, draw: true, delay: l.column * COLUMN_MS, ms: 500, ease: "out" })),
+      ...Object.keys(NODES).map((id): SvgAnimation => ({ id: `n${id}`, attrs: { opacity: [0, 1] }, delay: Math.max(0, NODE_COLUMN[id]! * COLUMN_MS - 120), ms: 250 })),
+      { id: "hub", attrs: { opacity: [0, 1] }, delay: 2 * COLUMN_MS - 120, ms: 300 },
+      { id: "caption", attrs: { opacity: [0, 1], y: [HUB[1] + 40, HUB[1] + 34] }, delay: 2 * COLUMN_MS, ms: 400, ease: "out" },
+      // Data packets drift along a few links while the path waits.
+      ...[3, 5, 8].map((link, i): SvgAnimation[] => [
+        { id: `pkt${i}`, attrs: { opacity: [0, 1] }, delay: 1000 + i * 150, ms: 150 },
+        { id: `pkt${i}`, along: `l${link}`, delay: 1000 + i * 150, ms: 1100, ease: "in-out" },
+        { id: `pkt${i}`, attrs: { opacity: [1, 0] }, delay: 2000 + i * 150, ms: 200 },
+      ]).flat(),
+      { id: "crit", draw: true, delay: PATH_START, ms: PATH_MS, ease: "in-out" },
+      { id: "comet", attrs: { opacity: [0, 1] }, delay: PATH_START, ms: 150 },
+      { id: "comet", along: "crit", delay: PATH_START, ms: PATH_MS, ease: "in-out" },
+      { id: "comet", attrs: { opacity: [1, 0] }, delay: PATH_START + PATH_MS, ms: 300 },
+      // Rings pulse out from the hub as the comet passes it, halfway along.
+      ...[0, 1].map((i): SvgAnimation => ({
+        id: `ring${i}`,
+        attrs: { r: [10, 52], opacity: [0.9, 0], "stroke-width": [3, 0.5] },
+        delay: PATH_START + PATH_MS / 2 + i * 350,
+        ms: 1200,
+        ease: "out",
+      })),
+    ],
+  },
+};
+
 /** Drip text's drips: where each leaves the word, as a fraction of its width, and how it runs. */
 const DRIP_TOP = 106;
 const DRIPS = [
@@ -439,4 +519,5 @@ export const vectorEffects: VectorEffect[] = [
   confetti,
   blobMorph,
   dripText,
+  flowNetwork,
 ];

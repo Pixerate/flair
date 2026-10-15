@@ -247,3 +247,58 @@ uniform float uSpin;    // @control min=0 max=4 default=1 label="Spin"`,
 }`,
   ),
 };
+
+export const lightRibbons: ShaderEffect = {
+  kind: "shader",
+  id: "light-ribbons",
+  name: "Light ribbons",
+  description: "A bundle of thin iridescent light strands weaving across a dark frame.",
+  category: "light",
+  tags: ["background", "hero", "tech", "iridescent", "flow"],
+  source: glsl(
+    `// Light ribbons: thin glowing strands weaving across the frame, shading from one colour to the next.
+uniform vec3 uBackground; // @control color default=#05060D label="Background"
+uniform vec3 uColorA;     // @control color default=#4FD1FF label="Colour A"
+uniform vec3 uColorB;     // @control color default=#B06BFF label="Colour B"
+uniform vec3 uColorC;     // @control color default=#FF7AC6 label="Colour C"
+uniform float uCount;     // @control min=2 max=24 default=12 step=1 label="Strands"
+uniform float uSpread;    // @control min=0.02 max=0.6 default=0.18 label="Spread"
+uniform float uWave;      // @control min=0 max=0.5 default=0.22 label="Wave"
+uniform float uTilt;      // @control min=-1 max=1 default=0.3 label="Tilt"
+uniform float uSpeed;     // @control min=0 max=2 default=0.5 label="Speed"
+uniform float uGlow;      // @control min=0 max=2 default=1 label="Glow"`,
+    `// Three colours round a loop, so the shading drifts without a seam.
+vec3 shade(float g) {
+  g = fract(g) * 3.0;
+  return g < 1.0 ? mix(uColorA, uColorB, g) : g < 2.0 ? mix(uColorB, uColorC, g - 1.0) : mix(uColorC, uColorA, g - 2.0);
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec2 p = (fragCoord - 0.5 * iResolution.xy) / iResolution.y;
+  float px = 1.0 / iResolution.y;
+  float t = iTime * uSpeed;
+  float halfWidth = 0.5 * iResolution.x / iResolution.y;
+  float x = p.x;
+  float y = p.y - x * uTilt;
+  // The bundle pinches and opens along its length, like ribbons twisting.
+  float pinch = 0.35 + 0.65 * abs(sin(x * 1.3 - t * 0.7));
+  vec3 light = vec3(0.0);
+  for (int i = 0; i < 24; i++) {
+    if (float(i) >= uCount) break;
+    float f = float(i) / max(uCount - 1.0, 1.0) - 0.5;
+    float centre = f * uSpread * pinch
+      + uWave * (0.6 * sin(x * 1.7 + t + f * 2.0) + 0.3 * sin(x * 3.3 - t * 1.3 + f * 5.0));
+    float d = abs(y - centre);
+    float core = 1.0 - smoothstep(0.0, px * 1.5, d);
+    float glow = uGlow * 0.006 / (d + 0.006);
+    light += shade(f * 0.6 + x * 0.12 + t * 0.05) * (core * 0.9 + glow * 0.4);
+  }
+  light *= 1.0 - 0.75 * pow(min(abs(x) / halfWidth, 1.0), 2.0);
+  fragColor = vec4(uBackground + (1.0 - exp(-light)), 1.0);
+}`,
+  ),
+  presets: [
+    { name: "Gold", values: { uBackground: [0.03, 0.03, 0.04], uColorA: [1, 0.78, 0.4], uColorB: [0.75, 0.5, 0.2], uColorC: [1, 0.93, 0.75], uCount: 8, uSpread: 0.4 } },
+    { name: "Aurora", values: { uColorA: [0.2, 1, 0.7], uColorB: [0.2, 0.6, 1], uColorC: [0.6, 0.3, 1], uTilt: -0.2, uWave: 0.3 } },
+  ],
+};
