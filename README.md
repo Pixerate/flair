@@ -1,215 +1,255 @@
-# Flair 🎨
+# @pixerate/flair
 
-**Flair** is a modern generative animation and WebGL shader engine designed for humans and AI agents. It eliminates reliance on desktop timeline applications (such as Apple Motion / After Effects) by providing programmable WebGL2 fragment shaders, declarative controls, live previews, frame-exact rendering, camera directing, procedural effects, and agent-ready tooling.
+<p align="center">
+  <strong>Visual effects and motion graphics for the web: WebGL2 shader effects, animated vector effects, a catalog of ready-made looks, and a UI-agnostic, agent-ready effect editor.</strong>
+</p>
 
----
-
-## Key Features
-
-### 🎬 Scene & Animation Directing (inspired by Lingo)
-- **Multi-Shot Directorial Structure**: Direct scenes as sequential beats (`Shot`) with camera moves, narration, headings/titles, and holds.
-- **Deterministic Time Source (`ManualClock`)**: Decouple rendering from wall-clock time. Advance frames manually with exact timestamps for video pipelines, SSR, or instant test simulation.
-- **Dynamic Camera Easing**: Smooth cubic easing (`easeInOutCubic`, `between`, `frame`) for panning, zooming, and framing objects across beats.
-- **Procedural Visual Effects**: Built-in procedural effects (`gradient`, `glow`, `flow`, `ripple`, `burst`, `shimmer`, `spotlight`, `timer`, `counter`, `highlight`, `blur`, `media`).
-- **First-Class Shader Media**: Embed bespoke WebGL fragment shaders directly into scene shots as dynamic background or foreground layers.
-- **Static Scene Validation & Fast Simulation**: Catch framing clipping, overlapping elements, tiny unreadable text, and timing issues off-screen before rendering.
-- **LLM Agent Authoring Tools**: Pre-built Anthropic/Gemini compatible tool schemas (`get_scene`, `write_scene`, `update_shot`, `insert_shots`, `delete_shots`, `set_media`, `preview_scene`) and a pure state machine (`applySceneTool`).
-
-### ⚡️ Bespoke WebGL2 Shader Engine (inspired by Gobo)
-- **Shadertoy-Compatible WebGL2 Shaders**: Write fragment shaders with `mainImage(out vec4 fragColor, in vec2 fragCoord)` using standard inputs (`iResolution`, `iTime`, `iTimeDelta`, `iFrame`, `iMouse`).
-- **Controls Declared in Source**: Annotate uniforms with `// @control` to define UI controls (sliders, switches, color pickers, vectors) directly in GLSL. The source remains the single source of truth.
-- **Line-Numbered Error Reporting**: Exact compiler diagnostics matching source line numbers, making autonomous agent iteration seamless.
-- **Frame-Exact Rendering (`ShaderFrames`)**: Render offscreen at exact timestamps without relying on wall-clock time, perfectly suited for video recording pipelines and deterministic previews.
-- **Live Canvas Previews (`ShaderRenderer`)**: Interactive preview canvas with play/pause, seek, speed controls, mouse interaction, and automatic fallback on compilation errors.
-- **Pooled Thumbnails (`ThumbnailPool`)**: Share a single WebGL2 context across dozens of animated cards/thumbnails.
-- **Looping GIFs & Standalone HTML**: Export self-contained HTML pages or encode looping animated GIFs via `gifenc`.
-- **Procedural Transitions Engine**: 8 high-performance WebGL & CPU transitions (`linearWipe`, `radialIris`, `blockDissolve`, `gridWipe`, `glassWipe`, `twister`, `lightLeak`, `crossZoom`) with GPU fragment shader generators and softening controls.
-- **Perceptual Color Science & Grading**: Oklab / Oklch color space conversions, perceptually uniform gradient blending, ASC CDL grading (Slope, Offset, Power, Saturation), Lift/Gamma/Gain, Vibrance with skin tone protection, and Kelvin white balance presets.
-- **Constant-Velocity Spatial Motion Paths**: Multi-segment cubic Bezier paths parameterized by arc length for jitter-free constant-velocity movement, auto-orient heading tangent calculation, normal vectors, curvature, and After Effects keyframe easing.
-- **Multi-Format Export & NLE Interchange**:
-  - **Lottie JSON**: Standard Lottie v5.5.2 vector animation export with After Effects cubic tangent ease curves.
-  - **Apple Motion (.motn)**: Native ozml 4.0 project generation.
-  - **Final Cut Pro 7 XML (xmeml v4)**: Industry-standard timeline interchange for Premiere Pro, DaVinci Resolve, and Final Cut Pro with video tracks, generator titles, and sequence markers.
-  - **CMX 3600 EDL**: Edit Decision List export compatible with Avid, DaVinci Resolve, Lightworks, and Premiere.
-
+<p align="center">
+  <a href="https://www.npmjs.com/package/@pixerate/flair"><img src="https://img.shields.io/npm/v/@pixerate/flair.svg?style=flat-square&color=violet" alt="npm version" /></a>
+  <a href="https://github.com/Pixerate/flair/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/Pixerate/flair/ci.yml?branch=main&style=flat-square" alt="CI build status" /></a>
+  <a href="https://pixerate.github.io/flair/"><img src="https://img.shields.io/badge/demo-live-a855f7.svg?style=flat-square" alt="Live demo" /></a>
+  <a href="https://github.com/Pixerate/flair/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square" alt="MIT License" /></a>
+</p>
 
 ---
 
-## Installation
+## 🌟 Overview
 
-Ensure Node.js v20+ is installed.
+Flair gives products a library of good-looking, configurable visual effects (hero backgrounds, textures, light, image treatments, transitions, loaders, animated icons and charts) and the tools to make more of them, by hand or with an agent.
 
-```bash
-# Clone and install dependencies
-cd Flair
-npm install
-npm run build
-```
+### Core Capabilities
 
----
-
-## CLI Usage
-
-`flair` includes a CLI for inspecting shaders, generating standalone web pages, and directing scenes.
-
-### Shader Commands
-
-```bash
-# Inspect @control uniforms in a shader
-npx flair controls ./my-shader.frag
-
-# Output controls as JSON
-npx flair controls ./my-shader.frag --json
-
-# Generate a self-contained HTML page for the shader
-npx flair html ./my-shader.frag --out ./preview.html --open
-```
-
-### Scene Directing Commands
-
-```bash
-# Validate a multi-shot scene JSON file
-npx flair scene validate ./my-scene.json
-
-# Fast simulate off-screen & print timing breakdown + diagnostic review
-npx flair scene review ./my-scene.json
-
-# Generate an interactive standalone web player for the scene
-npx flair scene html ./my-scene.json --out ./player.html --open
-
-# Export scene vector animation to Lottie JSON
-npx flair scene lottie ./my-scene.json ./output.json
-
-# Export timeline to Final Cut Pro 7 XML (for Premiere Pro & DaVinci Resolve)
-npx flair scene fcp7 ./my-scene.json ./timeline.xml
-
-# Export Edit Decision List to CMX 3600 EDL
-npx flair scene edl ./my-scene.json ./timeline.edl
-
-# Export scene to Apple Motion (.motn)
-npx flair scene motn ./my-scene.json ./scene.motn
-```
+- 🎨 **Effect catalog (`@pixerate/flair/catalog`)**: 59 effects, each with controls and presets. There are 44 WebGL2 shaders (gradients, organic textures, patterns, light, space, retro, image effects, transitions) and 15 animated SVG effects (loaders, status icons, charts, counters). [Browse them live](https://pixerate.github.io/flair/).
+- ⚡ **Shader engine**:
+  - Shadertoy-style GLSL ES 3.00 fragment shaders, with controls declared in the source (`// @control`), including image inputs.
+  - Compile errors come back with line numbers that match the source.
+  - Live previews (`ShaderRenderer`) and many animated thumbnails on one context (`ThumbnailPool`).
+  - Frames at exact times (`ShaderFrames`), looping GIFs, and standalone HTML pages.
+- ✒️ **Vector motion (`@pixerate/flair/vector`)**: animated SVG described as data. It covers attribute tweens, draw-on strokes, motion along paths, counters and view zooms. Every frame is a pure function of time (`svgFrame`), and `SvgPlayer` plays it.
+- 🎛️ **Effect editor (`@pixerate/flair/editor`)**:
+  - A headless editor for an effect's source, values, keyframes, presets and timeline.
+  - Built on [`@pixerate/editor`](https://github.com/Pixerate/editor)'s undo history and command registry, with no UI framework assumed.
+- 🤖 **Agent-native, bring your own model**:
+  - Every editing action is a command, and the commands are exposed as MCP-shaped tools.
+  - Ships instructions for the model. The host supplies the model, keys and agent loop.
+- 🎬 **Directing and interchange**: multi-shot scenes with camera moves, procedural effects, validation and fast headless simulation. Also blend modes, Oklab colour and grading, retiming, timecode, and export to Lottie, Apple Motion, FCP7 XML and CMX 3600 EDL.
 
 ---
 
-## Programmatic TypeScript API
+## 📦 Entry points
 
-### 1. Scene Directing & Fast Simulation
-
-```typescript
-import { simulateScene, type Scene } from 'flair';
-
-const scene: Scene = {
-  name: 'data-pipeline',
-  title: 'Real-time Streaming Architecture',
-  shots: [
-    {
-      title: 'Ingestion Layer',
-      caption: 'Events stream directly into our high-throughput buffer.',
-      camera: { x: 0, y: 0, width: 1920, height: 1080 },
-      hold: 800,
-      run: [
-        {
-          type: 'element',
-          element: { id: 'kafka', type: 'rectangle', x: 200, y: 300, width: 400, height: 250, text: 'Kafka' },
-        },
-      ],
-      effects: [
-        { type: 'glow', id: 'g1', ids: ['kafka'] },
-      ],
-    },
-    {
-      title: 'Processing Cluster',
-      caption: 'Workers compute aggregates in windowed batches.',
-      camera: { x: 500, y: 200, width: 1200, height: 700 },
-      hold: 1000,
-      effects: [
-        { type: 'burst', id: 'b1', ids: ['kafka'] },
-      ],
-      stopEffects: ['g1'],
-    },
-  ],
-};
-
-// Fast-forward simulation without waiting for wall-clock time
-const { result, review } = await simulateScene(scene);
-console.log(review.markdown);
-```
-
-### 2. Autonomous Agent Tools State Machine
-
-```typescript
-import { applySceneTool, FLAIR_AGENT_TOOLS } from 'flair';
-
-// Expose FLAIR_AGENT_TOOLS to Claude, GPT-4, or Gemini
-// Surgically patch scene state:
-const outcome = await applySceneTool(scene, 'update_shot', {
-  shot: 1,
-  set: { caption: 'Updated high-throughput stream caption.' },
-});
-
-if (outcome.ok) {
-  console.log('Updated scene:', outcome.scene);
-}
-```
-
-### 3. Live WebGL Shader Preview
-
-```typescript
-import { ShaderRenderer } from 'flair';
-
-const renderer = new ShaderRenderer(containerElement, 'preview');
-const status = renderer.setSource(glslSource);
-
-if (!status.ok) {
-  console.error('Compiler errors:', status.errors);
-}
-
-// Playback control
-renderer.pause();
-renderer.seek(2.5);
-renderer.setValues({ speed: 1.5 });
-```
-
-### 4. Frame-Exact Headless Rendering
-
-```typescript
-import { ShaderFrames } from 'flair';
-
-const frames = new ShaderFrames({
-  source: glslSource,
-  values: { speed: 2.0 },
-  width: 1920,
-  height: 1080,
-});
-
-for (let i = 0; i < 60; i++) {
-  frames.render(i / 30); // Frame at exact timestamp
-  const pixels = frames.readPixels(); // Uint8Array RGBA
-}
-
-frames.dispose();
-```
-
-## Architecture & Separation of Concerns
-
-There is an intentional, decoupled boundary between **Flair** and **`@pixerate/ai-core`**:
-
-| Responsibility | Flair 🎨 | @pixerate/ai-core 🧠 |
+| Import | What it provides | Runtime dependencies |
 | :--- | :--- | :--- |
-| **Domain** | Motion graphics, WebGL2 shaders, scene directing & simulation | AI orchestration, model reasoning & agent workflows |
-| **Runtime Dependencies** | Pure TypeScript, zero LLM SDKs, zero vendor locks | AI SDKs (Google Vertex, Anthropic, OpenAI), provider clients |
-| **Scene & Shader Specs** | Defines `Scene`, `Shot`, `Effect`, `@control`, `ManualClock` | Generates GLSL shaders & scene manifests from user prompts |
-| **Validation & Simulation** | Provides `validateScene`, `simulateScene`, camera layout checks | Analyzes validation issues and generates iterative corrections |
-| **Agent Tool Surfaces** | Exports declarative tool schemas (`FLAIR_AGENT_TOOLS`) and `applySceneTool` state machine | Executes the LLM agent loop that invokes those tools |
+| `@pixerate/flair` | Shader engine, vector motion, time and easing, colour, blending, transitions, scenes, interchange exporters | None (browser-safe) |
+| `@pixerate/flair/catalog` | `EFFECTS`, `getEffect`, `findEffects`, `effectDefaults`, `renderVectorEffect`, GLSL helpers, sample images | None |
+| `@pixerate/flair/vector` | `SvgMotion`, `svgFrame`, `svgView`, `SvgPlayer`, `svgMotionIssues` | None |
+| `@pixerate/flair/editor` | `EffectEditor`, effect documents, keyframe tracks, renderer bindings, agent tools and instructions | `@pixerate/editor` (optional peer) |
+| `@pixerate/flair/node` | `exportMotionGraphic`: renders a shader to GIF/MP4 through headless Chrome and ffmpeg | Node.js |
+
+The `flair` CLI inspects shaders, writes standalone pages and directs scenes (see [CLI](#-cli)).
 
 ---
 
-## Verification & Tests
+## 🏗️ Architecture
 
-```bash
-npm run typecheck
-npm test
-npm run build
+```mermaid
+graph TD
+  subgraph Effects["Effects (no dependencies)"]
+    Catalog["catalog: 59 effects + presets"]
+    Shader["shader engine: controls, compile, render, GIF, HTML"]
+    Vector["vector motion: SvgMotion, SvgPlayer"]
+    Time["time: clocks, easing, keyframes, noise"]
+  end
+  subgraph Editing["Editing (@pixerate/flair/editor)"]
+    Doc["EffectDocument: source, values, tracks, presets"]
+    Editor["EffectEditor: state, playhead"]
+    Cmds["commands → MCP tools"]
+  end
+  PE["@pixerate/editor: history, commands"]
+  Host["Your app: UI (any framework) + your model"]
+
+  Catalog --> Shader
+  Catalog --> Vector
+  Doc --> Editor
+  Editor --> Cmds
+  PE --> Editor
+  PE --> Cmds
+  Editor -- bindShaderRenderer / bindSvgView --> Shader
+  Editor --> Vector
+  Host --> Editor
+  Host -- tool calls --> Cmds
 ```
 
+Flair stays free of LLM SDKs and UI frameworks. Your app owns the interface and the model. Flair owns the rendering, the effect model and the tool surface.
+
+---
+
+## 🚀 Quickstart
+
+```bash
+npm install @pixerate/flair
+# For the editor:
+npm install @pixerate/flair @pixerate/editor
+```
+
+### 1. Drop in a catalog effect
+
+```ts
+import { ShaderRenderer, SvgPlayer } from "@pixerate/flair";
+import { getEffect, effectDefaults, renderVectorEffect } from "@pixerate/flair/catalog";
+
+// A shader background
+const aurora = getEffect("aurora")!;
+if (aurora.kind === "shader") {
+  const preview = new ShaderRenderer(document.querySelector("#hero")!);
+  preview.setSource(aurora.source);
+  preview.setValues(effectDefaults(aurora, { preset: "Ember", values: { uSpeed: 0.5 } }));
+}
+
+// An animated SVG loader, recoloured
+const spinner = getEffect("spinner")!;
+if (spinner.kind === "vector") {
+  new SvgPlayer(document.querySelector("#loading")!, renderVectorEffect(spinner, { accent: "#0ea5e9" }), {
+    hold: spinner.hold,
+  });
+}
+```
+
+Find effects with `findEffects({ text: "glow", category: "light", kind: "shader" })`. Each effect has an `id`, `name`, `description`, `category`, `tags` and optional `presets`. Image effects default to built-in sample pictures, so they look right before you set `uImage` to your own URL.
+
+### 2. Write your own shader
+
+```glsl
+// Controls are uniforms annotated on the same line.
+uniform vec3 uTint;    // @control color default=#77C16A label="Tint"
+uniform float uSpeed;  // @control min=0 max=4 default=1 label="Speed"
+uniform sampler2D uPhoto; // @control filter=linear wrap=clamp label="Photo"
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec2 uv = fragCoord / iResolution.xy;
+  vec3 photo = texture(uPhoto, uv + 0.01 * sin(uv.yx * 20.0 + iTime * uSpeed)).rgb;
+  fragColor = vec4(photo * uTint, 1.0);
+}
+```
+
+```ts
+import { ShaderRenderer, ShaderFrames, recordGif, standaloneHtml, parseControls } from "@pixerate/flair";
+
+const status = renderer.setSource(source); // { ok, errors: [{ line, message }] }
+parseControls(source); // [{ name: "uTint", type: "vec3", color: true, default: [...] }, ...]
+const gif = await recordGif({ source, width: 480, height: 270, fps: 30, duration: 3 });
+const page = standaloneHtml("My effect", source, { uSpeed: 2 });
+```
+
+### 3. Build an editor (any UI)
+
+```ts
+import { createEffectEditor, bindShaderRenderer, bindSvgView } from "@pixerate/flair/editor";
+import { ShaderRenderer } from "@pixerate/flair";
+
+const editor = createEffectEditor({ from: "nebula" });
+const renderer = new ShaderRenderer(previewElement);
+bindShaderRenderer(editor, renderer); // source, values at the playhead, time; compile errors flow back
+
+editor.subscribe((state) => render(state)); // state: document, controls, values, issues, compile, time, history
+editor.setValue("uDensity", 1.4); // checked and undoable; slider drags merge into one step
+editor.setKeyframe("uSpeed", 2000, 0.2, "ease-in-out");
+editor.applyPreset("Ember");
+editor.play();
+editor.undo();
+
+// Menus, shortcuts and command palettes run the same commands by id:
+editor.commands.execute("values.randomize");
+window.addEventListener("keydown", (e) => editor.commands.handleKeyDown(e)); // Space plays/pauses
+```
+
+`getState()` returns the same object until something changes, so React's `useSyncExternalStore` works as is. Documents are plain JSON (`EffectDocument`), and keyframe tracks use `@pixerate/editor`'s keyframe shape and easing names.
+
+### 4. Let an agent drive it
+
+```ts
+import { createEffectToolProvider, toolDefinitions, callTool, EFFECT_AGENT_INSTRUCTIONS } from "@pixerate/flair/editor";
+
+const tools = createEffectToolProvider(editor, {
+  capture: () => renderer.capture({ type: "image/png" }), // adds a `view_effect` tool so the model can look
+});
+
+// Give your model EFFECT_AGENT_INSTRUCTIONS and toolDefinitions(tools), then for each tool call:
+const result = await callTool(tools, call.name, call.input); // MCP tools/call result
+
+// Or register the provider with @pixerate/editor's ToolRegistry, or bridge it to an MCP server.
+```
+
+The tools are `list_commands`, `run_command` and `run_commands`, plus `view_effect` when you can capture the preview. The commands they run:
+
+- **Inspect and start:** `effect.describe`, `catalog.search`, `effect.load`.
+- **Edit the effect:** `effect.setSource`.
+- **Values and presets:** `values.set`, `values.reset`, `values.randomize`, `preset.apply` and `preset.save`.
+- **Keyframes:** `keyframe.set`, `keyframe.remove`, `keyframe.setEasing` and `keyframe.clear`.
+- **Timeline:** `timeline.setTiming`, `timeline.play` and `timeline.seek`.
+- **History:** `history.undo` and `history.redo`.
+
+Every change is one undo step, and refusals come back as messages the model can act on.
+
+---
+
+## 🎨 The catalog
+
+| Category | Effects |
+| :--- | :--- |
+| gradient | mesh gradient, aurora, gradient flow, conic sweep, silk |
+| organic | liquid marble, smoke, lava lamp, plasma, caustics, flames, blob morph |
+| pattern | dot wave, Truchet flow, hex pulse, living cells, moiré rings, kaleidoscope, stripes |
+| light / space | bokeh, god rays, sparkles, neon ripple, warp starfield, nebula, event horizon |
+| retro | synthwave, digital rain, dithered gradient, TV static |
+| image | ripple, glitch, duotone, halftone, pixel reveal, CRT screen, film look |
+| transition | wipe, iris, block dissolve, grid wipe, glass wipe, twister, light leak, cross zoom |
+| loader / icon / data | spinner, bouncing dots, pulse ping, equalizer, progress ring, bar chart, line chart, stat counter, route, success check, error cross, heartbeat, signature, confetti |
+
+Every shader is self-contained and compiles on WebGL2. Open [`#check`](https://pixerate.github.io/flair/#check) on the demo to compile the catalog on your own GPU.
+
+---
+
+## 💻 CLI
+
+```bash
+npx flair controls ./effect.frag            # list @control uniforms (--json for JSON)
+npx flair html ./effect.frag --out page.html --open
+npx flair scene validate ./scene.json        # layout, framing and timing checks
+npx flair scene review ./scene.json          # fast headless simulation + review
+npx flair scene lottie ./scene.json out.json # also: fcp7, edl, motn
+```
+
+---
+
+## 🧪 Interactive Browser Demo
+
+The [live demo](https://pixerate.github.io/flair/) has three parts:
+
+- **Gallery:** the whole catalog, live.
+- **Editor:** controls, presets, keyframes, source and export, built with React on the headless editor.
+- **Agent tools:** the tool surface, plus a sample agent plan you can run.
+
+To run it locally:
+
+```bash
+pnpm install
+pnpm dev   # http://localhost:3100
+```
+
+---
+
+## 🛠️ Development
+
+```bash
+pnpm typecheck && pnpm build && pnpm test
+pnpm changeset   # describe consumer-facing changes; merging to main publishes them
+```
+
+See [AGENTS.md](./AGENTS.md) for the conventions contributors and coding agents follow.
+
+---
+
+## 📄 License
+
+MIT © Pixerate

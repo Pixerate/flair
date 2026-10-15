@@ -1,7 +1,8 @@
 /**
- * Gobo: Shadertoy-style WebGL2 fragment shaders for the browser.
+ * Shaders: Shadertoy-style WebGL2 fragment shaders for the browser.
  *
  * - Source and controls: `parseControls`, `controlValue`, `coerceControlValue`.
+ * - Image controls: `sampler2D` uniforms load images through `TextureCache`.
  * - Compiling and drawing: `compileShader`, `drawFrame`, `wrapSource`.
  * - Running shaders: `ShaderRenderer` (a live preview), `ThumbnailPool`
  *   (many animated thumbnails on one context), `ShaderFrames` (frames at
@@ -12,18 +13,35 @@
  */
 
 export {
+  checkControlValue,
   coerceControlValue,
   componentCount,
   controlValue,
   describeValue,
   hexToRgb,
   humanise,
+  imageUrls,
+  isImageUrl,
   parseControls,
   rgbToHex,
+  type ControlCheck,
   type ControlDef,
   type ControlType,
   type ControlValue,
+  type TextureSettings,
 } from "./controls.js";
+export {
+  applyTextureSettings,
+  ImageLoadError,
+  isSvgUrl,
+  loadImage,
+  preloadImages,
+  releaseImages,
+  sizeSvg,
+  SVG_EDGE,
+  TextureCache,
+  type TextureSource,
+} from "./textures.js";
 export {
   BUILTIN_UNIFORMS,
   compileShader,

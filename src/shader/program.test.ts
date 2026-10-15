@@ -47,8 +47,8 @@ describe("wrapSource", () => {
   });
 
   it("calls mainImage from main and writes an opaque colour", () => {
-    expect(wrapped).toMatch(/void main\(\) \{[\s\S]*mainImage\(gobo_color, gl_FragCoord\.xy\);/);
-    expect(wrapped).toContain("gobo_FragColor = vec4(gobo_color.rgb, 1.0);");
+    expect(wrapped).toMatch(/void main\(\) \{[\s\S]*mainImage\(flair_color, gl_FragCoord\.xy\);/);
+    expect(wrapped).toContain("flair_FragColor = vec4(flair_color.rgb, 1.0);");
   });
 
   it("drops a #version line from the user's source", () => {
@@ -282,6 +282,49 @@ describe("drawFrame", () => {
     expect(gl.uniform("uI")).toEqual([3]);
     expect(gl.uniform("uB")).toEqual([0]);
     expect(gl.uniform("uV")).toEqual([[1, 2]]);
+  });
+
+  it("binds image controls to units in source order, with their sampling settings", () => {
+    const gl = new FakeGl();
+    const source = shaderSource(
+      "uniform sampler2D uA; // @control filter=nearest wrap=clamp",
+      "uniform float uF; // @control",
+      "uniform sampler2D uB; // @control wrap=mirror",
+    );
+    const textures = { texture: vi.fn((url: string) => ({ url }) as unknown as WebGLTexture) };
+    drawFrame(
+      asGl(gl),
+      compiled(gl, source),
+      parseControls(source),
+      { uB: "b.png" },
+      STATE,
+      textures,
+    );
+    expect(textures.texture.mock.calls).toEqual([[""], ["b.png"]]);
+    expect(gl.uniform("uA")).toEqual([0]);
+    expect(gl.uniform("uB")).toEqual([1]);
+    expect(gl.named("activeTexture").map((c) => c.args[0])).toEqual([gl.TEXTURE0, gl.TEXTURE0 + 1]);
+    expect(gl.named("bindTexture").map((c) => c.args[1])).toEqual([{ url: "" }, { url: "b.png" }]);
+    const params = gl.named("texParameteri").map((c) => c.args.slice(1));
+    expect(params).toEqual([
+      [gl.TEXTURE_MIN_FILTER, gl.NEAREST],
+      [gl.TEXTURE_MAG_FILTER, gl.NEAREST],
+      [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE],
+      [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE],
+      [gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR],
+      [gl.TEXTURE_MAG_FILTER, gl.LINEAR],
+      [gl.TEXTURE_WRAP_S, gl.MIRRORED_REPEAT],
+      [gl.TEXTURE_WRAP_T, gl.MIRRORED_REPEAT],
+    ]);
+  });
+
+  it("binds no texture to an image control without a texture source", () => {
+    const gl = new FakeGl();
+    const source = shaderSource("uniform sampler2D uA; // @control");
+    drawFrame(asGl(gl), compiled(gl, source), parseControls(source), undefined, STATE);
+    expect(gl.named("bindTexture")[0]!.args[1]).toBeNull();
+    expect(gl.named("texParameteri")).toHaveLength(0);
+    expect(gl.uniform("uA")).toEqual([0]);
   });
 
   it("skips uniforms the driver removed", () => {

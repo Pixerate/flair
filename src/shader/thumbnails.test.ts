@@ -1,5 +1,12 @@
 import { registerThumbnail, sharedThumbnailPool, ThumbnailPool } from "./thumbnails.js";
-import { installFakeWebGl, installManualRaf, setRect, shaderSource } from "./test-utils.js";
+import {
+  flush,
+  installFakeImages,
+  installFakeWebGl,
+  installManualRaf,
+  setRect,
+  shaderSource,
+} from "./test-utils.js";
 
 /** An IntersectionObserver whose records the test sends. */
 class ObserverFake {
@@ -47,6 +54,44 @@ const drawsInto = (webgl: ReturnType<typeof installFakeWebGl>, canvas: HTMLCanva
   webgl.contexts2d.find((c) => c.canvas === canvas)!.drawImage;
 
 describe("ThumbnailPool", () => {
+  it("redraws a still thumbnail when its image arrives, sharing textures by URL", async () => {
+    const images = installFakeImages();
+    const { webgl, raf, pool, observer } = setup({ reducedMotion: true });
+    const source = shaderSource("uniform sampler2D uPhoto; // @control");
+    const a = card();
+    const b = card();
+    pool.register(a, source, { uPhoto: "a.png" });
+    pool.register(b, source, { uPhoto: "a.png" });
+    observer().show(a);
+    observer().show(b);
+    raf.frame(1000);
+    expect(images).toHaveLength(1);
+    expect(drawsInto(webgl, a)).toHaveBeenCalledTimes(1);
+    raf.frame(1100);
+    expect(drawsInto(webgl, a)).toHaveBeenCalledTimes(1);
+    await flush();
+    raf.frame(1200);
+    expect(drawsInto(webgl, a)).toHaveBeenCalledTimes(2);
+    expect(drawsInto(webgl, b)).toHaveBeenCalledTimes(2);
+    const gl = webgl.contexts[0]!;
+    expect((gl.named("bindTexture").at(-1)!.args[1] as { image: unknown }).image).toBe(images[0]);
+  });
+
+  it("frees an image's texture when no thumbnail shows it", async () => {
+    installFakeImages();
+    const { webgl, raf, pool, observer } = setup();
+    const source = shaderSource("uniform sampler2D uPhoto; // @control");
+    const a = card();
+    const handle = pool.register(a, source, { uPhoto: "a.png" });
+    observer().show(a);
+    raf.frame(1000);
+    await flush();
+    const gl = webgl.contexts[0]!;
+    const texture = gl.textures.find((t) => t.image !== "1x1")!;
+    handle.update(source, { uPhoto: "b.png" });
+    expect(texture.deleted).toBe(true);
+  });
+
   it("creates nothing until the first thumbnail", () => {
     const { webgl, raf } = setup();
     expect(webgl.contexts).toHaveLength(0);

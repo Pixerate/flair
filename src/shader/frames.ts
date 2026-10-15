@@ -1,4 +1,4 @@
-import { parseControls, type ControlDef, type ControlValue } from "./controls.js";
+import { imageUrls, parseControls, type ControlDef, type ControlValue } from "./controls.js";
 import {
   compileShader,
   createContext,
@@ -6,6 +6,7 @@ import {
   ShaderCompileError,
   type CompiledShader,
 } from "./program.js";
+import { TextureCache } from "./textures.js";
 
 export interface ShaderFramesOptions {
   source: string;
@@ -32,6 +33,9 @@ export interface RenderOptions {
  * suits recorders, video pipelines and anything else stepped by its own
  * clock. The constructor throws a {@link ShaderCompileError} when the source
  * does not compile.
+ *
+ * Image controls load in the background: `await frames.ready()` before the
+ * first `render`, or the frames show black where the images go.
  */
 export class ShaderFrames {
   readonly canvas: HTMLCanvasElement;
@@ -40,6 +44,7 @@ export class ShaderFrames {
   readonly controls: ControlDef[];
   private gl: WebGL2RenderingContext | null;
   private shader: CompiledShader;
+  private textures: TextureCache;
   private values: Record<string, ControlValue> | undefined;
   private rendered = 0;
   private lastTime: number | null = null;
@@ -63,26 +68,44 @@ export class ShaderFrames {
       throw new ShaderCompileError(compiled.errors);
     }
     this.shader = compiled.shader;
+    this.textures = new TextureCache(gl);
+    this.syncTextures();
     this.pixels = new Uint8Array(this.width * this.height * 4);
   }
 
   /** Changes control values for the frames that follow. */
   setValues(values: Record<string, ControlValue> | undefined) {
     this.values = values;
+    this.syncTextures();
+  }
+
+  /**
+   * Settles once every image the controls show has loaded. Rejects with an
+   * {@link ImageLoadError} when one cannot be.
+   */
+  async ready(): Promise<void> {
+    await this.textures.ready(imageUrls(this.controls, this.values));
   }
 
   /** Draws the frame at `time` seconds onto `canvas`. */
   render(time: number, options: RenderOptions = {}) {
     const gl = this.context();
     const delta = options.delta ?? (this.lastTime === null ? 0 : time - this.lastTime);
-    drawFrame(gl, this.shader, this.controls, this.values, {
-      width: this.width,
-      height: this.height,
-      time,
-      delta,
-      frame: options.frame ?? this.rendered,
-      mouse: options.mouse ?? [0, 0, 0, 0],
-    });
+    drawFrame(
+      gl,
+      this.shader,
+      this.controls,
+      this.values,
+      {
+        width: this.width,
+        height: this.height,
+        time,
+        delta,
+        frame: options.frame ?? this.rendered,
+        mouse: options.mouse ?? [0, 0, 0, 0],
+      },
+      this.textures,
+    );
     this.rendered += 1;
     this.lastTime = time;
   }
@@ -111,8 +134,15 @@ export class ShaderFrames {
   dispose() {
     if (!this.gl) return;
     if (this.shader) this.gl.deleteProgram(this.shader.program);
+    this.textures?.dispose();
     this.gl.getExtension("WEBGL_lose_context")?.loseContext();
     this.gl = null;
+  }
+
+  private syncTextures() {
+    const urls = imageUrls(this.controls, this.values);
+    this.textures.retain(urls);
+    for (const url of urls) this.textures.request(url);
   }
 
   private context(): WebGL2RenderingContext {

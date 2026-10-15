@@ -187,7 +187,7 @@ program
     console.log(`Rendering ${duration}s (${duration * fps} frames at ${width}x${height}, ${fps}fps) to ${options.out}...`);
 
     try {
-      const { exportMotionGraphic } = await import('./export/index.js');
+      const { exportMotionGraphic } = await import('./export/recorder.js');
       const savedPath = await exportMotionGraphic({
         source,
         values,

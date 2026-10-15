@@ -1,4 +1,5 @@
 import { controlValue, type ControlDef, type ControlValue } from "./controls.js";
+import { applyTextureSettings, type TextureSource } from "./textures.js";
 
 /**
  * Shaders are written Shadertoy-style: the source defines
@@ -26,14 +27,14 @@ uniform float iTime;
 uniform float iTimeDelta;
 uniform int iFrame;
 uniform vec4 iMouse;
-out vec4 gobo_FragColor;
+out vec4 flair_FragColor;
 `;
 
 const EPILOGUE = `
 void main() {
-  vec4 gobo_color = vec4(0.0, 0.0, 0.0, 1.0);
-  mainImage(gobo_color, gl_FragCoord.xy);
-  gobo_FragColor = vec4(gobo_color.rgb, 1.0);
+  vec4 flair_color = vec4(0.0, 0.0, 0.0, 1.0);
+  mainImage(flair_color, gl_FragCoord.xy);
+  flair_FragColor = vec4(flair_color.rgb, 1.0);
 }
 `;
 
@@ -205,13 +206,19 @@ export interface FrameState {
   mouse: [number, number, number, number];
 }
 
-/** Draws one frame of a compiled shader into the bound framebuffer, from (0, 0). */
+/**
+ * Draws one frame of a compiled shader into the bound framebuffer, from (0, 0).
+ * Image controls are bound to texture units 0, 1, … in source order, with
+ * textures from `textures` (a {@link TextureCache} for the same context);
+ * without it they sample nothing.
+ */
 export function drawFrame(
   gl: WebGL2RenderingContext,
   shader: CompiledShader,
   controls: ControlDef[],
   values: Record<string, ControlValue> | undefined,
   state: FrameState,
+  textures?: TextureSource,
 ) {
   gl.viewport(0, 0, state.width, state.height);
   gl.useProgram(shader.program);
@@ -221,6 +228,7 @@ export function drawFrame(
   if (b.iTimeDelta) gl.uniform1f(b.iTimeDelta, state.delta);
   if (b.iFrame) gl.uniform1i(b.iFrame, state.frame);
   if (b.iMouse) gl.uniform4f(b.iMouse, ...state.mouse);
+  let unit = 0;
   for (const control of controls) {
     const loc = shader.uniforms.get(control.name);
     if (!loc) continue;
@@ -244,6 +252,14 @@ export function drawFrame(
       case "vec4":
         gl.uniform4fv(loc, v as number[]);
         break;
+      case "sampler2D": {
+        gl.activeTexture(gl.TEXTURE0 + unit);
+        const texture = textures?.texture(v as string) ?? null;
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        if (texture && control.texture) applyTextureSettings(gl, control.texture);
+        gl.uniform1i(loc, unit++);
+        break;
+      }
     }
   }
   gl.drawArrays(gl.TRIANGLES, 0, 3);

@@ -1,4 +1,4 @@
-import { parseControls, type ControlDef, type ControlValue } from "./controls.js";
+import { imageUrls, parseControls, type ControlDef, type ControlValue } from "./controls.js";
 import {
   compileShader,
   createContext,
@@ -6,6 +6,7 @@ import {
   resetGlCaches,
   type CompiledShader,
 } from "./program.js";
+import { TextureCache } from "./textures.js";
 
 /** Controls a registered thumbnail. */
 export interface ThumbnailHandle {
@@ -65,6 +66,7 @@ export class ThumbnailPool {
   private observer: IntersectionObserver | null | undefined;
   private glCanvas: HTMLCanvasElement | null = null;
   private gl: WebGL2RenderingContext | null = null;
+  private textures: TextureCache | null = null;
   private raf = 0;
   private last = 0;
   private start: number | null = null;
@@ -119,6 +121,7 @@ export class ThumbnailPool {
         }
         entry.values = nextValues;
         entry.dirty = true;
+        this.retainTextures();
         this.schedule();
       },
       setHovered: (hovered) => {
@@ -131,6 +134,7 @@ export class ThumbnailPool {
         this.entries.delete(entry);
         this.byCanvas.delete(canvas);
         this.release(entry);
+        this.retainTextures();
       },
     };
   }
@@ -168,16 +172,36 @@ export class ThumbnailPool {
     canvas.addEventListener("webglcontextlost", (e) => {
       e.preventDefault();
       for (const entry of this.entries) entry.shader = null;
+      this.textures?.dispose();
     });
     canvas.addEventListener("webglcontextrestored", () => {
       resetGlCaches();
+      if (this.gl) this.textures = this.textureCache(this.gl);
       for (const entry of this.entries) entry.dirty = true;
       this.schedule();
     });
     resetGlCaches();
     this.glCanvas = canvas;
     this.gl = createContext(canvas);
+    this.textures = this.gl && this.textureCache(this.gl);
     return this.gl;
+  }
+
+  private textureCache(gl: WebGL2RenderingContext): TextureCache {
+    return new TextureCache(gl, (url) => {
+      // A thumbnail showing the image redraws with it.
+      for (const entry of this.entries) {
+        if (imageUrls(entry.controls, entry.values).includes(url)) entry.dirty = true;
+      }
+      this.schedule();
+    });
+  }
+
+  /** Frees the textures no thumbnail shows any more. */
+  private retainTextures() {
+    this.textures?.retain(
+      [...this.entries].flatMap((entry) => imageUrls(entry.controls, entry.values)),
+    );
   }
 
   private release(entry: Entry) {
@@ -201,14 +225,21 @@ export class ThumbnailPool {
     const aspect = entry.canvas.width / entry.canvas.height;
     const w = Math.min(this.renderWidth, Math.round(this.renderHeight * aspect));
     const h = Math.min(this.renderHeight, Math.round(w / aspect));
-    drawFrame(gl, entry.shader, entry.controls, entry.values, {
-      width: w,
-      height: h,
-      time,
-      delta: this.interval / 1000,
-      frame: Math.floor(time * this.fps),
-      mouse: [0, 0, 0, 0],
-    });
+    drawFrame(
+      gl,
+      entry.shader,
+      entry.controls,
+      entry.values,
+      {
+        width: w,
+        height: h,
+        time,
+        delta: this.interval / 1000,
+        frame: Math.floor(time * this.fps),
+        mouse: [0, 0, 0, 0],
+      },
+      this.textures ?? undefined,
+    );
     // The GL canvas's drawing buffer is valid until this task ends; copy it now.
     // WebGL draws from the bottom left, so the frame sits at the bottom of the canvas.
     entry.ctx.drawImage(

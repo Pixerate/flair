@@ -372,8 +372,8 @@ vec4 flair_transition(sampler2D texA, sampler2D texB, vec2 uv, float progress) {
   float edge = -0.5 - feather + p * (span + 2.0 * feather);
   float proj = uv.x - 0.5;
   float w = 1.0 - smoothstep(edge - feather * 0.5, edge + feather * 0.5, proj);
-  vec4 a = texture2D(texA, uv);
-  vec4 b = texture2D(texB, uv);
+  vec4 a = texture(texA, uv);
+  vec4 b = texture(texB, uv);
   return mix(a, b, w);
 }
 `.trim();
@@ -387,8 +387,8 @@ vec4 flair_transition(sampler2D texA, sampler2D texB, vec2 uv, float progress) {
   float maxDist = 0.70710678;
   float radius = p * (maxDist + 0.1);
   float w = 1.0 - smoothstep(radius - 0.1, radius, dist);
-  vec4 a = texture2D(texA, uv);
-  vec4 b = texture2D(texB, uv);
+  vec4 a = texture(texA, uv);
+  vec4 b = texture(texB, uv);
   return mix(a, b, w);
 }
 `.trim();
@@ -408,8 +408,8 @@ vec4 flair_transition(sampler2D texA, sampler2D texB, vec2 uv, float progress) {
   vec2 cell = floor(uv * blocks);
   float h = flair_hash(cell);
   float w = smoothstep(h - 0.05, h, p * 1.05);
-  vec4 a = texture2D(texA, uv);
-  vec4 b = texture2D(texB, uv);
+  vec4 a = texture(texA, uv);
+  vec4 b = texture(texB, uv);
   return mix(a, b, w);
 }
 `.trim();
@@ -423,8 +423,8 @@ vec4 flair_transition(sampler2D texA, sampler2D texB, vec2 uv, float progress) {
   vec2 cell = floor(uv * grid) / grid;
   float rank = (cell.x + cell.y) * 0.5;
   float w = smoothstep(rank - 0.15, rank + 0.15, p * 1.3 - 0.15);
-  vec4 a = texture2D(texA, uv);
-  vec4 b = texture2D(texB, uv);
+  vec4 a = texture(texA, uv);
+  vec4 b = texture(texB, uv);
   return mix(a, b, w);
 }
 `.trim();
@@ -442,8 +442,8 @@ vec4 flair_transition(sampler2D texA, sampler2D texB, vec2 uv, float progress) {
   vec2 uvA = clamp(uv + vec2(disp * 0.7071, -disp * 0.7071), 0.0, 1.0);
   vec2 uvB = clamp(uv - vec2(disp * 0.7071, -disp * 0.7071), 0.0, 1.0);
   float w = smoothstep(-0.1, 0.1, waveDist);
-  vec4 a = texture2D(texA, uvA);
-  vec4 b = texture2D(texB, uvB);
+  vec4 a = texture(texA, uvA);
+  vec4 b = texture(texB, uvB);
   return mix(a, b, w);
 }
 `.trim();
@@ -460,8 +460,8 @@ vec4 flair_transition(sampler2D texA, sampler2D texB, vec2 uv, float progress) {
   float s = sin(angle);
   vec2 ruv = clamp(vec2(d.x * c - d.y * s, d.x * s + d.y * c) + vec2(0.5), 0.0, 1.0);
   float w = smoothstep(0.4, 0.6, p);
-  vec4 a = texture2D(texA, ruv);
-  vec4 b = texture2D(texB, ruv);
+  vec4 a = texture(texA, ruv);
+  vec4 b = texture(texB, ruv);
   return mix(a, b, w);
 }
 `.trim();
@@ -475,8 +475,8 @@ vec4 flair_transition(sampler2D texA, sampler2D texB, vec2 uv, float progress) {
   float leak = pow(peak, 3.0) * 1.5;
   vec3 tint = vec3(1.0, 0.85, 0.6) * leak;
   float w = smoothstep(0.3, 0.7, p);
-  vec4 a = texture2D(texA, uv);
-  vec4 b = texture2D(texB, uv);
+  vec4 a = texture(texA, uv);
+  vec4 b = texture(texB, uv);
   vec4 res = mix(a, b, w);
   return vec4(clamp(res.rgb + tint, 0.0, 1.0), res.a);
 }
@@ -493,8 +493,8 @@ vec4 flair_transition(sampler2D texA, sampler2D texB, vec2 uv, float progress) {
   vec2 uvA = clamp(vec2(0.5) + d / zA, 0.0, 1.0);
   vec2 uvB = clamp(vec2(0.5) + d / zB, 0.0, 1.0);
   float w = smoothstep(0.4, 0.6, p);
-  vec4 a = texture2D(texA, uvA);
-  vec4 b = texture2D(texB, uvB);
+  vec4 a = texture(texA, uvA);
+  vec4 b = texture(texB, uvB);
   return mix(a, b, w);
 }
 `.trim();

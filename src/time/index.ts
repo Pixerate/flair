@@ -1,5 +1,5 @@
 export {
-  Clock,
+  type Clock,
   ManualClock,
   jitter,
   pageHidden,
@@ -7,7 +7,7 @@ export {
 } from './clock.js';
 
 export {
-  EasingCurve,
+  type EasingCurve,
   holdTime,
   loopTime,
   pingPongTime,
@@ -16,7 +16,7 @@ export {
 } from './retiming.js';
 
 export {
-  KeyframeEase,
+  type KeyframeEase,
   EASY_EASE,
   bez1d,
   bez1dDerivative,
@@ -36,10 +36,10 @@ export {
 } from './noise.js';
 
 export {
-  RationalFrameRate,
+  type RationalFrameRate,
   COMMON_FRAME_RATES,
-  StandardFrameRateKey,
-  SMPTEFields,
+  type StandardFrameRateKey,
+  type SMPTEFields,
   createFrameRate,
   getTimecodeBase,
   supportsDropFrame,

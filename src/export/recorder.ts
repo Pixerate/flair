@@ -2,8 +2,22 @@ import http from 'http';
 import { spawn } from 'child_process';
 import fs from 'fs';
 import path from 'path';
-import { findChrome } from '@pixerate/circus/capture';
 import { parseControls, controlValue, type ControlValue } from '../shader/controls.js';
+
+const CHROME_CANDIDATES = [
+  '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+  '/Applications/Chromium.app/Contents/MacOS/Chromium',
+  'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+  '/usr/bin/google-chrome',
+  '/usr/bin/google-chrome-stable',
+  '/usr/bin/chromium',
+  '/usr/bin/chromium-browser',
+];
+
+/** Finds a local Chrome or Chromium executable, or `null`. */
+export function findChrome(): string | null {
+  return CHROME_CANDIDATES.find((candidate) => fs.existsSync(candidate)) ?? null;
+}
 
 export interface ExportOptions {
   /** GLSL fragment shader source */
@@ -20,8 +34,8 @@ export interface ExportOptions {
 }
 
 /**
- * Renders a shader animation frame-by-frame headlessly via hardware-accelerated WebGL2
- * and encodes to an animated GIF or MP4 video using ffmpeg and @pixerate/circus browser integration.
+ * Renders a shader animation frame-by-frame via hardware-accelerated WebGL2 in
+ * headless Chrome and encodes to an animated GIF or MP4 video using ffmpeg.
  */
 export async function exportMotionGraphic(options: ExportOptions): Promise<string> {
   const {
@@ -52,7 +66,6 @@ export async function exportMotionGraphic(options: ExportOptions): Promise<strin
     effectiveValues[k] = v;
   }
 
-  // Locate Chrome using @pixerate/circus
   const chromeBin = process.env.CHROME_BIN || process.env.CHROME_PATH || findChrome();
   if (!chromeBin) {
     throw new Error('Google Chrome binary not found. Please install Chrome or set CHROME_PATH.');
