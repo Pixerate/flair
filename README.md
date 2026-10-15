@@ -32,7 +32,7 @@ Flair gives products a library of good-looking, configurable visual effects (her
 - 🤖 **Agent-native, bring your own model**:
   - Every editing action is a command, and the commands are exposed as MCP-shaped tools.
   - Ships instructions for the model. The host supplies the model, keys and agent loop.
-- 🎬 **Directing and interchange**: multi-shot scenes with camera moves, procedural effects, validation and fast headless simulation. Also blend modes, Oklab colour and grading, retiming, timecode, and export to Lottie, Apple Motion, FCP7 XML and CMX 3600 EDL.
+- 🎬 **Directing and interchange**: multi-shot scenes with camera moves (3D tilt and motion blur included), procedural effects, validation and fast headless simulation. Also blend modes, Oklab colour and grading, retiming, timecode, and export to Lottie, Apple Motion, FCP7 XML and CMX 3600 EDL.
 
 ---
 
@@ -216,6 +216,21 @@ The tools are `list_commands`, `run_command` and `run_commands`, plus `view_effe
 Every change is one undo step, and refusals come back as messages the model can act on.
 
 ---
+
+## 🎬 Camera moves
+
+A shot's `camera` frames a box (`{ x, y, width, height }`) or elements (`{ frame: ["card"] }`), and can turn in 3D and blur while it moves, like the product-video swoop onto a tilted screen:
+
+```json
+{ "camera": { "frame": ["dashboard"], "tilt": 35, "turn": -15, "motionBlur": 1.5 } }
+```
+
+- `tilt` leans the board back (top away, like a desk seen from above), `turn` swings it round its vertical axis (left side nearer when positive), `roll` rolls it clockwise. Tilt and turn go up to ±75°.
+- `perspective` is the lens distance as a multiple of the stage width (1.2 by default). Lower values look more dramatic.
+- `motionBlur` (0 to 3, with 1 as natural) blurs the move in proportion to its speed, so the blur peaks mid-move and clears when the camera settles.
+- Angles carry over to later shots until a shot changes them. `{ "camera": { "tilt": 0, "turn": 0 } }` flattens the board in place.
+
+`playScene` hands boards views with these fields (`View.tilt`, `View.blur`, …). `cameraTransform(view, stage, width)` and `cameraFilter(...)` give the CSS `transform` and `filter` for a board layer, `projectPoint` gives where a point lands on screen, and the standalone player (`flair scene html`) plays all of it. Layout checks still use the flat framing.
 
 ## 🎨 The catalog
 

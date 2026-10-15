@@ -1,3 +1,4 @@
+import { MAX_TILT } from './camera.js';
 import type { Scene, Shot } from './types.js';
 import { EFFECT_TYPES } from './effects.js';
 
@@ -52,9 +53,22 @@ export function validateScene(scene: Scene): SceneIssue[] {
         if (!Array.isArray(shot.camera.frame) || shot.camera.frame.length === 0) {
           say(shotNum, 'Dynamic camera framing requires a non-empty frame array of element IDs.');
         }
-      } else if (shot.camera.width <= 0 || shot.camera.height <= 0) {
+      } else if ('width' in shot.camera && (shot.camera.width <= 0 || shot.camera.height <= 0)) {
         say(shotNum, 'Camera rectangle width and height must be positive.');
       }
+      const cam = shot.camera;
+      const angle = (name: 'tilt' | 'turn' | 'roll', max: number) => {
+        const v = cam[name];
+        if (v !== undefined && !(typeof v === 'number' && Math.abs(v) <= max))
+          say(shotNum, `Camera ${name} is degrees between -${max} and ${max}.`);
+      };
+      angle('tilt', MAX_TILT);
+      angle('turn', MAX_TILT);
+      angle('roll', 180);
+      if (cam.perspective !== undefined && !(typeof cam.perspective === 'number' && cam.perspective >= 0.3))
+        say(shotNum, 'Camera perspective is the lens distance as a multiple of the stage width, 0.3 or more (1.2 by default).');
+      if (cam.motionBlur !== undefined && !(typeof cam.motionBlur === 'number' && cam.motionBlur >= 0 && cam.motionBlur <= 3))
+        say(shotNum, 'Camera motionBlur is 0 (none) to 3 (a whip); 1 is natural.');
     }
 
     // Check hold

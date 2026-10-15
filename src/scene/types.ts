@@ -1,5 +1,5 @@
 import type { Rect, SceneElement } from './geometry.js';
-import type { Stage } from './camera.js';
+import type { CameraAngle, Stage } from './camera.js';
 import type { Effect } from './effects.js';
 import type { Behavior } from './behavior.js';
 import type { SceneRig } from './rig.js';
@@ -68,7 +68,26 @@ export interface DynamicFraming {
   minHeight?: number;
 }
 
-export type ShotCamera = Rect | DynamicFraming;
+/**
+ * A shot's camera beyond its framing: its 3D angle (see `CameraAngle`) and
+ * how much it blurs while moving into the shot. A part left out keeps the
+ * value the camera already has, so set `tilt: 0` to come back flat.
+ */
+export interface CameraLens extends CameraAngle {
+  /**
+   * Motion blur while the camera moves into this shot: 0 (the default) for
+   * none, 1 for natural, up to 3 for a whip. The blur follows the move's
+   * speed, so it peaks mid-move and is gone when the camera settles.
+   */
+  motionBlur?: number;
+}
+
+/**
+ * Where the camera goes for a shot: a framing box, a dynamic framing, or
+ * neither (only a new angle or blur, keeping the framing), with any
+ * {@link CameraLens} fields alongside: `{ "frame": ["chart"], "tilt": 30 }`.
+ */
+export type ShotCamera = (Rect | DynamicFraming | Record<never, never>) & CameraLens;
 
 /** One beat of a scene: camera framing, title, narration/caption, commands, and procedural effects. */
 export interface Shot {
@@ -76,7 +95,7 @@ export interface Shot {
   caption?: string;
   /** High-level title or callout displayed on screen. */
   title?: string;
-  /** Camera framing box in scene units, or dynamic auto-framing target. */
+  /** Camera framing box in scene units or dynamic auto-framing target, with an optional 3D angle and motion blur. */
   camera?: ShotCamera;
   /** Pause/dwell duration after this shot's actions run (in milliseconds). Default: 800ms. */
   hold?: number;
