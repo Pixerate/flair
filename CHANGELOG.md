@@ -1,5 +1,11 @@
 # @pixerate/flair
 
+## 0.13.0
+
+### Minor Changes
+
+- 78275f0: Add vector solo variants, agent scene outline view, 2D fit/stack layout, and typed value converters inspired by Rive architectural patterns.
+
 ## 0.12.0
 
 ### Minor Changes
