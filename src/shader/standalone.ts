@@ -1,4 +1,5 @@
 import { controlValue, parseControls, type ControlValue } from "./controls.js";
+import { HOVER_SECONDS, MAX_CLICKS } from "./pointer.js";
 import { VERTEX_SOURCE, wrapSource } from "./program.js";
 import { SVG_EDGE } from "./textures.js";
 
@@ -123,6 +124,16 @@ canvas.addEventListener("pointerdown", (e) => { const [x, y] = px(e); mouse = [x
 canvas.addEventListener("pointermove", (e) => { if (e.buttons && mouse[2] > 0) { const [x, y] = px(e); mouse = [x, y, mouse[2], mouse[3]]; } });
 addEventListener("pointerup", () => { if (mouse[2] > 0) mouse = [mouse[0], mouse[1], -mouse[2], -Math.abs(mouse[3])]; });
 let start = performance.now(), last = start, frame = 0;
+// iPointer (where, how hovered, seconds pressed) and iClicks (the latest clicks, newest first).
+const seconds = () => (performance.now() - start) / 1000;
+let at = [0, 0], over = false, hoverFrom = 0, hoverAt = -1e9, pressedAt = -1, releasedAt = -1, clicks = [];
+const hovered = (t) => { const k = Math.min(1, Math.max(0, (t - hoverAt) / ${HOVER_SECONDS})); return hoverFrom + ((over ? 1 : 0) - hoverFrom) * k * k * (3 - 2 * k); };
+const hover = (on) => { const t = seconds(); hoverFrom = hovered(t); hoverAt = t; over = on; };
+canvas.addEventListener("pointerenter", (e) => { at = px(e); hover(true); });
+canvas.addEventListener("pointerleave", () => hover(false));
+canvas.addEventListener("pointermove", (e) => { at = px(e); });
+canvas.addEventListener("pointerdown", (e) => { at = px(e); pressedAt = seconds(); clicks.unshift([at[0], at[1], pressedAt, 1]); clicks = clicks.slice(0, ${MAX_CLICKS}); });
+addEventListener("pointerup", () => { if (pressedAt >= 0) releasedAt = seconds(); pressedAt = -1; });
 function draw(now) {
   const dpr = Math.min(devicePixelRatio || 1, 2);
   const w = Math.round(canvas.clientWidth * dpr), h = Math.round(canvas.clientHeight * dpr);
@@ -133,6 +144,11 @@ function draw(now) {
   gl.uniform1f(u("iTimeDelta"), (now - last) / 1000);
   gl.uniform1i(u("iFrame"), frame++);
   gl.uniform4f(u("iMouse"), mouse[0], mouse[1], mouse[2], mouse[3]);
+  const t = (now - start) / 1000;
+  gl.uniform4f(u("iPointer"), at[0], at[1], hovered(t), pressedAt >= 0 ? Math.max(0, t - pressedAt) : releasedAt >= 0 ? -Math.max(1e-3, t - releasedAt) : 0);
+  const c = new Float32Array(${MAX_CLICKS * 4});
+  clicks.forEach((k, i) => c.set(k, i * 4));
+  gl.uniform4fv(u("iClicks"), c);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
   last = now;
   requestAnimationFrame(draw);

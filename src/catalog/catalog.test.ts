@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { checkControlValue, parseControls } from "../shader/controls.js";
-import { svgMotionIssues } from "../vector/motion.js";
+import { svgFrame, svgMotionIssues } from "../vector/motion.js";
+import { svgDuration } from "../vector/svg.js";
 import {
   EFFECT_CATEGORIES,
   EFFECTS,
@@ -270,5 +271,101 @@ describe("morph effects", () => {
     // 98 → 103 shows a hundreds digit only from 100 on.
     const slot = render("digit-morph", { from: 98, to: 103 }).animate!.filter((a) => a.id === "s1");
     expect(slot.map((a) => a.attrs!.opacity)).toEqual([[0, 0], [0, 1], [1, 1], [1, 1], [1, 1], [1, 1], [1, 1], [1, 1], [1, 0]]);
+  });
+});
+
+describe("interaction effects", () => {
+  const interactive = findEffects({ category: "interaction", kind: "shader" });
+
+  it("include the pointer-driven shaders", () => {
+    const ids = interactive.map((e) => e.id);
+    for (const id of ["click-ripple", "click-burst", "cursor-glow", "hover-liquid", "hover-reveal", "magnifier", "holo-card", "press-charge", "hover-swap"])
+      expect(ids).toContain(id);
+  });
+
+  it.each(interactive.map((e) => [e.id, e] as const))("%s reads the pointer built-ins and can turn its idle demo off", (_, effect) => {
+    if (effect.kind !== "shader") return;
+    expect(effect.tags).toContain("interactive");
+    expect(effect.tags.some((t) => ["hover", "click", "press"].includes(t))).toBe(true);
+    expect(effect.source).toMatch(/\biPointer\b|\biClicks\b/);
+    expect(effect.source).not.toMatch(/uniform\s+vec4\s+(iPointer|iClicks)/);
+    expect(effectControls(effect).find((c) => c.name === "uDemo")).toMatchObject({ type: "bool", default: true });
+  });
+
+  it("marks the overlays transparent", () => {
+    for (const id of ["click-ripple", "click-burst", "cursor-glow", "holo-card", "press-charge"]) {
+      const effect = getEffect(id)!;
+      expect(effect.kind === "shader" && effect.transparent).toBe(true);
+    }
+  });
+});
+
+describe("interaction effects", () => {
+  const effects = findEffects({ category: "interaction", kind: "vector" });
+  const render = (effect: (typeof effects)[number], values: Record<string, unknown> = {}) => {
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    return renderVectorEffect(effect, values as never);
+  };
+  const lastStep = (motion: ReturnType<typeof render>) => Math.max(0, ...(motion.animate ?? []).map((a) => a.step ?? 0));
+
+  it("are all triggered and tagged for it", () => {
+    expect(effects.length).toBeGreaterThanOrEqual(12);
+    for (const effect of effects) {
+      if (effect.kind !== "vector") continue;
+      expect(effect.trigger, effect.id).toBeDefined();
+      expect(effect.tags, effect.id).toEqual(expect.arrayContaining(["interactive", "ui", effect.trigger!]));
+    }
+  });
+
+  it.each(effects.filter((e) => e.kind === "vector" && e.trigger === "click").map((e) => [e.id, e] as const))(
+    "click effect %s changes on its steps and ends a round as it started",
+    (_, effect) => {
+      const motion = render(effect);
+      const steps = lastStep(motion);
+      expect(steps === 1 || steps === 2, `${effect.id} has ${steps} steps`).toBe(true);
+      // Step 0 never plays: everything waits for a click.
+      expect(motion.animate!.every((a) => (a.step ?? 0) >= 1)).toBe(true);
+      const at = (clicks: number[], ms: number) => JSON.stringify([...svgFrame(motion.animate!, clicks, ms)].sort());
+      const start = at([], 0);
+      // A toggle is on after step 1; every round ends where it began.
+      if (steps === 2) expect(at([0], 5000)).not.toBe(start);
+      else expect(at([0], 400)).not.toBe(start);
+      expect(at(steps === 2 ? [0, 5000] : [0], 10000)).toBe(start);
+    },
+  );
+
+  it.each(effects.filter((e) => e.kind === "vector" && e.trigger !== "click").map((e) => [e.id, e] as const))(
+    "hover or press effect %s plays from rest to a different end",
+    (_, effect) => {
+      const motion = render(effect);
+      expect(lastStep(motion)).toBe(0);
+      const frame = (ms: number) => JSON.stringify([...svgFrame(motion.animate!, [], ms)].sort());
+      expect(frame(svgDuration(motion))).not.toBe(frame(0));
+    },
+  );
+
+  it.each(effects.flatMap((e) => effectControls(e).filter((c) => c.type === "text").map((c) => [e.id, c.name, e] as const)))(
+    "%s fits short, long and unusual %s",
+    (_, name, effect) => {
+      for (const word of ["A", "Supercalifragilistic & <co>", "Café 日本 🎉", ""]) {
+        const motion = render(effect, { [name]: word });
+        expect(svgMotionIssues(motion)).toEqual([]);
+        expect(JSON.stringify(motion)).not.toMatch(/\{\{|NaN|undefined/);
+      }
+    },
+  );
+
+  it("like button counts up from its start count and back", () => {
+    const like = render(getEffect("like-button")!, { count: 99 });
+    expect(like.animate!.filter((a) => a.count).map((a) => a.count)).toEqual([[99, 100], [100, 99]]);
+  });
+
+  it("menu toggle morphs bars and cross of one structure at any weight", () => {
+    const skeleton = (d: unknown) => String(d).replace(/-?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?/gi, "#");
+    for (const weight of [1, 2, 3.5]) {
+      const d = render(getEffect("menu-toggle")!, { weight }).animate!.find((a) => a.id === "glyph")!.attrs!.d!;
+      expect(skeleton(d[0])).toBe(skeleton(d[1]));
+      expect(d[0]).not.toBe(d[1]);
+    }
   });
 });

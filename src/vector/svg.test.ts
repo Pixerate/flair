@@ -255,3 +255,73 @@ describe("formatCount and animateCount", () => {
   });
 });
 
+
+describe("SvgPlayer triggers", () => {
+  it("plays to the end while hovered and back to the start after", async () => {
+    const clock = new ManualClock();
+    const host = document.createElement("div");
+    const player = new SvgPlayer(host, media, { clock, trigger: "hover" });
+    const height = () => host.querySelector("#bar")!.getAttribute("height");
+    await clock.advance(500);
+    expect(player.isPlaying).toBe(false);
+    expect(height()).toBe("0");
+    host.dispatchEvent(new Event("pointerenter"));
+    await clock.advance(16);
+    await clock.advance(1100);
+    expect(player.currentTime).toBe(player.duration);
+    expect(player.isPlaying).toBe(false);
+    host.dispatchEvent(new Event("pointerleave"));
+    await clock.advance(16);
+    await clock.advance(1100);
+    expect(player.currentTime).toBe(0);
+    expect(height()).toBe("0");
+    player.dispose();
+  });
+
+  it("plays the next step on each click, starting over after the last", async () => {
+    const clock = new ManualClock();
+    const host = document.createElement("div");
+    const toggle = {
+      svg: `<svg viewBox="0 0 10 10"><rect id="knob" x="0" width="2" height="2"/></svg>`,
+      animate: [
+        { id: "knob", step: 1, attrs: { x: [0, 8] as const }, ms: 100, ease: "linear" as const },
+        { id: "knob", step: 2, attrs: { x: [8, 0] as const }, ms: 100, ease: "linear" as const },
+      ],
+    };
+    const player = new SvgPlayer(host, toggle, { clock, trigger: "click" });
+    const x = () => host.querySelector("#knob")!.getAttribute("x");
+    expect(x()).toBe("0");
+    host.dispatchEvent(new Event("click"));
+    await clock.advance(16);
+    await clock.advance(200);
+    expect(x()).toBe("8");
+    expect(player.isPlaying).toBe(false);
+    host.dispatchEvent(new Event("click"));
+    await clock.advance(16);
+    await clock.advance(200);
+    expect(x()).toBe("0");
+    host.dispatchEvent(new Event("click"));
+    await clock.advance(16);
+    await clock.advance(60);
+    expect(Number(x())).toBeGreaterThan(0);
+    expect(Number(x())).toBeLessThan(8);
+    await clock.advance(200);
+    expect(x()).toBe("8");
+    player.dispose();
+  });
+
+  it("can be driven by its host", async () => {
+    const clock = new ManualClock();
+    const host = document.createElement("div");
+    const player = new SvgPlayer(host, media, { clock, trigger: "press" });
+    player.setActive(true);
+    await clock.advance(16);
+    await clock.advance(400);
+    expect(player.currentTime).toBeGreaterThan(300);
+    window.dispatchEvent(new Event("pointerup"));
+    await clock.advance(16);
+    await clock.advance(1000);
+    expect(player.currentTime).toBe(0);
+    player.dispose();
+  });
+});

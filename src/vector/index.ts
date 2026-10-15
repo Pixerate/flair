@@ -42,6 +42,7 @@ export {
   svgView,
   type AnimateCountOptions,
   type SvgPlayerOptions,
+  type SvgTrigger,
   type SvgView,
   type SvgViewOptions,
 } from "./svg.js";

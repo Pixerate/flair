@@ -1,4 +1,5 @@
 import { controlValue, type ControlDef, type ControlValue } from "./controls.js";
+import { MAX_CLICKS } from "./pointer.js";
 import { applyTextureSettings, type TextureSource } from "./textures.js";
 
 /**
@@ -17,6 +18,17 @@ export const BUILTIN_UNIFORMS = [
     type: "vec4",
     doc: "xy = pointer while pressed (pixels), zw = press position (negative once released)",
   },
+  {
+    name: "iPointer",
+    type: "vec4",
+    doc: "xy = pointer while over the canvas (pixels), z = how hovered (0–1, eased), w = seconds held while pressed, minus seconds since release after (0 before any press)",
+  },
+  {
+    name: "iClicks",
+    type: "vec4",
+    size: MAX_CLICKS,
+    doc: "the latest clicks, newest first: xy = where (pixels), z = when (iTime seconds), w = 1 for a click, 0 for an empty slot",
+  },
 ] as const;
 
 const PRELUDE = `#version 300 es
@@ -27,6 +39,8 @@ uniform float iTime;
 uniform float iTimeDelta;
 uniform int iFrame;
 uniform vec4 iMouse;
+uniform vec4 iPointer;
+uniform vec4 iClicks[${MAX_CLICKS}];
 out vec4 flair_FragColor;
 `;
 
@@ -192,6 +206,8 @@ export function compileShader(
   return { ok: true, shader: { program, builtins, uniforms } };
 }
 
+const NO_CLICKS = new Float32Array(MAX_CLICKS * 4);
+
 /** What one frame shows: its size in pixels, its time and the pointer. */
 export interface FrameState {
   width: number;
@@ -204,6 +220,10 @@ export interface FrameState {
   frame: number;
   /** `iMouse`, Shadertoy semantics. */
   mouse: [number, number, number, number];
+  /** `iPointer` (default all zero: nobody is pointing). */
+  pointer?: readonly [number, number, number, number];
+  /** `iClicks`: {@link MAX_CLICKS} × (x, y, time, 1), newest first (default none; see `clicksUniform`). */
+  clicks?: Float32Array;
 }
 
 /**
@@ -228,6 +248,8 @@ export function drawFrame(
   if (b.iTimeDelta) gl.uniform1f(b.iTimeDelta, state.delta);
   if (b.iFrame) gl.uniform1i(b.iFrame, state.frame);
   if (b.iMouse) gl.uniform4f(b.iMouse, ...state.mouse);
+  if (b.iPointer) gl.uniform4f(b.iPointer, ...(state.pointer ?? [0, 0, 0, 0]));
+  if (b.iClicks) gl.uniform4fv(b.iClicks, state.clicks ?? NO_CLICKS);
   let unit = 0;
   for (const control of controls) {
     const loc = shader.uniforms.get(control.name);

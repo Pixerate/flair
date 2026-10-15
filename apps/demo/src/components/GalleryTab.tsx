@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { sharedThumbnailPool, SvgPlayer, ThumbnailPool } from "@pixerate/flair";
+import { sharedThumbnailPool, SvgPlayer, ThumbnailPool, type ThumbnailHandle } from "@pixerate/flair";
 import {
   EFFECT_CATEGORIES,
   effectDefaults,
@@ -19,13 +19,16 @@ function poolFor(effect: Extract<EffectDefinition, { kind: "shader" }>): Thumbna
   return (overlayPool ??= new ThumbnailPool({ alpha: true }));
 }
 
-function ShaderThumb({ effect }: { effect: Extract<EffectDefinition, { kind: "shader" }> }) {
+function ShaderThumb({ effect, hovered }: { effect: Extract<EffectDefinition, { kind: "shader" }>; hovered: boolean }) {
   const canvas = useRef<HTMLCanvasElement>(null);
+  const handle = useRef<ThumbnailHandle | undefined>(undefined);
   const [failed, setFailed] = useState(false);
   useEffect(() => {
-    const handle = poolFor(effect).register(canvas.current!, effect.source, effectDefaults(effect), (ok) => setFailed(!ok));
-    return () => handle.dispose();
+    handle.current = poolFor(effect).register(canvas.current!, effect.source, effectDefaults(effect), (ok) => setFailed(!ok));
+    return () => handle.current!.dispose();
   }, [effect]);
+  // Interactive shaders see a hovered card as the pointer over its middle.
+  useEffect(() => handle.current?.setHovered(hovered), [hovered]);
   return (
     <>
       <canvas ref={canvas} className="absolute inset-0 h-full w-full" />
@@ -34,26 +37,54 @@ function ShaderThumb({ effect }: { effect: Extract<EffectDefinition, { kind: "sh
   );
 }
 
-function VectorThumb({ effect }: { effect: Extract<EffectDefinition, { kind: "vector" }> }) {
+function VectorThumb({ effect, hovered }: { effect: Extract<EffectDefinition, { kind: "vector" }>; hovered: boolean }) {
   const host = useRef<HTMLDivElement>(null);
+  const player = useRef<SvgPlayer | undefined>(undefined);
   useEffect(() => {
-    const player = new SvgPlayer(host.current!, renderVectorEffect(effect, effectDefaults(effect)), { hold: effect.hold });
-    return () => player.dispose();
+    const motion = renderVectorEffect(effect, effectDefaults(effect));
+    // Hover and press effects follow the card's hover; clicking a card opens it, so click effects click themselves.
+    const p = new SvgPlayer(host.current!, motion, { hold: effect.hold, trigger: effect.trigger, triggerTarget: document.createElement("div") });
+    player.current = p;
+    // Click again only once the last click has played out, with a pause to see it.
+    let idleSince = 0;
+    const timer =
+      effect.trigger === "click"
+        ? setInterval(() => {
+            if (p.isPlaying) return void (idleSince = 0);
+            idleSince ||= performance.now();
+            if (performance.now() - idleSince >= 900) {
+              idleSince = 0;
+              p.advance();
+            }
+          }, 150)
+        : undefined;
+    return () => {
+      clearInterval(timer);
+      p.dispose();
+    };
   }, [effect]);
+  useEffect(() => {
+    if (effect.trigger === "hover" || effect.trigger === "press") player.current?.setActive(hovered);
+  }, [effect, hovered]);
   return <div ref={host} className={effect.category === "overlay" ? "absolute inset-0" : "absolute inset-[12%]"} />;
 }
 
 function EffectCard({ effect, onOpen }: { effect: EffectDefinition; onOpen: () => void }) {
+  const [hovered, setHovered] = useState(false);
+  const trigger = effect.kind === "vector" ? effect.trigger : effect.category === "interaction" ? "pointer" : undefined;
   return (
     <button
       onClick={onOpen}
+      onPointerEnter={() => setHovered(true)}
+      onPointerLeave={() => setHovered(false)}
       className="group text-left rounded-xl border border-slate-800 bg-slate-900 overflow-hidden hover:border-violet-500/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet-500 transition"
     >
       <div className={`relative aspect-video ${effect.kind === "vector" && effect.category !== "overlay" ? "bg-slate-100" : "bg-black"}`}>
         {effect.category === "overlay" && <img src={SAMPLE_IMAGES.city} alt="" className="absolute inset-0 h-full w-full object-cover" />}
-        {effect.kind === "shader" ? <ShaderThumb effect={effect} /> : <VectorThumb effect={effect} />}
+        {effect.kind === "shader" ? <ShaderThumb effect={effect} hovered={hovered} /> : <VectorThumb effect={effect} hovered={hovered} />}
         <span className="absolute top-2 left-2 rounded bg-black/60 px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-slate-200">
           {effect.kind}
+          {trigger && ` · ${trigger}`}
         </span>
       </div>
       <div className="p-3">

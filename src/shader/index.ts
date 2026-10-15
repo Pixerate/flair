@@ -72,6 +72,7 @@ export {
   type ThumbnailPoolOptions,
 } from "./thumbnails.js";
 export { ShaderFrames, type RenderOptions, type ShaderFramesOptions } from "./frames.js";
+export { clicksUniform, HOVER_SECONDS, MAX_CLICKS, PointerTracker, type ShaderClick } from "./pointer.js";
 export { recordGif, type GifOptions } from "./gif.js";
 export { standaloneHtml, type StandaloneOptions } from "./standalone.js";
 export {
