@@ -6,7 +6,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Pixerate/flair.git"
+    "url": "git+https://github.com/Pixerate/flair.git"
   },
   "homepage": "https://pixerate.github.io/flair/",
   "bugs": "https://github.com/Pixerate/flair/issues",
@@ -46,7 +46,7 @@
     "./package.json": "./package.json"
   },
   "bin": {
-    "flair": "./dist/cli.js"
+    "flair": "dist/cli.js"
   },
   "scripts": {
     "build": "tsup",
