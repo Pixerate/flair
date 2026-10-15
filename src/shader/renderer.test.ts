@@ -36,6 +36,18 @@ describe("ShaderRenderer", () => {
     expect(gl!.attributes).toMatchObject({ preserveDrawingBuffer: true, alpha: false });
   });
 
+  it("attaches directly to an existing HTMLCanvasElement without appending another", () => {
+    installFakeWebGl();
+    installManualRaf();
+    const existing = document.createElement("canvas");
+    document.body.appendChild(existing);
+    const renderer = new ShaderRenderer(existing, "custom-canvas");
+    expect(renderer.canvas).toBe(existing);
+    expect(renderer.canvas.className).toBe("custom-canvas");
+    renderer.dispose();
+    expect(existing.parentElement).toBe(document.body);
+  });
+
   it("sizes the drawing buffer from the CSS size and pixel ratio", () => {
     const { renderer } = setup();
     expect([renderer.canvas.width, renderer.canvas.height]).toEqual([100, 50]);
