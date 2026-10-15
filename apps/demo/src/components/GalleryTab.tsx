@@ -37,36 +37,118 @@ function ShaderThumb({ effect, hovered }: { effect: Extract<EffectDefinition, { 
   );
 }
 
+const prefersReducedMotion = () => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/**
+ * A pointer drawn over an interactive thumbnail while it plays its own demo:
+ * it glides in to hover, presses down to press, and pings to click.
+ */
+function DemoCursor({ cursor, ring }: { cursor: React.RefObject<HTMLDivElement | null>; ring: React.RefObject<HTMLSpanElement | null> }) {
+  return (
+    <div
+      ref={cursor}
+      aria-hidden
+      className="pointer-events-none absolute left-1/2 top-1/2 opacity-0 transition-[opacity,transform] duration-300 ease-out"
+      style={{ transform: "translate(28px, 28px)" }}
+    >
+      <span ref={ring} className="absolute -left-3 -top-3 h-6 w-6 rounded-full border-2 border-violet-500 opacity-0" />
+      <svg width="18" height="22" viewBox="0 0 18 22" className="drop-shadow">
+        <path d="M1 1 L1 17 L5 13 L8 20 L11 19 L8 12 L14 12 Z" fill="#fff" stroke="#111827" strokeWidth="1.5" strokeLinejoin="round" />
+      </svg>
+    </div>
+  );
+}
+
 function VectorThumb({ effect, hovered }: { effect: Extract<EffectDefinition, { kind: "vector" }>; hovered: boolean }) {
   const host = useRef<HTMLDivElement>(null);
+  const cursor = useRef<HTMLDivElement>(null);
+  const ring = useRef<HTMLSpanElement>(null);
   const player = useRef<SvgPlayer | undefined>(undefined);
+  const hoveredRef = useRef(hovered);
+  /** When the demo starts over (after a real hover, say). */
+  const restartAt = useRef(0);
+  const trigger = effect.trigger;
   useEffect(() => {
     const motion = renderVectorEffect(effect, effectDefaults(effect));
-    // Hover and press effects follow the card's hover; clicking a card opens it, so click effects click themselves.
-    const p = new SvgPlayer(host.current!, motion, { hold: effect.hold, trigger: effect.trigger, triggerTarget: document.createElement("div") });
+    // Clicking a card opens it, so the player listens to nothing: the card's hover and the demo below drive it.
+    const p = new SvgPlayer(host.current!, motion, { hold: effect.hold, trigger, triggerTarget: document.createElement("div") });
     player.current = p;
-    // Click again only once the last click has played out, with a pause to see it.
-    let idleSince = 0;
-    const timer =
-      effect.trigger === "click"
-        ? setInterval(() => {
-            if (p.isPlaying) return void (idleSince = 0);
-            idleSince ||= performance.now();
-            if (performance.now() - idleSince >= 900) {
-              idleSince = 0;
-              p.advance();
-            }
-          }, 150)
-        : undefined;
+    if (!trigger || prefersReducedMotion()) return () => p.dispose();
+
+    // While nobody hovers the card, it acts out its own interaction, the way interactive shaders play an idle demo:
+    // the cursor glides in, hovers / holds / clicks, waits for the picture to play out, then lets go and leaves.
+    const showCursor = (state: "out" | "in" | "down") => {
+      const el = cursor.current;
+      if (!el) return;
+      el.style.opacity = state === "out" ? "0" : "1";
+      el.style.transform = state === "out" ? "translate(28px, 28px)" : state === "down" ? "translate(0, 0) scale(0.85)" : "translate(0, 0)";
+    };
+    const ping = () => ring.current?.animate([{ transform: "scale(0.3)", opacity: 0.9 }, { transform: "scale(1.6)", opacity: 0 }], { duration: 450, easing: "ease-out" });
+    let phase = 0;
+    let waitUntil = performance.now() + 600;
+    const timer = setInterval(() => {
+      if (hoveredRef.current) return;
+      const now = performance.now();
+      if (restartAt.current) {
+        if (now < restartAt.current) return;
+        restartAt.current = 0;
+        phase = 0;
+      }
+      if (now < waitUntil || p.isPlaying) return;
+      if (trigger === "click") {
+        // In, click, let it play out, pause; every other round the cursor steps away.
+        if (phase === 0) showCursor("in");
+        else {
+          showCursor("down");
+          setTimeout(() => showCursor("in"), 120);
+          ping();
+          p.advance();
+        }
+        phase = 1;
+        waitUntil = now + 900;
+        return;
+      }
+      // Hover and press: in, act, (play to the end), hold, let go, (play back), out, rest.
+      switch (phase) {
+        case 0:
+          showCursor("in");
+          waitUntil = now + 350;
+          break;
+        case 1:
+          if (trigger === "press") showCursor("down");
+          p.setActive(true);
+          waitUntil = now + 900;
+          break;
+        case 2:
+          showCursor(trigger === "press" ? "in" : "out");
+          p.setActive(false);
+          waitUntil = now + 300;
+          break;
+        case 3:
+          showCursor("out");
+          waitUntil = now + 900;
+          break;
+      }
+      phase = (phase + 1) % 4;
+    }, 100);
     return () => {
       clearInterval(timer);
       p.dispose();
     };
-  }, [effect]);
+  }, [effect, trigger]);
   useEffect(() => {
-    if (effect.trigger === "hover" || effect.trigger === "press") player.current?.setActive(hovered);
-  }, [effect, hovered]);
-  return <div ref={host} className={effect.category === "overlay" ? "absolute inset-0" : "absolute inset-[12%]"} />;
+    hoveredRef.current = hovered;
+    // A real hover takes over from the demo: the demo cursor steps aside for the real one.
+    if (hovered && cursor.current) cursor.current.style.opacity = "0";
+    else restartAt.current = performance.now() + 1200;
+    if (trigger === "hover" || trigger === "press") player.current?.setActive(hovered);
+  }, [trigger, hovered]);
+  return (
+    <>
+      <div ref={host} className={effect.category === "overlay" ? "absolute inset-0" : "absolute inset-[12%]"} />
+      {trigger && <DemoCursor cursor={cursor} ring={ring} />}
+    </>
+  );
 }
 
 function EffectCard({ effect, onOpen }: { effect: EffectDefinition; onOpen: () => void }) {
