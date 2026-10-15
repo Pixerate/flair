@@ -1,7 +1,7 @@
 import { FBM, glsl, HASH, NOISE } from "../glsl.js";
 import { SAMPLE_IMAGES, textImage } from "../images.js";
 import type { ShaderEffect } from "../types.js";
-import { PICTURE } from "./image.js";
+import { BACKDROP_CONTROLS, PICTURE } from "./image.js";
 
 /**
  * `meltCycle(rate)`: how melted, 0–1, over an 8 s loop: it melts (faster
@@ -54,7 +54,8 @@ uniform float uViscosity;   // @control min=0.004 max=0.04 default=0.02 label="V
 uniform float uGloss;       // @control min=0 max=1.5 default=0.8 label="Gloss"
 uniform vec3 uBackground;   // @control color default=#17121F label="Behind"
 uniform bool uAnimate;      // @control default=true label="Animate"
-uniform float uProgress;    // @control min=0 max=1 default=0.7 label="Melt (when still)"`,
+uniform float uProgress;    // @control min=0 max=1 default=0.7 label="Melt (when still)"
+${BACKDROP_CONTROLS}`,
     HASH,
     NOISE,
     FBM,
@@ -110,13 +111,13 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   float h = clamp(uv.y / e, 0.0, 1.0);
   float ys = 1.0 - pow(1.0 - h, 1.0 + m * 1.3);
   float xs = uv.x + m * 0.006 * sin(uv.y * 40.0 + uv.x * 13.0);
-  vec3 col = picture(uImage, vec2(xs, ys));
-  vec3 behind = uBackground * (0.75 + 0.5 * uv.y);
+  vec4 col = pictureRGBA(uImage, vec2(xs, ys));
+  vec4 behind = vec4(uBackground * (0.75 + 0.5 * uv.y), uBackdropAlpha);
   col = mix(col, behind, smoothstep(e - px, e + px, uv.y));
 
   // The liquid's shadow, down and to the right.
   float shadow = liquid(uv + vec2(-0.004, 0.009), m);
-  col *= 1.0 - 0.4 * smoothstep(0.012, -0.004, shadow) * smoothstep(0.0, 0.1, m);
+  col.rgb *= 1.0 - 0.4 * smoothstep(0.012, -0.004, shadow) * smoothstep(0.0, 0.1, m);
 
   float d = liquid(uv, m);
   if (d < 4.0 * px) {
@@ -126,15 +127,16 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     float thick = sqrt(clamp(-d / 0.018, 0.0, 1.0));
     vec3 nrm = normalize(vec3(g * (1.0 - thick) * 1.6, 0.4 + thick));
     // Drips carry the colour of the top edge down; the puddle is everything mixed.
-    vec3 top = picture(uImage, vec2(uv.x + 0.01 * sin(uv.y * 25.0), 0.965));
+    vec4 top = pictureRGBA(uImage, vec2(uv.x + 0.01 * sin(uv.y * 25.0), 0.965));
     float sx = uv.x + 0.04 * sin(uv.x * 11.0 + uv.y * 30.0);
-    vec3 pool = (picture(uImage, vec2(sx - 0.06, 0.25)) + picture(uImage, vec2(sx + 0.06, 0.4)) + picture(uImage, vec2(sx, 0.9))) / 3.0;
+    vec4 pool = (pictureRGBA(uImage, vec2(sx - 0.06, 0.25)) + pictureRGBA(uImage, vec2(sx + 0.06, 0.4)) + pictureRGBA(uImage, vec2(sx, 0.9))) / 3.0;
     float inPool = smoothstep(poolY(uv.x, m) + 0.04, poolY(uv.x, m) - 0.01, uv.y);
-    vec3 base = mix(top, pool, inPool) * (0.9 + 0.12 * vnoise(vec2(uv.x * 90.0, uv.y * 3.0)));
-    vec3 wet = liquidShade(base * 1.05, nrm, uGloss);
-    col = mix(col, wet, smoothstep(px, -px, d));
+    vec4 base = mix(top, pool, inPool);
+    base.rgb *= 0.9 + 0.12 * vnoise(vec2(uv.x * 90.0, uv.y * 3.0));
+    vec3 wet = liquidShade(base.rgb * 1.05, nrm, uGloss);
+    col = mix(col, vec4(wet, base.a), smoothstep(px, -px, d));
   }
-  fragColor = vec4(col, 1.0);
+  fragColor = col;
 }`,
   ),
   presets: [
@@ -159,7 +161,8 @@ uniform float uScale;      // @control min=1 max=20 default=7 label="Scale"
 uniform float uSpeed;      // @control min=0 max=3 default=1 label="Speed"
 uniform float uHeight;     // @control min=0.1 max=1 default=0.8 label="Height"
 uniform vec3 uTint;        // @control color default=#FFB070 label="Warm tint"
-uniform float uWarmth;     // @control min=0 max=1 default=0.3 label="Tint amount"`,
+uniform float uWarmth;     // @control min=0 max=1 default=0.3 label="Tint amount"
+${BACKDROP_CONTROLS}`,
     HASH,
     NOISE,
     FBM,
@@ -179,16 +182,21 @@ uniform float uWarmth;     // @control min=0 max=1 default=0.3 label="Tint amoun
   vec2 st = uv + off;
   // A touch of colour fringing where the air bends light the most.
   float fringe = 0.25 * length(off);
-  vec3 col = vec3(picture(uImage, st + vec2(fringe, 0.0)).r, picture(uImage, st).g, picture(uImage, st - vec2(fringe, 0.0)).b);
+  vec4 r = pictureRGBA(uImage, st + vec2(fringe, 0.0));
+  vec4 g = pictureRGBA(uImage, st);
+  vec4 b2 = pictureRGBA(uImage, st - vec2(fringe, 0.0));
+  vec3 col = vec3(r.r, g.g, b2.b);
+  float alpha = max(max(r.a, g.a), b2.a);
   // An inferior mirage: just above the ground, what sits above it shows again, flipped and shimmering.
   float y0 = 0.05 + 0.15 * uHeight;
   float below = smoothstep(y0, 0.0, uv.y) * (0.6 + 0.4 * b);
-  vec3 mirage = picture(uImage, vec2(st.x, y0 + (y0 - uv.y) * 1.4 + off.y * 2.0));
-  col = mix(col, mirage, below * uStrength * 0.55);
+  vec4 mirage = pictureRGBA(uImage, vec2(st.x, y0 + (y0 - uv.y) * 1.4 + off.y * 2.0));
+  col = mix(col, mirage.rgb, below * uStrength * 0.55);
+  alpha = mix(alpha, mirage.a, below * uStrength * 0.55);
   // Warm, slightly hazy air.
   col = mix(col, col * mix(vec3(1.0), uTint * 1.35, uWarmth), heat);
   col = mix(col, uTint, heat * uWarmth * 0.12 * (0.7 + 0.6 * a));
-  fragColor = vec4(col, 1.0);
+  fragColor = vec4(col, alpha);
 }`,
   ),
   presets: [
@@ -430,7 +438,8 @@ uniform sampler2D uImage;  // @control filter=linear wrap=mirror default=${SAMPL
 uniform float uBrush;      // @control min=0.05 max=0.5 default=0.17 label="Brush size"
 uniform float uStrength;   // @control min=0 max=2 default=0.8 label="Strength"
 uniform float uRelax;      // @control min=0.2 max=5 default=1.2 label="Relax"
-uniform float uSpeed;      // @control min=0 max=2 default=1 label="Brush speed"`,
+uniform float uSpeed;      // @control min=0 max=2 default=1 label="Brush speed"
+${BACKDROP_CONTROLS}`,
     PICTURE,
     `// The brush at time t (frame units, height 1): a Lissajous path, or stirring round the pointer while it hovers.
 vec2 brush(float t) {
@@ -460,11 +469,11 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     wet += f * fade;
   }
   vec2 uv = (p - disp) * vec2(iResolution.y / iResolution.x, 1.0) + 0.5;
-  vec3 col = picture(uImage, uv);
+  vec4 pic = pictureRGBA(uImage, uv);
   // Wet paint catches a little light along the smears.
   float sheen = clamp(dot(disp, normalize(vec2(-0.6, 0.8))) * 12.0, -1.0, 1.0);
-  col *= 1.0 + 0.05 * sheen * min(wet, 1.0) * min(uStrength, 1.0);
-  fragColor = vec4(col, 1.0);
+  vec3 col = pic.rgb * (1.0 + 0.05 * sheen * min(wet, 1.0) * min(uStrength, 1.0));
+  fragColor = vec4(col, pic.a);
 }`,
   ),
   presets: [

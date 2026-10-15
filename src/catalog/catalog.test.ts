@@ -158,6 +158,31 @@ describe("catalog", () => {
     expect(SAMPLE_IMAGES.landscape).toMatch(/^data:image\/svg\+xml;base64,/);
   });
 
+  // Effects that show a picture lay it over a backdrop, so transparent images (Lucide icons:
+  // black strokes on clear) are not black on black, and pass its alpha on for overlays.
+  const PICTURE_EFFECTS = SHADER_EFFECTS.filter((e) => /\b(picture|pictureRGBA|flair_transition)\(/.test(e.source));
+  // These draw a whole opaque device around the picture, so they stay opaque.
+  const OPAQUE = new Set(["gameboy-screen"]);
+
+  it.each(PICTURE_EFFECTS.map((e) => [e.id, e] as const))("%s lays its image over a backdrop and keeps its alpha", (_, effect) => {
+    expect(effectDefaults(effect)).toMatchObject({ uBackdrop: [1, 1, 1], uBackdropAlpha: 1 });
+    expect(effect.source).toContain("vec4 overBackdrop(vec4 s)");
+    const main = effect.source.slice(effect.source.indexOf("void mainImage"));
+    if (OPAQUE.has(effect.id)) return;
+    expect(main, "no opaque output: the picture's alpha goes to fragColor").not.toMatch(/fragColor\s*=\s*vec4\([^;]*,\s*1\.0\);/);
+    expect(main).not.toMatch(/\btexture\(/);
+  });
+
+  it("covers the image and transition effects, and samples a Lucide-style icon", () => {
+    expect(PICTURE_EFFECTS.length).toBeGreaterThanOrEqual(50);
+    for (const id of ["image-duotone", "transition-wipe", "feature-morph", "time-echo", "hover-swap"]) {
+      expect(PICTURE_EFFECTS.map((e) => e.id)).toContain(id);
+    }
+    const icon = atob(SAMPLE_IMAGES.icon.split(",")[1]!);
+    expect(icon).toContain('stroke="currentColor"');
+    expect(icon).toContain('fill="none"');
+  });
+
   it("exposes background alpha and sparsity controls on sparkles and bokeh", () => {
     const sparkles = getEffect("sparkles")!;
     const bokeh = getEffect("bokeh")!;

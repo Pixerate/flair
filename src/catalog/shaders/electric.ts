@@ -1,7 +1,7 @@
 import { FBM, glsl, HASH, NOISE, ROTATE } from "../glsl.js";
 import { SAMPLE_IMAGES, textImage } from "../images.js";
 import type { ShaderEffect } from "../types.js";
-import { PICTURE } from "./image.js";
+import { BACKDROP_CONTROLS, PICTURE } from "./image.js";
 
 /*
  * Electricity is drawn from jagged arcs: straight runs between hashed kinks,
@@ -777,7 +777,8 @@ uniform sampler2D uImage;  // @control filter=linear wrap=clamp default=${SAMPLE
 uniform vec3 uColor;       // @control color default=#8FD8FF label="Arc colour"
 uniform float uPeriod;     // @control min=1.5 max=8 default=3.5 label="Seconds between surges"
 uniform float uStrength;   // @control min=0 max=1.5 default=1 label="Strength"
-uniform float uGlitch;     // @control min=0 max=1 default=0.6 label="Glitch"`,
+uniform float uGlitch;     // @control min=0 max=1 default=0.6 label="Glitch"
+${BACKDROP_CONTROLS}`,
     HASH,
     ZIGZAG,
     ARC,
@@ -796,7 +797,10 @@ uniform float uGlitch;     // @control min=0 max=1 default=0.6 label="Glitch"`,
   float tear = (hash12(vec2(rows, tick)) - 0.5) * step(0.55, hash12(vec2(rows, tick + 5.0))) * 0.12 * surge * uGlitch;
   vec2 st = uv + vec2(tear, 0.0);
   float split = 0.012 * surge * uGlitch;
-  vec3 col = vec3(picture(uImage, st + vec2(split, 0.0)).r, picture(uImage, st).g, picture(uImage, st - vec2(split, 0.0)).b);
+  vec4 r = pictureRGBA(uImage, st + vec2(split, 0.0));
+  vec4 g = pictureRGBA(uImage, st);
+  vec4 b2 = pictureRGBA(uImage, st - vec2(split, 0.0));
+  vec3 col = vec3(r.r, g.g, b2.b);
   // Brightness spikes, dips in a brownout, then comes back.
   float brownout = 1.0 - 0.3 * min(uStrength, 1.0) * smoothstep(0.25, 0.5, since) * (1.0 - smoothstep(0.7, 1.5, since));
   col = col * brownout * (1.0 + surge * 1.4) + surge * 0.2 * mix(uColor, vec3(1.0), 0.5);
@@ -815,7 +819,9 @@ uniform float uGlitch;     // @control min=0 max=1 default=0.6 label="Glitch"`,
     light *= on;
   }
   col = 1.0 - (1.0 - clamp(col, 0.0, 1.0)) * exp(-light);
-  fragColor = vec4(col, 1.0);
+  // The arc shows where the picture is clear too.
+  float arc = 1.0 - exp(-max(light.r, max(light.g, light.b)));
+  fragColor = vec4(col, max(max(max(r.a, g.a), b2.a), arc));
 }`,
   ),
   presets: [

@@ -1,7 +1,7 @@
 import { FBM, glsl, HASH, NOISE } from "../glsl.js";
 import { SAMPLE_IMAGES, textImage } from "../images.js";
 import type { ShaderEffect } from "../types.js";
-import { PICTURE } from "./image.js";
+import { BACKDROP_CONTROLS, PICTURE } from "./image.js";
 
 /*
  * Pixel looks stay crisp: every effect works on a virtual low-resolution grid
@@ -151,7 +151,8 @@ uniform int uPalette;      // @control min=0 max=5 default=0 label="Palette (0 G
 uniform float uPixel;      // @control min=1 max=16 default=4 step=1 label="Pixel size"
 uniform float uDither;     // @control min=0 max=1 default=0.7 label="Dither"
 uniform bool uBayer8;      // @control default=true label="8 × 8 Bayer matrix"
-uniform float uContrast;   // @control min=0.5 max=2 default=1.1 label="Contrast"`,
+uniform float uContrast;   // @control min=0.5 max=2 default=1.1 label="Contrast"
+${BACKDROP_CONTROLS}`,
     PICTURE,
     BAYER,
     paletteArray("GAMEBOY", GAMEBOY),
@@ -184,8 +185,8 @@ vec3 nearest(vec3 c, int pal) {
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 cell = floor(fragCoord / uPixel);
-  vec3 src = picture(uImage, (cell + 0.5) * uPixel / iResolution.xy);
-  src = clamp((src - 0.5) * uContrast + 0.5, 0.0, 1.0);
+  vec4 pic = pictureRGBA(uImage, (cell + 0.5) * uPixel / iResolution.xy);
+  vec3 src = clamp((pic.rgb - 0.5) * uContrast + 0.5, 0.0, 1.0);
   float threshold = (uBayer8 ? bayer8(cell) + 0.5 / 64.0 : bayer4(cell) + 0.5 / 16.0) - 0.5;
   vec3 col;
   if (uPalette == 0 || uPalette == 5) {
@@ -198,7 +199,8 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     float spread = uPalette == 3 ? 0.55 : 0.22;
     col = nearest(src + threshold * uDither * spread, uPalette);
   }
-  fragColor = vec4(col, 1.0);
+  // Pixels are whole, so alpha is cut at a half rather than blended.
+  fragColor = vec4(col, step(0.5, pic.a));
 }`,
   ),
   presets: [
@@ -229,7 +231,8 @@ uniform bool uDither;      // @control default=true label="Dither"
 uniform vec3 uDark;        // @control color default=#0F380F label="Darkest shade"
 uniform vec3 uLight;       // @control color default=#9BBC0F label="Lightest shade"
 uniform vec3 uBezel;       // @control color default=#4E5236 label="Bezel"
-uniform vec3 uCase;        // @control color default=#C9C6BC label="Case"`,
+uniform vec3 uCase;        // @control color default=#C9C6BC label="Case"
+${BACKDROP_CONTROLS}`,
     PICTURE,
     BAYER,
     `// The LCD shade (0 darkest – 3 lightest) of the picture at uv, for screen pixel cell.
@@ -863,7 +866,8 @@ uniform sampler2D uFrom;   // @control filter=nearest wrap=clamp default=${SAMPL
 uniform sampler2D uTo;     // @control filter=nearest wrap=clamp default=${SAMPLE_IMAGES.city} label="To image"
 uniform bool uAnimate;     // @control default=true label="Animate"
 uniform float uProgress;   // @control min=0 max=1 default=0.5 label="Progress (when still)"
-uniform float uMaxBlock;   // @control min=4 max=96 default=40 step=1 label="Largest block (px)"`,
+uniform float uMaxBlock;   // @control min=4 max=96 default=40 step=1 label="Largest block (px)"
+${BACKDROP_CONTROLS}`,
     HASH,
     PICTURE,
     `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
@@ -879,8 +883,7 @@ uniform float uMaxBlock;   // @control min=4 max=96 default=40 step=1 label="Lar
   vec2 big = floor(fragCoord / uMaxBlock);
   float swap = clamp((p - 0.35) / 0.3, 0.0, 1.0);
   bool showTo = p >= 0.65 || (p > 0.35 && hash12(big + 0.5) < swap);
-  vec3 col = showTo ? picture(uTo, uv) : picture(uFrom, uv);
-  fragColor = vec4(col, 1.0);
+  fragColor = showTo ? pictureRGBA(uTo, uv) : pictureRGBA(uFrom, uv);
 }`,
   ),
 };

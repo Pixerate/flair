@@ -132,6 +132,8 @@ animateCount({
 
 Find effects with `findEffects({ text: "glow", category: "light", kind: "shader" })`. Each effect has an `id`, `name`, `description`, `category`, `tags` and optional `presets`. Image effects default to built-in sample pictures, so they look right before you set `uImage` to your own URL.
 
+Effects that show a picture (image, transition, morph, time-warp and the like) take transparent pictures too, such as SVG icons (Lucide and similar sets draw black `currentColor` strokes on a clear background). They lay the picture over a backdrop: `uBackdrop` (white by default) shows through its clear parts. Set `uBackdropAlpha` to 0 to keep the picture's alpha instead, and render with `{ alpha: true }` to lay the result over the page. `SAMPLE_IMAGES.icon` is a Lucide-style sample icon. SVGs are rasterised at 2048 px on the long edge, so icons stay sharp.
+
 Overlay shaders (`category: "overlay"`) have `transparent: true`: they write coverage to `fragColor.a` and draw nothing elsewhere, so render them with `new ShaderRenderer(host, { alpha: true })` (or `new ThumbnailPool({ alpha: true })`) and lay the canvas over a picture, video or page. Interaction effects answer the pointer. Interactive shaders read `iPointer` and `iClicks`, so they work in any `ShaderRenderer` with no wiring, and play an idle demo when nobody is pointing (turn off "Demo when idle" to stop it). Vector micro-interactions carry a `trigger`: pass it to the player, `new SvgPlayer(host, renderVectorEffect(effect), { trigger: effect.trigger })`. A hover or press trigger plays to the end while hovered or held and back again after; a click trigger plays the next step on each click, so toggles turn on and off. Hosts can drive them too, with `player.setActive(on)` and `player.advance()` (from a keyboard handler, say).
 
 To morph between any two SVG shapes, `morphPaths(from, to)` (from `@pixerate/flair/vector`) returns two paths with one structure, so `attrs: { d: [a, b] }` blends them point by point: curves and arcs are read, pieces are paired by position and size, and a piece with no partner grows from or shrinks to a point (draw them with `fill-rule="evenodd"`). `morphSequence` does the same for three or more shapes. `feature-morph` morphs two photos from five matching points, and `silhouette-morph` morphs any two silhouettes or logos (or words, through `textImage`).
@@ -168,6 +170,7 @@ import { ShaderRenderer, ShaderFrames, recordGif, standaloneHtml, parseControls 
 const status = renderer.setSource(source); // { ok, errors: [{ line, message }] }
 parseControls(source); // [{ name: "uTint", type: "vec3", color: true, default: [...] }, ...]
 const gif = await recordGif({ source, width: 480, height: 270, fps: 30, duration: 3 });
+const frames = new ShaderFrames({ source, width: 480, height: 270, alpha: true }); // alpha: keep fragColor.a
 const page = standaloneHtml("My effect", source, { uSpeed: 2 });
 ```
 

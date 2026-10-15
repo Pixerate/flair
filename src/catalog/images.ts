@@ -58,6 +58,12 @@ const HEART = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" wid
 <path fill="#f43f5e" d="M256 452C120 352 40 272 40 172C40 102 95 58 160 58C205 58 238 84 256 118C274 84 307 58 352 58C417 58 472 102 472 172C472 272 392 352 256 452Z"/>
 </svg>`;
 
+/**
+ * An icon drawn the way Lucide and similar sets draw them: 24 × 24, stroked
+ * in `currentColor` (black in an image) on a transparent background.
+ */
+const ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20C5 15.5 3 12 3 8.5a4.5 4.5 0 0 1 9 0a4.5 4.5 0 0 1 9 0c0 3.5-2 7-9 11.5Z"/></svg>`;
+
 /** Built-in sample pictures, as image control values. */
 export const SAMPLE_IMAGES = {
   landscape: svgDataUrl(LANDSCAPE),
@@ -69,6 +75,7 @@ export const SAMPLE_IMAGES = {
   logo: svgDataUrl(LOGO),
   /** A heart, rose on transparent. */
   heart: svgDataUrl(HEART),
+  icon: svgDataUrl(ICON),
 } as const;
 
 /** Roughly how wide a character is in a bold sans-serif, in ems, for fitting text without measuring it. */

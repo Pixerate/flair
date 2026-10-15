@@ -12,6 +12,14 @@ describe("ShaderFrames", () => {
     expect(webgl.last().attributes).toMatchObject({ preserveDrawingBuffer: true });
   });
 
+  it("is opaque unless asked to keep the shader's alpha", () => {
+    const webgl = installFakeWebGl();
+    new ShaderFrames({ source: shaderSource(), width: 4, height: 4 });
+    expect(webgl.last().attributes).toMatchObject({ alpha: false });
+    new ShaderFrames({ source: shaderSource(), width: 4, height: 4, alpha: true });
+    expect(webgl.last().attributes).toMatchObject({ alpha: true, premultipliedAlpha: false });
+  });
+
   it("can draw on a canvas it is given", () => {
     installFakeWebGl();
     const canvas = document.createElement("canvas");

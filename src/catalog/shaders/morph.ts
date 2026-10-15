@@ -1,7 +1,7 @@
 import { FBM, glsl, HASH, NOISE, ROTATE } from "../glsl.js";
 import { SAMPLE_IMAGES, textImage } from "../images.js";
 import type { ShaderEffect } from "../types.js";
-import { PICTURE } from "./image.js";
+import { BACKDROP_CONTROLS, PICTURE } from "./image.js";
 
 /** The two-image controls every effect here starts with; progress runs 0 → 1 → 0 over 4 s when animated. */
 const pair = (from: string, to: string) => `uniform sampler2D uFrom;   // @control filter=linear wrap=clamp default=${from} label="From image"
@@ -9,7 +9,7 @@ uniform sampler2D uTo;     // @control filter=linear wrap=clamp default=${to} la
 uniform bool uAnimate;     // @control default=true label="Animate"
 uniform float uProgress;   // @control min=0 max=1 default=0.5 label="Progress (when still)"`;
 
-/** `progress()`, and `cover(tex, uv)`: an image cover-fitted to the frame (needs {@link PICTURE}). */
+/** `progress()`, and `cover(tex, uv)` / `coverRGBA(tex, uv)`: an image cover-fitted to the frame (needs {@link PICTURE}). */
 const COMMON = `
 float progress() {
   return uAnimate ? smoothstep(0.1, 0.9, 0.5 - 0.5 * cos(iTime * 6.28318 / 4.0)) : uProgress;
@@ -23,8 +23,12 @@ vec2 coverScale(sampler2D tex) {
   return frameAspect > imageAspect ? vec2(1.0, imageAspect / frameAspect) : vec2(frameAspect / imageAspect, 1.0);
 }
 
+vec4 coverRGBA(sampler2D tex, vec2 uv) {
+  return pictureRGBA(tex, 0.5 + (uv - 0.5) * coverScale(tex));
+}
+
 vec3 cover(sampler2D tex, vec2 uv) {
-  return picture(tex, 0.5 + (uv - 0.5) * coverScale(tex));
+  return coverRGBA(tex, uv).rgb;
 }
 
 float luma(vec3 c) {
@@ -52,7 +56,8 @@ uniform vec2 uToB;         // @control min=0 max=1 default=0.725,0.514 label="To
 uniform vec2 uToC;         // @control min=0 max=1 default=0.672,0.364 label="To: mouth"
 uniform vec2 uToD;         // @control min=0 max=1 default=0.672,0.25 label="To: chin"
 uniform vec2 uToE;         // @control min=0 max=1 default=0.672,0.778 label="To: hairline"
-uniform bool uShowPoints;  // @control default=false label="Show points"`,
+uniform bool uShowPoints;  // @control default=false label="Show points"
+${BACKDROP_CONTROLS}`,
     PICTURE,
     COMMON,
     `// Points are given in image uv; the warp works in frame space (height 1, x scaled by the aspect).
@@ -107,18 +112,23 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 m[5];
   for (int i = 0; i < 5; i++) m[i] = mix(a[i], b[i], t);
   vec2 x = fragCoord / iResolution.y;
-  vec3 colA = picture(uFrom, toImage(warp(x, m, a), scaleA));
-  vec3 colB = picture(uTo, toImage(warp(x, m, b), scaleB));
-  vec3 col = mix(colA, colB, smoothstep(0.2, 0.8, t));
+  vec4 colA = pictureRGBA(uFrom, toImage(warp(x, m, a), scaleA));
+  vec4 colB = pictureRGBA(uTo, toImage(warp(x, m, b), scaleB));
+  vec4 pic = mix(colA, colB, smoothstep(0.2, 0.8, t));
+  vec3 col = pic.rgb;
+  float marks = 0.0;
   if (uShowPoints) {
     float px = 1.0 / iResolution.y;
     for (int i = 0; i < 5; i++) {
       float d = length(x - m[i]);
-      col = mix(col, vec3(0.0), smoothstep(px * 1.5, 0.0, abs(d - 0.012)) * 0.6);
-      col = mix(col, vec3(1.0, 0.85, 0.2), smoothstep(px, 0.0, abs(d - 0.012)));
+      float shadow = smoothstep(px * 1.5, 0.0, abs(d - 0.012)) * 0.6;
+      float ring = smoothstep(px, 0.0, abs(d - 0.012));
+      col = mix(col, vec3(0.0), shadow);
+      col = mix(col, vec3(1.0, 0.85, 0.2), ring);
+      marks = max(marks, max(shadow, ring));
     }
   }
-  fragColor = vec4(col, 1.0);
+  fragColor = vec4(col, max(pic.a, marks));
 }`,
   ),
   presets: [{ name: "Show points", values: { uShowPoints: true, uAnimate: false, uProgress: 0.5 } }],
@@ -218,7 +228,8 @@ export const transitionLiquidMorph: ShaderEffect = {
 ${pair(SAMPLE_IMAGES.landscape, SAMPLE_IMAGES.city)}
 uniform float uStrength;   // @control min=0 max=0.5 default=0.1 label="Strength"
 uniform float uScale;      // @control min=0.5 max=8 default=2.5 label="Scale"
-uniform float uFlow;       // @control min=0 max=2 default=0.4 label="Flow speed"`,
+uniform float uFlow;       // @control min=0 max=2 default=0.4 label="Flow speed"
+${BACKDROP_CONTROLS}`,
     HASH,
     NOISE,
     FBM,
@@ -234,10 +245,10 @@ uniform float uFlow;       // @control min=0 max=2 default=0.4 label="Flow speed
   vec2 flow = vec2(fbm(q + 4.0 * first + vec2(1.7, 9.2) + time * 0.5, 4), fbm(q + 4.0 * first + vec2(8.3, 2.8) - time * 0.5, 4)) - 0.5;
   vec2 d = flow * uStrength * s * 2.0;
   // From is carried downstream, To arrives from upstream; neither moves at the ends.
-  vec3 a = cover(uFrom, uv + d);
-  vec3 b = cover(uTo, uv - d);
+  vec4 a = coverRGBA(uFrom, uv + d);
+  vec4 b = coverRGBA(uTo, uv - d);
   float k = smoothstep(0.25, 0.75, t + (flow.x + flow.y) * 0.6 * s);
-  fragColor = vec4(mix(a, b, k), 1.0);
+  fragColor = mix(a, b, k);
 }`,
   ),
   presets: [
@@ -258,7 +269,8 @@ export const transitionDisplacement: ShaderEffect = {
     `// Displacement: From's luminance drives a directional warp out, To's luminance the same warp in reverse.
 ${pair(SAMPLE_IMAGES.city, SAMPLE_IMAGES.landscape)}
 uniform float uStrength;   // @control min=0 max=1 default=0.4 label="Strength"
-uniform float uAngle;      // @control min=0 max=360 default=0 label="Direction (°)"`,
+uniform float uAngle;      // @control min=0 max=360 default=0 label="Direction (°)"
+${BACKDROP_CONTROLS}`,
     PICTURE,
     COMMON,
     `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
@@ -267,9 +279,9 @@ uniform float uAngle;      // @control min=0 max=360 default=0 label="Direction 
   vec2 dir = vec2(cos(radians(uAngle)), sin(radians(uAngle))) * vec2(iResolution.y / iResolution.x, 1.0);
   float la = luma(cover(uFrom, uv));
   float lb = luma(cover(uTo, uv));
-  vec3 a = cover(uFrom, uv + dir * t * uStrength * la);
-  vec3 b = cover(uTo, uv - dir * (1.0 - t) * uStrength * lb);
-  fragColor = vec4(mix(a, b, smoothstep(0.2, 0.8, t)), 1.0);
+  vec4 a = coverRGBA(uFrom, uv + dir * t * uStrength * la);
+  vec4 b = coverRGBA(uTo, uv - dir * (1.0 - t) * uStrength * lb);
+  fragColor = mix(a, b, smoothstep(0.2, 0.8, t));
 }`,
   ),
   presets: [
@@ -291,19 +303,20 @@ export const transitionLuma: ShaderEffect = {
 ${pair(SAMPLE_IMAGES.landscape, SAMPLE_IMAGES.city)}
 uniform float uSoftness;   // @control min=0.01 max=0.5 default=0.1 label="Softness"
 uniform bool uLightFirst;  // @control default=false label="Light first"
-uniform int uSource;       // @control min=0 max=1 default=0 label="Brightness of (0 From, 1 To)"`,
+uniform int uSource;       // @control min=0 max=1 default=0 label="Brightness of (0 From, 1 To)"
+${BACKDROP_CONTROLS}`,
     PICTURE,
     COMMON,
     `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 uv = fragCoord / iResolution.xy;
   float t = progress();
-  vec3 a = cover(uFrom, uv);
-  vec3 b = cover(uTo, uv);
-  float l = clamp(luma(uSource == 0 ? a : b), 0.0, 1.0);
+  vec4 a = coverRGBA(uFrom, uv);
+  vec4 b = coverRGBA(uTo, uv);
+  float l = clamp(luma(uSource == 0 ? a.rgb : b.rgb), 0.0, 1.0);
   if (uLightFirst) l = 1.0 - l;
   // The front sweeps from below the darkest pixel to above the lightest, so both ends are clean.
   float front = mix(-uSoftness, 1.0 + uSoftness, t);
-  fragColor = vec4(mix(a, b, smoothstep(l - uSoftness, l + uSoftness, front)), 1.0);
+  fragColor = mix(a, b, smoothstep(l - uSoftness, l + uSoftness, front));
 }`,
   ),
   presets: [
@@ -326,7 +339,8 @@ ${pair(SAMPLE_IMAGES.landscape, SAMPLE_IMAGES.city)}
 uniform float uParticle;   // @control min=6 max=80 default=20 label="Particle size (px)"
 uniform float uScatter;    // @control min=0 max=0.8 default=0.45 label="Scatter"
 uniform float uSpin;       // @control min=0 max=2 default=0.6 label="Spin & curl"
-uniform vec3 uBackground;  // @control color default=#0B0B12 label="Background"`,
+uniform vec3 uBackground;  // @control color default=#0B0B12 label="Background"
+${BACKDROP_CONTROLS}`,
     HASH,
     ROTATE,
     PICTURE,
@@ -347,7 +361,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 p = fragCoord / uParticle;
   vec2 grid = iResolution.xy / uParticle;
   vec2 base = floor(p);
-  vec3 col = uBackground;
+  vec4 col = vec4(uBackground, uBackdropAlpha);
   float top = -1.0;
   vec2 hitFrom = vec2(0.0);
   vec2 hitTo = vec2(0.0);
@@ -382,12 +396,11 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     }
   }
   if (top > -1.0) {
-    vec3 a = cover(uFrom, hitFrom / grid);
-    vec3 b = cover(uTo, hitTo / grid);
-    vec3 particle = mix(a, b, hitT) * (1.0 + 0.15 * sin(3.14159 * hitT));
+    vec4 particle = mix(coverRGBA(uFrom, hitFrom / grid), coverRGBA(uTo, hitTo / grid), hitT);
+    particle.rgb *= 1.0 + 0.15 * sin(3.14159 * hitT);
     col = mix(col, particle, hitCover);
   }
-  fragColor = vec4(col, 1.0);
+  fragColor = col;
 }`,
   ),
   presets: [
@@ -409,7 +422,8 @@ export const transitionInkBleed: ShaderEffect = {
 ${pair(SAMPLE_IMAGES.city, SAMPLE_IMAGES.landscape)}
 uniform float uScale;      // @control min=0.5 max=8 default=3 label="Scale"
 uniform float uEdge;       // @control min=0.005 max=0.2 default=0.05 label="Edge width"
-uniform vec3 uInk;         // @control color default=#1B1F3B label="Ink"`,
+uniform vec3 uInk;         // @control color default=#1B1F3B label="Ink"
+${BACKDROP_CONTROLS}`,
     HASH,
     NOISE,
     FBM,
@@ -437,12 +451,10 @@ uniform vec3 uInk;         // @control color default=#1B1F3B label="Ink"`,
   float soak = smoothstep(-2.0 * uEdge, 0.0, gap) * (1.0 - wet);
   float pool = wet * smoothstep(uEdge, 0.0, gap);
   vec2 bleed = vec2(soak - pool) * 0.004;
-  vec3 a = cover(uFrom, uv + bleed);
-  vec3 b = cover(uTo, uv - bleed);
-  vec3 col = mix(a, b, wet);
-  col = mix(col, col * 0.82, soak * 0.6);
-  col = mix(col, uInk, pool * 0.85);
-  fragColor = vec4(col, 1.0);
+  vec4 col = mix(coverRGBA(uFrom, uv + bleed), coverRGBA(uTo, uv - bleed), wet);
+  col.rgb = mix(col.rgb, col.rgb * 0.82, soak * 0.6);
+  col = mix(col, vec4(uInk, 1.0), pool * 0.85);
+  fragColor = col;
 }`,
   ),
   presets: [

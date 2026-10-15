@@ -1,7 +1,7 @@
 import { FBM, glsl, HASH, NOISE } from "../glsl.js";
 import { SAMPLE_IMAGES } from "../images.js";
 import type { ShaderEffect } from "../types.js";
-import { PICTURE } from "./image.js";
+import { BACKDROP_CONTROLS, PICTURE } from "./image.js";
 
 /*
  * These read the pointer built-ins the wrapper declares: `iPointer` (xy
@@ -242,7 +242,8 @@ uniform sampler2D uImage;  // @control filter=linear wrap=mirror default=${SAMPL
 uniform float uStrength;   // @control min=0 max=1 default=0.6 label="Strength"
 uniform float uRadius;     // @control min=0.05 max=0.8 default=0.3 label="Radius"
 uniform float uWobble;     // @control min=0 max=1 default=0.5 label="Wobble"
-uniform bool uDemo;        // @control default=true label="Demo when idle"`,
+uniform bool uDemo;        // @control default=true label="Demo when idle"
+${BACKDROP_CONTROLS}`,
     HASH,
     NOISE,
     HOVER,
@@ -262,11 +263,11 @@ uniform bool uDemo;        // @control default=true label="Demo when idle"`,
   off += dir * wave * uWobble * s * 0.02;
   vec2 churn = vec2(vnoise(d * 6.0 + iTime * 0.7), vnoise(d * 6.0 - iTime * 0.6 + 5.0)) - 0.5;
   off += churn * fall * s * uWobble * 0.05;
-  vec3 col = picture(uImage, uv + off * vec2(iResolution.y / iResolution.x, 1.0));
+  vec4 pic = pictureRGBA(uImage, uv + off * vec2(iResolution.y / iResolution.x, 1.0));
   // Light catching the swell's upper-left slope.
   float slope = dot(dir, normalize(vec2(-0.6, 0.8))) * r / uRadius;
-  col += 0.12 * s * fall * slope + 0.06 * s * wave * uWobble;
-  fragColor = vec4(col, 1.0);
+  vec3 col = pic.rgb + 0.12 * s * fall * slope + 0.06 * s * wave * uWobble;
+  fragColor = vec4(col, pic.a);
 }`,
   ),
   presets: [
@@ -289,7 +290,8 @@ uniform sampler2D uReveal; // @control filter=linear wrap=clamp default=${SAMPLE
 uniform float uRadius;     // @control min=0.05 max=0.6 default=0.22 label="Lens radius"
 uniform float uSoftness;   // @control min=0 max=1 default=0.35 label="Softness"
 uniform vec3 uRim;         // @control color default=#A5F3FC label="Rim"
-uniform bool uDemo;        // @control default=true label="Demo when idle"`,
+uniform bool uDemo;        // @control default=true label="Demo when idle"
+${BACKDROP_CONTROLS}`,
     HASH,
     NOISE,
     CLICKS,
@@ -313,10 +315,11 @@ uniform bool uDemo;        // @control default=true label="Demo when idle"`,
   d += (vnoise(fragCoord * px * 9.0 + iTime * 0.6) - 0.5) * 0.25 * R;
   float soft = max(uSoftness * R * 0.6, 1.5 * px);
   float m = 1.0 - smoothstep(R - soft, R, d);
-  vec3 col = mix(picture(uImage, uv), picture(uReveal, uv), m);
+  vec4 pic = mix(pictureRGBA(uImage, uv), pictureRGBA(uReveal, uv), m);
   float rim = exp(-pow((d - R + soft * 0.5) / max(soft * 0.5, 2.0 * px), 2.0)) * step(0.001, R);
-  col += uRim * rim * 0.6;
-  fragColor = vec4(col, 1.0);
+  // The rim is light added over the picture, so it also shows where the picture is clear.
+  float alpha = max(pic.a, clamp(rim * 0.6, 0.0, 1.0));
+  fragColor = vec4((pic.rgb * pic.a + uRim * rim * 0.6) / max(alpha, 1e-4), alpha);
 }`,
   ),
   presets: [
@@ -339,39 +342,39 @@ uniform float uZoom;         // @control min=1 max=5 default=2 label="Zoom"
 uniform float uRadius;       // @control min=0.05 max=0.5 default=0.18 label="Radius"
 uniform float uAberration;   // @control min=0 max=1 default=0.35 label="Colour fringe"
 uniform vec3 uRim;           // @control color default=#FFFFFF label="Rim"
-uniform bool uDemo;          // @control default=true label="Demo when idle"`,
+uniform bool uDemo;          // @control default=true label="Demo when idle"
+${BACKDROP_CONTROLS}`,
     HOVER,
     PICTURE,
     `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 uv = fragCoord / iResolution.xy;
   vec3 hp = hoverPoint(uDemo, 1.0);
   float s = hp.z;
-  vec3 col = picture(uImage, uv);
+  vec4 col = pictureRGBA(uImage, uv);
   float R = uRadius * (0.75 + 0.25 * s) * iResolution.y;
   vec2 d = fragCoord - hp.xy;
   float r = length(d);
   float k = r / R;
   // A soft shadow under the glass.
   float shadow = 1.0 - smoothstep(R * 0.9, R * 1.3, length(d - vec2(R * 0.08, -R * 0.12)));
-  col *= 1.0 - 0.35 * shadow * s;
+  col.rgb *= 1.0 - 0.35 * shadow * s;
   if (k < 1.05) {
     // More magnified at the centre, squeezed towards the rim like real glass.
     vec2 q = d / uZoom * (1.0 + 0.4 * k * k * k * k);
     float fr = uAberration * 0.08 * k * k * k;
-    vec3 lens = vec3(
-      picture(uImage, (hp.xy + q * (1.0 + fr)) / iResolution.xy).r,
-      picture(uImage, (hp.xy + q) / iResolution.xy).g,
-      picture(uImage, (hp.xy + q * (1.0 - fr)) / iResolution.xy).b
-    );
-    lens += 0.16 * exp(-pow(length(d / R - vec2(-0.35, 0.4)) * 2.6, 2.0));
-    lens *= 1.0 - 0.25 * pow(k, 6.0);
+    vec4 lr = pictureRGBA(uImage, (hp.xy + q * (1.0 + fr)) / iResolution.xy);
+    vec4 lg = pictureRGBA(uImage, (hp.xy + q) / iResolution.xy);
+    vec4 lb = pictureRGBA(uImage, (hp.xy + q * (1.0 - fr)) / iResolution.xy);
+    vec4 lens = vec4(lr.r, lg.g, lb.b, max(max(lr.a, lg.a), lb.a));
+    lens.rgb += 0.16 * exp(-pow(length(d / R - vec2(-0.35, 0.4)) * 2.6, 2.0));
+    lens.rgb *= 1.0 - 0.25 * pow(k, 6.0);
     col = mix(col, lens, (1.0 - smoothstep(R - 1.5, R, r)) * s);
   }
   float rimW = max(R * 0.035, 2.0);
   float lit = 0.6 + 0.4 * dot(d / max(r, 1e-4), normalize(vec2(-1.0, 1.0)));
   float rim = exp(-pow((r - R) / rimW, 2.0));
-  col = mix(col, uRim * lit, rim * s * 0.9);
-  fragColor = vec4(col, 1.0);
+  col = mix(col, vec4(uRim * lit, 1.0), rim * s * 0.9);
+  fragColor = col;
 }`,
   ),
   presets: [
@@ -396,7 +399,8 @@ uniform float uGlare;      // @control min=0 max=1 default=0.6 label="Glare"
 uniform float uTilt;       // @control min=0 max=1 default=0.6 label="Tilt"
 uniform float uCorner;     // @control min=0 max=0.25 default=0.06 label="Corner radius"
 uniform vec3 uBorder;      // @control color default=#E2E8F0 label="Border"
-uniform bool uDemo;        // @control default=true label="Demo when idle"`,
+uniform bool uDemo;        // @control default=true label="Demo when idle"
+${BACKDROP_CONTROLS}`,
     HASH,
     NOISE,
     HOVER,
@@ -549,7 +553,8 @@ uniform sampler2D uTo;     // @control filter=linear wrap=clamp default=${SAMPLE
 uniform vec3 uEdge;        // @control color default=#FFB86B label="Edge glow"
 uniform float uEdgeWidth;  // @control min=0 max=0.3 default=0.08 label="Edge width"
 uniform float uGrain;      // @control min=1 max=20 default=6 label="Noise scale"
-uniform bool uDemo;        // @control default=true label="Demo when idle"`,
+uniform bool uDemo;        // @control default=true label="Demo when idle"
+${BACKDROP_CONTROLS}`,
     HASH,
     NOISE,
     FBM,
@@ -571,10 +576,9 @@ uniform bool uDemo;        // @control default=true label="Demo when idle"`,
   float w = max(uEdgeWidth, 0.005);
   float t = progress * (1.0 + w);
   float m = 1.0 - smoothstep(t - w, t, f);
-  vec3 col = mix(picture(uFrom, uv), picture(uTo, uv), m);
+  vec4 col = mix(pictureRGBA(uFrom, uv), pictureRGBA(uTo, uv), m);
   float edge = m * (1.0 - m) * 4.0 * step(0.001, uEdgeWidth);
-  col = mix(col, uEdge, edge * 0.85);
-  fragColor = vec4(col, 1.0);
+  fragColor = mix(col, vec4(uEdge, 1.0), edge * 0.85);
 }`,
   ),
   presets: [

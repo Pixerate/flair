@@ -1,7 +1,7 @@
 import { glsl, HASH } from "../glsl.js";
 import { SAMPLE_IMAGES } from "../images.js";
 import type { ShaderEffect } from "../types.js";
-import { PICTURE } from "./image.js";
+import { BACKDROP_CONTROLS, PICTURE } from "./image.js";
 
 /*
  * Shaders keep no previous frames, so these re-derive the past: the picture
@@ -57,26 +57,29 @@ uniform float uSpacing;     // @control min=0.02 max=0.6 default=0.18 label="Spa
 uniform float uDecay;       // @control min=0.1 max=0.95 default=0.65 label="Decay"
 uniform float uMotion;      // @control min=0 max=2 default=1.2 label="Motion"
 uniform vec3 uTint;         // @control color default=#38BDF8 label="Echo tint"
-uniform float uTintAmount;  // @control min=0 max=1 default=0.5 label="Tint strength"`,
+uniform float uTintAmount;  // @control min=0 max=1 default=0.5 label="Tint strength"
+${BACKDROP_CONTROLS}`,
     PICTURE,
     COVER,
     SWAY,
     `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 uv = fragCoord / iResolution.xy;
-  vec3 sum = picture(uImage, swayUv(uImage, uv, iTime, uMotion));
+  // Summed premultiplied, so clear parts of the picture do not darken the echoes.
+  vec4 now = pictureRGBA(uImage, swayUv(uImage, uv, iTime, uMotion));
+  vec4 sum = vec4(now.rgb * now.a, now.a);
   float total = 1.0;
   float weight = 1.0;
   for (int k = 1; k <= 8; k++) {
     if (k > uEchoes) break;
     weight *= uDecay;
     float age = float(k) / float(uEchoes);
-    vec3 echo = picture(uImage, swayUv(uImage, uv, iTime - float(k) * uSpacing, uMotion));
+    vec4 echo = pictureRGBA(uImage, swayUv(uImage, uv, iTime - float(k) * uSpacing, uMotion));
     // Older echoes take on more of the tint.
-    echo = mix(echo, uTint * dot(echo, ${LUMA}) * 1.8, uTintAmount * age);
-    sum += echo * weight;
+    echo.rgb = mix(echo.rgb, uTint * dot(echo.rgb, ${LUMA}) * 1.8, uTintAmount * age);
+    sum += vec4(echo.rgb * echo.a, echo.a) * weight;
     total += weight;
   }
-  fragColor = vec4(sum / total, 1.0);
+  fragColor = vec4(sum.rgb / max(sum.a, 1e-4), sum.a / total);
 }`,
   ),
   presets: [
@@ -99,7 +102,8 @@ export const chronoSplit: ShaderEffect = {
 uniform sampler2D uImage;  // @control filter=linear wrap=mirror default=${SAMPLE_IMAGES.city} label="Image"
 uniform float uLag;        // @control min=0 max=0.6 default=0.15 label="Lag per channel (s)"
 uniform float uMotion;     // @control min=0 max=2 default=1.4 label="Motion"
-uniform int uOrder;        // @control min=0 max=1 default=0 label="Leading channel (0 red, 1 blue)"`,
+uniform int uOrder;        // @control min=0 max=1 default=0 label="Leading channel (0 red, 1 blue)"
+${BACKDROP_CONTROLS}`,
     PICTURE,
     COVER,
     SWAY,
@@ -107,12 +111,10 @@ uniform int uOrder;        // @control min=0 max=1 default=0 label="Leading chan
   vec2 uv = fragCoord / iResolution.xy;
   float lagR = uOrder == 0 ? 0.0 : 2.0 * uLag;
   float lagB = uOrder == 0 ? 2.0 * uLag : 0.0;
-  vec3 col = vec3(
-    picture(uImage, swayUv(uImage, uv, iTime - lagR, uMotion)).r,
-    picture(uImage, swayUv(uImage, uv, iTime - uLag, uMotion)).g,
-    picture(uImage, swayUv(uImage, uv, iTime - lagB, uMotion)).b
-  );
-  fragColor = vec4(col, 1.0);
+  vec4 r = pictureRGBA(uImage, swayUv(uImage, uv, iTime - lagR, uMotion));
+  vec4 g = pictureRGBA(uImage, swayUv(uImage, uv, iTime - uLag, uMotion));
+  vec4 b = pictureRGBA(uImage, swayUv(uImage, uv, iTime - lagB, uMotion));
+  fragColor = vec4(r.r, g.g, b.b, max(max(r.a, g.a), b.a));
 }`,
   ),
   presets: [
@@ -137,7 +139,8 @@ uniform float uDelay;      // @control min=0 max=0.6 default=0.12 label="Delay p
 uniform int uDirection;    // @control min=0 max=1 default=0 label="Bands (0 horizontal, 1 vertical)"
 uniform int uPattern;      // @control min=0 max=2 default=0 label="Order (0 stepped, 1 from centre, 2 random)"
 uniform float uMotion;     // @control min=0 max=2 default=1.5 label="Motion"
-uniform float uSeams;      // @control min=0 max=1 default=0.4 label="Seams"`,
+uniform float uSeams;      // @control min=0 max=1 default=0.4 label="Seams"
+${BACKDROP_CONTROLS}`,
     HASH,
     PICTURE,
     COVER,
@@ -150,13 +153,14 @@ uniform float uSeams;      // @control min=0 max=1 default=0.4 label="Seams"`,
   float order = band;
   if (uPattern == 1) order = abs(band - (bands - 1.0) * 0.5);
   if (uPattern == 2) order = floor(hash12(vec2(band, 4.7)) * bands);
-  vec3 col = picture(uImage, swayUv(uImage, uv, iTime - order * uDelay, uMotion));
+  vec4 pic = pictureRGBA(uImage, swayUv(uImage, uv, iTime - order * uDelay, uMotion));
+  vec3 col = pic.rgb;
   // A thin dark seam between bands, a pixel or two wide.
   float px = (uDirection == 0 ? iResolution.y : iResolution.x) / bands;
   float f = fract(across * bands);
   float edge = min(f, 1.0 - f) * px;
   col *= 1.0 - uSeams * (1.0 - smoothstep(0.0, 1.5, edge));
-  fragColor = vec4(col, 1.0);
+  fragColor = vec4(col, pic.a);
 }`,
   ),
   presets: [
@@ -201,7 +205,8 @@ uniform float uNoise;      // @control min=0 max=1 default=0.6 label="Tracking n
 uniform float uJitter;     // @control min=0 max=1 default=0.5 label="Line jitter"
 uniform float uBleed;      // @control min=0 max=0.03 default=0.008 label="Chroma bleed"
 uniform bool uOsd;         // @control default=true label="On-screen display"
-uniform vec3 uOsdColor;    // @control color default=#F8FAFC label="Display colour"`,
+uniform vec3 uOsdColor;    // @control color default=#F8FAFC label="Display colour"
+${BACKDROP_CONTROLS}`,
     HASH,
     PICTURE,
     COVER,
@@ -260,11 +265,11 @@ float osd(vec2 fragCoord, float phase, float tau) {
   st.y += rw * 0.01 * (hash12(vec2(frame, 5.0)) - 0.5);
   float bleed = uBleed * (1.0 + 2.0 * rw);
   float t = tau * 1.5;
-  vec3 col = vec3(
-    picture(uImage, swayUv(uImage, st + vec2(bleed, 0.0), t, 1.4)).r,
-    picture(uImage, swayUv(uImage, st, t, 1.4)).g,
-    picture(uImage, swayUv(uImage, st - vec2(bleed, 0.0), t, 1.4)).b
-  );
+  vec4 r = pictureRGBA(uImage, swayUv(uImage, st + vec2(bleed, 0.0), t, 1.4));
+  vec4 g = pictureRGBA(uImage, swayUv(uImage, st, t, 1.4));
+  vec4 b = pictureRGBA(uImage, swayUv(uImage, st - vec2(bleed, 0.0), t, 1.4));
+  vec3 col = vec3(r.r, g.g, b.b);
+  float alpha = max(max(r.a, g.a), b.a);
   // Static in the bars, a few white dropouts, and a washed-out tape look.
   float grain = hash12(fragCoord + frame * 17.0);
   col = mix(col, vec3(grain), bar * 0.75);
@@ -277,10 +282,12 @@ float osd(vec2 fragCoord, float phase, float tau) {
   col *= 1.0 - 0.35 * dot(v, v);
   if (uOsd) {
     float shadow = osd(fragCoord + vec2(-2.0, 2.0), phase, tau);
+    float text = osd(fragCoord, phase, tau);
     col = mix(col, vec3(0.0), shadow * 0.5);
-    col = mix(col, uOsdColor, osd(fragCoord, phase, tau));
+    col = mix(col, uOsdColor, text);
+    alpha = max(alpha, max(shadow * 0.5, text));
   }
-  fragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
+  fragColor = vec4(clamp(col, 0.0, 1.0), alpha);
 }`,
   ),
   presets: [
@@ -306,7 +313,8 @@ uniform float uHold;        // @control min=0.5 max=3 default=2.2 label="Freeze 
 uniform float uDesaturate;  // @control min=0 max=1 default=0.85 label="Desaturate"
 uniform float uZoom;        // @control min=0 max=0.25 default=0.08 label="Zoom"
 uniform vec3 uRing;         // @control color default=#A5F3FC label="Shockwave"
-uniform float uMotion;      // @control min=0 max=2 default=1.4 label="Motion"`,
+uniform float uMotion;      // @control min=0 max=2 default=1.4 label="Motion"
+${BACKDROP_CONTROLS}`,
     PICTURE,
     COVER,
     SWAY,
@@ -329,17 +337,18 @@ uniform float uMotion;      // @control min=0 max=2 default=1.4 label="Motion"`,
   float front = (dist - radius) / (0.045 * iResolution.y);
   float ring = exp(-front * front) * (1.0 - release);
   vec2 warp = d / max(dist, 1.0) * ring * 0.018;
-  vec3 live = picture(uImage, swayUv(uImage, uv - warp, iTime, uMotion));
+  vec4 live = pictureRGBA(uImage, swayUv(uImage, uv - warp, iTime, uMotion));
   // Behind the wave: the moment the freeze began, zooming in towards the centre the longer it is held.
   vec2 c = centre / iResolution.xy;
   float zoom = 1.0 + uZoom * smoothstep(0.0, 1.0, since / max(uHold, 0.1));
-  vec3 frozen = picture(uImage, swayUv(uImage, c + (uv - warp - c) / zoom, start, uMotion));
-  float grey = dot(frozen, ${LUMA});
-  frozen = mix(frozen, vec3(grey) * vec3(0.9, 0.98, 1.1), uDesaturate);
-  frozen *= 1.0 + 0.025 * sin(dist / iResolution.y * 60.0 - since * 4.0) * inside;
-  vec3 col = mix(live, frozen, inside);
-  col += uRing * ring * 0.7;
-  fragColor = vec4(col, 1.0);
+  vec4 frozen = pictureRGBA(uImage, swayUv(uImage, c + (uv - warp - c) / zoom, start, uMotion));
+  float grey = dot(frozen.rgb, ${LUMA});
+  frozen.rgb = mix(frozen.rgb, vec3(grey) * vec3(0.9, 0.98, 1.1), uDesaturate);
+  frozen.rgb *= 1.0 + 0.025 * sin(dist / iResolution.y * 60.0 - since * 4.0) * inside;
+  vec4 pic = mix(live, frozen, inside);
+  // The ring is light added over the picture, so it also shows where the picture is clear.
+  float alpha = max(pic.a, clamp(ring * 0.7, 0.0, 1.0));
+  fragColor = vec4((pic.rgb * pic.a + uRing * ring * 0.7) / max(alpha, 1e-4), alpha);
 }`,
   ),
   presets: [
@@ -363,7 +372,8 @@ uniform float uTwist;      // @control min=0 max=4 default=1.2 label="Twist"
 uniform float uSpeed;      // @control min=0 max=2 default=0.5 label="Speed"
 uniform vec3 uColor;       // @control color default=#3B82F6 label="Tunnel colour"
 uniform float uTint;       // @control min=0 max=1 default=0.55 label="Colour strength"
-uniform vec3 uCore;        // @control color default=#F0F9FF label="Core"`,
+uniform vec3 uCore;        // @control color default=#F0F9FF label="Core"
+${BACKDROP_CONTROLS}`,
     HASH,
     PICTURE,
     `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
@@ -376,7 +386,8 @@ uniform vec3 uCore;        // @control color default=#F0F9FF label="Core"`,
   // Round the tube (seamless: twice round the mirrored image), twisting with depth; along it, rushing closer.
   float u = a / 6.28318 + uTwist * 0.15 * z + iTime * 0.125;
   float v = z * 0.5 + iTime * uSpeed;
-  vec3 img = picture(uImage, vec2(u * 2.0, v));
+  vec4 pic = pictureRGBA(uImage, vec2(u * 2.0, v));
+  vec3 img = pic.rgb;
   float l = dot(img, vec3(0.2126, 0.7152, 0.0722));
   vec3 col = mix(img, uColor * l * 2.2, uTint);
   // Rings where the tube's sections meet.
@@ -388,13 +399,14 @@ uniform vec3 uCore;        // @control color default=#F0F9FF label="Core"`,
   // Thin in screen space at any distance from the core.
   float across = abs(fract(u * 64.0) - 0.5) / 64.0 * 6.28318 * r;
   float thin = 1.0 - smoothstep(0.0015, 0.005, across);
-  col += mix(uCore, uColor, 0.4) * dash * step(0.75, h) * thin * smoothstep(0.05, 0.25, r);
+  float streak = dash * step(0.75, h) * thin * smoothstep(0.05, 0.25, r);
+  col += mix(uCore, uColor, 0.4) * streak;
   // Depth haze into the glowing core; the near rim darkens.
   float haze = 1.0 - smoothstep(0.0, 0.2, r);
   col = mix(col, uCore, haze);
   col += uCore * 0.002 / (r * r + 0.01);
   col *= 1.0 - 0.45 * smoothstep(0.5, 0.95, r);
-  fragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
+  fragColor = vec4(clamp(col, 0.0, 1.0), clamp(max(pic.a, max(haze, streak)), 0.0, 1.0));
 }`,
   ),
   presets: [
@@ -417,7 +429,8 @@ export const speedRamp: ShaderEffect = {
 uniform sampler2D uImage;  // @control filter=linear wrap=mirror default=${SAMPLE_IMAGES.landscape} label="Image"
 uniform float uRamp;       // @control min=0 max=0.95 default=0.9 label="Ramp strength"
 uniform float uBlur;       // @control min=0 max=0.25 default=0.1 label="Motion blur (shutter s)"
-uniform float uPan;        // @control min=0.1 max=1 default=0.5 label="Pan speed"`,
+uniform float uPan;        // @control min=0.1 max=1 default=0.5 label="Pan speed"
+${BACKDROP_CONTROLS}`,
     PICTURE,
     COVER,
     `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
@@ -432,15 +445,17 @@ uniform float uPan;        // @control min=0.1 max=1 default=0.5 label="Pan spee
   vec2 base = 0.5 + (uv - 0.5) * cover / zoom + vec2(uPan * tau, 0.02 * sin(w * 2.0 * tau));
   // Blur along the pan, as long as the picture moves while the shutter is open (16 taps at most).
   float len = min(uPan * speed * uBlur, 0.25);
-  vec3 col = vec3(0.0);
+  // Summed premultiplied, so clear parts of the picture do not darken the blur.
+  vec4 sum = vec4(0.0);
   for (int i = 0; i < 16; i++) {
     float k = float(i) / 15.0 - 0.5;
-    col += picture(uImage, base - vec2(len * k, 0.0));
+    vec4 c = pictureRGBA(uImage, base - vec2(len * k, 0.0));
+    sum += vec4(c.rgb * c.a, c.a);
   }
-  col /= 16.0;
+  vec3 col = sum.rgb / max(sum.a, 1e-4);
   vec2 v = uv - 0.5;
   col *= 1.0 - (0.2 + 0.25 * max(speed - 1.0, 0.0)) * dot(v, v) * 2.0;
-  fragColor = vec4(col, 1.0);
+  fragColor = vec4(col, sum.a / 16.0);
 }`,
   ),
   presets: [
@@ -462,7 +477,8 @@ uniform sampler2D uImage;  // @control filter=linear wrap=mirror default=${SAMPL
 uniform float uRate;       // @control min=0.2 max=4 default=1 label="Bursts per second"
 uniform float uHold;       // @control min=0 max=1 default=0.55 label="Hold length"
 uniform float uFlash;      // @control min=0 max=1 default=0.6 label="Flash"
-uniform float uMotion;     // @control min=0 max=2 default=1.6 label="Motion"`,
+uniform float uMotion;     // @control min=0 max=2 default=1.6 label="Motion"
+${BACKDROP_CONTROLS}`,
     HASH,
     PICTURE,
     COVER,
@@ -487,13 +503,14 @@ uniform float uMotion;     // @control min=0 max=2 default=1.6 label="Motion"`,
     kick = exp(-since * 10.0);
   }
   vec2 st = 0.5 + (uv - 0.5) / (1.0 + 0.04 * kick);
-  vec3 col = picture(uImage, swayUv(uImage, st, t * 2.0, uMotion));
+  vec4 pic = pictureRGBA(uImage, swayUv(uImage, st, t * 2.0, uMotion));
+  vec3 col = pic.rgb;
   if (frozen) {
     col = mix(col, vec3(dot(col, ${LUMA})), 0.25);
     col = (col - 0.5) * 1.1 + 0.5;
   }
   col = mix(col, vec3(1.0), kick * uFlash * 0.85);
-  fragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
+  fragColor = vec4(clamp(col, 0.0, 1.0), max(pic.a, kick * uFlash * 0.85));
 }`,
   ),
   presets: [
