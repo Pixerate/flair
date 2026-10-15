@@ -143,9 +143,29 @@ describe("ThumbnailPool", () => {
       observer().show(c);
     }
     raf.frame(1000);
+    raf.frame(1001);
+    raf.frame(1002);
     expect(webgl.contexts).toHaveLength(1);
     for (const c of cards) expect(drawsInto(webgl, c)).toHaveBeenCalledTimes(1);
     expect(pool.size).toBe(3);
+  });
+
+  it("compiles one new thumbnail per frame, so a row scrolling in does not stall a frame", () => {
+    const { webgl, raf, pool, observer } = setup({ reducedMotion: true });
+    const cards = [card(), card(), card()];
+    cards.forEach((c, i) => {
+      pool.register(c, shaderSource(`// ${i}`));
+      observer().show(c);
+    });
+    raf.frame(1000);
+    expect(webgl.contexts[0]!.programs).toHaveLength(1);
+    expect(drawsInto(webgl, cards[1]!)).not.toHaveBeenCalled();
+    raf.frame(1100);
+    raf.frame(1200);
+    expect(webgl.contexts[0]!.programs).toHaveLength(3);
+    for (const c of cards) expect(drawsInto(webgl, c)).toHaveBeenCalledTimes(1);
+    // With every thumbnail still and drawn, the pool stops asking for frames.
+    expect(raf.pending).toBe(0);
   });
 
   it("skips thumbnails that are off screen", () => {

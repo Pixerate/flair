@@ -287,8 +287,17 @@ export class ThumbnailPool {
     const animate = now - this.last >= this.interval;
     const time = (now - this.start) / 1000;
     let keepGoing = false;
+    // Compiling is the slow part, so a row of thumbnails scrolling into view compiles one per frame.
+    let compiles = 1;
     for (const entry of this.entries) {
       if (!entry.visible) continue;
+      if (!entry.shader && !entry.failed) {
+        if (!compiles) {
+          keepGoing = true;
+          continue;
+        }
+        compiles--;
+      }
       const moving = !this.reducedMotion || entry.hovered;
       if (entry.dirty || (moving && animate)) {
         this.renderEntry(entry, gl, moving ? time : this.stillTime);

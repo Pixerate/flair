@@ -96,7 +96,7 @@ function Graph() {
   useEffect(() => {
     const effect = getEffect("flow-network");
     if (effect?.kind !== "vector") return;
-    const player = new SvgPlayer(host.current!, renderVectorEffect(effect, effectDefaults(effect)), { hold: effect.hold });
+    const player = new SvgPlayer(host.current!, renderVectorEffect(effect, effectDefaults(effect)), { hold: effect.hold, pauseWhenHidden: true });
     return () => player.dispose();
   }, []);
   return <div ref={host} className="absolute inset-[10%_4%_4%]" />;
@@ -139,11 +139,14 @@ function CameraPlayer({ scene }: { scene: Scene }) {
   useEffect(() => {
     let raf = 0;
     const start = performance.now();
+    // Measured on resize, not every frame: reading layout after writing transforms forces a layout per frame.
+    let width = frame.current!.clientWidth;
+    const resize = new ResizeObserver(([entry]) => entry && (width = entry.contentRect.width));
+    resize.observe(frame.current!);
     const draw = (now: number) => {
       const t = (now - start) % total;
       const entry = [...track].reverse().find((e) => e.startMs <= t) ?? track[0]!;
       const view = cameraAt(entry, t - entry.startMs, stage);
-      const width = frame.current!.clientWidth;
       const k = width / stage.width;
       content.current!.style.transform = `scale(${k * view.zoom}) translate(${view.scrollX}px, ${view.scrollY}px)`;
       board.current!.style.transform = cameraTransform(view, stage, width);
@@ -153,8 +156,17 @@ function CameraPlayer({ scene }: { scene: Scene }) {
       setShot((s) => (s === entry.index ? s : entry.index));
       raf = requestAnimationFrame(draw);
     };
-    raf = requestAnimationFrame(draw);
-    return () => cancelAnimationFrame(raf);
+    // Only plays while on screen.
+    const visibility = new IntersectionObserver(([entry]) => {
+      cancelAnimationFrame(raf);
+      raf = entry?.isIntersecting ? requestAnimationFrame(draw) : 0;
+    });
+    visibility.observe(frame.current!);
+    return () => {
+      cancelAnimationFrame(raf);
+      visibility.disconnect();
+      resize.disconnect();
+    };
   }, [track, stage, total, filterId]);
 
   const entry = track[shot]!;

@@ -71,9 +71,14 @@ function VectorThumb({ effect, hovered }: { effect: Extract<EffectDefinition, { 
   useEffect(() => {
     const motion = renderVectorEffect(effect, effectDefaults(effect));
     // Clicking a card opens it, so the player listens to nothing: the card's hover and the demo below drive it.
-    const p = new SvgPlayer(host.current!, motion, { hold: effect.hold, trigger, triggerTarget: document.createElement("div") });
+    // Cards scrolled out of view stop drawing: a gallery of always-playing pictures swamps scrolling.
+    const p = new SvgPlayer(host.current!, motion, { hold: effect.hold, trigger, triggerTarget: document.createElement("div"), pauseWhenHidden: true });
     player.current = p;
     if (!trigger || prefersReducedMotion()) return () => p.dispose();
+
+    let visible = false;
+    const observer = new IntersectionObserver(([entry]) => (visible = Boolean(entry?.isIntersecting)));
+    observer.observe(host.current!);
 
     // While nobody hovers the card, it acts out its own interaction, the way interactive shaders play an idle demo:
     // the cursor glides in, hovers / holds / clicks, waits for the picture to play out, then lets go and leaves.
@@ -87,7 +92,7 @@ function VectorThumb({ effect, hovered }: { effect: Extract<EffectDefinition, { 
     let phase = 0;
     let waitUntil = performance.now() + 600;
     const timer = setInterval(() => {
-      if (hoveredRef.current) return;
+      if (hoveredRef.current || !visible) return;
       const now = performance.now();
       if (restartAt.current) {
         if (now < restartAt.current) return;
@@ -133,6 +138,7 @@ function VectorThumb({ effect, hovered }: { effect: Extract<EffectDefinition, { 
     }, 100);
     return () => {
       clearInterval(timer);
+      observer.disconnect();
       p.dispose();
     };
   }, [effect, trigger]);
