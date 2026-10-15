@@ -1,11 +1,21 @@
 /**
  * Agents edit effects through the editor's commands. Flair ships the tools
  * and the instructions; the model, its credentials and the agent loop are
- * the host's (bridge the provider into an MCP server or any tool-calling LLM).
+ * the host's. Serve the tools with `@pixerate/editor/tools`' `ToolRegistry`
+ * (MCP `tools/list` and `tools/call`), or call them directly with `callTool`.
  */
 
 import { createCommandToolProvider } from "@pixerate/editor/commands";
-import type { AgentTool, AgentToolProvider, McpToolDefinition, McpToolResult } from "@pixerate/editor/generation";
+import {
+  createToolRegistry,
+  toToolResult,
+  type AgentTool,
+  type AgentToolProvider,
+  type McpToolDefinition,
+  type McpToolResult,
+  type ToolRegistry,
+  type ToolRegistryOptions,
+} from "@pixerate/editor/tools";
 import { BUILTIN_UNIFORMS } from "../shader/program.js";
 import type { EffectEditor } from "./editor.js";
 
@@ -60,6 +70,21 @@ export function createEffectToolProvider(editor: EffectEditor, options: EffectTo
   return { id: base.id, namespace: base.namespace, subscribe: base.subscribe, tools: () => [...baseTools(), ...extra] };
 }
 
+/**
+ * A `ToolRegistry` (from `@pixerate/editor/tools`) serving the effect editor's
+ * tools: `listTools()` and `callTool(name, args)` are MCP's `tools/list` and
+ * `tools/call`, with arguments checked against each tool's schema. Register
+ * more providers on it to give the agent other tools too.
+ */
+export function createEffectToolRegistry(
+  editor: EffectEditor,
+  options: EffectToolProviderOptions & { registry?: ToolRegistryOptions } = {},
+): ToolRegistry {
+  const registry = createToolRegistry({ validateArguments: true, ...options.registry });
+  registry.register(createEffectToolProvider(editor, options));
+  return registry;
+}
+
 /** A provider's tool definitions without their handlers, to send to a model. */
 export function toolDefinitions(provider: AgentToolProvider): McpToolDefinition[] {
   const tools = typeof provider.tools === "function" ? provider.tools() : provider.tools;
@@ -67,20 +92,16 @@ export function toolDefinitions(provider: AgentToolProvider): McpToolDefinition[
 }
 
 /**
- * Runs one of a provider's tools by name, for hosts without a `ToolRegistry`:
- * the handler's result comes back as an MCP `tools/call` result, and a
- * thrown error as an `isError` result.
+ * Runs one of a provider's tools by name without a registry: the handler's
+ * result comes back as an MCP `tools/call` result, and a thrown error as an
+ * `isError` result. (A `ToolRegistry` also checks the arguments first.)
  */
 export async function callTool(provider: AgentToolProvider, name: string, args: Record<string, unknown> = {}): Promise<McpToolResult> {
   const tools = typeof provider.tools === "function" ? provider.tools() : provider.tools;
   const tool = tools.find((t) => t.name === name);
   if (!tool) return { content: [{ type: "text", text: `There is no tool "${name}".` }], isError: true };
   try {
-    const result = await tool.handler(args, { name, providerId: provider.id });
-    if (result && typeof result === "object" && Array.isArray((result as McpToolResult).content)) return result as McpToolResult;
-    if (result === undefined) return { content: [] };
-    if (typeof result === "string") return { content: [{ type: "text", text: result }] };
-    return { content: [{ type: "text", text: JSON.stringify(result) }], structuredContent: result as Record<string, unknown> };
+    return toToolResult(await tool.handler(args, { name, providerId: provider.id }));
   } catch (e) {
     return { content: [{ type: "text", text: (e as Error).message }], isError: true };
   }

@@ -336,6 +336,34 @@ export class EffectEditor {
     return ok;
   }
 
+  /**
+   * Replaces a control's whole track (or removes it with `undefined`), one
+   * undo step. Every keyframe is checked like `setKeyframe`; values may be
+   * any form the control accepts (colours as "#RRGGBB" too).
+   */
+  setTrack(name: string, track: { keyframes: readonly { time: number; value: unknown; easing?: unknown }[]; enabled?: boolean } | undefined): EditResult {
+    const control = this.control(name);
+    if (!control) return this.unknownControl(name);
+    const tracks = { ...this.doc.tracks };
+    if (!track || track.keyframes.length === 0) {
+      if (!tracks[name]) return ok;
+      delete tracks[name];
+      this.commit("Clear keyframes", { ...this.doc, tracks });
+      return ok;
+    }
+    const keyframes: Keyframe[] = [];
+    for (const k of track.keyframes) {
+      if (!(k.time >= 0)) return fail("A keyframe's time is 0 ms or more.");
+      if (k.easing !== undefined && !isEasing(k.easing)) return fail(`Unknown easing ${JSON.stringify(k.easing)}.`);
+      const check = checkControlValue(control, k.value);
+      if (!check.ok) return fail(`At ${k.time} ms: ${check.message}`);
+      keyframes.push({ time: k.time, value: check.value, ...(k.easing !== undefined && { easing: k.easing as Easing }) });
+    }
+    tracks[name] = { keyframes: normalizeKeyframes(keyframes), ...(track.enabled === false && { enabled: false }) };
+    this.commit(`Keyframes ${control.label}`, { ...this.doc, tracks });
+    return ok;
+  }
+
   setTiming(timing: { duration?: number; loop?: boolean }): EditResult {
     if (timing.duration !== undefined && !(timing.duration > 0)) return fail("The duration must be above 0 ms.");
     this.commit("Set timing", { ...this.doc, duration: timing.duration ?? this.doc.duration, loop: timing.loop ?? this.doc.loop });

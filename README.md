@@ -43,7 +43,7 @@ Flair gives products a library of good-looking, configurable visual effects (her
 | `@pixerate/flair` | Shader engine, vector motion, time and easing, colour, blending, transitions, scenes, interchange exporters | None (browser-safe) |
 | `@pixerate/flair/catalog` | `EFFECTS`, `getEffect`, `findEffects`, `effectDefaults`, `renderVectorEffect`, GLSL helpers, sample images | None |
 | `@pixerate/flair/vector` | `SvgMotion`, `svgFrame`, `svgView`, `SvgPlayer`, `svgMotionIssues` | None |
-| `@pixerate/flair/editor` | `EffectEditor`, effect documents, keyframe tracks, renderer bindings, agent tools and instructions | `@pixerate/editor` (optional peer) |
+| `@pixerate/flair/editor` | `EffectEditor`, effect documents, keyframe tracks, renderer bindings, parameter-panel binding, agent tools and instructions | `@pixerate/editor` ≥ 0.29 (optional peer; only its dependency-free `/history`, `/commands`, `/tools`, `/animation` and `/parameters` subpaths) |
 | `@pixerate/flair/node` | `exportMotionGraphic`: renders a shader to GIF/MP4 through headless Chrome and ffmpeg | Node.js |
 
 The `flair` CLI inspects shaders, writes standalone pages and directs scenes (see [CLI](#-cli)).
@@ -90,6 +90,8 @@ Flair stays free of LLM SDKs and UI frameworks. Your app owns the interface and 
 npm install @pixerate/flair
 # For the editor:
 npm install @pixerate/flair @pixerate/editor
+# For the ready-made React (or Svelte) controls panel:
+npm install @pixerate/editor-react
 ```
 
 ### 1. Drop in a catalog effect
@@ -163,12 +165,24 @@ editor.commands.execute("values.randomize");
 window.addEventListener("keydown", (e) => editor.commands.handleKeyDown(e)); // Space plays/pauses
 ```
 
-`getState()` returns the same object until something changes, so React's `useSyncExternalStore` works as is. Documents are plain JSON (`EffectDocument`), and keyframe tracks use `@pixerate/editor`'s keyframe shape and easing names.
+`getState()` returns the same object until something changes, so React's `useSyncExternalStore` works as is. Documents are plain JSON (`EffectDocument`). Keyframe tracks use `@pixerate/editor/animation`'s track shape and easing engine.
+
+For a ready-made controls panel, bind the effect to `@pixerate/editor`'s parameters editor. Every field, image pick and keyframe diamond goes through the effect editor and its undo history:
+
+```tsx
+import { bindEffectParameters } from "@pixerate/flair/editor";
+import { ParametersPanel } from "@pixerate/editor-react/parameters"; // or @pixerate/editor-svelte/parameters
+
+const { controller, dispose } = bindEffectParameters(editor);
+<ParametersPanel controller={controller} showToolbar={false} showPresets={false} showKeyframes />;
+```
+
+`parameterSchemaFor(controls)` gives you the schema alone, for a UI of your own.
 
 ### 4. Let an agent drive it
 
 ```ts
-import { createEffectToolProvider, toolDefinitions, callTool, EFFECT_AGENT_INSTRUCTIONS } from "@pixerate/flair/editor";
+import { createEffectToolProvider, createEffectToolRegistry, toolDefinitions, callTool, EFFECT_AGENT_INSTRUCTIONS } from "@pixerate/flair/editor";
 
 const tools = createEffectToolProvider(editor, {
   capture: () => renderer.capture({ type: "image/png" }), // adds a `view_effect` tool so the model can look
@@ -177,7 +191,8 @@ const tools = createEffectToolProvider(editor, {
 // Give your model EFFECT_AGENT_INSTRUCTIONS and toolDefinitions(tools), then for each tool call:
 const result = await callTool(tools, call.name, call.input); // MCP tools/call result
 
-// Or register the provider with @pixerate/editor's ToolRegistry, or bridge it to an MCP server.
+// Or serve them through @pixerate/editor/tools' ToolRegistry (MCP tools/list and tools/call):
+const registry = createEffectToolRegistry(editor); // registry.listTools(), registry.callTool(name, args)
 ```
 
 The tools are `list_commands`, `run_command` and `run_commands`, plus `view_effect` when you can capture the preview. The commands they run:
@@ -185,8 +200,8 @@ The tools are `list_commands`, `run_command` and `run_commands`, plus `view_effe
 - **Inspect and start:** `effect.describe`, `catalog.search`, `effect.load`.
 - **Edit the effect:** `effect.setSource`.
 - **Values and presets:** `values.set`, `values.reset`, `values.randomize`, `preset.apply` and `preset.save`.
-- **Keyframes:** `keyframe.set`, `keyframe.remove`, `keyframe.setEasing` and `keyframe.clear`.
-- **Timeline:** `timeline.setTiming`, `timeline.play` and `timeline.seek`.
+- **Keyframes:** `keyframe.set`, `keyframe.setTrack`, `keyframe.remove`, `keyframe.setEasing` and `keyframe.clear`.
+- **Timeline:** `timeline.setTiming`, `timeline.play`, `timeline.pause` and `timeline.seek`.
 - **History:** `history.undo` and `history.redo`.
 
 Every change is one undo step, and refusals come back as messages the model can act on.

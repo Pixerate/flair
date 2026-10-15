@@ -7,8 +7,11 @@
  * - Keyframes: `Track`, `Keyframe`, `Easing`, `evaluateTrack`.
  * - Editing: `EffectEditor` / `createEffectEditor` (state, undo, playhead,
  *   commands), bound to a preview with `bindShaderRenderer` or `bindSvgView`.
- * - Agents: `createEffectToolProvider`, `callTool`, `toolDefinitions`,
- *   `EFFECT_AGENT_INSTRUCTIONS`. The model is the host's to provide.
+ * - Parameter panels: `parameterSchemaFor` and `bindEffectParameters` drive
+ *   `@pixerate/editor/parameters` (and its React and Svelte panels).
+ * - Agents: `createEffectToolRegistry`, `createEffectToolProvider`,
+ *   `callTool`, `toolDefinitions`, `EFFECT_AGENT_INSTRUCTIONS`. The model is
+ *   the host's to provide.
  *
  * Needs `@pixerate/editor` (an optional peer dependency of Flair).
  *
@@ -53,8 +56,18 @@ export { describeEditor, effectCommands } from "./commands.js";
 export {
   callTool,
   createEffectToolProvider,
+  createEffectToolRegistry,
   EFFECT_AGENT_INSTRUCTIONS,
   toolDefinitions,
   type EffectToolProviderOptions,
 } from "./agent.js";
 export { bindShaderRenderer, bindSvgView, type ShaderPreview } from "./bind.js";
+export {
+  bindEffectParameters,
+  parameterFieldFor,
+  parameterSchemaFor,
+  toParameterValue,
+  toParameterValues,
+  type EffectParameterOptions,
+  type EffectParametersBinding,
+} from "./parameters.js";

@@ -204,6 +204,29 @@ export function effectCommands(): CommandSpec<EffectEditor>[] {
       run: (editor, p: { name: string; time: number; easing: Easing }) => done(editor.setKeyframeEasing(p.name, p.time, p.easing)),
     },
     {
+      id: "keyframe.setTrack",
+      label: "Set keyframes",
+      group: "Keyframes",
+      description: "Replaces all of a control's keyframes at once (an empty list removes them). Times are ms; each easing shapes the segment leaving its keyframe.",
+      params: {
+        type: "object",
+        properties: {
+          name: { type: "string" },
+          keyframes: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: { time: { type: "number", minimum: 0 }, value: valueSchema, easing: easingSchema },
+              required: ["time", "value"],
+            },
+          },
+        },
+        required: ["name", "keyframes"],
+        additionalProperties: false,
+      },
+      run: (editor, p: { name: string; keyframes: { time: number; value: unknown; easing?: unknown }[] }) => done(editor.setTrack(p.name, { keyframes: p.keyframes })),
+    },
+    {
       id: "keyframe.clear",
       label: "Clear keyframes",
       group: "Keyframes",
