@@ -440,7 +440,7 @@ export const dripText: VectorEffect = {
   id: "drip-text",
   name: "Drip text",
   description: "A chunky outlined title popping in, then oozing slime drips from its letters.",
-  category: "icon",
+  category: "text",
   tags: ["title", "text", "drip", "slime", "y2k", "headline"],
   hold: 1200,
   presets: [

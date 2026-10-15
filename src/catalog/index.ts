@@ -25,7 +25,11 @@ import {
 import { blackHole, bokeh, godRays, lightRibbons, nebula, neonRipple, sparkles, starfield } from "./shaders/light.js";
 import { caustics, flames, lavaLamp, marble, plasma, smoke } from "./shaders/organic.js";
 import { barberStripes, dotWave, hexPulse, kaleidoscope, moire, neonCircuit, truchet, voronoi } from "./shaders/patterns.js";
+import { overlayEffects } from "./shaders/overlay.js";
 import { digitalRain, pixelSunset, synthwaveGrid, tvStatic } from "./shaders/retro.js";
+import { textShaders } from "./shaders/text.js";
+import { imageTreatments } from "./shaders/treatments.js";
+import { textEffects } from "./text.js";
 import { EFFECT_CATEGORIES, vectorEffectControls, type EffectCategory, type EffectDefinition, type ShaderEffect } from "./types.js";
 import { vectorEffects } from "./vector.js";
 
@@ -87,13 +91,16 @@ export const SHADER_EFFECTS: readonly ShaderEffect[] = [
   imageDuotone,
   imageHalftone,
   imagePixelate,
+  ...imageTreatments,
   crt,
   filmGrain,
+  ...overlayEffects,
+  ...textShaders,
   ...transitions,
 ];
 
 /** Every effect in the catalog, shaders first, grouped by category. */
-export const EFFECTS: readonly EffectDefinition[] = [...SHADER_EFFECTS, ...vectorEffects].sort(
+export const EFFECTS: readonly EffectDefinition[] = [...SHADER_EFFECTS, ...vectorEffects, ...textEffects].sort(
   (a, b) => EFFECT_CATEGORIES.indexOf(a.category) - EFFECT_CATEGORIES.indexOf(b.category),
 );
 

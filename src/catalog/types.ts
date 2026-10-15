@@ -18,6 +18,8 @@ export type EffectCategory =
   | "space"
   | "retro"
   | "image"
+  | "overlay"
+  | "text"
   | "transition"
   | "loader"
   | "data"
@@ -32,6 +34,8 @@ export const EFFECT_CATEGORIES: readonly EffectCategory[] = [
   "space",
   "retro",
   "image",
+  "overlay",
+  "text",
   "transition",
   "loader",
   "data",
