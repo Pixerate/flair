@@ -214,3 +214,60 @@ it("catalog effects load in the editor without issues", () => {
     expect(createEffectEditor({ from: id }).getState().issues).toEqual([]);
   }
 });
+
+describe("parameters", () => {
+  it("maps controls to a parameters schema", async () => {
+    const { parameterSchemaFor, toParameterValues } = await import("./parameters.js");
+    const editor = createEffectEditor({ from: "image-glitch" });
+    const schema = parameterSchemaFor(editor.controls, { images: [{ url: "https://x.test/a.png", label: "A" }] });
+    const types = Object.fromEntries(schema.fields.map((f) => [f.id, f.type]));
+    expect(types).toMatchObject({ uImage: "image", uAmount: "number" });
+    const aurora = createEffectEditor({ from: "aurora" });
+    const sky = parameterSchemaFor(aurora.controls).fields.find((f) => f.id === "uSky")!;
+    expect(sky).toMatchObject({ type: "color", alpha: false, default: "#050816" });
+    expect(toParameterValues(aurora.controls, aurora.getState().values).uSky).toBe("#050816");
+    const plasma = createEffectEditor({ from: "plasma" });
+    expect(parameterSchemaFor(plasma.controls).fields.find((f) => f.id === "uPhase")).toMatchObject({ type: "vector", size: 3 });
+    expect(parameterSchemaFor(createEffectEditor({ from: "lava-lamp" }).controls).fields.find((f) => f.id === "uCount")).toMatchObject({ type: "int" });
+  });
+
+  it("keeps a parameters controller in step with the editor, both ways", async () => {
+    const { bindEffectParameters } = await import("./parameters.js");
+    const editor = createEffectEditor({ from: "aurora" });
+    const { controller, dispose } = bindEffectParameters(editor);
+    // Controller → editor (one undo step, in the editor's history)
+    expect(controller.setValue("uSky", "#ff0000").ok).toBe(true);
+    expect(editor.getState().values.uSky).toEqual([1, 0, 0]);
+    expect(editor.getState().history.canUndo).toBe(true);
+    // Editor → controller
+    editor.undo();
+    expect(controller.getValues().uSky).toBe("#050816");
+    editor.setValue("uSpeed", 1.5);
+    expect(controller.getValues().uSpeed).toBe(1.5);
+    // Keyframe diamonds go through the editor
+    editor.seek(1000);
+    expect(controller.toggleKeyframe("uSpeed").ok).toBe(true);
+    expect(editor.document.tracks.uSpeed!.keyframes).toEqual([{ time: 1000, value: 1.5 }]);
+    expect(controller.keyState("uSpeed")).toBe("keyed");
+    editor.undo();
+    expect(editor.document.tracks.uSpeed).toBeUndefined();
+    // A new source updates the schema
+    editor.load({ source: "uniform float uGain; // @control min=0 max=2 default=1\nvoid mainImage(out vec4 c, in vec2 p) { c = vec4(uGain); }" });
+    expect(controller.getState().fields.map((f) => f.id)).toEqual(["uGain"]);
+    dispose();
+  });
+});
+
+describe("tool registry", () => {
+  it("serves the editor's tools through @pixerate/editor/tools", async () => {
+    const { createEffectToolRegistry } = await import("./agent.js");
+    const editor = createEffectEditor({ from: "aurora" });
+    const registry = createEffectToolRegistry(editor);
+    expect(registry.listTools().tools.map((t) => t.name)).toEqual(expect.arrayContaining(["list_commands", "run_command", "run_commands"]));
+    const ok = await registry.callTool("run_command", { id: "keyframe.setTrack", params: { name: "uSpeed", keyframes: [{ time: 0, value: 0 }, { time: 1000, value: 2, easing: "ease-out" }] } });
+    expect(ok.isError).toBeFalsy();
+    expect(editor.document.tracks.uSpeed!.keyframes).toHaveLength(2);
+    const bad = await registry.callTool("run_command", { nope: true });
+    expect(bad.isError).toBe(true);
+  });
+});

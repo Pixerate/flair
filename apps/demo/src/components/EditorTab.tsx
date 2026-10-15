@@ -183,7 +183,7 @@ export function EditorTab({ editor }: { editor: EffectEditor }) {
               Reset
             </button>
           </div>
-          <ControlsPanel editor={editor} state={state} />
+          <ControlsPanel editor={editor} />
         </section>
 
         <section className="rounded-xl border border-slate-800 bg-slate-900 p-4 space-y-2">

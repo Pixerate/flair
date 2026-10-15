@@ -3,7 +3,19 @@
 @tailwind utilities;
 
 @layer base {
+  /* Theme tokens for the @pixerate/editor-react components (dark slate, violet accent). */
   :root {
+    --background-rgb: 2 6 23; /* slate-950 */
+    --foreground-rgb: 241 245 249; /* slate-100 */
+    --border-rgb: 30 41 59; /* slate-800 */
+    --input-rgb: 51 65 85; /* slate-700 */
+    --ring-rgb: 168 85 247; /* violet-500 */
+    --muted-rgb: 30 41 59; /* slate-800 */
+    --muted-foreground-rgb: 148 163 184; /* slate-400 */
+    --primary-rgb: 168 85 247; /* violet-500 */
+    --primary-foreground-rgb: 255 255 255;
+    --destructive-rgb: 248 113 113; /* red-400 */
+    --destructive-foreground-rgb: 255 255 255;
     color-scheme: dark;
   }
 
