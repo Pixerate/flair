@@ -460,7 +460,7 @@ export const dripText: VectorEffect = {
   id: "drip-text",
   name: "Drip text",
   description: "A chunky outlined title popping in, then oozing slime drips from its letters.",
-  category: "icon",
+  category: "text",
   tags: ["title", "text", "drip", "slime", "y2k", "headline"],
   hold: 1200,
   presets: [
@@ -522,6 +522,35 @@ export const dripText: VectorEffect = {
   })(),
 };
 
+/** Viewfinder's timecode runs this many seconds (at 25 fps) before it loops back to zero. */
+const VIEWFINDER_SECONDS = 10;
+
+export const viewfinder: VectorEffect = {
+  kind: "vector",
+  id: "viewfinder",
+  name: "Viewfinder",
+  description: "A camera viewfinder over the picture: corner brackets, a blinking REC light and a running timecode.",
+  category: "overlay",
+  tags: ["overlay", "camera", "recording", "vlog", "frame"],
+  hold: 0,
+  presets: [
+    { name: "Night vision", values: { color: [0.45, 1, 0.45], rec: [0.45, 1, 0.45] } },
+    { name: "Live", values: { label: "LIVE", timecode: false } },
+  ],
+  derived: (v) => ({ timecodeOpacity: v.timecode ? 1 : 0 }),
+  motion: {
+    svg: `<svg viewBox="0 0 320 180" font-family="ui-monospace, Menlo, Consolas, monospace"><!-- {{color: color default=#FFFFFF label='Frame'}} {{rec: color default=#EF4444 label='Record light'}} {{timecode: bool default=true label='Timecode'}} --><g fill="none" stroke="{{color}}" stroke-width="2.5" stroke-linecap="square"><path d="M16 42 V16 H42"/><path d="M278 16 H304 V42"/><path d="M304 138 V164 H278"/><path d="M42 164 H16 V138"/><path d="M154 90 H166 M160 84 V96" stroke-width="1.5" opacity="0.8"/></g><circle id="dot" cx="34" cy="33" r="4.5" fill="{{rec}}"/><text x="44" y="37.5" font-size="12" font-weight="700" fill="{{color}}">{{label: text default=REC label='Label'}}</text><text x="296" y="37.5" text-anchor="end" font-size="12" fill="{{color}}" opacity="{{timecodeOpacity}}">00:00:<tspan id="sec">00</tspan>:<tspan id="ff">00</tspan></text></svg>`,
+    animate: Array.from({ length: VIEWFINDER_SECONDS }, (_, s): SvgAnimation[] => [
+      { id: "sec", count: [s, s], format: s < 10 ? "0{n}" : "{n}", delay: s * 1000, ms: 1 },
+      // Frames 00–24: the single digits padded with a zero, then the rest.
+      { id: "ff", count: [0, 9.49], format: "0{n}", delay: s * 1000, ms: 400, ease: "linear" },
+      { id: "ff", count: [10, 24.49], format: "{n}", delay: s * 1000 + 400, ms: 600, ease: "linear" },
+      { id: "dot", attrs: { opacity: [0, 1] }, delay: s * 1000, ms: 1 },
+      { id: "dot", attrs: { opacity: [1, 0] }, delay: s * 1000 + 600, ms: 1 },
+    ]).flat(),
+  },
+};
+
 export const vectorEffects: VectorEffect[] = [
   spinner,
   bouncingDots,
@@ -541,4 +570,5 @@ export const vectorEffects: VectorEffect[] = [
   blobMorph,
   dripText,
   flowNetwork,
+  viewfinder,
 ];

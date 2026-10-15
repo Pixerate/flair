@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ShaderRenderer, standaloneHtml } from "@pixerate/flair";
-import { EFFECTS } from "@pixerate/flair/catalog";
+import { EFFECTS, getEffect, SAMPLE_IMAGES } from "@pixerate/flair/catalog";
 import { bindShaderRenderer, bindSvgView, valuesAt, type EffectEditor } from "@pixerate/flair/editor";
 import { useEditorState } from "../hooks";
 import { ControlsPanel } from "./ControlsPanel";
@@ -14,11 +14,11 @@ function download(name: string, text: string, type: string) {
 }
 
 /** The preview: a shader renderer or an SVG view, driven by the editor. */
-function Preview({ editor, kind }: { editor: EffectEditor; kind: "shader" | "vector" }) {
+function Preview({ editor, kind, overlay, transparent }: { editor: EffectEditor; kind: "shader" | "vector"; overlay: boolean; transparent: boolean }) {
   const host = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (kind === "vector") return bindSvgView(editor, host.current!);
-    const renderer = new ShaderRenderer(host.current!, "absolute inset-0 h-full w-full");
+    const renderer = new ShaderRenderer(host.current!, { className: "absolute inset-0 h-full w-full", alpha: transparent });
     const unbind = bindShaderRenderer(editor, renderer);
     // The agent tab's `view_effect` tool captures this preview.
     const page = window as unknown as { flairPreview?: ShaderRenderer };
@@ -28,10 +28,11 @@ function Preview({ editor, kind }: { editor: EffectEditor; kind: "shader" | "vec
       unbind();
       renderer.dispose();
     };
-  }, [editor, kind]);
+  }, [editor, kind, transparent]);
   return (
-    <div className={`relative aspect-video overflow-hidden rounded-xl border border-slate-800 ${kind === "vector" ? "bg-slate-100 p-[8%]" : "bg-black"}`}>
-      <div ref={host} className={kind === "vector" ? "h-full w-full" : "absolute inset-0"} />
+    <div className={`relative aspect-video overflow-hidden rounded-xl border border-slate-800 ${overlay ? "bg-black" : kind === "vector" ? "bg-slate-100 p-[8%]" : "bg-black"}`}>
+      {overlay && <img src={SAMPLE_IMAGES.city} alt="" className="absolute inset-0 h-full w-full object-cover" />}
+      <div ref={host} className={kind === "vector" && !overlay ? "h-full w-full" : "absolute inset-0"} />
     </div>
   );
 }
@@ -88,6 +89,10 @@ export function EditorTab({ editor }: { editor: EffectEditor }) {
   const state = useEditorState(editor);
   const doc = state.document;
   const kind = doc.effect.kind;
+  const based = doc.basedOn ? getEffect(doc.basedOn) : undefined;
+  // Overlays preview over a picture; overlay shaders draw on a transparent canvas.
+  const overlay = based?.category === "overlay";
+  const transparent = based?.kind === "shader" && Boolean(based.transparent);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -131,7 +136,7 @@ export function EditorTab({ editor }: { editor: EffectEditor }) {
           </div>
         </div>
 
-        <Preview key={kind} editor={editor} kind={kind} />
+        <Preview key={kind} editor={editor} kind={kind} overlay={overlay} transparent={transparent} />
         <Timeline editor={editor} state={state} />
 
         {state.issues.length > 0 && (

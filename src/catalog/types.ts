@@ -18,6 +18,8 @@ export type EffectCategory =
   | "space"
   | "retro"
   | "image"
+  | "overlay"
+  | "text"
   | "transition"
   | "loader"
   | "data"
@@ -32,6 +34,8 @@ export const EFFECT_CATEGORIES: readonly EffectCategory[] = [
   "space",
   "retro",
   "image",
+  "overlay",
+  "text",
   "transition",
   "loader",
   "data",
@@ -65,6 +69,12 @@ export interface ShaderEffect extends EffectBase {
   source: string;
   /** Seconds after which it repeats exactly, when it loops seamlessly. */
   loop?: number;
+  /**
+   * Draws over other content: `fragColor.a` is coverage (0 where there is
+   * nothing to draw), so render it on a transparent canvas
+   * (`ShaderRenderer`'s `alpha` option) to layer it over a page or picture.
+   */
+  transparent?: boolean;
 }
 
 /**

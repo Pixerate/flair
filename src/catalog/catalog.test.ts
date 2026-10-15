@@ -11,6 +11,7 @@ import {
   renderVectorEffect,
   SAMPLE_IMAGES,
   SHADER_EFFECTS,
+  textImage,
   vectorControlIssues,
   vectorControls,
 } from "./index.js";
@@ -161,5 +162,42 @@ describe("catalog", () => {
     const bokeh = getEffect("bokeh")!;
     expect(effectDefaults(sparkles)).toMatchObject({ uBackgroundAlpha: 1, uChance: 1 });
     expect(effectDefaults(bokeh)).toMatchObject({ uBackgroundAlpha: 1 });
+  });
+
+  it("draws any text as a white-on-clear SVG image", () => {
+    const url = textImage(`Café <&> 日本 🎉 'quoted'`);
+    expect(url).toMatch(/^data:image\/svg\+xml;charset=utf-8,/);
+    expect(url).not.toMatch(/[\s'"()]/);
+    const svg = decodeURIComponent(url.slice(url.indexOf(",") + 1));
+    expect(svg).toContain(`>Café &lt;&amp;&gt; 日本 🎉 &#39;quoted&#39;</text>`);
+    expect(svg).toContain('viewBox="0 0 1024 256"');
+    expect(svg).toContain('fill="#fff"');
+    // Longer text is set smaller, so it still fits.
+    const size = (u: string) => Number(/font-size="([\d.]+)"/.exec(decodeURIComponent(u))![1]);
+    expect(size(textImage("A LONGER TITLE HERE"))).toBeLessThan(size(textImage("HI")));
+    expect(decodeURIComponent(textImage("x", { font: "Georgia", weight: 400, size: 80 }))).toMatch(/font-family="Georgia" font-weight="400" font-size="80"/);
+    expect(effectDefaults(getEffect("shader-text")!).uText).toBe(textImage("FLAIR"));
+  });
+
+  it.each(findEffects({ category: "text", kind: "vector" }).map((e) => [e.id, e] as const))(
+    "text effect %s fits short, long and unusual text",
+    (_, effect) => {
+      if (effect.kind !== "vector") return;
+      const text = effectControls(effect).find((c) => c.type === "text")!;
+      for (const word of ["A", "Supercalifragilistic & <co>", "Café 日本 🎉"]) {
+        const motion = renderVectorEffect(effect, { [text.name]: word });
+        expect(svgMotionIssues(motion)).toEqual([]);
+        expect(JSON.stringify(motion)).not.toMatch(/\{\{|NaN|undefined/);
+      }
+    },
+  );
+
+  it("typewriter writes its text with a caret, kinetic stagger one letter per slot", () => {
+    const typed = renderVectorEffect(getEffect("typewriter") as never, { text: "Hi there" });
+    expect(typed.animate![0]).toMatchObject({ id: "typed", write: "Hi there", caret: "▌", ms: 720 });
+    const kinetic = renderVectorEffect(getEffect("kinetic-stagger") as never, { text: "Go!" }).svg;
+    expect(kinetic).toMatch(/id="l0"[^>]*>G</);
+    expect(kinetic).toMatch(/id="l2"[^>]*>!</);
+    expect(kinetic).toMatch(/id="l3"[^>]*><\/text>/);
   });
 });
