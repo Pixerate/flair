@@ -24,10 +24,16 @@ export interface ThumbnailPoolOptions {
   renderHeight?: number;
   /** Animation rate (default 30). */
   fps?: number;
-  /** `iTime` of the still frame shown with reduced motion (default 2). */
+  /** `iTime` of the still frame shown with reduced motion or hover-only mode (default 2). */
   stillTime?: number;
   /** Hold still frames unless hovered (default: the `prefers-reduced-motion` media query). */
   reducedMotion?: boolean;
+  /** Only animate hovered thumbnails, holding `stillTime` on all others (default false). */
+  hoverOnly?: boolean;
+  /** Animation policy: `"always"` (animate all visible), `"hover"` (only animate hovered), or `"reduced-motion"` (default: follow `reducedMotion` / `prefers-reduced-motion`). */
+  animateMode?: "always" | "hover" | "reduced-motion";
+  /** Enable a transparent WebGL drawing buffer and clear each thumbnail canvas before copying (default false). */
+  alpha?: boolean;
 }
 
 interface Entry {
@@ -61,6 +67,7 @@ export class ThumbnailPool {
   private readonly fps: number;
   private readonly stillTime: number;
   private readonly reducedMotion: boolean;
+  private readonly alpha: boolean;
   private readonly entries = new Set<Entry>();
   private readonly byCanvas = new WeakMap<Element, Entry>();
   private observer: IntersectionObserver | null | undefined;
@@ -77,9 +84,16 @@ export class ThumbnailPool {
     this.fps = options.fps ?? 30;
     this.interval = 1000 / this.fps;
     this.stillTime = options.stillTime ?? 2;
+    this.alpha = Boolean(options.alpha);
+    const mode = options.animateMode ?? (options.hoverOnly ? "hover" : "reduced-motion");
     this.reducedMotion =
-      options.reducedMotion ??
-      (typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches);
+      mode === "hover"
+        ? true
+        : mode === "always"
+          ? false
+          : (options.reducedMotion ??
+            (typeof matchMedia !== "undefined" &&
+              matchMedia("(prefers-reduced-motion: reduce)").matches));
   }
 
   /**
@@ -182,7 +196,7 @@ export class ThumbnailPool {
     });
     resetGlCaches();
     this.glCanvas = canvas;
-    this.gl = createContext(canvas);
+    this.gl = createContext(canvas, false, this.alpha);
     this.textures = this.gl && this.textureCache(this.gl);
     return this.gl;
   }
@@ -242,6 +256,9 @@ export class ThumbnailPool {
     );
     // The GL canvas's drawing buffer is valid until this task ends; copy it now.
     // WebGL draws from the bottom left, so the frame sits at the bottom of the canvas.
+    if (this.alpha) {
+      entry.ctx.clearRect(0, 0, entry.canvas.width, entry.canvas.height);
+    }
     entry.ctx.drawImage(
       this.glCanvas!,
       0,

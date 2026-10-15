@@ -34,7 +34,7 @@ const EPILOGUE = `
 void main() {
   vec4 flair_color = vec4(0.0, 0.0, 0.0, 1.0);
   mainImage(flair_color, gl_FragCoord.xy);
-  flair_FragColor = vec4(flair_color.rgb, 1.0);
+  flair_FragColor = vec4(flair_color.rgb, clamp(flair_color.a, 0.0, 1.0));
 }
 `;
 
@@ -266,16 +266,18 @@ export function drawFrame(
 }
 
 /**
- * A WebGL2 context set up for full-screen fragment shaders: opaque, no depth,
- * stencil or antialiasing. `preserveDrawingBuffer` keeps the last frame
- * readable after the task that drew it (for captures). Null without WebGL2.
+ * A WebGL2 context set up for full-screen fragment shaders: opaque by default,
+ * no depth, stencil or antialiasing. `preserveDrawingBuffer` keeps the last
+ * frame readable after the task that drew it (for captures). `alpha` enables a
+ * transparent drawing buffer for overlay shaders. Null without WebGL2.
  */
 export function createContext(
   canvas: HTMLCanvasElement | OffscreenCanvas,
   preserveDrawingBuffer = false,
+  alpha = false,
 ): WebGL2RenderingContext | null {
   return canvas.getContext("webgl2", {
-    alpha: false,
+    alpha,
     antialias: false,
     depth: false,
     stencil: false,

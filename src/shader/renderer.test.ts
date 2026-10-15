@@ -48,6 +48,16 @@ describe("ShaderRenderer", () => {
     expect(existing.parentElement).toBe(document.body);
   });
 
+  it("requests a transparent WebGL context when alpha: true is passed", () => {
+    const webgl = installFakeWebGl();
+    installManualRaf();
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const renderer = new ShaderRenderer(host, { alpha: true });
+    expect(webgl.last().attributes).toMatchObject({ preserveDrawingBuffer: true, alpha: true });
+    renderer.dispose();
+  });
+
   it("pauses and resumes when scrolled out of view with pauseWhenHidden", () => {
     installFakeWebGl();
     installManualRaf();

@@ -12,6 +12,7 @@
 export {
   defaultDataKey,
   EASES,
+  formatCount,
   lerpAttr,
   lerpData,
   STEP_MS,
@@ -32,10 +33,12 @@ export {
   type SvgMotion,
 } from "./motion.js";
 export {
+  animateCount,
   parseSvg,
   svgDuration,
   SvgPlayer,
   svgView,
+  type AnimateCountOptions,
   type SvgPlayerOptions,
   type SvgView,
   type SvgViewOptions,

@@ -289,6 +289,7 @@ export const asGl = (gl: FakeGl) => gl as unknown as WebGL2RenderingContext;
 export interface Fake2d {
   canvas: HTMLCanvasElement;
   drawImage: ReturnType<typeof vi.fn>;
+  clearRect: ReturnType<typeof vi.fn>;
 }
 
 export interface FakeWebGl {
@@ -323,7 +324,7 @@ export function installFakeWebGl(options: FakeGlOptions & { webgl?: boolean } = 
       return gl as never;
     }
     if (kind === "2d") {
-      const ctx = { canvas: this, drawImage: vi.fn() };
+      const ctx = { canvas: this, drawImage: vi.fn(), clearRect: vi.fn() };
       contexts2d.push(ctx);
       byCanvas.set(this, ctx);
       return ctx as never;

@@ -23,9 +23,9 @@ Flair gives products a library of good-looking, configurable visual effects (her
 - ⚡ **Shader engine**:
   - Shadertoy-style GLSL ES 3.00 fragment shaders, with controls declared in the source (`// @control`), including image inputs.
   - Compile errors come back with line numbers that match the source.
-  - Live previews (`ShaderRenderer`) and many animated thumbnails on one context (`ThumbnailPool`).
+  - Live previews (`ShaderRenderer`, with optional `{ alpha: true }` for transparent overlays) and many animated or hover-activated thumbnails on one context (`ThumbnailPool`).
   - Frames at exact times (`ShaderFrames`), looping GIFs, and standalone HTML pages.
-- ✒️ **Vector motion (`@pixerate/flair/vector`)**: animated SVG described as data. Catalog vector effects declare their controls in the picture (`{{name: type …}}`), text included. It covers attribute tweens, draw-on strokes, motion along paths, counters and view zooms. Every frame is a pure function of time (`svgFrame`), and `SvgPlayer` plays it.
+- ✒️ **Vector motion (`@pixerate/flair/vector`)**: animated SVG described as data. Catalog vector effects declare their controls in the picture (`{{name: type …}}`), text included. It covers attribute tweens, draw-on strokes, motion along paths, counters (`animateCount` / `formatCount` for DOM elements too) and view zooms. Every frame is a pure function of time (`svgFrame`), and `SvgPlayer` plays it (with `scrollTrigger`, `hideWhenPaused`, and `reset()`).
 - 🎛️ **Effect editor (`@pixerate/flair/editor`)**:
   - A headless editor for an effect's source, values, keyframes, presets and timeline.
   - Built on [`@pixerate/editor`](https://github.com/Pixerate/editor)'s undo history and command registry, with no UI framework assumed.
@@ -42,7 +42,7 @@ Flair gives products a library of good-looking, configurable visual effects (her
 | :--- | :--- | :--- |
 | `@pixerate/flair` | Shader engine, vector motion, time and easing, colour, blending, transitions, scenes, interchange exporters | None (browser-safe) |
 | `@pixerate/flair/catalog` | `EFFECTS`, `getEffect`, `findEffects`, `effectDefaults`, `renderVectorEffect`, `vectorControls`, GLSL helpers, sample images | None |
-| `@pixerate/flair/vector` | `SvgMotion`, `svgFrame`, `svgView`, `SvgPlayer`, `svgMotionIssues` | None |
+| `@pixerate/flair/vector` | `SvgMotion`, `svgFrame`, `svgView`, `SvgPlayer`, `animateCount`, `formatCount`, `svgMotionIssues` | None |
 | `@pixerate/flair/editor` | `EffectEditor`, effect documents, keyframe tracks, renderer bindings, parameter-panel binding, agent tools and instructions | `@pixerate/editor` ≥ 0.29 (optional peer; only its dependency-free `/history`, `/commands`, `/tools`, `/animation` and `/parameters` subpaths) |
 | `@pixerate/flair/node` | `exportMotionGraphic`: renders a shader to GIF/MP4 through headless Chrome and ffmpeg | Node.js |
 
@@ -97,10 +97,10 @@ npm install @pixerate/editor-react
 ### 1. Drop in a catalog effect
 
 ```ts
-import { ShaderRenderer, SvgPlayer } from "@pixerate/flair";
+import { ShaderRenderer, SvgPlayer, ThumbnailPool, animateCount } from "@pixerate/flair";
 import { getEffect, effectDefaults, renderVectorEffect } from "@pixerate/flair/catalog";
 
-// A shader background
+// A shader background (or pass { alpha: true } with uBackgroundAlpha: 0 for a transparent overlay)
 const aurora = getEffect("aurora")!;
 if (aurora.kind === "shader") {
   const preview = new ShaderRenderer(document.querySelector("#hero")!);
@@ -108,13 +108,25 @@ if (aurora.kind === "shader") {
   preview.setValues(effectDefaults(aurora, { preset: "Ember", values: { uSpeed: 0.5 } }));
 }
 
-// An animated SVG loader, recoloured
+// Many shader cards sharing one WebGL context, animating only while hovered
+const pool = new ThumbnailPool({ hoverOnly: true });
+
+// An animated SVG effect, with scroll-triggered playback or hover reset (hideWhenPaused + reset())
 const spinner = getEffect("spinner")!;
 if (spinner.kind === "vector") {
   new SvgPlayer(document.querySelector("#loading")!, renderVectorEffect(spinner, { accent: "#0ea5e9" }), {
     hold: spinner.hold,
   });
 }
+
+// Standalone DOM number counter using Flair's clock and easing curves
+animateCount({
+  element: document.querySelector("#year")!,
+  from: 2010,
+  to: 2026,
+  ms: 900,
+  ease: "out",
+});
 ```
 
 Find effects with `findEffects({ text: "glow", category: "light", kind: "shader" })`. Each effect has an `id`, `name`, `description`, `category`, `tags` and optional `presets`. Image effects default to built-in sample pictures, so they look right before you set `uImage` to your own URL.
