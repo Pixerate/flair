@@ -6,6 +6,7 @@ import {
   ShaderCompileError,
   type CompiledShader,
 } from "./program.js";
+import { clicksUniform, type ShaderClick } from "./pointer.js";
 import { TextureCache } from "./textures.js";
 
 export interface ShaderFramesOptions {
@@ -26,6 +27,10 @@ export interface RenderOptions {
   delta?: number;
   /** `iMouse` (default: all zero, as on a page nobody has touched). */
   mouse?: [number, number, number, number];
+  /** `iPointer`: x, y, how hovered (0–1), the press (seconds held, or minus seconds since release; default all zero). */
+  pointer?: [number, number, number, number];
+  /** Clicks so far, for `iClicks` (the latest `MAX_CLICKS` at or before the frame's time count). */
+  clicks?: readonly ShaderClick[];
 }
 
 /**
@@ -105,6 +110,8 @@ export class ShaderFrames {
         delta,
         frame: options.frame ?? this.rendered,
         mouse: options.mouse ?? [0, 0, 0, 0],
+        pointer: options.pointer,
+        clicks: options.clicks && clicksUniform(options.clicks, time),
       },
       this.textures,
     );

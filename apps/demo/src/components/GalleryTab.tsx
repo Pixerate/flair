@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { sharedThumbnailPool, SvgPlayer, ThumbnailPool } from "@pixerate/flair";
+import { sharedThumbnailPool, SvgPlayer, ThumbnailPool, type ThumbnailHandle } from "@pixerate/flair";
 import {
   EFFECT_CATEGORIES,
   effectDefaults,
@@ -19,13 +19,16 @@ function poolFor(effect: Extract<EffectDefinition, { kind: "shader" }>): Thumbna
   return (overlayPool ??= new ThumbnailPool({ alpha: true }));
 }
 
-function ShaderThumb({ effect }: { effect: Extract<EffectDefinition, { kind: "shader" }> }) {
+function ShaderThumb({ effect, hovered }: { effect: Extract<EffectDefinition, { kind: "shader" }>; hovered: boolean }) {
   const canvas = useRef<HTMLCanvasElement>(null);
+  const handle = useRef<ThumbnailHandle | undefined>(undefined);
   const [failed, setFailed] = useState(false);
   useEffect(() => {
-    const handle = poolFor(effect).register(canvas.current!, effect.source, effectDefaults(effect), (ok) => setFailed(!ok));
-    return () => handle.dispose();
+    handle.current = poolFor(effect).register(canvas.current!, effect.source, effectDefaults(effect), (ok) => setFailed(!ok));
+    return () => handle.current!.dispose();
   }, [effect]);
+  // Interactive shaders see a hovered card as the pointer over its middle.
+  useEffect(() => handle.current?.setHovered(hovered), [hovered]);
   return (
     <>
       <canvas ref={canvas} className="absolute inset-0 h-full w-full" />
@@ -34,26 +37,136 @@ function ShaderThumb({ effect }: { effect: Extract<EffectDefinition, { kind: "sh
   );
 }
 
-function VectorThumb({ effect }: { effect: Extract<EffectDefinition, { kind: "vector" }> }) {
+const prefersReducedMotion = () => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/**
+ * A pointer drawn over an interactive thumbnail while it plays its own demo:
+ * it glides in to hover, presses down to press, and pings to click.
+ */
+function DemoCursor({ cursor, ring }: { cursor: React.RefObject<HTMLDivElement | null>; ring: React.RefObject<HTMLSpanElement | null> }) {
+  return (
+    <div
+      ref={cursor}
+      aria-hidden
+      className="pointer-events-none absolute left-1/2 top-1/2 opacity-0 transition-[opacity,transform] duration-300 ease-out"
+      style={{ transform: "translate(28px, 28px)" }}
+    >
+      <span ref={ring} className="absolute -left-3 -top-3 h-6 w-6 rounded-full border-2 border-violet-500 opacity-0" />
+      <svg width="18" height="22" viewBox="0 0 18 22" className="drop-shadow">
+        <path d="M1 1 L1 17 L5 13 L8 20 L11 19 L8 12 L14 12 Z" fill="#fff" stroke="#111827" strokeWidth="1.5" strokeLinejoin="round" />
+      </svg>
+    </div>
+  );
+}
+
+function VectorThumb({ effect, hovered }: { effect: Extract<EffectDefinition, { kind: "vector" }>; hovered: boolean }) {
   const host = useRef<HTMLDivElement>(null);
+  const cursor = useRef<HTMLDivElement>(null);
+  const ring = useRef<HTMLSpanElement>(null);
+  const player = useRef<SvgPlayer | undefined>(undefined);
+  const hoveredRef = useRef(hovered);
+  /** When the demo starts over (after a real hover, say). */
+  const restartAt = useRef(0);
+  const trigger = effect.trigger;
   useEffect(() => {
-    const player = new SvgPlayer(host.current!, renderVectorEffect(effect, effectDefaults(effect)), { hold: effect.hold });
-    return () => player.dispose();
-  }, [effect]);
-  return <div ref={host} className={effect.category === "overlay" ? "absolute inset-0" : "absolute inset-[12%]"} />;
+    const motion = renderVectorEffect(effect, effectDefaults(effect));
+    // Clicking a card opens it, so the player listens to nothing: the card's hover and the demo below drive it.
+    const p = new SvgPlayer(host.current!, motion, { hold: effect.hold, trigger, triggerTarget: document.createElement("div") });
+    player.current = p;
+    if (!trigger || prefersReducedMotion()) return () => p.dispose();
+
+    // While nobody hovers the card, it acts out its own interaction, the way interactive shaders play an idle demo:
+    // the cursor glides in, hovers / holds / clicks, waits for the picture to play out, then lets go and leaves.
+    const showCursor = (state: "out" | "in" | "down") => {
+      const el = cursor.current;
+      if (!el) return;
+      el.style.opacity = state === "out" ? "0" : "1";
+      el.style.transform = state === "out" ? "translate(28px, 28px)" : state === "down" ? "translate(0, 0) scale(0.85)" : "translate(0, 0)";
+    };
+    const ping = () => ring.current?.animate([{ transform: "scale(0.3)", opacity: 0.9 }, { transform: "scale(1.6)", opacity: 0 }], { duration: 450, easing: "ease-out" });
+    let phase = 0;
+    let waitUntil = performance.now() + 600;
+    const timer = setInterval(() => {
+      if (hoveredRef.current) return;
+      const now = performance.now();
+      if (restartAt.current) {
+        if (now < restartAt.current) return;
+        restartAt.current = 0;
+        phase = 0;
+      }
+      if (now < waitUntil || p.isPlaying) return;
+      if (trigger === "click") {
+        // In, click, let it play out, pause; every other round the cursor steps away.
+        if (phase === 0) showCursor("in");
+        else {
+          showCursor("down");
+          setTimeout(() => showCursor("in"), 120);
+          ping();
+          p.advance();
+        }
+        phase = 1;
+        waitUntil = now + 900;
+        return;
+      }
+      // Hover and press: in, act, (play to the end), hold, let go, (play back), out, rest.
+      switch (phase) {
+        case 0:
+          showCursor("in");
+          waitUntil = now + 350;
+          break;
+        case 1:
+          if (trigger === "press") showCursor("down");
+          p.setActive(true);
+          waitUntil = now + 900;
+          break;
+        case 2:
+          showCursor(trigger === "press" ? "in" : "out");
+          p.setActive(false);
+          waitUntil = now + 300;
+          break;
+        case 3:
+          showCursor("out");
+          waitUntil = now + 900;
+          break;
+      }
+      phase = (phase + 1) % 4;
+    }, 100);
+    return () => {
+      clearInterval(timer);
+      p.dispose();
+    };
+  }, [effect, trigger]);
+  useEffect(() => {
+    hoveredRef.current = hovered;
+    // A real hover takes over from the demo: the demo cursor steps aside for the real one.
+    if (hovered && cursor.current) cursor.current.style.opacity = "0";
+    else restartAt.current = performance.now() + 1200;
+    if (trigger === "hover" || trigger === "press") player.current?.setActive(hovered);
+  }, [trigger, hovered]);
+  return (
+    <>
+      <div ref={host} className={effect.category === "overlay" ? "absolute inset-0" : "absolute inset-[12%]"} />
+      {trigger && <DemoCursor cursor={cursor} ring={ring} />}
+    </>
+  );
 }
 
 function EffectCard({ effect, onOpen }: { effect: EffectDefinition; onOpen: () => void }) {
+  const [hovered, setHovered] = useState(false);
+  const trigger = effect.kind === "vector" ? effect.trigger : effect.category === "interaction" ? "pointer" : undefined;
   return (
     <button
       onClick={onOpen}
+      onPointerEnter={() => setHovered(true)}
+      onPointerLeave={() => setHovered(false)}
       className="group text-left rounded-xl border border-slate-800 bg-slate-900 overflow-hidden hover:border-violet-500/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet-500 transition"
     >
       <div className={`relative aspect-video ${effect.kind === "vector" && effect.category !== "overlay" ? "bg-slate-100" : "bg-black"}`}>
         {effect.category === "overlay" && <img src={SAMPLE_IMAGES.city} alt="" className="absolute inset-0 h-full w-full object-cover" />}
-        {effect.kind === "shader" ? <ShaderThumb effect={effect} /> : <VectorThumb effect={effect} />}
+        {effect.kind === "shader" ? <ShaderThumb effect={effect} hovered={hovered} /> : <VectorThumb effect={effect} hovered={hovered} />}
         <span className="absolute top-2 left-2 rounded bg-black/60 px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-slate-200">
           {effect.kind}
+          {trigger && ` · ${trigger}`}
         </span>
       </div>
       <div className="p-3">

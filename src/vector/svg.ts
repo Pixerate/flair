@@ -331,7 +331,19 @@ export interface SvgPlayerOptions extends SvgViewOptions {
   playOnEnter?: boolean;
   /** Hide the view (`visibility: hidden`) whenever playback is paused or reset (default false). */
   hideWhenPaused?: boolean;
+  /**
+   * Plays in answer to the pointer instead of on its own (see {@link SvgTrigger}):
+   * `"hover"` and `"press"` play to the end while hovered or held and back to
+   * the start after; `"click"` plays the next step on each click, starting
+   * over after the last. `autoplay`, `loop` and `steps` are ignored.
+   */
+  trigger?: SvgTrigger;
+  /** The element whose pointer events trigger it (default the container). */
+  triggerTarget?: HTMLElement;
 }
+
+/** What makes a triggered {@link SvgPlayer} play. */
+export type SvgTrigger = "hover" | "press" | "click";
 
 /**
  * Plays an {@link SvgMotion} inside `container`: loops by default, and can be
@@ -340,9 +352,16 @@ export interface SvgPlayerOptions extends SvgViewOptions {
 export class SvgPlayer {
   readonly view: SvgView;
   private readonly clock: Clock;
-  private readonly steps: readonly number[];
+  private steps: readonly number[];
   private readonly loop: boolean;
-  private readonly length: number;
+  private length: number;
+  private readonly motion: SvgMotion;
+  private readonly trigger?: SvgTrigger;
+  private readonly triggerTarget?: HTMLElement;
+  /** With a hover or press trigger: 1 playing to the end, -1 back to the start. */
+  private direction = 1;
+  /** With a click trigger: when each click came, in ms of playback. */
+  private clicks: number[] = [];
   private readonly hideWhenPaused: boolean;
   private speed: number;
   private time = 0;
@@ -359,8 +378,10 @@ export class SvgPlayer {
     options: SvgPlayerOptions = {},
   ) {
     this.clock = options.clock ?? realClock;
-    this.steps = options.steps ?? [];
-    this.loop = options.loop ?? true;
+    this.motion = motion;
+    this.trigger = options.trigger;
+    this.steps = this.trigger ? [] : (options.steps ?? []);
+    this.loop = this.trigger ? false : (options.loop ?? true);
     this.speed = options.speed ?? 1;
     this.hideWhenPaused = Boolean(options.hideWhenPaused);
     this.length = options.duration ?? svgDuration(motion, this.steps) + (options.hold ?? 600);
@@ -392,6 +413,15 @@ export class SvgPlayer {
         }
       });
       this.intersectionObserver.observe(this.view.element);
+    }
+
+    if (this.trigger) {
+      // A click-triggered picture runs until its latest step is over, however many clicks.
+      // Hovers and presses run to the last change and back, with no rest to wait through.
+      this.length = this.trigger === "click" ? Infinity : (options.duration ?? svgDuration(motion));
+      this.triggerTarget = options.triggerTarget ?? container;
+      this.listen(true);
+      return;
     }
 
     const shouldAutoplay = (options.autoplay ?? true) && !options.playOnEnter;
@@ -449,11 +479,58 @@ export class SvgPlayer {
     this.speed = speed;
   }
 
+  /**
+   * Plays to the end (`true`) or back to the start (`false`) from wherever it
+   * is: what a hover or press trigger does, for hosts that drive it themselves
+   * (a hovered card, a focused button).
+   */
+  setActive(active: boolean): void {
+    this.direction = active ? 1 : -1;
+    this.play();
+  }
+
+  /**
+   * Plays the picture's next step (what a click trigger does): steps 1, 2, …
+   * in turn, then step 1 again, so a picture whose last step leads back to
+   * how it started toggles; one with no steps plays again from the start.
+   */
+  advance(): void {
+    const last = Math.max(0, ...(this.motion.animate ?? []).map((a) => a.step ?? 0));
+    if (last === 0) {
+      this.clicks = [];
+      this.time = 0;
+    } else {
+      this.clicks.push(this.time);
+      // Only the clicks of the current round count, so each round starts from how the last ended.
+      this.steps = this.clicks.slice(Math.floor((this.clicks.length - 1) / last) * last);
+    }
+    this.view.draw(this.time, this.steps);
+    this.play();
+  }
+
   dispose(): void {
     this.disposed = true;
     this.playing = false;
+    if (this.trigger) this.listen(false);
     this.intersectionObserver?.disconnect();
     this.view.element.remove();
+  }
+
+  private onEnter = () => this.setActive(true);
+  private onLeave = () => this.setActive(false);
+  private onClick = () => this.advance();
+
+  private listen(on: boolean) {
+    const target = this.triggerTarget!;
+    const method = on ? "addEventListener" : "removeEventListener";
+    if (this.trigger === "hover") {
+      target[method]("pointerenter", this.onEnter);
+      target[method]("pointerleave", this.onLeave);
+    } else if (this.trigger === "press") {
+      target[method]("pointerdown", this.onEnter);
+      window[method]("pointerup", this.onLeave);
+      window[method]("pointercancel", this.onLeave);
+    } else target[method]("click", this.onClick);
   }
 
   private async run(): Promise<void> {
@@ -461,8 +538,23 @@ export class SvgPlayer {
       await this.clock.frame();
       if (!this.playing || this.disposed) return;
       const now = this.clock.now();
-      const next = this.time + (now - this.last) * this.speed;
+      const dt = (now - this.last) * this.speed;
       this.last = now;
+      if (this.trigger === "click") {
+        // Rest once the latest step is over, until the next click.
+        const end = svgDuration(this.motion, this.steps);
+        this.time = Math.min(this.time + dt, Math.max(end, this.time));
+        this.view.draw(this.time, this.steps);
+        if (this.time >= end) this.playing = false;
+        continue;
+      }
+      if (this.trigger) {
+        const next = Math.min(Math.max(this.time + dt * this.direction, 0), this.length);
+        this.seek(next);
+        if (next === 0 || next === this.length) this.playing = false;
+        continue;
+      }
+      const next = this.time + dt;
       if (!this.loop && next >= this.length) {
         this.seek(this.length);
         this.playing = false;

@@ -114,7 +114,7 @@ Start with \`effect.describe\` to see what is being edited. To start from someth
 
 Shader effects are GLSL ES 3.00 fragment shaders written Shadertoy-style:
 - Define \`void mainImage(out vec4 fragColor, in vec2 fragCoord)\`; the output is opaque unless the host renders with \`alpha: true\` (overlays), when \`fragColor.a\` is coverage.
-- Built-in uniforms (do not declare them): ${BUILTIN_UNIFORMS.map((u) => `\`${u.type} ${u.name}\` (${u.doc})`).join("; ")}.
+- Built-in uniforms (do not declare them): ${BUILTIN_UNIFORMS.map((u) => `\`${u.type} ${u.name}${"size" in u ? `[${u.size}]` : ""}\` (${u.doc})`).join("; ")}.
 - Declare controls as uniforms with an annotation on the same line, e.g.
   uniform float uSpeed;  // @control min=0 max=4 default=1 label="Speed"
   uniform vec3 uTint;    // @control color default=#77C16A label="Tint"

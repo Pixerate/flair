@@ -251,6 +251,8 @@ export class ThumbnailPool {
         delta: this.interval / 1000,
         frame: Math.floor(time * this.fps),
         mouse: [0, 0, 0, 0],
+        // A hovered thumbnail is pointed at in its middle, for effects that answer hovers.
+        pointer: [w / 2, h / 2, entry.hovered ? 1 : 0, 0],
       },
       this.textures ?? undefined,
     );

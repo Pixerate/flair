@@ -19,13 +19,14 @@ Flair gives products a library of good-looking, configurable visual effects (her
 
 ### Core Capabilities
 
-- 🎨 **Effect catalog (`@pixerate/flair/catalog`)**: 98 effects, each with controls and presets. There are 68 WebGL2 shaders (gradients, organic textures, patterns, light, space, retro, image treatments, transparent overlays, text fills, transitions) and 30 animated SVG effects (loaders, status icons, animated titles, charts, counters, node graphs). [Browse them live](https://pixerate.github.io/flair/).
+- 🎨 **Effect catalog (`@pixerate/flair/catalog`)**: 186 effects, each with controls and presets. There are 126 WebGL2 shaders (gradients, organic textures, patterns, light, space, retro and pixel art, image treatments, transparent overlays, text fills, image morphs, pointer interactions, pyrotechnics, time warps, melting, electricity, transitions) and 60 animated SVG effects (loaders, status icons, animated titles, shape morphs, UI micro-interactions, pixel sprites, charts, counters, node graphs). [Browse them live](https://pixerate.github.io/flair/).
 - ⚡ **Shader engine**:
   - Shadertoy-style GLSL ES 3.00 fragment shaders, with controls declared in the source (`// @control`), including image inputs.
   - Compile errors come back with line numbers that match the source.
+  - Pointer input beyond Shadertoy's `iMouse`: `iPointer` (position while over the canvas, eased hover amount, seconds held or since release) and `iClicks[8]` (the latest clicks' positions and times), so effects answer hovers, presses and taps. `ShaderRenderer` and standalone pages feed them; `ShaderFrames` takes scripted `pointer` and `clicks` for recordings.
   - Live previews (`ShaderRenderer`, with optional `{ alpha: true }` for transparent overlays) and many animated or hover-activated thumbnails on one context (`ThumbnailPool`).
   - Frames at exact times (`ShaderFrames`), looping GIFs, and standalone HTML pages.
-- ✒️ **Vector motion (`@pixerate/flair/vector`)**: animated SVG described as data. Catalog vector effects declare their controls in the picture (`{{name: type …}}`), text included. It covers attribute tweens, draw-on strokes, motion along paths, counters (`animateCount` / `formatCount` for DOM elements too), text written letter by letter (`write`, with `scramble` and `caret`) and view zooms. Every frame is a pure function of time (`svgFrame`), and `SvgPlayer` plays it (with `scrollTrigger`, `hideWhenPaused`, and `reset()`).
+- ✒️ **Vector motion (`@pixerate/flair/vector`)**: animated SVG described as data. Catalog vector effects declare their controls in the picture (`{{name: type …}}`), text included. It covers attribute tweens, draw-on strokes, motion along paths, counters (`animateCount` / `formatCount` for DOM elements too), text written letter by letter (`write`, with `scramble` and `caret`), shape morphs between any paths (`morphPaths`, `morphSequence`) and view zooms. Every frame is a pure function of time (`svgFrame`), and `SvgPlayer` plays it (with `scrollTrigger`, `hideWhenPaused`, `reset()`, and `trigger: "hover" | "press" | "click"` to play in answer to the pointer).
 - 🎛️ **Effect editor (`@pixerate/flair/editor`)**:
   - A headless editor for an effect's source, values, keyframes, presets and timeline.
   - Built on [`@pixerate/editor`](https://github.com/Pixerate/editor)'s undo history and command registry, with no UI framework assumed.
@@ -42,7 +43,7 @@ Flair gives products a library of good-looking, configurable visual effects (her
 | :--- | :--- | :--- |
 | `@pixerate/flair` | Shader engine, vector motion, time and easing, colour, blending, transitions, scenes, interchange exporters | None (browser-safe) |
 | `@pixerate/flair/catalog` | `EFFECTS`, `getEffect`, `findEffects`, `effectDefaults`, `renderVectorEffect`, `vectorControls`, GLSL helpers, sample images, `textImage` | None |
-| `@pixerate/flair/vector` | `SvgMotion`, `svgFrame`, `svgView`, `SvgPlayer`, `animateCount`, `formatCount`, `svgMotionIssues` | None |
+| `@pixerate/flair/vector` | `SvgMotion`, `svgFrame`, `svgView`, `SvgPlayer`, `animateCount`, `formatCount`, `morphPaths`, `morphSequence`, `svgMotionIssues` | None |
 | `@pixerate/flair/editor` | `EffectEditor`, effect documents, keyframe tracks, renderer bindings, parameter-panel binding, agent tools and instructions | `@pixerate/editor` ≥ 0.29 (optional peer; only its dependency-free `/history`, `/commands`, `/tools`, `/animation` and `/parameters` subpaths) |
 | `@pixerate/flair/node` | `exportMotionGraphic`: renders a shader to GIF/MP4 through headless Chrome and ffmpeg | Node.js |
 
@@ -55,7 +56,7 @@ The `flair` CLI inspects shaders, writes standalone pages and directs scenes (se
 ```mermaid
 graph TD
   subgraph Effects["Effects (no dependencies)"]
-    Catalog["catalog: 98 effects + presets"]
+    Catalog["catalog: 186 effects + presets"]
     Shader["shader engine: controls, compile, render, GIF, HTML"]
     Vector["vector motion: SvgMotion, SvgPlayer"]
     Time["time: clocks, easing, keyframes, noise"]
@@ -131,9 +132,13 @@ animateCount({
 
 Find effects with `findEffects({ text: "glow", category: "light", kind: "shader" })`. Each effect has an `id`, `name`, `description`, `category`, `tags` and optional `presets`. Image effects default to built-in sample pictures, so they look right before you set `uImage` to your own URL.
 
-Image and transition effects take transparent pictures too, such as SVG icons (Lucide and similar sets draw black `currentColor` strokes on a clear background). They lay the picture over a backdrop: `uBackdrop` (white by default) shows through its clear parts. Set `uBackdropAlpha` to 0 to keep the picture's alpha instead, and render with `{ alpha: true }` to lay the result over the page. `SAMPLE_IMAGES.icon` is a Lucide-style sample icon. SVGs are rasterised at 2048 px on the long edge, so icons stay sharp.
+Effects that show a picture (image, transition, morph, time-warp and the like) take transparent pictures too, such as SVG icons (Lucide and similar sets draw black `currentColor` strokes on a clear background). They lay the picture over a backdrop: `uBackdrop` (white by default) shows through its clear parts. Set `uBackdropAlpha` to 0 to keep the picture's alpha instead, and render with `{ alpha: true }` to lay the result over the page. `SAMPLE_IMAGES.icon` is a Lucide-style sample icon. SVGs are rasterised at 2048 px on the long edge, so icons stay sharp.
 
-Overlay shaders (`category: "overlay"`) have `transparent: true`: they write coverage to `fragColor.a` and draw nothing elsewhere, so render them with `new ShaderRenderer(host, { alpha: true })` (or `new ThumbnailPool({ alpha: true })`) and lay the canvas over a picture, video or page. `shader-text` fills letters from a text image: set its `uText` control to `textImage("Your title", { weight: 900 })`, a transparent SVG `data:` URL of any Unicode text.
+Overlay shaders (`category: "overlay"`) have `transparent: true`: they write coverage to `fragColor.a` and draw nothing elsewhere, so render them with `new ShaderRenderer(host, { alpha: true })` (or `new ThumbnailPool({ alpha: true })`) and lay the canvas over a picture, video or page. Interaction effects answer the pointer. Interactive shaders read `iPointer` and `iClicks`, so they work in any `ShaderRenderer` with no wiring, and play an idle demo when nobody is pointing (turn off "Demo when idle" to stop it). Vector micro-interactions carry a `trigger`: pass it to the player, `new SvgPlayer(host, renderVectorEffect(effect), { trigger: effect.trigger })`. A hover or press trigger plays to the end while hovered or held and back again after; a click trigger plays the next step on each click, so toggles turn on and off. Hosts can drive them too, with `player.setActive(on)` and `player.advance()` (from a keyboard handler, say).
+
+To morph between any two SVG shapes, `morphPaths(from, to)` (from `@pixerate/flair/vector`) returns two paths with one structure, so `attrs: { d: [a, b] }` blends them point by point: curves and arcs are read, pieces are paired by position and size, and a piece with no partner grows from or shrinks to a point (draw them with `fill-rule="evenodd"`). `morphSequence` does the same for three or more shapes. `feature-morph` morphs two photos from five matching points, and `silhouette-morph` morphs any two silhouettes or logos (or words, through `textImage`).
+
+`shader-text` fills letters from a text image: set its `uText` control to `textImage("Your title", { weight: 900 })`, a transparent SVG `data:` URL of any Unicode text.
 
 A vector effect declares its controls in its picture, the way a shader declares its uniforms: the first `{{name: type …}}` declares a control (`float`, `int`, `bool`, `color` or `text`, with `@control`'s attributes; quote values with spaces in single quotes), and every `{{name}}` is filled with its value. Declarations can sit in an XML comment, which is dropped when the picture is filled in, and text is escaped, so any words are safe:
 
@@ -269,11 +274,17 @@ The exporters carry the camera too:
 | organic | liquid marble, smoke, lava lamp, plasma, caustics, flames, blob morph |
 | pattern | dot wave, Truchet flow, hex pulse, living cells, moiré rings, kaleidoscope, stripes, neon circuit |
 | light / space | bokeh, god rays, sparkles, neon ripple, light ribbons, warp starfield, nebula, event horizon |
-| retro | synthwave, digital rain, dithered gradient, TV static |
+| retro | synthwave, digital rain, dithered gradient, TV static, 8-bit, Game Boy screen, pixel fire, pixel landscape, OutRun road, palette cycle, raster bars, tape loading, pixel water, pixel text, coin spin, space invader, heart health bar, chomp loader |
 | image | ripple, glitch, duotone, halftone, pixel reveal, Ken Burns, ASCII art, shatter, melt, risograph, thermal, edge glow, tilt-shift, slit-scan, mosaic flip, chromatic lens, oil paint, CRT screen, film look |
 | overlay | rain on glass, snowfall, lens flare, vignette & grain, scanline sweep, spotlight, embers, shine sweep, frost creep, viewfinder |
 | text | shader text, drip text, typewriter, scramble text, kinetic stagger, neon sign, stroke draw text, split reveal, highlighter, word cycle, liquid fill, glitch text, extruded text |
-| transition | wipe, iris, block dissolve, grid wipe, glass wipe, twister, light leak, cross zoom |
+| morph | feature morph, silhouette morph, shape morph, icon toggle, morph sequence, gooey morph, particle morph, digit morph |
+| interaction | click ripple, click burst, cursor glow, hover liquid, X-ray reveal, magnifier, holo card, press charge, hover swap, like button, toggle switch, checkbox, menu toggle, bookmark, copy button, send button, download button, link hover, button hover fill, tooltip pop, press button |
+| pyrotechnics | fireworks, sparkler, explosion, spark fountain, roman candle, fuse burn, smoke bomb, light show, firework burst |
+| timewarp | time echo, chrono split, time slice, VHS rewind, bullet time, time tunnel, speed ramp, stutter freeze, time-lapse clock |
+| melt | drip melt, heat haze, wax melt, melting text, liquify, melting clock, lava flow, ice cube melt, candle |
+| electric | lightning, Tesla arc, plasma ball, electric border, electric text, Jacob's ladder, short circuit, power surge, electric field, zap icon, power button, battery charge |
+| transition | liquid morph, displacement, luma fade, particle swap, ink bleed, pixel dissolve, wipe, iris, block dissolve, grid wipe, glass wipe, twister, light leak, cross zoom |
 | loader / icon / data | spinner, bouncing dots, pulse ping, equalizer, progress ring, bar chart, line chart, stat counter, route, timeline track, success check, error cross, heartbeat, signature, confetti, flow network |
 
 Every shader is self-contained and compiles on WebGL2. Open [`#check`](https://pixerate.github.io/flair/#check) on the demo to compile the catalog on your own GPU.

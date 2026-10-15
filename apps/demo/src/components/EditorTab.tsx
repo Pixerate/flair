@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { ShaderRenderer, standaloneHtml } from "@pixerate/flair";
+import { ShaderRenderer, standaloneHtml, SvgPlayer, type SvgTrigger } from "@pixerate/flair";
 import { EFFECTS, getEffect, SAMPLE_IMAGES } from "@pixerate/flair/catalog";
-import { bindShaderRenderer, bindSvgView, valuesAt, type EffectEditor } from "@pixerate/flair/editor";
+import { bindShaderRenderer, bindSvgView, motionAt, valuesAt, type EffectEditor } from "@pixerate/flair/editor";
 import { useEditorState } from "../hooks";
 import { ControlsPanel } from "./ControlsPanel";
 import { Timeline } from "./Timeline";
@@ -14,10 +14,47 @@ function download(name: string, text: string, type: string) {
 }
 
 /** The preview: a shader renderer or an SVG view, driven by the editor. */
-function Preview({ editor, kind, overlay, transparent }: { editor: EffectEditor; kind: "shader" | "vector"; overlay: boolean; transparent: boolean }) {
+/** A vector effect played by the pointer (hover, press or click), rebuilt whenever the edit changes it. */
+function bindTriggeredSvg(editor: EffectEditor, container: HTMLElement, trigger: SvgTrigger): () => void {
+  let player: SvgPlayer | undefined;
+  let key: string | undefined;
+  const sync = () => {
+    const state = editor.getState();
+    const motion = motionAt(state.document, state.time);
+    const next = JSON.stringify(motion ?? null);
+    if (next === key) return;
+    key = next;
+    player?.dispose();
+    player = motion ? new SvgPlayer(container, motion, { trigger, triggerTarget: container.parentElement ?? container }) : undefined;
+  };
+  sync();
+  const unsubscribe = editor.subscribe(sync);
+  return () => {
+    unsubscribe();
+    player?.dispose();
+  };
+}
+
+const TRIGGER_HINTS: Record<SvgTrigger, string> = { hover: "Hover to play", press: "Press and hold", click: "Click to play" };
+
+function Preview({
+  editor,
+  kind,
+  overlay,
+  transparent,
+  trigger,
+  hint,
+}: {
+  editor: EffectEditor;
+  kind: "shader" | "vector";
+  overlay: boolean;
+  transparent: boolean;
+  trigger?: SvgTrigger;
+  hint?: string;
+}) {
   const host = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (kind === "vector") return bindSvgView(editor, host.current!);
+    if (kind === "vector") return trigger ? bindTriggeredSvg(editor, host.current!, trigger) : bindSvgView(editor, host.current!);
     const renderer = new ShaderRenderer(host.current!, { className: "absolute inset-0 h-full w-full", alpha: transparent });
     const unbind = bindShaderRenderer(editor, renderer);
     // The agent tab's `view_effect` tool captures this preview.
@@ -28,11 +65,16 @@ function Preview({ editor, kind, overlay, transparent }: { editor: EffectEditor;
       unbind();
       renderer.dispose();
     };
-  }, [editor, kind, transparent]);
+  }, [editor, kind, transparent, trigger]);
   return (
     <div className={`relative aspect-video overflow-hidden rounded-xl border border-slate-800 ${overlay ? "bg-black" : kind === "vector" ? "bg-slate-100 p-[8%]" : "bg-black"}`}>
       {overlay && <img src={SAMPLE_IMAGES.city} alt="" className="absolute inset-0 h-full w-full object-cover" />}
       <div ref={host} className={kind === "vector" && !overlay ? "h-full w-full" : "absolute inset-0"} />
+      {(hint ?? (trigger && TRIGGER_HINTS[trigger])) && (
+        <span className="pointer-events-none absolute bottom-2 right-2 rounded bg-black/60 px-2 py-0.5 text-xs text-slate-200">
+          {hint ?? TRIGGER_HINTS[trigger!]}
+        </span>
+      )}
     </div>
   );
 }
@@ -93,6 +135,8 @@ export function EditorTab({ editor }: { editor: EffectEditor }) {
   // Overlays preview over a picture; overlay shaders draw on a transparent canvas.
   const overlay = based?.category === "overlay";
   const transparent = based?.kind === "shader" && Boolean(based.transparent);
+  const trigger = based?.kind === "vector" ? based.trigger : undefined;
+  const hint = based?.kind === "shader" && based.category === "interaction" ? "Hover, press or click" : undefined;
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -136,7 +180,7 @@ export function EditorTab({ editor }: { editor: EffectEditor }) {
           </div>
         </div>
 
-        <Preview key={kind} editor={editor} kind={kind} overlay={overlay} transparent={transparent} />
+        <Preview key={kind} editor={editor} kind={kind} overlay={overlay} transparent={transparent} trigger={trigger} hint={hint} />
         <Timeline editor={editor} state={state} />
 
         {state.issues.length > 0 && (

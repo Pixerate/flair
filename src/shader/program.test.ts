@@ -39,7 +39,8 @@ describe("wrapSource", () => {
   });
 
   it("declares every built-in uniform", () => {
-    for (const u of BUILTIN_UNIFORMS) expect(wrapped).toContain(`uniform ${u.type} ${u.name};`);
+    for (const u of BUILTIN_UNIFORMS)
+      expect(wrapped).toContain(`uniform ${u.type} ${u.name}${"size" in u ? `[${u.size}]` : ""};`);
   });
 
   it("resets line numbers just before the user's source", () => {
@@ -330,11 +331,12 @@ describe("drawFrame", () => {
   });
 
   it("skips uniforms the driver removed", () => {
-    const gl = new FakeGl({ missingUniforms: ["uGone", "iMouse"] });
+    const gl = new FakeGl({ missingUniforms: ["uGone", "iMouse", "iPointer", "iClicks"] });
     const source = shaderSource("uniform float uGone; // @control");
     drawFrame(asGl(gl), compiled(gl, source), parseControls(source), undefined, STATE);
     expect(gl.named("uniform1f").some((c) => c.args[0] === null)).toBe(false);
     expect(gl.named("uniform4f")).toHaveLength(0);
+    expect(gl.named("uniform4fv")).toHaveLength(0);
   });
 });
 

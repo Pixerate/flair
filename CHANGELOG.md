@@ -1,5 +1,38 @@
 # @pixerate/flair
 
+## 0.11.0
+
+### Minor Changes
+
+- ef5f69f: Catalog: 54 new effects in four new categories and the retro category.
+
+  - **pyrotechnics** (new): fireworks (also bursting at clicks), sparkler, explosion, spark fountain, roman candle, fuse burn and smoke bomb overlays, a light-show finale, and a vector firework burst.
+  - **timewarp** (new): time echo, chrono split, time slice, VHS rewind, bullet time, time tunnel, speed ramp and stutter freeze over an image, and a vector time-lapse clock.
+  - **melt** (new): drip melt, heat haze, wax melt, melting text, liquify, melting clock and lava flow, and vector ice cube melt and candle.
+  - **electric** (new): lightning (also striking at clicks), Tesla arc, plasma ball, electric border, electric text, Jacob's ladder, short circuit, power surge and electric field, and vector zap icon, power button (click toggle) and battery charge.
+  - **retro**: 8-bit palettes with dithering (Game Boy, PICO-8, NES, CGA, C64, 1-bit), Game Boy screen, pixel fire, pixel landscape, OutRun road, palette cycle, raster bars, tape loading and pixel water, a pixel dissolve transition, and vector pixel text, coin spin, space invader, heart health bar and chomp loader.
+
+## 0.10.0
+
+### Minor Changes
+
+- 7542ad5: Interaction: pointer uniforms, `SvgPlayer` triggers and 21 interaction effects.
+
+  - Shaders get two new built-ins: `iPointer` (xy while over the canvas, eased hover amount, seconds held or minus seconds since release) and `iClicks[8]` (the latest clicks: xy, `iTime` of the click, 1). `ShaderRenderer`, standalone pages and hovered `ThumbnailPool` thumbnails feed them; `ShaderFrames.render` takes `pointer` and `clicks` for scripted recordings. `PointerTracker`, `clicksUniform`, `MAX_CLICKS` and `HOVER_SECONDS` are exported.
+  - `SvgPlayer` takes `trigger: "hover" | "press" | "click"` (and `triggerTarget`): hover and press play forward while active and back after; click plays the next step on each click, wrapping round. `setActive(on)` and `advance()` let hosts drive it. Vector effects declare `trigger`.
+  - **interaction** (new category): click ripple, click burst, cursor glow, hover liquid, X-ray reveal, magnifier, holo card, press charge and hover swap shaders (each with an idle demo), and like button, toggle switch, checkbox, menu toggle, bookmark, copy, send and download buttons, link hover, button hover fill, tooltip pop and press button vector effects.
+
+## 0.9.0
+
+### Minor Changes
+
+- bf62436: Morphs: `morphPaths` / `morphSequence` and 13 new effects.
+
+  - `morphPaths(from, to)` and `morphSequence(paths)` in `/vector` turn any SVG paths (curves, arcs, relative commands, several pieces) into paths with one structure, so an `attrs` change on `d` blends them. Pieces pair by position and size; one without a partner grows from or shrinks to a point.
+  - **morph** (new category): feature morph (two photos, five matching points), silhouette morph (any silhouettes, logos or `textImage` words), and vector shape morph, icon toggle (play/pause, menu/close, plus/check, sun/moon, heart), morph sequence, gooey morph, particle morph and digit morph.
+  - **transition**: liquid morph, displacement, luma fade, particle swap and ink bleed.
+  - `SAMPLE_IMAGES` gains `portrait2`, `logo` and `heart`.
+
 ## 0.8.0
 
 ### Minor Changes

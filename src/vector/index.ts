@@ -4,11 +4,13 @@
  * - Describing motion: `SvgMotion`, `SvgAnimation` (attribute tweens, draw-on,
  *   along a path, counts, written text, view zooms), checked by `svgMotionIssues`.
  * - Frames as pure functions: `svgFrame`, `lerpAttr`, `lerpData`, `stepData`.
+ * - Shape morphing: `morphPaths`, `morphSequence` (any paths → paths that blend).
  * - Drawing: `parseSvg` (sanitised), `svgView`, `SvgPlayer`.
  *
  * @packageDocumentation
  */
 
+export { morphPaths, morphSequence, type MorphOptions } from "./morph.js";
 export {
   defaultDataKey,
   EASES,
@@ -40,6 +42,7 @@ export {
   svgView,
   type AnimateCountOptions,
   type SvgPlayerOptions,
+  type SvgTrigger,
   type SvgView,
   type SvgViewOptions,
 } from "./svg.js";

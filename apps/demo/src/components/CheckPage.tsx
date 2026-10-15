@@ -10,6 +10,8 @@ interface Result {
 
 /** Effects that show a picture over a backdrop (see `BACKDROP` in the catalog). */
 const PICTURE_EFFECTS = SHADER_EFFECTS.filter((e) => /uniform float uBackdropAlpha;/.test(e.source));
+/** These draw a whole opaque device around the picture, so they stay opaque with a clear backdrop. */
+const OPAQUE = new Set(["gameboy-screen"]);
 
 /**
  * Renders `effect` with the sample icon (black strokes on clear, like a Lucide
@@ -48,9 +50,11 @@ async function checkIcon(effect: ShaderEffect): Promise<Result> {
       high = Math.max(high, l);
       minAlpha = Math.min(minAlpha, opaque[i + 3]!);
     }
-    if (minAlpha < 255) errors.push(`over the backdrop, alpha drops to ${minAlpha}`);
+    // Transparent effects (a card on clear, say) are clear around what they draw whatever the backdrop.
+    if (minAlpha < 255 && !effect.transparent) errors.push(`over the backdrop, alpha drops to ${minAlpha}`);
     if (high - low < 48) errors.push(`over the backdrop, the icon does not show (brightness ${low.toFixed(0)}–${high.toFixed(0)})`);
 
+    if (OPAQUE.has(effect.id)) return { id: `${effect.id} (icon)`, ok: errors.length === 0, errors };
     const clear = await frame({ uBackdropAlpha: 0 });
     let maxAlpha = 0;
     let clearPixels = 0;

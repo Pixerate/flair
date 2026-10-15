@@ -35,6 +35,29 @@ const PORTRAIT = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360">
 <path d="M300 185 Q320 198 340 185" stroke="#7a3e2c" stroke-width="5" fill="none"/>
 </svg>`;
 
+// A second portrait, the face larger and right of centre, for morphing with PORTRAIT.
+// Features (viewBox units): eyes (396, 175) and (464, 175), mouth (430, 229), chin (430, 270), hairline (430, 80).
+const PORTRAIT_2 = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" width="640" height="360">
+<rect width="640" height="360" fill="#d3e4e6"/>
+<path d="M255 360 Q268 300 430 297 Q592 300 605 360Z" fill="#a4372f"/>
+<rect x="408" y="250" width="44" height="52" fill="#d9a07c"/>
+<circle cx="430" cy="175" r="95" fill="#e8b48f"/>
+<path d="M332 172 Q330 66 430 64 Q530 66 528 172 Q520 112 470 100 Q420 128 352 116 Q336 140 332 172Z" fill="#8a3b1e"/>
+<circle cx="396" cy="175" r="8" fill="#3a2418"/><circle cx="464" cy="175" r="8" fill="#3a2418"/>
+<path d="M424 186 Q430 206 436 186" stroke="#c48262" stroke-width="5" fill="none"/>
+<path d="M403 225 Q430 244 457 225" stroke="#9c4a35" stroke-width="7" fill="none" stroke-linecap="round"/>
+</svg>`;
+
+// Flat shapes on transparent, for silhouette morphs and masks.
+const LOGO = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+<path fill="#6366f1" fill-rule="evenodd" d="M256 56a200 200 0 1 1 0 400a200 200 0 1 1 0-400zm0 92a108 108 0 1 0 0 216a108 108 0 1 0 0-216z"/>
+<circle cx="256" cy="256" r="52" fill="#6366f1"/>
+</svg>`;
+
+const HEART = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+<path fill="#f43f5e" d="M256 452C120 352 40 272 40 172C40 102 95 58 160 58C205 58 238 84 256 118C274 84 307 58 352 58C417 58 472 102 472 172C472 272 392 352 256 452Z"/>
+</svg>`;
+
 /**
  * An icon drawn the way Lucide and similar sets draw them: 24 × 24, stroked
  * in `currentColor` (black in an image) on a transparent background.
@@ -46,6 +69,12 @@ export const SAMPLE_IMAGES = {
   landscape: svgDataUrl(LANDSCAPE),
   city: svgDataUrl(CITY),
   portrait: svgDataUrl(PORTRAIT),
+  /** Another face, larger and to the right: morph it with `portrait`. */
+  portrait2: svgDataUrl(PORTRAIT_2),
+  /** A ring-and-dot mark, indigo on transparent. */
+  logo: svgDataUrl(LOGO),
+  /** A heart, rose on transparent. */
+  heart: svgDataUrl(HEART),
   icon: svgDataUrl(ICON),
 } as const;
 

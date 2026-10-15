@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { checkControlValue, parseControls } from "../shader/controls.js";
-import { svgMotionIssues } from "../vector/motion.js";
+import { svgFrame, svgMotionIssues } from "../vector/motion.js";
+import { svgDuration } from "../vector/svg.js";
 import {
   EFFECT_CATEGORIES,
   EFFECTS,
@@ -160,19 +161,23 @@ describe("catalog", () => {
   // Effects that show a picture lay it over a backdrop, so transparent images (Lucide icons:
   // black strokes on clear) are not black on black, and pass its alpha on for overlays.
   const PICTURE_EFFECTS = SHADER_EFFECTS.filter((e) => /\b(picture|pictureRGBA|flair_transition)\(/.test(e.source));
+  // These draw a whole opaque device around the picture, so they stay opaque.
+  const OPAQUE = new Set(["gameboy-screen"]);
 
   it.each(PICTURE_EFFECTS.map((e) => [e.id, e] as const))("%s lays its image over a backdrop and keeps its alpha", (_, effect) => {
     expect(effectDefaults(effect)).toMatchObject({ uBackdrop: [1, 1, 1], uBackdropAlpha: 1 });
     expect(effect.source).toContain("vec4 overBackdrop(vec4 s)");
     const main = effect.source.slice(effect.source.indexOf("void mainImage"));
+    if (OPAQUE.has(effect.id)) return;
     expect(main, "no opaque output: the picture's alpha goes to fragColor").not.toMatch(/fragColor\s*=\s*vec4\([^;]*,\s*1\.0\);/);
     expect(main).not.toMatch(/\btexture\(/);
   });
 
-  it("covers every image and transition effect, and samples a Lucide-style icon", () => {
-    const imageControls = SHADER_EFFECTS.filter((e) => /uniform sampler2D u(Image|From)\b/.test(e.source));
-    expect(PICTURE_EFFECTS.map((e) => e.id)).toEqual(imageControls.map((e) => e.id));
-    expect(PICTURE_EFFECTS.length).toBeGreaterThanOrEqual(27);
+  it("covers the image and transition effects, and samples a Lucide-style icon", () => {
+    expect(PICTURE_EFFECTS.length).toBeGreaterThanOrEqual(50);
+    for (const id of ["image-duotone", "transition-wipe", "feature-morph", "time-echo", "hover-swap"]) {
+      expect(PICTURE_EFFECTS.map((e) => e.id)).toContain(id);
+    }
     const icon = atob(SAMPLE_IMAGES.icon.split(",")[1]!);
     expect(icon).toContain('stroke="currentColor"');
     expect(icon).toContain('fill="none"');
@@ -220,5 +225,376 @@ describe("catalog", () => {
     expect(kinetic).toMatch(/id="l0"[^>]*>G</);
     expect(kinetic).toMatch(/id="l2"[^>]*>!</);
     expect(kinetic).toMatch(/id="l3"[^>]*><\/text>/);
+  });
+
+  it("gives the image morphs two pictures and a progress control", () => {
+    for (const id of ["feature-morph", "silhouette-morph", "transition-liquid-morph", "transition-displacement", "transition-luma", "transition-particle-swap", "transition-ink-bleed"]) {
+      const effect = getEffect(id)!;
+      expect(effect, id).toBeDefined();
+      const names = effectControls(effect).map((c) => c.name);
+      expect(names, id).toEqual(expect.arrayContaining(["uFrom", "uTo", "uAnimate", "uProgress"]));
+      expect(effect.kind === "shader" && effect.loop, id).toBe(4);
+    }
+    expect(effectDefaults(getEffect("feature-morph")!)).toMatchObject({ uFrom: SAMPLE_IMAGES.portrait, uTo: SAMPLE_IMAGES.portrait2, uFromA: [0.461, 0.583] });
+    expect(effectDefaults(getEffect("silhouette-morph")!, { preset: "Hello → World" }).uTo).toBe(textImage("WORLD"));
+    for (const key of ["portrait2", "logo", "heart"] as const) expect(SAMPLE_IMAGES[key]).toMatch(/^data:image\/svg\+xml;base64,/);
+  });
+});
+
+describe("morph effects", () => {
+  const NUMBER = /-?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?/gi;
+  const skeleton = (d: unknown) => String(d).replace(NUMBER, "#");
+  const render = (id: string, values: Record<string, unknown> = {}) => {
+    const effect = getEffect(id)!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    return renderVectorEffect(effect, values as never);
+  };
+  /** Every `d` change blends: both ends have one structure. */
+  const blends = (motion: ReturnType<typeof render>) => {
+    for (const a of motion.animate ?? []) if (a.attrs?.d) expect(skeleton(a.attrs.d[0])).toBe(skeleton(a.attrs.d[1]));
+  };
+
+  it.each(findEffects({ category: "morph", kind: "vector" }).map((e) => [e.id] as const))("%s morphs shapes of one structure", (id) => {
+    blends(render(id));
+  });
+
+  it("shape morph fits any paths to its picture and falls back on unreadable ones", () => {
+    const motion = render("shape-morph", { from: "M0 0 H1000 V500 H0 Z M200 100 H400 V400 H200 Z", to: "m5 5 l1 0 l0 1z" });
+    blends(motion);
+    const numbers = String(motion.animate![0]!.attrs!.d[0]).match(NUMBER)!.map(Number);
+    expect(Math.min(...numbers)).toBeGreaterThanOrEqual(11.9);
+    expect(Math.max(...numbers)).toBeLessThanOrEqual(88.1);
+    const broken = render("shape-morph", { from: "not a path", to: "M0 0 X" });
+    expect(svgMotionIssues(broken)).toEqual([]);
+    expect(broken.animate![0]!.attrs!.d).toEqual(render("shape-morph").animate![0]!.attrs!.d);
+  });
+
+  it("icon toggle morphs every pair", () => {
+    for (let pair = 0; pair <= 4; pair++) {
+      const motion = render("icon-toggle", { pair });
+      expect(svgMotionIssues(motion)).toEqual([]);
+      blends(motion);
+    }
+  });
+
+  it("particle morph keeps one dot per element whatever the shapes", () => {
+    for (const to of ["M0 0 H10 V10 H0 Z M20 0 H30 V10 H20 Z M40 0 H50 V10 H40 Z", "M0 0 L100 0", "nonsense"]) {
+      const motion = render("particle-morph", { to });
+      expect(svgMotionIssues(motion)).toEqual([]);
+      expect(motion.svg.match(/<circle id="p\d+"/g)).toHaveLength(48);
+      expect(JSON.stringify(motion)).not.toMatch(/\{\{|NaN|undefined/);
+    }
+  });
+
+  it("digit morph counts through at most a few numbers, up or down", () => {
+    for (const [from, to] of [[12, 20], [9999, 0], [98, 103], [5, 5], [0, 7]]) {
+      const motion = render("digit-morph", { from, to });
+      expect(svgMotionIssues(motion)).toEqual([]);
+      expect(JSON.stringify(motion)).not.toMatch(/\{\{|NaN|undefined/);
+      blends(motion);
+    }
+    // 98 → 103 shows a hundreds digit only from 100 on.
+    const slot = render("digit-morph", { from: 98, to: 103 }).animate!.filter((a) => a.id === "s1");
+    expect(slot.map((a) => a.attrs!.opacity)).toEqual([[0, 0], [0, 1], [1, 1], [1, 1], [1, 1], [1, 1], [1, 1], [1, 1], [1, 0]]);
+  });
+});
+
+describe("interaction effects", () => {
+  const interactive = findEffects({ category: "interaction", kind: "shader" });
+
+  it("include the pointer-driven shaders", () => {
+    const ids = interactive.map((e) => e.id);
+    for (const id of ["click-ripple", "click-burst", "cursor-glow", "hover-liquid", "hover-reveal", "magnifier", "holo-card", "press-charge", "hover-swap"])
+      expect(ids).toContain(id);
+  });
+
+  it.each(interactive.map((e) => [e.id, e] as const))("%s reads the pointer built-ins and can turn its idle demo off", (_, effect) => {
+    if (effect.kind !== "shader") return;
+    expect(effect.tags).toContain("interactive");
+    expect(effect.tags.some((t) => ["hover", "click", "press"].includes(t))).toBe(true);
+    expect(effect.source).toMatch(/\biPointer\b|\biClicks\b/);
+    expect(effect.source).not.toMatch(/uniform\s+vec4\s+(iPointer|iClicks)/);
+    expect(effectControls(effect).find((c) => c.name === "uDemo")).toMatchObject({ type: "bool", default: true });
+  });
+
+  it("marks the overlays transparent", () => {
+    for (const id of ["click-ripple", "click-burst", "cursor-glow", "holo-card", "press-charge"]) {
+      const effect = getEffect(id)!;
+      expect(effect.kind === "shader" && effect.transparent).toBe(true);
+    }
+  });
+});
+
+describe("interaction vector effects", () => {
+  const effects = findEffects({ category: "interaction", kind: "vector" });
+  const render = (effect: (typeof effects)[number], values: Record<string, unknown> = {}) => {
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    return renderVectorEffect(effect, values as never);
+  };
+  const lastStep = (motion: ReturnType<typeof render>) => Math.max(0, ...(motion.animate ?? []).map((a) => a.step ?? 0));
+
+  it("are all triggered and tagged for it", () => {
+    expect(effects.length).toBeGreaterThanOrEqual(12);
+    for (const effect of effects) {
+      if (effect.kind !== "vector") continue;
+      expect(effect.trigger, effect.id).toBeDefined();
+      expect(effect.tags, effect.id).toEqual(expect.arrayContaining(["interactive", "ui", effect.trigger!]));
+    }
+  });
+
+  it.each(effects.filter((e) => e.kind === "vector" && e.trigger === "click").map((e) => [e.id, e] as const))(
+    "click effect %s changes on its steps and ends a round as it started",
+    (_, effect) => {
+      const motion = render(effect);
+      const steps = lastStep(motion);
+      expect(steps === 1 || steps === 2, `${effect.id} has ${steps} steps`).toBe(true);
+      // Step 0 never plays: everything waits for a click.
+      expect(motion.animate!.every((a) => (a.step ?? 0) >= 1)).toBe(true);
+      const at = (clicks: number[], ms: number) => JSON.stringify([...svgFrame(motion.animate!, clicks, ms)].sort());
+      const start = at([], 0);
+      // A toggle is on after step 1; every round ends where it began.
+      if (steps === 2) expect(at([0], 5000)).not.toBe(start);
+      else expect(at([0], 400)).not.toBe(start);
+      expect(at(steps === 2 ? [0, 5000] : [0], 10000)).toBe(start);
+    },
+  );
+
+  it.each(effects.filter((e) => e.kind === "vector" && e.trigger !== "click").map((e) => [e.id, e] as const))(
+    "hover or press effect %s plays from rest to a different end",
+    (_, effect) => {
+      const motion = render(effect);
+      expect(lastStep(motion)).toBe(0);
+      const frame = (ms: number) => JSON.stringify([...svgFrame(motion.animate!, [], ms)].sort());
+      expect(frame(svgDuration(motion))).not.toBe(frame(0));
+    },
+  );
+
+  it.each(effects.flatMap((e) => effectControls(e).filter((c) => c.type === "text").map((c) => [e.id, c.name, e] as const)))(
+    "%s fits short, long and unusual %s",
+    (_, name, effect) => {
+      for (const word of ["A", "Supercalifragilistic & <co>", "Café 日本 🎉", ""]) {
+        const motion = render(effect, { [name]: word });
+        expect(svgMotionIssues(motion)).toEqual([]);
+        expect(JSON.stringify(motion)).not.toMatch(/\{\{|NaN|undefined/);
+      }
+    },
+  );
+
+  it("like button counts up from its start count and back", () => {
+    const like = render(getEffect("like-button")!, { count: 99 });
+    expect(like.animate!.filter((a) => a.count).map((a) => a.count)).toEqual([[99, 100], [100, 99]]);
+  });
+
+  it("menu toggle morphs bars and cross of one structure at any weight", () => {
+    const skeleton = (d: unknown) => String(d).replace(/-?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?/gi, "#");
+    for (const weight of [1, 2, 3.5]) {
+      const d = render(getEffect("menu-toggle")!, { weight }).animate!.find((a) => a.id === "glyph")!.attrs!.d!;
+      expect(skeleton(d[0])).toBe(skeleton(d[1]));
+      expect(d[0]).not.toBe(d[1]);
+    }
+  });
+});
+
+describe("timewarp effects", () => {
+  const timewarp = findEffects({ category: "timewarp" });
+
+  it("include the echoes, rewinds, freezes and the clock", () => {
+    const ids = timewarp.map((e) => e.id);
+    for (const id of ["time-echo", "chrono-split", "time-slice", "rewind", "bullet-time", "time-tunnel", "speed-ramp", "stutter-freeze", "time-lapse-clock"])
+      expect(ids).toContain(id);
+    for (const effect of timewarp) expect(effect.tags).toContain("time");
+  });
+
+  it("shaders take an image and draw opaque", () => {
+    for (const effect of timewarp) {
+      if (effect.kind !== "shader") continue;
+      expect(effect.transparent).toBeFalsy();
+      expect(effectControls(effect).find((c) => c.name === "uImage")).toMatchObject({ type: "sampler2D" });
+      expect(effect.source).not.toMatch(/uniform\s+vec4\s+(iPointer|iClicks)/);
+    }
+    const bullet = getEffect("bullet-time")!;
+    expect(bullet.kind === "shader" && bullet.source).toMatch(/\biClicks\[0\]/);
+  });
+
+  it("time-lapse clock turns its hands whole turns and ends the sky where it began", () => {
+    const effect = getEffect("time-lapse-clock")!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    const motion = renderVectorEffect(effect, { day: "#112233" } as never);
+    const turns = (id: string) => motion.animate!.filter((a) => a.id === id).map((a) => a.attrs!.transform);
+    expect(turns("minute")).toEqual([["rotate(0 100 100)", "rotate(4320 100 100)"]]);
+    expect(turns("hour")).toEqual([["rotate(0 100 100)", "rotate(360 100 100)"]]);
+    const sky = motion.animate!.filter((a) => a.id === "sky").map((a) => a.attrs!.fill);
+    expect(sky[0]![0]).toBe("#112233");
+    expect(sky.at(-1)![1]).toBe("#112233");
+    expect(motion.svg).toContain('fill="#112233"');
+  });
+});
+
+describe("pyrotechnics", () => {
+  const pyro = findEffects({ category: "pyrotechnics" });
+
+  it("has the fireworks, sparks, explosions and smoke", () => {
+    const ids = pyro.map((e) => e.id);
+    for (const id of ["fireworks", "sparkler", "explosion", "spark-fountain", "roman-candle", "fuse-burn", "smoke-bomb", "light-show", "firework-burst"])
+      expect(ids).toContain(id);
+    for (const effect of pyro) expect(effect.tags).toContain("pyro");
+  });
+
+  it("draws the shaders as transparent overlays, all but the opaque light show", () => {
+    for (const effect of pyro) {
+      if (effect.kind !== "shader") continue;
+      expect(effect.transparent ?? false, effect.id).toBe(effect.id !== "light-show");
+    }
+  });
+
+  it("fires fireworks and explosions at clicks, and moves the sparkler with the pointer", () => {
+    for (const id of ["fireworks", "explosion"]) {
+      const effect = getEffect(id)!;
+      expect(effect.kind === "shader" && effect.source, id).toMatch(/\biClicks\[/);
+    }
+    const sparkler = getEffect("sparkler")!;
+    expect(sparkler.kind === "shader" && sparkler.source).toMatch(/\biPointer\b/);
+  });
+});
+
+describe("melt effects", () => {
+  const NUMBER = /-?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?/gi;
+  const skeleton = (d: unknown) => String(d).replace(NUMBER, "#");
+
+  it("include drips, haze, wax, text, liquify, a clock, lava and vector melts", () => {
+    const ids = findEffects({ category: "melt" }).map((e) => e.id);
+    for (const id of ["drip-melt", "heat-haze", "wax-melt", "melting-text", "liquify", "dali-clock", "lava-flow", "ice-cube-melt", "candle"]) expect(ids).toContain(id);
+    for (const effect of findEffects({ category: "melt" })) expect(effect.tags).toContain("melt");
+  });
+
+  it("loops the melt-and-reform shaders, with a still progress control", () => {
+    for (const id of ["drip-melt", "wax-melt", "melting-text"]) {
+      const effect = getEffect(id)!;
+      expect(effect.kind === "shader" && effect.loop, id).toBe(8);
+      expect(effectControls(effect).map((c) => c.name), id).toEqual(expect.arrayContaining(["uAnimate", "uProgress"]));
+    }
+    expect(effectDefaults(getEffect("melting-text")!).uText).toBe(textImage("MELT"));
+    expect(effectDefaults(getEffect("wax-melt")!).uMask).toBe(textImage("WAX"));
+    const text = getEffect("melting-text")!;
+    expect(text.kind === "shader" && text.transparent).toBe(true);
+    expect(effectDefaults(text).uBackgroundAlpha).toBe(0);
+    // Liquify reads the pointer built-in without declaring it.
+    const liquify = getEffect("liquify")!;
+    expect(liquify.kind === "shader" && liquify.source).toMatch(/\biPointer\b/);
+    expect(liquify.kind === "shader" && liquify.source).not.toMatch(/uniform\s+vec4\s+iPointer/);
+  });
+
+  it.each([["ice-cube-melt"], ["candle"]])("%s blends every change and ends where it starts", (id) => {
+    const effect = getEffect(id)!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    const motion = renderVectorEffect(effect, effectDefaults(effect));
+    for (const a of motion.animate ?? []) for (const [name, [from, to]] of Object.entries(a.attrs ?? {}))
+        if (!String(from).startsWith("#")) expect(skeleton(from), `${id} ${a.id} ${name}`).toBe(skeleton(to));
+    // Each attribute's last change returns it to its first value, so the loop is seamless.
+    const first = new Map<string, unknown>();
+    const last = new Map<string, unknown>();
+    const timed = [...(motion.animate ?? [])].map((a, i) => ({ a, i })).sort((x, y) => (x.a.delay ?? 0) - (y.a.delay ?? 0) || x.i - y.i);
+    for (const { a } of timed)
+      for (const [name, [from, to]] of Object.entries(a.attrs ?? {})) {
+        const key = `${a.id}.${name}`;
+        if (!first.has(key)) first.set(key, from);
+        last.set(key, to);
+      }
+    for (const [key, value] of first) expect(last.get(key), key).toEqual(value);
+  });
+});
+
+describe("electric effects", () => {
+  const electric = findEffects({ category: "electric" });
+
+  it("has the lightning, arcs, plasma, sparks and icons", () => {
+    const ids = electric.map((e) => e.id);
+    for (const id of ["lightning", "tesla-arc", "plasma-ball", "electric-border", "electric-text", "jacobs-ladder", "short-circuit", "power-surge", "electric-field", "zap-icon", "power-button", "battery-charge"])
+      expect(ids).toContain(id);
+    for (const effect of electric) expect(effect.tags).toContain("electric");
+  });
+
+  it("draws the overlays transparent and the rest opaque", () => {
+    const overlays = ["lightning", "tesla-arc", "electric-border", "short-circuit"];
+    for (const effect of electric) {
+      if (effect.kind !== "shader") continue;
+      expect(effect.transparent ?? false, effect.id).toBe(overlays.includes(effect.id));
+    }
+  });
+
+  it("strikes at clicks and follows the pointer", () => {
+    const lightning = getEffect("lightning")!;
+    expect(lightning.kind === "shader" && lightning.source).toMatch(/\biClicks\[/);
+    for (const id of ["tesla-arc", "plasma-ball", "electric-field"]) {
+      const effect = getEffect(id)!;
+      expect(effect.kind === "shader" && effect.source, id).toMatch(/\biPointer\b/);
+      expect(effect.kind === "shader" && effect.source, id).not.toMatch(/uniform\s+vec4\s+(iPointer|iClicks)/);
+    }
+  });
+
+  it("power button turns on with its first click and back off with its second", () => {
+    const effect = getEffect("power-button")!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    const motion = renderVectorEffect(effect, effectDefaults(effect));
+    expect(motion.animate!.every((a) => a.step === 1 || a.step === 2)).toBe(true);
+    const at = (clicks: number[], ms: number) => JSON.stringify([...svgFrame(motion.animate!, clicks, ms)].sort());
+    const start = at([], 0);
+    expect(at([0], 5000)).not.toBe(start);
+    expect(at([0, 5000], 10000)).toBe(start);
+  });
+
+  it("battery counts up to a full charge", () => {
+    const effect = getEffect("battery-charge")!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    const motion = renderVectorEffect(effect, effectDefaults(effect));
+    expect(motion.animate!.find((a) => a.count)!.count).toEqual([0, 100]);
+  });
+});
+
+describe("pixel effects", () => {
+  const SHADERS = ["image-8bit", "gameboy-screen", "pixel-fire", "pixel-landscape", "outrun-road", "palette-cycle", "raster-bars", "loading-stripes", "pixel-water"];
+  const VECTORS = ["pixel-text", "coin-spin", "space-invader", "pixel-heart-health", "chomp-loader"];
+
+  it("are retro and tagged pixel or retro", () => {
+    for (const id of [...SHADERS, ...VECTORS]) {
+      const effect = getEffect(id)!;
+      expect(effect, id).toBeDefined();
+      expect(effect.category, id).toBe("retro");
+      expect(effect.tags.some((t) => t === "pixel" || t === "retro"), id).toBe(true);
+    }
+    for (const id of VECTORS) {
+      const effect = getEffect(id)!;
+      expect(effect.kind === "vector" && effect.motion.svg, id).toContain('shape-rendering="crispEdges"');
+    }
+  });
+
+  it("8-bit has a preset per palette", () => {
+    const effect = getEffect("image-8bit")!;
+    expect(effect.presets!.map((p) => p.values.uPalette)).toEqual([0, 1, 2, 3, 4, 5]);
+  });
+
+  it("pixel dissolve is a looping two-image transition", () => {
+    const effect = getEffect("transition-pixel-dissolve")!;
+    expect(effect.category).toBe("transition");
+    expect(effect.tags).toEqual(expect.arrayContaining(["transition", "pixel"]));
+    expect(effectControls(effect).map((c) => c.name)).toEqual(expect.arrayContaining(["uFrom", "uTo", "uAnimate", "uProgress"]));
+    expect(effect.kind === "shader" && effect.loop).toBe(4);
+  });
+
+  it("pixel text draws any text as one path per letter, cut to its slots", () => {
+    const effect = getEffect("pixel-text")!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    for (const text of ["A", "", "Hello, world & <co>!", "Café 日本 🎉", "A VERY LONG TITLE INDEED"]) {
+      const motion = renderVectorEffect(effect, { text });
+      expect(svgMotionIssues(motion)).toEqual([]);
+      expect(JSON.stringify(motion)).not.toMatch(/\{\{|NaN|undefined/);
+      expect(motion.svg.match(/<g id="g\d+"/g)).toHaveLength(16);
+    }
+    const hi = renderVectorEffect(effect, { text: "Hi" }).svg;
+    // H's path is drawn; the slots after the text are empty.
+    expect(hi).toMatch(/<g id="g0"[^>]*><path[^>]*d="M0 0h1v1h-1zM4 0h1v1h-1z/);
+    expect(hi).toMatch(/<g id="g2"[^>]*><path[^>]*d="M0 0"/);
+    const delays = renderVectorEffect(effect, { stagger: 100 }).animate!.filter((a) => a.id === "g3").map((a) => a.delay);
+    expect(delays).toEqual([300, 300, 560, 670]);
   });
 });
