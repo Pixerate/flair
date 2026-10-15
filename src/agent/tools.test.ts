@@ -80,4 +80,30 @@ describe('applySceneTool', () => {
       expect(res.review?.markdown).toContain('Scene Preview Review');
     }
   });
+
+  it('returns outline view with structural summary', async () => {
+    const sceneWithCommands: Scene = {
+      ...initialScene,
+      media: { bg: { type: 'shader', source: '// heavy source code' } },
+      shots: [
+        {
+          caption: 'Shot 1',
+          hold: 500,
+          run: [{ type: 'clear' }, { type: 'delete', id: 'old' }],
+          effects: [{ type: 'glow', id: 'glow1', ids: ['item1'] }],
+        },
+      ],
+    };
+    const res = await applySceneTool(sceneWithCommands, 'get_scene', { view: 'outline' });
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      expect(res.outline).toBeDefined();
+      expect(res.outline?.name).toBe('test-flow');
+      expect(res.outline?.mediaIds).toEqual(['bg']);
+      expect(res.outline?.shots).toHaveLength(1);
+      expect(res.outline?.shots[0]?.shot).toBe(1);
+      expect(res.outline?.shots[0]?.commandCount).toBe(2);
+      expect(res.outline?.shots[0]?.effects).toEqual(['glow']);
+    }
+  });
 });

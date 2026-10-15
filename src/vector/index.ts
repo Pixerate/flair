@@ -46,3 +46,18 @@ export {
   type SvgView,
   type SvgViewOptions,
 } from "./svg.js";
+export {
+  computeBoxFit,
+  layoutStack,
+  type BoxAlignment,
+  type BoxFit,
+  type FittedBoxResult,
+  type StackLayoutOptions,
+} from "./layout.js";
+export {
+  formatUnit,
+  remap,
+  stepVariant,
+  type FormatUnitOptions,
+  type UnitFormat,
+} from "./converters.js";

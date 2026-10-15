@@ -141,6 +141,18 @@ function apply(
       el.setAttribute("stroke-dashoffset", String(1 - frame.draw));
     }
     if (frame.text !== undefined) el.textContent = frame.text;
+    if (frame.solo !== undefined) {
+      const children = Array.from(el.children);
+      children.forEach((child, idx) => {
+        if (child instanceof SVGElement || child instanceof HTMLElement) {
+          if (idx === frame.solo) {
+            child.removeAttribute("display");
+          } else {
+            child.setAttribute("display", "none");
+          }
+        }
+      });
+    }
     if (frame.along) {
       const path = byId.get(frame.along.path) as SVGGeometryElement | undefined;
       try {

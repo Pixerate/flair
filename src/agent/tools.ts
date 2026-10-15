@@ -13,10 +13,17 @@ export interface AgentToolDefinition {
 export const FLAIR_AGENT_TOOLS: AgentToolDefinition[] = [
   {
     name: 'get_scene',
-    description: 'Returns the current scene JSON and any static validation issues.',
+    description: 'Returns the current scene JSON (or a concise structural outline) and any static validation issues.',
     input_schema: {
       type: 'object',
-      properties: {},
+      properties: {
+        view: {
+          type: 'string',
+          enum: ['full', 'outline'],
+          description:
+            'When "outline", returns scene hierarchy, timing, and framing without dense commands or raw media sources.',
+        },
+      },
       additionalProperties: false,
     },
   },
@@ -134,8 +141,28 @@ export const FLAIR_AGENT_TOOLS: AgentToolDefinition[] = [
   },
 ];
 
+export interface SceneOutlineShot {
+  shot: number;
+  caption?: string;
+  title?: string;
+  hold?: number;
+  camera?: Shot['camera'];
+  commandCount: number;
+  effects?: string[];
+}
+
+export interface SceneOutline {
+  name: string;
+  title?: string;
+  description?: string;
+  stage?: Scene['stage'];
+  target?: Scene['target'];
+  mediaIds: string[];
+  shots: SceneOutlineShot[];
+}
+
 export type SceneToolResult =
-  | { ok: true; scene: Scene; issues: SceneIssue[]; review?: Review }
+  | { ok: true; scene: Scene; outline?: SceneOutline; issues: SceneIssue[]; review?: Review }
   | { ok: false; error: string };
 
 /**
@@ -148,7 +175,28 @@ export async function applySceneTool(
 ): Promise<SceneToolResult> {
   switch (toolName) {
     case 'get_scene': {
-      return { ok: true, scene, issues: validateScene(scene) };
+      const issues = validateScene(scene);
+      if (input.view === 'outline') {
+        const outline: SceneOutline = {
+          name: scene.name,
+          title: scene.title,
+          description: scene.description,
+          stage: scene.stage,
+          target: scene.target,
+          mediaIds: Object.keys(scene.media || {}),
+          shots: scene.shots.map((s, i) => ({
+            shot: i + 1,
+            caption: s.caption,
+            title: s.title,
+            hold: s.hold,
+            camera: s.camera,
+            commandCount: s.run?.length ?? 0,
+            effects: s.effects?.map((e) => e.type),
+          })),
+        };
+        return { ok: true, scene, outline, issues };
+      }
+      return { ok: true, scene, issues };
     }
 
     case 'write_scene': {

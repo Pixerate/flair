@@ -116,6 +116,17 @@ describe("svgFrame", () => {
     expect(frame.get("route")!.draw).toBe(0.5);
     expect(frame.get("total")!.text).toBe("21%");
   });
+
+  it("switches solo active index discretely across steps", () => {
+    const anims: SvgAnimation[] = [
+      { id: "icons", solo: 0 },
+      { id: "icons", solo: 1, step: 1 },
+      { id: "icons", solo: 2, step: 2 },
+    ];
+    expect(svgFrame(anims, [1000, 2000], 500).get("icons")!.solo).toBe(0);
+    expect(svgFrame(anims, [1000, 2000], 1500).get("icons")!.solo).toBe(1);
+    expect(svgFrame(anims, [1000, 2000], 2500).get("icons")!.solo).toBe(2);
+  });
 });
 
 describe("svgFrame views and paths", () => {

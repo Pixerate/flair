@@ -184,6 +184,11 @@ export interface SvgAnimation {
   along?: string;
   /** How far along the path `along` moves the element, from and to (default [0, 1]). */
   at?: readonly [number, number];
+  /**
+   * Sets the active child index in a solo container (data-solo group or element with multiple children).
+   * Hides all siblings except the one at this index (0-based).
+   */
+  solo?: number;
   /** Counts the element's text from one number to the other. */
   count?: readonly [number, number];
   /** How a count is written: `{n}` stands for the number ("{n}%", "$ {n}M"). */
@@ -243,6 +248,8 @@ export interface SvgElementFrame {
   /** How much of its length is drawn, 0–1. */
   draw?: number;
   text?: string;
+  /** Active child index when targeting a solo container. */
+  solo?: number;
   /** Where it is along a path: the path's id and the fraction of its length. */
   along?: { path: string; at: number };
   /**
@@ -332,6 +339,7 @@ export function svgFrame(
     if (a.draw) add("draw", a, i);
     if (a.count) add("count", a, i);
     if (a.write !== undefined) add("count", a, i);
+    if (a.solo !== undefined) add("solo", a, i);
     if (a.view !== undefined) add("view", a, i);
     if (a.along) add("along", a, i);
   });
@@ -357,6 +365,8 @@ export function svgFrame(
     } else if (prop === "along") {
       const [a, b] = anim.at ?? [0, 1];
       frame.along = { path: anim.along!, at: a + (b - a) * u };
+    } else if (prop === "solo") {
+      frame.solo = anim.solo;
     } else if (prop.startsWith("@")) {
       const [a, b] = anim.attrs![prop.slice(1)]!;
       frame.attrs[prop.slice(1)] = lerpAttr(a, b, u);
@@ -414,10 +424,12 @@ export function svgMotionIssues(motion: unknown): string[] {
       issues.push(`${where}: \`delay\` must be 0 or more`);
     if (a.ease !== undefined && !(a.ease in EASES))
       issues.push(`${where}: \`ease\` is one of ${Object.keys(EASES).join(", ")}`);
-    if (!a.attrs && !a.draw && !a.count && a.write === undefined && a.view === undefined && !a.along)
+    if (!a.attrs && !a.draw && !a.count && a.write === undefined && a.view === undefined && !a.along && a.solo === undefined)
       issues.push(
-        `${where} changes nothing: give \`attrs\`, \`draw\`, \`count\`, \`write\`, \`view\` or \`along\``,
+        `${where} changes nothing: give \`attrs\`, \`draw\`, \`count\`, \`write\`, \`view\`, \`along\` or \`solo\``,
       );
+    if (a.solo !== undefined && !(Number.isInteger(a.solo) && a.solo >= 0))
+      issues.push(`${where}: \`solo\` is an index (whole number, 0 or more)`);
     if (a.view !== undefined) {
       const box = a.view as unknown;
       if (typeof box === "string") {
