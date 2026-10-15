@@ -1,10 +1,13 @@
 import {
+  checkControlValue,
   coerceControlValue,
   componentCount,
   controlValue,
   describeValue,
   hexToRgb,
   humanise,
+  imageUrls,
+  isImageUrl,
   parseControls,
   rgbToHex,
   type ControlDef,
@@ -48,7 +51,7 @@ describe("parseControls", () => {
   });
 
   it("supports every type", () => {
-    const types = ["float", "int", "bool", "vec2", "vec3", "vec4"] as const;
+    const types = ["float", "int", "bool", "vec2", "vec3", "vec4", "sampler2D"] as const;
     const source = types.map((t, i) => `uniform ${t} u${i}; // @control`).join("\n");
     expect(parseControls(source).map((c) => c.type)).toEqual(types);
   });
@@ -56,7 +59,7 @@ describe("parseControls", () => {
   it("ignores unsupported types, comments without @control, and annotations on other lines", () => {
     const source = [
       "uniform mat3 uMatrix; // @control",
-      "uniform sampler2D uTex; // @control",
+      "uniform samplerCube uSky; // @control",
       "uniform float uNote; // control",
       "uniform float uNext;",
       "// @control min=0 max=1",
@@ -157,6 +160,72 @@ describe("parseControls", () => {
   });
 });
 
+describe("image controls", () => {
+  it("default to no image, mipmapped and repeating", () => {
+    const photo = one("uniform sampler2D uPhoto; // @control");
+    expect(photo).toMatchObject({
+      type: "sampler2D",
+      label: "Photo",
+      default: "",
+      texture: { filter: "mipmap", wrap: "repeat" },
+    });
+  });
+
+  it("read a default URL, filter and wrap", () => {
+    const photo = one(
+      "uniform sampler2D iChannel0; // @control default=https://example.com/a.png filter=NEAREST wrap=clamp",
+    );
+    expect(photo.default).toBe("https://example.com/a.png");
+    expect(photo.texture).toEqual({ filter: "nearest", wrap: "clamp" });
+  });
+
+  it("fall back to the defaults for unknown filters and wraps", () => {
+    expect(one("uniform sampler2D uA; // @control filter=cubic wrap=tile").texture).toEqual({
+      filter: "mipmap",
+      wrap: "repeat",
+    });
+  });
+
+  it("only other controls have no texture settings", () => {
+    expect(one("uniform float uA; // @control").texture).toBeUndefined();
+  });
+
+  it("take stored strings, else the default", () => {
+    const photo = one("uniform sampler2D uPhoto; // @control default=a.png");
+    expect(controlValue(photo, { uPhoto: "b.png" })).toBe("b.png");
+    expect(controlValue(photo, { uPhoto: 3 })).toBe("a.png");
+  });
+
+  it("list the URLs shown, once each", () => {
+    const controls = parseControls(
+      [
+        "uniform sampler2D uA; // @control default=a.png",
+        "uniform sampler2D uB; // @control",
+        "uniform sampler2D uC; // @control",
+        "uniform float uD; // @control",
+      ].join("\n"),
+    );
+    expect(imageUrls(controls, { uC: "a.png" })).toEqual(["a.png"]);
+    expect(imageUrls(controls, { uB: "b.png" })).toEqual(["a.png", "b.png"]);
+  });
+
+  it("isImageUrl takes web, data:image, blob and relative URLs", () => {
+    for (const url of [
+      "https://example.com/a.png",
+      "http://localhost/a.jpg",
+      "data:image/png;base64,AAAA",
+      "blob:https://example.com/1234",
+      "images/a.png",
+      "/a.png",
+    ]) {
+      expect(isImageUrl(url), url).toBe(true);
+    }
+    for (const url of ["", "  ", "javascript:alert(1)", "data:text/html,<b>", "file:///a.png"]) {
+      expect(isImageUrl(url), url).toBe(false);
+    }
+  });
+});
+
 describe("humanise", () => {
   it.each([
     ["uFlowSpeed", "Flow speed"],
@@ -197,8 +266,10 @@ describe("colours", () => {
 describe("componentCount", () => {
   it("counts components", () => {
     expect(
-      ["float", "int", "bool", "vec2", "vec3", "vec4"].map((t) => componentCount(t as never)),
-    ).toEqual([1, 1, 1, 2, 3, 4]);
+      ["float", "int", "bool", "vec2", "vec3", "vec4", "sampler2D"].map((t) =>
+        componentCount(t as never),
+      ),
+    ).toEqual([1, 1, 1, 2, 3, 4, 1]);
   });
 });
 
@@ -268,7 +339,37 @@ describe("coerceControlValue", () => {
   });
 });
 
+describe("checkControlValue", () => {
+  const photo = one("uniform sampler2D uPhoto; // @control");
+
+  it("tells a value from a message, even for images", () => {
+    expect(checkControlValue(photo, "https://example.com/a.png")).toEqual({
+      ok: true,
+      value: "https://example.com/a.png",
+    });
+    expect(checkControlValue(photo, "")).toEqual({ ok: true, value: "" });
+    expect(checkControlValue(photo, "javascript:alert(1)")).toEqual({
+      ok: false,
+      message: "uPhoto takes an image URL: https://…, data:image/… or blob:….",
+    });
+    expect(checkControlValue(photo, 3).ok).toBe(false);
+  });
+
+  it("agrees with coerceControlValue for other controls", () => {
+    const speed = one("uniform float uSpeed; // @control");
+    expect(checkControlValue(speed, 2)).toEqual({ ok: true, value: 2 });
+    expect(checkControlValue(speed, "x")).toEqual({ ok: false, message: "uSpeed takes a number." });
+  });
+});
+
 describe("describeValue", () => {
+  it("shortens long data URLs to their type and size", () => {
+    const photo = one("uniform sampler2D uPhoto; // @control");
+    const data = `data:image/png;base64,${"A".repeat(4096)}`;
+    expect(describeValue(photo, data)).toBe("data:image/png;base64,… (about 3 kB)");
+    expect(describeValue(photo, "https://example.com/a.png")).toBe("https://example.com/a.png");
+  });
+
   it("writes colours as hex", () => {
     expect(describeValue(one("uniform vec3 uT; // @control color"), [1, 0, 0])).toBe("#ff0000");
   });

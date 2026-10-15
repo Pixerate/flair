@@ -1,5 +1,13 @@
 import { ShaderRenderer, type RendererStats } from "./renderer.js";
-import { installFakeWebGl, installManualRaf, setRect, shaderSource } from "./test-utils.js";
+import { ImageLoadError } from "./textures.js";
+import {
+  flush,
+  installFakeImages,
+  installFakeWebGl,
+  installManualRaf,
+  setRect,
+  shaderSource,
+} from "./test-utils.js";
 
 function setup(options: Parameters<typeof installFakeWebGl>[0] = {}) {
   const webgl = installFakeWebGl(options);
@@ -271,6 +279,58 @@ describe("ShaderRenderer", () => {
       const remove = vi.spyOn(window, "removeEventListener");
       renderer.dispose();
       expect(remove).toHaveBeenCalledWith("pointerup", expect.any(Function));
+    });
+  });
+
+  describe("images", () => {
+    const photo = shaderSource("uniform sampler2D uPhoto; // @control");
+    const bound = (gl: { named(n: string): { args: unknown[] }[] }) =>
+      gl.named("bindTexture").at(-1)!.args[1] as { image: unknown } | null;
+
+    it("loads an image when its value is set, and a paused preview redraws with it", async () => {
+      const images = installFakeImages();
+      const { renderer, gl } = setup();
+      renderer.setSource(photo);
+      renderer.pause();
+      renderer.setValues({ uPhoto: "https://example.com/a.png" });
+      expect(images.map((i) => i.src)).toEqual(["https://example.com/a.png"]);
+      expect(bound(gl!)!.image).toBe("1x1");
+      await renderer.ready();
+      expect(bound(gl!)!.image).toBe(images[0]);
+    });
+
+    it("ready rejects, and onImageError hears, when an image cannot load", async () => {
+      installFakeImages();
+      const { renderer } = setup();
+      const onImageError = vi.fn();
+      renderer.onImageError = onImageError;
+      renderer.setSource(photo);
+      renderer.setValues({ uPhoto: "https://example.com/broken.png" });
+      await expect(renderer.ready()).rejects.toBeInstanceOf(ImageLoadError);
+      expect(onImageError).toHaveBeenCalledWith(expect.any(ImageLoadError));
+    });
+
+    it("frees an image's texture once nothing shows it", async () => {
+      installFakeImages();
+      const { renderer, gl } = setup();
+      renderer.setSource(photo);
+      renderer.setValues({ uPhoto: "a.png" });
+      await renderer.ready();
+      const texture = gl!.textures.find((t) => t.image !== "1x1" && t.image !== null)!;
+      renderer.setValues({ uPhoto: "b.png" });
+      expect(texture.deleted).toBe(true);
+    });
+
+    it("deletes its textures on dispose", async () => {
+      installFakeImages();
+      const { renderer, gl } = setup();
+      renderer.setSource(photo);
+      renderer.setValues({ uPhoto: "a.png" });
+      renderer.seek(0);
+      await flush();
+      renderer.dispose();
+      expect(gl!.textures.length).toBeGreaterThan(0);
+      expect(gl!.textures.every((t) => t.deleted)).toBe(true);
     });
   });
 });

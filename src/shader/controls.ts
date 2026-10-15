@@ -7,16 +7,28 @@
  *   uniform bool uGrain;   // @control default=true label="Film grain"
  *   uniform vec2 uCenter;  // @control min=-1 max=1 default=0,0
  *   uniform vec3 uTint;    // @control color default=#77C16A label="Tint"
+ *   uniform sampler2D uPhoto; // @control filter=linear wrap=clamp label="Photo"
  *
  * The source is the single source of truth for which controls exist and
  * their defaults; values someone picks are stored next to it.
  */
 
 /** The uniform types a control can have. */
-export type ControlType = "float" | "int" | "bool" | "vec2" | "vec3" | "vec4";
+export type ControlType = "float" | "int" | "bool" | "vec2" | "vec3" | "vec4" | "sampler2D";
 
-/** A control's value: a number (`float`, `int`), a boolean (`bool`) or the components of a vector. */
-export type ControlValue = number | boolean | number[];
+/**
+ * A control's value: a number (`float`, `int`), a boolean (`bool`), the
+ * components of a vector, or an image URL (`sampler2D`; "" for none).
+ */
+export type ControlValue = number | boolean | number[] | string;
+
+/** How an image is sampled: Shadertoy's channel settings. */
+export interface TextureSettings {
+  /** `mipmap` (the default), `linear` or `nearest` (pixelated). */
+  filter: "mipmap" | "linear" | "nearest";
+  /** Outside 0–1: `repeat` (the default), `clamp` to the edge, or `mirror`. */
+  wrap: "repeat" | "clamp" | "mirror";
+}
 
 /** A control parsed from an annotated uniform. */
 export interface ControlDef {
@@ -34,10 +46,12 @@ export interface ControlDef {
   default: ControlValue;
   /** 1-based line of the declaration. */
   line: number;
+  /** Sampling settings, for `sampler2D` controls only. */
+  texture?: TextureSettings;
 }
 
 const DECLARATION =
-  /^\s*uniform\s+(float|int|bool|vec2|vec3|vec4)\s+([A-Za-z_]\w*)\s*;\s*\/\/\s*@control\b(.*)$/;
+  /^\s*uniform\s+(float|int|bool|vec2|vec3|vec4|sampler2D)\s+([A-Za-z_]\w*)\s*;\s*\/\/\s*@control\b(.*)$/;
 const ATTRIBUTE = /([a-z]+)(?:=("[^"]*"|\S+))?/gi;
 
 const COMPONENTS: Record<ControlType, number> = {
@@ -47,9 +61,10 @@ const COMPONENTS: Record<ControlType, number> = {
   vec2: 2,
   vec3: 3,
   vec4: 4,
+  sampler2D: 1,
 };
 
-/** The number of components a control type has: 1 for scalars and `bool`, else the vector size. */
+/** The number of components a control type has: 1 for scalars, `bool` and `sampler2D`, else the vector size. */
 export function componentCount(type: ControlType): number {
   return COMPONENTS[type];
 }
@@ -98,6 +113,7 @@ export function rgbToHex(rgb: number[]): string {
 function parseDefault(raw: string | undefined, type: ControlType, color: boolean): ControlValue {
   const n = COMPONENTS[type];
   if (type === "bool") return raw === "true" || raw === "1";
+  if (type === "sampler2D") return raw ?? "";
   // Without a default, numbers start at 0 and colours at white.
   if (raw === undefined) return n === 1 ? 0 : Array.from({ length: n }, () => (color ? 1 : 0));
   if (color && raw.startsWith("#")) {
@@ -138,7 +154,7 @@ export function parseControls(source: string): ControlDef[] {
     const min = num(attrs.min, 0);
     const rawMax = num(attrs.max, type === "int" ? 10 : 1);
     const max = rawMax > min ? rawMax : min + 1;
-    controls.push({
+    const control: ControlDef = {
       name,
       type,
       label: attrs.label ?? humanise(name),
@@ -148,7 +164,16 @@ export function parseControls(source: string): ControlDef[] {
       step: num(attrs.step, type === "int" ? 1 : (max - min) / 200),
       default: parseDefault(attrs.default, type, color),
       line: index + 1,
-    });
+    };
+    if (type === "sampler2D") {
+      const pick = <T extends string>(v: string | undefined, options: readonly T[]): T =>
+        options.find((o) => o === v?.toLowerCase()) ?? options[0]!;
+      control.texture = {
+        filter: pick(attrs.filter, ["mipmap", "linear", "nearest"] as const),
+        wrap: pick(attrs.wrap, ["repeat", "clamp", "mirror"] as const),
+      };
+    }
+    controls.push(control);
   });
   return controls;
 }
@@ -161,42 +186,99 @@ export function controlValue(
   const v = values?.[control.name];
   if (v === undefined) return control.default;
   if (control.type === "bool") return typeof v === "boolean" ? v : control.default;
+  if (control.type === "sampler2D") return typeof v === "string" ? v : control.default;
   const n = COMPONENTS[control.type];
   if (n === 1) return typeof v === "number" ? v : control.default;
   return Array.isArray(v) && v.length === n ? v : control.default;
 }
 
+/** What {@link checkControlValue} decides: the value to store, or a sentence saying what the control takes. */
+export type ControlCheck = { ok: true; value: ControlValue } | { ok: false; message: string };
+
 /**
  * Checks a value from outside (an agent's tool call, a URL, a form) against a
- * control. Returns the value to store, or a sentence saying what the control
- * takes. Colours also accept "#RRGGBB"; `int` values are rounded.
+ * control. Colours also accept "#RRGGBB"; `int` values are rounded. Images
+ * take a URL: `https:`, `http:`, `data:image/…`, `blob:` or a relative path
+ * ("" for none).
  */
-export function coerceControlValue(control: ControlDef, raw: unknown): ControlValue | string {
+export function checkControlValue(control: ControlDef, raw: unknown): ControlCheck {
+  const fail = (message: string): ControlCheck => ({ ok: false, message });
   const n = COMPONENTS[control.type];
   if (control.type === "bool") {
-    return typeof raw === "boolean" ? raw : `${control.name} takes true or false.`;
+    return typeof raw === "boolean"
+      ? { ok: true, value: raw }
+      : fail(`${control.name} takes true or false.`);
+  }
+  if (control.type === "sampler2D") {
+    return typeof raw === "string" && (raw === "" || isImageUrl(raw))
+      ? { ok: true, value: raw }
+      : fail(`${control.name} takes an image URL: https://…, data:image/… or blob:….`);
   }
   if (control.color && typeof raw === "string") {
     const rgb = hexToRgb(raw);
-    if (!rgb) return `${control.name} takes a colour like "#77C16A".`;
-    return control.type === "vec4" ? [...rgb, 1] : rgb;
+    if (!rgb) return fail(`${control.name} takes a colour like "#77C16A".`);
+    return { ok: true, value: control.type === "vec4" ? [...rgb, 1] : rgb };
   }
   if (n === 1) {
-    if (typeof raw !== "number" || !Number.isFinite(raw)) return `${control.name} takes a number.`;
-    return control.type === "int" ? Math.round(raw) : raw;
+    if (typeof raw !== "number" || !Number.isFinite(raw)) {
+      return fail(`${control.name} takes a number.`);
+    }
+    return { ok: true, value: control.type === "int" ? Math.round(raw) : raw };
   }
   if (
     !Array.isArray(raw) ||
     raw.length !== n ||
     !raw.every((x) => typeof x === "number" && Number.isFinite(x))
   ) {
-    return `${control.name} takes ${n} numbers${control.color ? ' (or a colour like "#77C16A")' : ""}.`;
+    return fail(
+      `${control.name} takes ${n} numbers${control.color ? ' (or a colour like "#77C16A")' : ""}.`,
+    );
   }
-  return raw as number[];
+  return { ok: true, value: raw as number[] };
 }
 
-/** A value as compact, JSON-friendly data: colours as hex, numbers to three decimals. */
+/**
+ * {@link checkControlValue} for controls whose values are never strings:
+ * returns the value to store, or the message. An image control's value is a
+ * string too, so use `checkControlValue` where images can appear.
+ */
+export function coerceControlValue(control: ControlDef, raw: unknown): ControlValue | string {
+  const check = checkControlValue(control, raw);
+  return check.ok ? check.value : check.message;
+}
+
+/** Whether a string is a URL an image control can load: `http(s):`, `data:image/`, `blob:` or a relative path. */
+export function isImageUrl(url: string): boolean {
+  const scheme = /^([a-z][a-z0-9+.-]*):/i.exec(url.trim())?.[1]?.toLowerCase();
+  if (scheme === undefined) return url.trim() !== "";
+  if (scheme === "data") return /^data:image\//i.test(url.trim());
+  return scheme === "http" || scheme === "https" || scheme === "blob";
+}
+
+/** The image URLs the controls show with these values, without duplicates or empty ones. */
+export function imageUrls(
+  controls: ControlDef[],
+  values: Record<string, ControlValue> | undefined,
+): string[] {
+  const urls = new Set<string>();
+  for (const control of controls) {
+    if (control.type !== "sampler2D") continue;
+    const url = controlValue(control, values) as string;
+    if (url) urls.add(url);
+  }
+  return [...urls];
+}
+
+/**
+ * A value as compact, JSON-friendly data: colours as hex, numbers to three
+ * decimals. A long `data:` URL is shortened to its type and size, which
+ * keeps it out of an agent's context but cannot be stored back.
+ */
 export function describeValue(control: ControlDef, value: ControlValue): unknown {
+  if (typeof value === "string" && value.startsWith("data:") && value.length > 100) {
+    const kb = Math.round((value.length * 3) / 4 / 1024);
+    return `${value.slice(0, value.indexOf(",") + 1)}… (about ${kb} kB)`;
+  }
   if (control.color && Array.isArray(value)) return rgbToHex(value);
   if (Array.isArray(value)) return value.map((v) => Math.round(v * 1000) / 1000);
   if (typeof value === "number") return Math.round(value * 1000) / 1000;

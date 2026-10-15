@@ -21,6 +21,15 @@ export interface FakeLocation {
   name: string;
 }
 
+export interface FakeTexture {
+  id: number;
+  /** What was uploaded: an image, or "1x1" for raw bytes. */
+  image: unknown;
+  flipped: boolean;
+  mipmapped: boolean;
+  deleted: boolean;
+}
+
 export interface Call {
   name: string;
   args: unknown[];
@@ -47,15 +56,31 @@ export class FakeGl {
   readonly TRIANGLES = 0x0004;
   readonly RGBA = 0x1908;
   readonly UNSIGNED_BYTE = 0x1401;
+  readonly TEXTURE_2D = 0x0de1;
+  readonly TEXTURE0 = 0x84c0;
+  readonly TEXTURE_MIN_FILTER = 0x2801;
+  readonly TEXTURE_MAG_FILTER = 0x2800;
+  readonly TEXTURE_WRAP_S = 0x2802;
+  readonly TEXTURE_WRAP_T = 0x2803;
+  readonly NEAREST = 0x2600;
+  readonly LINEAR = 0x2601;
+  readonly LINEAR_MIPMAP_LINEAR = 0x2703;
+  readonly REPEAT = 0x2901;
+  readonly CLAMP_TO_EDGE = 0x812f;
+  readonly MIRRORED_REPEAT = 0x8370;
+  readonly UNPACK_FLIP_Y_WEBGL = 0x9240;
 
   readonly calls: Call[] = [];
   readonly shaders: FakeShader[] = [];
   readonly programs: FakeProgram[] = [];
+  readonly textures: FakeTexture[] = [];
   readonly attributes: unknown;
   lost = false;
   /** Make `createShader` return null, as a lost context can. */
   refuseShaders = false;
   time = 0;
+  private bound: FakeTexture | null = null;
+  private flipY = false;
   private readonly options: FakeGlOptions;
 
   constructor(options: FakeGlOptions = {}, attributes?: unknown) {
@@ -194,6 +219,47 @@ export class FakeGl {
     this.record("uniform4fv", [loc, v]);
   }
 
+  createTexture(): FakeTexture {
+    const texture = {
+      id: this.textures.length,
+      image: null,
+      flipped: false,
+      mipmapped: false,
+      deleted: false,
+    };
+    this.textures.push(texture);
+    this.record("createTexture", [texture]);
+    return texture;
+  }
+  deleteTexture(texture: FakeTexture) {
+    this.record("deleteTexture", [texture]);
+    texture.deleted = true;
+  }
+  activeTexture(unit: number) {
+    this.record("activeTexture", [unit]);
+  }
+  bindTexture(target: number, texture: FakeTexture | null) {
+    this.record("bindTexture", [target, texture]);
+    this.bound = texture;
+  }
+  pixelStorei(pname: number, value: unknown) {
+    this.record("pixelStorei", [pname, value]);
+    if (pname === this.UNPACK_FLIP_Y_WEBGL) this.flipY = Boolean(value);
+  }
+  texImage2D(...args: unknown[]) {
+    this.record("texImage2D", args);
+    if (!this.bound) return;
+    this.bound.image = args.length === 6 ? args[5] : "1x1";
+    this.bound.flipped = this.flipY;
+  }
+  generateMipmap(target: number) {
+    this.record("generateMipmap", [target]);
+    if (this.bound) this.bound.mipmapped = true;
+  }
+  texParameteri(target: number, pname: number, value: number) {
+    this.record("texParameteri", [target, pname, value]);
+  }
+
   drawArrays(mode: number, first: number, count: number) {
     this.record("drawArrays", [mode, first, count]);
   }
@@ -274,6 +340,32 @@ export function installFakeWebGl(options: FakeGlOptions & { webgl?: boolean } = 
     },
   };
 }
+
+/**
+ * Replaces `Image` with a fake whose `decode()` resolves on the next
+ * microtask, or rejects when the URL contains "broken". `images` lists every
+ * one created. Restored after each test by `unstubGlobals`.
+ */
+export function installFakeImages() {
+  const images: FakeImage[] = [];
+  class FakeImage {
+    src = "";
+    crossOrigin: string | null = null;
+    constructor() {
+      images.push(this);
+    }
+    decode() {
+      return this.src.includes("broken")
+        ? Promise.reject(new Error("EncodingError"))
+        : Promise.resolve();
+    }
+  }
+  vi.stubGlobal("Image", FakeImage);
+  return images;
+}
+
+/** Lets pending promise callbacks run (image loads in the fakes). */
+export const flush = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
 
 /** A `mainImage` source, optionally with extra lines before it. */
 export function shaderSource(...lines: string[]): string {

@@ -1,6 +1,7 @@
 import { recordGif } from "./gif.js";
 import { ShaderCompileError } from "./program.js";
-import { installFakeWebGl, shaderSource } from "./test-utils.js";
+import { ImageLoadError } from "./textures.js";
+import { installFakeImages, installFakeWebGl, shaderSource } from "./test-utils.js";
 
 interface ParsedGif {
   width: number;
@@ -164,6 +165,34 @@ describe("recordGif", () => {
   it("releases the context when it finishes", async () => {
     const webgl = installFakeWebGl();
     await recordGif({ source: shaderSource(), width: 2, height: 2, fps: 10, duration: 0.1 });
+    expect(webgl.last().lost).toBe(true);
+  });
+
+  it("waits for images, and rejects when one cannot load, releasing the context", async () => {
+    installFakeImages();
+    const webgl = installFakeWebGl();
+    const source = shaderSource("uniform sampler2D uPhoto; // @control");
+    const gif = await recordGif({
+      source,
+      values: { uPhoto: "a.png" },
+      width: 4,
+      height: 4,
+      fps: 10,
+      duration: 0.1,
+    });
+    expect(gif.type).toBe("image/gif");
+    const gl = webgl.last();
+    expect(gl.named("texImage2D").some((c) => c.args.length === 6)).toBe(true);
+    await expect(
+      recordGif({
+        source,
+        values: { uPhoto: "broken.png" },
+        width: 4,
+        height: 4,
+        fps: 10,
+        duration: 0.1,
+      }),
+    ).rejects.toBeInstanceOf(ImageLoadError);
     expect(webgl.last().lost).toBe(true);
   });
 });

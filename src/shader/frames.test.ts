@@ -1,6 +1,7 @@
 import { ShaderFrames } from "./frames.js";
 import { ShaderCompileError } from "./program.js";
-import { installFakeWebGl, shaderSource } from "./test-utils.js";
+import { ImageLoadError, preloadImages, releaseImages } from "./textures.js";
+import { installFakeImages, installFakeWebGl, shaderSource } from "./test-utils.js";
 
 describe("ShaderFrames", () => {
   it("renders on a new canvas of the given size", () => {
@@ -129,5 +130,50 @@ describe("ShaderFrames", () => {
     const frames = new ShaderFrames({ source: shaderSource(), width: 4, height: 4 });
     webgl.last().lost = true;
     expect(() => frames.render(0)).toThrow("The graphics context was lost.");
+  });
+
+  it("draws images once ready, including ones set later", async () => {
+    const images = installFakeImages();
+    const webgl = installFakeWebGl();
+    const frames = new ShaderFrames({
+      source: shaderSource("uniform sampler2D uPhoto; // @control default=a.png"),
+      width: 4,
+      height: 4,
+    });
+    const gl = webgl.last();
+    const bound = () => (gl.named("bindTexture").at(-1)!.args[1] as { image: unknown }).image;
+    await frames.ready();
+    frames.render(0);
+    expect(bound()).toBe(images[0]);
+    frames.setValues({ uPhoto: "b.png" });
+    await frames.ready();
+    frames.render(0);
+    expect(bound()).toBe(images[1]);
+  });
+
+  it("draws preloaded images from the first frame, without waiting", async () => {
+    const images = installFakeImages();
+    await preloadImages(["a.png"]);
+    const webgl = installFakeWebGl();
+    const frames = new ShaderFrames({
+      source: shaderSource("uniform sampler2D uPhoto; // @control default=a.png"),
+      width: 4,
+      height: 4,
+    });
+    frames.render(0);
+    const bound = webgl.last().named("bindTexture").at(-1)!.args[1] as { image: unknown };
+    expect(bound.image).toBe(images[0]);
+    releaseImages();
+  });
+
+  it("ready rejects when an image cannot load", async () => {
+    installFakeImages();
+    installFakeWebGl();
+    const frames = new ShaderFrames({
+      source: shaderSource("uniform sampler2D uPhoto; // @control default=broken.png"),
+      width: 4,
+      height: 4,
+    });
+    await expect(frames.ready()).rejects.toBeInstanceOf(ImageLoadError);
   });
 });

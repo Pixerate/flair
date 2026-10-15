@@ -32,7 +32,9 @@ const yieldToBrowser = () => new Promise<void>((resolve) => setTimeout(resolve, 
  * frame gets its own 256-colour palette. The encoder,
  * [gifenc](https://github.com/mattdesl/gifenc), is loaded on first use.
  *
- * Rejects with a `ShaderCompileError` when the source does not compile.
+ * Image controls are loaded before the first frame. Rejects with a
+ * `ShaderCompileError` when the source does not compile, and an
+ * `ImageLoadError` when an image cannot be loaded.
  */
 export async function recordGif(options: GifOptions): Promise<Blob> {
   const { source, values, width, height, fps, duration, start = 0, onProgress, signal } = options;
@@ -40,6 +42,7 @@ export async function recordGif(options: GifOptions): Promise<Blob> {
 
   const frames = new ShaderFrames({ source, values, width, height });
   try {
+    await frames.ready();
     const total = Math.max(1, Math.round(duration * fps));
     const delay = 1000 / fps;
     const rgba = new Uint8Array(frames.width * frames.height * 4);

@@ -1,4 +1,4 @@
-import { parseControls, type ControlDef, type ControlValue } from "./controls.js";
+import { imageUrls, parseControls, type ControlDef, type ControlValue } from "./controls.js";
 import {
   compileShader,
   createContext,
@@ -7,6 +7,7 @@ import {
   type CompileError,
   type CompiledShader,
 } from "./program.js";
+import { TextureCache, type ImageLoadError } from "./textures.js";
 
 /** Whether the latest source compiled, and if not, why. */
 export interface CompileStatus {
@@ -39,6 +40,7 @@ export class ShaderRenderer {
   readonly canvas: HTMLCanvasElement;
   private gl: WebGL2RenderingContext | null;
   private shader: CompiledShader | null = null;
+  private textures: TextureCache | null = null;
   private controls: ControlDef[] = [];
   private values: Record<string, ControlValue> | undefined;
   private source = "";
@@ -63,6 +65,8 @@ export class ShaderRenderer {
   onStats?: (stats: RendererStats) => void;
   /** Called with `true` when the GL context is lost and `false` once it is restored and recompiled. */
   onContextLost?: (lost: boolean) => void;
+  /** Called when an image control's URL cannot be loaded; the control shows black. */
+  onImageError?: (error: ImageLoadError) => void;
 
   /** Creates a canvas in `host` (with `className`) and starts the animation loop. Size the canvas with CSS. */
   constructor(host: HTMLElement, className = "") {
@@ -71,6 +75,7 @@ export class ShaderRenderer {
     host.appendChild(canvas);
     this.canvas = canvas;
     this.gl = createContext(canvas, true);
+    this.textures = this.gl && this.textureCache(this.gl);
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(canvas);
     canvas.addEventListener("webglcontextlost", this.onLost);
@@ -107,14 +112,28 @@ export class ShaderRenderer {
     } else {
       this.status = { ok: false, errors: result.errors };
     }
+    this.syncTextures();
     if (!this.playing) this.render();
     return this.status;
   }
 
-  /** Sets control values (see `controlValue`); a paused preview redraws. */
+  /**
+   * Sets control values (see `controlValue`); a paused preview redraws.
+   * Images load in the background and show once they arrive: await
+   * `ready()` before a `capture` that needs them.
+   */
   setValues(values: Record<string, ControlValue> | undefined) {
     this.values = values;
+    this.syncTextures();
     if (!this.playing) this.render();
+  }
+
+  /**
+   * Settles once the images the current controls show have loaded. Rejects
+   * with an {@link ImageLoadError} when one cannot be (it shows black).
+   */
+  async ready(): Promise<void> {
+    await this.textures?.ready(imageUrls(this.controls, this.values));
   }
 
   play() {
@@ -182,6 +201,8 @@ export class ShaderRenderer {
     this.canvas.removeEventListener("pointermove", this.onPointerMove);
     window.removeEventListener("pointerup", this.onPointerUp);
     if (this.gl && this.shader) this.gl.deleteProgram(this.shader.program);
+    this.textures?.dispose();
+    this.textures = null;
     // Free the context now rather than waiting for GC (browsers cap live contexts).
     this.gl?.getExtension("WEBGL_lose_context")?.loseContext();
     this.gl = null;
@@ -201,14 +222,36 @@ export class ShaderRenderer {
 
   private render(delta = 0) {
     if (!this.gl || !this.shader || this.gl.isContextLost()) return;
-    drawFrame(this.gl, this.shader, this.controls, this.values, {
-      width: this.canvas.width,
-      height: this.canvas.height,
-      time: this.time,
-      delta,
-      frame: this.frame,
-      mouse: this.mouse,
+    drawFrame(
+      this.gl,
+      this.shader,
+      this.controls,
+      this.values,
+      {
+        width: this.canvas.width,
+        height: this.canvas.height,
+        time: this.time,
+        delta,
+        frame: this.frame,
+        mouse: this.mouse,
+      },
+      this.textures ?? undefined,
+    );
+  }
+
+  private textureCache(gl: WebGL2RenderingContext): TextureCache {
+    return new TextureCache(gl, (_url, error) => {
+      if (error) this.onImageError?.(error);
+      else if (!this.playing) this.render();
     });
+  }
+
+  /** Starts loading the images now shown, and frees the ones no longer shown. */
+  private syncTextures() {
+    if (!this.textures) return;
+    const urls = imageUrls(this.controls, this.values);
+    this.textures.retain(urls);
+    for (const url of urls) this.textures.request(url);
   }
 
   private tick = (now: number) => {
@@ -272,12 +315,15 @@ export class ShaderRenderer {
   private onLost = (e: Event) => {
     e.preventDefault();
     this.shader = null;
+    this.textures?.dispose();
+    this.textures = null;
     this.onContextLost?.(true);
   };
 
   private onRestored = () => {
     resetGlCaches();
     this.gl = createContext(this.canvas, true);
+    this.textures = this.gl && this.textureCache(this.gl);
     this.setSource(this.source);
     this.onContextLost?.(false);
   };
