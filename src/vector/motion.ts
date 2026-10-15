@@ -190,6 +190,51 @@ export interface SvgAnimation {
   format?: string;
   /** Decimals in a count (default 0). */
   decimals?: number;
+  /**
+   * Writes this text into the element letter by letter: none of it when the
+   * change starts, all of it when it ends (a typewriter).
+   */
+  write?: string;
+  /**
+   * With `write`: letters not yet written show characters picked from this
+   * string, changing every {@link SCRAMBLE_MS} ms, so the text decodes
+   * rather than types. The same time always picks the same characters.
+   */
+  scramble?: string;
+  /** With `write`: shown after the written letters while it writes ("▌", "|"). */
+  caret?: string;
+}
+
+/** How often scrambled letters change, in ms (see `SvgAnimation.scramble`). */
+export const SCRAMBLE_MS = 50;
+
+/**
+ * `text` with `u` (0–1) of its letters written (see `SvgAnimation.write`):
+ * the rest scrambled from `scramble` (picked by `timeMs`) or left off, then
+ * the caret while it is unfinished. Letters are code points, so emoji and
+ * accents are never split.
+ */
+export function writtenText(
+  text: string,
+  u: number,
+  options: { scramble?: string; caret?: string; timeMs?: number } = {},
+): string {
+  const letters = Array.from(text);
+  const shown = Math.round(clamp01(u) * letters.length);
+  let out = letters.slice(0, shown).join("");
+  const pool = Array.from(options.scramble ?? "");
+  if (pool.length) {
+    const tick = Math.floor((options.timeMs ?? 0) / SCRAMBLE_MS);
+    for (let i = shown; i < letters.length; i++)
+      out += /\s/.test(letters[i]!) ? letters[i] : pool[Math.floor(noise(i, tick) * pool.length)];
+  }
+  return shown < letters.length && options.caret ? out + options.caret : out;
+}
+
+/** A repeatable 0–1 number for a letter at a tick. */
+function noise(i: number, tick: number): number {
+  const x = Math.sin(i * 127.1 + tick * 311.7) * 43758.5453;
+  return x - Math.floor(x);
 }
 
 /** What one element of an animated SVG shows at a time. */
@@ -256,7 +301,7 @@ const startOf = (a: SvgAnimation, steps: readonly number[]) => {
 
 /**
  * What each animated element shows at `timeMs`. For each attribute (or
- * line, or count) the latest change to have started wins; before the first
+ * line, count or writing) the latest change to have started wins; before the first
  * one starts, the element shows that change's starting value, so something
  * that grows in later is hidden until then.
  */
@@ -277,6 +322,7 @@ export function svgFrame(
     for (const name of Object.keys(a.attrs ?? {})) add(`@${name}`, a, i);
     if (a.draw) add("draw", a, i);
     if (a.count) add("count", a, i);
+    if (a.write !== undefined) add("count", a, i);
     if (a.view !== undefined) add("view", a, i);
     if (a.along) add("along", a, i);
   });
@@ -308,6 +354,8 @@ export function svgFrame(
     } else if (prop === "draw") {
       const [a, b] = anim.draw === true ? [0, 1] : (anim.draw as readonly [number, number]);
       frame.draw = a + (b - a) * u;
+    } else if (anim.write !== undefined) {
+      frame.text = writtenText(anim.write, u, { scramble: anim.scramble, caret: anim.caret, timeMs });
     } else {
       const [a, b] = anim.count!;
       const n = (a + (b - a) * u).toFixed(anim.decimals ?? 0);
@@ -358,9 +406,9 @@ export function svgMotionIssues(motion: unknown): string[] {
       issues.push(`${where}: \`delay\` must be 0 or more`);
     if (a.ease !== undefined && !(a.ease in EASES))
       issues.push(`${where}: \`ease\` is one of ${Object.keys(EASES).join(", ")}`);
-    if (!a.attrs && !a.draw && !a.count && a.view === undefined && !a.along)
+    if (!a.attrs && !a.draw && !a.count && a.write === undefined && a.view === undefined && !a.along)
       issues.push(
-        `${where} changes nothing: give \`attrs\`, \`draw\`, \`count\`, \`view\` or \`along\``,
+        `${where} changes nothing: give \`attrs\`, \`draw\`, \`count\`, \`write\`, \`view\` or \`along\``,
       );
     if (a.view !== undefined) {
       const box = a.view as unknown;
@@ -395,6 +443,10 @@ export function svgMotionIssues(motion: unknown): string[] {
       issues.push(`${where}: \`draw\` is true or [from, to] between 0 and 1`);
     if (a.count !== undefined && !(Array.isArray(a.count) && a.count.length === 2))
       issues.push(`${where}: \`count\` is [from, to]`);
+    if (a.write !== undefined && typeof a.write !== "string")
+      issues.push(`${where}: \`write\` is the text to write`);
+    if ((a.scramble !== undefined || a.caret !== undefined) && a.write === undefined)
+      issues.push(`${where}: \`scramble\` and \`caret\` go with \`write\``);
   });
   return issues;
 }

@@ -2,7 +2,7 @@
  * Vector motion: animated SVG pictures described as data.
  *
  * - Describing motion: `SvgMotion`, `SvgAnimation` (attribute tweens, draw-on,
- *   along a path, counts, view zooms), checked by `svgMotionIssues`.
+ *   along a path, counts, written text, view zooms), checked by `svgMotionIssues`.
  * - Frames as pure functions: `svgFrame`, `lerpAttr`, `lerpData`, `stepData`.
  * - Drawing: `parseSvg` (sanitised), `svgView`, `SvgPlayer`.
  *
@@ -22,6 +22,8 @@ export {
   svgFrame,
   svgMotionIssues,
   svgOpeningTag,
+  SCRAMBLE_MS,
+  writtenText,
   type DataKey,
   type EaseName,
   type SvgAnimation,
