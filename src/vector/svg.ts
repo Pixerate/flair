@@ -439,7 +439,8 @@ export class SvgPlayer {
       return;
     }
 
-    const shouldAutoplay = (options.autoplay ?? true) && !options.playOnEnter;
+    // Without IntersectionObserver (a server, a test), nothing would say it entered: play at once.
+    const shouldAutoplay = (options.autoplay ?? true) && !(options.playOnEnter && needsObserver);
     if (shouldAutoplay) {
       this.play();
     } else if (this.hideWhenPaused) {

@@ -112,6 +112,36 @@ export function svgViewBox(markup: string): SvgBox | undefined {
   return parseViewBox(/\sviewBox\s*=\s*(?:"([^"]*)"|'([^']*)')/i.exec(open)?.slice(1).find((v) => v !== undefined));
 }
 
+/** How a picture framed for a line of text (a text effect's `inline`) sits in it; see {@link svgInlineLayout}. */
+export interface SvgInlineLayout {
+  /** Its viewBox: x, y, width, height. */
+  viewBox: SvgBox;
+  /** Width over height, for its host's CSS `aspect-ratio`. */
+  aspectRatio: number;
+  /**
+   * How far it reaches past its box at rest (descenders, outlines, glows,
+   * drips), in ems of the font size it is set at; 0 where the picture says
+   * nothing (no `data-overhang`).
+   */
+  overhang: { top: number; right: number; bottom: number; left: number };
+}
+
+/**
+ * The box and overhang on an SVG's opening tag: its `viewBox`, and
+ * `data-overhang="top right bottom left"` (ems), which text effects write.
+ * Set inline (`height: 0.72em`, the cap height they frame), give the host a
+ * margin of the overhang to keep room for what spills out:
+ * `margin: ${top}em ${right}em ${bottom}em ${left}em`.
+ */
+export function svgInlineLayout(markup: string): SvgInlineLayout | undefined {
+  const viewBox = svgViewBox(markup);
+  if (!viewBox || !(viewBox[3] > 0)) return undefined;
+  const open = /<svg\b[^>]*>/i.exec(markup)?.[0] ?? "";
+  const spill = (/\sdata-overhang\s*=\s*"([^"]*)"/i.exec(open)?.[1] ?? "").trim().split(/\s+/).map(Number);
+  const [top, right, bottom, left] = [0, 1, 2, 3].map((i) => (Number.isFinite(spill[i]) ? Math.max(0, spill[i]!) : 0));
+  return { viewBox, aspectRatio: viewBox[2] / viewBox[3], overhang: { top: top!, right: right!, bottom: bottom!, left: left! } };
+}
+
 export interface SvgFrameMarkupOptions {
   /**
    * The time shown, in ms: a number, `"first"` (0) or `"last"` (the end of

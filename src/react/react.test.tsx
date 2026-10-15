@@ -70,10 +70,24 @@ describe("SvgPlayerView", () => {
     expect(live.childElementCount).toBe(0);
   });
 
+  it("waits until scrolled into view to play once, and keeps room for an inline word's overhang", () => {
+    let player: SvgPlayer | undefined;
+    render(<SvgPlayerView motion={motion} loop={false} onPlayer={(p) => (player = p)} />);
+    // jsdom's IntersectionObserver never reports it in view.
+    expect(player?.isPlaying).toBe(false);
+    act(() => root!.unmount());
+    render(<SvgPlayerView motion={motion} onPlayer={(p) => (player = p)} />);
+    expect(player?.isPlaying).toBe(true);
+    act(() => root!.unmount());
+    render(<VectorEffect id="drip-text" values={{ word: "Slop", inline: true }} contain />);
+    const host = container.firstElementChild as HTMLElement;
+    expect([host.style.marginTop, host.style.marginLeft, host.style.marginBottom]).toEqual(["0.03em", "0.03em", "0.47em"]);
+  });
+
   it("plays on its clock, and stays on the last frame without a loop", async () => {
     const clock = new ManualClock();
     let player: SvgPlayer | undefined;
-    render(<SvgPlayerView motion={motion} clock={clock} loop={false} onPlayer={(p) => (player = p)} />);
+    render(<SvgPlayerView motion={motion} clock={clock} loop={false} playOnEnter={false} onPlayer={(p) => (player = p)} />);
     expect(player?.isPlaying).toBe(true);
     const live = stillOf(container).nextElementSibling!;
     await act(async () => {

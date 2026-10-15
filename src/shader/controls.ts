@@ -97,6 +97,54 @@ export function hexToRgb(hex: string): number[] | null {
   return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16) / 255);
 }
 
+/**
+ * A CSS colour as [r, g, b] (0–1), or [r, g, b, a] when it gives an alpha
+ * below 1: hex (`#7c6`, `#7c6f`, `#77C16A`, `#77C16AFF`), `rgb()`/`rgba()`
+ * and `hsl()`/`hsla()`, with commas or spaces, numbers or percentages.
+ * Null for anything else (names like "red" and `currentColor` included).
+ */
+export function parseColor(css: string): number[] | null {
+  const text = css.trim().toLowerCase();
+  const hex = /^#?([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/.exec(text);
+  if (hex) {
+    const d = hex[1]!.length <= 4 ? Array.from(hex[1]!, (c) => c + c).join("") : hex[1]!;
+    const rgba = (d.match(/../g) ?? []).map((h) => parseInt(h, 16) / 255);
+    return rgba.length === 4 && rgba[3]! < 1 ? rgba : rgba.slice(0, 3);
+  }
+  const fn = /^(rgba?|hsla?)\(\s*([^)]*)\)$/.exec(text);
+  if (!fn) return null;
+  const parts = fn[2]!.split(/\s*[,/]\s*|\s+/).filter(Boolean);
+  if (parts.length < 3 || parts.length > 4) return null;
+  // A component: a number, or a percentage of `full`.
+  const num = (p: string, full: number) => {
+    const n = parseFloat(p);
+    if (!/^-?(\d+\.?\d*|\.\d+)(%|deg)?$/.test(p) || !Number.isFinite(n)) return NaN;
+    return p.endsWith("%") ? (n / 100) * full : n;
+  };
+  const clamp = (n: number) => Math.min(1, Math.max(0, n));
+  let rgb: number[];
+  if (fn[1]!.startsWith("rgb")) rgb = parts.slice(0, 3).map((p) => clamp(num(p, 255) / 255));
+  else {
+    const h = (((num(parts[0]!, 360) % 360) + 360) % 360) / 360;
+    const sat = clamp(num(parts[1]!, 1));
+    const l = clamp(num(parts[2]!, 1));
+    // HSL to RGB, per CSS Color 4.
+    const f = (k: number) => {
+      const t = (k + h * 12) % 12;
+      return l - sat * Math.min(l, 1 - l) * Math.max(-1, Math.min(t - 3, 9 - t, 1));
+    };
+    rgb = [f(0), f(8), f(4)];
+  }
+  const alpha = parts[3] === undefined ? 1 : clamp(num(parts[3], 1));
+  if ([...rgb, alpha].some((n) => Number.isNaN(n))) return null;
+  return alpha < 1 ? [...rgb, alpha] : rgb;
+}
+
+/** As a control value: `rgb` padded or cut to the control's components (an alpha of 1 added for a vec4). */
+function colourValue(control: ControlDef, rgb: number[]): number[] {
+  return control.type === "vec4" ? [...rgb.slice(0, 3), rgb[3] ?? 1] : rgb.slice(0, 3);
+}
+
 /** [0.467, 0.757, 0.416] → "#77c16a". Components are clamped to 0–1; a fourth (alpha) is ignored. */
 export function rgbToHex(rgb: number[]): string {
   return (
@@ -199,6 +247,10 @@ export function controlValue(
   if (control.type === "sampler2D" || control.type === "text") return typeof v === "string" ? v : control.default;
   const n = COMPONENTS[control.type];
   if (n === 1) return typeof v === "number" ? v : control.default;
+  if (control.color && typeof v === "string") {
+    const rgb = parseColor(v);
+    return rgb ? colourValue(control, rgb) : control.default;
+  }
   return Array.isArray(v) && v.length === n ? v : control.default;
 }
 
@@ -207,7 +259,7 @@ export type ControlCheck = { ok: true; value: ControlValue } | { ok: false; mess
 
 /**
  * Checks a value from outside (an agent's tool call, a URL, a form) against a
- * control. Colours also accept "#RRGGBB"; `int` values are rounded. Images
+ * control. Colours also accept CSS colours (see {@link parseColor}); `int` values are rounded. Images
  * take a URL: `https:`, `http:`, `data:image/…`, `blob:` or a relative path
  * ("" for none).
  */
@@ -228,9 +280,9 @@ export function checkControlValue(control: ControlDef, raw: unknown): ControlChe
     return typeof raw === "string" ? { ok: true, value: raw } : fail(`${control.name} takes text.`);
   }
   if (control.color && typeof raw === "string") {
-    const rgb = hexToRgb(raw);
-    if (!rgb) return fail(`${control.name} takes a colour like "#77C16A".`);
-    return { ok: true, value: control.type === "vec4" ? [...rgb, 1] : rgb };
+    const rgb = parseColor(raw);
+    if (!rgb) return fail(`${control.name} takes a colour like "#77C16A", "rgb(119 193 106)" or "hsl(110 40% 59%)".`);
+    return { ok: true, value: colourValue(control, rgb) };
   }
   if (n === 1) {
     if (typeof raw !== "number" || !Number.isFinite(raw)) {

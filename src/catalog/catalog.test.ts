@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { checkControlValue, parseControls } from "../shader/controls.js";
 import { svgFrame, svgMotionIssues } from "../vector/motion.js";
+import { svgInlineLayout } from "../vector/static.js";
 import { svgDuration } from "../vector/svg.js";
+import type { VectorEffect } from "./types.js";
 import {
   EFFECT_CATEGORIES,
   EFFECTS,
@@ -123,9 +125,25 @@ describe("catalog", () => {
     const short = renderVectorEffect(drip, { word: "OK" }).svg;
     const long = renderVectorEffect(drip, { word: "UNSTOPPABLE" }).svg;
     expect(short).toContain(">OK</text>");
-    expect(short).toContain('textLength="150"');
-    expect(long).toContain('textLength="380"');
+    expect(short).toContain('textLength="154"');
+    // A long word keeps its letters' shapes: drawn at its own width and scaled down to fit the stage.
+    expect(long).toContain('textLength="847"');
+    expect(long).toContain('scale(0.449) translate(-200 -100)"><g id="word"');
     expect(svgMotionIssues(renderVectorEffect(drip, { word: "Slop & Co" }))).toEqual([]);
+  });
+
+  it("drip text repeats its drips along a long word", () => {
+    const drip = getEffect("drip-text") as VectorEffect;
+    const drips = (word: string) => (renderVectorEffect(drip, { word, inline: true }).svg.match(/<circle id="fc\d+"/g) ?? []).length;
+    const shown = (word: string) => (renderVectorEffect(drip, { word, inline: true }).svg.match(/<g display="inline"><rect id="fr/g) ?? []).length;
+    expect(drips("SLOP")).toBe(56);
+    expect(shown("SLOP")).toBe(7);
+    expect(shown("PRODUCT ONBOARDING")).toBeGreaterThanOrEqual(28);
+    const inline = renderVectorEffect(drip, { word: "PRODUCT ONBOARDING", inline: true }).svg;
+    // Inline, the picture widens with the word rather than squeezing it.
+    expect(inline).toMatch(/viewBox="-[\d.]+ 45 (\d+) 75"/);
+    expect(Number(/viewBox="[^ ]+ 45 (\d+) 75"/.exec(inline)![1])).toBeGreaterThan(1000);
+    expect(inline).toContain('scale(1) translate(-200 -100)');
   });
 
   it("drip text takes a font and sits inline on the baseline", () => {
@@ -137,7 +155,7 @@ describe("catalog", () => {
     expect(block).toContain('font-weight="900"');
     const inline = renderVectorEffect(drip, { word: "SLOP", inline: true, font: "inherit", weight: 400 }).svg;
     // The word's capitals only: cap height (y 45) down to its baseline (y 120).
-    expect(inline).toContain('viewBox="50 45 300 75" overflow="visible"');
+    expect(inline).toContain('viewBox="46 45 308 75" overflow="visible"');
     expect(inline).toContain('font-family="inherit"');
     expect(inline).toContain('font-weight="400"');
     expect(renderVectorEffect(drip, { font: `'Rubik Wet Paint', cursive` }).svg).toContain(`font-family="&#39;Rubik Wet Paint&#39;, cursive"`);
@@ -232,6 +250,56 @@ describe("catalog", () => {
       }
     },
   );
+
+  it("every text effect takes a font and weight, and sits inline on the baseline", () => {
+    const texts = findEffects({ kind: "vector", category: "text" }) as VectorEffect[];
+    expect(texts.length).toBeGreaterThan(10);
+    for (const effect of texts) {
+      expect(effectControls(effect).map((c) => c.name), effect.id).toEqual(expect.arrayContaining(["font", "weight", "inline"]));
+      const block = renderVectorEffect(effect).svg;
+      expect(block, effect.id).toMatch(/^<svg viewBox="0 0 400 200" overflow="hidden"/);
+      const inline = renderVectorEffect(effect, { inline: true, font: "inherit", weight: 300 });
+      expect(inline.svg, effect.id).toMatch(/^<svg viewBox="[\d.-]+ [\d.-]+ [\d.]+ [\d.]+" overflow="visible"/);
+      expect(inline.svg, effect.id).not.toContain('viewBox="0 0 400 200"');
+      // Every word takes the font, and no backdrop covers the line.
+      expect(inline.svg.match(/font-family="([^"]*)"/g)!.every((f) => f === 'font-family="inherit"'), effect.id).toBe(true);
+      expect(inline.svg, effect.id).toContain('font-weight="300"');
+      expect(inline.svg, effect.id).not.toMatch(/<rect width="400" height="200"[^>]*opacity="1"/);
+      expect(svgMotionIssues(inline), effect.id).toEqual([]);
+    }
+  });
+
+  it("text effects keep long text full size inline, and say how far they spill", () => {
+    const long = "The quick brown fox jumps over";
+    for (const effect of findEffects({ kind: "vector", category: "text" }) as VectorEffect[]) {
+      const values = { text: long, word: long, prefix: long, inline: true };
+      const block = svgInlineLayout(renderVectorEffect(effect, { ...values, inline: false }).svg)!;
+      const inline = svgInlineLayout(renderVectorEffect(effect, values).svg)!;
+      // Inline, the picture widens rather than the text shrinking to the stage.
+      expect(inline.aspectRatio, effect.id).toBeGreaterThan(400 / (200 * 0.72) + 1);
+      expect(block.viewBox, effect.id).toEqual([0, 0, 400, 200]);
+      expect(inline.overhang.bottom, effect.id).toBeGreaterThan(0);
+    }
+  });
+
+  it("colours take CSS colours and currentColor, through effectDefaults too", () => {
+    const drip = getEffect("drip-text") as VectorEffect;
+    expect(effectDefaults(drip, { values: { fill: "#000", outline: "rgb(255 255 255)" } })).toMatchObject({ fill: [0, 0, 0], outline: [1, 1, 1] });
+    expect(renderVectorEffect(drip, effectDefaults(drip, { values: { fill: "hsl(0 100% 50%)" } })).svg).toContain('fill="#ff0000"');
+    for (const effect of findEffects({ kind: "vector", category: "text" }) as VectorEffect[]) {
+      const colours = effectControls(effect).filter((c) => c.color);
+      const values = effectDefaults(effect, { values: Object.fromEntries(colours.map((c) => [c.name, "currentColor"])) });
+      expect(colours.every((c) => values[c.name] === "currentColor"), effect.id).toBe(true);
+      const motion = renderVectorEffect(effect, values);
+      expect(motion.svg, effect.id).toContain('"currentColor"');
+      expect(motion.svg, effect.id).not.toMatch(/#[0-9a-f]{6}"/i);
+      expect(svgMotionIssues(motion), effect.id).toEqual([]);
+    }
+    // Shaders take no currentColor: it falls back to the default.
+    const aurora = getEffect("aurora")!;
+    const colour = effectControls(aurora).find((c) => c.color)!;
+    expect(effectDefaults(aurora, { values: { [colour.name]: "currentColor" } })[colour.name]).toEqual(colour.default);
+  });
 
   it("typewriter writes its text with a caret, kinetic stagger one letter per slot", () => {
     const typed = renderVectorEffect(getEffect("typewriter") as never, { text: "Hi there" });

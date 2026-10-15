@@ -70,10 +70,20 @@ describe("vectorEffectStill", () => {
 });
 
 describe("vectorEffect action", () => {
+  it("waits until scrolled into view to play once, and keeps room for an inline word's overhang", () => {
+    let player: SvgPlayer | undefined;
+    const action = vectorEffect(host, { motion, loop: false, onPlayer: (p) => (player = p) });
+    // jsdom's IntersectionObserver never reports it in view.
+    expect(player?.isPlaying).toBe(false);
+    action.destroy?.();
+    const drip = vectorEffectStill({ id: "drip-text", values: { word: "Slop", inline: true }, contain: true });
+    expect(drip.style).toMatch(/margin: 0\.03em 0\.03em 0\.\d+em 0\.03em/);
+  });
+
   it("makes its own still and sizing without a server still, and plays on its clock", async () => {
     const clock = new ManualClock();
     let player: SvgPlayer | undefined;
-    const action = vectorEffect(host, { motion, clock, loop: false, onPlayer: (p) => (player = p) });
+    const action = vectorEffect(host, { motion, clock, loop: false, playOnEnter: false, onPlayer: (p) => (player = p) });
     expect(host.style.display).toBe("block");
     expect(host.style.aspectRatio).toBe("200 / 100");
     expect(stillOf(host).style.display).toBe("none");
