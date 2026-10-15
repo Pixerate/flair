@@ -1,5 +1,11 @@
 # @pixerate/flair
 
+## 0.5.0
+
+### Minor Changes
+
+- a08286a: Add `pauseWhenHidden` option to `ShaderRenderer` and `SvgPlayer` to pause animation loops when scrolled off screen via `IntersectionObserver`.
+
 ## 0.4.0
 
 ### Minor Changes
