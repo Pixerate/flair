@@ -10,15 +10,15 @@ Before declaring any change complete:
 
 1. **Type Checking**:
    ```bash
-   npm run typecheck
+   pnpm typecheck
    ```
 2. **Build Verification**:
    ```bash
-   npm run build
+   pnpm build
    ```
 3. **Unit Tests**:
    ```bash
-   npm test
+   pnpm test
    ```
 4. **End-to-End CLI Verification**:
    Test inspecting controls or generating standalone HTML using the CLI:
@@ -26,6 +26,8 @@ Before declaring any change complete:
    node ./dist/cli.js controls ./tests/fixtures/sample.frag
    node ./dist/cli.js scene review ./tests/fixtures/sample.scene.json
    ```
+
+5. **Catalog shaders compile on a real GPU**: when adding or changing catalog shaders, run `pnpm dev` and open `http://localhost:3100/#check`; every shader must compile.
 
 ---
 
@@ -41,12 +43,13 @@ Upon successful completion and full test verification of any feature, fix, or up
    ```bash
    git add .
    ```
-3. **Commit Changes**:
+3. **Add a changeset** for any change consumers would notice (`pnpm changeset`), and commit the generated file. Merging to `main` versions and publishes `@pixerate/flair`.
+4. **Commit Changes**:
    Create a clear, conventional commit message detailing what was changed:
    ```bash
    git commit -m "feat: <description of feature or fix>"
    ```
-4. **Push to Remote Repository**:
+5. **Push to Remote Repository**:
    ```bash
    git push origin main
    ```
@@ -59,6 +62,9 @@ Upon successful completion and full test verification of any feature, fix, or up
 - **Line-Numbered Error Reporting**: Shader compilation and parsing errors must maintain exact line numbers matching user/agent source code (`#line 1` convention).
 - **Source as Single Source of Truth**: Uniforms annotated with `// @control` define the parameter surface and defaults.
 - **Documentation**: Keep `README.md` and JSDoc annotations up to date whenever modifying shader compilers, renderers, or CLI options.
+- **Entry points stay lean**: `@pixerate/flair`, `/catalog` and `/vector` have no runtime dependencies and no Node built-ins (browser-safe). Node-only code goes in `/node`. Only `/editor` may import `@pixerate/editor`, and only its dependency-free subpaths (`/history`, `/commands`, types from `/generation`); it is an optional peer dependency.
+- **Catalog effects**: shader sources are self-contained (inline helpers from `src/catalog/glsl.ts`), every uniform is a `// @control`, and presets only use declared controls. Vector effects fill `{{control}}` placeholders; `src/catalog/catalog.test.ts` checks all of this.
+- **Editor commands are the agent surface**: new editing actions are added to `EffectEditor` and registered in `src/editor/commands.ts` with a params schema, so menus, shortcuts and agents share them. Refusals are sentences an agent can act on.
 
 ---
 

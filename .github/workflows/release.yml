@@ -1,0 +1,88 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  release:
+    name: Build, Release & Publish (OIDC)
+    runs-on: ubuntu-latest
+    if: github.repository_owner == 'Pixerate' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          token: ${{ secrets.GH_PAT || secrets.GH_TOKEN_FOR_PACKAGES || secrets.PERSONAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          run_install: false
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: "pnpm"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check for pending changesets
+        id: changeset_check
+        run: |
+          CHANGESETS=$(find .changeset -name "*.md" ! -name "README.md" | wc -l)
+          echo "count=$CHANGESETS" >> $GITHUB_OUTPUT
+          if [ "$CHANGESETS" -gt "0" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "Release required. Pending changesets: $CHANGESETS"
+            echo "should_release=true" >> $GITHUB_OUTPUT
+          else
+            echo "No pending changesets found. Skipping release."
+            echo "should_release=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Configure Git
+        if: steps.changeset_check.outputs.should_release == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Version package & update CHANGELOG.md
+        if: steps.changeset_check.outputs.should_release == 'true'
+        run: pnpm version-packages
+
+      - name: Build package
+        if: steps.changeset_check.outputs.should_release == 'true'
+        run: pnpm build
+
+      - name: Run unit tests
+        if: steps.changeset_check.outputs.should_release == 'true'
+        run: pnpm test
+
+      - name: Publish to npm (OIDC)
+        if: steps.changeset_check.outputs.should_release == 'true'
+        run: pnpm release
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: "true"
+
+      - name: Commit version bumps & changelogs, push git tags
+        if: steps.changeset_check.outputs.should_release == 'true'
+        run: |
+          git add .
+          git commit -m "chore(release): version package and update changelog [skip ci]" || echo "No changes to commit"
+          git push origin HEAD --tags || echo "Failed to push tags"

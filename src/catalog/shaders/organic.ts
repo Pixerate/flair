@@ -154,14 +154,17 @@ uniform float uSpeed;   // @control min=0 max=2 default=0.5 label="Speed"
 uniform float uScale;   // @control min=1 max=10 default=4 label="Scale"
 uniform float uBright;  // @control min=0 max=2 default=1 label="Brightness"`,
     `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  vec2 p = fragCoord / iResolution.y * uScale;
-  float t = iTime * uSpeed + 23.0;
+  // After Dave Hoskins' "Tileable water caustic".
+  vec2 uv = fragCoord / iResolution.y * uScale * 0.25;
+  float t = iTime * uSpeed * 0.5 + 23.0;
+  vec2 p = mod(uv * 6.28318, 6.28318) - 250.0;
   vec2 i = p;
   float c = 1.0;
+  float inten = 0.005;
   for (int n = 0; n < 5; n++) {
     float tn = t * (1.0 - 3.5 / float(n + 1));
     i = p + vec2(cos(tn - i.x) + sin(tn + i.y), sin(tn - i.y) + cos(tn + i.x));
-    c += 1.0 / length(vec2(p.x / (sin(i.x + tn) / 0.005), p.y / (cos(i.y + tn) / 0.005)));
+    c += 1.0 / length(vec2(p.x / (sin(i.x + tn) / inten), p.y / (cos(i.y + tn) / inten)));
   }
   c /= 5.0;
   c = 1.17 - pow(c, 1.4);

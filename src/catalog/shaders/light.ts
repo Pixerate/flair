@@ -83,7 +83,7 @@ export const sparkles: ShaderEffect = {
 uniform vec3 uBackground; // @control color default=#1E1B4B label="Background"
 uniform vec3 uSparkle;    // @control color default=#FFFFFF label="Sparkle"
 uniform float uDensity;   // @control min=2 max=30 default=10 label="Density"
-uniform float uSize;      // @control min=0.05 max=0.5 default=0.25 label="Size"
+uniform float uSize;      // @control min=0.05 max=0.5 default=0.35 label="Size"
 uniform float uSpeed;     // @control min=0 max=4 default=1 label="Twinkle speed"`,
     HASH,
     `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
@@ -96,10 +96,11 @@ uniform float uSpeed;     // @control min=0 max=4 default=1 label="Twinkle speed
     vec2 o = hash22(id) - 0.5;
     vec2 d = f - o * 0.6;
     float phase = hash12(id + 4.0) * 6.28318;
-    float tw = pow(max(0.0, sin(iTime * uSpeed * 2.0 + phase)), 6.0);
-    float s = uSize * tw;
-    float star = max(0.0, 1.0 - abs(d.x * d.y) * 600.0 / max(s, 1e-3)) * smoothstep(s, 0.0, length(d));
-    star += 0.2 * tw * exp(-length(d) * 30.0);
+    float tw = pow(max(0.0, sin(iTime * uSpeed * 2.0 + phase)), 4.0);
+    float r = length(d);
+    float rays = max(0.0, 1.0 - abs(d.x * d.y) * 3000.0);
+    float core = 0.01 / (r + 0.01);
+    float star = (rays * 0.8 + core) * smoothstep(uSize, 0.0, r) * tw;
     col += uSparkle * star;
   }
   fragColor = vec4(col, 1.0);

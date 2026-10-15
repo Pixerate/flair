@@ -7,9 +7,24 @@ updates:
       day: "monday"
     open-pull-requests-limit: 10
     groups:
+      # @pixerate/editor is an optional peer; its updates land on their own so the peer range is reviewed.
+      pixerate:
+        patterns:
+          - "@pixerate/*"
       minor-and-patch:
         patterns:
           - "*"
         update-types:
           - "minor"
           - "patch"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      actions:
+        patterns:
+          - "*"

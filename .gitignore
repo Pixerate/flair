@@ -5,3 +5,5 @@ dist/
 *.mp4
 test-bg.svg
 test-spec.json
+.claude/
+apps/demo/dist/

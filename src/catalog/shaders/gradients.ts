@@ -135,23 +135,29 @@ export const silk: ShaderEffect = {
 uniform vec3 uBase;      // @control color default=#3B0764 label="Base"
 uniform vec3 uSheen;     // @control color default=#F0ABFC label="Sheen"
 uniform float uSpeed;    // @control min=0 max=2 default=0.4 label="Speed"
-uniform float uFolds;    // @control min=1 max=10 default=4 label="Folds"
+uniform float uFolds;    // @control min=1 max=10 default=5 label="Folds"
 uniform float uGloss;    // @control min=0 max=2 default=1 label="Gloss"`,
     ROTATE,
-    `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  vec2 p = (fragCoord - 0.5 * iResolution.xy) / iResolution.y;
-  p = rot(0.6) * p;
-  float t = iTime * uSpeed;
+    `float folds(vec2 p, float t) {
   float h = 0.0;
   for (int i = 1; i <= 4; i++) {
     float fi = float(i);
     h += sin(p.x * uFolds * fi * 0.7 + t * (1.0 + 0.3 * fi) + sin(p.y * 2.0 * fi + t)) / fi;
   }
-  float dx = dFdx(h) * iResolution.y;
-  float light = clamp(0.5 + 0.5 * dx * 0.08, 0.0, 1.0);
-  float spec = pow(light, 8.0) * uGloss;
-  vec3 col = mix(uBase * 0.6, uBase, 0.5 + 0.25 * h);
-  col = mix(col, uSheen, spec);
+  return h;
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec2 p = rot(0.6) * (fragCoord - 0.5 * iResolution.xy) / iResolution.y;
+  float t = iTime * uSpeed;
+  float e = 0.002;
+  float hx = (folds(p + vec2(e, 0.0), t) - folds(p - vec2(e, 0.0), t)) / (2.0 * e);
+  float hy = (folds(p + vec2(0.0, e), t) - folds(p - vec2(0.0, e), t)) / (2.0 * e);
+  vec3 n = normalize(vec3(-hx * 0.12, -hy * 0.12, 1.0));
+  vec3 l = normalize(vec3(-0.4, 0.6, 0.7));
+  float diff = clamp(dot(n, l), 0.0, 1.0);
+  float spec = pow(clamp(dot(reflect(-l, n), vec3(0.0, 0.0, 1.0)), 0.0, 1.0), 20.0) * uGloss;
+  vec3 col = uBase * (0.35 + 0.9 * diff) + uSheen * (spec + 0.12 * pow(diff, 6.0));
   fragColor = vec4(col, 1.0);
 }`,
   ),

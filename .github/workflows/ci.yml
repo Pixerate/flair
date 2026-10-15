@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-and-build:
+    name: Test & Build (Node 24)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          run_install: false
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check for changeset on PRs
+        if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]'
+        run: |
+          CHANGESETS=$(find .changeset -name "*.md" ! -name "README.md" | wc -l)
+          if [ "$CHANGESETS" -eq "0" ]; then
+            echo "::error title=Missing Changeset::No changeset found in .changeset/. Please run 'pnpm changeset' and include the generated markdown file in your PR so packages can be published on merge."
+            exit 1
+          else
+            echo "Pending changeset found: $CHANGESETS"
+          fi
+
+      - name: Build package & demo
+        run: pnpm build && pnpm --filter demo build
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Run unit tests
+        run: pnpm test
+
+      - name: CLI smoke test
+        run: |
+          node ./dist/cli.js controls ./tests/fixtures/sample.frag
+          node ./dist/cli.js scene review ./tests/fixtures/sample.scene.json
