@@ -131,6 +131,8 @@ animateCount({
 
 Find effects with `findEffects({ text: "glow", category: "light", kind: "shader" })`. Each effect has an `id`, `name`, `description`, `category`, `tags` and optional `presets`. Image effects default to built-in sample pictures, so they look right before you set `uImage` to your own URL.
 
+Image and transition effects take transparent pictures too, such as SVG icons (Lucide and similar sets draw black `currentColor` strokes on a clear background). They lay the picture over a backdrop: `uBackdrop` (white by default) shows through its clear parts. Set `uBackdropAlpha` to 0 to keep the picture's alpha instead, and render with `{ alpha: true }` to lay the result over the page. `SAMPLE_IMAGES.icon` is a Lucide-style sample icon. SVGs are rasterised at 2048 px on the long edge, so icons stay sharp.
+
 Overlay shaders (`category: "overlay"`) have `transparent: true`: they write coverage to `fragColor.a` and draw nothing elsewhere, so render them with `new ShaderRenderer(host, { alpha: true })` (or `new ThumbnailPool({ alpha: true })`) and lay the canvas over a picture, video or page. `shader-text` fills letters from a text image: set its `uText` control to `textImage("Your title", { weight: 900 })`, a transparent SVG `data:` URL of any Unicode text.
 
 A vector effect declares its controls in its picture, the way a shader declares its uniforms: the first `{{name: type …}}` declares a control (`float`, `int`, `bool`, `color` or `text`, with `@control`'s attributes; quote values with spaces in single quotes), and every `{{name}}` is filled with its value. Declarations can sit in an XML comment, which is dropped when the picture is filled in, and text is escaped, so any words are safe:
@@ -163,6 +165,7 @@ import { ShaderRenderer, ShaderFrames, recordGif, standaloneHtml, parseControls 
 const status = renderer.setSource(source); // { ok, errors: [{ line, message }] }
 parseControls(source); // [{ name: "uTint", type: "vec3", color: true, default: [...] }, ...]
 const gif = await recordGif({ source, width: 480, height: 270, fps: 30, duration: 3 });
+const frames = new ShaderFrames({ source, width: 480, height: 270, alpha: true }); // alpha: keep fragColor.a
 const page = standaloneHtml("My effect", source, { uSpeed: 2 });
 ```
 

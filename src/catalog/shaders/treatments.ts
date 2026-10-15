@@ -1,7 +1,7 @@
 import { FBM, glsl, HASH, NOISE, ROTATE } from "../glsl.js";
 import { SAMPLE_IMAGES } from "../images.js";
 import type { ShaderEffect } from "../types.js";
-import { PICTURE } from "./image.js";
+import { BACKDROP_CONTROLS, PICTURE } from "./image.js";
 
 export const imageKenBurns: ShaderEffect = {
   kind: "shader",
@@ -17,7 +17,8 @@ uniform sampler2D uImage;  // @control filter=linear wrap=clamp default=${SAMPLE
 uniform float uZoomStart;  // @control min=1 max=3 default=1.05 label="Start zoom"
 uniform float uZoomEnd;    // @control min=1 max=3 default=1.4 label="End zoom"
 uniform float uAngle;      // @control min=0 max=360 default=20 label="Pan direction (°)"
-uniform float uDuration;   // @control min=2 max=30 default=6 label="Duration (s)"`,
+uniform float uDuration;   // @control min=2 max=30 default=6 label="Duration (s)"
+${BACKDROP_CONTROLS}`,
     PICTURE,
     `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 uv = fragCoord / iResolution.xy;
@@ -33,8 +34,7 @@ uniform float uDuration;   // @control min=2 max=30 default=6 label="Duration (s
   // Pan as far as the window allows in the chosen direction, from one side to the other.
   float a = radians(uAngle);
   vec2 pan = vec2(cos(a), sin(a)) * (1.0 - window) * 0.5 * (2.0 * k - 1.0);
-  vec3 col = picture(uImage, 0.5 + (uv - 0.5) * window + pan);
-  fragColor = vec4(col, 1.0);
+  fragColor = pictureRGBA(uImage, 0.5 + (uv - 0.5) * window + pan);
 }`,
   ),
   presets: [
@@ -57,7 +57,8 @@ uniform sampler2D uImage;  // @control filter=linear wrap=clamp default=${SAMPLE
 uniform float uCell;       // @control min=4 max=32 default=9 label="Cell size (px)"
 uniform int uColourMode;   // @control min=0 max=1 default=0 label="Colour (0 ink, 1 original)"
 uniform vec3 uInk;         // @control color default=#A3E635 label="Ink"
-uniform vec3 uBackground;  // @control color default=#0A0F0A label="Background"`,
+uniform vec3 uBackground;  // @control color default=#0A0F0A label="Background"
+${BACKDROP_CONTROLS}`,
     PICTURE,
     `// 5 × 7 glyphs, lightest to densest: bit (x + 5y) of .x holds rows 0–3 (top first), of .y rows 4–6.
 const ivec2 GLYPHS[10] = ivec2[10](
@@ -85,14 +86,15 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 cell = vec2(uCell, uCell * 9.0 / 7.0);
   vec2 id = floor(fragCoord / cell);
   vec2 local = fract(fragCoord / cell);
-  vec3 src = picture(uImage, (id + 0.5) * cell / iResolution.xy);
+  vec4 pic = pictureRGBA(uImage, (id + 0.5) * cell / iResolution.xy);
+  vec3 src = pic.rgb;
   float l = pow(clamp(dot(src, vec3(0.2126, 0.7152, 0.0722)), 0.0, 1.0), 0.8);
   int level = int(min(l * 10.0, 9.0));
   int gx = int(floor(local.x * 7.0)) - 1;
   int gy = int(floor((1.0 - local.y) * 9.0)) - 1;
   float ink = glyphBit(GLYPHS[level], gx, gy);
   vec3 tint = uColourMode == 1 ? src * 1.25 : uInk;
-  fragColor = vec4(mix(uBackground, tint, ink), 1.0);
+  fragColor = vec4(mix(uBackground, tint, ink), pic.a);
 }`,
   ),
   presets: [
@@ -118,7 +120,8 @@ uniform float uProgress;   // @control min=0 max=1 default=0.5 label="Progress (
 uniform float uCount;      // @control min=3 max=30 default=8 label="Shards (across height)"
 uniform float uSpread;     // @control min=0 max=2 default=0.6 label="Spread"
 uniform float uSpin;       // @control min=0 max=6.28 default=1.5 label="Spin"
-uniform vec3 uBackground;  // @control color default=#0B0B12 label="Background"`,
+uniform vec3 uBackground;  // @control color default=#0B0B12 label="Background"
+${BACKDROP_CONTROLS}`,
     HASH,
     ROTATE,
     PICTURE,
@@ -154,7 +157,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   // Shard centres move out from the middle; shards keep their size, so gaps open between them.
   float grow = 1.0 + uSpread * k;
   vec2 base = floor(p / grow);
-  vec3 col = uBackground;
+  vec4 col = vec4(uBackground, uBackdropAlpha);
   float top = -1.0;
   for (int j = -2; j <= 2; j++) {
     for (int i = -2; i <= 2; i++) {
@@ -169,14 +172,14 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
       if (s.x == c.x && s.y == c.y && h.y > top) {
         top = h.y;
         vec2 uv = q / uCount * iResolution.y / iResolution.xy + 0.5;
-        vec3 shard = picture(uImage, uv);
-        shard *= 1.0 - 0.35 * k * abs(sin(a));
-        shard += k * 0.35 * smoothstep(0.06, 0.0, s.z);
+        vec4 shard = pictureRGBA(uImage, uv);
+        shard.rgb *= 1.0 - 0.35 * k * abs(sin(a));
+        shard.rgb += k * 0.35 * smoothstep(0.06, 0.0, s.z);
         col = shard;
       }
     }
   }
-  fragColor = vec4(col, 1.0);
+  fragColor = col;
 }`,
   ),
   presets: [
@@ -197,7 +200,8 @@ export const imageMelt: ShaderEffect = {
 uniform sampler2D uImage;  // @control filter=linear wrap=clamp default=${SAMPLE_IMAGES.landscape} label="Image"
 uniform float uAmount;     // @control min=0 max=0.6 default=0.18 label="Amount"
 uniform float uSpeed;      // @control min=0 max=2 default=0.35 label="Flow speed"
-uniform float uScale;      // @control min=1 max=20 default=6 label="Scale"`,
+uniform float uScale;      // @control min=1 max=20 default=6 label="Scale"
+${BACKDROP_CONTROLS}`,
     HASH,
     NOISE,
     FBM,
@@ -211,10 +215,10 @@ uniform float uScale;      // @control min=1 max=20 default=6 label="Scale"`,
   float drop = uAmount * (0.7 * runs + 0.6 * drips) * (0.35 + 0.65 * (1.0 - uv.y));
   float wobble = (vnoise(vec2(uv.y * uScale * 2.0 - t, uv.x * uScale)) - 0.5) * uAmount * 0.12;
   vec2 st = clamp(uv + vec2(wobble, drop), 0.0, 1.0);
-  vec3 col = picture(uImage, st);
+  vec4 pic = pictureRGBA(uImage, st);
   // A little sheen along the leading edges of the runs.
-  col += 0.12 * smoothstep(0.55, 0.9, drips) * uAmount * 4.0;
-  fragColor = vec4(col, 1.0);
+  vec3 col = pic.rgb + 0.12 * smoothstep(0.55, 0.9, drips) * uAmount * 4.0;
+  fragColor = vec4(col, pic.a);
 }`,
   ),
   presets: [
@@ -238,7 +242,8 @@ uniform vec3 uInkA;        // @control color default=#FF48B0 label="Ink A"
 uniform vec3 uInkB;        // @control color default=#0078BF label="Ink B"
 uniform float uOffset;     // @control min=0 max=20 default=4 label="Misregistration (px)"
 uniform float uGrain;      // @control min=0 max=1 default=0.4 label="Grain"
-uniform vec3 uPaper;       // @control color default=#F5EFE0 label="Paper"`,
+uniform vec3 uPaper;       // @control color default=#F5EFE0 label="Paper"
+${BACKDROP_CONTROLS}`,
     HASH,
     NOISE,
     PICTURE,
@@ -254,8 +259,8 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   float fibre = hash12(fragCoord);
   float mottle = vnoise(fragCoord / 6.0);
   // Two separations: ink A where the picture lacks green, ink B where it lacks red.
-  vec3 a = picture(uImage, uv + shift);
-  vec3 b = picture(uImage, uv - shift);
+  vec4 a = pictureRGBA(uImage, uv + shift);
+  vec4 b = pictureRGBA(uImage, uv - shift);
   float dA = posterize(1.0 - a.g, levels, (hash12(fragCoord + 17.0) - 0.5) * uGrain * 0.6);
   float dB = posterize(1.0 - b.r, levels, (hash12(fragCoord + 53.0) - 0.5) * uGrain * 0.6);
   // Ink never lays down evenly: mottled, with paper showing through.
@@ -263,7 +268,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec3 col = uPaper * (1.0 - uGrain * 0.08 * fibre);
   col *= mix(vec3(1.0), uInkA, dA * cover);
   col *= mix(vec3(1.0), uInkB, dB * cover);
-  fragColor = vec4(col, 1.0);
+  fragColor = vec4(col, max(a.a, b.a));
 }`,
   ),
   presets: [
@@ -285,7 +290,8 @@ export const imageThermal: ShaderEffect = {
 uniform sampler2D uImage;  // @control filter=linear wrap=clamp default=${SAMPLE_IMAGES.landscape} label="Image"
 uniform int uMode;         // @control min=0 max=1 default=0 label="Palette (0 thermal, 1 night vision)"
 uniform float uNoise;      // @control min=0 max=0.5 default=0.04 label="Noise"
-uniform float uContrast;   // @control min=0.5 max=3 default=1.3 label="Contrast"`,
+uniform float uContrast;   // @control min=0.5 max=3 default=1.3 label="Contrast"
+${BACKDROP_CONTROLS}`,
     HASH,
     PICTURE,
     `vec3 heat(float t) {
@@ -300,9 +306,9 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 uv = fragCoord / iResolution.xy;
   // Heat spreads, so take a soft average around the pixel.
   vec2 px = 2.0 / iResolution.xy;
-  vec3 src = 0.4 * picture(uImage, uv) + 0.15 * (picture(uImage, uv + vec2(px.x, 0.0)) + picture(uImage, uv - vec2(px.x, 0.0)) +
-             picture(uImage, uv + vec2(0.0, px.y)) + picture(uImage, uv - vec2(0.0, px.y)));
-  float l = dot(src, vec3(0.2126, 0.7152, 0.0722));
+  vec4 src = 0.4 * pictureRGBA(uImage, uv) + 0.15 * (pictureRGBA(uImage, uv + vec2(px.x, 0.0)) + pictureRGBA(uImage, uv - vec2(px.x, 0.0)) +
+             pictureRGBA(uImage, uv + vec2(0.0, px.y)) + pictureRGBA(uImage, uv - vec2(0.0, px.y)));
+  float l = dot(src.rgb, vec3(0.2126, 0.7152, 0.0722));
   l = clamp((l - 0.5) * uContrast + 0.5, 0.0, 1.0);
   float frame = floor(iTime * 24.0);
   float grain = hash12(fragCoord + frame * 37.1) - 0.5;
@@ -317,7 +323,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     vec2 d = (uv - 0.5) * vec2(iResolution.x / iResolution.y, 1.0);
     col *= smoothstep(0.75, 0.3, length(d));
   }
-  fragColor = vec4(col, 1.0);
+  fragColor = vec4(col, src.a);
 }`,
   ),
   presets: [
@@ -341,25 +347,28 @@ uniform float uThreshold;  // @control min=0 max=1 default=0.15 label="Threshold
 uniform vec3 uGlow;        // @control color default=#22D3EE label="Glow colour"
 uniform float uWidth;      // @control min=0.5 max=4 default=1.5 label="Glow width (px)"
 uniform float uDim;        // @control min=0 max=1 default=0.75 label="Dim image"
-uniform float uPulse;      // @control min=0 max=1 default=0.4 label="Pulse"`,
+uniform float uPulse;      // @control min=0 max=1 default=0.4 label="Pulse"
+${BACKDROP_CONTROLS}`,
     PICTURE,
-    `float luma(vec2 uv) {
-  return dot(picture(uImage, uv), vec3(0.2126, 0.7152, 0.0722));
+    `// Brightness and alpha: an edge is where either changes (an icon's outline is in its alpha).
+vec2 lumaAlpha(vec2 uv) {
+  vec4 c = pictureRGBA(uImage, uv);
+  return vec2(dot(c.rgb, vec3(0.2126, 0.7152, 0.0722)), c.a);
 }
 
 // Sobel edge strength, sampling d apart (in uv).
 float sobel(vec2 uv, vec2 d) {
-  float tl = luma(uv + vec2(-d.x, d.y));
-  float t = luma(uv + vec2(0.0, d.y));
-  float tr = luma(uv + d);
-  float l = luma(uv - vec2(d.x, 0.0));
-  float r = luma(uv + vec2(d.x, 0.0));
-  float bl = luma(uv - d);
-  float b = luma(uv - vec2(0.0, d.y));
-  float br = luma(uv + vec2(d.x, -d.y));
-  float gx = tr + 2.0 * r + br - tl - 2.0 * l - bl;
-  float gy = tl + 2.0 * t + tr - bl - 2.0 * b - br;
-  return length(vec2(gx, gy));
+  vec2 tl = lumaAlpha(uv + vec2(-d.x, d.y));
+  vec2 t = lumaAlpha(uv + vec2(0.0, d.y));
+  vec2 tr = lumaAlpha(uv + d);
+  vec2 l = lumaAlpha(uv - vec2(d.x, 0.0));
+  vec2 r = lumaAlpha(uv + vec2(d.x, 0.0));
+  vec2 bl = lumaAlpha(uv - d);
+  vec2 b = lumaAlpha(uv - vec2(0.0, d.y));
+  vec2 br = lumaAlpha(uv + vec2(d.x, -d.y));
+  vec2 gx = tr + 2.0 * r + br - tl - 2.0 * l - bl;
+  vec2 gy = tl + 2.0 * t + tr - bl - 2.0 * b - br;
+  return max(length(vec2(gx.x, gy.x)), length(vec2(gx.y, gy.y)));
 }
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
@@ -369,10 +378,13 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   float halo = smoothstep(uThreshold, uThreshold + 0.5, sobel(uv, d * 3.0));
   vec2 c = (uv - 0.5) * vec2(iResolution.x / iResolution.y, 1.0);
   float pulse = 1.0 - uPulse * (0.5 + 0.5 * sin(iTime * 3.14159265 - length(c) * 12.0));
-  vec3 col = picture(uImage, uv) * (1.0 - uDim);
-  col += uGlow * (line + 0.45 * halo) * pulse;
-  col += vec3(1.0) * line * line * 0.35 * pulse;
-  fragColor = vec4(col, 1.0);
+  vec4 pic = pictureRGBA(uImage, uv);
+  float glow = (line + 0.45 * halo) * pulse;
+  vec3 light = uGlow * glow + vec3(1.0) * line * line * 0.35 * pulse;
+  // The glow is light added over the picture, so it also shows where the picture is clear.
+  float alpha = max(pic.a, clamp(glow, 0.0, 1.0));
+  vec3 col = (pic.rgb * (1.0 - uDim) * pic.a + light) / max(alpha, 1e-4);
+  fragColor = vec4(col, alpha);
 }`,
   ),
   presets: [
@@ -394,25 +406,28 @@ uniform sampler2D uImage;  // @control filter=linear wrap=clamp default=${SAMPLE
 uniform float uFocus;      // @control min=0 max=1 default=0.45 label="Focus position"
 uniform float uBand;       // @control min=0 max=0.6 default=0.12 label="Focus band width"
 uniform float uBlur;       // @control min=0 max=30 default=12 label="Blur (px)"
-uniform float uSaturation; // @control min=0 max=2 default=1.4 label="Saturation"`,
+uniform float uSaturation; // @control min=0 max=2 default=1.4 label="Saturation"
+${BACKDROP_CONTROLS}`,
     PICTURE,
     `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 uv = fragCoord / iResolution.xy;
   float away = smoothstep(uBand * 0.5, uBand * 0.5 + 0.3, abs(uv.y - uFocus));
   float radius = away * uBlur;
   // A 24-tap golden-angle disc.
-  vec3 sum = vec3(0.0);
+  // Summed premultiplied, so clear parts of the picture do not darken the blur.
+  vec4 sum = vec4(0.0);
   for (int i = 0; i < 24; i++) {
     float fi = float(i);
     float r = sqrt((fi + 0.5) / 24.0) * radius;
     float a = fi * 2.39996;
-    sum += picture(uImage, uv + r * vec2(cos(a), sin(a)) / iResolution.xy);
+    vec4 c = pictureRGBA(uImage, uv + r * vec2(cos(a), sin(a)) / iResolution.xy);
+    sum += vec4(c.rgb * c.a, c.a);
   }
-  vec3 col = sum / 24.0;
+  vec3 col = sum.rgb / max(sum.a, 1e-4);
   float l = dot(col, vec3(0.2126, 0.7152, 0.0722));
   col = mix(vec3(l), col, uSaturation);
   col = clamp((col - 0.5) * 1.08 + 0.5, 0.0, 1.0);
-  fragColor = vec4(col, 1.0);
+  fragColor = vec4(col, sum.a / 24.0);
 }`,
   ),
   presets: [
@@ -433,7 +448,8 @@ export const imageSlitScan: ShaderEffect = {
 uniform sampler2D uImage;  // @control filter=linear wrap=mirror default=${SAMPLE_IMAGES.landscape} label="Image"
 uniform int uDirection;    // @control min=0 max=1 default=0 label="Direction (0 horizontal, 1 vertical)"
 uniform float uStretch;    // @control min=0 max=1 default=0.45 label="Stretch"
-uniform float uSpeed;      // @control min=0 max=3 default=0.6 label="Speed"`,
+uniform float uSpeed;      // @control min=0 max=3 default=0.6 label="Speed"
+${BACKDROP_CONTROLS}`,
     HASH,
     NOISE,
     PICTURE,
@@ -448,13 +464,15 @@ uniform float uSpeed;      // @control min=0 max=3 default=0.6 label="Speed"`,
   float along = slit + (a.x - slit) * (1.0 - uStretch * delay);
   along += uStretch * 0.15 * (delay - 0.5);
   // Smear: average a few taps along the streak.
-  vec3 col = vec3(0.0);
+  // Summed premultiplied, so clear parts of the picture do not darken the smear.
+  vec4 sum = vec4(0.0);
   for (int i = 0; i < 8; i++) {
     float s = along - float(i) * uStretch * 0.006;
     vec2 st = uDirection == 0 ? vec2(s, a.y) : vec2(a.y, s);
-    col += picture(uImage, st);
+    vec4 c = pictureRGBA(uImage, st);
+    sum += vec4(c.rgb * c.a, c.a);
   }
-  fragColor = vec4(col / 8.0, 1.0);
+  fragColor = vec4(sum.rgb / max(sum.a, 1e-4), sum.a / 8.0);
 }`,
   ),
   presets: [
@@ -478,7 +496,8 @@ uniform int uShape;        // @control min=0 max=1 default=0 label="Tile shape (
 uniform float uSize;       // @control min=10 max=160 default=48 label="Tile size (px)"
 uniform bool uAuto;        // @control default=true label="Animate"
 uniform float uProgress;   // @control min=0 max=1 default=1 label="Progress (when still)"
-uniform vec3 uBackground;  // @control color default=#0F172A label="Background"`,
+uniform vec3 uBackground;  // @control color default=#0F172A label="Background"
+${BACKDROP_CONTROLS}`,
     HASH,
     PICTURE,
     `// Hexagon tiles 1 unit across the flats: h is the offset from the tile's centre.
@@ -532,14 +551,14 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 hf = vec2(h.x / max(squash, 0.001), h.y);
   float e = uShape == 0 ? hexEdge(hf) : triEdge(hf, up);
   float gap = 0.1 * (1.0 - flip);
-  vec3 col = uBackground * 0.6;
+  vec4 col = vec4(uBackground * 0.6, uBackdropAlpha);
   if (e < 1.0 - gap + 0.001) {
-    vec3 face = flip < 0.5
-      ? uBackground * (0.9 + 0.2 * hash12(centre * 3.17)) + 0.04
-      : picture(uImage, (centre + hf) * uSize / iResolution.xy);
-    col = face * (0.5 + 0.5 * squash);
+    vec4 face = flip < 0.5
+      ? vec4(uBackground * (0.9 + 0.2 * hash12(centre * 3.17)) + 0.04, uBackdropAlpha)
+      : pictureRGBA(uImage, (centre + hf) * uSize / iResolution.xy);
+    col = vec4(face.rgb * (0.5 + 0.5 * squash), face.a);
   }
-  fragColor = vec4(col, 1.0);
+  fragColor = col;
 }`,
   ),
   presets: [
@@ -560,7 +579,8 @@ export const imageChromaticLens: ShaderEffect = {
 uniform sampler2D uImage;   // @control filter=linear wrap=clamp default=${SAMPLE_IMAGES.landscape} label="Image"
 uniform float uDistortion;  // @control min=-0.5 max=1 default=0.25 label="Distortion"
 uniform float uAberration;  // @control min=0 max=0.1 default=0.025 label="Aberration"
-uniform float uVignette;    // @control min=0 max=1 default=0.4 label="Vignette"`,
+uniform float uVignette;    // @control min=0 max=1 default=0.4 label="Vignette"
+${BACKDROP_CONTROLS}`,
     PICTURE,
     `// Where a lens with barrel strength k shows the point c (centred, aspect-corrected) from.
 vec2 lens(vec2 c, float k, vec2 aspect) {
@@ -574,13 +594,12 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 uv = fragCoord / iResolution.xy;
   vec2 aspect = vec2(iResolution.x / iResolution.y, 1.0);
   vec2 c = (uv - 0.5) * aspect;
-  vec3 col = vec3(
-    picture(uImage, lens(c, uDistortion + uAberration, aspect)).r,
-    picture(uImage, lens(c, uDistortion, aspect)).g,
-    picture(uImage, lens(c, uDistortion - uAberration, aspect)).b
-  );
+  vec4 r = pictureRGBA(uImage, lens(c, uDistortion + uAberration, aspect));
+  vec4 g = pictureRGBA(uImage, lens(c, uDistortion, aspect));
+  vec4 b = pictureRGBA(uImage, lens(c, uDistortion - uAberration, aspect));
+  vec3 col = vec3(r.r, g.g, b.b);
   col *= 1.0 - uVignette * smoothstep(0.25, 0.95, length(c));
-  fragColor = vec4(col, 1.0);
+  fragColor = vec4(col, max(max(r.a, g.a), b.a));
 }`,
   ),
   presets: [
@@ -601,7 +620,8 @@ export const imageOilPaint: ShaderEffect = {
 uniform sampler2D uImage;  // @control filter=linear wrap=clamp default=${SAMPLE_IMAGES.portrait} label="Image"
 uniform int uRadius;       // @control min=1 max=8 default=4 label="Brush radius (px)"
 uniform float uSharpness;  // @control min=0.5 max=8 default=4 label="Sharpness"
-uniform float uSaturation; // @control min=0 max=2 default=1.15 label="Saturation"`,
+uniform float uSaturation; // @control min=0 max=2 default=1.15 label="Saturation"
+${BACKDROP_CONTROLS}`,
     PICTURE,
     `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 uv = fragCoord / iResolution.xy;
@@ -641,7 +661,7 @@ uniform float uSaturation; // @control min=0 max=2 default=1.15 label="Saturatio
   vec3 col = (m0 * w.x + m1 * w.y + m2 * w.z + m3 * w.w) / (w.x + w.y + w.z + w.w);
   float l = dot(col, vec3(0.2126, 0.7152, 0.0722));
   col = mix(vec3(l), col, uSaturation);
-  fragColor = vec4(col, 1.0);
+  fragColor = vec4(col, pictureRGBA(uImage, uv).a);
 }`,
   ),
   presets: [

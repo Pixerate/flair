@@ -15,6 +15,8 @@ export interface ShaderFramesOptions {
   height: number;
   /** Draw on this canvas instead of a new, detached one. It is resized to `width` × `height`. */
   canvas?: HTMLCanvasElement;
+  /** Keep the shader's alpha (`fragColor.a`) in the frames, for transparent recordings (default false: opaque). */
+  alpha?: boolean;
 }
 
 export interface RenderOptions {
@@ -58,7 +60,7 @@ export class ShaderFrames {
     this.canvas.width = this.width;
     this.canvas.height = this.height;
     this.values = values;
-    const gl = createContext(this.canvas, true);
+    const gl = createContext(this.canvas, true, Boolean(options.alpha));
     if (!gl) throw new Error("WebGL2 is not available in this browser.");
     this.gl = gl;
     this.controls = parseControls(source);

@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import {
   ImageLoadError,
   isSvgUrl,
@@ -79,6 +80,14 @@ describe("SVG images", () => {
     ]);
     // Percentages say nothing about the size; neither size nor viewBox means 300 × 150.
     expect(size(sizeSvg(svg('width="100%"'), 600))).toEqual(["600", "300", "0 0 300 150"]);
+  });
+
+  it("sizeSvg sizes a Lucide-style icon and leaves its currentColor strokes alone", () => {
+    const icon = readFileSync("tests/fixtures/icon.svg", "utf8");
+    const sized = sizeSvg(icon, SVG_EDGE);
+    expect(size(sized)).toEqual([String(SVG_EDGE), String(SVG_EDGE), "0 0 24 24"]);
+    const el = new DOMParser().parseFromString(sized, "image/svg+xml").documentElement;
+    expect(["fill", "stroke", "stroke-width"].map((a) => el.getAttribute(a))).toEqual(["none", "currentColor", "2"]);
   });
 
   it("sizeSvg throws for markup that is not an SVG", () => {

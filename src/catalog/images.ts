@@ -35,11 +35,18 @@ const PORTRAIT = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360">
 <path d="M300 185 Q320 198 340 185" stroke="#7a3e2c" stroke-width="5" fill="none"/>
 </svg>`;
 
+/**
+ * An icon drawn the way Lucide and similar sets draw them: 24 × 24, stroked
+ * in `currentColor` (black in an image) on a transparent background.
+ */
+const ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20C5 15.5 3 12 3 8.5a4.5 4.5 0 0 1 9 0a4.5 4.5 0 0 1 9 0c0 3.5-2 7-9 11.5Z"/></svg>`;
+
 /** Built-in sample pictures, as image control values. */
 export const SAMPLE_IMAGES = {
   landscape: svgDataUrl(LANDSCAPE),
   city: svgDataUrl(CITY),
   portrait: svgDataUrl(PORTRAIT),
+  icon: svgDataUrl(ICON),
 } as const;
 
 /** Roughly how wide a character is in a bold sans-serif, in ems, for fitting text without measuring it. */
