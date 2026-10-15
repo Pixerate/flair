@@ -259,6 +259,36 @@ describe("ThumbnailPool", () => {
       raf.frame(1000);
       expect(webgl.contexts[0]!.uniform("iTime")).toEqual([2]);
     });
+
+    it("supports hoverOnly / animateMode: 'hover' regardless of prefers-reduced-motion", () => {
+      vi.stubGlobal("matchMedia", () => ({ matches: false }));
+      const { webgl, raf, observer } = setup({ hoverOnly: true, stillTime: 1.5 });
+      const canvas = card();
+      const handle = new ThumbnailPool({ animateMode: "hover", stillTime: 1.5 }).register(
+        canvas,
+        shaderSource(),
+      );
+      observer().show(canvas);
+      raf.frame(1000);
+      const gl = webgl.contexts[0]!;
+      expect(gl.uniform("iTime")).toEqual([1.5]);
+      expect(raf.pending).toBe(0);
+      handle.setHovered(true);
+      raf.frame(1200);
+      expect(gl.uniform("iTime")).toEqual([0.2]);
+      expect(raf.pending).toBe(1);
+    });
+
+    it("clears the 2D canvas before drawing when alpha: true is set", () => {
+      const { webgl, raf, pool, observer } = setup({ alpha: true });
+      const canvas = card(200, 100);
+      pool.register(canvas, shaderSource());
+      observer().show(canvas);
+      raf.frame(1000);
+      expect(webgl.contexts[0]!.attributes).toMatchObject({ alpha: true });
+      const ctx2d = webgl.contexts2d.find((c) => c.canvas === canvas)!;
+      expect(ctx2d.clearRect).toHaveBeenCalledWith(0, 0, 200, 100);
+    });
   });
 
   it("stops drawing a disposed thumbnail and frees its program", () => {

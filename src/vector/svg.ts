@@ -4,7 +4,17 @@
  */
 
 import { realClock, type Clock } from "../time/clock.js";
-import { SVG_PICTURE, svgFrame, svgOpeningTag, type SvgBox, type SvgMotion } from "./motion.js";
+import {
+  EASES,
+  formatCount,
+  STEP_MS,
+  SVG_PICTURE,
+  svgFrame,
+  svgOpeningTag,
+  type EaseName,
+  type SvgBox,
+  type SvgMotion,
+} from "./motion.js";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -319,6 +329,8 @@ export interface SvgPlayerOptions extends SvgViewOptions {
   pauseWhenHidden?: boolean;
   /** Wait to start playing until the element enters the viewport via IntersectionObserver (default false). When true, autoplay is deferred until first visible. */
   playOnEnter?: boolean;
+  /** Hide the view (`visibility: hidden`) whenever playback is paused or reset (default false). */
+  hideWhenPaused?: boolean;
 }
 
 /**
@@ -331,6 +343,7 @@ export class SvgPlayer {
   private readonly steps: readonly number[];
   private readonly loop: boolean;
   private readonly length: number;
+  private readonly hideWhenPaused: boolean;
   private speed: number;
   private time = 0;
   private last = 0;
@@ -349,6 +362,7 @@ export class SvgPlayer {
     this.steps = options.steps ?? [];
     this.loop = options.loop ?? true;
     this.speed = options.speed ?? 1;
+    this.hideWhenPaused = Boolean(options.hideWhenPaused);
     this.length = options.duration ?? svgDuration(motion, this.steps) + (options.hold ?? 600);
     this.view = svgView(motion, options);
     container.appendChild(this.view.element);
@@ -381,7 +395,11 @@ export class SvgPlayer {
     }
 
     const shouldAutoplay = (options.autoplay ?? true) && !options.playOnEnter;
-    if (shouldAutoplay) this.play();
+    if (shouldAutoplay) {
+      this.play();
+    } else if (this.hideWhenPaused) {
+      this.view.element.style.visibility = "hidden";
+    }
   }
 
   /** The loop length in ms. */
@@ -401,12 +419,22 @@ export class SvgPlayer {
   play(): void {
     if (this.playing || this.disposed) return;
     this.playing = true;
+    if (this.hideWhenPaused) this.view.element.style.visibility = "visible";
     this.last = this.clock.now();
     void this.run();
   }
 
   pause(): void {
     this.playing = false;
+    if (this.hideWhenPaused) this.view.element.style.visibility = "hidden";
+  }
+
+  /** Stops playback, rewinds to `0 ms`, and hides the view if `hideWhenPaused` is enabled. */
+  reset(): void {
+    this.playing = false;
+    this.wasPlayingBeforeHidden = false;
+    this.seek(0);
+    if (this.hideWhenPaused) this.view.element.style.visibility = "hidden";
   }
 
   /** Shows the picture at `ms` (wrapped into the loop when looping). */
@@ -438,9 +466,71 @@ export class SvgPlayer {
       if (!this.loop && next >= this.length) {
         this.seek(this.length);
         this.playing = false;
+        if (this.hideWhenPaused) this.view.element.style.visibility = "hidden";
         return;
       }
       this.seek(next);
     }
   }
+}
+
+export interface AnimateCountOptions {
+  /** Starting number. */
+  from: number;
+  /** Ending number. */
+  to: number;
+  /** Duration in ms (default {@link STEP_MS}). */
+  ms?: number;
+  /** Delay before starting in ms (default 0). */
+  delay?: number;
+  /** Easing curve (default `"out"`). */
+  ease?: EaseName;
+  /** Number of decimal places (default 0). */
+  decimals?: number;
+  /** Format template where `{n}` is replaced by the formatted number (default `"{n}"`). */
+  format?: string;
+  /** Time source (default: animation frames). */
+  clock?: Clock;
+  /** Called with each formatted text frame (and raw numeric value). */
+  onUpdate: (text: string, value: number) => void;
+}
+
+/**
+ * Counts a number from `from` to `to` over `ms` using Flair's easing curves
+ * and `Clock`, calling `onUpdate` with the formatted string on each frame.
+ * Returns a cancel function that stops the animation.
+ */
+export function animateCount(options: AnimateCountOptions): () => void {
+  const clock = options.clock ?? realClock;
+  const ms = options.ms ?? STEP_MS;
+  const delay = options.delay ?? 0;
+  const ease = EASES[options.ease ?? "out"];
+  const start = clock.now();
+  let stopped = false;
+
+  const emit = (u: number) => {
+    const v = options.from + (options.to - options.from) * ease(u);
+    options.onUpdate(formatCount(v, options), v);
+  };
+
+  emit(ms <= 0 && delay <= 0 ? 1 : 0);
+  if (ms <= 0 && delay <= 0) return () => {};
+
+  void (async () => {
+    while (!stopped) {
+      await clock.frame();
+      if (stopped) return;
+      const elapsed = clock.now() - start - delay;
+      if (elapsed < 0) continue;
+      if (ms <= 0 || elapsed >= ms) {
+        emit(1);
+        return;
+      }
+      emit(elapsed / ms);
+    }
+  })();
+
+  return () => {
+    stopped = true;
+  };
 }

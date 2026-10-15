@@ -10,17 +10,19 @@ export const bokeh: ShaderEffect = {
   tags: ["background", "festive", "dreamy", "night"],
   source: glsl(
     `// Bokeh: soft out-of-focus lights drifting.
-uniform vec3 uBackground; // @control color default=#0B1026 label="Background"
-uniform vec3 uWarm;       // @control color default=#FFC56E label="Warm light"
-uniform vec3 uCool;       // @control color default=#6EC8FF label="Cool light"
-uniform int uCount;       // @control min=4 max=60 default=30 label="Lights"
-uniform float uSize;      // @control min=0.02 max=0.25 default=0.08 label="Size"
-uniform float uSpeed;     // @control min=0 max=1 default=0.15 label="Drift"`,
+uniform vec3 uBackground;       // @control color default=#0B1026 label="Background"
+uniform float uBackgroundAlpha; // @control min=0 max=1 default=1 label="Background opacity"
+uniform vec3 uWarm;             // @control color default=#FFC56E label="Warm light"
+uniform vec3 uCool;             // @control color default=#6EC8FF label="Cool light"
+uniform int uCount;             // @control min=4 max=60 default=30 label="Lights"
+uniform float uSize;            // @control min=0.02 max=0.25 default=0.08 label="Size"
+uniform float uSpeed;           // @control min=0 max=1 default=0.15 label="Drift"`,
     HASH,
     `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 p = fragCoord / iResolution.y;
   float aspect = iResolution.x / iResolution.y;
-  vec3 col = uBackground * (0.7 + 0.3 * fragCoord.y / iResolution.y);
+  vec3 col = uBackground * (0.7 + 0.3 * fragCoord.y / iResolution.y) * uBackgroundAlpha;
+  float lightAlpha = 0.0;
   for (int i = 0; i < 60; i++) {
     if (i >= uCount) break;
     float fi = float(i);
@@ -32,9 +34,12 @@ uniform float uSpeed;     // @control min=0 max=1 default=0.15 label="Drift"`,
     float d = length(p - c);
     float disc = smoothstep(r, r * 0.85, d) * (0.6 + 0.4 * smoothstep(r * 0.4, r, d));
     vec3 light = mix(uWarm, uCool, step(0.5, hash12(vec2(fi, 1.3))));
-    col += light * disc * (0.15 + 0.25 * (1.0 - depth));
+    float weight = disc * (0.15 + 0.25 * (1.0 - depth));
+    col += light * weight;
+    lightAlpha += weight;
   }
-  fragColor = vec4(col, 1.0);
+  float a = clamp(uBackgroundAlpha + lightAlpha * (1.0 - uBackgroundAlpha), 0.0, 1.0);
+  fragColor = vec4(col, a);
 }`,
   ),
 };
@@ -80,18 +85,21 @@ export const sparkles: ShaderEffect = {
   tags: ["overlay", "magic", "celebration", "premium"],
   source: glsl(
     `// Sparkles: four-pointed glints twinkling across the frame.
-uniform vec3 uBackground; // @control color default=#1E1B4B label="Background"
-uniform vec3 uSparkle;    // @control color default=#FFFFFF label="Sparkle"
-uniform float uDensity;   // @control min=2 max=30 default=10 label="Density"
-uniform float uSize;      // @control min=0.05 max=0.5 default=0.35 label="Size"
-uniform float uSpeed;     // @control min=0 max=4 default=1 label="Twinkle speed"`,
+uniform vec3 uBackground;       // @control color default=#1E1B4B label="Background"
+uniform float uBackgroundAlpha; // @control min=0 max=1 default=1 label="Background opacity"
+uniform vec3 uSparkle;          // @control color default=#FFFFFF label="Sparkle"
+uniform float uDensity;         // @control min=2 max=30 default=10 label="Density"
+uniform float uChance;          // @control min=0.02 max=1 default=1 label="Sparsity"
+uniform float uSize;            // @control min=0.05 max=0.5 default=0.35 label="Size"
+uniform float uSpeed;           // @control min=0 max=4 default=1 label="Twinkle speed"`,
     HASH,
     `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 p = fragCoord / iResolution.y * uDensity;
-  vec3 col = uBackground;
+  float glint = 0.0;
   for (int layer = 0; layer < 2; layer++) {
     vec2 q = p * (1.0 + float(layer) * 0.6) + float(layer) * 7.3;
     vec2 id = floor(q);
+    float keep = step(1.0 - uChance, hash12(id + 19.0 + float(layer) * 31.0));
     vec2 f = fract(q) - 0.5;
     vec2 o = hash22(id) - 0.5;
     vec2 d = f - o * 0.6;
@@ -100,10 +108,12 @@ uniform float uSpeed;     // @control min=0 max=4 default=1 label="Twinkle speed
     float r = length(d);
     float rays = max(0.0, 1.0 - abs(d.x * d.y) * 3000.0);
     float core = 0.01 / (r + 0.01);
-    float star = (rays * 0.8 + core) * smoothstep(uSize, 0.0, r) * tw;
-    col += uSparkle * star;
+    float star = (rays * 0.8 + core) * smoothstep(uSize, 0.0, r) * tw * keep;
+    glint += star;
   }
-  fragColor = vec4(col, 1.0);
+  vec3 col = uBackground * uBackgroundAlpha + uSparkle * glint;
+  float a = clamp(uBackgroundAlpha + glint * (1.0 - uBackgroundAlpha), 0.0, 1.0);
+  fragColor = vec4(col, a);
 }`,
   ),
 };

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ManualClock } from "../time/clock.js";
-import { parseSvg, svgDuration, SvgPlayer, svgView } from "./svg.js";
-import type { SvgMotion } from "./motion.js";
+import { animateCount, parseSvg, svgDuration, SvgPlayer, svgView } from "./svg.js";
+import { formatCount, type SvgMotion } from "./motion.js";
 
 const media: SvgMotion = {
   svg: `<svg viewBox="0 0 200 100" onload="evil()">
@@ -201,6 +201,57 @@ describe("SvgPlayer", () => {
     } finally {
       globalThis.IntersectionObserver = origObserver;
     }
+  });
+
+  it("resets playback to 0 ms and hides the view when hideWhenPaused is true", async () => {
+    const clock = new ManualClock();
+    const host = document.createElement("div");
+    const player = new SvgPlayer(host, media, {
+      clock,
+      autoplay: false,
+      hideWhenPaused: true,
+      hold: 0,
+    });
+    expect(player.view.element.style.visibility).toBe("hidden");
+
+    player.play();
+    expect(player.view.element.style.visibility).toBe("visible");
+    await clock.advance(500);
+    expect(player.currentTime).toBe(500);
+    expect(host.querySelector("#bar")!.getAttribute("height")).toBe("40");
+
+    player.reset();
+    expect(player.isPlaying).toBe(false);
+    expect(player.currentTime).toBe(0);
+    expect(host.querySelector("#bar")!.getAttribute("height")).toBe("0");
+    expect(player.view.element.style.visibility).toBe("hidden");
+    player.dispose();
+  });
+});
+
+describe("formatCount and animateCount", () => {
+  it("formats numbers with decimals and custom templates", () => {
+    expect(formatCount(42.6)).toBe("43");
+    expect(formatCount(42.678, { decimals: 1, format: "${n}M" })).toBe("$42.7M");
+  });
+
+  it("counts from start to finish on a clock and can be cancelled", async () => {
+    const clock = new ManualClock();
+    const values: string[] = [];
+    const cancel = animateCount({
+      from: 2000,
+      to: 2024,
+      ms: 1000,
+      ease: "linear",
+      clock,
+      onUpdate: (text) => values.push(text),
+    });
+    expect(values).toEqual(["2000"]);
+    await clock.advance(500);
+    expect(values).toEqual(["2000", "2012"]);
+    cancel();
+    await clock.advance(500);
+    expect(values).toEqual(["2000", "2012"]);
   });
 });
 
