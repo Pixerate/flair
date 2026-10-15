@@ -31,6 +31,10 @@ export interface ShaderRendererOptions {
   className?: string;
   /** Pause rendering when scrolled out of view via IntersectionObserver (default false). */
   pauseWhenHidden?: boolean;
+  /** Start playing at once (default true). Set to false to start paused. */
+  autoplay?: boolean;
+  /** Wait to start playing until the canvas enters the viewport via IntersectionObserver (default false). When true, autoplay is deferred until first visible. */
+  playOnEnter?: boolean;
 }
 
 /**
@@ -59,6 +63,7 @@ export class ShaderRenderer {
   private resizeObserver: ResizeObserver;
   private intersectionObserver?: IntersectionObserver;
   private wasPlayingBeforeHidden = false;
+  private hasEnteredViewport = false;
   private mouse: [number, number, number, number] = [0, 0, 0, 0];
   private disposed = false;
   /** The latest source's status. */
@@ -100,16 +105,24 @@ export class ShaderRenderer {
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(canvas);
 
-    if (opts.pauseWhenHidden && typeof IntersectionObserver !== "undefined") {
+    const needsObserver =
+      (opts.pauseWhenHidden || opts.playOnEnter) && typeof IntersectionObserver !== "undefined";
+
+    if (needsObserver) {
       this.intersectionObserver = new IntersectionObserver(([entry]) => {
         if (!entry) return;
         if (entry.isIntersecting) {
-          if (this.wasPlayingBeforeHidden) {
+          if (opts.playOnEnter && !this.hasEnteredViewport) {
+            this.hasEnteredViewport = true;
+            if (opts.autoplay ?? true) {
+              this.play();
+            }
+          } else if (this.wasPlayingBeforeHidden) {
             this.wasPlayingBeforeHidden = false;
             this.play();
           }
         } else {
-          if (this.playing) {
+          if (this.playing && opts.pauseWhenHidden) {
             this.wasPlayingBeforeHidden = true;
             this.pause();
           }
@@ -117,6 +130,9 @@ export class ShaderRenderer {
       });
       this.intersectionObserver.observe(canvas);
     }
+
+    const shouldAutoplay = (opts.autoplay ?? true) && !opts.playOnEnter;
+    this.playing = shouldAutoplay;
 
     canvas.addEventListener("webglcontextlost", this.onLost);
     canvas.addEventListener("webglcontextrestored", this.onRestored);

@@ -201,6 +201,26 @@ export const statCounter: VectorEffect = {
   },
 };
 
+export const timelineTrack: VectorEffect = {
+  kind: "vector",
+  id: "timeline-track",
+  name: "Timeline track",
+  description: "A vertical line drawing down with nodes popping along milestones.",
+  category: "data",
+  tags: ["timeline", "roadmap", "milestones", "history"],
+  hold: 1200,
+  motion: {
+    svg: `<svg viewBox="0 0 100 400"><!-- {{track: color default=#E5E7EB label='Track'}} {{accent: color default=#F97316 label='Accent'}} {{width: float min=1 max=8 default=3 step=0.5 label='Line width'}} --><line x1="50" y1="20" x2="50" y2="380" stroke="{{track}}" stroke-width="{{width}}" stroke-linecap="round"/><path id="line" d="M50 20 L50 380" fill="none" stroke="{{accent}}" stroke-width="{{width}}" stroke-linecap="round"/><g id="n1" transform="translate(50 60) scale(0)"><circle r="8" fill="{{accent}}"/><circle r="4" fill="#ffffff"/></g><g id="n2" transform="translate(50 160) scale(0)"><circle r="8" fill="{{accent}}"/><circle r="4" fill="#ffffff"/></g><g id="n3" transform="translate(50 260) scale(0)"><circle r="8" fill="{{accent}}"/><circle r="4" fill="#ffffff"/></g><g id="n4" transform="translate(50 360) scale(0)"><circle r="8" fill="{{accent}}"/><circle r="4" fill="#ffffff"/></g></svg>`,
+    animate: [
+      { id: "line", draw: true, ms: 1400, ease: "in-out" },
+      { id: "n1", attrs: { transform: ["translate(50 60) scale(0)", "translate(50 60) scale(1)"] }, delay: 200, ms: 250, ease: "out" },
+      { id: "n2", attrs: { transform: ["translate(50 160) scale(0)", "translate(50 160) scale(1)"] }, delay: 550, ms: 250, ease: "out" },
+      { id: "n3", attrs: { transform: ["translate(50 260) scale(0)", "translate(50 260) scale(1)"] }, delay: 900, ms: 250, ease: "out" },
+      { id: "n4", attrs: { transform: ["translate(50 360) scale(0)", "translate(50 360) scale(1)"] }, delay: 1300, ms: 250, ease: "out" },
+    ],
+  },
+};
+
 export const route: VectorEffect = {
   kind: "vector",
   id: "route",
@@ -512,6 +532,7 @@ export const vectorEffects: VectorEffect[] = [
   lineChart,
   statCounter,
   route,
+  timelineTrack,
   successCheck,
   errorCross,
   heartbeat,
