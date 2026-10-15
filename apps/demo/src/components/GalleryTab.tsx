@@ -8,6 +8,7 @@ import {
   type EffectCategory,
   type EffectDefinition,
 } from "@pixerate/flair/catalog";
+import { CameraMoves } from "./CameraMoves";
 
 function ShaderThumb({ effect }: { effect: Extract<EffectDefinition, { kind: "shader" }> }) {
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -100,6 +101,8 @@ preview.setValues(effectDefaults(aurora, { preset: "Ember" }));`}</code>
           </button>
         ))}
       </div>
+
+      {category === "all" && !text && <CameraMoves />}
 
       {effects.length === 0 ? (
         <p className="text-slate-400">No effects match.</p>
