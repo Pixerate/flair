@@ -19,7 +19,7 @@ Flair gives products a library of good-looking, configurable visual effects (her
 
 ### Core Capabilities
 
-- 🎨 **Effect catalog (`@pixerate/flair/catalog`)**: 132 effects, each with controls and presets. There are 84 WebGL2 shaders (gradients, organic textures, patterns, light, space, retro, image treatments, transparent overlays, text fills, image morphs, pointer interactions, transitions) and 48 animated SVG effects (loaders, status icons, animated titles, shape morphs, UI micro-interactions, charts, counters, node graphs). [Browse them live](https://pixerate.github.io/flair/).
+- 🎨 **Effect catalog (`@pixerate/flair/catalog`)**: 186 effects, each with controls and presets. There are 126 WebGL2 shaders (gradients, organic textures, patterns, light, space, retro and pixel art, image treatments, transparent overlays, text fills, image morphs, pointer interactions, pyrotechnics, time warps, melting, electricity, transitions) and 60 animated SVG effects (loaders, status icons, animated titles, shape morphs, UI micro-interactions, pixel sprites, charts, counters, node graphs). [Browse them live](https://pixerate.github.io/flair/).
 - ⚡ **Shader engine**:
   - Shadertoy-style GLSL ES 3.00 fragment shaders, with controls declared in the source (`// @control`), including image inputs.
   - Compile errors come back with line numbers that match the source.
@@ -56,7 +56,7 @@ The `flair` CLI inspects shaders, writes standalone pages and directs scenes (se
 ```mermaid
 graph TD
   subgraph Effects["Effects (no dependencies)"]
-    Catalog["catalog: 132 effects + presets"]
+    Catalog["catalog: 186 effects + presets"]
     Shader["shader engine: controls, compile, render, GIF, HTML"]
     Vector["vector motion: SvgMotion, SvgPlayer"]
     Time["time: clocks, easing, keyframes, noise"]
@@ -271,13 +271,17 @@ The exporters carry the camera too:
 | organic | liquid marble, smoke, lava lamp, plasma, caustics, flames, blob morph |
 | pattern | dot wave, Truchet flow, hex pulse, living cells, moiré rings, kaleidoscope, stripes, neon circuit |
 | light / space | bokeh, god rays, sparkles, neon ripple, light ribbons, warp starfield, nebula, event horizon |
-| retro | synthwave, digital rain, dithered gradient, TV static |
+| retro | synthwave, digital rain, dithered gradient, TV static, 8-bit, Game Boy screen, pixel fire, pixel landscape, OutRun road, palette cycle, raster bars, tape loading, pixel water, pixel text, coin spin, space invader, heart health bar, chomp loader |
 | image | ripple, glitch, duotone, halftone, pixel reveal, Ken Burns, ASCII art, shatter, melt, risograph, thermal, edge glow, tilt-shift, slit-scan, mosaic flip, chromatic lens, oil paint, CRT screen, film look |
 | overlay | rain on glass, snowfall, lens flare, vignette & grain, scanline sweep, spotlight, embers, shine sweep, frost creep, viewfinder |
 | text | shader text, drip text, typewriter, scramble text, kinetic stagger, neon sign, stroke draw text, split reveal, highlighter, word cycle, liquid fill, glitch text, extruded text |
 | morph | feature morph, silhouette morph, shape morph, icon toggle, morph sequence, gooey morph, particle morph, digit morph |
 | interaction | click ripple, click burst, cursor glow, hover liquid, X-ray reveal, magnifier, holo card, press charge, hover swap, like button, toggle switch, checkbox, menu toggle, bookmark, copy button, send button, download button, link hover, button hover fill, tooltip pop, press button |
-| transition | liquid morph, displacement, luma fade, particle swap, ink bleed, wipe, iris, block dissolve, grid wipe, glass wipe, twister, light leak, cross zoom |
+| pyrotechnics | fireworks, sparkler, explosion, spark fountain, roman candle, fuse burn, smoke bomb, light show, firework burst |
+| timewarp | time echo, chrono split, time slice, VHS rewind, bullet time, time tunnel, speed ramp, stutter freeze, time-lapse clock |
+| melt | drip melt, heat haze, wax melt, melting text, liquify, melting clock, lava flow, ice cube melt, candle |
+| electric | lightning, Tesla arc, plasma ball, electric border, electric text, Jacob's ladder, short circuit, power surge, electric field, zap icon, power button, battery charge |
+| transition | liquid morph, displacement, luma fade, particle swap, ink bleed, pixel dissolve, wipe, iris, block dissolve, grid wipe, glass wipe, twister, light leak, cross zoom |
 | loader / icon / data | spinner, bouncing dots, pulse ping, equalizer, progress ring, bar chart, line chart, stat counter, route, timeline track, success check, error cross, heartbeat, signature, confetti, flow network |
 
 Every shader is self-contained and compiles on WebGL2. Open [`#check`](https://pixerate.github.io/flair/#check) on the demo to compile the catalog on your own GPU.
