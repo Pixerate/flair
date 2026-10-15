@@ -327,7 +327,10 @@ export interface SvgPlayerOptions extends SvgViewOptions {
   clock?: Clock;
   /** Start playing at once (default `true`). */
   autoplay?: boolean;
-  /** Start again at the end (default `true`). */
+  /**
+   * Start again at the end (default `true`). When `false` it plays once and
+   * stays on the last frame (hidden instead with `hideWhenPaused`).
+   */
   loop?: boolean;
   /** Loop length in ms (default: the picture's own, see {@link svgDuration}, plus `hold`). */
   duration?: number;

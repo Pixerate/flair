@@ -130,6 +130,17 @@ animateCount({
 });
 ```
 
+With `loop: false` a player plays once and stays on its last frame (like CSS `animation-fill-mode: forwards`); add `hideWhenPaused` to hide it at the end instead.
+
+Drip text can sit inside a heading. Set `inline: true` and the picture frames just the word, from cap height to baseline, while its outline and drips spill over the text around it. Give its container `display: inline-block`, `height: 0.72em` and the viewBox's aspect ratio. `font` and `weight` set its typeface, and `font: "inherit"` takes the heading's:
+
+```ts
+const motion = renderVectorEffect(getEffect("drip-text") as VectorEffect, { word: "Slop", inline: true, font: "inherit" });
+const [, , w, h] = motion.svg.match(/viewBox="([^"]+)"/)![1]!.split(" ").map(Number);
+Object.assign(host.style, { display: "inline-block", height: "0.72em", aspectRatio: `${w} / ${h}` });
+new SvgPlayer(host, motion, { loop: false });
+```
+
 Find effects with `findEffects({ text: "glow", category: "light", kind: "shader" })`. Each effect has an `id`, `name`, `description`, `category`, `tags` and optional `presets`. Image effects default to built-in sample pictures, so they look right before you set `uImage` to your own URL.
 
 Effects that show a picture (image, transition, morph, time-warp and the like) take transparent pictures too, such as SVG icons (Lucide and similar sets draw black `currentColor` strokes on a clear background). They lay the picture over a backdrop: `uBackdrop` (white by default) shows through its clear parts. Set `uBackdropAlpha` to 0 to keep the picture's alpha instead, and render with `{ alpha: true }` to lay the result over the page. `SAMPLE_IMAGES.icon` is a Lucide-style sample icon. SVGs are rasterised at 2048 px on the long edge, so icons stay sharp.

@@ -443,6 +443,9 @@ export const flowNetwork: VectorEffect = {
   },
 };
 
+/** Drip text's word: its baseline, and its cap height (a heavy sans's, about 0.72 of its 104 size). */
+const DRIP_BASELINE = 120;
+const DRIP_CAP = 75;
 /** Drip text's drips: where each leaves the word, as a fraction of its width, and how it runs. */
 const DRIP_TOP = 106;
 const DRIPS = [
@@ -455,11 +458,18 @@ const DRIPS = [
   { at: 0.793, width: 11, length: 32, delay: 300, ms: 1500 },
 ];
 
+/**
+ * Drip text. With `inline` on, the picture frames the word from cap height to
+ * baseline and lets the rest spill out, so in a heading it sits on the
+ * baseline without adding leading: give its container `display: inline-block;
+ * height: 0.72em` and the viewBox's aspect ratio (its width over 75). A
+ * `font` of `inherit` takes the surrounding text's.
+ */
 export const dripText: VectorEffect = {
   kind: "vector",
   id: "drip-text",
   name: "Drip text",
-  description: "A chunky outlined title popping in, then oozing slime drips from its letters.",
+  description: "A chunky outlined title popping in, then oozing slime drips from its letters; Inline sets it in a line of text.",
   category: "text",
   tags: ["title", "text", "drip", "slime", "y2k", "headline"],
   hold: 1200,
@@ -474,6 +484,10 @@ export const dripText: VectorEffect = {
     const left = 200 - width / 2;
     return {
       width,
+      // Inline, the picture frames just the word's capitals, from cap height to baseline, so it sits on
+      // the line like a letter would; the pop, outline and drips spill out over the text around it.
+      viewBox: v.inline ? `${left} ${DRIP_BASELINE - DRIP_CAP} ${width} ${DRIP_CAP}` : "0 0 400 200",
+      overflow: v.inline ? "visible" : "hidden",
       ...Object.fromEntries(
         DRIPS.flatMap((d, i) => {
           const x = Math.round((left + d.at * width) * 10) / 10;
@@ -490,7 +504,7 @@ export const dripText: VectorEffect = {
     };
   },
   motion: (() => {
-    const word = `<text x="200" y="120" text-anchor="middle" textLength="{{width}}" lengthAdjust="spacingAndGlyphs" font-family="'Arial Black', Impact, system-ui, sans-serif" font-size="104" font-weight="900" stroke-linejoin="round"`;
+    const word = `<text x="200" y="${DRIP_BASELINE}" text-anchor="middle" textLength="{{width}}" lengthAdjust="spacingAndGlyphs" font-family="{{font}}" font-size="104" font-weight="{{weight}}" stroke-linejoin="round"`;
     const drips = (layer: "o" | "f", paint: string) =>
       DRIPS.map(
         (d, i) =>
@@ -500,7 +514,7 @@ export const dripText: VectorEffect = {
     const pop = (from: number, to: number) =>
       [`translate(200 100) scale(${from}) translate(-200 -100)`, `translate(200 100) scale(${to}) translate(-200 -100)`] as [string, string];
     return {
-      svg: `<svg viewBox="0 0 400 200"><!-- {{word: text default=SLOP label='Word'}} {{fill: color default=#FF7EB6 label='Fill'}} {{outline: color default=#3A0A2C label='Outline'}} {{shine: color default=#FFD1E6 label='Shine'}} {{drip: float min=0.2 max=2 default=1 label='Drip length'}} {{stroke: float min=0 max=14 default=7 step=0.5 label='Outline width'}} --><g id="word" transform="${pop(0.6, 1)[0]}" opacity="0">${drips("o", outline)}${word} fill="none" stroke="{{outline}}" stroke-width="{{stroke}}">{{word}}</text>${drips("f", `fill="{{fill}}"`)}${word} fill="{{fill}}">{{word}}</text>${DRIPS.map(
+      svg: `<svg viewBox="{{viewBox}}" overflow="{{overflow}}"><!-- {{word: text default=SLOP label='Word'}} {{font: text default='Arial Black, Impact, system-ui, sans-serif' label='Font'}} {{weight: int min=100 max=900 default=900 step=100 label='Weight'}} {{fill: color default=#FF7EB6 label='Fill'}} {{outline: color default=#3A0A2C label='Outline'}} {{shine: color default=#FFD1E6 label='Shine'}} {{drip: float min=0.2 max=2 default=1 label='Drip length'}} {{stroke: float min=0 max=14 default=7 step=0.5 label='Outline width'}} {{inline: bool default=false label='Inline'}} --><g id="word" transform="${pop(0.6, 1)[0]}" opacity="0">${drips("o", outline)}${word} fill="none" stroke="{{outline}}" stroke-width="{{stroke}}">{{word}}</text>${drips("f", `fill="{{fill}}"`)}${word} fill="{{fill}}">{{word}}</text>${DRIPS.map(
         (d, i) => `<circle id="s${i}" cx="{{shine${i}}}" cy="${DRIP_TOP}" r="${d.width * 0.2}" fill="{{shine}}" opacity="0"/>`,
       ).join("")}</g></svg>`,
       animate: [
