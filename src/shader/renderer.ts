@@ -27,6 +27,16 @@ export interface RendererStats {
   height: number;
 }
 
+export interface ShaderRendererOptions {
+  className?: string;
+  /** Pause rendering when scrolled out of view via IntersectionObserver (default false). */
+  pauseWhenHidden?: boolean;
+  /** Start playing at once (default true). Set to false to start paused. */
+  autoplay?: boolean;
+  /** Wait to start playing until the canvas enters the viewport via IntersectionObserver (default false). When true, autoplay is deferred until first visible. */
+  playOnEnter?: boolean;
+}
+
 /**
  * Runs one shader on a canvas: the editor's live preview. A source that does
  * not compile leaves the last working program on screen, so a typo never
@@ -49,7 +59,11 @@ export class ShaderRenderer {
   private frame = 0;
   private fpsFrames = 0;
   private fpsSince = 0;
+  private ownsCanvas = false;
   private resizeObserver: ResizeObserver;
+  private intersectionObserver?: IntersectionObserver;
+  private wasPlayingBeforeHidden = false;
+  private hasEnteredViewport = false;
   private mouse: [number, number, number, number] = [0, 0, 0, 0];
   private disposed = false;
   /** The latest source's status. */
@@ -68,16 +82,58 @@ export class ShaderRenderer {
   /** Called when an image control's URL cannot be loaded; the control shows black. */
   onImageError?: (error: ImageLoadError) => void;
 
-  /** Creates a canvas in `host` (with `className`) and starts the animation loop. Size the canvas with CSS. */
-  constructor(host: HTMLElement, className = "") {
-    const canvas = document.createElement("canvas");
-    canvas.className = className;
-    host.appendChild(canvas);
+  /**
+   * Creates a canvas in `target` (with `className` or options), or attaches to an existing
+   * `HTMLCanvasElement`, and starts the animation loop. Size the canvas with CSS.
+   */
+  constructor(target: HTMLElement | HTMLCanvasElement, options?: string | ShaderRendererOptions) {
+    const opts: ShaderRendererOptions =
+      typeof options === "string" ? { className: options } : (options ?? {});
+    let canvas: HTMLCanvasElement;
+    if (target instanceof HTMLCanvasElement || ("tagName" in target && target.tagName === "CANVAS")) {
+      canvas = target as HTMLCanvasElement;
+      if (opts.className) canvas.className = opts.className;
+    } else {
+      canvas = document.createElement("canvas");
+      if (opts.className) canvas.className = opts.className;
+      target.appendChild(canvas);
+      this.ownsCanvas = true;
+    }
     this.canvas = canvas;
     this.gl = createContext(canvas, true);
     this.textures = this.gl && this.textureCache(this.gl);
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(canvas);
+
+    const needsObserver =
+      (opts.pauseWhenHidden || opts.playOnEnter) && typeof IntersectionObserver !== "undefined";
+
+    if (needsObserver) {
+      this.intersectionObserver = new IntersectionObserver(([entry]) => {
+        if (!entry) return;
+        if (entry.isIntersecting) {
+          if (opts.playOnEnter && !this.hasEnteredViewport) {
+            this.hasEnteredViewport = true;
+            if (opts.autoplay ?? true) {
+              this.play();
+            }
+          } else if (this.wasPlayingBeforeHidden) {
+            this.wasPlayingBeforeHidden = false;
+            this.play();
+          }
+        } else {
+          if (this.playing && opts.pauseWhenHidden) {
+            this.wasPlayingBeforeHidden = true;
+            this.pause();
+          }
+        }
+      });
+      this.intersectionObserver.observe(canvas);
+    }
+
+    const shouldAutoplay = (opts.autoplay ?? true) && !opts.playOnEnter;
+    this.playing = shouldAutoplay;
+
     canvas.addEventListener("webglcontextlost", this.onLost);
     canvas.addEventListener("webglcontextrestored", this.onRestored);
     canvas.addEventListener("pointerdown", this.onPointerDown);
@@ -195,6 +251,7 @@ export class ShaderRenderer {
     this.disposed = true;
     cancelAnimationFrame(this.raf);
     this.resizeObserver.disconnect();
+    this.intersectionObserver?.disconnect();
     this.canvas.removeEventListener("webglcontextlost", this.onLost);
     this.canvas.removeEventListener("webglcontextrestored", this.onRestored);
     this.canvas.removeEventListener("pointerdown", this.onPointerDown);
@@ -206,7 +263,7 @@ export class ShaderRenderer {
     // Free the context now rather than waiting for GC (browsers cap live contexts).
     this.gl?.getExtension("WEBGL_lose_context")?.loseContext();
     this.gl = null;
-    this.canvas.remove();
+    if (this.ownsCanvas) this.canvas.remove();
   }
 
   private resize() {

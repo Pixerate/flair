@@ -36,6 +36,90 @@ describe("ShaderRenderer", () => {
     expect(gl!.attributes).toMatchObject({ preserveDrawingBuffer: true, alpha: false });
   });
 
+  it("attaches directly to an existing HTMLCanvasElement without appending another", () => {
+    installFakeWebGl();
+    installManualRaf();
+    const existing = document.createElement("canvas");
+    document.body.appendChild(existing);
+    const renderer = new ShaderRenderer(existing, "custom-canvas");
+    expect(renderer.canvas).toBe(existing);
+    expect(renderer.canvas.className).toBe("custom-canvas");
+    renderer.dispose();
+    expect(existing.parentElement).toBe(document.body);
+  });
+
+  it("pauses and resumes when scrolled out of view with pauseWhenHidden", () => {
+    installFakeWebGl();
+    installManualRaf();
+    let callback: IntersectionObserverCallback | null = null;
+    class MockIntersectionObserver {
+      constructor(cb: IntersectionObserverCallback) {
+        callback = cb;
+      }
+      observe = vi.fn();
+      disconnect = vi.fn();
+      unobserve = vi.fn();
+      takeRecords = vi.fn().mockReturnValue([]);
+      root = null;
+      rootMargin = "";
+      thresholds = [];
+    }
+    const origObserver = globalThis.IntersectionObserver;
+    globalThis.IntersectionObserver = MockIntersectionObserver as unknown as typeof IntersectionObserver;
+    try {
+      const host = document.createElement("div");
+      document.body.appendChild(host);
+      const renderer = new ShaderRenderer(host, { pauseWhenHidden: true });
+      expect(renderer.playing).toBe(true);
+
+      // Scrolled offscreen
+      callback!([{ isIntersecting: false } as IntersectionObserverEntry], {} as IntersectionObserver);
+      expect(renderer.playing).toBe(false);
+
+      // Scrolled back into view
+      callback!([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver);
+      expect(renderer.playing).toBe(true);
+
+      renderer.dispose();
+    } finally {
+      globalThis.IntersectionObserver = origObserver;
+    }
+  });
+
+  it("defers playback until scrolled into view with playOnEnter", () => {
+    installFakeWebGl();
+    installManualRaf();
+    let callback: IntersectionObserverCallback | null = null;
+    class MockIntersectionObserver {
+      constructor(cb: IntersectionObserverCallback) {
+        callback = cb;
+      }
+      observe = vi.fn();
+      disconnect = vi.fn();
+      unobserve = vi.fn();
+      takeRecords = vi.fn().mockReturnValue([]);
+      root = null;
+      rootMargin = "";
+      thresholds = [];
+    }
+    const origObserver = globalThis.IntersectionObserver;
+    globalThis.IntersectionObserver = MockIntersectionObserver as unknown as typeof IntersectionObserver;
+    try {
+      const host = document.createElement("div");
+      document.body.appendChild(host);
+      const renderer = new ShaderRenderer(host, { playOnEnter: true });
+      expect(renderer.playing).toBe(false);
+
+      // Scrolled into view
+      callback!([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver);
+      expect(renderer.playing).toBe(true);
+
+      renderer.dispose();
+    } finally {
+      globalThis.IntersectionObserver = origObserver;
+    }
+  });
+
   it("sizes the drawing buffer from the CSS size and pixel ratio", () => {
     const { renderer } = setup();
     expect([renderer.canvas.width, renderer.canvas.height]).toEqual([100, 50]);

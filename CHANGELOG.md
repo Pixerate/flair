@@ -1,5 +1,23 @@
 # @pixerate/flair
 
+## 0.6.0
+
+### Minor Changes
+
+- bd247bf: Add `playOnEnter` option to `SvgPlayer` and `ShaderRenderer`, plus new `timeline-track` vector effect
+
+## 0.5.0
+
+### Minor Changes
+
+- a08286a: Add `pauseWhenHidden` option to `ShaderRenderer` and `SvgPlayer` to pause animation loops when scrolled off screen via `IntersectionObserver`.
+
+## 0.4.0
+
+### Minor Changes
+
+- 7b06c4e: Allow `ShaderRenderer` to attach directly to an existing `HTMLCanvasElement`.
+
 ## 0.3.0
 
 ### Minor Changes

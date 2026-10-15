@@ -315,6 +315,10 @@ export interface SvgPlayerOptions extends SvgViewOptions {
   speed?: number;
   /** Step start times in ms, for pictures that change on steps (default none). */
   steps?: readonly number[];
+  /** Pause the animation loop when scrolled out of view via IntersectionObserver (default false). */
+  pauseWhenHidden?: boolean;
+  /** Wait to start playing until the element enters the viewport via IntersectionObserver (default false). When true, autoplay is deferred until first visible. */
+  playOnEnter?: boolean;
 }
 
 /**
@@ -332,6 +336,9 @@ export class SvgPlayer {
   private last = 0;
   private playing = false;
   private disposed = false;
+  private wasPlayingBeforeHidden = false;
+  private hasEnteredViewport = false;
+  private intersectionObserver?: IntersectionObserver;
 
   constructor(
     private readonly container: HTMLElement,
@@ -346,7 +353,35 @@ export class SvgPlayer {
     this.view = svgView(motion, options);
     container.appendChild(this.view.element);
     this.view.draw(0, this.steps);
-    if (options.autoplay ?? true) this.play();
+
+    const needsObserver =
+      (options.pauseWhenHidden || options.playOnEnter) && typeof IntersectionObserver !== "undefined";
+
+    if (needsObserver) {
+      this.intersectionObserver = new IntersectionObserver(([entry]) => {
+        if (!entry) return;
+        if (entry.isIntersecting) {
+          if (options.playOnEnter && !this.hasEnteredViewport) {
+            this.hasEnteredViewport = true;
+            if (options.autoplay ?? true) {
+              this.play();
+            }
+          } else if (this.wasPlayingBeforeHidden) {
+            this.wasPlayingBeforeHidden = false;
+            this.play();
+          }
+        } else {
+          if (this.playing && options.pauseWhenHidden) {
+            this.wasPlayingBeforeHidden = true;
+            this.pause();
+          }
+        }
+      });
+      this.intersectionObserver.observe(this.view.element);
+    }
+
+    const shouldAutoplay = (options.autoplay ?? true) && !options.playOnEnter;
+    if (shouldAutoplay) this.play();
   }
 
   /** The loop length in ms. */
@@ -389,6 +424,7 @@ export class SvgPlayer {
   dispose(): void {
     this.disposed = true;
     this.playing = false;
+    this.intersectionObserver?.disconnect();
     this.view.element.remove();
   }
 
