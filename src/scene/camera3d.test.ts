@@ -19,6 +19,16 @@ import { validateScene } from './validate.js';
 const stage: Stage = { width: 1920, height: 1080, caption: 0 };
 const flat = viewAt(960, 540, 1, stage);
 
+const scene: Scene = {
+  name: 'tilt',
+  shots: [
+    { camera: { x: 0, y: 0, width: 1920, height: 1080 }, hold: 100, run: [{ type: 'element', element: { id: 'card', type: 'rectangle', x: 600, y: 300, width: 400, height: 300 } }] },
+    { camera: { frame: ['card'], tilt: 35, turn: -15, motionBlur: 1.5 }, hold: 100 },
+    { camera: { x: 0, y: 0, width: 1920, height: 1080 }, hold: 100 },
+    { camera: { tilt: 0, turn: 0 }, hold: 100 },
+  ],
+};
+
 describe('3D camera', () => {
   it('interpolates angles, and leaves flat moves flat', () => {
     const tilted: View = { ...flat, tilt: 40, turn: -20 };
@@ -63,15 +73,6 @@ describe('3D camera', () => {
     expect(motionBlur(flat, viewAt(5000, 540, 1, stage), stage, 3)).toBe(40);
   });
 
-  const scene: Scene = {
-    name: 'tilt',
-    shots: [
-      { camera: { x: 0, y: 0, width: 1920, height: 1080 }, hold: 100, run: [{ type: 'element', element: { id: 'card', type: 'rectangle', x: 600, y: 300, width: 400, height: 300 } }] },
-      { camera: { frame: ['card'], tilt: 35, turn: -15, motionBlur: 1.5 }, hold: 100 },
-      { camera: { x: 0, y: 0, width: 1920, height: 1080 }, hold: 100 },
-      { camera: { tilt: 0, turn: 0 }, hold: 100 },
-    ],
-  };
 
   it('moves into a shot at its angle, blurring on the way and keeping the angle until changed', async () => {
     const clock = new ManualClock();
@@ -126,5 +127,59 @@ describe('3D camera', () => {
     expect(plan.shots[1].move.at(-1)).toMatchObject({ tilt: 35, turn: -15 });
     expect(plan.shots[1].elements.map((e: { id: string }) => e.id)).toEqual(['card']);
     expect(html).toContain("'perspective('");
+  });
+});
+
+describe('angled checks and directional blur', () => {
+  it('judges framing and text size on screen, where the angle puts things', async () => {
+    const { checkShot } = await import('./check.js');
+    const card = { id: 'card', type: 'rectangle', x: 760, y: 440, width: 400, height: 200, text: 'Hi', fontSize: 30 };
+    const shot = { run: [{ type: 'element' as const, element: card }] };
+    const flatView = viewAt(960, 540, 1, stage);
+    expect(checkShot(shot, [card], flatView, stage).framing).toEqual([]);
+    expect(checkShot(shot, [card], flatView, stage).smallestText?.px).toBe(30);
+    // Zoomed in on the card flat, it fits; tilted hard, its near edge swells off the board.
+    const close = viewAt(960, 540, 4.5, stage);
+    expect(checkShot(shot, [card], close, stage).framing).toEqual([]);
+    expect(checkShot(shot, [card], { ...close, tilt: 60 }, stage).framing).toEqual([{ id: 'card', how: 'cut' }]);
+    // Leaning back shrinks text at the top of the board.
+    const top = { ...card, y: 0 };
+    expect(checkShot(shot, [top], { ...flatView, tilt: 50 }, stage).smallestText!.px).toBeLessThan(30);
+  });
+
+  it('streaks a pan along its direction, and blurs zooms every way', async () => {
+    const { cameraBlur, moveBlur } = await import('./camera.js');
+    const pan = moveBlur(flat, viewAt(1100, 540, 1, stage), stage, 1);
+    expect(pan.blurAngle).toBe(0);
+    const [sx, sy] = cameraBlur({ ...flat, ...pan }, stage);
+    expect(sx).toBeGreaterThan(sy * 5);
+    const down = moveBlur(flat, viewAt(960, 700, 1, stage), stage, 1);
+    expect(down.blurAngle).toBe(90);
+    const zoom = moveBlur(flat, viewAt(960, 540, 2, stage), stage, 1);
+    expect(zoom.blurAngle).toBeUndefined();
+    const [zx, zy] = cameraBlur({ ...flat, ...zoom }, stage);
+    expect(zx).toBe(zy);
+    // Rolled 90°, a horizontal streak runs along the board's own y axis.
+    const [rx, ry] = cameraBlur({ ...flat, ...pan, roll: 90 }, stage);
+    expect(ry).toBeGreaterThan(rx * 5);
+    expect(cameraBlur(flat, stage)).toEqual([0, 0]);
+  });
+
+  it('lays the camera out on a timeline for exporters', async () => {
+    const { cameraTrack, cameraSamples } = await import('./cameratrack.js');
+    const track = cameraTrack(scene);
+    expect(track.map((t) => [t.startMs, t.moveMs, t.holdMs])).toEqual([
+      [0, 0, 100],
+      [100, 600, 100],
+      [800, 600, 100],
+      [1500, 600, 100],
+    ]);
+    expect(track[1]!.to).toMatchObject({ tilt: 35, turn: -15 });
+    const samples = cameraSamples(scene, 30);
+    expect(samples[0]).toMatchObject({ frame: 0, shot: 0 });
+    const intoCard = samples.filter((x) => x.shot === 1);
+    expect(intoCard.map((x) => x.frame)).toEqual([3, 5, 7, 9, 11, 13, 15, 17, 19, 21]);
+    expect(intoCard.some((x) => (x.view.blur ?? 0) > 0)).toBe(true);
+    expect(intoCard.at(-1)!.view.blur).toBeUndefined();
   });
 });

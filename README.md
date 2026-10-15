@@ -227,10 +227,22 @@ A shot's `camera` frames a box (`{ x, y, width, height }`) or elements (`{ frame
 
 - `tilt` leans the board back (top away, like a desk seen from above), `turn` swings it round its vertical axis (left side nearer when positive), `roll` rolls it clockwise. Tilt and turn go up to ±75°.
 - `perspective` is the lens distance as a multiple of the stage width (1.2 by default). Lower values look more dramatic.
-- `motionBlur` (0 to 3, with 1 as natural) blurs the move in proportion to its speed, so the blur peaks mid-move and clears when the camera settles.
+- `motionBlur` (0 to 3, with 1 as natural) blurs the move in proportion to its speed, so the blur peaks mid-move and clears when the camera settles. A pan streaks along its direction (`View.blurAngle`), while a zoom or turn blurs in every direction.
 - Angles carry over to later shots until a shot changes them. `{ "camera": { "tilt": 0, "turn": 0 } }` flattens the board in place.
 
-`playScene` hands boards views with these fields (`View.tilt`, `View.blur`, …). `cameraTransform(view, stage, width)` and `cameraFilter(...)` give the CSS `transform` and `filter` for a board layer, `projectPoint` gives where a point lands on screen, and the standalone player (`flair scene html`) plays all of it. Layout checks still use the flat framing.
+`playScene` hands boards views with these fields (`View.tilt`, `View.blur`, `View.blurAngle`, …). For renderers:
+- `cameraTransform(view, stage, width)` gives the CSS `transform` for a board layer.
+- `cameraBlur(...)` gives the `stdDeviation` for an SVG `feGaussianBlur` that streaks, and `cameraFilter(...)` gives a CSS `blur()`.
+- `projectPoint` gives where a scene point lands on screen.
+- `cameraTrack` and `cameraSamples` lay the camera out on a timeline.
+
+The standalone player (`flair scene html`) plays all of it. Layout checks (framing, edges, text size, the title) are judged on screen, where the angle puts each element.
+
+The exporters carry the camera too:
+- **Lottie:** a "Camera" null layer that the element layers hang off. When the camera is angled, it is a 3D layer with an AE camera (lottie-web draws it with its `html` renderer).
+- **Apple Motion:** a keyframed "Camera" group around the shots.
+- **FCP7 XML:** a keyframed Distort corner pin on each shot's clip, plus Motion Blur.
+- **EDL:** a `* CAMERA:` note, since CMX 3600 has no transforms.
 
 ## 🎨 The catalog
 

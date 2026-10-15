@@ -1,4 +1,4 @@
-import { visibleRect, type View, type Stage } from './camera.js';
+import { boardHeight, projectPoint, type View, type Stage } from './camera.js';
 import { boundsOf, overlapArea, areaOf, type Rect, type SceneElement } from './geometry.js';
 import { isElementCommand, type Shot } from './types.js';
 
@@ -40,7 +40,31 @@ export function touchedIds(shot: Shot): string[] {
 
 const IN_FRAME = 0.95;
 
-/** Evaluates the elements on stage against the current camera view and shot settings. */
+/**
+ * Where a scene box lands on screen (stage pixels from the board's top
+ * left), turned and in perspective as the view draws it: the bounds of its
+ * four corners. Null when part of it is behind the camera.
+ */
+export function screenBox(box: Rect, view: View, stage: Stage): Rect | null {
+  const corners = [
+    [box.x, box.y],
+    [box.x + box.width, box.y],
+    [box.x, box.y + box.height],
+    [box.x + box.width, box.y + box.height],
+  ].map(([x, y]) => projectPoint(view, stage, [x!, y!]));
+  if (corners.some((c) => !c)) return null;
+  const xs = corners.map((c) => c![0]);
+  const ys = corners.map((c) => c![1]);
+  const x = Math.min(...xs);
+  const y = Math.min(...ys);
+  return { x, y, width: Math.max(...xs) - x, height: Math.max(...ys) - y };
+}
+
+/**
+ * Evaluates the elements on stage against the current camera view and shot
+ * settings. Framing, edges, text size and the title are judged on screen,
+ * where the view (its angle included) puts each element.
+ */
 export function checkShot(
   shot: Shot,
   elements: readonly SceneElement[],
@@ -48,7 +72,7 @@ export function checkShot(
   stage: Stage,
   title?: string,
 ): ShotCheck {
-  const frameRect = visibleRect(view, stage);
+  const screen: Rect = { x: 0, y: 0, width: stage.width, height: boardHeight(stage) };
   const touched = new Set(touchedIds(shot));
   const framing: { id: string; how: 'outside' | 'cut' }[] = [];
   const edges: string[] = [];
@@ -56,9 +80,9 @@ export function checkShot(
   const activeElements = elements.filter((e) => !e.isDeleted && (e.opacity === undefined || e.opacity > 0));
 
   for (const el of activeElements) {
-    const box = boundsOf(el);
-    const overlap = overlapArea(box, frameRect);
-    const boxArea = areaOf(box);
+    const box = screenBox(boundsOf(el), view, stage);
+    const overlap = box ? overlapArea(box, screen) : 0;
+    const boxArea = box ? areaOf(box) : 0;
 
     if (touched.has(el.id)) {
       if (overlap === 0) {
@@ -93,7 +117,12 @@ export function checkShot(
 
   for (const el of activeElements) {
     if (el.text && el.fontSize) {
-      const px = Math.round(el.fontSize * view.zoom);
+      // The text's height on screen where it sits: zoom, and perspective when the camera is angled.
+      const b = boundsOf(el);
+      const top = projectPoint(view, stage, [b.x + b.width / 2, b.y + b.height / 2]);
+      const bottom = projectPoint(view, stage, [b.x + b.width / 2, b.y + b.height / 2 + el.fontSize]);
+      if (!top || !bottom) continue;
+      const px = Math.round(Math.hypot(bottom[0] - top[0], bottom[1] - top[1]));
       const item = { id: el.id, text: el.text, px };
       if (!smallestText || px < smallestText.px) {
         smallestText = item;
@@ -108,15 +137,9 @@ export function checkShot(
   const underTitle: string[] = [];
   if (title) {
     const tBox = titleBox(title, stage);
-    // Convert tBox in screen space to scene space
-    const sceneTBox: Rect = {
-      x: tBox.x / view.zoom - view.scrollX,
-      y: tBox.y / view.zoom - view.scrollY,
-      width: tBox.width / view.zoom,
-      height: tBox.height / view.zoom,
-    };
     for (const el of activeElements) {
-      if (overlapArea(boundsOf(el), sceneTBox) > 0) {
+      const box = screenBox(boundsOf(el), view, stage);
+      if (box && overlapArea(box, tBox) > 0) {
         underTitle.push(el.id);
       }
     }

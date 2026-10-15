@@ -1,6 +1,6 @@
-import { between, CAMERA_MS, DEFAULT_STAGE, easeInOutCubic, motionBlur, viewAt, type Stage, type View } from './camera.js';
+import { CAMERA_MS, type Stage, type View } from './camera.js';
+import { CAMERA_STEP_MS, cameraAt, cameraTrack, sceneStage } from './cameratrack.js';
 import type { SceneElement } from './geometry.js';
-import { MemorySceneBoard, shotView } from './player.js';
 import type { Scene } from './types.js';
 
 /** What the standalone player shows for one shot: the camera's move into it and the elements on stage. */
@@ -10,28 +10,14 @@ interface ShotPlan {
   elements: SceneElement[];
 }
 
-const MOVE_STEPS = 15;
-
 /** Each shot's camera move and elements, worked out the way `playScene` plays them. */
 function planShots(scene: Scene, stage: Stage): ShotPlan[] {
-  const board = new MemorySceneBoard(stage);
-  let view: View = viewAt(stage.width / 2, (stage.height - (stage.caption ?? 0)) / 2, 1, stage);
-  return scene.shots.map((shot, idx) => {
-    const target = shotView(shot, board.elements(), stage, view) ?? view;
-    const move: View[] = [];
-    if (idx === 0 || target === view) move.push(target);
-    else {
-      let last = view;
-      for (let s = 1; s <= MOVE_STEPS; s++) {
-        const next = between(view, target, easeInOutCubic(s / MOVE_STEPS), stage);
-        const blur = s < MOVE_STEPS ? motionBlur(last, next, stage, shot.camera?.motionBlur ?? 0) : 0;
-        move.push(blur > 0 ? { ...next, blur } : next);
-        last = next;
-      }
-    }
-    view = target;
-    for (const cmd of shot.run ?? []) board.runCommand(cmd);
-    return { move, elements: board.elements().map((e) => ({ ...e })) };
+  return cameraTrack(scene).map((entry) => {
+    // The player's steps: the last one lands on the shot's view, with no blur.
+    const steps = Math.round(entry.moveMs / CAMERA_STEP_MS);
+    const move = Array.from({ length: Math.max(0, steps - 1) }, (_, i) => cameraAt(entry, (i + 1) * CAMERA_STEP_MS, stage));
+    move.push(entry.to);
+    return { move, elements: entry.elements };
   });
 }
 
@@ -42,7 +28,7 @@ function planShots(scene: Scene, stage: Stage): ShotPlan[] {
  * WebGL fragment shaders for bespoke motion graphics.
  */
 export function standaloneSceneHtml(scene: Scene): string {
-  const stage: Stage = { ...DEFAULT_STAGE, ...scene.stage };
+  const stage = sceneStage(scene);
   const serializedScene = JSON.stringify(scene).replace(/</g, '\\u003c');
   const serializedPlan = JSON.stringify({ stage, cameraMs: CAMERA_MS, shots: planShots(scene, stage) }).replace(/</g, '\\u003c');
   const title = scene.title || scene.name;
@@ -189,6 +175,7 @@ export function standaloneSceneHtml(scene: Scene): string {
     <div class="viewport" id="viewport">
       <canvas id="shaderCanvas" class="layer"></canvas>
       <div id="board" class="board"><canvas id="sceneCanvas" class="layer"></canvas></div>
+      <svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="motionBlur" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur id="motionBlurAmount" stdDeviation="0 0"/></filter></svg>
       <div id="titleEl" class="overlay-title"></div>
       <div id="captionEl" class="overlay-caption"></div>
     </div>
@@ -317,8 +304,20 @@ export function standaloneSceneHtml(scene: Scene): string {
       boardEl.style.transform = angled
         ? 'perspective(' + (view.perspective || 1.2) * w + 'px) rotateX(' + (view.tilt || 0) + 'deg) rotateY(' + (view.turn || 0) + 'deg) rotateZ(' + (view.roll || 0) + 'deg)'
         : 'none';
+      // Motion blur streaks along a pan (taken back through the roll, as the board is blurred before it turns).
       const blur = (view.blur || 0) * w / plan.stage.width;
-      boardEl.style.filter = blur >= 0.05 ? 'blur(' + blur.toFixed(2) + 'px)' : 'none';
+      if (blur >= 0.05) {
+        let sx = blur, sy = blur;
+        if (view.blurAngle !== undefined) {
+          const a = (view.blurAngle - (view.roll || 0)) * Math.PI / 180;
+          sx = Math.max(blur * 0.15, blur * Math.abs(Math.cos(a)));
+          sy = Math.max(blur * 0.15, blur * Math.abs(Math.sin(a)));
+        }
+        document.getElementById('motionBlurAmount').setAttribute('stdDeviation', sx.toFixed(2) + ' ' + sy.toFixed(2));
+        boardEl.style.filter = 'url(#motionBlur)';
+      } else {
+        boardEl.style.filter = 'none';
+      }
     }
 
     function draw() {

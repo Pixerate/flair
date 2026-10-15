@@ -1,6 +1,7 @@
 export * from './types.js';
 export * from './geometry.js';
 export * from './camera.js';
+export * from './cameratrack.js';
 export * from './effects.js';
 export * from './check.js';
 export * from './validate.js';

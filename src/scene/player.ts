@@ -11,7 +11,7 @@ import {
   frame,
   calculateFramingRect,
   isAngled,
-  motionBlur,
+  moveBlur,
   projectPoint,
   viewAt,
   type Stage,
@@ -230,8 +230,7 @@ export async function playScene(
         for (let s = 1; s <= steps; s++) {
           const t = easeInOutCubic(s / steps);
           const view = between(fromView, targetView, t, stage);
-          const blur = s < steps ? motionBlur(last, view, stage, strength) : 0;
-          board.setView(blur > 0 ? { ...view, blur } : view);
+          board.setView(s < steps ? { ...view, ...moveBlur(last, view, stage, strength) } : view);
           last = view;
           await clock.sleep(stepMs);
         }

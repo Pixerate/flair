@@ -47,6 +47,12 @@ export interface View extends CameraAngle {
   scrollY: number;
   /** Motion blur in stage pixels, set while the camera moves (see `ShotCamera.motionBlur`); 0 or absent when still. */
   blur?: number;
+  /**
+   * The direction the picture streaks in, in degrees on screen (0 is
+   * horizontal, 90 vertical), when the move is mostly a pan; absent when it
+   * blurs every way (a zoom or a turn).
+   */
+  blurAngle?: number;
 }
 
 export const boardHeight = (stage: Stage): number => stage.height - (stage.caption ?? 0);
@@ -226,7 +232,25 @@ export function cameraTransform(view: View, stage: Stage, width = stage.width): 
   return `perspective(${round(distance)}px) rotateX(${round(a.tilt ?? 0)}deg) rotateY(${round(a.turn ?? 0)}deg) rotateZ(${round(a.roll ?? 0)}deg)`;
 }
 
-/** The CSS `filter` for the view's motion blur at a layer `width` CSS pixels wide, or "none". */
+/**
+ * The view's motion blur as standard deviations along the board layer's own
+ * x and y axes, in CSS pixels at a layer `width` wide: for an SVG
+ * `<feGaussianBlur stdDeviation="x y">`, so a pan streaks along its
+ * direction (CSS `blur()` can only blur every way). The layer is turned
+ * after it is blurred, so the direction is taken back through its roll.
+ * [0, 0] when still.
+ */
+export function cameraBlur(view: View, stage: Stage, width = stage.width): [number, number] {
+  const blur = (view.blur ?? 0) * (width / stage.width);
+  if (!(blur >= 0.05)) return [0, 0];
+  if (view.blurAngle === undefined) return [round(blur), round(blur)];
+  const a = ((view.blurAngle - (cameraAngle(view).roll ?? 0)) * Math.PI) / 180;
+  // A little blur across the streak keeps it from looking like a scanline.
+  const across = blur * 0.15;
+  return [round(Math.max(across, blur * Math.abs(Math.cos(a)))), round(Math.max(across, blur * Math.abs(Math.sin(a))))];
+}
+
+/** The CSS `filter` for the view's motion blur at a layer `width` CSS pixels wide (the same every way; see {@link cameraBlur} for a streak), or "none". */
 export function cameraFilter(view: View, stage: Stage, width = stage.width): string {
   const blur = (view.blur ?? 0) * (width / stage.width);
   return blur >= 0.05 ? `blur(${round(blur)}px)` : 'none';
@@ -262,6 +286,16 @@ export function projectPoint(view: View, stage: Stage, [x, y]: readonly [number,
   return [cx + px * k, cy + py * k];
 }
 
+/** How far the picture moves on screen between two views: as a pan (x, y), and as zooming and turning. */
+function screenMotion(from: View, to: View, stage: Stage): { dx: number; dy: number; other: number } {
+  const [x0, y0] = centreOf(from, stage);
+  const [x1, y1] = centreOf(to, stage);
+  const zoom = Math.sqrt(from.zoom * to.zoom);
+  const scale = Math.abs(Math.log(to.zoom / from.zoom)) * stage.width * 0.5;
+  const turn = ANGLES.reduce((sum, k) => sum + Math.abs((to[k] ?? 0) - (from[k] ?? 0)), 0) * (stage.width / 180);
+  return { dx: (x1 - x0) * zoom, dy: (y1 - y0) * zoom, other: scale + turn };
+}
+
 /**
  * Motion blur for one step of a camera move, in stage pixels: how far the
  * picture moves on screen between two views (centre, zoom and angle), times
@@ -269,13 +303,29 @@ export function projectPoint(view: View, stage: Stage, [x, y]: readonly [number,
  */
 export function motionBlur(from: View, to: View, stage: Stage, strength: number): number {
   if (!(strength > 0)) return 0;
-  const [x0, y0] = centreOf(from, stage);
-  const [x1, y1] = centreOf(to, stage);
-  const zoom = Math.sqrt(from.zoom * to.zoom);
-  const pan = Math.hypot(x1 - x0, y1 - y0) * zoom;
-  const scale = Math.abs(Math.log(to.zoom / from.zoom)) * stage.width * 0.5;
-  const turn = ANGLES.reduce((sum, k) => sum + Math.abs((to[k] ?? 0) - (from[k] ?? 0)), 0) * (stage.width / 180);
-  return round(Math.min(40, (pan + scale + turn) * 0.35 * strength));
+  const { dx, dy, other } = screenMotion(from, to, stage);
+  return round(Math.min(40, (Math.hypot(dx, dy) + other) * 0.35 * strength));
+}
+
+/**
+ * The direction a step of a camera move streaks in, in degrees on screen
+ * (0 to 180, 0 horizontal), when most of it is a pan; undefined when it is
+ * mostly zooming or turning, which blurs every way.
+ */
+export function motionBlurAngle(from: View, to: View, stage: Stage): number | undefined {
+  const { dx, dy, other } = screenMotion(from, to, stage);
+  const pan = Math.hypot(dx, dy);
+  if (!(pan > 0) || pan < 0.6 * (pan + other)) return undefined;
+  const a = (Math.atan2(dy, dx) * 180) / Math.PI;
+  return round(((a % 180) + 180) % 180);
+}
+
+/** The blur fields of a step of a camera move with this strength: `{ blur, blurAngle }`, or nothing when still. */
+export function moveBlur(from: View, to: View, stage: Stage, strength: number): Pick<View, 'blur' | 'blurAngle'> {
+  const blur = motionBlur(from, to, stage, strength);
+  if (!(blur > 0)) return {};
+  const blurAngle = motionBlurAngle(from, to, stage);
+  return blurAngle === undefined ? { blur } : { blur, blurAngle };
 }
 
 /** The part of the scene the camera currently shows. */

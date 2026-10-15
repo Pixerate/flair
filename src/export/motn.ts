@@ -1,5 +1,6 @@
 import type { Scene, Shot } from '../scene/types.js';
-import { DEFAULT_STAGE, CAMERA_MS } from '../scene/camera.js';
+import { DEFAULT_STAGE, CAMERA_MS, DEFAULT_PERSPECTIVE, centreOf, isAngled, type View } from '../scene/camera.js';
+import { cameraSamples, sceneStage, type CameraSample } from '../scene/cameratrack.js';
 import { isElementCommand } from '../scene/types.js';
 
 export interface MotnExportOptions {
@@ -15,8 +16,70 @@ function escapeXml(unsafe: string): string {
     .replace(/'/g, '&apos;');
 }
 
+const r3 = (n: number) => Math.round(n * 1000) / 1000;
+
+/** A parameter, keyframed (linear, at frames) when the samples change and static when they do not. */
+function curveParameter(name: string, id: number, samples: readonly CameraSample[], value: (v: View) => number, indent: string): string[] {
+  const values = samples.map((x) => r3(value(x.view)));
+  if (values.every((v) => v === values[0])) return [`${indent}<parameter name="${name}" id="${id}" value="${values[0]}"/>`];
+  return [
+    `${indent}<parameter name="${name}" id="${id}" value="${values[0]}">`,
+    `${indent}  <curve type="1" default="${values[0]}" value="${values[0]}">`,
+    ...samples.map((x, i) => `${indent}    <keypoint interpolation="1"><time>${x.frame}</time><value>${values[i]}</value></keypoint>`),
+    `${indent}  </curve>`,
+    `${indent}</parameter>`,
+  ];
+}
+
 /**
- * Serializes a Flair Scene into Apple Motion ozml 4.0 XML document format (.motn).
+ * The scene's camera as a group the shot groups sit in: its anchor point is
+ * the camera's centre, its scale the zoom and its rotations the angle
+ * (Motion's y points up, so tilt and roll turn the other way), keyframed
+ * every other frame through each move. The perspective distance and each
+ * move's motion blur are noted in comments: set them on a Motion camera and
+ * in the render settings.
+ */
+function cameraGroupOpen(scene: Scene, frameRate: number, totalFrames: number, id: number): string[] {
+  const stage = sceneStage(scene);
+  const samples = cameraSamples(scene, frameRate);
+  const angled = samples.some((x) => isAngled(x.view));
+  const lines = [`    <group name="Camera" id="${id}">`];
+  if (angled) {
+    const distance = r3((samples.find((x) => x.view.perspective)?.view.perspective ?? DEFAULT_PERSPECTIVE) * stage.width);
+    lines.push(`      <!-- 3D group: view it through a camera ${distance}px from the canvas -->`);
+  }
+  for (const shot of scene.shots) {
+    if (shot.camera?.motionBlur) lines.push(`      <!-- ${escapeXml(shot.title ?? 'Shot')}: motion blur ${shot.camera.motionBlur} on the move in -->`);
+  }
+  lines.push(`      <timing in="0" out="${totalFrames - 1}" offset="0"/>`);
+  lines.push('      <parameter name="Properties" id="1">');
+  lines.push('        <parameter name="Transform" id="100">');
+  lines.push('          <parameter name="Position" id="101">');
+  lines.push('            <parameter name="X" id="1" value="0"/>');
+  lines.push('            <parameter name="Y" id="2" value="0"/>');
+  lines.push('          </parameter>');
+  lines.push('          <parameter name="Scale" id="102">');
+  lines.push(...curveParameter('X', 1, samples, (v) => v.zoom * 100, '            '));
+  lines.push(...curveParameter('Y', 2, samples, (v) => v.zoom * 100, '            '));
+  lines.push('          </parameter>');
+  lines.push('          <parameter name="Rotation" id="103">');
+  lines.push(...curveParameter('X', 1, samples, (v) => 0 - (v.tilt ?? 0), '            '));
+  lines.push(...curveParameter('Y', 2, samples, (v) => v.turn ?? 0, '            '));
+  lines.push(...curveParameter('Z', 3, samples, (v) => 0 - (v.roll ?? 0), '            '));
+  lines.push('          </parameter>');
+  lines.push('          <parameter name="Anchor Point" id="104">');
+  lines.push(...curveParameter('X', 1, samples, (v) => centreOf(v, stage)[0], '            '));
+  lines.push(...curveParameter('Y', 2, samples, (v) => 0 - centreOf(v, stage)[1], '            '));
+  lines.push('          </parameter>');
+  lines.push('        </parameter>');
+  lines.push('      </parameter>');
+  return lines;
+}
+
+/**
+ * Serializes a Flair Scene into Apple Motion ozml 4.0 XML document format
+ * (.motn). A scene with a camera puts its shots in a "Camera" group that
+ * moves, zooms and turns as the camera does.
  */
 export function exportMotn(scene: Scene, options: MotnExportOptions = {}): string {
   const frameRate = options.frameRate ?? 30;
@@ -115,7 +178,9 @@ export function exportMotn(scene: Scene, options: MotnExportOptions = {}): strin
     lines.push('    </scenenode>');
   }
 
-  // Groups and element nodes per shot
+  // Groups and element nodes per shot, inside the camera group when there is one.
+  const hasCamera = scene.shots.some((s) => s.camera);
+  if (hasCamera) lines.push(...cameraGroupOpen(scene, frameRate, totalFrames, nodeId++));
   for (const [idx, item] of shotTimings.entries()) {
     const shotLabel = item.shot.title
       ? `Shot ${idx + 1}: ${escapeXml(item.shot.title)}`
@@ -156,6 +221,7 @@ export function exportMotn(scene: Scene, options: MotnExportOptions = {}): strin
 
     lines.push('    </group>');
   }
+  if (hasCamera) lines.push('    </group>');
 
   lines.push('  </scene>');
   lines.push('</ozml>');
