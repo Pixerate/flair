@@ -169,4 +169,38 @@ describe("SvgPlayer", () => {
       globalThis.IntersectionObserver = origObserver;
     }
   });
+
+  it("defers playback until scrolled into view with playOnEnter", () => {
+    let callback: IntersectionObserverCallback | null = null;
+    class MockIntersectionObserver {
+      constructor(cb: IntersectionObserverCallback) {
+        callback = cb;
+      }
+      observe = vi.fn();
+      disconnect = vi.fn();
+      unobserve = vi.fn();
+      takeRecords = vi.fn().mockReturnValue([]);
+      root = null;
+      rootMargin = "";
+      thresholds = [];
+    }
+    const origObserver = globalThis.IntersectionObserver;
+    globalThis.IntersectionObserver = MockIntersectionObserver as unknown as typeof IntersectionObserver;
+    try {
+      const clock = new ManualClock();
+      const host = document.createElement("div");
+      const player = new SvgPlayer(host, media, { clock, playOnEnter: true });
+      // Should not start playing initially when playOnEnter is true
+      expect(player.isPlaying).toBe(false);
+
+      // Enters view
+      callback!([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver);
+      expect(player.isPlaying).toBe(true);
+
+      player.dispose();
+    } finally {
+      globalThis.IntersectionObserver = origObserver;
+    }
+  });
 });
+

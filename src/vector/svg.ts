@@ -317,6 +317,8 @@ export interface SvgPlayerOptions extends SvgViewOptions {
   steps?: readonly number[];
   /** Pause the animation loop when scrolled out of view via IntersectionObserver (default false). */
   pauseWhenHidden?: boolean;
+  /** Wait to start playing until the element enters the viewport via IntersectionObserver (default false). When true, autoplay is deferred until first visible. */
+  playOnEnter?: boolean;
 }
 
 /**
@@ -335,6 +337,7 @@ export class SvgPlayer {
   private playing = false;
   private disposed = false;
   private wasPlayingBeforeHidden = false;
+  private hasEnteredViewport = false;
   private intersectionObserver?: IntersectionObserver;
 
   constructor(
@@ -351,16 +354,24 @@ export class SvgPlayer {
     container.appendChild(this.view.element);
     this.view.draw(0, this.steps);
 
-    if (options.pauseWhenHidden && typeof IntersectionObserver !== "undefined") {
+    const needsObserver =
+      (options.pauseWhenHidden || options.playOnEnter) && typeof IntersectionObserver !== "undefined";
+
+    if (needsObserver) {
       this.intersectionObserver = new IntersectionObserver(([entry]) => {
         if (!entry) return;
         if (entry.isIntersecting) {
-          if (this.wasPlayingBeforeHidden) {
+          if (options.playOnEnter && !this.hasEnteredViewport) {
+            this.hasEnteredViewport = true;
+            if (options.autoplay ?? true) {
+              this.play();
+            }
+          } else if (this.wasPlayingBeforeHidden) {
             this.wasPlayingBeforeHidden = false;
             this.play();
           }
         } else {
-          if (this.playing) {
+          if (this.playing && options.pauseWhenHidden) {
             this.wasPlayingBeforeHidden = true;
             this.pause();
           }
@@ -369,7 +380,8 @@ export class SvgPlayer {
       this.intersectionObserver.observe(this.view.element);
     }
 
-    if (options.autoplay ?? true) this.play();
+    const shouldAutoplay = (options.autoplay ?? true) && !options.playOnEnter;
+    if (shouldAutoplay) this.play();
   }
 
   /** The loop length in ms. */
