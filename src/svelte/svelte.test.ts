@@ -11,7 +11,7 @@ import type { SvgPlayer } from "../vector/svg.js";
 import Effect from "./fixtures/Effect.svelte";
 // @ts-expect-error: Svelte types `*.svelte`, not `*.svelte?server`; compiled for the server.
 import EffectServer from "./fixtures/Effect.svelte?server";
-import { vectorEffect, vectorEffectStill, type VectorEffectParams } from "./index.js";
+import { flairEffect, type VectorEffectParams, vectorEffect, vectorEffectStill } from "./index.js";
 
 const motion: SvgMotion = {
   svg: `<svg viewBox="0 0 200 100"><rect id="bar" x="0" y="0" width="0" height="10"/></svg>`,
@@ -223,5 +223,21 @@ describe("entry points", () => {
   it("imports only Svelte's types, so the built entry needs no Svelte at run time", () => {
     const source = readFileSync(join(__dirname, "index.ts"), "utf8");
     for (const line of source.match(/^import .* from "svelte[^"]*";$/gm) ?? []) expect(line).toMatch(/^import type /);
+  });
+});
+
+describe("flairEffect", () => {
+  it("runs any catalog effect in the element, follows new subjects, and cleans up", () => {
+    const node = document.createElement("div");
+    const action = flairEffect(node, { effect: "typewriter", subject: { text: "Hi" }, autoplay: false });
+    expect(node.style.position).toBe("relative");
+    expect(node.querySelectorAll("svg")).toHaveLength(1);
+    action.update!({ effect: "typewriter", subject: { text: "Bye" }, autoplay: false });
+    expect(node.querySelectorAll("svg")).toHaveLength(1);
+    action.update!({ effect: "aurora", autoplay: false });
+    expect(node.querySelector("svg")).toBeNull();
+    expect(node.querySelector("canvas")).not.toBeNull();
+    action.destroy!();
+    expect(node.querySelector("canvas")).toBeNull();
   });
 });

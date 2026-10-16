@@ -39,6 +39,10 @@
       "types": "./dist/vector/index.d.ts",
       "import": "./dist/vector/index.js"
     },
+    "./embed": {
+      "types": "./dist/embed/index.d.ts",
+      "import": "./dist/embed/index.js"
+    },
     "./react": {
       "types": "./dist/react/index.d.ts",
       "import": "./dist/react/index.js"

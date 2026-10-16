@@ -97,13 +97,17 @@ program
 
 program
   .command('export <targetOrShader> [extraPath] [outputPath]')
-  .description('Export shader animation (GIF/MP4) or scene to Apple Motion ozml 4.0 (.motn)')
+  .description('Export a shader file to video (.mp4/.webm/.mov), .gif or .png frames, or a scene to motn/lottie/fcp7/edl')
   .option('-o, --out <outputPath>', 'Output file path')
   .option('-w, --width <width>', 'Canvas width', '720')
   .option('-h, --height <height>', 'Canvas height', '720')
   .option('--fps <fps>', 'Frames per second', '30')
   .option('-d, --duration <duration>', 'Duration in seconds', '3')
   .option('-v, --values <jsonOrFile>', 'Control values as JSON string or file')
+  .option('--alpha', 'Keep the shader alpha (webm, mov, gif, png)', false)
+  .option('--transparent', 'The shader is an overlay: composite its alpha over --background', false)
+  .option('--background <css>', 'Colour under transparent pixels without --alpha', '#000000')
+  .option('--pointer', 'Act out a pointer that hovers, wanders and clicks', false)
   .action(async (targetOrShader, extraPath, outputPath, options) => {
     if (targetOrShader === 'motn' || targetOrShader === 'lottie' || targetOrShader === 'fcp7' || targetOrShader === 'edl') {
       const sceneFile = extraPath;
@@ -196,6 +200,10 @@ program
         height,
         fps,
         duration,
+        alpha: options.alpha,
+        transparent: options.transparent,
+        background: options.background,
+        pointer: options.pointer ? 'auto' : 'none',
         onProgress: (frame, total) => {
           process.stdout.write(`\rRendering frame ${frame}/${total} (${Math.round((frame / total) * 100)}%)`);
         },
@@ -203,6 +211,94 @@ program
       console.log(`\n✅ Successfully exported motion graphic to: ${savedPath}`);
     } catch (err: any) {
       console.error(`\nExport failed: ${err.message}`);
+      process.exit(1);
+    }
+  });
+
+// ==========================================
+// Catalog Commands
+// ==========================================
+const collect = (value: string, previous: string[]) => [...previous, value];
+
+program
+  .command('effects')
+  .description('List catalog effects with what they take (image, video, svg, text, mask, path) and how they answer the pointer')
+  .option('--accepts <inputs>', 'Only effects that take all of these (image, video, svg, text, mask, path; comma-separated or repeated)', collect, [])
+  .option('--interaction <ways>', 'Only effects that answer the pointer in one of these ways (hover, press, click, trail, pointer)', collect, [])
+  .option('--category <category>', 'Only this category')
+  .option('--kind <kind>', 'shader or vector')
+  .option('--search <words>', 'Words to look for in the id, name, description and tags')
+  .option('--json', 'Output JSON (id, name, kind, category, description, inputs, presets)', false)
+  .action(async (options) => {
+    try {
+      const { findEffects, effectInputs } = await import('./catalog/index.js');
+      const { effectQueryFromFlags, describeEffect } = await import('./export/effect.js');
+      const effects = findEffects(effectQueryFromFlags(options));
+      if (options.json) {
+        console.log(JSON.stringify(effects.map((e) => ({ id: e.id, name: e.name, kind: e.kind, category: e.category, description: e.description, inputs: effectInputs(e), presets: e.presets?.map((p) => p.name) ?? [] })), null, 2));
+        return;
+      }
+      if (!effects.length) {
+        console.log('No effects match.');
+        return;
+      }
+      for (const e of effects) console.log(describeEffect(e));
+      console.log(`\n${effects.length} effect${effects.length === 1 ? '' : 's'}. Render one with: flair render <id> [--image p | --text "…" | …] -o out.mp4`);
+    } catch (err: any) {
+      console.error(`Error: ${err.message}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('render <effect>')
+  .description('Render a catalog effect, applied to a subject, to .mp4, .webm, .mov, .gif, .svg (vector effects) or .png frames')
+  .option('--image <path>', 'A picture (file path or URL); repeat for effects that take two', collect, [])
+  .option('--svg <path>', 'An SVG (file path, URL or markup)', collect, [])
+  .option('--text <text>', 'Words, for a text effect or a text mask', collect, [])
+  .option('--font <family>', 'CSS font family for --text drawn into a shader')
+  .option('--weight <weight>', 'Font weight for --text drawn into a shader')
+  .option('--path <d>', 'SVG path data, for a shape control', collect, [])
+  .option('--video <path>', 'A video file, decoded to frames with ffmpeg', collect, [])
+  .option('--preset <name>', 'A preset by name')
+  .option('--set <name=value>', 'A control value (repeatable): --set uSpeed=2 --set uTint=#ff0080', collect, [])
+  .option('--size <WxH>', 'Pixels, like 1280x720')
+  .option('--fps <fps>', 'Frames per second', '30')
+  .option('--duration <seconds>', 'Seconds (default: the effect\'s loop or play-through)')
+  .option('--alpha', 'Keep transparency (webm, mov, gif, png, svg)', false)
+  .option('--background <css>', 'Colour under transparent pixels without --alpha')
+  .option('--no-pointer', 'Leave the pointer still (interactive effects otherwise get a scripted pointer)')
+  .option('-o, --out <outputPath>', 'Output: .mp4, .webm, .mov, .gif, .svg, a .png pattern (out_%04d.png) or a folder')
+  .action(async (effectId, options) => {
+    try {
+      if (!options.out) throw new Error('Say where to write it: -o out.mp4 (or .webm, .mov, .gif, .svg, out_%04d.png, a folder/).');
+      const { exportEffect, parseSets, parseSize, resolveEffect, subjectsFromFlags } = await import('./export/effect.js');
+      const effect = resolveEffect(effectId);
+      const subjects = subjectsFromFlags(options);
+      const size = options.size ? parseSize(options.size) : undefined;
+      const fps = Number(options.fps);
+      if (!(fps > 0)) throw new Error(`--fps takes a positive number, not "${options.fps}".`);
+      const duration = options.duration === undefined ? undefined : Number(options.duration);
+      if (duration !== undefined && !(duration > 0)) throw new Error(`--duration takes seconds, more than 0, not "${options.duration}".`);
+      console.log(`Rendering ${effect.id} to ${options.out}...`);
+      const saved = await exportEffect(effect, {
+        ...(subjects.length ? { subject: subjects } : {}),
+        ...(options.preset ? { preset: options.preset } : {}),
+        values: parseSets(effect, options.set),
+        outputPath: options.out,
+        ...(size ?? {}),
+        fps,
+        ...(duration !== undefined ? { duration } : {}),
+        alpha: options.alpha,
+        ...(options.background ? { background: options.background } : {}),
+        ...(options.pointer === false ? { pointer: 'none' as const } : {}),
+        onProgress: (frame, total) => {
+          if (total > 1) process.stdout.write(`\rFrame ${frame}/${total} (${Math.round((frame / total) * 100)}%)`);
+        },
+      });
+      console.log(`\nWrote ${saved}`);
+    } catch (err: any) {
+      console.error(`\nRender failed: ${err.message}`);
       process.exit(1);
     }
   });

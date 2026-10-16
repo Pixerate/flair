@@ -1,6 +1,7 @@
 /**
- * Svelte 5 bindings for Flair's vector effects, written as plain TypeScript so
- * they need no Svelte compiler: the `vectorEffect` action plays a catalog
+ * Svelte 5 bindings for Flair, written as plain TypeScript so they need no
+ * Svelte compiler: the `flairEffect` action runs any catalog effect (shader or
+ * vector) applied to a picture, video, SVG or words; the `vectorEffect` action plays a catalog
  * effect (or any {@link SvgMotion}) in an element, and `vectorEffectStill`
  * gives the markup and style of its still for server rendering.
  *
@@ -25,7 +26,8 @@
  */
 
 import type { ActionReturn } from "svelte/action";
-import { getEffect, effectDefaults } from "../catalog/index.js";
+import { getEffect, effectDefaults, type EffectDefinition } from "../catalog/index.js";
+import { mountEffect, type EffectSubject } from "../embed/index.js";
 import { renderVectorEffect, type VectorEffect as VectorEffectDefinition } from "../catalog/types.js";
 import type { ControlValue } from "../shader/controls.js";
 import type { Clock } from "../time/clock.js";
@@ -366,3 +368,65 @@ export function vectorEffect(node: HTMLElement, initial: VectorEffectParams): Ac
 }
 
 export type { SvgPlayer, SvgMotion, SvgTrigger };
+
+/** What the `flairEffect` action runs: any catalog effect, applied to a subject. */
+export interface FlairEffectParams {
+  /** A catalog effect, by id or definition: shader or vector. */
+  effect: string | EffectDefinition;
+  /** What to apply it to: a picture, a video, an SVG, words or a path (see `EffectSubject`). */
+  subject?: EffectSubject | readonly EffectSubject[];
+  preset?: string;
+  values?: Record<string, ControlValue>;
+  /** Start playing at once (default `true`). */
+  autoplay?: boolean;
+  /** Pause while scrolled out of view (default `true`). */
+  pauseWhenHidden?: boolean;
+}
+
+/**
+ * Runs any catalog effect, shader or vector, in an element, applied to a
+ * subject (see `mountEffect` in `@pixerate/flair/embed`); it fills the
+ * element, so size it with CSS. A new subject or values update the running
+ * effect; a new effect, preset or playback option starts it again.
+ *
+ * ```svelte
+ * <div use:flairEffect={{ effect: "image-duotone", subject: { image: "/team.jpg" } }} style="aspect-ratio: 16 / 9"></div>
+ * ```
+ */
+export function flairEffect(node: HTMLElement, initial: FlairEffectParams): ActionReturn<FlairEffectParams> {
+  let params = initial;
+  if (!node.style.position) node.style.position = "relative";
+  const start = () => {
+    const m = mountEffect(node, params.effect, {
+      ...(params.subject ? { subject: params.subject } : {}),
+      ...(params.preset ? { preset: params.preset } : {}),
+      ...(params.values ? { values: params.values } : {}),
+      autoplay: params.autoplay ?? true,
+      pauseWhenHidden: params.pauseWhenHidden ?? true,
+    });
+    m.element.style.display = "block";
+    m.element.style.width = "100%";
+    m.element.style.height = "100%";
+    return m;
+  };
+  let mounted = start();
+  return {
+    update(next) {
+      const restart =
+        next.effect !== params.effect || next.preset !== params.preset || next.autoplay !== params.autoplay || next.pauseWhenHidden !== params.pauseWhenHidden;
+      const subjectChanged = next.subject !== params.subject;
+      const valuesChanged = JSON.stringify(next.values ?? {}) !== JSON.stringify(params.values ?? {});
+      params = next;
+      if (restart) {
+        mounted.dispose();
+        mounted = start();
+        return;
+      }
+      if (subjectChanged && next.subject) mounted.setSubject(next.subject);
+      if (valuesChanged && next.values) mounted.setValues(next.values);
+    },
+    destroy() {
+      mounted.dispose();
+    },
+  };
+}

@@ -7,11 +7,14 @@
 import { SVG_PICTURE, svgFrame, type SvgBox, type SvgMotion } from "./motion.js";
 import { svgDuration } from "./svg.js";
 
-interface Node {
+/** @internal An element of a parsed picture (see `svgFrameTree`). */
+export interface SvgNode {
   tag: string;
   attrs: [string, string][];
-  children: (Node | string)[];
+  children: (SvgNode | string)[];
 }
+
+type Node = SvgNode;
 
 /** Elements dropped with all they hold: they run code or show outside markup. */
 const DROPPED = new Set(["script", "foreignobject", "iframe", "object", "embed"]);
@@ -81,13 +84,15 @@ function parse(markup: string): Node | undefined {
   return svg && svg.tag.toLowerCase() === "svg" ? svg : undefined;
 }
 
-function serialize(node: Node | string): string {
+/** @internal A parsed element as markup. */
+export function serialize(node: Node | string): string {
   if (typeof node === "string") return escapeText(node);
   const attrs = node.attrs.map(([k, v]) => ` ${k}="${escapeAttr(v)}"`).join("");
   return `<${node.tag}${attrs}>${node.children.map(serialize).join("")}</${node.tag}>`;
 }
 
-function setAttr(node: Node, name: string, value: string | undefined) {
+/** @internal Sets (or with `undefined` removes) an attribute, unless it is unsafe. */
+export function setAttr(node: Node, name: string, value: string | undefined) {
   const i = node.attrs.findIndex(([k]) => k === name);
   if (value === undefined) {
     if (i >= 0) node.attrs.splice(i, 1);
@@ -96,7 +101,8 @@ function setAttr(node: Node, name: string, value: string | undefined) {
   else node.attrs.push([name, value]);
 }
 
-const getAttr = (node: Node, name: string) => node.attrs.find(([k]) => k === name)?.[1];
+/** @internal */
+export const getAttr = (node: Node, name: string) => node.attrs.find(([k]) => k === name)?.[1];
 
 /** A `viewBox` attribute's box, or undefined when it has none or it is malformed. */
 export function parseViewBox(value: string | null | undefined): SvgBox | undefined {
@@ -164,11 +170,31 @@ export interface SvgFrameMarkupOptions {
  * markup puts them. Undefined when `motion.svg` is not an `<svg>`.
  */
 export function svgFrameMarkup(motion: SvgMotion, options: SvgFrameMarkupOptions = {}): string | undefined {
-  const svg = parse(motion.svg.trim());
-  if (!svg) return undefined;
   const steps = options.steps ?? [];
   const at = options.at ?? "last";
   const time = at === "first" ? 0 : at === "last" ? svgDuration(motion, steps) : at;
+  const tree = svgFrameTree(motion, steps, time);
+  if (!tree) return undefined;
+  const { svg } = tree;
+  setAttr(svg, "width", "100%");
+  setAttr(svg, "height", "100%");
+  if (!getAttr(svg, "xmlns")) setAttr(svg, "xmlns", "http://www.w3.org/2000/svg");
+  return serialize(svg);
+}
+
+/**
+ * @internal The safe tree of `motion.svg` showing its frame at `time`, with
+ * its elements by id (the first of each) and its own `viewBox`; undefined
+ * when it is not an `<svg>`. What {@link svgFrameMarkup} and
+ * `svgAnimatedMarkup` build on.
+ */
+export function svgFrameTree(
+  motion: SvgMotion,
+  steps: readonly number[],
+  time: number,
+): { svg: Node; byId: Map<string, Node>; whole: SvgBox | undefined } | undefined {
+  const svg = parse(motion.svg.trim());
+  if (!svg) return undefined;
   const byId = new Map<string, Node>();
   const index = (node: Node) => {
     const id = getAttr(node, "id");
@@ -200,8 +226,5 @@ export function svgFrameMarkup(motion: SvgMotion, options: SvgFrameMarkupOptions
         if (typeof child !== "string") setAttr(child, "display", i++ === frame.solo ? undefined : "none");
     }
   }
-  setAttr(svg, "width", "100%");
-  setAttr(svg, "height", "100%");
-  if (!getAttr(svg, "xmlns")) setAttr(svg, "xmlns", "http://www.w3.org/2000/svg");
-  return serialize(svg);
+  return { svg, byId, whole };
 }

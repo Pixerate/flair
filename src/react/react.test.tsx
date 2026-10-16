@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ManualClock } from "../time/clock.js";
 import type { SvgMotion } from "../vector/motion.js";
 import type { SvgPlayer } from "../vector/svg.js";
-import { SvgPlayerView, VectorEffect } from "./index.js";
+import { FlairEffect, SvgPlayerView, VectorEffect } from "./index.js";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -174,5 +174,25 @@ describe("entry points", () => {
     );
     expect(files.length).toBeGreaterThan(20);
     for (const f of files) expect(readFileSync(join(src, f), "utf8"), f).not.toMatch(/from\s+["']react(-dom)?(\/[^"']*)?["']/);
+  });
+});
+
+describe("FlairEffect", () => {
+  it("runs a vector effect with its subject, updates it, and cleans up", () => {
+    render(<FlairEffect effect="typewriter" subject={{ text: "Hello" }} autoplay={false} className="title" />);
+    const host = container.querySelector<HTMLElement>("div.title")!;
+    expect(host.querySelectorAll("svg")).toHaveLength(1);
+    render(<FlairEffect effect="typewriter" subject={{ text: "Goodbye" }} autoplay={false} className="title" />);
+    expect(container.querySelectorAll("svg")).toHaveLength(1);
+    act(() => root!.unmount());
+    root = undefined;
+    expect(container.querySelector("svg")).toBeNull();
+  });
+
+  it("runs a shader effect on a canvas that fills it, and nothing on the server", () => {
+    expect(renderToString(<FlairEffect effect="aurora" />)).toBe('<div style="position:relative"></div>');
+    render(<FlairEffect effect="aurora" autoplay={false} />);
+    const canvas = container.querySelector("canvas")!;
+    expect(canvas.style.width).toBe("100%");
   });
 });

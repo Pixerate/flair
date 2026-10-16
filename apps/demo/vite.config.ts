@@ -18,6 +18,7 @@ export default defineConfig({
       { find: /^@pixerate\/flair\/catalog$/, replacement: src("catalog/index.ts") },
       { find: /^@pixerate\/flair\/editor$/, replacement: src("editor/index.ts") },
       { find: /^@pixerate\/flair\/vector$/, replacement: src("vector/index.ts") },
+      { find: /^@pixerate\/flair\/embed$/, replacement: src("embed/index.ts") },
       { find: /^@pixerate\/flair$/, replacement: src("index.ts") },
     ],
   },

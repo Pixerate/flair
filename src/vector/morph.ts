@@ -420,3 +420,32 @@ export function morphPaths(from: string, to: string, options: MorphOptions = {})
   const [a, b] = morphSequence([from, to], options);
   return [a!, b!];
 }
+
+/**
+ * @internal The point `at` (0–1) of the way along a path's `d` by length, as
+ * a browser's `getPointAtLength` finds it (moves between pieces not counted),
+ * with curves split into short lines. Undefined when `d` does not parse.
+ */
+export function pathPointAt(d: string, at: number): [number, number] | undefined {
+  let rings: Ring[];
+  try {
+    rings = flatten(d);
+  } catch {
+    return undefined;
+  }
+  const lines: [Point, Point, number][] = [];
+  for (const ring of rings) {
+    const pts = ring.closed ? [...ring.points, ring.points[0]!] : ring.points;
+    for (let i = 1; i < pts.length; i++)
+      lines.push([pts[i - 1]!, pts[i]!, Math.hypot(pts[i]![0] - pts[i - 1]![0], pts[i]![1] - pts[i - 1]![1])]);
+  }
+  const first = rings[0]?.points[0];
+  if (!first) return undefined;
+  let left = Math.min(Math.max(at, 0), 1) * lines.reduce((sum, l) => sum + l[2], 0);
+  for (const [a, b, length] of lines) {
+    if (left <= length && length > 0) return [a[0] + ((b[0] - a[0]) * left) / length, a[1] + ((b[1] - a[1]) * left) / length];
+    left -= length;
+  }
+  const last = lines[lines.length - 1];
+  return last ? [last[1][0], last[1][1]] : [first[0], first[1]];
+}
