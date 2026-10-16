@@ -19,7 +19,7 @@ Flair gives products a library of good-looking, configurable visual effects (her
 
 ### Core Capabilities
 
-- 🎨 **Effect catalog (`@pixerate/flair/catalog`)**: 310 effects, each with controls and presets. There are 221 WebGL2 shaders (gradients, organic textures and growth, patterns, light, lighting that relights pictures, space, retro and pixel art, image treatments, transparent overlays, text fills, image morphs, pointer interactions, pyrotechnics, time warps, melting, electricity, splatters, bubbles, stickers, pointer trails, particles, debris, impacts, comic looks, atmosphere, glows, shadows, distortions, transitions) and 89 animated SVG effects (loaders, status icons, animated titles, shape morphs, UI micro-interactions, pixel sprites, stickers, cartoon effects, glowing and lifting UI, a lamp switch, charts, counters, node graphs). [Browse them live](https://pixerate.github.io/flair/).
+- 🎨 **Effect catalog (`@pixerate/flair/catalog`)**: 310 effects, each with controls and presets. There are 221 WebGL2 shaders (gradients, organic textures and growth, patterns, light, lighting that relights pictures, space, retro and pixel art, image treatments, transparent overlays, text fills, image morphs, pointer interactions, pyrotechnics, time warps, melting, electricity, splatters, bubbles, stickers, pointer trails, particles, debris, impacts, comic looks, atmosphere, glows, shadows, distortions, web UI flourishes and backgrounds, transitions) and 89 animated SVG effects (loaders and progress bars, status icons, a logo marquee, a number ticker, animated titles, shape morphs, UI micro-interactions, pixel sprites, stickers, cartoon effects, glowing and lifting UI, a lamp switch, charts, counters, node graphs). [Browse them live](https://pixerate.github.io/flair/).
 - ⚡ **Shader engine**:
   - Shadertoy-style GLSL ES 3.00 fragment shaders, with controls declared in the source (`// @control`), including image inputs.
   - Compile errors come back with line numbers that match the source.
@@ -495,7 +495,7 @@ frames.render(t, { audio: track.at(t), scroll: [0.5, 0.5, 0, 0] });
 
 | Category | Effects |
 | :--- | :--- |
-| gradient | mesh gradient, aurora, gradient flow, conic sweep, silk |
+| gradient | mesh gradient, aurora, gradient flow, conic sweep, silk, grainy gradient, Stripe gradient, holographic gradient, radial glow |
 | organic | liquid marble, smoke, lava lamp, plasma, caustics, flames, reaction diffusion, cell division, coral growth, veins, ferrofluid, jellyfish, fur, blob morph |
 | pattern | dot wave, Truchet flow, hex pulse, living cells, moiré rings, kaleidoscope, stripes, Memphis pattern, chevron tunnel, neon circuit |
 | light / space | bokeh, god rays, sparkles, neon ripple, light ribbons, warp starfield, nebula, event horizon |
@@ -526,8 +526,9 @@ frames.render(t, { audio: track.at(t), scroll: [0.5, 0.5, 0, 0] });
 | scroll | scroll reveal, parallax layers, scroll progress glow, scroll velocity blur, scroll zoom, scroll draw, scroll counter, scroll steps |
 | broadcast | lower third, stacked lower third, title card, logo reveal, logo sting, end card, countdown, subscribe button, news ticker, scoreboard, chapter marker |
 | annotation | hand circle, hand arrow, callout, bracket note, scribble out, step badges, focus box, fake cursor, tooltip tour |
+| ui | border beam, gradient border, meteors, background beams, grid spotlight, dot grid, glass card, liquid glass, grainy glow background, marquee, number ticker, animated badge |
 | transition | liquid morph, displacement, luma fade, particle swap, ink bleed, pixel dissolve, comic panels, wipe, iris, block dissolve, grid wipe, glass wipe, twister, light leak, cross zoom, whip pan |
-| loader / icon / data | spinner, bouncing dots, pulse ping, equalizer, progress ring, bar chart, line chart, stat counter, route, timeline track, success check, error cross, heartbeat, signature, confetti, flow network, upload card |
+| loader / icon / data | spinner, bouncing dots, pulse ping, equalizer, skeleton shimmer, progress bar, indeterminate bar, step progress, circle dots loader, wave bars, progress ring, bar chart, line chart, stat counter, route, timeline track, success check, error cross, heartbeat, signature, confetti, flow network, upload card |
 
 #### Broadcast graphics and annotations
 
