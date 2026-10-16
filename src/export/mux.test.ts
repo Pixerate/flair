@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { muxMp4, type Mp4Sample } from "./mp4mux.js";
-import { muxWebm, vint } from "./webmmux.js";
+import { aacConfig, muxMp4, type Mp4Sample } from "./mp4mux.js";
+import { muxWebm, opusHead, vint } from "./webmmux.js";
 import { crc32, zipStore } from "./zip.js";
 
 const fromHex = (hex: string) => Uint8Array.from(hex.match(/../g)!, (b) => parseInt(b, 16));
@@ -58,7 +58,7 @@ interface Element {
   children: Element[];
 }
 
-const MASTERS = new Set([0x1a45dfa3, 0x18538067, 0x1549a966, 0x1654ae6b, 0xae, 0xe0, 0x1f43b675, 0xa0, 0x75a1, 0xa6]);
+const MASTERS = new Set([0x1a45dfa3, 0x18538067, 0x1549a966, 0x1654ae6b, 0xae, 0xe0, 0xe1, 0x1f43b675, 0xa0, 0x75a1, 0xa6]);
 
 function readVint(bytes: Uint8Array, at: number, keepMarker: boolean): [number, number] {
   const first = bytes[at]!;
@@ -155,6 +155,42 @@ describe("muxMp4", () => {
     expect(() => muxMp4({ width: 16, height: 16, avcC: Uint8Array.of(1), samples: fakeSamples(2, 30, 5).slice(1) })).toThrow(/keyframe/);
   });
 
+  it("adds an AAC sound track after the picture, with its config, times and data", () => {
+    const samples = fakeSamples(30, 30, 30);
+    // AAC frames are 1024 samples: about 47 of them a second at 48 kHz.
+    const sound = Array.from({ length: 47 }, (_, i) => ({ data: new Uint8Array(6).fill(200 + (i % 50)), timestamp: Math.round((i * 1024 * 1e6) / 48000), key: true }));
+    const file = muxMp4({ width: 32, height: 32, avcC: Uint8Array.of(1), samples, audio: { sampleRate: 48000, channels: 2, samples: sound } });
+    const top = boxes(file);
+    const traks = find(top, "moov").children.filter((b) => b.type === "trak");
+    expect(traks).toHaveLength(2);
+    expect(find(top, "moov/mvhd").body.getUint32(96)).toBe(3); // next track id
+    const audio = traks[1]!;
+    const hdlr = find(audio.children, "mdia/hdlr");
+    expect(String.fromCharCode(...new Uint8Array(hdlr.body.buffer, hdlr.body.byteOffset + 8, 4))).toBe("soun");
+    expect(find(audio.children, "tkhd").body.getUint32(12)).toBe(2);
+    expect(find(audio.children, "mdia/mdhd").body.getUint32(12)).toBe(48000);
+    expect(find(audio.children, "mdia/minf/smhd")).toBeDefined();
+    const stsd = find(audio.children, "mdia/minf/stbl/stsd");
+    const [mp4a] = boxes(new Uint8Array(stsd.body.buffer, stsd.body.byteOffset + 8, stsd.body.byteLength - 8));
+    expect(mp4a!.type).toBe("mp4a");
+    expect(mp4a!.body.getUint16(16)).toBe(2);
+    expect(mp4a!.body.getUint32(24) / 65536).toBe(48000);
+    const esds = new Uint8Array(mp4a!.body.buffer, mp4a!.body.byteOffset + 28, mp4a!.body.byteLength - 28);
+    expect(String.fromCharCode(...esds.subarray(4, 8))).toBe("esds");
+    // The DecoderSpecificInfo (tag 5) holds AAC-LC, 48 kHz (index 3), stereo: 0x11 0x90.
+    const tag5 = esds.indexOf(0x05, 12);
+    expect([...esds.subarray(tag5 + 2, tag5 + 4)]).toEqual([...aacConfig(48000, 2)]);
+    expect([...aacConfig(48000, 2)]).toEqual([0x11, 0x90]);
+    const stco = find(audio.children, "mdia/minf/stbl/stco").body.getUint32(8);
+    const videoStart = find(traks[0]!.children, "mdia/minf/stbl/stco").body.getUint32(8);
+    expect(stco).toBe(videoStart + samples.reduce((n, x) => n + x.data.length, 0));
+    expect([...file.subarray(stco, stco + 6)]).toEqual([...sound[0]!.data]);
+    expect(stco + sound.length * 6).toBe(file.length);
+    const stts = find(audio.children, "mdia/minf/stbl/stts");
+    expect(stts.body.getUint32(4)).toBe(1);
+    expect([stts.body.getUint32(8), stts.body.getUint32(12)]).toEqual([47, 1024]);
+  });
+
   it("muxes real H.264 from Chrome's encoder into a well-formed file", () => {
     const samples = H264.chunks.map((c) => ({ ...c, data: fromHex(c.data) }));
     const file = muxMp4({ width: 16, height: 16, avcC: fromHex(H264.avcC), samples });
@@ -232,6 +268,31 @@ describe("muxWebm", () => {
       if (i % 2 === 0) expect(ref).toBeUndefined();
       else expect(ref.body.length).toBe(1);
     });
+  });
+
+  it("adds an Opus sound track, its packets interleaved with the frames in time", () => {
+    const frames = fakeSamples(60, 30, 30);
+    const packets = Array.from({ length: 100 }, (_, i) => ({ data: Uint8Array.of(0xf0, i), timestamp: i * 20000 }));
+    const file = muxWebm({ codec: "vp9", width: 16, height: 16, frames, fps: 30, audio: { sampleRate: 48000, channels: 2, packets } });
+    const segment = elements(file)[1]!;
+    const tracks = all(child(segment, 0x1654ae6b), 0xae);
+    expect(tracks).toHaveLength(2);
+    const sound = tracks[1]!;
+    expect(strOf(child(sound, 0x86))).toBe("A_OPUS");
+    expect([uintOf(child(sound, 0xd7)), uintOf(child(sound, 0x83))]).toEqual([2, 2]);
+    expect([...child(sound, 0x63a2).body]).toEqual([...opusHead(48000, 2)]);
+    expect(uintOf(child(sound, 0x56aa))).toBe(6_500_000); // 312 samples of pre-skip
+    expect(floatOf(child(child(sound, 0xe1), 0xb5))).toBe(48000);
+    expect(uintOf(child(child(sound, 0xe1), 0x9f))).toBe(2);
+    const clusters = all(segment, 0x1f43b675);
+    expect(clusters.map((c) => uintOf(child(c, 0xe7)))).toEqual([0, 1000]);
+    const times = clusters.flatMap((c) => all(c, 0xa3).map((b) => [b.body[0]!, uintOf(child(c, 0xe7)) + new DataView(b.body.buffer, b.body.byteOffset + 1, 2).getInt16(0)] as const));
+    expect(times.filter(([track]) => track === 0x82)).toHaveLength(100);
+    expect(times.filter(([track]) => track === 0x81)).toHaveLength(60);
+    // In time order throughout, the picture first at a tie.
+    for (let i = 1; i < times.length; i++) expect(times[i]![1]).toBeGreaterThanOrEqual(times[i - 1]![1]);
+    expect(times[0]).toEqual([0x81, 0]);
+    expect(times[1]).toEqual([0x82, 0]);
   });
 
   it("starts a cluster before a block's offset would overflow 16 bits", () => {

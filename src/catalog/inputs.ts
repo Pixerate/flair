@@ -17,11 +17,14 @@ import type { EffectDefinition, VideoUse } from "./types.js";
  * - `text`: words, for a text control, or for a text mask through `textImage`.
  * - `mask`: a shape with transparency (an icon, a logo, `textImage`) whose silhouette the effect uses.
  * - `path`: SVG path data (`d`), for a shape control.
+ * - `audio`: sound (a playing `<audio>` or `<video>`, a microphone, a Web
+ *   Audio node, or an `AudioBuffer` for recordings) that it reacts to
+ *   through `iAudio`, `iSpectrum` or `iBeat`.
  */
-export type EffectInput = "image" | "video" | "svg" | "text" | "mask" | "path";
+export type EffectInput = "image" | "video" | "svg" | "text" | "mask" | "path" | "audio";
 
 /** Every {@link EffectInput}. */
-export const EFFECT_INPUTS: readonly EffectInput[] = ["image", "video", "svg", "text", "mask", "path"];
+export const EFFECT_INPUTS: readonly EffectInput[] = ["image", "video", "svg", "text", "mask", "path", "audio"];
 
 /**
  * How an effect answers the pointer:
@@ -30,11 +33,13 @@ export const EFFECT_INPUTS: readonly EffectInput[] = ["image", "video", "svg", "
  * - `click`: answers each click or tap.
  * - `trail`: follows where the pointer has just been.
  * - `pointer`: follows where the pointer is.
+ * - `scroll`: follows the page's scrolling (`iScroll`, or a vector effect's
+ *   `trigger: "scroll"`).
  */
-export type EffectInteraction = "hover" | "press" | "click" | "trail" | "pointer";
+export type EffectInteraction = "hover" | "press" | "click" | "trail" | "pointer" | "scroll";
 
 /** Every {@link EffectInteraction}. */
-export const EFFECT_INTERACTIONS: readonly EffectInteraction[] = ["hover", "press", "click", "trail", "pointer"];
+export const EFFECT_INTERACTIONS: readonly EffectInteraction[] = ["hover", "press", "click", "trail", "pointer", "scroll"];
 
 /** A shader's image control and what it wants. */
 export interface ImageSlot {
@@ -102,15 +107,19 @@ function textSlot(control: ControlDef): TextSlot {
   return { name: control.name, label: control.label, holds, default: value };
 }
 
-/** The pointer built-ins a shader's source reads (comments left out), as interactions. */
+/** A shader's source without its comments. */
+const codeOf = (source: string) => source.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, "");
+
+/** The pointer and scroll built-ins a shader's source reads (comments left out), as interactions. */
 function shaderInteractions(source: string): EffectInteraction[] {
-  const code = source.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, "");
+  const code = codeOf(source);
   const found = new Set<EffectInteraction>();
   if (/\biClicks\b/.test(code)) found.add("click");
   if (/\biTrail\b/.test(code)) found.add("trail");
   if (/\biPointer\s*\.\s*z\b/.test(code)) found.add("hover");
   if (/\biPointer\s*\.\s*w\b/.test(code) || /\biMouse\s*\.\s*z\b/.test(code)) found.add("press");
   if (/\biPointer\s*\.\s*xy?\b/.test(code) || /\biMouse\s*\.\s*xy?\b/.test(code)) found.add("pointer");
+  if (/\biScroll\b/.test(code)) found.add("scroll");
   return EFFECT_INTERACTIONS.filter((i) => found.has(i));
 }
 
@@ -119,8 +128,9 @@ function shaderInteractions(source: string): EffectInteraction[] {
  * `effectInputs` in the catalog, which passes them), from its controls and
  * source: its image controls (and whether each wants a picture, a mask or
  * text), its text controls (copy, fonts, path data), how it suits video, the
- * pointer built-ins it reads (`iPointer`, `iClicks`, `iTrail`, `iMouse`) or
- * its `trigger`, and whether it draws over other content.
+ * pointer and scroll built-ins it reads (`iPointer`, `iClicks`, `iTrail`,
+ * `iMouse`, `iScroll`) or its `trigger`, whether it hears sound (`iAudio`,
+ * `iSpectrum`, `iBeat`), and whether it draws over other content.
  */
 export function inputsOf(effect: EffectDefinition, controls: readonly ControlDef[]): EffectInputs {
   const accepts = new Set<EffectInput>();
@@ -146,6 +156,7 @@ export function inputsOf(effect: EffectDefinition, controls: readonly ControlDef
       if (slot.holds === "path") accepts.add("path");
     }
   }
+  if (effect.kind === "shader" && /\bi(Audio|Spectrum|Beat)\b/.test(codeOf(effect.source))) accepts.add("audio");
   const interactions =
     effect.kind === "vector"
       ? effect.trigger

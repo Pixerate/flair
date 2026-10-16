@@ -1,12 +1,14 @@
 /**
- * A small MP4 (ISO BMFF) writer for one H.264 video track, with no
- * dependencies, for video encoded in the browser (WebCodecs' `VideoEncoder`
- * with `avc: { format: "avc" }`).
+ * A small MP4 (ISO BMFF) writer for one H.264 video track, and optionally
+ * one AAC audio track, with no dependencies, for video encoded in the
+ * browser (WebCodecs' `VideoEncoder` with `avc: { format: "avc" }`, and
+ * `AudioEncoder` with `mp4a.40.2`).
  *
  * The file is "faststart": `ftyp`, then `moov` (the index), then one `mdat`
- * holding every sample in a single chunk, so a page can start playing it
- * before it has all arrived. Samples are in presentation order (browser
- * encoders make no B-frames), so there is no `ctts`.
+ * holding every video sample in a single chunk (then every audio sample in
+ * another), so a page can start playing it before it has all arrived.
+ * Samples are in presentation order (browser encoders make no B-frames), so
+ * there is no `ctts`.
  */
 
 /** One encoded frame: its bytes (length-prefixed NAL units), when it shows, and whether it is a keyframe. */
@@ -27,6 +29,30 @@ export interface Mp4Options {
   samples: readonly Mp4Sample[];
   /** Ticks per second of the track's times (default 90000, as for broadcast video). */
   timescale?: number;
+  /** An AAC sound track to go with the picture. */
+  audio?: Mp4AudioTrack;
+}
+
+/** AAC audio for {@link muxMp4}: WebCodecs `AudioEncoder` output with codec `mp4a.40.2`. */
+export interface Mp4AudioTrack {
+  sampleRate: number;
+  channels: number;
+  /**
+   * The AudioSpecificConfig: the encoder's `decoderConfig.description`
+   * (default: AAC-LC at this rate and channel count).
+   */
+  config?: Uint8Array;
+  /** Raw AAC frames; `key` is ignored (every AAC frame is a sync sample). */
+  samples: readonly Mp4Sample[];
+}
+
+const AAC_RATES = [96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025, 8000, 7350];
+
+/** An AAC-LC AudioSpecificConfig: object type 2, the rate's index, the channel count. */
+export function aacConfig(sampleRate: number, channels: number): Uint8Array {
+  const index = AAC_RATES.indexOf(sampleRate);
+  if (index < 0) throw new Error(`AAC has no standard rate of ${sampleRate} Hz; resample to 48000 or 44100.`);
+  return Uint8Array.of((2 << 3) | (index >> 1), ((index & 1) << 7) | (channels << 3));
 }
 
 const MOVIE_TIMESCALE = 1000;
@@ -123,19 +149,84 @@ function stts(ticks: number[]): Uint8Array {
   }));
 }
 
+/** A descriptor in an `esds`: tag, length (one byte will do here), body. */
+const descriptor = (tag: number, ...content: Uint8Array[]) => {
+  const body = fields((w) => content.forEach((c) => w.bytes(c)));
+  if (body.length > 0x7f) throw new Error("An esds descriptor this long is not written here.");
+  return fields((w) => w.u8(tag).u8(body.length).bytes(body));
+};
+
+/** `stsz`, `stsc` and `stco`/`co64`: every sample in one chunk at `offset`. */
+function oneChunk(samples: readonly Mp4Sample[], offset: number, wide: boolean): Uint8Array[] {
+  const stsz = fullBox("stsz", 0, 0, fields((w) => {
+    w.u32(0).u32(samples.length);
+    for (const s of samples) w.u32(s.data.length);
+  }));
+  const stsc = fullBox("stsc", 0, 0, fields((w) => (samples.length ? w.u32(1).u32(1).u32(samples.length).u32(1) : w.u32(0))));
+  const stco = wide
+    ? fullBox("co64", 0, 0, fields((w) => w.u32(1).u64(offset)))
+    : fullBox("stco", 0, 0, fields((w) => w.u32(1).u32(offset)));
+  return [stsz, stsc, stco];
+}
+
+/** The sound's `trak`: track 2, AAC in an `mp4a` entry. */
+function audioTrak(audio: Mp4AudioTrack, offset: number, wide: boolean): { trak: Uint8Array; movieTicks: number } {
+  const timescale = audio.sampleRate;
+  const ticks = sampleTicks(audio.samples, timescale);
+  const trackTicks = ticks.reduce((a, b) => a + b, 0);
+  const movieTicks = Math.round((trackTicks * MOVIE_TIMESCALE) / timescale);
+  const tkhd = fullBox("tkhd", 0, 3, fields((w) =>
+    w.u32(0).u32(0).u32(2).u32(0).u32(movieTicks)
+      .zeros(8).u16(0).u16(1).u16(0x0100).u16(0) // reserved, layer, alternate group, volume 1.0, reserved
+      .bytes(MATRIX).u32(0).u32(0),
+  ));
+  const mdhd = fullBox("mdhd", 0, 0, fields((w) => w.u32(0).u32(0).u32(timescale).u32(trackTicks).u16(0x55c4).u16(0)));
+  const hdlr = fullBox("hdlr", 0, 0, fields((w) => w.u32(0).bytes(ascii("soun")).zeros(12).bytes(ascii("SoundHandler\0"))));
+  const smhd = fullBox("smhd", 0, 0, new Uint8Array(4));
+  const dinf = box("dinf", fullBox("dref", 0, 0, fields((w) => w.u32(1)), fullBox("url ", 0, 1)));
+  const bitrate = Math.round((audio.samples.reduce((n, s) => n + s.data.length, 0) * 8) / Math.max(1e-3, trackTicks / timescale));
+  const esds = fullBox(
+    "esds",
+    0,
+    0,
+    descriptor(
+      0x03, // ES_Descriptor
+      fields((w) => w.u16(2).u8(0)), // ES id, flags
+      descriptor(
+        0x04, // DecoderConfigDescriptor
+        fields((w) => w.u8(0x40).u8(0x15).u8(0).u16(0).u32(bitrate).u32(bitrate)), // MPEG-4 audio, audio stream, buffer size, bitrates
+        descriptor(0x05, audio.config ?? aacConfig(audio.sampleRate, audio.channels)), // DecoderSpecificInfo
+      ),
+      descriptor(0x06, Uint8Array.of(0x02)), // SLConfigDescriptor
+    ),
+  );
+  const mp4a = box(
+    "mp4a",
+    fields((w) => w.zeros(6).u16(1).zeros(8).u16(audio.channels).u16(16).u16(0).u16(0).u32(Math.min(audio.sampleRate, 0xffff) * 0x10000)),
+    esds,
+  );
+  const stsd = fullBox("stsd", 0, 0, fields((w) => w.u32(1)), mp4a);
+  const stbl = box("stbl", stsd, stts(ticks), ...oneChunk(audio.samples, offset, wide));
+  const trak = box("trak", tkhd, box("mdia", mdhd, hdlr, box("minf", smhd, dinf, stbl)));
+  return { trak, movieTicks };
+}
+
 function moov(options: Mp4Options, ticks: number[], dataOffset: number, wide: boolean): Uint8Array {
   const { width, height, avcC, samples } = options;
   const timescale = options.timescale ?? 90000;
   const trackTicks = ticks.reduce((a, b) => a + b, 0);
-  const movieTicks = Math.round((trackTicks * MOVIE_TIMESCALE) / timescale);
+  const videoTicks = Math.round((trackTicks * MOVIE_TIMESCALE) / timescale);
+  const videoBytes = samples.reduce((n, s) => n + s.data.length, 0);
+  const sound = options.audio?.samples.length ? audioTrak(options.audio, dataOffset + videoBytes, wide) : undefined;
+  const movieTicks = Math.max(videoTicks, sound?.movieTicks ?? 0);
 
   const mvhd = fullBox("mvhd", 0, 0, fields((w) =>
     w.u32(0).u32(0).u32(MOVIE_TIMESCALE).u32(movieTicks)
       .u32(0x00010000).u16(0x0100).zeros(10) // rate 1.0, volume 1.0, reserved
-      .bytes(MATRIX).zeros(24).u32(2), // pre_defined, next track id
+      .bytes(MATRIX).zeros(24).u32(sound ? 3 : 2), // pre_defined, next track id
   ));
   const tkhd = fullBox("tkhd", 0, 3, fields((w) => // enabled, in the movie
-    w.u32(0).u32(0).u32(1).u32(0).u32(movieTicks)
+    w.u32(0).u32(0).u32(1).u32(0).u32(videoTicks)
       .zeros(8).u16(0).u16(0).u16(0).u16(0) // reserved, layer, group, volume (none for video), reserved
       .bytes(MATRIX).u32(width * 0x10000).u32(height * 0x10000),
   ));
@@ -161,24 +252,17 @@ function moov(options: Mp4Options, ticks: number[], dataOffset: number, wide: bo
     w.u32(keys.length);
     for (const k of keys) w.u32(k);
   }))];
-  const stsz = fullBox("stsz", 0, 0, fields((w) => {
-    w.u32(0).u32(samples.length);
-    for (const s of samples) w.u32(s.data.length);
-  }));
   // One chunk with every sample, starting at the mdat's data.
-  const stsc = fullBox("stsc", 0, 0, fields((w) => (samples.length ? w.u32(1).u32(1).u32(samples.length).u32(1) : w.u32(0))));
-  const stco = wide
-    ? fullBox("co64", 0, 0, fields((w) => w.u32(1).u64(dataOffset)))
-    : fullBox("stco", 0, 0, fields((w) => w.u32(1).u32(dataOffset)));
-  const stbl = box("stbl", stsd, stts(ticks), ...stss, stsz, stsc, stco);
+  const stbl = box("stbl", stsd, stts(ticks), ...stss, ...oneChunk(samples, dataOffset, wide));
   const minf = box("minf", vmhd, dinf, stbl);
   const trak = box("trak", tkhd, box("mdia", mdhd, hdlr, minf));
-  return box("moov", mvhd, trak);
+  return box("moov", mvhd, trak, ...(sound ? [sound.trak] : []));
 }
 
 /**
- * An MP4 file of one H.264 track: `ftyp`, `moov`, then the samples in one
- * `mdat`. Throws when there are no samples or the first is not a keyframe.
+ * An MP4 file of one H.264 track (and an AAC one, with `audio`): `ftyp`,
+ * `moov`, then the samples in one `mdat`, the video's then the sound's.
+ * Throws when there are no samples or the first is not a keyframe.
  */
 export function muxMp4(options: Mp4Options): Uint8Array {
   const { samples } = options;
@@ -186,7 +270,8 @@ export function muxMp4(options: Mp4Options): Uint8Array {
   if (!samples[0]!.key) throw new Error("An MP4's first frame must be a keyframe.");
   const ftyp = box("ftyp", ascii("isom"), fields((w) => w.u32(0x200)), ascii("isomiso2avc1mp41"));
   const ticks = sampleTicks(samples, options.timescale ?? 90000);
-  const payload = samples.reduce((n, s) => n + s.data.length, 0);
+  const all = [...samples, ...(options.audio?.samples ?? [])];
+  const payload = all.reduce((n, s) => n + s.data.length, 0);
   const large = payload + 8 >= UINT32;
   const mdatHeader = large ? 16 : 8;
   // The index's size does not depend on the offset it holds, so measure it once and write it again.
@@ -201,7 +286,7 @@ export function muxMp4(options: Mp4Options): Uint8Array {
   const out = new Uint8Array(head.length + payload);
   out.set(head);
   let at = head.length;
-  for (const s of samples) {
+  for (const s of all) {
     out.set(s.data, at);
     at += s.data.length;
   }

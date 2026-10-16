@@ -7,6 +7,8 @@
  * - Running shaders: `ShaderRenderer` (a live preview), `ThumbnailPool`
  *   (many animated thumbnails on one context), `ShaderFrames` (frames at
  *   exact times, off screen).
+ * - Inputs: the pointer (`PointerTracker`), sound (`AudioAnalysis`,
+ *   `LiveAudio`, `analyseAudioBuffer`) and scrolling (`ScrollTracker`).
  * - Output: `recordGif`, `standaloneHtml`.
  *
  * @packageDocumentation
@@ -85,6 +87,24 @@ export {
   trailUniform,
   type ShaderClick,
 } from "./pointer.js";
+export {
+  analyseAudioBuffer,
+  AUDIO_BANDS,
+  AudioAnalysis,
+  fft,
+  frequencyData,
+  LiveAudio,
+  rmsLevel,
+  sharedAudioContext,
+  SPECTRUM_BINS,
+  type AudioAnalysisOptions,
+  type AudioBufferAnalysis,
+  type AudioBufferAnalysisOptions,
+  type AudioFrame,
+  type AudioSamples,
+  type AudioSource,
+} from "./audio.js";
+export { SCROLL_SETTLE, SCROLL_SMOOTHING, ScrollTracker, viewportProgress } from "./scroll.js";
 export { recordGif, type GifOptions } from "./gif.js";
 export { standaloneHtml, type StandaloneOptions } from "./standalone.js";
 export {

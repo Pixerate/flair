@@ -1396,3 +1396,63 @@ describe("glare sweep", () => {
     expect(effectInputs(glare)).toMatchObject({ accepts: [], transparent: true, interactions: [] });
   });
 });
+
+describe("audio effects", () => {
+  const audio = findEffects({ category: "audio" });
+
+  it("has the bars, ring, waveform, pulse, particles, plasma and vinyl", () => {
+    expect(audio.map((e) => e.id)).toEqual(["spectrum-bars", "circular-spectrum", "waveform-line", "bass-pulse", "audio-particles", "audio-plasma", "vinyl"]);
+  });
+
+  it.each(audio.map((e) => [e.id, e] as const))("%s hears sound, plays a demo when silent, and is not tagged interactive", (_, effect) => {
+    if (effect.kind !== "shader") throw new Error("shader expected");
+    expect(effectInputs(effect).accepts).toContain("audio");
+    expect(effect.tags).toContain("audio");
+    expect(effect.tags).not.toContain("interactive");
+    expect(effect.source).not.toMatch(/uniform\s+\w+\s+(iAudio|iSpectrum|iBeat)\b/);
+    // The demo plays only with no audio at all: iBeat and iAudio both 0.
+    expect(effect.source).toContain("iBeat == 0.0 && dot(iAudio, iAudio) == 0.0");
+    expect(effectControls(effect).find((c) => c.name === "uDemo")).toMatchObject({ type: "bool", default: true });
+  });
+
+  it("finds them by what they take", () => {
+    expect(findEffects({ accepts: ["audio"] }).map((e) => e.id).sort()).toEqual(audio.map((e) => e.id).sort());
+    expect(findEffects({ accepts: ["audio", "image"] }).map((e) => e.id)).toEqual(["circular-spectrum", "bass-pulse", "vinyl"]);
+  });
+});
+
+describe("scroll effects", () => {
+  const scroll = findEffects({ category: "scroll" });
+
+  it("has the shaders and the vector effects", () => {
+    expect(scroll.map((e) => e.id)).toEqual(["scroll-reveal", "parallax-layers", "scroll-progress-glow", "scroll-velocity-blur", "scroll-zoom", "scroll-draw", "scroll-counter", "scroll-steps"]);
+  });
+
+  it.each(scroll.map((e) => [e.id, e] as const))("%s follows the scroll and is tagged for it", (_, effect) => {
+    expect(effectInputs(effect).interactions).toEqual(["scroll"]);
+    expect(effect.tags).toEqual(expect.arrayContaining(["interactive", "scroll"]));
+    if (effect.kind === "vector") expect(effect.trigger).toBe("scroll");
+    else {
+      expect(effect.source).toContain("dot(iScroll, iScroll) == 0.0");
+      expect(effectControls(effect).find((c) => c.name === "uDemo")).toMatchObject({ type: "bool", default: true });
+    }
+  });
+
+  it("prefixes every vector id with the effect's name, and scrubs from start to end", () => {
+    for (const [id, prefix] of [["scroll-draw", "scrollDraw"], ["scroll-counter", "scrollCounter"], ["scroll-steps", "scrollSteps"]] as const) {
+      const effect = getEffect(id) as VectorEffect;
+      const motion = renderVectorEffect(effect, effectDefaults(effect));
+      for (const [, name] of motion.svg.matchAll(/\sid="([^"]+)"/g)) expect(name, id).toMatch(new RegExp(`^${prefix}`));
+      expect(motion.svg).not.toMatch(/<animate|<set\b/);
+      const end = JSON.stringify([...svgFrame(motion.animate!, [], svgDuration(motion))]);
+      expect(end).not.toBe(JSON.stringify([...svgFrame(motion.animate!, [], 0)]));
+    }
+    const counter = renderVectorEffect(getEffect("scroll-counter") as VectorEffect, { value: 12.5, decimals: 1, prefix: "$", suffix: "M" });
+    expect(counter.animate![0]).toMatchObject({ count: [0, 12.5], decimals: 1, format: "$" + "{n}M" });
+    expect(effectInputs(getEffect("scroll-draw")!).accepts).toEqual(["path"]);
+  });
+
+  it("marks the overlays transparent", () => {
+    for (const id of ["scroll-reveal", "scroll-progress-glow"]) expect(getEffect(id)).toMatchObject({ transparent: true });
+  });
+});

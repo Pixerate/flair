@@ -2,10 +2,11 @@
 // type-checks these sources through the `workspace` condition.
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="../shader/gifenc.d.ts" />
-import { effectDefaults, getEffect, type EffectDefinition } from "../catalog/index.js";
+import { effectDefaults, effectInputs, getEffect, type EffectDefinition } from "../catalog/index.js";
 import { renderVectorEffect } from "../catalog/types.js";
 import { muxMp4 } from "../export/mp4mux.js";
 import { muxWebm, type WebmFrame } from "../export/webmmux.js";
+import { analyseAudioBuffer, type AudioBufferAnalysis } from "../shader/audio.js";
 import { zipStore, type ZipEntry } from "../export/zip.js";
 import { parseColor, type ControlValue } from "../shader/controls.js";
 import { ShaderFrames, type RenderOptions } from "../shader/frames.js";
@@ -68,6 +69,19 @@ export interface RecordOptions {
   /** A vector effect's step start times in ms, for pictures that change on steps (default none). */
   steps?: readonly number[];
   /**
+   * Sound: a decoded `AudioBuffer`, or the URL of an audio file to fetch and
+   * decode. An audio-reactive shader follows it frame for frame (each
+   * frame's `iAudio`, `iSpectrum` and `iBeat` come from `analyseAudioBuffer`
+   * at that frame's time, so the picture is the same on every machine), and
+   * the stretch from `start` to `start + duration` is muxed into an `mp4`
+   * (AAC) or `webm` (Opus) as its sound track, unless `audioTrack` is false.
+   * `gif` and `png` have no sound, so there it only drives the picture.
+   * Effects that don't hear sound just get the sound track.
+   */
+  audio?: AudioBuffer | string;
+  /** Put `audio` in the video as its sound track (default true for `mp4` and `webm`). */
+  audioTrack?: boolean;
+  /**
    * Called before each frame is drawn, with its time in seconds: draw a
    * canvas subject for that time here. (A `<video>` subject is paused and
    * sought to each frame's time for you.)
@@ -92,6 +106,22 @@ export interface RecordingPlan {
   alpha: boolean;
   /** For `mp4` and `webm`: the encoder's settings. */
   encoder?: VideoEncoderConfig;
+  /** For `mp4` and `webm` with `audio`: the sound's encoder settings (AAC or Opus, 48 kHz stereo). */
+  audioEncoder?: AudioEncoderConfig;
+}
+
+/** The rate sound tracks are encoded at (Opus only takes 48 kHz; AAC is happy with it). */
+const AUDIO_RATE = 48000;
+
+/** An AAC or Opus encoder config the browser takes, or undefined. */
+async function audioConfig(format: "mp4" | "webm"): Promise<AudioEncoderConfig | undefined> {
+  if (typeof AudioEncoder === "undefined" || typeof AudioData === "undefined") return undefined;
+  const config: AudioEncoderConfig = { codec: format === "mp4" ? "mp4a.40.2" : "opus", sampleRate: AUDIO_RATE, numberOfChannels: 2, bitrate: 128_000 };
+  try {
+    return (await AudioEncoder.isConfigSupported(config)).supported ? config : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 const DEFAULT_SECONDS = 4;
@@ -232,7 +262,25 @@ export async function recordingPlan(effect: EffectDefinition | string, options: 
     width = w;
     height = h;
   }
-  return { effect: def, format: format!, width, height, fps, duration, start, frames: Math.max(1, Math.round(duration * fps)), alpha, ...(encoder ? { encoder } : {}) };
+  let audioEncoder: AudioEncoderConfig | undefined;
+  if (options.audio !== undefined && options.audioTrack !== false && (format === "mp4" || format === "webm")) {
+    audioEncoder = await audioConfig(format);
+    if (!audioEncoder && format === "mp4" && !options.format) {
+      // No AAC here: a webm (Opus) keeps the sound.
+      const webm = await videoConfig("webm", width, height, fps, encoder!.bitrate ?? Math.round(width * height * fps * 0.15));
+      const opus = webm && (await audioConfig("webm"));
+      if (webm && opus) {
+        format = "webm";
+        encoder = webm;
+        audioEncoder = opus;
+      }
+    }
+    if (!audioEncoder) {
+      const codec = format === "mp4" ? "AAC" : "Opus";
+      throw new Error(`This browser cannot encode ${codec} audio, so it cannot put the sound in ${format === "mp4" ? "an mp4" : "a webm"}; ${format === "mp4" ? 'record "webm" (Opus), or ' : ""}pass audioTrack: false to record the picture alone (the sound still drives it).`);
+    }
+  }
+  return { effect: def, format: format!, width, height, fps, duration, start, frames: Math.max(1, Math.round(duration * fps)), alpha, ...(encoder ? { encoder } : {}), ...(audioEncoder ? { audioEncoder } : {}) };
 }
 
 /** A shader's loop, or a vector effect's picture plus its hold, else 4 seconds. */
@@ -258,7 +306,7 @@ interface FrameSource {
   dispose(): void;
 }
 
-function shaderSource(plan: RecordingPlan, values: Record<string, ControlValue>, live: Record<string, LiveSource>, options: RecordOptions): FrameSource {
+function shaderSource(plan: RecordingPlan, values: Record<string, ControlValue>, live: Record<string, LiveSource>, options: RecordOptions, sound?: AudioBufferAnalysis): FrameSource {
   const def = plan.effect as Extract<EffectDefinition, { kind: "shader" }>;
   // A transparent effect is drawn with its alpha even when it is not kept, to be laid over the background.
   const frames = new ShaderFrames({ source: def.source, values, width: plan.width, height: plan.height, alpha: plan.alpha || Boolean(def.transparent) });
@@ -277,7 +325,7 @@ function shaderSource(plan: RecordingPlan, values: Record<string, ControlValue>,
       await options.beforeFrame?.(time, index);
       await frames.ready();
       const pointer = typeof script === "function" ? script(time) : script;
-      frames.render(time, { frame: index, delta: 1 / plan.fps, ...pointer });
+      frames.render(time, { frame: index, delta: 1 / plan.fps, ...pointer, ...(sound ? { audio: sound.at(time) } : {}) });
       frames.readPixels(out);
     },
     dispose() {
@@ -409,13 +457,87 @@ function collector(config: VideoEncoderConfig, fail: (e: Error) => void) {
   return out;
 }
 
+/** Fetches and decodes an audio file at {@link AUDIO_RATE}. */
+async function decodeAudio(url: string): Promise<AudioBuffer> {
+  if (typeof OfflineAudioContext === "undefined") throw new Error("This browser has no Web Audio (OfflineAudioContext), so it cannot decode the audio.");
+  let bytes: ArrayBuffer;
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    bytes = await response.arrayBuffer();
+  } catch (e) {
+    throw new Error(`The audio at ${url} could not be loaded (${(e as Error).message}); a file from another site needs CORS.`, { cause: e });
+  }
+  try {
+    return await new OfflineAudioContext(2, 1, AUDIO_RATE).decodeAudioData(bytes);
+  } catch (e) {
+    throw new Error(`The audio at ${url} could not be decoded; give it an mp3, AAC, Ogg, Opus, FLAC or WAV file the browser plays.`, { cause: e });
+  }
+}
+
+/** Encoded sound, ready to mux. */
+interface EncodedSound {
+  codec: "aac" | "opus";
+  sampleRate: number;
+  channels: number;
+  description?: Uint8Array;
+  chunks: { data: Uint8Array; timestamp: number; duration?: number; key: boolean }[];
+}
+
+/**
+ * The stretch of `buffer` a recording covers, at 48 kHz stereo (rendered by
+ * an `OfflineAudioContext`, which resamples and mixes), encoded with
+ * WebCodecs.
+ */
+async function encodeSound(buffer: AudioBuffer, plan: RecordingPlan): Promise<EncodedSound> {
+  const config = plan.audioEncoder!;
+  const channels = config.numberOfChannels;
+  const length = Math.max(1, Math.round(plan.duration * AUDIO_RATE));
+  const offline = new OfflineAudioContext(channels, length, AUDIO_RATE);
+  const node = offline.createBufferSource();
+  node.buffer = buffer;
+  node.connect(offline.destination);
+  node.start(0, Math.min(plan.start, buffer.duration));
+  const rendered = await offline.startRendering();
+  const out: EncodedSound = { codec: config.codec === "opus" ? "opus" : "aac", sampleRate: AUDIO_RATE, channels, chunks: [] };
+  let failure: Error | undefined;
+  const encoder = new AudioEncoder({
+    output(chunk, metadata) {
+      const data = new Uint8Array(chunk.byteLength);
+      chunk.copyTo(data);
+      const desc = metadata?.decoderConfig?.description;
+      if (desc && !out.description) out.description = bytesOf(desc);
+      out.chunks.push({ data, timestamp: chunk.timestamp, ...(chunk.duration ? { duration: chunk.duration } : {}), key: true });
+    },
+    error: (e) => (failure ??= new Error(`The audio encoder failed: ${e.message}`, { cause: e })),
+  });
+  encoder.configure(config);
+  const block = 4800;
+  for (let at = 0; at < length; at += block) {
+    const n = Math.min(block, length - at);
+    const planes = new Float32Array(n * channels);
+    for (let c = 0; c < channels; c++) planes.set(rendered.getChannelData(c).subarray(at, at + n), c * n);
+    const data = new AudioData({ format: "f32-planar", sampleRate: AUDIO_RATE, numberOfFrames: n, numberOfChannels: channels, timestamp: Math.round((at * 1e6) / AUDIO_RATE), data: planes });
+    try {
+      encoder.encode(data);
+    } finally {
+      data.close();
+    }
+  }
+  await encoder.flush();
+  encoder.close();
+  if (failure) throw failure;
+  out.chunks.sort((a, b) => a.timestamp - b.timestamp);
+  return out;
+}
+
 /**
  * Encodes with WebCodecs and muxes into mp4 or webm. With `alpha`, a second
  * encoder (same codec) takes the alpha as a greyscale picture, and each
  * frame's alpha goes beside it in the webm, as Chrome's own recordings do:
  * browsers' encoders do not keep alpha themselves.
  */
-function videoEncoder(plan: RecordingPlan): Encoder {
+function videoEncoder(plan: RecordingPlan, sound?: Promise<EncodedSound>): Encoder {
   const config = plan.encoder!;
   let failure: Error | undefined;
   const fail = (e: Error) => (failure ??= e);
@@ -457,9 +579,16 @@ function videoEncoder(plan: RecordingPlan): Encoder {
       for (const e of encoders) e.close();
       const byTime = (a: { timestamp: number }, b: { timestamp: number }) => a.timestamp - b.timestamp;
       const chunks = color.chunks.sort(byTime);
+      const audio = await sound;
       if (plan.format === "mp4") {
         if (!color.description) throw new Error("The H.264 encoder gave no decoder configuration (avcC), so the mp4 cannot be written.");
-        const file = muxMp4({ width, height, avcC: color.description, samples: chunks });
+        const file = muxMp4({
+          width,
+          height,
+          avcC: color.description,
+          samples: chunks,
+          ...(audio ? { audio: { sampleRate: audio.sampleRate, channels: audio.channels, ...(audio.description ? { config: audio.description } : {}), samples: audio.chunks } } : {}),
+        });
         return new Blob([file as Uint8Array<ArrayBuffer>], { type: "video/mp4" });
       }
       const alphas = new Map(alpha?.chunks.map((c) => [c.timestamp, c.data]));
@@ -469,7 +598,15 @@ function videoEncoder(plan: RecordingPlan): Encoder {
         return { ...c, ...(a ? { alpha: a } : {}) };
       });
       const codec = config.codec.startsWith("vp8") ? "vp8" : "vp9";
-      const file = muxWebm({ codec, width, height, frames, duration: plan.frames * frameUs, fps: plan.fps });
+      const file = muxWebm({
+        codec,
+        width,
+        height,
+        frames,
+        duration: plan.frames * frameUs,
+        fps: plan.fps,
+        ...(audio ? { audio: { sampleRate: audio.sampleRate, channels: audio.channels, ...(audio.description ? { codecPrivate: audio.description } : {}), packets: audio.chunks } } : {}),
+      });
       return new Blob([file as Uint8Array<ArrayBuffer>], { type: "video/webm" });
     },
     close() {
@@ -488,7 +625,9 @@ function videoEncoder(plan: RecordingPlan): Encoder {
  * machine. Shaders render with `ShaderFrames` (a `<video>` subject is paused
  * and sought to each frame, and put back after); vector effects are drawn
  * with `svgView` and rasterised. Shaders that answer the pointer play their
- * idle demos unless `pointer` scripts it.
+ * idle demos unless `pointer` scripts it. With `audio`, audio-reactive
+ * shaders follow the sound frame for frame, and videos carry it as their
+ * sound track.
  *
  * `png` resolves to a ZIP of numbered frames (`frame-0001.png`, …), so every
  * format is one `Blob` to save or upload.
@@ -502,6 +641,7 @@ function videoEncoder(plan: RecordingPlan): Encoder {
  * const mp4 = await recordEffect("image-duotone", { subject: { image: "/team.jpg" }, preset: "Spotify" });
  * const gif = await recordEffect("typewriter", { subject: { text: "Hello" }, format: "gif", width: 640, height: 360, fps: 25 });
  * const webm = await recordEffect("click-ripple", { format: "webm", alpha: true, pointer: { clicks: [{ x: 640, y: 360, time: 0.2 }] } });
+ * const music = await recordEffect("spectrum-bars", { audio: "/song.mp3", duration: 10 });
  * ```
  */
 export async function recordEffect(effect: EffectDefinition | string, options: RecordOptions = {}): Promise<Blob> {
@@ -510,10 +650,15 @@ export async function recordEffect(effect: EffectDefinition | string, options: R
   const { values, live } = effectValues(plan.effect, options);
   const background = (parseColor(options.background ?? (plan.effect.kind === "shader" ? "#000000" : "#ffffff")) ?? [0, 0, 0]).map((c) => Math.round(c * 255)) as [number, number, number];
 
-  const source = plan.effect.kind === "shader" ? shaderSource(plan, values, live, options) : vectorSource(plan, values, options);
+  const buffer = options.audio === undefined ? undefined : typeof options.audio === "string" ? await decodeAudio(options.audio) : options.audio;
+  const sound = buffer && plan.effect.kind === "shader" && effectInputs(plan.effect).accepts.includes("audio") ? analyseAudioBuffer(buffer) : undefined;
+  // The sound track encodes alongside the frames.
+  const track = buffer && plan.audioEncoder ? encodeSound(buffer, plan) : undefined;
+  track?.catch(() => undefined);
+  const source = plan.effect.kind === "shader" ? shaderSource(plan, values, live, options, sound) : vectorSource(plan, values, options);
   let encoder: Encoder | undefined;
   try {
-    encoder = plan.format === "gif" ? await gifEncoder(plan) : plan.format === "png" ? pngEncoder(plan) : videoEncoder(plan);
+    encoder = plan.format === "gif" ? await gifEncoder(plan) : plan.format === "png" ? pngEncoder(plan) : videoEncoder(plan, track);
     const rgba = new Uint8ClampedArray(plan.width * plan.height * 4);
     for (let i = 0; i < plan.frames; i++) {
       if (signal?.aborted) throw new DOMException("Cancelled", "AbortError");

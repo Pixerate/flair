@@ -1,6 +1,7 @@
 /**
- * A small WebM (Matroska) writer for one VP8 or VP9 video track, with no
- * dependencies, for video encoded in the browser (WebCodecs' `VideoEncoder`).
+ * A small WebM (Matroska) writer for one VP8 or VP9 video track, and
+ * optionally one Opus audio track, with no dependencies, for video encoded
+ * in the browser (WebCodecs' `VideoEncoder` and `AudioEncoder`).
  *
  * The file is an EBML header and one Segment of known size: `Info` (with the
  * duration), `Tracks`, then `Cluster`s of `SimpleBlock`s, a new cluster at
@@ -8,7 +9,8 @@
  * is quick for short clips. Frames with an alpha plane (VP9 or VP8 encoded
  * with `alpha: "keep"`) go in `BlockGroup`s with the alpha as a
  * `BlockAdditional` (id 1), and the track says `AlphaMode` 1, as Chrome's
- * own recordings do.
+ * own recordings do. Sound goes in track 2, its packets interleaved with
+ * the frames in time order.
  */
 
 /** One encoded frame. */
@@ -32,6 +34,29 @@ export interface WebmOptions {
   fps?: number;
   /** `WritingApp` (default "flair"). */
   app?: string;
+  /** An Opus sound track to go with the picture. */
+  audio?: WebmAudioTrack;
+}
+
+/** Opus audio for {@link muxWebm}: WebCodecs `AudioEncoder` output with codec `opus`. */
+export interface WebmAudioTrack {
+  sampleRate: number;
+  channels: number;
+  /** The `OpusHead`: the encoder's `decoderConfig.description` (default one for this rate and channel count, pre-skip 312). */
+  codecPrivate?: Uint8Array;
+  packets: readonly { data: Uint8Array; timestamp: number }[];
+}
+
+/** An Opus identification header ("OpusHead", RFC 7845) for mapping family 0. */
+export function opusHead(sampleRate: number, channels: number, preSkip = 312): Uint8Array {
+  const b = new Uint8Array(19);
+  b.set(new TextEncoder().encode("OpusHead"));
+  const v = new DataView(b.buffer);
+  v.setUint8(8, 1);
+  v.setUint8(9, channels);
+  v.setUint16(10, preSkip, true);
+  v.setUint32(12, sampleRate, true);
+  return b;
 }
 
 /** Element ids (their own leading-bits coding is part of the id). */
@@ -58,6 +83,12 @@ const ID = {
   FlagLacing: 0x9c,
   CodecID: 0x86,
   DefaultDuration: 0x23e383,
+  CodecPrivate: 0x63a2,
+  CodecDelay: 0x56aa,
+  SeekPreRoll: 0x56bb,
+  Audio: 0xe1,
+  SamplingFrequency: 0xb5,
+  Channels: 0x9f,
   MaxBlockAdditionID: 0x55ee,
   Video: 0xe0,
   PixelWidth: 0xb0,
@@ -134,24 +165,25 @@ const float = (id: number, n: number) => {
 
 const str = (id: number, s: string) => el(id, new TextEncoder().encode(s));
 
-/** A block's header: track 1, its time from the cluster's, its flags. */
-function blockHeader(offset: number, flags: number): Uint8Array {
+/** A block's header: its track (1 the picture, 2 the sound), its time from the cluster's, its flags. */
+function blockHeader(offset: number, flags: number, track = 1): Uint8Array {
   const b = new Uint8Array(4);
-  b[0] = 0x81;
+  b[0] = 0x80 | track;
   new DataView(b.buffer).setInt16(1, offset);
   b[3] = flags;
   return b;
 }
 
 /**
- * A WebM file of one VP8 or VP9 track. Throws when there are no frames or
- * the first is not a keyframe.
+ * A WebM file of one VP8 or VP9 track (and an Opus one, with `audio`).
+ * Throws when there are no frames or the first is not a keyframe.
  */
 export function muxWebm(options: WebmOptions): Uint8Array {
   const { codec, width, height, frames, fps } = options;
   if (!frames.length) throw new Error("A WebM needs at least one frame.");
   if (!frames[0]!.key) throw new Error("A WebM's first frame must be a keyframe.");
   const alpha = frames.some((f) => f.alpha);
+  const sound = options.audio?.packets.length ? options.audio : undefined;
   const ms = (us: number) => Math.round(us / 1000);
   const last = frames[frames.length - 1]!;
   const frameUs = fps ? 1e6 / fps : frames.length > 1 ? (last.timestamp - frames[0]!.timestamp) / (frames.length - 1) : 1e6 / 30;
@@ -188,6 +220,7 @@ export function muxWebm(options: WebmOptions): Uint8Array {
       ...(alpha ? [uint(ID.MaxBlockAdditionID, 1)] : []),
       el(ID.Video, uint(ID.PixelWidth, width), uint(ID.PixelHeight, height), ...(alpha ? [uint(ID.AlphaMode, 1)] : [])),
     ),
+    ...(sound ? [soundTrack(sound)] : []),
   );
 
   const clusters: Uint8Array[] = [];
@@ -198,11 +231,28 @@ export function muxWebm(options: WebmOptions): Uint8Array {
     if (blocks.length) clusters.push(el(ID.Cluster, uint(ID.Timestamp, clusterMs), ...blocks));
     blocks = [];
   };
-  frames.forEach((frame, i) => {
-    const at = ms(frame.timestamp);
-    if (i === 0 || frame.key || at - clusterMs > MAX_OFFSET) {
+  // The picture's frames and the sound's packets in time order (a frame first at a tie); clusters start at keyframes.
+  type Item = { frame: WebmFrame; packet?: undefined } | { frame?: undefined; packet: WebmAudioTrack["packets"][number] };
+  const items: Item[] = [...frames.map((frame) => ({ frame })), ...(sound?.packets ?? []).map((packet) => ({ packet }))];
+  const timeOf = (item: Item) => (item.frame ?? item.packet)!.timestamp;
+  items.sort((a, b) => timeOf(a) - timeOf(b) || (a.frame ? -1 : 0) - (b.frame ? -1 : 0));
+  let started = false;
+  for (const item of items) {
+    const at = ms(timeOf(item));
+    const frame = item.frame;
+    if (!frame) {
+      if (!started || at - clusterMs > MAX_OFFSET) {
+        close();
+        clusterMs = at;
+        started = true;
+      }
+      blocks.push(el(ID.SimpleBlock, blockHeader(at - clusterMs, 0x80, 2), item.packet!.data));
+      continue;
+    }
+    if (!started || frame.key || at - clusterMs > MAX_OFFSET) {
       close();
       clusterMs = at;
+      started = true;
     }
     const offset = at - clusterMs;
     if (frame.alpha) {
@@ -219,11 +269,30 @@ export function muxWebm(options: WebmOptions): Uint8Array {
       blocks.push(el(ID.SimpleBlock, blockHeader(offset, frame.key ? 0x80 : 0), frame.data));
     }
     previousMs = at;
-  });
+  }
   close();
 
   const segment = el(ID.Segment, info, tracks, ...clusters);
   return concat([header, segment]);
+}
+
+/** Track 2: Opus at its rate, with its header and the decoder's delay. */
+function soundTrack(sound: WebmAudioTrack): Uint8Array {
+  const head = sound.codecPrivate?.length ? sound.codecPrivate : opusHead(sound.sampleRate, sound.channels);
+  // Pre-skip is in 48 kHz samples, whatever the rate.
+  const preSkip = head.length >= 12 ? head[10]! | (head[11]! << 8) : 312;
+  return el(
+    ID.TrackEntry,
+    uint(ID.TrackNumber, 2),
+    uint(ID.TrackUID, 2),
+    uint(ID.TrackType, 2), // audio
+    uint(ID.FlagLacing, 0),
+    str(ID.CodecID, "A_OPUS"),
+    el(ID.CodecPrivate, head),
+    uint(ID.CodecDelay, Math.round((preSkip * 1e9) / 48000)),
+    uint(ID.SeekPreRoll, 80_000_000),
+    el(ID.Audio, float(ID.SamplingFrequency, sound.sampleRate), uint(ID.Channels, sound.channels)),
+  );
 }
 
 /** A signed integer's bytes, big-endian, in the fewest bytes (ReferenceBlock is signed). */

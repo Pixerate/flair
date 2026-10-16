@@ -7,7 +7,9 @@ import {
   type CompileError,
   type CompiledShader,
 } from "./program.js";
+import { LiveAudio, type AudioFrame, type AudioSource } from "./audio.js";
 import { PointerTracker } from "./pointer.js";
+import { ScrollTracker, viewportProgress } from "./scroll.js";
 import { TextureCache, type ImageLoadError, type LiveSource } from "./textures.js";
 
 /** Whether the latest source compiled, and if not, why. */
@@ -73,6 +75,17 @@ export class ShaderRenderer {
   private mouse: [number, number, number, number] = [0, 0, 0, 0];
   /** `iPointer` and `iClicks`. */
   private pointer = new PointerTracker();
+  /** `iAudio`, `iSpectrum` and `iBeat`, from `setAudioSource`. */
+  private audio: LiveAudio | null = null;
+  private audioFrame: AudioFrame | undefined;
+  /** `iScroll`. */
+  private scrollTracker = new ScrollTracker();
+  private scrollOverride: number | null = null;
+  private scrollMoved = true;
+  /** The page clock's latest reading, in seconds, for `iScroll`'s easing. */
+  private scrollNow = 0;
+  /** `iScroll` as last drawn, so a paused preview redraws only when it changes. */
+  private drawnScroll: readonly number[] = [0, 0, 0, 0];
   private disposed = false;
   /** The latest source's status. */
   status: CompileStatus = { ok: true, errors: [] };
@@ -150,6 +163,8 @@ export class ShaderRenderer {
     canvas.addEventListener("pointerenter", this.onPointerEnter);
     canvas.addEventListener("pointerleave", this.onPointerLeave);
     window.addEventListener("pointerup", this.onPointerUp);
+    // Any scroll that may move the canvas: the page's or a scrolling element's.
+    window.addEventListener("scroll", this.onScroll, { capture: true, passive: true });
     this.resize();
     this.raf = requestAnimationFrame(this.tick);
   }
@@ -176,6 +191,8 @@ export class ShaderRenderer {
       this.shader = result.shader;
       this.controls = controls;
       this.status = { ok: true, errors: [] };
+      // Where the page is now, so the first frame shows it.
+      if (result.shader.builtins.iScroll) this.sampleScroll(performance.now() / 1000);
     } else {
       this.status = { ok: false, errors: result.errors };
     }
@@ -210,6 +227,44 @@ export class ShaderRenderer {
     else this.live.delete(name);
     this.textures?.setLive(name, source);
     if (!this.playing) this.render();
+  }
+
+  /**
+   * Feeds `iAudio`, `iSpectrum` and `iBeat` from a sound (`null` stops):
+   * - an `<audio>` or `<video>` element: it keeps playing to the speakers,
+   *   now through Web Audio (an element can only be wired in once, so the
+   *   same node is reused by every renderer that listens to it);
+   * - a `MediaStream`, such as a microphone from `getUserMedia`: listened
+   *   to, not played;
+   * - any Web Audio node (an oscillator, a gain, a player's output), in its
+   *   own context.
+   *
+   * The `AudioContext` and `AnalyserNode` are made on first use (see
+   * `sharedAudioContext`). Browsers keep a new context suspended until the
+   * page has a click or key press (autoplay policy): call this from one, or
+   * the context resumes on the first. While a source is set, a paused
+   * preview still follows the sound. A media element from another site needs
+   * `crossOrigin = "anonymous"` and CORS, or the browser feeds silence.
+   */
+  setAudioSource(source: AudioSource | null) {
+    this.audio?.dispose();
+    this.audio = source ? new LiveAudio(source) : null;
+    this.audioFrame = undefined;
+    if (!this.playing) this.render();
+  }
+
+  /**
+   * Pins `iScroll` to a scroll position of your own (0–1, for x and y; the
+   * velocity and "scrolling" follow its changes), for scrubbers and hosts
+   * that scroll in their own way; `null` goes back to following the page.
+   */
+  setScrollProgress(progress: number | null) {
+    this.scrollOverride = progress === null ? null : Math.min(1, Math.max(0, progress));
+    this.scrollMoved = true;
+    if (!this.playing) {
+      this.sampleScroll(performance.now() / 1000);
+      this.render();
+    }
   }
 
   /**
@@ -294,6 +349,9 @@ export class ShaderRenderer {
     this.canvas.removeEventListener("pointerenter", this.onPointerEnter);
     this.canvas.removeEventListener("pointerleave", this.onPointerLeave);
     window.removeEventListener("pointerup", this.onPointerUp);
+    window.removeEventListener("scroll", this.onScroll, { capture: true });
+    this.audio?.dispose();
+    this.audio = null;
     if (this.gl && this.shader) this.gl.deleteProgram(this.shader.program);
     this.textures?.dispose();
     this.textures = null;
@@ -331,6 +389,8 @@ export class ShaderRenderer {
         pointer: this.pointer.pointer(this.time),
         clicks: this.pointer.clicksAt(this.time),
         trail: this.pointer.trailAt(this.time),
+        ...(this.audioFrame ?? {}),
+        scroll: (this.drawnScroll = this.scrollTracker.scroll(this.scrollNow)),
       },
       this.textures ?? undefined,
     );
@@ -358,13 +418,27 @@ export class ShaderRenderer {
     this.raf = requestAnimationFrame(this.tick);
     const delta = this.lastNow ? Math.min((now - this.lastNow) / 1000, 0.1) : 0;
     this.lastNow = now;
+    const seconds = now / 1000;
+    // The sound and the scroll run on the page's clock, whether or not the shader's is paused.
+    let follow = false;
+    const b = this.shader?.builtins;
+    if (this.audio && b && (b.iAudio || b.iSpectrum || b.iBeat)) {
+      this.audioFrame = this.audio.read(seconds);
+      follow = true;
+    }
+    this.scrollNow = seconds;
+    if (b?.iScroll) {
+      if (this.scrollMoved || this.scrollOverride === null || !this.scrollTracker.settled(seconds)) this.sampleScroll(seconds);
+      const scroll = this.scrollTracker.scroll(seconds);
+      if (scroll.some((v, i) => v !== this.drawnScroll[i])) follow = true;
+    }
     if (this.playing) {
       this.time += delta * this.speed;
       this.frame += 1;
       this.render(delta * this.speed);
       this.fpsFrames += 1;
-    } else if (this.textures?.liveChanged()) {
-      // A live video moved on (played, seeked or loaded) while the clock is paused.
+    } else if (this.textures?.liveChanged() || follow) {
+      // A live video moved on (played, seeked or loaded), the sound changed or the page scrolled while the clock is paused.
       this.render();
     }
     if (now - this.fpsSince >= 500) {
@@ -386,6 +460,27 @@ export class ShaderRenderer {
       height: this.canvas.height,
     });
   }
+
+  /** Where the canvas is in the viewport (or the pinned progress), into the scroll tracker. */
+  private sampleScroll(seconds: number) {
+    this.scrollMoved = false;
+    this.scrollNow = seconds;
+    if (this.scrollOverride !== null) {
+      const p = this.scrollOverride;
+      // As if the canvas were a viewport tall: progress 0 to 1 is two viewport heights of scrolling.
+      this.scrollTracker.sample(p, p, p * 2, seconds);
+      return;
+    }
+    const rect = this.canvas.getBoundingClientRect();
+    const viewport = window.innerHeight || document.documentElement.clientHeight || 1;
+    const page = document.scrollingElement ?? document.documentElement;
+    const range = page.scrollHeight - page.clientHeight;
+    this.scrollTracker.sample(viewportProgress(rect.top, rect.height, viewport), range > 0 ? page.scrollTop / range : 0, -rect.top / viewport, seconds);
+  }
+
+  private onScroll = () => {
+    this.scrollMoved = true;
+  };
 
   /** Pointer position in shader pixels (origin bottom-left, like gl_FragCoord). */
   private toPixels(e: PointerEvent): [number, number] {

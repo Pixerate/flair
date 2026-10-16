@@ -63,6 +63,24 @@ describe("ShaderFrames", () => {
     expect(gl.uniform("iMouse")).toEqual([5, 6, 7, 8]);
   });
 
+  it("takes scripted audio and scroll, silence for what audio leaves out, nothing at all without it", () => {
+    const webgl = installFakeWebGl();
+    const frames = new ShaderFrames({ source: shaderSource(), width: 4, height: 4 });
+    const gl = webgl.last();
+    frames.render(0);
+    expect(gl.uniform("iBeat")).toEqual([0]);
+    expect(gl.uniform("iScroll")).toEqual([0, 0, 0, 0]);
+    frames.render(1, { audio: { audio: [0.5, 1, 0.25, 0] }, scroll: [0.3, 0.6, -2, 1] });
+    expect(gl.uniform("iAudio")).toEqual([0.5, 1, 0.25, 0]);
+    expect(gl.uniform("iBeat")).toEqual([-1]);
+    expect((gl.uniform("iSpectrum")![0] as Float32Array).every((v) => v === 0)).toBe(true);
+    expect(gl.uniform("iScroll")).toEqual([0.3, 0.6, -2, 1]);
+    const spectrum = new Float32Array(64).fill(0.75);
+    frames.render(2, { audio: { spectrum, beat: 0.2 } });
+    expect(gl.uniform("iSpectrum")![0]).toBe(spectrum);
+    expect(gl.uniform("iBeat")).toEqual([0.2]);
+  });
+
   it("applies control values, and new ones after setValues", () => {
     const webgl = installFakeWebGl();
     const frames = new ShaderFrames({

@@ -1,3 +1,4 @@
+import { sharedAudioContext } from "./audio.js";
 import { ShaderRenderer, type RendererStats } from "./renderer.js";
 import { ImageLoadError } from "./textures.js";
 import {
@@ -461,6 +462,129 @@ describe("ShaderRenderer", () => {
       renderer.dispose();
       expect(gl!.textures.length).toBeGreaterThan(0);
       expect(gl!.textures.every((t) => t.deleted)).toBe(true);
+    });
+  });
+
+  describe("scroll", () => {
+    it("feeds iScroll from where the canvas is in the viewport, and follows scrolling while paused", () => {
+      const { renderer, gl, raf } = setup();
+      vi.stubGlobal("innerHeight", 800);
+      setRect(renderer.canvas, 100, 200, 0, 300);
+      renderer.setSource(shaderSource());
+      renderer.pause();
+      raf.frame(1000);
+      expect(gl!.uniform("iScroll")![0]).toBeCloseTo(0.5);
+      // Scroll down 80 px a frame: the canvas moves up.
+      for (let i = 1; i <= 5; i++) {
+        setRect(renderer.canvas, 100, 200, 0, 300 - 80 * i);
+        window.dispatchEvent(new Event("scroll"));
+        raf.frame(1000 + (1000 / 60) * i);
+      }
+      const [x, , v, w] = gl!.uniform("iScroll") as number[];
+      expect(x).toBeCloseTo((800 - (300 - 400)) / 1000);
+      expect(v).toBeGreaterThan(3);
+      expect(w).toBe(1);
+    });
+
+    it("can be pinned to a progress of the host's own", () => {
+      const { renderer, gl } = setup();
+      renderer.setSource(shaderSource());
+      renderer.pause();
+      renderer.setScrollProgress(0.25);
+      expect((gl!.uniform("iScroll") as number[]).slice(0, 2)).toEqual([0.25, 0.25]);
+      renderer.setScrollProgress(2);
+      expect(gl!.uniform("iScroll")![0]).toBe(1);
+    });
+
+    it("stops listening on dispose", () => {
+      const { renderer } = setup();
+      const remove = vi.spyOn(window, "removeEventListener");
+      renderer.dispose();
+      expect(remove.mock.calls.map((c) => c[0])).toContain("scroll");
+    });
+  });
+
+  describe("audio", () => {
+    /** A Web Audio stand-in: an analyser that hears a full-scale bass. */
+    function installFakeAudio(level = 1) {
+      // Each test starts with a new shared context.
+      try {
+        (sharedAudioContext() as { state: string }).state = "closed";
+      } catch {
+        // None yet.
+      }
+      const connections: [string, string][] = [];
+      const node = (name: string) => ({
+        name,
+        connect: vi.fn((to: { name: string }) => connections.push([name, to.name])),
+        disconnect: vi.fn(),
+      });
+      class FakeAnalyser {
+        name = "analyser";
+        fftSize = 2048;
+        smoothingTimeConstant = 0.8;
+        minDecibels = -100;
+        maxDecibels = -30;
+        get frequencyBinCount() {
+          return this.fftSize / 2;
+        }
+        getFloatFrequencyData(out: Float32Array) {
+          out.fill(-100);
+          for (let k = 0; k < 11; k++) out[k] = -100 + 70 * level;
+        }
+        getFloatTimeDomainData(out: Float32Array) {
+          out.fill(0.5 * level);
+        }
+        connect() {}
+        disconnect() {}
+      }
+      class FakeContext {
+        state = "running";
+        sampleRate = 48000;
+        destination = { name: "speakers" };
+        createAnalyser = () => new FakeAnalyser();
+        createMediaElementSource = vi.fn(() => node("element"));
+        createMediaStreamSource = vi.fn(() => node("stream"));
+        resume = vi.fn(async () => {});
+        addEventListener() {}
+      }
+      vi.stubGlobal("AudioContext", FakeContext);
+      return connections;
+    }
+
+    it("plays a media element to the speakers through an analyser and feeds the audio uniforms", async () => {
+      const connections = installFakeAudio();
+      const { renderer, gl, raf } = setup();
+      renderer.setSource(shaderSource());
+      expect(gl!.uniform("iBeat")).toBeUndefined();
+      raf.frame(1000);
+      expect(gl!.uniform("iBeat")).toEqual([0]);
+      renderer.setAudioSource(document.createElement("audio"));
+      expect(connections).toEqual([["element", "speakers"], ["element", "analyser"]]);
+      raf.frame(1016);
+      const [level, bass, mid] = gl!.uniform("iAudio") as number[];
+      expect(level).toBeGreaterThan(0.8);
+      expect(bass).toBe(1);
+      expect(mid).toBe(0);
+      expect(gl!.uniform("iBeat")).toEqual([-1]);
+      expect((gl!.uniform("iSpectrum")![0] as Float32Array)[0]).toBe(1);
+    });
+
+    it("listens to a stream without playing it, and stops on null", () => {
+      const connections = installFakeAudio();
+      const { renderer, gl, raf } = setup();
+      renderer.setSource(shaderSource());
+      class FakeStream {}
+      vi.stubGlobal("MediaStream", FakeStream);
+      renderer.setAudioSource(new FakeStream() as unknown as MediaStream);
+      expect(connections).toEqual([["stream", "analyser"]]);
+      expect(connections.some(([, to]) => to === "speakers")).toBe(false);
+      raf.frame(1000);
+      expect((gl!.uniform("iAudio") as number[])[1]).toBe(1);
+      renderer.setAudioSource(null);
+      raf.frame(1016);
+      expect(gl!.uniform("iAudio")).toEqual([0, 0, 0, 0]);
+      expect(gl!.uniform("iBeat")).toEqual([0]);
     });
   });
 });
