@@ -42,6 +42,8 @@ export type EffectCategory =
   | "distortion"
   | "audio"
   | "scroll"
+  | "broadcast"
+  | "annotation"
   | "transition"
   | "loader"
   | "data"
@@ -79,6 +81,8 @@ export const EFFECT_CATEGORIES: readonly EffectCategory[] = [
   "distortion",
   "audio",
   "scroll",
+  "broadcast",
+  "annotation",
   "transition",
   "loader",
   "data",

@@ -524,8 +524,14 @@ frames.render(t, { audio: track.at(t), scroll: [0.5, 0.5, 0, 0] });
 | distortion | twirl, pinch & bulge, fisheye, mirror tiles, wave warp, ribbed glass, shower glass, datamosh, polar warp, texture displace |
 | audio | spectrum bars, circular spectrum, waveform line, bass pulse, audio particles, audio plasma, vinyl |
 | scroll | scroll reveal, parallax layers, scroll progress glow, scroll velocity blur, scroll zoom, scroll draw, scroll counter, scroll steps |
+| broadcast | lower third, stacked lower third, title card, logo reveal, logo sting, end card, countdown, subscribe button, news ticker, scoreboard, chapter marker |
+| annotation | hand circle, hand arrow, callout, bracket note, scribble out, step badges, focus box, fake cursor, tooltip tour |
 | transition | liquid morph, displacement, luma fade, particle swap, ink bleed, pixel dissolve, comic panels, wipe, iris, block dissolve, grid wipe, glass wipe, twister, light leak, cross zoom, whip pan |
 | loader / icon / data | spinner, bouncing dots, pulse ping, equalizer, progress ring, bar chart, line chart, stat counter, route, timeline track, success check, error cross, heartbeat, signature, confetti, flow network, upload card |
+
+#### Broadcast graphics and annotations
+
+The `broadcast` and `annotation` effects are animated SVGs in a 1920 × 1080 (16:9) frame, with their text inside the title-safe area. Each animates in, holds for its `hold` control (seconds) and animates out, ending as it started, so it loops; the news ticker is a seamless crawl instead. Lower thirds, the ticker, the score bug, the chapter marker, the subscribe button and every annotation draw on a transparent frame, to lay over video or a screenshot (`flair render lower-third --text "Ada Lovelace" --alpha -o lt.webm`); annotations are placed with position controls in percent of the frame. Every label is a text control, fitted to its length. Logos (`lower-third-stacked`, `logo-reveal`, `logo-sting`) take SVG path data in their `logo` control (`--path "M…"`), scaled to fit their slot and recoloured by the effect, so they draw on, shine and export as animated SVG like the rest; anything that is not path data draws a stand-in mark.
 
 Every shader is self-contained and compiles on WebGL2. Open [`#check`](https://pixerate.github.io/flair/#check) on the demo to compile the catalog on your own GPU. [`#bench`](https://pixerate.github.io/flair/#bench) times every shader per frame on your GPU (`#bench?size=720&only=aurora,fur` for a size or a few effects; keep the tab in front, since a hidden tab or other drawing inflates every number).
 
