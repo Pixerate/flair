@@ -152,6 +152,8 @@ describe("commands and agent tools", () => {
     expect(editor.document.values.uSpeed).toBeUndefined();
     const found = editor.commands.execute<{ id: string }[]>("catalog.search", { text: "fire" });
     expect(found.ok && found.result.map((e) => e.id)).toContain("flames");
+    const video = editor.commands.execute<{ id: string; video?: string }[]>("catalog.search", { video: ["transition"] });
+    expect(video.ok && video.result.length > 5 && video.result.every((e) => e.video === "transition")).toBe(true);
   });
 
   it("exposes the commands as MCP tools an agent can call", async () => {

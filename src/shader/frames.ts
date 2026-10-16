@@ -7,7 +7,7 @@ import {
   type CompiledShader,
 } from "./program.js";
 import { clicksUniform, type ShaderClick } from "./pointer.js";
-import { TextureCache } from "./textures.js";
+import { TextureCache, type LiveSource } from "./textures.js";
 
 export interface ShaderFramesOptions {
   source: string;
@@ -43,6 +43,10 @@ export interface RenderOptions {
  *
  * Image controls load in the background: `await frames.ready()` before the
  * first `render`, or the frames show black where the images go.
+ *
+ * A video in an image control (see `setLiveSource`) is drawn at whatever
+ * frame it is on. To step it with the shader, seek it first: `await
+ * seekVideo(video, t); frames.render(t)`.
  */
 export class ShaderFrames {
   readonly canvas: HTMLCanvasElement;
@@ -87,11 +91,21 @@ export class ShaderFrames {
   }
 
   /**
-   * Settles once every image the controls show has loaded. Rejects with an
-   * {@link ImageLoadError} when one cannot be.
+   * Draws a `<video>` (or a canvas) in the image control `name` instead of
+   * its URL, at the frame it is on when `render` runs; `null` goes back to
+   * the URL. See `ShaderRenderer.setLiveSource`.
+   */
+  setLiveSource(name: string, source: LiveSource | null) {
+    this.textures.setLive(name, source);
+  }
+
+  /**
+   * Settles once every image the controls show has loaded, and every live
+   * video has a frame. Rejects with an {@link ImageLoadError} when one
+   * cannot be.
    */
   async ready(): Promise<void> {
-    await this.textures.ready(imageUrls(this.controls, this.values));
+    await Promise.all([this.textures.ready(imageUrls(this.controls, this.values)), this.textures.liveReady()]);
   }
 
   /** Draws the frame at `time` seconds onto `canvas`. */

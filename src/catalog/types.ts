@@ -55,6 +55,22 @@ export const EFFECT_CATEGORIES: readonly EffectCategory[] = [
   "icon",
 ];
 
+/**
+ * How a shader effect suits video in its image controls (see
+ * `ShaderRenderer.setLiveSource`):
+ *
+ * - `filter`: it treats each frame on its own, so it works as a live video filter.
+ * - `transition`: it blends two pictures, so it works between two clips.
+ * - `interactive`: it reacts to the pointer over a picture, and works as well over video.
+ * - `stills`: it runs on video but is made for a still picture: it moves the
+ *   picture to fake motion of its own, or needs shapes or features in fixed places.
+ * - `none`: its pictures are not photos (rendered text, a silhouette mask), so video has no place in it.
+ */
+export type VideoUse = "filter" | "transition" | "interactive" | "stills" | "none";
+
+/** Every {@link VideoUse}, best suited to video first. */
+export const VIDEO_USES: readonly VideoUse[] = ["filter", "transition", "interactive", "stills", "none"];
+
 /** Named control values: a look an effect can be switched to. */
 export interface EffectPreset {
   name: string;
@@ -88,6 +104,11 @@ export interface ShaderEffect extends EffectBase {
    * (`ShaderRenderer`'s `alpha` option) to layer it over a page or picture.
    */
   transparent?: boolean;
+  /**
+   * How it suits video in its image controls. Every effect with an image
+   * control says; effects without one have nothing to show video in.
+   */
+  video?: VideoUse;
 }
 
 /**

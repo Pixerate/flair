@@ -235,6 +235,7 @@ export const hoverLiquid: ShaderEffect = {
   name: "Liquid hover",
   description: "An image that swells and ripples like liquid around the pointer while it hovers.",
   category: "interaction",
+  video: "interactive",
   tags: ["interactive", "hover", "image", "liquid", "distortion"],
   source: glsl(
     `// Liquid hover: an image bulging and rippling around the pointer, as strongly as it is hovered.
@@ -282,6 +283,7 @@ export const hoverReveal: ShaderEffect = {
   name: "X-ray reveal",
   description: "A second image showing through a soft lens around the pointer that grows as it hovers and pulses on click.",
   category: "interaction",
+  video: "interactive",
   tags: ["interactive", "hover", "click", "image", "reveal", "x-ray"],
   source: glsl(
     `// X-ray reveal: a second image seen through a soft lens at the pointer.
@@ -334,6 +336,7 @@ export const magnifier: ShaderEffect = {
   name: "Magnifier",
   description: "A round magnifying glass over an image at the pointer, with a bright rim and a fringe of colour at its edge.",
   category: "interaction",
+  video: "interactive",
   tags: ["interactive", "hover", "image", "lens", "zoom"],
   source: glsl(
     `// Magnifier: a round lens over an image at the pointer, showing while hovered.
@@ -389,6 +392,7 @@ export const holoCard: ShaderEffect = {
   name: "Holo card",
   description: "A holographic foil trading card whose rainbow sheen and glare shift as the pointer tilts it.",
   category: "interaction",
+  video: "interactive",
   tags: ["interactive", "hover", "card", "holographic", "foil", "iridescent"],
   transparent: true,
   source: glsl(
@@ -545,6 +549,7 @@ export const hoverSwap: ShaderEffect = {
   name: "Hover swap",
   description: "One image burning away into another from the pointer as it hovers, along a glowing ragged edge.",
   category: "interaction",
+  video: "interactive",
   tags: ["interactive", "hover", "image", "dissolve", "transition"],
   source: glsl(
     `// Hover swap: image A dissolves into image B as hover goes 0 → 1, spreading from the pointer.

@@ -143,6 +143,7 @@ export const image8bit: ShaderEffect = {
   name: "8-bit",
   description: "An image on a chunky pixel grid, reduced to a classic console or computer palette with ordered Bayer dithering.",
   category: "retro",
+  video: "filter",
   tags: ["pixel", "retro", "image", "8-bit", "dither", "palette", "game boy", "pico-8"],
   source: glsl(
     `// 8-bit: an image on a chunky pixel grid in a classic palette, Bayer-dithered.
@@ -219,6 +220,7 @@ export const gameboyScreen: ShaderEffect = {
   name: "Game Boy screen",
   description: "An image on a handheld's green dot-matrix LCD: four shades, a visible pixel grid and smeary ghosting, inset in an olive bezel.",
   category: "retro",
+  video: "filter",
   tags: ["pixel", "retro", "image", "game boy", "lcd", "handheld", "screen"],
   source: glsl(
     `// Game Boy screen: an image on a 4-shade green LCD with a pixel grid, ghosting and a bezel.
@@ -668,6 +670,7 @@ export const rasterBars: ShaderEffect = {
   name: "Raster bars",
   description: "Demoscene copper bars bouncing on sine paths behind a sine-scrolling greeting, all in chunky pixels.",
   category: "retro",
+  video: "none",
   tags: ["pixel", "retro", "demoscene", "amiga", "c64", "scroller", "text", "copper"],
   source: glsl(
     `// Raster bars: copper bars on sine paths behind a sine scroller.
@@ -858,6 +861,7 @@ export const pixelDissolve: ShaderEffect = {
   name: "Pixel dissolve",
   description: "The picture pixelates up to big blocks, the blocks swap to the next image in a random order, then it resolves into the new picture. Loops back and forth; or turn Animate off and set Progress.",
   category: "transition",
+  video: "transition",
   tags: ["transition", "pixel", "image", "retro", "8-bit", "slideshow"],
   loop: 4,
   source: glsl(

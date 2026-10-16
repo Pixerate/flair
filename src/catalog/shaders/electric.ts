@@ -505,6 +505,7 @@ export const electricText: ShaderEffect = {
   name: "Electric text",
   description: "A word with electricity crawling over its outlines and arcs leaping between its letters, flickering on a dark background.",
   category: "electric",
+  video: "none",
   tags: ["electric", "text", "title", "glow", "sci-fi"],
   source: glsl(
     `// Electric text: electricity crawling along the letters' outlines, arcs jumping between them.
@@ -770,6 +771,7 @@ export const powerSurge: ShaderEffect = {
   name: "Power surge",
   description: "A picture jolted by a power surge: a flash, an arc tearing across, scanlines and colour split, then a brownout before it settles.",
   category: "electric",
+  video: "filter",
   tags: ["electric", "image", "glitch", "surge", "flash"],
   source: glsl(
     `// Power surge: an image jolted by a surge, then settling, on a schedule.

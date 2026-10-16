@@ -9,6 +9,7 @@ export const imageKenBurns: ShaderEffect = {
   name: "Ken Burns",
   description: "A slow documentary-style pan and zoom across an image, easing in and out and back again.",
   category: "image",
+  video: "filter",
   tags: ["image", "camera", "documentary", "slideshow"],
   loop: 12,
   source: glsl(
@@ -50,6 +51,7 @@ export const imageAscii: ShaderEffect = {
   name: "ASCII art",
   description: "An image drawn as text characters picked by brightness, in one ink or the picture's own colours.",
   category: "image",
+  video: "filter",
   tags: ["image", "ascii", "text", "terminal", "retro"],
   source: glsl(
     `// ASCII art: each cell of the image becomes a character, denser for brighter cells.
@@ -110,6 +112,7 @@ export const imageShatter: ShaderEffect = {
   name: "Shatter",
   description: "An image breaking into glass-like shards that fly apart, spin and reassemble in a loop.",
   category: "image",
+  video: "filter",
   tags: ["image", "shatter", "transition", "voronoi", "explode"],
   loop: 5,
   source: glsl(
@@ -194,6 +197,7 @@ export const imageMelt: ShaderEffect = {
   name: "Melt",
   description: "An image melting and dripping downwards in slow, noisy runs.",
   category: "image",
+  video: "filter",
   tags: ["image", "melt", "drip", "psychedelic", "distortion"],
   source: glsl(
     `// Melt: noise-driven runs drag the image downwards.
@@ -233,6 +237,7 @@ export const imageRisograph: ShaderEffect = {
   name: "Risograph",
   description: "An image printed in two posterized, slightly misregistered inks on grainy paper.",
   category: "image",
+  video: "filter",
   tags: ["image", "print", "riso", "editorial", "poster"],
   source: glsl(
     `// Risograph: two posterized ink layers, out of register, on grainy paper.
@@ -284,6 +289,7 @@ export const imageThermal: ShaderEffect = {
   name: "Thermal",
   description: "An image seen through a heat camera or night-vision goggles.",
   category: "image",
+  video: "filter",
   tags: ["image", "thermal", "night-vision", "surveillance", "colour"],
   source: glsl(
     `// Thermal: brightness mapped to a heat palette, or to green night-vision phosphor.
@@ -338,6 +344,7 @@ export const imageEdgeGlow: ShaderEffect = {
   name: "Edge glow",
   description: "An image's edges traced as glowing neon lines over a dimmed picture, with a travelling pulse.",
   category: "image",
+  video: "filter",
   tags: ["image", "neon", "edges", "outline", "cyber"],
   loop: 2,
   source: glsl(
@@ -399,6 +406,7 @@ export const imageTiltShift: ShaderEffect = {
   name: "Tilt-shift",
   description: "An image blurred outside a sharp horizontal band, with punchy colour, so it looks like a miniature.",
   category: "image",
+  video: "filter",
   tags: ["image", "blur", "miniature", "photography", "depth"],
   source: glsl(
     `// Tilt-shift: blur away from a focus band, plus saturation, for the miniature look.
@@ -442,6 +450,7 @@ export const imageSlitScan: ShaderEffect = {
   name: "Slit-scan",
   description: "An image smeared into time-stretched streaks, like a slit-scan photograph.",
   category: "image",
+  video: "stills",
   tags: ["image", "slit-scan", "smear", "experimental", "distortion"],
   source: glsl(
     `// Slit-scan: rows (or columns) squeeze towards a moving slit and smear into streaks.
@@ -487,6 +496,7 @@ export const imageMosaic: ShaderEffect = {
   name: "Mosaic flip",
   description: "Hexagonal or triangular tiles flipping over from the left to reveal an image, then back.",
   category: "image",
+  video: "filter",
   tags: ["image", "reveal", "transition", "tiles", "hexagon"],
   loop: 6,
   source: glsl(
@@ -573,6 +583,7 @@ export const imageChromaticLens: ShaderEffect = {
   name: "Chromatic lens",
   description: "An image through a cheap wide lens: barrel distortion and colour fringes growing towards the edges.",
   category: "image",
+  video: "filter",
   tags: ["image", "lens", "aberration", "distortion", "vintage"],
   source: glsl(
     `// Chromatic lens: barrel distortion with red, green and blue bent by different amounts.
@@ -614,6 +625,7 @@ export const imageOilPaint: ShaderEffect = {
   name: "Oil paint",
   description: "An image repainted in flat, edge-keeping brush dabs, like an oil painting.",
   category: "image",
+  video: "filter",
   tags: ["image", "painterly", "artistic", "kuwahara", "filter"],
   source: glsl(
     `// Oil paint: a four-sector Kuwahara filter, each pixel takes the calmest neighbourhood's colour.

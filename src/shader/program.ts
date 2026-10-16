@@ -229,8 +229,9 @@ export interface FrameState {
 /**
  * Draws one frame of a compiled shader into the bound framebuffer, from (0, 0).
  * Image controls are bound to texture units 0, 1, … in source order, with
- * textures from `textures` (a {@link TextureCache} for the same context);
- * without it they sample nothing.
+ * textures from `textures` (a {@link TextureCache} for the same context): a
+ * control's live source when it has one, else its URL's image. Without
+ * `textures` they sample nothing.
  */
 export function drawFrame(
   gl: WebGL2RenderingContext,
@@ -276,7 +277,8 @@ export function drawFrame(
         break;
       case "sampler2D": {
         gl.activeTexture(gl.TEXTURE0 + unit);
-        const texture = textures?.texture(v as string) ?? null;
+        const live = textures?.liveTexture?.(control.name);
+        const texture = (live === undefined ? textures?.texture(v as string) : live) ?? null;
         gl.bindTexture(gl.TEXTURE_2D, texture);
         if (texture && control.texture) applyTextureSettings(gl, control.texture);
         gl.uniform1i(loc, unit++);

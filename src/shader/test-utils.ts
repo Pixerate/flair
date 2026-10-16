@@ -404,6 +404,41 @@ export function installManualRaf() {
   };
 }
 
+/**
+ * A stand-in for a `<video>`: set `readyState` and `currentTime` to move it
+ * on, and `emit` its events. Seeking moves at once and fires `seeked` on the
+ * next microtask, as a browser would a little later.
+ */
+export class FakeVideo extends EventTarget {
+  readyState = 0;
+  duration = 10;
+  seeking = false;
+  src = "";
+  currentSrc = "https://example.com/clip.mp4";
+  error: unknown = null;
+  private time = 0;
+
+  get currentTime() {
+    return this.time;
+  }
+  set currentTime(t: number) {
+    this.time = t;
+    this.seeking = true;
+    queueMicrotask(() => {
+      this.seeking = false;
+      this.readyState = Math.max(this.readyState, 2);
+      this.emit("seeked");
+    });
+  }
+  /** Moves to `t` without seeking, as playback does. */
+  playTo(t: number) {
+    this.time = t;
+  }
+  emit(type: string) {
+    this.dispatchEvent(new Event(type));
+  }
+}
+
 /** Gives an element a layout box, which jsdom does not compute. */
 export function setRect(el: Element, width: number, height: number, left = 0, top = 0) {
   Object.defineProperty(el, "clientWidth", { value: width, configurable: true });

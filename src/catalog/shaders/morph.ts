@@ -41,6 +41,7 @@ export const featureMorph: ShaderEffect = {
   name: "Feature morph",
   description: "The classic face morph: two pictures warp so five matching points (eyes, mouth, chin, hairline) meet while they cross-fade.",
   category: "morph",
+  video: "stills",
   tags: ["morph", "face", "warp", "image", "transition"],
   loop: 4,
   source: glsl(
@@ -140,6 +141,7 @@ export const silhouetteMorph: ShaderEffect = {
   name: "Silhouette morph",
   description: "One silhouette or logo flowing into another as a gooey blob, its colour blending from the first shape's to the second's.",
   category: "morph",
+  video: "stills",
   tags: ["morph", "shape", "logo", "goo", "blob", "text"],
   loop: 4,
   source: glsl(
@@ -221,6 +223,7 @@ export const transitionLiquidMorph: ShaderEffect = {
   name: "Liquid morph",
   description: "Both images swept along a flowing, swirling current that peaks half way, dissolving one into the other like ink in water.",
   category: "transition",
+  video: "transition",
   tags: ["transition", "morph", "liquid", "image", "flow"],
   loop: 4,
   source: glsl(
@@ -263,6 +266,7 @@ export const transitionDisplacement: ShaderEffect = {
   name: "Displacement",
   description: "Each image's brightness pushes it out in one direction as the next slides in, warped by its own light and dark.",
   category: "transition",
+  video: "transition",
   tags: ["transition", "morph", "displacement", "image", "warp"],
   loop: 4,
   source: glsl(
@@ -296,6 +300,7 @@ export const transitionLuma: ShaderEffect = {
   name: "Luma fade",
   description: "Pixels switch to the next image in order of brightness, shadows first or highlights first, along a soft edge.",
   category: "transition",
+  video: "transition",
   tags: ["transition", "morph", "luma", "image", "dissolve"],
   loop: 4,
   source: glsl(
@@ -331,6 +336,7 @@ export const transitionParticleSwap: ShaderEffect = {
   name: "Particle swap",
   description: "The image breaks into square particles that tumble along curved, staggered paths and land as the next image.",
   category: "transition",
+  video: "transition",
   tags: ["transition", "morph", "particles", "image", "mosaic"],
   loop: 4,
   source: glsl(
@@ -415,6 +421,7 @@ export const transitionInkBleed: ShaderEffect = {
   name: "Ink bleed",
   description: "The next image bleeds through the first like wet ink on paper, spreading from a few seeds with dark, pooled edges.",
   category: "transition",
+  video: "transition",
   tags: ["transition", "morph", "ink", "watercolour", "image", "organic"],
   loop: 4,
   source: glsl(

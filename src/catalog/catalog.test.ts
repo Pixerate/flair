@@ -17,6 +17,7 @@ import {
   textImage,
   vectorControlIssues,
   vectorControls,
+  VIDEO_USES,
 } from "./index.js";
 
 describe("catalog", () => {
@@ -175,6 +176,29 @@ describe("catalog", () => {
     expect(findEffects({ kind: "vector" }).every((e) => e.kind === "vector")).toBe(true);
     expect(findEffects({ tags: ["loader"] }).length).toBeGreaterThan(2);
     expect(findEffects({ text: "no such thing anywhere" })).toEqual([]);
+  });
+
+  it("says how every shader with an image control suits video, and only those", () => {
+    for (const effect of EFFECTS) {
+      if (effect.kind !== "shader") continue;
+      const images = parseControls(effect.source).some((c) => c.type === "sampler2D");
+      if (images) expect(VIDEO_USES, `${effect.id} needs a video use`).toContain(effect.video);
+      else expect(effect.video, `${effect.id} takes no image, so no video`).toBeUndefined();
+    }
+    expect(getEffect("crt")).toMatchObject({ video: "filter" });
+    expect(getEffect("transition-wipe")).toMatchObject({ video: "transition" });
+    expect(getEffect("magnifier")).toMatchObject({ video: "interactive" });
+    expect(getEffect("time-echo")).toMatchObject({ video: "stills" });
+    expect(getEffect("shader-text")).toMatchObject({ video: "none" });
+  });
+
+  it("finds effects by how they suit video", () => {
+    const filters = findEffects({ video: ["filter"] });
+    expect(filters.length).toBeGreaterThan(15);
+    expect(filters.every((e) => e.kind === "shader" && e.video === "filter")).toBe(true);
+    const clips = findEffects({ video: ["filter", "transition"] }).map((e) => e.id);
+    expect(clips).toContain("transition-luma");
+    expect(clips).not.toContain("aurora");
   });
 
   it("merges defaults, presets and values", () => {

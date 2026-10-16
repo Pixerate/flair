@@ -4,9 +4,10 @@ import type { TextureSettings } from "./controls.js";
 export class ImageLoadError extends Error {
   readonly url: string;
 
-  constructor(url: string, cause?: unknown) {
+  constructor(url: string, cause?: unknown, message?: string) {
     super(
-      `Could not load the image at ${shortUrl(url)}. If it is on another site, that site must allow cross-origin use (CORS).`,
+      message ??
+        `Could not load the image at ${shortUrl(url)}. If it is on another site, that site must allow cross-origin use (CORS).`,
       { cause },
     );
     this.name = "ImageLoadError";
@@ -161,6 +162,62 @@ export function releaseImages(urls?: Iterable<string>) {
 export interface TextureSource {
   /** The texture for `url`: the image once loaded, a 1 × 1 opaque black placeholder until then. */
   texture(url: string): WebGLTexture | null;
+  /**
+   * The texture of the live source set for the image control `name` (see
+   * {@link TextureCache.setLive}), with its current frame; undefined when
+   * the control has none, so its URL is drawn instead.
+   */
+  liveTexture?(name: string): WebGLTexture | null | undefined;
+}
+
+/**
+ * A picture that changes while it is shown, for an image control: a playing
+ * `<video>`, or a canvas something else draws on. Videos re-upload when
+ * their frame changes; canvases on every frame drawn.
+ */
+export type LiveSource = HTMLVideoElement | HTMLCanvasElement | OffscreenCanvas;
+
+interface Live {
+  source: LiveSource;
+  texture: WebGLTexture | null;
+  /** The video time last uploaded (NaN before the first upload). */
+  uploaded: number;
+  /** Set once the source could not be uploaded: it shows black, and is not tried again. */
+  error: ImageLoadError | null;
+}
+
+/** Whether `source` is a video element (without touching `HTMLVideoElement`, which tests and workers lack). */
+function isVideo(source: LiveSource): source is HTMLVideoElement {
+  return "readyState" in source && "currentTime" in source;
+}
+
+/** `HAVE_CURRENT_DATA`: a video has a frame to show. */
+const HAVE_CURRENT_DATA = 2;
+
+/** A name for a live source in messages: its video URL, or the control's name. */
+function liveName(name: string, source: LiveSource): string {
+  return (isVideo(source) && (source.currentSrc || source.src)) || name;
+}
+
+/**
+ * Seeks a video to `time` seconds and settles once the frame there can be
+ * drawn, for stepping a video in time with `ShaderFrames`: `await
+ * seekVideo(video, t); frames.render(t)`. Pause the video first, or it
+ * moves on. The time is clamped to the video's length.
+ */
+export async function seekVideo(video: HTMLVideoElement, time: number): Promise<void> {
+  if (video.readyState < 1) {
+    await new Promise<void>((resolve, reject) => {
+      video.addEventListener("loadedmetadata", () => resolve(), { once: true });
+      video.addEventListener("error", () => reject(new Error(`Could not load the video ${shortUrl(video.currentSrc || video.src)}.`)), { once: true });
+    });
+  }
+  const target = Math.max(0, Math.min(time, Number.isFinite(video.duration) ? video.duration : time));
+  if (Math.abs(video.currentTime - target) < 1e-6 && video.readyState >= HAVE_CURRENT_DATA && !video.seeking) return;
+  await new Promise<void>((resolve) => {
+    video.addEventListener("seeked", () => resolve(), { once: true });
+    video.currentTime = target;
+  });
 }
 
 interface Entry {
@@ -181,6 +238,7 @@ interface Entry {
 export class TextureCache implements TextureSource {
   private readonly gl: WebGL2RenderingContext;
   private readonly entries = new Map<string, Entry>();
+  private readonly live = new Map<string, Live>();
   private readonly onLoad: (url: string, error: ImageLoadError | null) => void;
   private readonly load: (url: string) => Promise<TexImageSource>;
   private placeholder: WebGLTexture | null = null;
@@ -231,6 +289,88 @@ export class TextureCache implements TextureSource {
     return created;
   }
 
+  /**
+   * Shows `source` in the image control `name` instead of its URL, frame by
+   * frame (`null` goes back to the URL). Its texture is uploaded as it is
+   * drawn: a video's whenever it has moved to another frame, a canvas's on
+   * every frame. Until a video has a frame it shows black. A video from
+   * another site needs CORS (`crossOrigin = "anonymous"` and the site's
+   * consent); without it the upload fails, `onLoad` hears an
+   * {@link ImageLoadError}, and the control shows black.
+   */
+  setLive(name: string, source: LiveSource | null) {
+    const existing = this.live.get(name);
+    if (existing?.source === source) return;
+    if (existing?.texture) this.gl.deleteTexture(existing.texture);
+    this.live.delete(name);
+    if (source) this.live.set(name, { source, texture: null, uploaded: NaN, error: null });
+  }
+
+  liveTexture(name: string): WebGLTexture | null | undefined {
+    const live = this.live.get(name);
+    if (!live) return undefined;
+    if (live.error || this.gl.isContextLost()) return this.blank();
+    const { source } = live;
+    if (isVideo(source)) {
+      if (source.readyState < HAVE_CURRENT_DATA) return live.texture ?? this.blank();
+      if (live.texture && live.uploaded === source.currentTime) return live.texture;
+      live.uploaded = source.currentTime;
+    }
+    const gl = this.gl;
+    live.texture ??= gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, live.texture);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    try {
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
+    } catch (e) {
+      const url = liveName(name, source);
+      live.error = new ImageLoadError(
+        url,
+        e,
+        `Could not draw the video at ${shortUrl(url)}. If it is on another site, set crossOrigin = "anonymous" on the <video> and make sure that site allows cross-origin use (CORS).`,
+      );
+      this.onLoad(url, live.error);
+      return this.blank();
+    } finally {
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+    }
+    gl.generateMipmap(gl.TEXTURE_2D);
+    return live.texture;
+  }
+
+  /**
+   * Whether a live video has moved to a frame not yet drawn (or has its
+   * first frame ready), so a paused preview knows to draw again.
+   */
+  liveChanged(): boolean {
+    for (const live of this.live.values()) {
+      const { source } = live;
+      if (live.error || !isVideo(source) || source.readyState < HAVE_CURRENT_DATA) continue;
+      if (!live.texture || live.uploaded !== source.currentTime) return true;
+    }
+    return false;
+  }
+
+  /**
+   * Settles once every live video has a frame to show. Rejects with an
+   * {@link ImageLoadError} when one fails to load.
+   */
+  async liveReady(): Promise<void> {
+    await Promise.all(
+      [...this.live.entries()].map(([name, { source }]) => {
+        if (!isVideo(source) || source.readyState >= HAVE_CURRENT_DATA) return undefined;
+        return new Promise<void>((resolve, reject) => {
+          source.addEventListener("loadeddata", () => resolve(), { once: true });
+          source.addEventListener(
+            "error",
+            () => reject(new ImageLoadError(liveName(name, source), source.error, `Could not load the video at ${shortUrl(liveName(name, source))}.`)),
+            { once: true },
+          );
+        });
+      }),
+    );
+  }
+
   /** The error for `url`, if it failed to load. */
   error(url: string): ImageLoadError | null {
     return this.entries.get(url)?.error ?? null;
@@ -260,6 +400,7 @@ export class TextureCache implements TextureSource {
   /** Deletes every texture; loads still in flight are dropped. */
   dispose() {
     this.retain([]);
+    for (const name of [...this.live.keys()]) this.setLive(name, null);
     if (this.placeholder) this.gl.deleteTexture(this.placeholder);
     this.placeholder = null;
     this.disposed = true;
