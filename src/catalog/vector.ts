@@ -1,4 +1,4 @@
-import type { SvgAnimation } from "../vector/motion.js";
+import type { SvgAnimation, SvgMotion } from "../vector/motion.js";
 import { textWidthEm } from "./images.js";
 import type { VectorEffect } from "./types.js";
 
@@ -587,6 +587,69 @@ export const viewfinder: VectorEffect = {
   },
 };
 
+/** Upload card's picture box, the done badge on its corner, and how long the done state shows. */
+const UPLOAD_IMAGE = { x: 40, y: 32, w: 160, h: 96 };
+const UPLOAD_BADGE: [number, number] = [184, 48];
+const UPLOAD_SHOW = 1900;
+const uploadAbout = (cx: number, cy: number, s: number) => `translate(${cx} ${cy}) scale(${s}) translate(${-cx} ${-cy})`;
+/** A derived number in an animation's numeric field. */
+const num = (name: string) => `{{${name}}}` as unknown as number;
+
+export const uploadCard: VectorEffect = {
+  kind: "vector",
+  id: "upload-card",
+  name: "Upload card",
+  description: "An image upload card whose progress bar fills as the percentage counts to 100%, then the placeholder cross-fades into the finished picture with a check, and resets.",
+  category: "loader",
+  tags: ["upload", "progress", "image", "file", "ui", "loader"],
+  hold: 300,
+  presets: [
+    { name: "Dark", values: { card: [0.09, 0.11, 0.15], ink: [0.95, 0.96, 0.97], accent: [0.55, 0.36, 0.96] } },
+    { name: "Ocean", values: { label: "beach-day.png", accent: [0.02, 0.6, 0.75] } },
+  ],
+  derived: (v) => {
+    const e = Math.max(0.6, textWidthEm(String(v.label)));
+    const size = Math.round(Math.min(13, 112 / e) * 10) / 10;
+    const up = Math.round(Math.min(6, Math.max(0.5, Number(v.duration) || 2.2)) * 1000);
+    const back = up + UPLOAD_SHOW;
+    return { size, length: Math.round(e * size * 10) / 10, up, swap: up + 80, pop: up + 300, popped: up + 500, tickAt: up + 420, back, hidden: back + 300, shown: back + 350 };
+  },
+  motion: ((): SvgMotion => {
+    const { x, y, w, h } = UPLOAD_IMAGE;
+    const [bx, by] = UPLOAD_BADGE;
+    const mid = [x + w / 2, y + h / 2] as const;
+    return {
+      svg: `<svg viewBox="0 0 240 200"><!-- {{label: text default='mountains.jpg' label='File name'}} {{duration: float min=0.5 max=6 default=2.2 step=0.1 label='Upload time (s)'}} {{card: color default=#FFFFFF label='Card'}} {{accent: color default=#6366F1 label='Accent'}} {{ink: color default=#111827 label='Text colour'}} --><defs><filter id="cardShadow" x="-20%" y="-20%" width="140%" height="150%"><feGaussianBlur stdDeviation="6"/></filter><clipPath id="imageClip"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="10"/></clipPath><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{{accent}}" stop-opacity="0.45"/><stop offset="1" stop-color="{{accent}}" stop-opacity="0.1"/></linearGradient></defs><rect x="24" y="22" width="192" height="168" rx="16" fill="#000000" opacity="0.14" filter="url(#cardShadow)"/><rect x="24" y="16" width="192" height="168" rx="16" fill="{{card}}" stroke="{{ink}}" stroke-opacity="0.08"/><g id="placeholder"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="10" fill="{{ink}}" fill-opacity="0.05" stroke="{{ink}}" stroke-opacity="0.18" stroke-width="1.5" stroke-dasharray="5 4"/><g fill="none" stroke="{{ink}}" stroke-opacity="0.4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="142" cy="64" r="7"/><path d="M84 104 L104 80 L118 95 L128 86 L156 104 Z"/></g></g><g id="picture" opacity="0" transform="${uploadAbout(mid[0], mid[1], 1.06)}" clip-path="url(#imageClip)"><rect x="${x}" y="${y}" width="${w}" height="${h}" fill="{{card}}"/><rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#sky)"/><circle cx="150" cy="60" r="11" fill="#FDE68A"/><path d="M40 128 L40 110 L82 74 L114 102 L146 80 L200 116 L200 128 Z" fill="{{accent}}" fill-opacity="0.55"/><path d="M40 128 L40 118 Q90 96 138 110 T200 106 L200 128 Z" fill="{{accent}}"/></g><g id="badge" transform="${uploadAbout(bx, by, 0)}"><circle cx="${bx}" cy="${by}" r="11" fill="{{accent}}" stroke="{{card}}" stroke-width="3"/><path id="tick" d="M${bx - 5} ${by + 0.5} L${bx - 1.5} ${by + 4} L${bx + 5} ${by - 3.5}" fill="none" stroke="#FFFFFF" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" opacity="0"/></g><text x="${x}" y="152" textLength="{{length}}" lengthAdjust="spacingAndGlyphs" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="{{size}}" font-weight="600" fill="{{ink}}">{{label}}</text><text id="pct" x="${x + w}" y="152" text-anchor="end" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" font-weight="500" fill="{{ink}}" fill-opacity="0.6">0%</text><rect x="${x}" y="162" width="${w}" height="6" rx="3" fill="{{ink}}" fill-opacity="0.1"/><rect id="bar" x="${x}" y="162" width="0" height="6" rx="3" fill="{{accent}}"/></svg>`,
+      animate: [
+        // Uploading: the bar and the percentage climb together.
+        { id: "bar", attrs: { width: [0, w] }, ms: num("up"), ease: "in-out" },
+        { id: "pct", count: [0, 100], format: "{n}%", ms: num("up"), ease: "in-out" },
+        // Done: the placeholder gives way to the picture, settling as it fades in, and a check pops on.
+        { id: "placeholder", attrs: { opacity: [1, 0] }, delay: num("swap"), ms: 360 },
+        { id: "picture", attrs: { opacity: [0, 1] }, delay: num("swap"), ms: 420 },
+        { id: "picture", attrs: { transform: [uploadAbout(mid[0], mid[1], 1.06), uploadAbout(mid[0], mid[1], 1)] }, delay: num("swap"), ms: 600, ease: "out" },
+        { id: "badge", attrs: { transform: [uploadAbout(bx, by, 0), uploadAbout(bx, by, 1.2)] }, delay: num("pop"), ms: 200, ease: "out" },
+        { id: "badge", attrs: { transform: [uploadAbout(bx, by, 1.2), uploadAbout(bx, by, 1)] }, delay: num("popped"), ms: 160, ease: "in-out" },
+        { id: "tick", attrs: { opacity: [0, 1] }, delay: num("tickAt"), ms: 40 },
+        { id: "tick", draw: true, delay: num("tickAt"), ms: 260, ease: "out" },
+        // Reset: back to the empty placeholder, the bar and count fading out and back in at zero.
+        { id: "picture", attrs: { opacity: [1, 0] }, delay: num("back"), ms: 360 },
+        { id: "placeholder", attrs: { opacity: [0, 1] }, delay: num("back"), ms: 360 },
+        { id: "badge", attrs: { transform: [uploadAbout(bx, by, 1), uploadAbout(bx, by, 0)] }, delay: num("back"), ms: 220, ease: "in-out" },
+        { id: "tick", attrs: { opacity: [1, 0] }, delay: num("back"), ms: 120 },
+        { id: "tick", draw: [0, 0], delay: num("hidden"), ms: 0 },
+        { id: "picture", attrs: { transform: [uploadAbout(mid[0], mid[1], 1.06), uploadAbout(mid[0], mid[1], 1.06)] }, delay: num("hidden"), ms: 0 },
+        { id: "bar", attrs: { opacity: [1, 0] }, delay: num("back"), ms: 250 },
+        { id: "pct", attrs: { opacity: [1, 0] }, delay: num("back"), ms: 250 },
+        { id: "bar", attrs: { width: [0, 0] }, delay: num("hidden"), ms: 0 },
+        { id: "pct", count: [0, 0], format: "{n}%", delay: num("hidden"), ms: 0 },
+        { id: "bar", attrs: { opacity: [0, 1] }, delay: num("shown"), ms: 250 },
+        { id: "pct", attrs: { opacity: [0, 1] }, delay: num("shown"), ms: 250 },
+      ],
+    };
+  })(),
+};
+
 export const vectorEffects: VectorEffect[] = [
   spinner,
   bouncingDots,
@@ -607,4 +670,5 @@ export const vectorEffects: VectorEffect[] = [
   dripText,
   flowNetwork,
   viewfinder,
+  uploadCard,
 ];
