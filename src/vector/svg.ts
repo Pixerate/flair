@@ -46,6 +46,62 @@ export function parseSvg(markup: string): SVGSVGElement | undefined {
   return document.importNode(svg, true) as unknown as SVGSVGElement;
 }
 
+/** Live views made so far, for ids unique on the page (see {@link scopeIds}). */
+let views = 0;
+
+const URL_REF = /url\(\s*(['"]?)#([^'")\s]+)\1\s*\)/g;
+
+/**
+ * Gives the ids a live picture refers to (by `url(#…)` in attributes and
+ * styles, or `href="#…"`: its gradients, filters, clips, masks, `<use>`d
+ * shapes) `suffix`, and points the references at the new ids, so two
+ * pictures on one page that both define `id="glow"` each use their own.
+ * Other ids stay as written. The original id is kept in `data-flair-id`;
+ * returns how ids map.
+ */
+function scopeIds(svg: Element, suffix: string): Map<string, string> {
+  const all = [svg, ...svg.querySelectorAll("*")];
+  const referred = new Set<string>();
+  for (const el of all) {
+    const texts = [...el.attributes].map((a) => [a.name.toLowerCase(), a.value] as const);
+    if (el.localName === "style") texts.push(["", el.textContent ?? ""]);
+    for (const [name, value] of texts) {
+      if ((name === "href" || name === "xlink:href") && value.startsWith("#")) referred.add(value.slice(1));
+      for (const m of value.matchAll(URL_REF)) referred.add(m[2]!);
+    }
+  }
+  const ids = new Map<string, string>();
+  for (const el of all) {
+    if (!el.id || !referred.has(el.id) || ids.has(el.id)) continue;
+    ids.set(el.id, `${el.id}-${suffix}`);
+    el.setAttribute("data-flair-id", el.id);
+    el.id = `${el.id}-${suffix}`;
+  }
+  if (ids.size)
+    for (const el of [svg, ...svg.querySelectorAll("*")]) {
+      for (const attr of [...el.attributes]) {
+        const scoped = scopedRefs(attr.value, ids, attr.name);
+        if (scoped !== attr.value) attr.value = scoped;
+      }
+      if (el.localName === "style" && el.textContent) el.textContent = scopedRefs(el.textContent, ids);
+    }
+  return ids;
+}
+
+/** `value` with its references to ids in `ids` pointed at their scoped ids. */
+function scopedRefs(value: string, ids: ReadonlyMap<string, string>, attr = ""): string {
+  const name = attr.toLowerCase();
+  if (name === "href" || name === "xlink:href") {
+    const to = value.startsWith("#") ? ids.get(value.slice(1)) : undefined;
+    return to ? `#${to}` : value;
+  }
+  if (!value.includes("url(")) return value;
+  return value.replace(URL_REF, (whole, quote: string, id: string) => {
+    const to = ids.get(id);
+    return to ? `url(${quote}#${to}${quote})` : whole;
+  });
+}
+
 /** Share of an element's size left round it when a `view` frames it. */
 const VIEW_MARGIN = 0.12;
 
@@ -122,6 +178,7 @@ function apply(
   motion: SvgMotion,
   timeMs: number,
   steps: readonly number[],
+  ids: ReadonlyMap<string, string> = new Map(),
 ) {
   for (const [id, frame] of svgFrame(motion.animate ?? [], steps, timeMs)) {
     if (id === SVG_PICTURE && frame.view) {
@@ -133,7 +190,7 @@ function apply(
     }
     const el = byId.get(id);
     if (!el) continue;
-    for (const [name, value] of Object.entries(frame.attrs)) el.setAttribute(name, value);
+    for (const [name, value] of Object.entries(frame.attrs)) el.setAttribute(name, scopedRefs(value, ids, name));
     if (frame.draw !== undefined) {
       // A path length of 1 lets the dash be a fraction, with nothing measured.
       el.setAttribute("pathLength", "1");
@@ -245,7 +302,11 @@ function fixedLayer(svg: SVGSVGElement): SVGSVGElement | undefined {
 }
 
 export interface SvgViewOptions {
-  /** Called with the id of the innermost element with an id that is clicked. */
+  /**
+   * Called with the id of the innermost element with an id that is clicked:
+   * its id in the motion's markup (in the page, ids carry a suffix that keeps
+   * them unique, so several pictures can use the same ones).
+   */
   onPick?: (id: string) => void;
 }
 
@@ -269,13 +330,15 @@ export function svgView(motion: SvgMotion, options: SvgViewOptions = {}): SvgVie
     element.addEventListener("click", (event) => {
       // The innermost element with an id, up to the picture itself.
       for (let el = event.target as Element | null; el && el !== element; el = el.parentElement)
-        if (el.id && el.localName !== "svg") return onPick(el.id);
+        if (el.id && el.localName !== "svg") return onPick(el.getAttribute("data-flair-id") ?? el.id);
     });
   let svg: SVGSVGElement | undefined | null = null;
   let fixed: SVGSVGElement | undefined;
   let nonscaling: Element[] = [];
   let whole: SvgBox = [0, 0, 100, 100];
   const byId = new Map<string, Element>();
+  let ids: ReadonlyMap<string, string> = new Map();
+  const suffix = `f${++views}`;
   return {
     element,
     draw(timeMs, steps = []) {
@@ -283,6 +346,7 @@ export function svgView(motion: SvgMotion, options: SvgViewOptions = {}): SvgVie
         // Parsed on first use, so a view made and dropped costs nothing.
         svg = parseSvg(motion.svg);
         if (svg) {
+          ids = scopeIds(svg, suffix);
           svg.setAttribute("width", "100%");
           svg.setAttribute("height", "100%");
           element.appendChild(svg);
@@ -292,7 +356,8 @@ export function svgView(motion: SvgMotion, options: SvgViewOptions = {}): SvgVie
             element.appendChild(fixed);
           }
           for (const layer of [svg, fixed])
-            for (const el of layer?.querySelectorAll("[id]") ?? []) byId.set(el.id, el);
+            for (const el of layer?.querySelectorAll("[id]") ?? [])
+              byId.set(el.getAttribute("data-flair-id") ?? el.id, el);
           nonscaling = [...svg.querySelectorAll("[data-nonscaling]")];
           const box = (svg.getAttribute("viewBox") ?? "")
             .trim()
@@ -302,7 +367,7 @@ export function svgView(motion: SvgMotion, options: SvgViewOptions = {}): SvgVie
         }
       }
       if (svg) {
-        apply(svg, whole, byId, motion, timeMs, steps);
+        apply(svg, whole, byId, motion, timeMs, steps, ids);
         keepSize(svg, whole, nonscaling);
       }
     },

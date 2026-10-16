@@ -705,3 +705,198 @@ describe("pixel effects", () => {
     expect(delays).toEqual([300, 300, 560, 670]);
   });
 });
+
+describe("growth effects", () => {
+  const IDS = ["reaction-diffusion", "cell-division", "coral-growth", "veins", "ferrofluid", "jellyfish", "fur"];
+
+  it("are opaque organic shaders with presets", () => {
+    for (const id of IDS) {
+      const effect = getEffect(id)!;
+      expect(effect, id).toBeDefined();
+      expect(effect.kind, id).toBe("shader");
+      expect(effect.category, id).toBe("organic");
+      expect(effect.tags, id).toContain("organic");
+      expect(effect.presets?.length, id).toBeGreaterThan(0);
+      if (effect.kind === "shader") {
+        expect(effect.transparent, id).toBeUndefined();
+        expect(effect.video, id).toBeUndefined();
+      }
+    }
+  });
+
+  it("follow the pointer where they are interactive, and cell division loops", () => {
+    for (const id of ["ferrofluid", "fur"]) {
+      const effect = getEffect(id)!;
+      expect(effect.kind === "shader" && effect.source, id).toContain("iPointer");
+      expect(effect.tags, id).toContain("hover");
+    }
+    expect(getEffect("cell-division")).toMatchObject({ loop: 8 });
+    expect(getEffect("reaction-diffusion")!.presets!.map((p) => p.name)).toEqual(["Coral", "Zebra", "Leopard spots"]);
+    expect(getEffect("veins")!.presets!.map((p) => p.name)).toEqual(["Leaf veins", "Blood vessels", "Tree roots"]);
+    expect(getEffect("fur")!.presets!.map((p) => p.name)).toEqual(["Moss", "Fur", "Grass"]);
+  });
+});
+
+describe("splatter effects", () => {
+  const splatter = findEffects({ category: "splatter" });
+
+  it("has paint, ink, crowns, goo, a roller, water and a stamp", () => {
+    const ids = splatter.map((e) => e.id);
+    for (const id of ["paint-splatter", "ink-splash", "splash-crown", "goo-splat", "paint-roller", "water-splash", "splat-stamp"]) expect(ids).toContain(id);
+    for (const effect of splatter) expect(effect.tags).toContain("splatter");
+  });
+
+  it("draws the overlays transparent, splats at clicks with an idle demo, and loops", () => {
+    for (const id of ["paint-splatter", "goo-splat", "water-splash"]) expect(getEffect(id)).toMatchObject({ transparent: true });
+    for (const id of ["paint-splatter", "goo-splat"]) {
+      const effect = getEffect(id)!;
+      expect(effect.kind === "shader" && effect.source, id).toMatch(/\biClicks\[/);
+      expect(effectControls(effect).map((c) => c.name), id).toContain("uDemo");
+    }
+    for (const effect of splatter) if (effect.kind === "shader") expect(effect.loop, effect.id).toBeGreaterThan(0);
+    expect(getEffect("paint-roller")).toMatchObject({ video: "transition" });
+  });
+
+  it("stamps a splat that morphs from a dot and back, for any shape", () => {
+    const effect = getEffect("splat-stamp")!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    const NUMBER = /-?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?/gi;
+    for (const shape of [0, 5, 9]) {
+      const motion = renderVectorEffect(effect, { shape, size: 50 });
+      expect(svgMotionIssues(motion)).toEqual([]);
+      const ds = (motion.animate ?? []).filter((a) => a.id === "splat").flatMap((a) => a.attrs!.d!);
+      expect(new Set(ds.map((d) => String(d).replace(NUMBER, "#"))).size).toBe(1);
+      expect(ds[0]).toBe(ds[ds.length - 1]);
+    }
+  });
+});
+
+describe("bubble effects", () => {
+  const bubbles = findEffects({ category: "bubble" });
+
+  it("has the soap, underwater, fizz, foam, wrap, lava, chat and loader bubbles", () => {
+    const ids = bubbles.map((e) => e.id);
+    for (const id of ["soap-bubbles", "underwater-bubbles", "fizz", "foam", "bubble-wrap", "lava-bubbles", "chat-bubble", "bubble-pop-loader"])
+      expect(ids).toContain(id);
+    for (const effect of bubbles) expect(effect.tags).toContain("bubble");
+  });
+
+  it("draws soap bubbles as an overlay and pops them, and bubble wrap, at clicks", () => {
+    expect(getEffect("soap-bubbles")).toMatchObject({ transparent: true });
+    expect(getEffect("underwater-bubbles")).toMatchObject({ video: "filter" });
+    for (const id of ["soap-bubbles", "bubble-wrap"]) {
+      const effect = getEffect(id)!;
+      expect(effect.kind === "shader" && effect.source, id).toMatch(/\biClicks\[/);
+      expect(effect.kind === "shader" && effect.source, id).not.toMatch(/uniform\s+vec4\s+iClicks/);
+      expect(effectControls(effect).map((c) => c.name), id).toContain("uDemo");
+    }
+  });
+
+  it("chat bubble writes its message", () => {
+    const effect = getEffect("chat-bubble")!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    for (const text of ["Hi", "A much longer message that has to shrink to fit the bubble"]) {
+      const motion = renderVectorEffect(effect, { text });
+      expect(svgMotionIssues(motion)).toEqual([]);
+      expect(JSON.stringify(motion)).not.toMatch(/\{\{|NaN|undefined/);
+      expect(motion.animate!.find((a) => a.write)!.write).toBe(text);
+    }
+  });
+
+  it("bubble pop loader ends every attribute where it starts", () => {
+    const effect = getEffect("bubble-pop-loader")!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    const motion = renderVectorEffect(effect, effectDefaults(effect));
+    const first = new Map<string, unknown>();
+    const last = new Map<string, unknown>();
+    const timed = [...motion.animate!].map((a, i) => ({ a, i })).sort((x, y) => (x.a.delay ?? 0) - (y.a.delay ?? 0) || x.i - y.i);
+    for (const { a } of timed)
+      for (const [name, [from, to]] of Object.entries(a.attrs ?? {})) {
+        const key = `${a.id}.${name}`;
+        if (!first.has(key)) first.set(key, from);
+        last.set(key, to);
+      }
+    for (const [key, value] of first) expect(last.get(key), key).toEqual(value);
+  });
+});
+
+describe("sticker effects", () => {
+  const stickers = findEffects({ category: "sticker" });
+  const render = (effect: (typeof stickers)[number], values: Record<string, unknown> = {}) => {
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    return renderVectorEffect(effect, values as never);
+  };
+  const frameAt = (motion: ReturnType<typeof render>, clicks: number[], ms: number) => JSON.stringify([...svgFrame(motion.animate!, clicks, ms)].sort());
+
+  it("has the slapped, peeled, holo, stamped and taped stickers, all tagged", () => {
+    const ids = stickers.map((e) => e.id);
+    for (const id of ["sticker-slap", "sticker-peel", "holo-sticker", "sticker-sheet", "stamp-badge", "washi-tape", "holo-foil-sticker", "sticker-peel-reveal"])
+      expect(ids).toContain(id);
+    for (const effect of stickers) expect(effect.tags).toContain("sticker");
+  });
+
+  it("slap replays on every click and the stamp toggles, each ending a round as it started", () => {
+    for (const [id, steps] of [["sticker-slap", 1], ["stamp-badge", 2]] as const) {
+      const effect = getEffect(id)!;
+      expect(effect.kind === "vector" && effect.trigger, id).toBe("click");
+      const motion = render(effect);
+      expect(motion.animate!.every((a) => (a.step ?? 0) >= 1 && (a.step ?? 0) <= steps), id).toBe(true);
+      const start = frameAt(motion, [], 0);
+      expect(frameAt(motion, [0], 300), id).not.toBe(start);
+      expect(frameAt(motion, steps === 2 ? [0, 5000] : [0], 10000), id).toBe(start);
+    }
+  });
+
+  it("peels on hover to a different end", () => {
+    const effect = getEffect("sticker-peel")!;
+    expect(effect.kind === "vector" && effect.trigger).toBe("hover");
+    const motion = render(effect);
+    expect(frameAt(motion, [], svgDuration(motion))).not.toBe(frameAt(motion, [], 0));
+  });
+
+  it("holo sticker loops seamlessly: everything plays inside one sweep, which moves its gradient a whole period", () => {
+    const effect = getEffect("holo-sticker")!;
+    for (const speed of [1, 3, 8]) {
+      const motion = render(effect, { speed });
+      expect(svgDuration(motion)).toBe(speed * 1000);
+      const shift = (id: string) => motion.animate!.find((a) => a.id === id)!.attrs!.gradientTransform!.map((t) => Number(/translate\((-?[\d.]+)/.exec(String(t))![1]));
+      expect(shift("holoFoil")).toEqual([0, 150]);
+      // The grain's gradient repeats every 30 (reflected, so every 60).
+      expect(shift("holoGrain")).toEqual([0, -60]);
+      // Sparkles and sheen are gone again by the end, as at the start.
+      expect(frameAt(motion, [], speed * 1000)).toMatch(/"glint3",\{"attrs":\{"transform":"[^"]*scale\(0\)/);
+    }
+  });
+
+  it.each(stickers.flatMap((e) => effectControls(e).filter((c) => c.type === "text" && c.name !== "font").map((c) => [e.id, c.name, e] as const)))(
+    "%s fits short, long and unusual %s",
+    (_, name, effect) => {
+      for (const word of ["A", "Supercalifragilistic & <co>", "Café 日本 🎉", ""]) {
+        const motion = render(effect, { [name]: word });
+        expect(svgMotionIssues(motion)).toEqual([]);
+        expect(JSON.stringify(motion)).not.toMatch(/\{\{|NaN|undefined/);
+      }
+    },
+  );
+
+  it("switches the slap and holo shapes", () => {
+    for (const id of ["sticker-slap", "holo-sticker"]) {
+      const shapes = new Set([0, 1, 2, 3].map((shape) => render(getEffect(id)!, { shape }).svg));
+      expect(shapes.size, id).toBe(4);
+    }
+  });
+
+  it("draws the foil sticker over a transparent canvas from a mask, tilting with the pointer", () => {
+    const foil = getEffect("holo-foil-sticker")!;
+    expect(foil).toMatchObject({ transparent: true, video: "none" });
+    expect(effectDefaults(foil).uMask).toBe(textImage("WOW"));
+    expect(foil.kind === "shader" && foil.source).toMatch(/\biPointer\b/);
+    expect(foil.kind === "shader" && foil.source).not.toMatch(/uniform\s+vec4\s+(iPointer|iClicks)/);
+  });
+
+  it("peel reveal is a looping two-image transition", () => {
+    const peel = getEffect("sticker-peel-reveal")!;
+    expect(peel).toMatchObject({ video: "transition", loop: 4 });
+    expect(effectControls(peel).map((c) => c.name)).toEqual(expect.arrayContaining(["uFrom", "uTo", "uAnimate", "uProgress"]));
+  });
+});

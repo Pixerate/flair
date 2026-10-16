@@ -3,6 +3,7 @@ import { ShaderRenderer, standaloneHtml, SvgPlayer, type SvgTrigger } from "@pix
 import { EFFECTS, getEffect, SAMPLE_IMAGES } from "@pixerate/flair/catalog";
 import { bindShaderRenderer, bindSvgView, motionAt, valuesAt, type EffectEditor } from "@pixerate/flair/editor";
 import { useEditorState } from "../hooks";
+import { showsOverPicture } from "../overPicture";
 import { ControlsPanel } from "./ControlsPanel";
 import { Timeline } from "./Timeline";
 
@@ -132,8 +133,8 @@ export function EditorTab({ editor }: { editor: EffectEditor }) {
   const doc = state.document;
   const kind = doc.effect.kind;
   const based = doc.basedOn ? getEffect(doc.basedOn) : undefined;
-  // Overlays preview over a picture; overlay shaders draw on a transparent canvas.
-  const overlay = based?.category === "overlay";
+  // Overlays and transparent shaders preview over a picture, transparent shaders on a transparent canvas.
+  const overlay = showsOverPicture(based);
   const transparent = based?.kind === "shader" && Boolean(based.transparent);
   const trigger = based?.kind === "vector" ? based.trigger : undefined;
   const hint = based?.kind === "shader" && based.category === "interaction" ? "Hover, press or click" : undefined;
