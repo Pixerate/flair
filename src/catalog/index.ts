@@ -71,6 +71,8 @@ import { shadowShaders } from "./shaders/shadow.js";
 import { distortionShaders } from "./shaders/distortion.js";
 import { lightingShaders } from "./shaders/lighting.js";
 import { textEffects } from "./text.js";
+import { broadcastEffects } from "./broadcast.js";
+import { annotationEffects } from "./annotation.js";
 import { CURRENT_COLOR, EFFECT_CATEGORIES, isCurrentColor, vectorEffectControls, type EffectCategory, type EffectDefinition, type ShaderEffect, type VideoUse } from "./types.js";
 import { vectorEffects } from "./vector.js";
 
@@ -168,7 +170,7 @@ export const SHADER_EFFECTS: readonly ShaderEffect[] = [
 ];
 
 /** Every effect in the catalog, shaders first, grouped by category. */
-export const EFFECTS: readonly EffectDefinition[] = [...SHADER_EFFECTS, ...vectorEffects, ...textEffects, ...morphEffects, ...interactionEffects, ...pyroEffects, ...timewarpEffects, ...meltEffects, ...electricEffects, ...pixelEffects, ...splatterEffects, ...bubbleEffects, ...stickerEffects, ...trailEffects, ...impactEffects, ...comicEffects, ...glowEffects, ...shadowEffects, ...lightingEffects].sort(
+export const EFFECTS: readonly EffectDefinition[] = [...SHADER_EFFECTS, ...vectorEffects, ...textEffects, ...morphEffects, ...interactionEffects, ...pyroEffects, ...timewarpEffects, ...meltEffects, ...electricEffects, ...pixelEffects, ...splatterEffects, ...bubbleEffects, ...stickerEffects, ...trailEffects, ...impactEffects, ...comicEffects, ...glowEffects, ...shadowEffects, ...lightingEffects, ...broadcastEffects, ...annotationEffects].sort(
   (a, b) => EFFECT_CATEGORIES.indexOf(a.category) - EFFECT_CATEGORIES.indexOf(b.category),
 );
 
