@@ -1,5 +1,22 @@
 # @pixerate/flair
 
+## 0.31.0
+
+### Minor Changes
+
+- 1bd6d27: A new `ui` catalog category for landing-page flourishes and backgrounds, plus more loaders and gradients (22 effects):
+
+  - **UI shaders**: Border beam (`border-beam`, a light beam running round a card's border), Gradient border (`gradient-border`, a turning conic ring with glow), Meteors (`meteors`), Background beams (`background-beams`), Grid spotlight (`grid-spotlight`, follows the pointer), Dot grid (`dot-grid`, dots swell near the pointer), Glass card (`glass-card`, frosted glass over a picture or video), Liquid glass (`liquid-glass`, a refracting glass pill that follows the pointer) and Grainy glow background (`noise-grain-bg`). Each has dark and light presets.
+  - **UI vectors**: Marquee (`marquee`, a seamless logo or word scroller with faded edges), Number ticker (`number-ticker`, an odometer roll to any formatted value such as `$12,480`) and Animated badge (`animated-badge`, a shimmering "New" pill with a sparkle).
+  - **Loaders**: Skeleton shimmer, Progress bar (striped, with a percentage), Indeterminate bar, Step progress, Circle dots loader and Wave bars.
+  - **Gradients**: Grainy gradient (with a Stripe-like preset), Stripe gradient, Holographic gradient and Radial glow.
+
+## 0.30.0
+
+### Minor Changes
+
+- 94bac1b: Broadcast graphics and annotations: two new catalog categories of animated SVG effects in a 16:9, title-safe frame. `broadcast` has a lower third, a stacked lower third with a logo, a title card, a logo reveal, a logo sting, an end card, a countdown, a subscribe button, a news ticker, a scoreboard and a chapter marker; `annotation` has a hand-drawn circle and arrow, a callout, a bracket note, a scribble-out, step badges, a focus box, a product-demo cursor and a tooltip tour, all transparent to lay over video or screenshots. Each animates in, holds for its `hold` control and animates out, and takes a logo as SVG path data where it has one.
+
 ## 0.29.0
 
 ### Minor Changes
