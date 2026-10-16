@@ -7,6 +7,7 @@
  * - Shape morphing: `morphPaths`, `morphSequence` (any paths → paths that blend).
  * - Drawing: `parseSvg` (sanitised), `svgView`, `SvgPlayer`.
  * - Stills without a DOM (server rendering, reduced motion): `svgFrameMarkup`, `svgViewBox`.
+ * - Animated files without a DOM or script (an `<img>`, a `.svg` download): `svgAnimatedMarkup`.
  *
  * @packageDocumentation
  */
@@ -55,6 +56,7 @@ export {
   type SvgFrameMarkupOptions,
   type SvgInlineLayout,
 } from "./static.js";
+export { svgAnimatedMarkup, type AnimatedSvgOptions } from "./animated.js";
 export {
   computeBoxFit,
   layoutStack,

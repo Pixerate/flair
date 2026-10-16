@@ -43,11 +43,12 @@ Flair gives products a library of good-looking, configurable visual effects (her
 | :--- | :--- | :--- |
 | `@pixerate/flair` | Shader engine, vector motion, time and easing, colour, blending, transitions, scenes, interchange exporters | None (browser-safe) |
 | `@pixerate/flair/catalog` | `EFFECTS`, `getEffect`, `findEffects` (also by `video` use), `effectDefaults`, `renderVectorEffect`, `vectorControls`, GLSL helpers, sample images, `textImage` | None |
-| `@pixerate/flair/vector` | `SvgMotion`, `svgFrame`, `svgView`, `SvgPlayer`, `svgFrameMarkup`, `svgViewBox`, `animateCount`, `formatCount`, `morphPaths`, `morphSequence`, `svgMotionIssues` | None |
-| `@pixerate/flair/react` | `<VectorEffect>`, `<SvgPlayerView>`: vector effects as React components, server-rendered as a still | `react` ≥ 18 (optional peer) |
-| `@pixerate/flair/svelte` | `vectorEffect` action, `vectorEffectStill`: vector effects in Svelte, server-rendered as a still | `svelte` ≥ 5 (optional peer; types only) |
+| `@pixerate/flair/vector` | `SvgMotion`, `svgFrame`, `svgView`, `SvgPlayer`, `svgFrameMarkup`, `svgViewBox`, `animateCount`, `formatCount`, `morphPaths`, `morphSequence`, `svgAnimatedMarkup` (an animated `.svg` file), `svgMotionIssues` | None |
+| `@pixerate/flair/embed` | `mountEffect`, `subjectValues`: any catalog effect on a page, applied to a picture, video, SVG, words or a path; `recordEffect`: MP4, WebM, GIF or PNG frames in the browser | None |
+| `@pixerate/flair/react` | `<FlairEffect>`: any catalog effect applied to a subject; `<VectorEffect>`, `<SvgPlayerView>`: vector effects as React components, server-rendered as a still | `react` ≥ 18 (optional peer) |
+| `@pixerate/flair/svelte` | `flairEffect` action: any catalog effect applied to a subject; `vectorEffect` action, `vectorEffectStill`: vector effects in Svelte, server-rendered as a still | `svelte` ≥ 5 (optional peer; types only) |
 | `@pixerate/flair/editor` | `EffectEditor`, effect documents, keyframe tracks, renderer bindings, parameter-panel binding, agent tools and instructions | `@pixerate/editor` ≥ 0.29 (optional peer; only its dependency-free `/history`, `/commands`, `/tools`, `/animation` and `/parameters` subpaths) |
-| `@pixerate/flair/node` | `exportMotionGraphic`: renders a shader to GIF/MP4 through headless Chrome and ffmpeg | Node.js |
+| `@pixerate/flair/node` | `exportEffect` and `exportMotionGraphic`: render a catalog effect (on a picture, video, SVG, words or a path) or a shader to MP4, WebM, MOV, GIF, PNG frames or animated SVG, through headless Chrome (and ffmpeg for video) | Node.js |
 
 The `flair` CLI inspects shaders, writes standalone pages and directs scenes (see [CLI](#-cli)).
 
@@ -177,7 +178,62 @@ findEffects({ transparent: true }); // overlays to lay over a page, picture or v
 
 `findEffects` filters on `accepts` (all of them), `interaction` (any of them; `[]` for effects that don't answer the pointer) and `transparent`, and the `catalog.search` command takes the same filters and lists each effect's `accepts` and `interactions`. The `interactive` tag is kept in step with `interactions`.
 
+#### Put an effect on a page
+
+`@pixerate/flair/embed` pairs a catalog effect with what it takes and runs it, shader or vector, in one call. `mountEffect(host, effect, { subject })` takes a subject:
+- `{ image }`: a picture's URL.
+- `{ video }`: a playing `<video>`, shown live.
+- `{ svg }`: an SVG, as markup or a URL.
+- `{ text }`: words, typed into a vector effect, or drawn with `textImage` for a shader's text or mask.
+- `{ path }`: path data.
+
+It puts the subject in the right control (see `effectInputs`) and throws a sentence if the effect can't take it.
+
+```ts
+import { mountEffect } from "@pixerate/flair/embed";
+
+mountEffect(el, "image-duotone", { subject: { image: "/team.jpg" }, preset: "Spotify" });
+mountEffect(el, "crt", { subject: { video: document.querySelector("video")! } });
+mountEffect(el, "neon-outline", { subject: { svg: logoMarkup } });
+mountEffect(el, "typewriter", { subject: { text: "Hello there" } });
+mountEffect(el, "transition-wipe", { subject: [{ image: "/a.jpg" }, { image: "/b.jpg" }] });
+const m = mountEffect(el, "click-ripple"); // overlays get a transparent canvas, interactive effects answer the pointer
+m.setValues({ uSpeed: 2 });
+m.dispose();
+```
+
+`subjectValues(effect, subject)` gives the control values (and live sources) without mounting anything, for `ShaderRenderer`, `ShaderFrames` or `renderVectorEffect`.
+
+In React, `<FlairEffect effect="image-duotone" subject={{ image: "/team.jpg" }} style={{ aspectRatio: "16 / 9" }} />` (from `@pixerate/flair/react`) does the same. In Svelte, use `<div use:flairEffect={{ effect, subject }}></div>` (from `@pixerate/flair/svelte`). Either way the effect fills its element, so size it with CSS.
+
 Effects that show a picture (image, transition, morph, time-warp and the like) take transparent pictures too, such as SVG icons (Lucide and similar sets draw black `currentColor` strokes on a clear background). They lay the picture over a backdrop: `uBackdrop` (white by default) shows through its clear parts. Set `uBackdropAlpha` to 0 to keep the picture's alpha instead, and render with `{ alpha: true }` to lay the result over the page. `SAMPLE_IMAGES.icon` is a Lucide-style sample icon. SVGs are rasterised at 2048 px on the long edge, so icons stay sharp.
+
+#### Recording an effect
+
+`recordEffect(effect, options)` (from `@pixerate/flair/embed`) records a catalog effect, applied to a subject, to a file in the browser, with no server and no extra dependencies:
+
+```ts
+import { recordEffect } from "@pixerate/flair/embed";
+
+const mp4 = await recordEffect("image-duotone", { subject: { image: "/team.jpg" }, preset: "Spotify" });
+const webm = await recordEffect("crt", { subject: { video }, format: "webm", duration: 5 });
+const gif = await recordEffect("typewriter", { subject: { text: "Hello there" }, format: "gif", width: 640, height: 360, fps: 25 });
+const overlay = await recordEffect("click-ripple", {
+  format: "webm",
+  alpha: true,
+  pointer: { clicks: [{ x: 640, y: 360, time: 0.2 }] }, // or (t) => ({ pointer: [x, y, hover, press] })
+  onProgress: (f) => (bar.value = f),
+});
+download(mp4); // a Blob
+```
+
+- **Formats.** `mp4` (H.264) or `webm` (VP9, else VP8) are encoded with WebCodecs and written by small built-in muxers: a faststart MP4 (`moov` before `mdat`) and a WebM with no `Cues`. `gif` uses gifenc. `png` gives a ZIP of numbered frames (`frame-0001.png`, …), so every format is one `Blob`. The default is `mp4` where the browser encodes H.264, else `webm`. When the browser can't make a format, it rejects with a sentence that names the formats that would work.
+- **Exact frames.** Frame `i` is drawn at `start + i / fps` off screen, so the result is the same whatever the page is doing. Shaders render with `ShaderFrames`. A `<video>` subject is paused and sought to each frame's time, then put back. A canvas subject is drawn as it is, so draw it for each frame in `beforeFrame(time)`. Vector effects are drawn with `svgView` and rasterised.
+- **Defaults.** 1280 × 720 at 30 fps. The length is a shader's `loop`, or a vector effect's picture plus its `hold`, else 4 s. The bitrate is `width × height × fps × 0.15`. Video sizes round up to even numbers. `recordingPlan(effect, options)` tells you what a recording will be (format, size, frames, encoder) before any frame is drawn.
+- **Interaction.** Shaders that answer the pointer play their idle demo unless `pointer` scripts it, with the same `pointer`, `clicks` and `trail` that `ShaderFrames.render` takes. Click-triggered vector effects take `steps` (ms).
+- **Transparency.** `alpha` defaults to the effect's `transparent`. It is kept in `webm` (VP9/VP8 with an alpha channel, encoded as a second stream and stored as `BlockAdditions`, as Chrome does), in `png`, and in `gif` (one see-through colour, so edges are hard). An `mp4` has no alpha, so asking for both is refused. When alpha is off, transparent pixels are laid over `background` (black for shaders, white for vector effects).
+
+Limits: video needs WebCodecs (Chrome and Edge 94+, Safari 16.4+ for H.264, and Firefox 130+). Safari doesn't play alpha WebM, so use PNG frames there. Everything is held in memory until the end, so record long or 4K clips in parts. Vector effects are rasterised once per frame, which is slower than shaders. A picture from another site needs CORS, as on screen.
 
 #### Effects on video
 
@@ -207,6 +263,24 @@ A video from another site needs `crossOrigin = "anonymous"` and that site's CORS
 Overlay shaders (`category: "overlay"`) have `transparent: true`: they write coverage to `fragColor.a` and draw nothing elsewhere, so render them with `new ShaderRenderer(host, { alpha: true })` (or `new ThumbnailPool({ alpha: true })`) and lay the canvas over a picture, video or page. Interaction effects answer the pointer. Interactive shaders read `iPointer` and `iClicks`, so they work in any `ShaderRenderer` with no wiring, and play an idle demo when nobody is pointing (turn off "Demo when idle" to stop it). Vector micro-interactions carry a `trigger`: pass it to the player, `new SvgPlayer(host, renderVectorEffect(effect), { trigger: effect.trigger })`. A hover or press trigger plays to the end while hovered or held and back again after; a click trigger plays the next step on each click, so toggles turn on and off. Hosts can drive them too, with `player.setActive(on)` and `player.advance()` (from a keyboard handler, say).
 
 To morph between any two SVG shapes, `morphPaths(from, to)` (from `@pixerate/flair/vector`) returns two paths with one structure, so `attrs: { d: [a, b] }` blends them point by point: curves and arcs are read, pieces are paired by position and size, and a piece with no partner grows from or shrinks to a point (draw them with `fill-rule="evenodd"`). `morphSequence` does the same for three or more shapes. `feature-morph` morphs two photos from five matching points, and `silhouette-morph` morphs any two silhouettes or logos (or words, through `textImage`).
+
+#### An animated SVG file
+
+`svgAnimatedMarkup(motion, options)` (from `@pixerate/flair/vector`) writes any `SvgMotion` as one self-contained `.svg` that plays and loops on its own, with no script and no player: put it in an `<img src>`, open it as a file, or inline it. The changes are written as SMIL, so it needs no DOM to make:
+
+```ts
+import { effectDefaults, getEffect, renderVectorEffect, type VectorEffect } from "@pixerate/flair/catalog";
+import { svgAnimatedMarkup } from "@pixerate/flair/vector";
+
+const effect = getEffect("stat-counter") as VectorEffect;
+const svg = svgAnimatedMarkup(renderVectorEffect(effect, effectDefaults(effect)), { hold: effect.hold })!;
+img.src = `data:image/svg+xml,${encodeURIComponent(svg)}`; // or save it as stat-counter.svg
+```
+
+- **Options**: `hold` (ms on the last frame, default 600), `duration` (the loop, default the picture's length plus `hold`), `loop: false` to play once and stay on the last frame, `steps` (ms) for click-triggered effects, `fps` (default 30) for what is sampled, and `idSuffix`.
+- **How it is written**: each attribute change is one `<animate>` (a `transform` is one `<animateTransform>` per function), and eases are exact `keySplines`. `draw` animates `stroke-dashoffset`, `along` becomes `<animateMotion>` on the path, `view` animates the `viewBox` (keeping `data-fixed` and `data-nonscaling` elements as the player does), and `solo` toggles `display`. Counts and written text are one `<tspan>` per text, shown in turn, sampled at `fps`. Every element starts on the first frame, so it still shows that where SMIL does not run.
+- **Limits**: a count that changes faster than `fps` can be up to half a sample out. A change cut short by the next one, or a `matrix` transform, is sampled. A `view` that frames an element by id (it needs layout) is left out, as in `svgFrameMarkup`. Attributes SMIL cannot blend change in steps. Ids the picture refers to (gradients, filters, paths followed) get a suffix, a hash of the motion by default, so two files inlined in one page don't clash. `#id` selectors in a `<style>` are not renamed. Interaction triggers (hover, press, click) cannot be written as SMIL, so a click-triggered effect plays its `steps` on a timer.
+- **Size**: catalog effects come out at 1 to 105 KB (`drip-text` is the largest).
 
 ### React
 
@@ -421,7 +495,50 @@ npx flair html ./effect.frag --out page.html --open
 npx flair scene validate ./scene.json        # layout, framing and timing checks
 npx flair scene review ./scene.json          # fast headless simulation + review
 npx flair scene lottie ./scene.json out.json # also: fcp7, edl, motn
+
+# Catalog effects to files
+npx flair effects --accepts video            # pick an effect: what each takes (--interaction click, --category image, --kind, --search, --json)
+npx flair render image-duotone --image team.jpg --preset Spotify -o team.mp4
+npx flair render crt --video clip.mp4 -o crt.mp4
+npx flair render click-ripple --alpha -o ripple.webm
+npx flair render shader-text --text "FLAIR" --set uSpeed=2 --size 1280x720 -o title.mov
+npx flair render typewriter --text "Hello" -o hello.gif
+npx flair render toggle-switch -o toggle.svg  # vector effects: an animated SVG, no browser needed
+npx flair render aurora --duration 4 -o frames/   # PNG frames (or -o out_%04d.png)
+
+# A shader file of your own
+npx flair export ./effect.frag -o out.mp4 -w 1280 -h 720 -d 5 --values '{"speed":2}'
 ```
+
+#### Rendering in Node
+
+`flair render` and `flair export` render in headless Chrome, so a shader draws exactly as `ShaderRenderer` draws it: the same GLSL wrapper and built-ins (`iPointer`, `iClicks`, `iTrail`), image controls (SVGs sized up first), `int` and `bool` controls. The output format comes from the extension:
+
+| Output | Notes |
+| --- | --- |
+| `.mp4` | H.264, yuv420p, BT.709. Always opaque (`--alpha` is refused). |
+| `.webm` | VP9; `--alpha` keeps transparency (yuva420p). |
+| `.mov` | ProRes 4444; `--alpha` keeps transparency. |
+| `.gif` | 256 colours a frame; `--alpha` gives one-bit transparency. No ffmpeg needed. |
+| `.png` | Frames: a folder (`-o frames/`) or a pattern (`-o out_%04d.png`). No ffmpeg needed. |
+| `.svg` | Vector effects only: one animated SVG (`svgAnimatedMarkup`), with no browser at all. |
+
+Subjects: `--image` (a file or URL), `--svg` (a file, URL or markup), `--text` (with `--font`, `--weight`), `--path` (path data) and `--video` (a file, decoded with ffmpeg to one frame per output frame, looping a short clip; the render lasts as long as the clip, up to 10 s, unless `--duration` says). Repeat a flag for effects that take two pictures, such as transitions. `--set name=value` sets a control (numbers, `true`/`false`, colours like `#ff0080`, or comma-separated vectors), over `--preset`.
+
+Without `--alpha`, overlays are drawn over `--background` (black for shaders, white for vector effects). Effects that answer the pointer get a scripted one that hovers, wanders and clicks (`--no-pointer` leaves it still); click-triggered vector effects are clicked through their steps, and hover or press ones play through and back.
+
+Chrome is found in the usual places, in Playwright's downloads, or at `CHROME_PATH`; ffmpeg on the `PATH` or at `FFMPEG_PATH`. The same from code:
+
+```ts
+import { exportEffect, exportMotionGraphic } from "@pixerate/flair/node";
+
+await exportEffect("image-duotone", { subject: { image: "team.jpg" }, preset: "Spotify", outputPath: "team.mp4" });
+await exportEffect("click-ripple", { alpha: true, outputPath: "ripple.webm" });
+await exportEffect("toggle-switch", { outputPath: "toggle.svg" });
+await exportMotionGraphic({ source, values: { speed: 2 }, outputPath: "out.gif", duration: 2 });
+```
+
+Limits: vector frames are drawn with `svgFrameMarkup`, so a change `along` a path and a `view` that frames an element by id stay where the markup puts them; GIF frame delays are whole hundredths of a second (30 fps plays at 33.3).
 
 ---
 

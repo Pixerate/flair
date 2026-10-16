@@ -1,6 +1,7 @@
 /**
- * React components for Flair's vector effects: `<VectorEffect>` plays a
- * catalog effect by id, `<SvgPlayerView>` plays any {@link SvgMotion}.
+ * React components for Flair: `<FlairEffect>` runs any catalog effect (shader
+ * or vector) applied to a picture, video, SVG or words; `<VectorEffect>` plays
+ * a catalog vector effect by id, `<SvgPlayerView>` plays any {@link SvgMotion}.
  *
  * Both render a still of the picture on the server (its last frame, by
  * default), so a page hydrates with the picture in place rather than a blank
@@ -20,7 +21,8 @@ import {
   type CSSProperties,
   type HTMLAttributes,
 } from "react";
-import { getEffect, effectDefaults } from "../catalog/index.js";
+import { getEffect, effectDefaults, type EffectDefinition } from "../catalog/index.js";
+import { mountEffect, type EffectSubject, type MountedEffect } from "../embed/index.js";
 import { renderVectorEffect, type VectorEffect as VectorEffectDefinition } from "../catalog/types.js";
 import type { ControlValue } from "../shader/controls.js";
 import type { Clock } from "../time/clock.js";
@@ -247,3 +249,71 @@ export function VectorEffect(props: VectorEffectProps) {
 }
 
 export type { SvgPlayer, SvgMotion, SvgTrigger };
+
+export interface FlairEffectProps extends Omit<HTMLAttributes<HTMLDivElement>, "children"> {
+  /** A catalog effect, by id or definition: shader or vector. */
+  effect: string | EffectDefinition;
+  /** What to apply it to: a picture, a video, an SVG, words or a path (see `EffectSubject`). */
+  subject?: EffectSubject | readonly EffectSubject[];
+  /** A preset by name, under `values`. */
+  preset?: string;
+  /** Control values over the effect's defaults (and preset). */
+  values?: Record<string, ControlValue>;
+  /** Start playing at once (default `true`). */
+  autoplay?: boolean;
+  /** Pause while scrolled out of view (default `true`). */
+  pauseWhenHidden?: boolean;
+}
+
+/**
+ * Any catalog effect, shader or vector, applied to a subject: a picture, a
+ * video, an SVG, words or a path (see `mountEffect` in
+ * `@pixerate/flair/embed`). Fills its element: size it with CSS. A new
+ * subject or values update the running effect; a new effect, preset or
+ * playback option starts it again. It renders nothing on the server.
+ *
+ * ```tsx
+ * <FlairEffect effect="image-duotone" subject={{ image: "/team.jpg" }} preset="Spotify" style={{ aspectRatio: "16 / 9" }} />
+ * <FlairEffect effect="typewriter" subject={{ text: "Hello there" }} />
+ * ```
+ */
+export function FlairEffect(props: FlairEffectProps) {
+  const { effect, subject, preset, values, autoplay, pauseWhenHidden, style, ...rest } = props;
+  const host = useRef<HTMLDivElement>(null);
+  const mounted = useRef<MountedEffect | undefined>(undefined);
+  const valuesKey = JSON.stringify(values ?? {});
+  // What the running effect last took, so a re-render with the same subject or values changes nothing.
+  const applied = useRef<{ subject?: FlairEffectProps["subject"]; valuesKey: string }>({ valuesKey: "" });
+  const latest = useRef({ subject, values, valuesKey });
+  latest.current = { subject, values, valuesKey };
+  useEffect(() => {
+    const now = latest.current;
+    const m = mountEffect(host.current!, effect, {
+      ...(now.subject ? { subject: now.subject } : {}),
+      ...(preset ? { preset } : {}),
+      ...(now.values ? { values: now.values } : {}),
+      autoplay: autoplay ?? true,
+      pauseWhenHidden: pauseWhenHidden ?? true,
+    });
+    m.element.style.display = "block";
+    m.element.style.width = "100%";
+    m.element.style.height = "100%";
+    mounted.current = m;
+    applied.current = { subject: now.subject, valuesKey: now.valuesKey };
+    return () => {
+      m.dispose();
+      mounted.current = undefined;
+    };
+  }, [effect, preset, autoplay, pauseWhenHidden]);
+  useEffect(() => {
+    if (!mounted.current || !subject || subject === applied.current.subject) return;
+    mounted.current.setSubject(subject);
+    applied.current.subject = subject;
+  }, [subject]);
+  useEffect(() => {
+    if (!mounted.current || !values || valuesKey === applied.current.valuesKey) return;
+    mounted.current.setValues(values);
+    applied.current.valuesKey = valuesKey;
+  }, [valuesKey]);
+  return <div ref={host} style={{ position: "relative", ...style }} {...rest} />;
+}
