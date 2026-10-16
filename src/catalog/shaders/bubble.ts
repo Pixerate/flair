@@ -79,16 +79,25 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   float px = 1.0 / iResolution.y;
   vec2 p = fragCoord * px;
   vec4 acc = vec4(0.0);
+  // The clicks are the same for every bubble, so look them up once.
+  vec4 clicks[8];
+  for (int j = 0; j < 8; j++) clicks[j] = clickAt(j, uDemo);
+  // Nothing of a bubble reaches further than this from where it is now: its pop (up to 0.7 s
+  // ago, so it has drifted at most this far since) throws droplets out to 3.6 radii + 0.1.
+  float drift = 0.7 * (uRise + 0.085 * uWobble + 0.04);
+  float far = max(uSize * 0.12, 0.01) * 3.6 + 0.1 + drift + 2.0 * px;
   for (int i = 0; i < 16; i++) {
     if (i >= uCount) break;
     float age;
     float life;
     vec4 b = bubbleAt(i, iTime, age, life);
+    vec2 d0 = p - b.xy;
+    if (dot(d0, d0) > far * far) continue;
     float birth = iTime - age;
     // It pops when its life is up, or at the first click that lands on it.
     float popAt = birth + life;
     for (int j = 0; j < 8; j++) {
-      vec4 c = clickAt(j, uDemo);
+      vec4 c = clicks[j];
       if (c.w < 0.5 || c.z < birth || c.z > iTime || c.z >= popAt) continue;
       float a2;
       float l2;

@@ -280,18 +280,6 @@ vec3 shardOf(vec2 q) {
   return vec3(sid, ring, edge);
 }
 
-// A shard's middle, which it turns about, and how far it reaches from there.
-vec3 shardCentre(float sid, float ring) {
-  float a0 = spoke(sid);
-  float a1 = spoke(sid + 1.0);
-  float mid = 0.5 * (a0 + a1);
-  float inner = ring > 0.0 ? ringAt(sid, ring) : 0.0;
-  float outer = ring + 1.0 < float(RINGS) ? ringAt(sid, ring + 1.0) : inner * uGrowth;
-  float rc = ring > 0.0 ? 0.5 * (inner + outer) : 0.66 * outer;
-  float reach = length(vec2(max(outer - rc, rc - inner), outer * tan(0.5 * (a1 - a0))));
-  return vec3(vec2(cos(mid), sin(mid)) * rc, reach + 0.01);
-}
-
 // When a shard lets go: the middle first, the outer pane last.
 float release(float sid, float ring) {
   return 0.3 + 0.16 * ring + 0.25 * hash12(vec2(sid, ring + 9.0));
@@ -313,33 +301,109 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec4 col = vec4(uBackground, 1.0);
 
   // Shards that have let go, falling and spinning: the first to fall is in front.
+  // A ring at a time: the rings all of whose shards are too far from this pixel, wherever they are
+  // in their fall, are passed over whole; later rings let go later, so once one is not yet falling
+  // (or would be behind what is already here) neither are the rest.
   float best = 1e3;
   vec4 hit = vec4(0.0);
   vec2 hitCentre = vec2(0.0);
-  for (int s = 0; s < 16; s++) {
-    if (s >= uSpokes) break;
-    for (int j = 0; j < RINGS; j++) {
-      float sid = float(s);
-      float ring = float(j);
+  float n = float(uSpokes);
+  float spreadMax = tan(min(0.8 * TAU / n, 1.5));
+  for (int j = 0; j < RINGS; j++) {
+    float ring = float(j);
+    float firstGo = 0.3 + 0.16 * ring;
+    float dtHi = age - firstGo;
+    if (dtHi <= 0.0 || firstGo >= best) break;
+    float dtLo = max(dtHi - 0.25, 0.0);
+    // Bounds on this ring's shards: how far out their middles are, how far they reach, how far they have drifted and dropped.
+    float span = uScale * pow(uGrowth, ring);
+    float lo = j > 0 ? span / uGrowth : 0.0;
+    float rcLo = j > 0 ? 0.425 * (lo + span) : 0.561 * span;
+    float rcHi = j > 0 ? 0.575 * (lo + span) : 0.759 * span;
+    float radial = j > 0 ? 0.5 * max(1.15 * span - 0.85 * lo, 1.15 * lo - 0.85 * span) : rcHi;
+    float reachMax = length(vec2(radial, 1.15 * span * spreadMax)) + 0.02;
+    float rMin = rcLo + 0.05 * (1.0 - exp(-0.6 * dtLo)) / 0.6 / (1.0 + ring) - reachMax - 0.01;
+    float rMax = rcHi + 0.2 * (1.0 - exp(-0.6 * dtHi)) / 0.6 / (1.0 + ring) + reachMax + 0.01;
+    float yA = ballistic(vec2(0.0, 0.08), 0.6, uGravity, dtLo).y;
+    float yB = ballistic(vec2(0.0, 0.08), 0.6, uGravity, dtHi).y;
+    float yLo = min(yA, yB) - 0.02;
+    float yHi = max(yA, yB) + 0.02;
+    float dNear = length(vec2(q.x, q.y - clamp(q.y, yLo, yHi)));
+    float dFar = max(length(q - vec2(0.0, yLo)), length(q - vec2(0.0, yHi)));
+    if (dFar < rMin || dNear > rMax) continue;
+    // And of its shards, only those whose sector points (near enough) at this pixel from where the impact point has dropped to:
+    // each sector's middle lies 0.2–0.8 of the way round its share of the circle.
+    float first = 0.0;
+    float count = n;
+    float slack = reachMax + 0.01;
+    if (dNear > slack) {
+      vec2 na = normalize(q - vec2(0.0, yLo));
+      vec2 nb = normalize(q - vec2(0.0, yHi));
+      float w = 0.5 * acos(clamp(dot(na, nb), -1.0, 1.0)) + asin(slack / dNear);
+      vec2 bisect = na + nb;
+      float toward = atan(bisect.y, bisect.x) / (TAU / n);
+      w /= TAU / n;
+      first = ceil(toward - w - 0.8);
+      count = min(floor(toward + w - 0.2) - first + 1.0, n);
+    }
+    for (int k = 0; k < 16; k++) {
+      if (float(k) >= count) break;
+      float sid = mod(first + float(k), n);
       float tr = release(sid, ring);
       float dt = age - tr;
       if (dt <= 0.0 || tr >= best) continue;
+      // How far it has drifted (along e) and dropped since it let go: ballistic(), split so the drop can be used first.
+      float e = (1.0 - exp(-0.6 * dt)) / 0.6;
+      // Seen from where the impact point has dropped to by now, too near or far, or not in this sector's direction.
+      vec2 dropped = q - vec2(0.0, 0.08 * e - uGravity / 0.6 * (dt - e));
+      float far = length(dropped);
+      if (far < rMin || far > rMax) continue;
+      // Its two cracks, the direction halfway between them and tan of half the angle they make.
+      float a0 = spoke(sid);
+      float a1 = spoke(sid + 1.0);
+      vec2 d0 = vec2(cos(a0), sin(a0));
+      vec2 d1 = vec2(cos(a1), sin(a1));
+      vec2 dir = normalize(d0 + d1);
+      float spread = (d0.x * d1.y - d0.y * d1.x) / (1.0 + dot(d0, d1));
+      // Not pointing (near enough) this way: further off its middle than any of its corners could be.
+      float near = length(vec2(radial, 1.15 * span * spread)) + 0.03;
+      if (far > near && dot(dropped, dir) < sqrt(far * far - near * near)) continue;
+      // Its middle, which it turns about, and how far it reaches from there (ringAt, with the ring's scale worked out above).
+      float inner = j > 0 ? lo * (0.85 + 0.3 * hash12(vec2(sid, ring + 0.5))) : 0.0;
+      float outer = j + 1 < RINGS ? span * (0.85 + 0.3 * hash12(vec2(sid, ring + 1.5))) : inner * uGrowth;
+      float rc = j > 0 ? 0.5 * (inner + outer) : 0.66 * outer;
+      float reach = length(vec2(max(outer - rc, rc - inner), outer * spread)) + 0.01;
+      vec2 cen = dir * rc;
       vec2 h = hash22(vec2(sid, ring) + 17.3);
-      vec3 cen = shardCentre(sid, ring);
-      vec2 v0 = normalize(cen.xy + 1e-4) * (0.05 + 0.15 * h.x) / (1.0 + ring) + vec2(0.0, 0.08);
-      vec2 rel = q - cen.xy - ballistic(v0, 0.6, uGravity, dt);
-      if (length(rel) > cen.z) continue;
+      vec2 rel = dropped - cen - normalize(cen + 1e-4) * (0.05 + 0.15 * h.x) / (1.0 + ring) * e;
+      if (dot(rel, rel) > reach * reach) continue;
       float ang = (h.y - 0.5) * 2.0 * uSpin * dt;
       // It also turns about its own axis, narrowing and catching the light.
       float tilt = cos(dt * (0.6 + 1.2 * h.x) * uSpin);
       vec2 local = rot(-ang) * rel;
       local.x /= sign(tilt) * max(abs(tilt), 0.05);
-      vec2 orig = cen.xy + local;
-      vec3 sh = shardOf(orig);
-      if (sh.x != sid || sh.y != ring) continue;
+      vec2 orig = cen + local;
+      // Back on the pane, is that point inside this shard: between its two cracks and its two rings?
+      float side0 = d0.x * orig.y - d0.y * orig.x;
+      float side1 = d1.x * orig.y - d1.y * orig.x;
+      float d = dot(orig, dir);
+      float rim = j + 1 < RINGS ? outer : 1e3;
+      if (side0 < 0.0 || side1 >= 0.0 || d >= rim) continue;
+      // Past every ring inside it (they are a little ragged, so not only the nearest).
+      bool past = true;
+      for (int i = 1; i < RINGS; i++) {
+        if (i > j) break;
+        if (d < ringAt(sid, float(i))) {
+          past = false;
+          break;
+        }
+      }
+      if (!past) continue;
+      float edge = min(rim - d, min(abs(side0), abs(side1)));
+      if (j > 0) edge = min(edge, d - inner);
       best = tr;
-      hit = vec4(orig, tilt, sh.z);
-      hitCentre = cen.xy;
+      hit = vec4(orig, tilt, edge);
+      hitCentre = cen;
     }
   }
 
@@ -825,6 +889,14 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
       float b = now - float(k);
       float a = e - b * BATCH;
       if (a < 0.0 || a > LIFE) continue;
+      // Where its grains came from, give or take the turbulence: skip the batch unless that is in
+      // the shape and in the slab of it this batch was taken from (see batchOf).
+      vec2 from = (p - vec2(dirX * uWind * (0.15 * a + 0.55 * a * a), 0.05 * a + 0.03 * a * a) - origin) / vec2(shapeW, shapeH);
+      vec2 sway = uTurbulence * a * vec2(0.04, 0.11) / vec2(shapeW, shapeH) + 1e-3;
+      if (uFromRight) from.x = 1.0 - from.x;
+      float slabLo = max((b * BATCH - 0.775) / 1.5, 0.0);
+      float slabHi = min(((b + 1.0) * BATCH - 0.125) / 1.5, 1.0);
+      if (from.x + sway.x < slabLo || from.x - sway.x > slabHi || from.y + sway.y < 0.0 || from.y - sway.y > 1.0) continue;
       // Back from where a grain is to where it came from.
       vec2 s = p - blown(a, p);
       s = p - blown(a, s);

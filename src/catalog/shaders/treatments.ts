@@ -132,6 +132,24 @@ ${BACKDROP_CONTROLS}`,
   return cell + 0.15 + 0.7 * hash22(cell);
 }
 
+// No point is further than this from its own shard's site (sites sit in the middle 70% of each cell).
+const float SHARD_REACH = 1.25;
+
+// Whether grid point q lies on shard c: c's site is the nearest of those in the 3 × 3 cells around q.
+bool onShard(vec2 q, vec2 c) {
+  vec2 base = floor(q);
+  vec2 off = c - base;
+  if (abs(off.x) > 1.0 || abs(off.y) > 1.0) return false;
+  float own = distance(q, shardSite(c));
+  for (int j = -1; j <= 1; j++) {
+    for (int i = -1; i <= 1; i++) {
+      vec2 n = base + vec2(float(i), float(j));
+      if (n != c && distance(q, shardSite(n)) < own) return false;
+    }
+  }
+  return true;
+}
+
 // The shard (cell) under grid point q, and how far q is from its edge (xy: cell, z: edge gap).
 vec3 shardAt(vec2 q) {
   vec2 base = floor(q);
@@ -160,27 +178,41 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   // Shard centres move out from the middle; shards keep their size, so gaps open between them.
   float grow = 1.0 + uSpread * k;
   vec2 base = floor(p / grow);
-  vec4 col = vec4(uBackground, uBackdropAlpha);
   float top = -1.0;
-  for (int j = -2; j <= 2; j++) {
-    for (int i = -2; i <= 2; i++) {
-      vec2 c = base + vec2(float(i), float(j));
-      vec2 site = shardSite(c);
+  vec2 hitQ = vec2(0.0);
+  float hitA = 0.0;
+  // Every shard that could reach this pixel (of the 5 × 5 cells around, those whose site, wherever it sits
+  // in its cell and however far it is thrown, lands close enough); the one on top (highest h.y) wins.
+  float slack = 0.6 * k + SHARD_REACH;
+  vec2 lo = max(base - 2.0, ceil((p - slack) / grow - 0.85));
+  vec2 hi = min(base + 2.0, floor((p + slack) / grow - 0.15));
+  for (int j = 0; j < 5; j++) {
+    if (lo.y + float(j) > hi.y) break;
+    for (int i = 0; i < 5; i++) {
+      if (lo.x + float(i) > hi.x) break;
+      vec2 c = lo + vec2(float(i), float(j));
       vec2 h = hash22(c + 41.7);
+      if (h.y <= top) continue;
+      vec2 site = shardSite(c);
       vec2 centre = site * grow + (h - 0.5) * 1.2 * k;
+      vec2 rel = p - centre;
+      if (dot(rel, rel) > SHARD_REACH * SHARD_REACH) continue;
       float a = (h.x - 0.5) * 2.0 * uSpin * k;
       // Back to where this pixel would sit in the unbroken image, if it is on this shard.
-      vec2 q = rot(-a) * (p - centre) + site;
-      vec3 s = shardAt(q);
-      if (s.x == c.x && s.y == c.y && h.y > top) {
+      vec2 q = rot(-a) * rel + site;
+      if (onShard(q, c)) {
         top = h.y;
-        vec2 uv = q / uCount * iResolution.y / iResolution.xy + 0.5;
-        vec4 shard = pictureRGBA(uImage, uv);
-        shard.rgb *= 1.0 - 0.35 * k * abs(sin(a));
-        shard.rgb += k * 0.35 * smoothstep(0.06, 0.0, s.z);
-        col = shard;
+        hitQ = q;
+        hitA = a;
       }
     }
+  }
+  vec4 col = vec4(uBackground, uBackdropAlpha);
+  if (top > -1.0) {
+    vec2 uv = hitQ / uCount * iResolution.y / iResolution.xy + 0.5;
+    col = pictureRGBA(uImage, uv);
+    col.rgb *= 1.0 - 0.35 * k * abs(sin(hitA));
+    col.rgb += k * 0.35 * smoothstep(0.06, 0.0, shardAt(hitQ).z);
   }
   fragColor = col;
 }`,
@@ -635,31 +667,48 @@ uniform float uSharpness;  // @control min=0.5 max=8 default=4 label="Sharpness"
 uniform float uSaturation; // @control min=0 max=2 default=1.15 label="Saturation"
 ${BACKDROP_CONTROLS}`,
     PICTURE,
-    `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+    `// Sums of colour and colour² over four overlapping squares (down-left, down-right, up-left, up-right),
+// each pixel read once: the shared middle row and column count towards both squares they border.
+// A macro so the image and the test card each get their own loop, rather than every read paying for both.
+#define GATHER(TAP) { \\
+  vec3 c = TAP(uv); \\
+  vec3 cc = c * c; \\
+  m0 = c; m1 = c; m2 = c; m3 = c; \\
+  s0 = cc; s1 = cc; s2 = cc; s3 = cc; \\
+  for (int i = 1; i <= 8; i++) { \\
+    if (i > uRadius) break; \\
+    float o = float(i); \\
+    c = TAP(uv - vec2(o * px.x, 0.0)); cc = c * c; m0 += c; s0 += cc; m2 += c; s2 += cc; \\
+    c = TAP(uv + vec2(o * px.x, 0.0)); cc = c * c; m1 += c; s1 += cc; m3 += c; s3 += cc; \\
+    c = TAP(uv - vec2(0.0, o * px.y)); cc = c * c; m0 += c; s0 += cc; m1 += c; s1 += cc; \\
+    c = TAP(uv + vec2(0.0, o * px.y)); cc = c * c; m2 += c; s2 += cc; m3 += c; s3 += cc; \\
+  } \\
+  for (int j = 1; j <= 8; j++) { \\
+    if (j > uRadius) break; \\
+    for (int i = 1; i <= 8; i++) { \\
+      if (i > uRadius) break; \\
+      vec2 o = vec2(float(i), float(j)) * px; \\
+      c = TAP(uv - o); m0 += c; s0 += c * c; \\
+      c = TAP(uv + vec2(o.x, -o.y)); m1 += c; s1 += c * c; \\
+      c = TAP(uv + vec2(-o.x, o.y)); m2 += c; s2 += c * c; \\
+      c = TAP(uv + o); m3 += c; s3 += c * c; \\
+    } \\
+  } \\
+}
+
+vec3 imageTap(vec2 uv) {
+  return overBackdrop(texture(uImage, uv)).rgb;
+}
+
+vec3 cardTap(vec2 uv) {
+  return testCard(fract(uv));
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 uv = fragCoord / iResolution.xy;
   vec2 px = 1.0 / iResolution.xy;
-  // Sums of colour and colour² over four overlapping squares: down-left, down-right, up-left, up-right.
-  vec3 m0 = vec3(0.0), m1 = vec3(0.0), m2 = vec3(0.0), m3 = vec3(0.0);
-  vec3 s0 = vec3(0.0), s1 = vec3(0.0), s2 = vec3(0.0), s3 = vec3(0.0);
-  for (int j = 0; j <= 8; j++) {
-    if (j > uRadius) break;
-    for (int i = 0; i <= 8; i++) {
-      if (i > uRadius) break;
-      vec2 o = vec2(float(i), float(j)) * px;
-      vec3 c = picture(uImage, uv + vec2(-o.x, -o.y));
-      m0 += c;
-      s0 += c * c;
-      c = picture(uImage, uv + vec2(o.x, -o.y));
-      m1 += c;
-      s1 += c * c;
-      c = picture(uImage, uv + vec2(-o.x, o.y));
-      m2 += c;
-      s2 += c * c;
-      c = picture(uImage, uv + o);
-      m3 += c;
-      s3 += c * c;
-    }
-  }
+  vec3 m0, m1, m2, m3, s0, s1, s2, s3;
+  if (textureSize(uImage, 0).x > 1) GATHER(imageTap) else GATHER(cardTap)
   float n = float((uRadius + 1) * (uRadius + 1));
   m0 /= n; m1 /= n; m2 /= n; m3 /= n;
   // Weight each square by how calm (low-variance) it is; sharpness sets how strongly the calmest wins.

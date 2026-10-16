@@ -67,6 +67,90 @@ float coverage(vec2 p, float radius) {
   return sum / 16.0;
 }`.trim();
 
+/** Golden-angle disc offsets of unit radius for an `n`-tap blur, as the GLSL constant `GOLDEN<n>`. */
+function goldenTaps(n: number): string {
+  const taps = Array.from({ length: n }, (_, i) => {
+    const r = Math.sqrt((i + 0.5) / n);
+    const a = i * 2.39996;
+    return `vec2(${(r * Math.cos(a)).toFixed(5)}, ${(r * Math.sin(a)).toFixed(5)})`;
+  });
+  return `const vec2 GOLDEN${n}[${n}] = vec2[${n}](${taps.join(", ")});`;
+}
+
+/** A disc blur of the mask in `n` golden-angle taps, each read at the mip level for a blur of `blur` × the radius. */
+function coverageTaps(name: string, n: number, blur: number): string {
+  return `
+${goldenTaps(n)}
+float ${name}(vec2 p, float radius) {
+  float sum = 0.0;
+  if (gMaskPlace.w < 0.5) {
+    for (int i = 0; i < ${n}; i++) sum += shapeAt(p + radius * GOLDEN${n}[i], radius * ${blur.toFixed(2)});
+  } else {
+    float lod = log2(max(radius * ${blur.toFixed(2)} * gMaskPlace.z, 1.0));
+    for (int i = 0; i < ${n}; i++) sum += shapeLod(p + radius * GOLDEN${n}[i], lod);
+  }
+  return sum / ${n}.0;
+}`.trim();
+}
+
+/** Taps in `coverageLite`. */
+const LITE_TAPS = 10;
+
+/**
+ * {@link MASK} made cheaper to read many times a pixel, for the glows that
+ * do: `setKey()` also works out once where the picture sits, the golden-angle
+ * taps are constants and each blur picks its mip level once. `shapeAt` and
+ * `coverage` give what MASK's do; `coverageLite(p, radius)` is the same blur
+ * in {@link LITE_TAPS} taps a little higher up the mip chain, for wide blurs
+ * where the difference does not show.
+ */
+const MASK_FAST = `
+vec3 gKeyColour;
+float gKeyTolerance;
+// Picture units per frame unit (xy), texels per frame unit (z), 1 with a picture (w).
+vec4 gMaskPlace;
+
+// The colour in the picture's top-left corner: the ground to key out; and where the picture sits.
+void setKey(float tolerance) {
+  gKeyTolerance = tolerance;
+  vec4 c = textureLod(uMask, vec2(0.01, 0.99), 0.0);
+  gKeyColour = c.rgb / max(c.a, 1e-3);
+  vec2 size = vec2(textureSize(uMask, 0));
+  float aspect = size.x / size.y;
+  float h = min(uSize, iResolution.x / iResolution.y * uSize / aspect);
+  gMaskPlace = vec4(1.0 / (h * aspect), 1.0 / h, size.y / h, size.x > 1.0 ? 1.0 : 0.0);
+}
+
+// Where frame point p falls in the picture (xy) and texels per frame unit (z).
+vec3 maskPlace(vec2 p) {
+  return vec3(p * gMaskPlace.xy + 0.5, gMaskPlace.z);
+}
+
+// The picture's coverage at p read at mip level lod (needs a picture).
+float shapeLod(vec2 p, float lod) {
+  vec2 uv = p * gMaskPlace.xy + 0.5;
+  if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) return 0.0;
+  vec4 c = textureLod(uMask, uv, lod);
+  float a = c.a;
+  if (gKeyTolerance > 0.0) {
+    float away = distance(c.rgb / max(c.a, 1e-3), gKeyColour);
+    a *= smoothstep(gKeyTolerance, gKeyTolerance + 0.12, away);
+  }
+  return a;
+}
+
+float shapeAt(vec2 p, float blur) {
+  if (gMaskPlace.w < 0.5) {
+    float d = length(p) - 0.3 * uSize;
+    return clamp(0.5 - d / max(blur, 0.004), 0.0, 1.0);
+  }
+  return shapeLod(p, log2(max(blur * gMaskPlace.z, 1.0)));
+}
+
+${coverageTaps("coverage", 16, 0.4)}
+
+${coverageTaps("coverageLite", LITE_TAPS, 0.5)}`.trim();
+
 export const aura: ShaderEffect = {
   kind: "shader",
   id: "aura",
@@ -91,7 +175,7 @@ uniform float uIntensity;    // @control min=0 max=3 default=1.1 label="Intensit
     HASH,
     NOISE,
     FBM,
-    MASK,
+    MASK_FAST,
     `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   setKey(uKey);
   vec2 p = (fragCoord - 0.5 * iResolution.xy) / iResolution.y;
@@ -103,10 +187,11 @@ uniform float uIntensity;    // @control min=0 max=3 default=1.1 label="Intensit
   float n2 = fbm(vec2(q.x * 1.7 + 4.1, q.y * 0.9 - t * 2.9), 4);
   float pulse = 1.0 + uPulse * (0.3 * sin(t * 3.0) + 0.12 * sin(t * 7.3 + 1.0));
   // The silhouette blurred at three widths, swayed and stretched upward by the noise, so light gathers above it.
+  // The two wide blurs, torn by the noise anyway, take fewer taps.
   vec2 warp = vec2((n2 - 0.5) * uSpread * 1.5, -(n - 0.3) * uHeight);
   float inner = coverage(p + warp * 0.3, uSpread * 0.5);
-  float outer = coverage(p + warp, uSpread * 1.4);
-  float tall = coverage(p + warp * 1.5 - vec2(0.0, uHeight), uSpread * 2.2);
+  float outer = coverageLite(p + warp, uSpread * 1.4);
+  float tall = coverageLite(p + warp * 1.5 - vec2(0.0, uHeight), uSpread * 2.2);
   float field = (inner * 0.9 + outer * 0.8 + tall * 0.6) * pulse;
   // Torn into tongues: the noise breaks the thin outer field into licks, the thick inner field holds.
   float tongues = smoothstep(0.12, 0.95, field * (0.45 + 1.1 * n));
@@ -116,7 +201,7 @@ uniform float uIntensity;    // @control min=0 max=3 default=1.1 label="Intensit
   light *= uIntensity;
   vec3 col = uBackground + (1.0 - exp(-light));
   // The figure in front, its own colours, rim-lit by the aura.
-  if (textureSize(uMask, 0).x > 1 && body > 0.0) {
+  if (gMaskPlace.w > 0.5 && body > 0.0) {
     vec3 m = maskPlace(p);
     vec4 c = texture(uMask, m.xy);
     vec3 own = c.rgb / max(c.a, 1e-3);
@@ -361,7 +446,7 @@ uniform float uSpeed;        // @control min=0 max=2 default=0.4 label="Ray drif
 uniform float uIntensity;    // @control min=0 max=3 default=1.3 label="Intensity"`,
     HASH,
     NOISE,
-    MASK,
+    MASK_FAST,
     `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   setKey(uKey);
   float px = 1.0 / iResolution.y;
@@ -370,17 +455,21 @@ uniform float uIntensity;    // @control min=0 max=3 default=1.3 label="Intensit
   vec2 toL = L - p;
   float dl = length(toL);
   // Light reaching here: march toward the light, the shape shadowing what is behind it.
+  // 24 jittered steps (decay and sum scaled to match 0.965 per 1/40 of the way); steps three light
+  // sizes or more from it add almost nothing, so they skip reading the shape.
   float shafts = 0.0;
   float decay = 1.0;
   float jitter = hash12(fragCoord);
-  for (int i = 0; i < 40; i++) {
-    float s = (float(i) + jitter) / 40.0;
-    vec2 q = p + toL * s;
-    float open = 1.0 - shapeAt(q, 2.0 * px + 0.01 * s);
-    shafts += open * exp(-pow(length(q - L) / uGlowSize, 2.0)) * decay;
-    decay *= 0.965;
+  float far = 3.0 * uGlowSize;
+  for (int i = 0; i < 24; i++) {
+    float s = (float(i) + jitter) / 24.0;
+    float r = dl * (1.0 - s);
+    float open = r < far ? 1.0 - shapeAt(p + toL * s, 2.0 * px + 0.01 * s) : 1.0;
+    float g = r / uGlowSize;
+    shafts += open * exp(-g * g) * decay;
+    decay *= 0.94236;
   }
-  shafts /= 20.0;
+  shafts /= 12.0;
   // Streaks round the light, drifting slowly.
   vec2 dir = -toL / max(dl, 1e-4);
   float a = iTime * uSpeed * 0.2;
@@ -388,7 +477,7 @@ uniform float uIntensity;    // @control min=0 max=3 default=1.3 label="Intensit
   float rays = shafts * mix(1.0, 0.25 + 1.5 * streak * streak, uRays);
   // Spill: light wrapping just round the edges.
   float body = shapeAt(p, 1.2 * px);
-  float spill = coverage(p, 0.03) * 0.8 + coverage(p, 0.08) * 0.5;
+  float spill = coverage(p, 0.03) * 0.8 + coverageLite(p, 0.08) * 0.5;
   float glowAt = exp(-pow(dl / (uGlowSize * 1.6), 2.0));
   vec3 light = uLight * (rays * 1.4 + spill * (1.0 - body) * glowAt * 1.2) * uIntensity;
   vec3 col = uBackground + (1.0 - exp(-light));

@@ -18,8 +18,9 @@ import type { ShaderEffect } from "../types.js";
  * between frames like real points do; the drawing code is the same for both.
  * `speed` is how fast the demo goes round. `TRAIL_POINTS` is the size of
  * `iTrail` (32 points, at most one every 1/30 s: about a second of path).
+ * With `walk`, also the cheaper ways through the trail of {@link trailWalk}.
  */
-function trailHelper(dt: number, speed: number): string {
+function trailHelper(dt: number, speed: number, walk = false): string {
   return `
 const int TRAIL_POINTS = 32;
 vec2 demoPath(float t) {
@@ -36,6 +37,60 @@ vec4 trailPoint(int i, bool demo) {
   const float dt = ${dt.toFixed(5)};
   float t = i == 0 ? iTime : (floor(iTime / dt) + 1.0 - float(i)) * dt;
   return vec4(demoPath(t), t, 1.0);
+}${walk ? `\n${trailWalk(dt, speed)}` : ""}`.trim();
+}
+
+/**
+ * For walking the whole trail each pixel, cheaply: `trailLive(demo)` once,
+ * then `trailAt(i, live)` gives what `trailPoint(i, demo)` does; or, going
+ * through the points in order, `trailFrom(i, live)` once and `trailNext(live)`
+ * for points i, i + 1, …, which steps the demo path's sines and cosines on
+ * by a fixed turn instead of working each one out again.
+ */
+function trailWalk(dt: number, speed: number): string {
+  // The demo path's four phases, as multiples of s, and how far each turns back per point.
+  const rates = [1, 2.3, 2, 3.1];
+  const turn = rates.map((r) => r * dt * speed);
+  const vec = (f: (x: number) => number) => `vec4(${turn.map((x) => f(x).toFixed(8)).join(", ")})`;
+  return `
+bool trailLive(bool demo) {
+  return !demo || (iTrail[0].w > 0.5 && iPointer.z > 0.0);
+}
+vec4 trailAt(int i, bool live) {
+  if (live) return iTrail[i];
+  const float dt = ${dt.toFixed(5)};
+  float t = i == 0 ? iTime : (floor(iTime / dt) + 1.0 - float(i)) * dt;
+  return vec4(demoPath(t), t, 1.0);
+}
+int gWalkI;
+float gWalkBase;
+vec4 gWalkCos;
+vec4 gWalkSin;
+// Starts a walk at point i (1 or more).
+void trailFrom(int i, bool live) {
+  gWalkI = i;
+  if (live) return;
+  const float dt = ${dt.toFixed(5)};
+  gWalkBase = floor(iTime / dt) + 1.0;
+  float s = (gWalkBase - float(i)) * dt * ${speed.toFixed(3)};
+  vec4 phase = vec4(s, s * 2.3 + 1.0, s * 2.0 + 0.4, s * 3.1);
+  gWalkCos = cos(phase);
+  gWalkSin = sin(phase);
+}
+// The walk's next point: as trailAt(i, live) for i = the start, then one more each call.
+vec4 trailNext(bool live) {
+  int i = gWalkI;
+  gWalkI++;
+  if (live) return iTrail[min(i, TRAIL_POINTS - 1)];
+  const float dt = ${dt.toFixed(5)};
+  vec2 q = vec2(0.34 * gWalkSin.x + 0.05 * gWalkSin.y, 0.27 * gWalkSin.z + 0.04 * gWalkCos.w);
+  vec4 point = vec4(iResolution.xy * (0.5 + q), (gWalkBase - float(i)) * dt, 1.0);
+  const vec4 turnCos = ${vec(Math.cos)};
+  const vec4 turnSin = ${vec(Math.sin)};
+  vec4 c = gWalkCos * turnCos + gWalkSin * turnSin;
+  gWalkSin = gWalkSin * turnCos - gWalkCos * turnSin;
+  gWalkCos = c;
+  return point;
 }`.trim();
 }
 
@@ -53,6 +108,21 @@ vec2 catmull(vec2 p0, vec2 p1, vec2 p2, vec2 p3, float t) {
   float t2 = t * t;
   float t3 = t2 * t;
   return 0.5 * (2.0 * p1 + (p2 - p0) * t + (2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3) * t2 + (3.0 * p1 - p0 - 3.0 * p2 + p3) * t3);
+}`.trim();
+
+/**
+ * `trailBoxDist(p, p0, p1, p2, p3, scale)`: at most the distance from p to the
+ * Catmull-Rom spline from p1 to p2 (and to any chords between points on it),
+ * all scaled by `scale`: the distance to the box round its Bezier control
+ * points, which hold the whole curve.
+ */
+const CATMULL_BOX = `
+float trailBoxDist(vec2 p, vec2 p0, vec2 p1, vec2 p2, vec2 p3, float scale) {
+  vec2 c1 = p1 + (p2 - p0) / 6.0;
+  vec2 c2 = p2 - (p3 - p1) / 6.0;
+  vec2 lo = min(min(p1, p2), min(c1, c2)) * scale;
+  vec2 hi = max(max(p1, p2), max(c1, c2)) * scale;
+  return length(max(max(lo - p, p - hi), 0.0));
 }`.trim();
 
 /** `glow(c)`: light as a colour over whatever is behind it (alpha is its brightest channel). */
@@ -154,14 +224,16 @@ uniform float uSpin;      // @control min=0 max=10 default=2 label="Spin"
 uniform float uShine;     // @control min=0 max=1 default=0.7 label="Shine"
 uniform float uLife;      // @control min=0.1 max=3 default=1.1 label="Fade time"
 uniform bool uDemo;       // @control default=true label="Demo when idle"`,
-    trailHelper(1 / 30, 1.5),
+    trailHelper(1 / 30, 1.5, true),
     SEGMENT,
     CATMULL,
+    CATMULL_BOX,
     `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   float px = 1.0 / iResolution.y;
   vec2 p = fragCoord * px;
-  vec4 a = trailPoint(0, uDemo);
-  vec4 b = trailPoint(1, uDemo);
+  bool live = trailLive(uDemo);
+  vec4 a = trailAt(0, live);
+  vec4 b = trailAt(1, live);
   if (a.w < 0.5 || b.w < 0.5) {
     fragColor = vec4(0.0);
     return;
@@ -172,14 +244,16 @@ uniform bool uDemo;       // @control default=true label="Demo when idle"`,
   float bestFace = 1.0;
   float bestV = 0.0;
   float bestFade = 0.0;
+  trailFrom(2, live);
   for (int k = 0; k < TRAIL_POINTS - 1; k++) {
-    b = trailPoint(k + 1, uDemo);
     if (b.w < 0.5 || trailJump(a, b)) break;
-    vec4 c = k + 2 < TRAIL_POINTS ? trailPoint(min(k + 2, TRAIL_POINTS - 1), uDemo) : vec4(0.0);
+    // The point after b: read once, it is the next segment's b.
+    vec4 c = k + 2 < TRAIL_POINTS ? trailNext(live) : vec4(0.0);
     vec2 next = c.w > 0.5 && !trailJump(b, c) ? c.xy : 2.0 * b.xy - a.xy;
     vec2 lo = min(min(prev, a.xy), min(b.xy, next)) * px - uWidth - 2.0 * px;
     vec2 hi = max(max(prev, a.xy), max(b.xy, next)) * px + uWidth + 2.0 * px;
-    if (all(greaterThan(p, lo)) && all(lessThan(p, hi))) {
+    // The ribbon is at most half its width either side of the spline: further off than that, a segment cannot be nearer.
+    if (all(greaterThan(p, lo)) && all(lessThan(p, hi)) && trailBoxDist(p, prev, a.xy, b.xy, next, px) - uWidth * 0.5 < best) {
       vec2 q0 = a.xy * px;
       for (int j = 1; j <= 4; j++) {
         float t1 = float(j) / 4.0;
@@ -205,6 +279,7 @@ uniform bool uDemo;       // @control default=true label="Demo when idle"`,
     }
     prev = a.xy;
     a = b;
+    b = c;
   }
   float cover = (1.0 - smoothstep(-px, px, best)) * smoothstep(0.0, 0.15, bestFade);
   if (cover <= 0.0) {
@@ -250,21 +325,31 @@ uniform float uTwinkle;   // @control min=0 max=1 default=0.7 label="Twinkle"
 uniform float uIntensity; // @control min=0.2 max=3 default=1.2 label="Intensity"
 uniform bool uDemo;       // @control default=true label="Demo when idle"`,
     HASH,
-    trailHelper(1 / 40, 1.4),
+    trailHelper(1 / 40, 1.4, true),
     GLOW,
     `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   float px = 1.0 / iResolution.y;
   vec2 p = fragCoord * px;
   vec3 col = vec3(0.0);
+  bool live = trailLive(uDemo);
+  // How far a sparkle's light reaches from where it is (twice its largest size), and its sideways sway.
+  float reach = 2.5 * uSize + px;
+  float side = uSpread + 0.012 + reach;
   // Point 0 is still moving with the pointer, so sparkles come from the settled points after it.
+  trailFrom(1, live);
   for (int k = 1; k < TRAIL_POINTS; k++) {
-    vec4 q = trailPoint(k, uDemo);
+    vec4 q = trailNext(live);
     if (q.w < 0.5) break;
     float age = iTime - q.z;
     if (age < 0.0 || age > uLife) continue;
+    // Skip points none of whose sparkles (spread, swaying and drifting down) can reach this pixel.
+    vec2 rel = p - q.xy * px;
+    float fall = uFall * age * (0.4 + 0.6 * age);
+    if (abs(rel.x) > side || rel.y > uSpread + reach || rel.y < -uSpread - fall - reach) continue;
     float life = age / uLife;
     // Points drop off the end of the trail: fade those about to go.
     float keep = 1.0 - smoothstep(float(TRAIL_POINTS) - 6.0, float(TRAIL_POINTS) - 1.0, float(k));
+    float env = smoothstep(0.0, 0.08, life) * (1.0 - life) * (1.0 - life) * keep;
     for (int j = 0; j < 4; j++) {
       if (j >= uCount) break;
       vec2 h = hash22(vec2(q.z * 61.37 + float(j) * 7.13, float(j) + 0.5));
@@ -277,13 +362,12 @@ uniform bool uDemo;       // @control default=true label="Demo when idle"`,
       // Turn some of them a little.
       float an = (h.y - 0.5) * 0.9;
       d = mat2(cos(an), sin(an), -sin(an), cos(an)) * d;
-      float env = smoothstep(0.0, 0.08, life) * (1.0 - life) * (1.0 - life);
       float tw = mix(1.0, 0.35 + 0.65 * (0.5 + 0.5 * sin(age * (12.0 + 12.0 * h.y) + h.x * 6.28318)), uTwinkle);
       float rays = exp(-abs(d.x) / (s * 0.05)) * exp(-abs(d.y) / (s * 0.45));
       rays += exp(-abs(d.y) / (s * 0.05)) * exp(-abs(d.x) / (s * 0.45));
       float core = exp(-dot(d, d) / (s * s * 0.02));
       vec3 tint = h3 < 0.5 ? uColorA : uColorB;
-      col += (tint * (rays * 0.9 + core * 0.6) + vec3(1.0) * core) * env * tw * keep;
+      col += (tint * (rays * 0.9 + core * 0.6) + vec3(1.0) * core) * env * tw;
     }
   }
   fragColor = glow(col * uIntensity);
@@ -317,7 +401,7 @@ uniform bool uDemo;       // @control default=true label="Demo when idle"`,
     HASH,
     NOISE,
     FBM,
-    trailHelper(1 / 30, 1.3),
+    trailHelper(1 / 30, 1.3, true),
     SEGMENT,
     `// The stroke's width at a point from how fast the segment from a to b was drawn: faster, thinner.
 float pressWidth(vec4 a, vec4 b, float px) {
@@ -328,47 +412,61 @@ float pressWidth(vec4 a, vec4 b, float px) {
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   float px = 1.0 / iResolution.y;
   vec2 p = fragCoord * px;
-  vec4 a = trailPoint(0, uDemo);
-  vec4 b = trailPoint(1, uDemo);
+  bool live = trailLive(uDemo);
+  vec4 a = trailAt(0, live);
+  vec4 b = trailAt(1, live);
   float best = 1e9;
   float bestU = 1.0;
   float bestV = 0.0;
   float bestFade = 0.0;
+  // Ragged edges: the same noise for every segment, so read it once.
+  float rag = 0.9 + 0.2 * vnoise(p * 180.0);
   if (a.w > 0.5 && b.w > 0.5) {
-    float wa = pressWidth(a, b, px);
+    // Faster strokes are thinner, never wider than uWidth: ragged, at most 1.1 × that from the line.
+    float reach = 1.1 * uWidth;
+    trailFrom(2, live);
     for (int k = 0; k < TRAIL_POINTS - 1; k++) {
-      b = trailPoint(k + 1, uDemo);
       if (b.w < 0.5 || trailJump(a, b)) break;
-      vec4 c = k + 2 < TRAIL_POINTS ? trailPoint(min(k + 2, TRAIL_POINTS - 1), uDemo) : vec4(0.0);
-      if (trailJump(b, c)) c = vec4(0.0);
-      float wb = c.w > 0.5 ? pressWidth(b, c, px) : wa;
-      vec2 s = segment(p, a.xy * px, b.xy * px);
-      float u = (float(k) + s.y) / float(TRAIL_POINTS - 1);
-      float fade = clamp(1.0 - (iTime - mix(a.z, b.z, s.y)) / uLife, 0.0, 1.0);
-      // A rounded start and a tail that thins out.
-      float w = mix(wa, wb, s.y) * (1.0 - 0.6 * smoothstep(0.55, 1.0, u)) * smoothstep(0.0, 0.04, u + 0.01);
-      w *= 0.4 + 0.6 * fade;
-      // Ragged edges.
-      float sd = s.x - w * (0.9 + 0.2 * vnoise(p * 180.0));
-      if (sd < best) {
-        vec2 dir = b.xy - a.xy;
-        float side = dir.x * (p.y - a.y * px) - dir.y * (p.x - a.x * px);
-        best = sd;
-        bestU = u;
-        bestV = clamp(s.x / max(w, 1e-5), 0.0, 1.0) * (side < 0.0 ? -1.0 : 1.0);
-        bestFade = fade;
+      // The point after b: read once, it is the next segment's b.
+      vec4 next = k + 2 < TRAIL_POINTS ? trailNext(live) : vec4(0.0);
+      // A segment whose box is further off than the stroke reaches cannot be nearer than the best so far.
+      vec2 off = max(max(min(a.xy, b.xy) * px - p, p - max(a.xy, b.xy) * px), 0.0);
+      float r = best + reach;
+      if (r > 0.0 && dot(off, off) < r * r) {
+        // The width where the segment starts is from it, where it ends from the next (or the same at the end).
+        float wa = pressWidth(a, b, px);
+        float wb = next.w > 0.5 && !trailJump(b, next) ? pressWidth(b, next, px) : wa;
+        vec2 s = segment(p, a.xy * px, b.xy * px);
+        float u = (float(k) + s.y) / float(TRAIL_POINTS - 1);
+        float fade = clamp(1.0 - (iTime - mix(a.z, b.z, s.y)) / uLife, 0.0, 1.0);
+        // A rounded start and a tail that thins out.
+        float w = mix(wa, wb, s.y) * (1.0 - 0.6 * smoothstep(0.55, 1.0, u)) * smoothstep(0.0, 0.04, u + 0.01);
+        w *= 0.4 + 0.6 * fade;
+        float sd = s.x - w * rag;
+        if (sd < best) {
+          vec2 dir = b.xy - a.xy;
+          float side = dir.x * (p.y - a.y * px) - dir.y * (p.x - a.x * px);
+          best = sd;
+          bestU = u;
+          bestV = clamp(s.x / max(w, 1e-5), 0.0, 1.0) * (side < 0.0 ? -1.0 : 1.0);
+          bestFade = fade;
+        }
       }
       a = b;
-      wa = wb;
+      b = next;
     }
   }
   // Bristles streak along the stroke (they vary across it); the paper's tooth breaks them up.
-  float bristle = 0.6 * vnoise(vec2(bestV * uBristles, 3.7)) + 0.4 * fbm(p * vec2(55.0, 55.0), 3);
-  float dry = uDry * smoothstep(0.15, 1.0, bestU) + 0.35 * uDry * smoothstep(0.6, 1.0, abs(bestV)) + 0.7 * (1.0 - bestFade);
-  float ink = smoothstep(dry - 0.06, dry + 0.06, bristle * 1.1);
-  float cover = (1.0 - smoothstep(-px, px, best)) * ink * smoothstep(0.0, 0.1, bestFade);
-  // Ink pools darker at the edges and thins where a bristle runs dry.
-  vec3 col = uInk * (1.0 + 0.6 * (1.0 - bristle) * (1.0 - abs(bestV))) + 0.04 * (1.0 - bristle);
+  // Away from the stroke nothing shows, so the bristles are not worked out there.
+  float cover = (1.0 - smoothstep(-px, px, best)) * smoothstep(0.0, 0.1, bestFade);
+  vec3 col = uInk;
+  if (cover > 0.0) {
+    float bristle = 0.6 * vnoise(vec2(bestV * uBristles, 3.7)) + 0.4 * fbm(p * vec2(55.0, 55.0), 3);
+    float dry = uDry * smoothstep(0.15, 1.0, bestU) + 0.35 * uDry * smoothstep(0.6, 1.0, abs(bestV)) + 0.7 * (1.0 - bestFade);
+    cover *= smoothstep(dry - 0.06, dry + 0.06, bristle * 1.1);
+    // Ink pools darker at the edges and thins where a bristle runs dry.
+    col = uInk * (1.0 + 0.6 * (1.0 - bristle) * (1.0 - abs(bestV))) + 0.04 * (1.0 - bristle);
+  }
   if (uPaper) {
     vec3 paper = uPaperColor * (0.95 + 0.07 * fbm(p * 9.0, 4)) - 0.03 * smoothstep(0.55, 0.9, vnoise(p * vec2(400.0, 30.0)));
     fragColor = vec4(mix(paper, col, cover * 0.95), 1.0);
@@ -488,9 +586,10 @@ uniform float uLife;      // @control min=0.5 max=10 default=4 label="Fade time"
 uniform float uFlicker;   // @control min=0 max=1 default=0.25 label="Flicker"
 uniform bool uDemo;       // @control default=true label="Demo when idle"`,
     HASH,
-    trailHelper(0.05, 1.1),
+    trailHelper(0.05, 1.1, true),
     SEGMENT,
     CATMULL,
+    CATMULL_BOX,
     `vec3 spectrum(float h) {
   return 0.5 + 0.5 * cos(6.28318 * (h + vec3(0.0, 0.33, 0.67)));
 }
@@ -503,8 +602,9 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec3 col = uBackground * (1.0 - 0.45 * dot(uv - 0.5, uv - 0.5) * 2.0);
   col += (hash12(fragCoord + fract(iTime) * 113.0) - 0.5) * 0.012;
 
-  vec4 a = trailPoint(0, uDemo);
-  vec4 b = trailPoint(1, uDemo);
+  bool live = trailLive(uDemo);
+  vec4 a = trailAt(0, live);
+  vec4 b = trailAt(1, live);
   if (a.w > 0.5 && b.w > 0.5) {
     float glowR = uWidth * 4.0 * max(uGlow, 0.05);
     float margin = uWidth * 3.0 + glowR * 6.0 + 2.0 * px;
@@ -513,35 +613,44 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     float halo = 0.0;
     float best = 1e9;
     float bestWhen = a.z;
+    trailFrom(2, live);
     for (int k = 0; k < TRAIL_POINTS - 1; k++) {
-      b = trailPoint(k + 1, uDemo);
       if (b.w < 0.5) break;
       // Earlier strokes stay lit, but the jump between strokes is not drawn.
       bool jump = trailJump(a, b);
-      vec4 c = k + 2 < TRAIL_POINTS ? trailPoint(min(k + 2, TRAIL_POINTS - 1), uDemo) : vec4(0.0);
+      // The point after b: read once, it is the next segment's b.
+      vec4 c = k + 2 < TRAIL_POINTS ? trailNext(live) : vec4(0.0);
       vec2 next = c.w > 0.5 && !trailJump(b, c) ? c.xy : 2.0 * b.xy - a.xy;
       vec2 lo = min(min(prev, a.xy), min(b.xy, next)) * px - margin;
       vec2 hi = max(max(prev, a.xy), max(b.xy, next)) * px + margin;
       if (!jump && all(greaterThan(p, lo)) && all(lessThan(p, hi))) {
-        vec2 q0 = a.xy * px;
-        for (int j = 1; j <= 4; j++) {
-          vec2 q1 = catmull(prev, a.xy, b.xy, next, float(j) / 4.0) * px;
-          vec2 s = segment(p, q0, q1);
-          float when = mix(a.z, b.z, (float(j - 1) + s.y) / 4.0);
-          float fade = clamp(1.0 - (iTime - when) / uLife, 0.0, 1.0);
-          fade *= fade;
-          float d = s.x;
-          core = max(core, exp(-d * d / (uWidth * uWidth)) * fade);
-          halo = max(halo, exp(-d / glowR) * fade);
-          if (d < best) {
-            best = d;
-            bestWhen = when;
+        // Nothing on the segment is brighter than its newer end: skip it when it can be neither nearer
+        // nor brighter than what is found.
+        float dmin = trailBoxDist(p, prev, a.xy, b.xy, next, px);
+        float top = clamp(1.0 - (iTime - max(a.z, b.z)) / uLife, 0.0, 1.0);
+        top *= top;
+        if (dmin < best || exp(-dmin / glowR) * top > halo || exp(-dmin * dmin / (uWidth * uWidth)) * top > core) {
+          vec2 q0 = a.xy * px;
+          for (int j = 1; j <= 4; j++) {
+            vec2 q1 = catmull(prev, a.xy, b.xy, next, float(j) / 4.0) * px;
+            vec2 s = segment(p, q0, q1);
+            float when = mix(a.z, b.z, (float(j - 1) + s.y) / 4.0);
+            float fade = clamp(1.0 - (iTime - when) / uLife, 0.0, 1.0);
+            fade *= fade;
+            float d = s.x;
+            core = max(core, exp(-d * d / (uWidth * uWidth)) * fade);
+            halo = max(halo, exp(-d / glowR) * fade);
+            if (d < best) {
+              best = d;
+              bestWhen = when;
+            }
+            q0 = q1;
           }
-          q0 = q1;
         }
       }
       prev = jump ? 2.0 * b.xy - next : a.xy;
       a = b;
+      b = c;
     }
     // Colour from when the light passed, so each part keeps its colour as it fades.
     vec3 tint = spectrum(uHue + bestWhen * uCycle);

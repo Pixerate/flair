@@ -64,6 +64,22 @@ vec4 clickAt(int i, bool demo, float period) {
   return vec4((0.2 + 0.6 * h) * iResolution.xy, k * period, 1.0);
 }`.trim();
 
+/**
+ * `cornerHashes(i)`: `hash12` of the four corners of lattice cell `i`
+ * (i, i + x, i + y, i + xy), sharing the work between corners in the same
+ * row or column; the same numbers as four `hash12` calls, for less.
+ */
+const CORNER_HASHES = `
+vec4 cornerHashes(vec2 i) {
+  vec2 x = fract(vec2(i.x, i.x + 1.0) * 0.1031);
+  vec2 y = fract(vec2(i.y, i.y + 1.0) * 0.1031);
+  vec4 X = x.xyxy;
+  vec4 Y = y.xxyy;
+  vec4 d = X * (Y + 33.33) + Y * (X + 33.33) + X * (X + 33.33);
+  vec4 px = X + d;
+  return fract((px + (Y + d)) * px);
+}`.trim();
+
 export const flowParticles: ShaderEffect = {
   kind: "shader",
   id: "flow-particles",
@@ -86,19 +102,25 @@ uniform vec3 uFast;         // @control color default=#7CFFE0 label="Fast colour
 uniform vec3 uBackground;   // @control color default=#04060E label="Background"
 uniform bool uTransparent;  // @control default=false label="Transparent"`,
     HASH,
-    NOISE,
+    CORNER_HASHES,
     GLOW,
-    `float potential(vec2 p, float t) {
-  return vnoise(p + vec2(t, -0.6 * t)) + uTurbulence * 0.5 * vnoise(p * 2.3 - vec2(0.7 * t, t) + 9.1);
+    `// The gradient of vnoise, worked out exactly (its value is not needed here).
+vec2 vnoiseGrad(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  vec2 du = 6.0 * f * (1.0 - f);
+  vec4 h = cornerHashes(i);
+  float k = h.x - h.y - h.z + h.w;
+  return du * vec2(h.y - h.x + k * u.y, h.z - h.x + k * u.x);
 }
 
-// The curl of the potential (divergence free, so streams swirl rather than pool), plus a gentle drift.
+// The curl of the potential vnoise(p + vec2(t, -0.6 t)) + turbulence * 0.5 * vnoise(p * 2.3 - vec2(0.7 t, t) + 9.1)
+// (divergence free, so streams swirl rather than pool), plus a gentle drift.
 vec2 flow(vec2 p, float t) {
-  const float e = 0.01;
-  float c = potential(p, t);
-  float dx = potential(p + vec2(e, 0.0), t) - c;
-  float dy = potential(p + vec2(0.0, e), t) - c;
-  return vec2(dy, -dx) / e + vec2(0.35, 0.08);
+  vec2 g = vnoiseGrad(p + vec2(t, -0.6 * t));
+  if (uTurbulence > 0.0) g += uTurbulence * 1.15 * vnoiseGrad(p * 2.3 - vec2(0.7 * t, t) + 9.1);
+  return vec2(g.y, -g.x) + vec2(0.35, 0.08);
 }
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
@@ -108,22 +130,38 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   float ft = iTime * uSpeed * 0.04;
   float tail = max(uTail * float(STEPS), 1.0);
   vec3 col = vec3(0.0);
+  // The walk stays a few steps in each cell, so its particle is worked out once per cell.
+  vec2 cellAt = vec2(-1e9);
+  bool alive = false;
+  float life = 0.0;
+  vec2 at = vec2(0.0);
+  vec2 v = vec2(0.0);
+  float sp = 0.0;
   for (int k = 0; k < STEPS; k++) {
-    vec2 v = flow(q * uScale, ft);
-    float sp = length(v);
+    // The field barely turns over a step, so it is looked up every other step.
+    if ((k & 1) == 0) {
+      v = flow(q * uScale, ft);
+      sp = length(v);
+    }
     // One particle per cell at most; each life starts somewhere new in the cell.
     vec2 c = floor(q * uDensity);
-    float h0 = hash12(c + 0.31);
-    float phase = iTime * uSpeed * (0.3 + 0.3 * h0) + hash12(c + 7.7);
-    float life = fract(phase);
-    float cyc = floor(phase);
-    if (hash12(c * 1.7 + cyc * 3.1) < uAmount) {
-      vec2 hd = hash22(c + cyc * 17.13);
-      float d = length(q - (c + 0.25 + 0.5 * hd) * cell) / cell;
-      float spot = exp(-d * d * 14.0);
-      // This pixel lies k steps downstream of the particle's start; its head is "head" steps along.
-      float behind = life * float(STEPS) - float(k);
-      if (spot > 0.01 && behind >= 0.0 && behind < tail) {
+    if (c != cellAt) {
+      cellAt = c;
+      float h0 = hash12(c + 0.31);
+      float phase = iTime * uSpeed * (0.3 + 0.3 * h0) + hash12(c + 7.7);
+      life = fract(phase);
+      float cyc = floor(phase);
+      alive = hash12(c * 1.7 + cyc * 3.1) < uAmount;
+      if (alive) at = (c + 0.25 + 0.5 * hash22(c + cyc * 17.13)) * cell;
+    }
+    // This pixel lies k steps downstream of the particle's start; its head is "head" steps along.
+    float behind = life * float(STEPS) - float(k);
+    if (alive && behind >= 0.0 && behind < tail) {
+      vec2 dq = (q - at) / cell;
+      float d2 = dot(dq, dq);
+      // exp(-14 d^2) > 0.01
+      if (d2 < 0.329) {
+        float spot = exp(-d2 * 14.0);
         float w = 1.0 - behind / tail;
         float fade = smoothstep(0.0, 0.08, life) * (1.0 - smoothstep(0.75, 1.0, life));
         vec3 hue = mix(uSlow, uFast, smoothstep(0.3, 2.2, sp));
@@ -394,12 +432,40 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   float t = iTime * uSpeed * 0.5;
   float len = 0.018 * uSize;
   float cover = 0.0;
+  // A bird is within its formation offset, jitter and size of the line between the two flocks
+  // it is moving between, so first find which pairs of flocks pass near this pixel (bit a * 4 + b).
+  float groups = float(uGroups);
+  vec2 flocks[4];
+  for (int g = 0; g < 4; g++) flocks[g] = flockAt(float(g), t, aspect);
+  float margin = 1.89 * uSpread + 0.036 * uJitter + 2.04 * len + 2.0 * px;
+  int near = 0;
+  for (int a = 0; a < 4; a++) {
+    if (a >= uGroups) break;
+    for (int b = 0; b < 4; b++) {
+      if (b >= uGroups) break;
+      vec2 pa = p - flocks[a];
+      vec2 ba = flocks[b] - flocks[a];
+      vec2 off = pa - ba * clamp(dot(pa, ba) / max(dot(ba, ba), 1e-8), 0.0, 1.0);
+      if (dot(off, off) < margin * margin) near |= 1 << (a * 4 + b);
+    }
+  }
   for (int i = 0; i < 120; i++) {
-    if (i >= uCount) break;
+    if (near == 0 || i >= uCount) break;
     float fi = float(i);
+    // birdAt, with the flock centres looked up and far birds dropped before the rest of the work.
+    vec2 h = hash22(vec2(fi, 3.1));
+    float sw = t * 0.06 * (0.6 + 0.8 * h.y) + h.x * 10.0;
+    float k = floor(sw);
+    int ga = int(floor(hash12(vec2(fi, k)) * groups));
+    float glide = smoothstep(0.6, 1.0, fract(sw));
+    int gb = glide > 0.0 ? int(floor(hash12(vec2(fi, k + 1.0)) * groups)) : ga;
+    if ((near & (1 << (ga * 4 + gb))) == 0) continue;
+    vec2 o = (hash22(vec2(fi, 8.3)) - 0.5) * 2.0 * uSpread;
+    o.x *= 1.6;
+    vec2 jitter = uJitter * 0.025 * vec2(sin(t * (1.1 + h.x) + fi), cos(t * (1.3 + h.y) + fi * 1.7));
+    vec2 pos = mix(flocks[ga], flocks[gb], glide) + o + jitter;
     float scale = 0.7 + 0.5 * hash12(vec2(fi, 6.6));
     float l = len * scale;
-    vec2 pos = birdAt(fi, t, aspect);
     vec2 dp = p - pos;
     if (abs(dp.x) > l * 1.2 || abs(dp.y) > l * 1.2) continue;
     vec2 v = pos - birdAt(fi, t - 0.03, aspect);
@@ -459,7 +525,7 @@ uniform float uDensity;      // @control min=40 max=240 default=120 step=1 label
 uniform float uScatter;      // @control min=0.1 max=1.5 default=0.4 label="Scatter distance"
 uniform float uDirection;    // @control min=-180 max=180 default=20 label="Drift direction"`,
     HASH,
-    NOISE,
+    CORNER_HASHES,
     `// The text image's alpha at frame point p (height 1, centred), the image contained in uSize of the frame.
 float letters(vec2 p) {
   vec2 size = vec2(textureSize(uText, 0));
@@ -469,6 +535,15 @@ float letters(vec2 p) {
   vec2 uv = p / vec2(h * aspect, h) + 0.5;
   if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) return 0.0;
   return texture(uText, uv).a;
+}
+
+// Half the size of the text's box in the frame (letters is 0 outside it).
+vec2 lettersHalf() {
+  vec2 size = vec2(textureSize(uText, 0));
+  float aspect = size.x / max(size.y, 1.0);
+  float frame = iResolution.x / iResolution.y;
+  float h = min(uSize, frame * uSize / aspect);
+  return 0.5 * vec2(h * aspect, h);
 }
 
 // How far through dissolving the particle at home is (0 in place, 1 gone): left to right, then back together.
@@ -481,16 +556,40 @@ float scattered(vec2 home, float phase) {
   return a * a * (3.0 - 2.0 * a);
 }
 
+// vnoise, keeping the corner hashes of the lattice cell it last looked in: the wind is smooth and
+// its lattice coarse, so most lookups land in the same cell as the one before.
+vec2 eddyCellA = vec2(-1e9);
+vec2 eddyCellB = vec2(-1e9);
+vec4 eddyHashA = vec4(0.0);
+vec4 eddyHashB = vec4(0.0);
+
+float eddy(vec2 p, inout vec2 cellAt, inout vec4 h) {
+  vec2 i = floor(p);
+  if (i != cellAt) {
+    cellAt = i;
+    h = cornerHashes(i);
+  }
+  vec2 f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(h.x, h.y, u.x), mix(h.z, h.w, u.x), u.y);
+}
+
+// Group g's gust: its wind (xy) and how much it lifts what it carries (z).
+vec3 gustOf(float g) {
+  float ang = radians(uDirection) + (fract(g * 0.618) - 0.5) * 1.2;
+  return vec3(vec2(cos(ang), sin(ang)) * (0.3 + 0.18 * g), 0.3 * (0.5 + 0.2 * g));
+}
+
 // Where the wind has carried a particle of group g from home: smooth in home, so it can be inverted.
 // Each of the six groups rides its own gust (speed, heading and eddies), so they spread apart.
-vec2 carried(vec2 home, float phase, float g) {
+vec2 carried(vec2 home, float phase, float g, vec3 gust) {
   float a = scattered(home, phase);
-  float ang = radians(uDirection) + (fract(g * 0.618) - 0.5) * 1.2;
-  vec2 wind = vec2(cos(ang), sin(ang)) * (0.3 + 0.18 * g);
+  // Still at home (most of the frame, most of the time): no need for the eddies.
+  if (a <= 0.0) return vec2(0.0);
   float t = phase * 3.0;
   vec2 q = home * 3.0 + g * 5.3;
-  vec2 swirl = vec2(vnoise(q + vec2(t, 0.0)), vnoise(q + vec2(4.7, t))) - 0.5;
-  return a * uScatter * (wind + swirl * 0.8 + vec2(0.0, 0.3 * a * (0.5 + 0.2 * g)));
+  vec2 swirl = vec2(eddy(q + vec2(t, 0.0), eddyCellA, eddyHashA), eddy(q + vec2(4.7, t), eddyCellB, eddyHashB)) - 0.5;
+  return a * uScatter * (gust.xy + swirl * 0.8 + vec2(0.0, gust.z * a));
 }
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
@@ -504,22 +603,28 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec3 col = uColor;
   float cover = solid;
 
+  // Every particle is home outside this part of the loop.
+  bool moving = phase > 0.12 && phase < 0.94;
+  vec2 box = lettersHalf() + 2.0 * cell;
   for (int gi = 0; gi < 6; gi++) {
+    if (!moving) break;
     float g = float(gi);
+    vec3 gust = gustOf(g);
     // Trace back to the home a particle of this group here would have come from, then search the cells round it.
     vec2 home = p;
-    for (int i = 0; i < 4; i++) home = p - carried(home, phase, g);
+    for (int i = 0; i < 4; i++) home = p - carried(home, phase, g, gust);
+    // The cells searched are all off the text.
+    if (any(greaterThan(abs(home), box))) continue;
     vec2 base = floor(home / cell);
     for (int y = -1; y <= 1; y++) {
       for (int x = -1; x <= 1; x++) {
         vec2 c = base + vec2(float(x), float(y));
         if (floor(hash12(c + 0.73) * 6.0) != g) continue;
         vec2 hc = (c + 0.5) * cell;
-        if (letters(hc) < 0.5) continue;
         float a = scattered(hc, phase);
-        if (a < 0.002) continue;
+        if (a < 0.002 || letters(hc) < 0.5) continue;
         vec2 j = hash22(c);
-        vec2 pos = hc + carried(hc, phase, g) + (j - 0.5) * cell * 1.1 * a;
+        vec2 pos = hc + carried(hc, phase, g, gust) + (j - 0.5) * cell * 1.1 * a;
         float r = cell * (0.5 - 0.1 * a) * (0.75 + 0.5 * j.x);
         float d = length(p - pos);
         float disc = (1.0 - smoothstep(r - px, r + px * 0.5, d)) * (1.0 - smoothstep(0.6, 1.0, a) * 0.6 * j.y);
@@ -578,14 +683,32 @@ vec4 blast(vec4 acc, vec2 p, vec2 origin, float angle, float spread, float speed
   float e = (1.0 - exp(-k * age)) / k;
   float fade = 1.0 - smoothstep(LIFE - 1.0, LIFE, age);
   float reach = 0.03 * uSize;
+  // Every piece is within its sway and the spread of fall speeds of the fan its launch sweeps out
+  // (speeds 0.5 to 1 times speed, within spread of angle, all dropped by the middle fall speed),
+  // so skip the blast where this pixel is clear of that.
+  float drop = 0.16 * uFall * (age - e);
+  vec2 rel = p - origin + vec2(0.0, drop);
+  float slack = reach * 1.42 + 0.035 + 0.3 * drop + px;
+  float r = length(rel);
+  float far = speed * e;
+  if (r > far + slack || r < 0.5 * far - slack) return acc;
+  if (spread < 6.2 && r > slack) {
+    float off = abs(mod(atan(rel.y, rel.x) - angle + 3.14159265, 6.28318531) - 3.14159265);
+    if (off > spread * 0.5 + asin(slack / r) + 0.01) return acc;
+  }
   for (int j = 0; j < 80; j++) {
     if (j >= count) break;
     float fj = float(j);
     vec2 h = hash22(vec2(fj * 7.13 + 1.0, seed));
+    float launch = speed * (0.5 + 0.5 * h.y);
+    // The same tests for this piece before working out the rest of it: how far out, then where.
+    if (abs(r - launch * e) > slack) continue;
+    float a = angle + (h.x - 0.5) * spread;
+    vec2 v0 = vec2(cos(a), sin(a)) * launch;
+    vec2 dv = rel - v0 * e;
+    if (abs(dv.x) > reach + 0.035 || abs(dv.y) > reach + 0.3 * drop) continue;
     vec2 h2 = hash22(h * 53.1 + seed);
     float h3 = hash12(h2 * 17.7 + fj);
-    float a = angle + (h.x - 0.5) * spread;
-    vec2 v0 = vec2(cos(a), sin(a)) * speed * (0.5 + 0.5 * h.y);
     float fall = 0.16 * uFall * (0.7 + 0.6 * h2.x);
     vec2 pos = origin + v0 * e - vec2(0.0, fall * (age - e));
     pos.x += 0.035 * sin(age * (2.0 + 2.0 * h2.y) + h.x * 6.28) * smoothstep(0.3, 1.2, age);

@@ -67,12 +67,64 @@ uniform float uSpeed;       // @control min=0 max=3 default=0.6 label="Drift spe
     `const float BOTTOM = 1.5;
 const float TOP = 3.2;
 
-float cloudDensity(vec3 p, int octaves) {
-  vec3 q = p * 0.42 + vec3(iTime * uSpeed * 0.12, 0.0, iTime * uSpeed * 0.05);
-  float n = fbm3(q, octaves);
+// The noise's lattice cell last used, and its eight corner hashes. Successive
+// samples along a ray (and toward the sun) mostly fall in the same cell of the
+// coarse octaves, so they reuse its hashes instead of hashing it again.
+struct Cell {
+  vec3 id;
+  vec4 lo;
+  vec4 hi;
+};
+
+Cell noCell() {
+  return Cell(vec3(1e9), vec4(0.0), vec4(0.0));
+}
+
+// vnoise3(p), with its corners taken from the cell when p is still in it.
+float cellNoise(vec3 p, inout Cell c) {
+  vec3 i = floor(p);
+  if (i != c.id) {
+    c.id = i;
+    c.lo = vec4(hash13(i), hash13(i + vec3(1.0, 0.0, 0.0)), hash13(i + vec3(0.0, 1.0, 0.0)), hash13(i + vec3(1.0, 1.0, 0.0)));
+    c.hi = vec4(hash13(i + vec3(0.0, 0.0, 1.0)), hash13(i + vec3(1.0, 0.0, 1.0)), hash13(i + vec3(0.0, 1.0, 1.0)), hash13(i + vec3(1.0, 1.0, 1.0)));
+  }
+  vec3 f = fract(p);
+  vec3 u = f * f * (3.0 - 2.0 * f);
+  float a = mix(c.lo.x, c.lo.y, u.x);
+  float b = mix(c.lo.z, c.lo.w, u.x);
+  float cc = mix(c.hi.x, c.hi.y, u.x);
+  float d = mix(c.hi.z, c.hi.w, u.x);
+  return mix(mix(a, b, u.y), mix(cc, d, u.y), u.z);
+}
+
+// fbm3(p, octaves) for three octaves or more, the first three through cells c0, c1 and c2.
+float cloudNoise(vec3 p, int octaves, inout Cell c0, inout Cell c1, inout Cell c2) {
+  float sum = 0.5 * cellNoise(p, c0);
+  p = p * 2.03 + vec3(11.7, 3.1, 7.9);
+  sum += 0.25 * cellNoise(p, c1);
+  p = p * 2.03 + vec3(11.7, 3.1, 7.9);
+  sum += 0.125 * cellNoise(p, c2);
+  p = p * 2.03 + vec3(11.7, 3.1, 7.9);
+  float amp = 0.0625;
+  for (int i = 3; i < 6; i++) {
+    if (i >= octaves) break;
+    sum += amp * vnoise3(p);
+    p = p * 2.03 + vec3(11.7, 3.1, 7.9);
+    amp *= 0.5;
+  }
+  return sum;
+}
+
+// The cloud's density at p from its noise to the given octaves; rest stands in
+// for the octaves left out (their average), so the cloud keeps its mass.
+float cloudDensity(vec3 p, int octaves, float rest, inout Cell c0, inout Cell c1, inout Cell c2) {
   float h = clamp((p.y - BOTTOM) / (TOP - BOTTOM), 0.0, 1.0);
   // Rounded tops and flat-ish bases.
   float shape = smoothstep(0.0, 0.15, h) * (1.0 - smoothstep(0.45, 1.0, h));
+  // Outside the slab there's no cloud, whatever the noise.
+  if (shape <= 0.0) return 0.0;
+  vec3 q = p * 0.42 + vec3(iTime * uSpeed * 0.12, 0.0, iTime * uSpeed * 0.05);
+  float n = cloudNoise(q, octaves, c0, c1, c2) + rest;
   return clamp((n - (1.0 - uCoverage) * 0.75) * 3.0 * shape, 0.0, 1.0) * uDensity;
 }
 
@@ -91,21 +143,35 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   if (rd.y > 0.02) {
     float t0 = BOTTOM / rd.y;
     float t1 = min(TOP / rd.y, t0 + 14.0);
-    float dt = (t1 - t0) / 40.0;
+    // Steps of about 0.35 (as long as a ray toward the horizon takes in 40), so
+    // short, steep rays take fewer: between 28 and 40 (fewer shows the jitter as grain).
+    float steps = clamp(ceil((t1 - t0) / 0.35), 28.0, 40.0);
+    float dt = (t1 - t0) / steps;
     float t = t0 + dt * fract(sin(dot(fragCoord, vec2(12.9898, 78.233))) * 43758.5453);
     // Henyey-Greenstein: a forward lobe for the silver lining plus a soft back lobe.
     float g = 0.65;
     float hg = (1.0 - g * g) / pow(1.0 + g * g - 2.0 * g * mu, 1.5) / 12.566;
     float phase = mix(0.08, hg * 4.0, 0.7);
+    // Noise cells along the ray (m) and toward the sun (l).
+    Cell m0 = noCell();
+    Cell m1 = noCell();
+    Cell m2 = noCell();
+    Cell l0 = noCell();
+    Cell l1 = noCell();
+    Cell l2 = noCell();
     for (int i = 0; i < 40; i++) {
-      if (trans < 0.02 || t > 60.0) break;
+      if (trans < 0.02 || t > 60.0 || float(i) >= steps) break;
       vec3 pos = rd * t;
-      int oct = t < 18.0 ? 5 : 3;
-      float d = cloudDensity(pos, oct);
+      // Fine detail where it shows: five octaves near and in front, fewer once
+      // the cloud in front hides most of this sample, three far away.
+      int oct = t < 18.0 ? (trans > 0.5 ? 5 : trans > 0.15 ? 4 : 3) : 3;
+      float rest = t < 18.0 ? 0.5 * (exp2(-float(oct)) - exp2(-5.0)) : 0.0;
+      float d = cloudDensity(pos, oct, rest, m0, m1, m2);
       if (d > 0.01) {
-        // Light march toward the sun for self-shadowing.
+        // Light march toward the sun for self-shadowing: the cloud between 0.11 and
+        // 0.99 toward it, sampled at the middles of its two halves.
         float shade = 0.0;
-        for (int j = 1; j <= 4; j++) shade += cloudDensity(pos + sun * 0.22 * float(j), 3);
+        for (int j = 0; j < 2; j++) shade += 2.0 * cloudDensity(pos + sun * (0.33 + 0.44 * float(j)), 3, 0.0, l0, l1, l2);
         float light = exp(-shade * 1.4);
         float powder = 1.0 - exp(-d * 4.0);
         vec3 lit = mix(uShadowColor, uCloudColor, light) + uSunColor * light * powder * phase * 2.5;
