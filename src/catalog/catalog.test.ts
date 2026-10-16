@@ -3,7 +3,7 @@ import { checkControlValue, parseControls } from "../shader/controls.js";
 import { svgFrame, svgMotionIssues } from "../vector/motion.js";
 import { svgInlineLayout } from "../vector/static.js";
 import { svgDuration } from "../vector/svg.js";
-import type { VectorEffect } from "./types.js";
+import type { EffectCategory, VectorEffect } from "./types.js";
 import {
   EFFECT_CATEGORIES,
   EFFECTS,
@@ -1580,5 +1580,32 @@ describe("more gradients", () => {
       expect(effect.presets?.length ?? 0, id).toBeGreaterThan(1);
     }
     expect(getEffect("grainy-gradient")!.presets!.map((p) => p.name)).toContain("Stripe-like");
+  });
+});
+
+describe("3d, space, weather and water effects", () => {
+  const ids = (category: EffectCategory) => findEffects({ category }).map((e) => e.id);
+
+  it("fill the new categories and add to space", () => {
+    expect(ids("3d")).toEqual(["globe", "rotating-shapes", "isometric-city", "wireframe-terrain", "metaballs-3d", "torus-knot"]);
+    expect(ids("weather")).toEqual(["rain-streaks", "thunderstorm", "rainbow", "wind-gust", "hail"]);
+    expect(ids("water")).toEqual(["ocean-waves", "underwater-scene", "pond-ripples", "waterfall"]);
+    for (const id of ["planet", "spiral-galaxy", "solar-system"]) expect(ids("space")).toContain(id);
+  });
+
+  it("lay the weather overlays over other content and filter pictures", () => {
+    for (const id of ["rain-streaks", "wind-gust", "hail"]) expect(getEffect(id), id).toMatchObject({ transparent: true });
+    for (const id of ["rainbow", "pond-ripples"]) {
+      expect(getEffect(id), id).toMatchObject({ video: "filter" });
+      expect(effectInputs(getEffect(id)!).accepts).toContain("video");
+    }
+  });
+
+  it("let the globe be dragged and the pond take stones, with idle demos", () => {
+    expect(effectInputs(getEffect("globe")!).interactions).toEqual(expect.arrayContaining(["press", "pointer"]));
+    expect(effectInputs(getEffect("pond-ripples")!).interactions).toContain("click");
+    for (const id of ["globe", "pond-ripples"]) {
+      expect(effectControls(getEffect(id)!).find((c) => c.name === "uDemo"), id).toMatchObject({ type: "bool", default: true });
+    }
   });
 });

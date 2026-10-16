@@ -77,6 +77,10 @@ import { lightingShaders } from "./shaders/lighting.js";
 import { audioShaders } from "./shaders/audio.js";
 import { scrollShaders } from "./shaders/scroll.js";
 import { scrollEffects } from "./scroll.js";
+import { threeDShaders } from "./shaders/three-d.js";
+import { spaceShaders } from "./shaders/space-more.js";
+import { weatherShaders } from "./shaders/weather.js";
+import { waterShaders } from "./shaders/water.js";
 import { textEffects } from "./text.js";
 import { broadcastEffects } from "./broadcast.js";
 import { annotationEffects } from "./annotation.js";
@@ -140,6 +144,7 @@ export const SHADER_EFFECTS: readonly ShaderEffect[] = [
   starfield,
   nebula,
   blackHole,
+  ...spaceShaders,
   synthwaveGrid,
   digitalRain,
   pixelSunset,
@@ -177,6 +182,9 @@ export const SHADER_EFFECTS: readonly ShaderEffect[] = [
   ...audioShaders,
   ...scrollShaders,
   ...uiShaders,
+  ...threeDShaders,
+  ...weatherShaders,
+  ...waterShaders,
   ...transitions,
 ];
 

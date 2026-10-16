@@ -498,7 +498,7 @@ frames.render(t, { audio: track.at(t), scroll: [0.5, 0.5, 0, 0] });
 | gradient | mesh gradient, aurora, gradient flow, conic sweep, silk, grainy gradient, Stripe gradient, holographic gradient, radial glow |
 | organic | liquid marble, smoke, lava lamp, plasma, caustics, flames, reaction diffusion, cell division, coral growth, veins, ferrofluid, jellyfish, fur, blob morph |
 | pattern | dot wave, Truchet flow, hex pulse, living cells, moiré rings, kaleidoscope, stripes, Memphis pattern, chevron tunnel, neon circuit |
-| light / space | bokeh, god rays, sparkles, neon ripple, light ribbons, warp starfield, nebula, event horizon |
+| light / space | bokeh, god rays, sparkles, neon ripple, light ribbons, warp starfield, nebula, event horizon, planet, spiral galaxy, solar system |
 | lighting | relight, point light, studio lighting, time of day, gobo projection, neon spill, candlelight, pool caustics, party lights, lamp switch |
 | retro | synthwave, digital rain, dithered gradient, TV static, 8-bit, Game Boy screen, pixel fire, pixel landscape, OutRun road, palette cycle, raster bars, tape loading, pixel water, pixel text, coin spin, space invader, heart health bar, chomp loader |
 | image | ripple, glitch, duotone, halftone, pixel reveal, Ken Burns, ASCII art, shatter, melt, risograph, thermal, edge glow, tilt-shift, slit-scan, mosaic flip, chromatic lens, oil paint, CRT screen, film look |
@@ -527,6 +527,9 @@ frames.render(t, { audio: track.at(t), scroll: [0.5, 0.5, 0, 0] });
 | broadcast | lower third, stacked lower third, title card, logo reveal, logo sting, end card, countdown, subscribe button, news ticker, scoreboard, chapter marker |
 | annotation | hand circle, hand arrow, callout, bracket note, scribble out, step badges, focus box, fake cursor, tooltip tour |
 | ui | border beam, gradient border, meteors, background beams, grid spotlight, dot grid, glass card, liquid glass, grainy glow background, marquee, number ticker, animated badge |
+| 3d | globe, rotating shapes, isometric city, wireframe terrain, 3D metaballs, torus knot |
+| weather | rain streaks, thunderstorm, rainbow, wind gust, hail |
+| water | ocean waves, underwater scene, pond ripples, waterfall |
 | transition | liquid morph, displacement, luma fade, particle swap, ink bleed, pixel dissolve, comic panels, wipe, iris, block dissolve, grid wipe, glass wipe, twister, light leak, cross zoom, whip pan |
 | loader / icon / data | spinner, bouncing dots, pulse ping, equalizer, skeleton shimmer, progress bar, indeterminate bar, step progress, circle dots loader, wave bars, progress ring, bar chart, line chart, stat counter, route, timeline track, success check, error cross, heartbeat, signature, confetti, flow network, upload card |
 

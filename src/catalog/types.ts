@@ -45,6 +45,9 @@ export type EffectCategory =
   | "broadcast"
   | "annotation"
   | "ui"
+  | "3d"
+  | "weather"
+  | "water"
   | "transition"
   | "loader"
   | "data"
@@ -85,6 +88,9 @@ export const EFFECT_CATEGORIES: readonly EffectCategory[] = [
   "broadcast",
   "annotation",
   "ui",
+  "3d",
+  "weather",
+  "water",
   "transition",
   "loader",
   "data",
