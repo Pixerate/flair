@@ -351,15 +351,15 @@ ${BACKDROP_CONTROLS}`,
     ROTATE,
     PICTURE,
     COMMON,
-    `const vec2 RING[4] = vec2[4](vec2(0.0, 0.0), vec2(1.0, 0.0), vec2(1.0, 1.0), vec2(0.0, 1.0));
-
-// Where cell c's particle lands: cells trade places around each 2 × 2 block, turned 1–3 steps.
+    `// Where cell c's particle lands: cells trade places around each 2 × 2 block, turned 1–3 steps.
+// Round the block the corners go (0, 0), (1, 0), (1, 1), (0, 1); worked out rather than looked up in an array.
 vec2 landing(vec2 c) {
   vec2 block = floor(c * 0.5);
   vec2 local = c - block * 2.0;
-  int i = local.y < 0.5 ? int(local.x) : 3 - int(local.x);
-  int turn = 1 + int(hash12(block + 7.3) * 2.999);
-  return block * 2.0 + RING[(i + turn) % 4];
+  float i = local.y < 0.5 ? local.x : 3.0 - local.x;
+  float turn = 1.0 + floor(hash12(block + 7.3) * 2.999);
+  float r = mod(i + turn, 4.0);
+  return block * 2.0 + vec2(r > 0.5 && r < 2.5 ? 1.0 : 0.0, r > 1.5 ? 1.0 : 0.0);
 }
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
@@ -373,26 +373,43 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 hitTo = vec2(0.0);
   float hitT = 0.0;
   float hitCover = 0.0;
-  // Particles travel at most about 1.5 cells, so the 5 × 5 cells around are every candidate.
-  for (int j = -2; j <= 2; j++) {
-    for (int i = -2; i <= 2; i++) {
-      vec2 c = base + vec2(float(i), float(j));
+  // How far a particle's corners stray from the straight line between its two places: the curl, then its turned corners.
+  float reach = max(0.7072, 0.6 * abs(uScatter + uSpin * 0.3) + 0.4951) + 0.01;
+  // Particles travel at most about 1.5 cells, so the 5 × 5 cells around are every candidate;
+  // of those, only the cells within reach (one cell either side of the block) need looking at.
+  vec2 lo = max(base - 2.0, ceil(p - 1.5 - reach));
+  vec2 hi = min(base + 2.0, floor(p + 0.5 + reach));
+  for (int j = 0; j < 5; j++) {
+    if (lo.y + float(j) > hi.y) break;
+    for (int i = 0; i < 5; i++) {
+      if (lo.x + float(i) > hi.x) break;
+      vec2 c = lo + vec2(float(i), float(j));
+      // It stays in its 2 × 2 block, so skip it if this pixel is out of its reach from there.
+      vec2 corner = c - 2.0 * floor(c * 0.5);
+      if (any(lessThan(p, c + 0.5 - corner - reach)) || any(greaterThan(p, c + 1.5 - corner + reach))) continue;
       vec2 h = hash22(c);
       // Staggered: a sweep from the left plus some randomness.
       float delay = 0.5 * (0.55 * clamp(c.x / grid.x, 0.0, 1.0) + 0.45 * h.x);
       float k = smoothstep(0.0, 1.0, clamp((t - delay) / 0.5, 0.0, 1.0));
       float lift = sin(3.14159 * k);
+      float z = h.y + lift;
+      // Behind what is already here, or (now its lift is known) out of reach: skip it before working out where it is.
+      if (z <= top) continue;
+      float near = 0.6 * abs(uScatter + uSpin * 0.3) * lift + 0.7072 * (1.0 - 0.3 * lift) + 0.01;
+      if (any(lessThan(p, c + 0.5 - corner - near)) || any(greaterThan(p, c + 1.5 - corner + near))) continue;
       vec2 from = c + 0.5;
       vec2 to = landing(c) + 0.5;
       vec2 path = to - from;
       vec2 side = normalize(vec2(-path.y, path.x) + (h - 0.5) * 0.8);
       vec2 pos = mix(from, to, k) + side * lift * (uScatter + uSpin * 0.3) * (h.y > 0.5 ? 0.6 : -0.6);
       float size = 1.0 - 0.3 * lift;
+      // Out of reach of its corners, however it is turned.
+      vec2 rel = p - pos;
+      if (dot(rel, rel) > 0.501 * size * size) continue;
       float angle = (h.y - 0.5) * 6.28318 * uSpin * lift;
-      vec2 l = rot(-angle) * (p - pos) / size;
+      vec2 l = rot(-angle) * rel / size;
       float m = max(abs(l.x), abs(l.y));
-      float z = h.y + lift;
-      if (m <= 0.5 && z > top) {
+      if (m <= 0.5) {
         top = z;
         hitFrom = from + l;
         hitTo = to + l;

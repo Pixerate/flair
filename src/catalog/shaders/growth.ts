@@ -647,10 +647,36 @@ uniform float uClump;    // @control min=0 max=1 default=0.5 label="Clumping"
 uniform float uPart;     // @control min=0 max=1 default=0.8 label="Parting"`,
     HASH,
     NOISE,
-    `vec2 strandDir(vec2 root, vec2 ptr, float hov) {
-  float a = radians(uLie) + (vnoise(root * 0.07) - 0.5) * 1.6 * uClump;
-  a += uSway * 0.7 * sin(iTime * 1.3 + root.x * 0.05 + root.y * 0.03 + 2.0 * vnoise(root * 0.02 + iTime * 0.15));
+    `// The two slow noise fields that turn the strands, hashed once per pixel on a
+// 3 x 3 lattice that covers every root the pixel looks at.
+mat3 clumpGrid;
+vec2 clumpBase;
+mat3 swayGrid;
+vec2 swayBase;
+
+mat3 noiseGrid(vec2 base) {
+  mat3 g;
+  for (int x = 0; x < 3; x++) {
+    for (int y = 0; y < 3; y++) g[x][y] = hash12(base + vec2(float(x), float(y)));
+  }
+  return g;
+}
+
+// vnoise(q), with its corners read from a lattice hashed at base.
+float gridNoise(vec2 q, vec2 base, mat3 g) {
+  vec2 f = fract(q);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  ivec2 k = clamp(ivec2(floor(q) - base), 0, 1);
+  vec3 c0 = g[k.x];
+  vec3 c1 = g[k.x + 1];
+  return mix(mix(c0[k.y], c1[k.y], u.x), mix(c0[k.y + 1], c1[k.y + 1], u.x), u.y);
+}
+
+vec2 strandDir(vec2 root, vec2 ptr, float hov) {
+  float a = radians(uLie) + (gridNoise(root * 0.07, clumpBase, clumpGrid) - 0.5) * 1.6 * uClump;
+  a += uSway * 0.7 * sin(iTime * 1.3 + root.x * 0.05 + root.y * 0.03 + 2.0 * gridNoise(root * 0.02 + iTime * 0.15, swayBase, swayGrid));
   vec2 dir = vec2(cos(a), sin(a));
+  if (uPart * hov <= 0.0) return dir;
   vec2 away = root - ptr;
   float reach = 0.16 * uDensity;
   float f = uPart * hov * exp(-dot(away, away) / (reach * reach));
@@ -661,23 +687,93 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 p = fragCoord / iResolution.y * uDensity;
   vec2 ptr = iPointer.xy / iResolution.y * uDensity;
   float hov = clamp(iPointer.z, 0.0, 1.0);
+  // Every root looked at below lies within 7 cells of p.
+  clumpBase = floor((p - 7.0) * 0.07);
+  clumpGrid = noiseGrid(clumpBase);
+  swayBase = floor((p - 7.0) * 0.02 + iTime * 0.15);
+  swayGrid = noiseGrid(swayBase);
   vec2 here = strandDir(p, ptr, hov);
   float top = -1.0;
   float across = 0.0;
   float tint = 0.0;
   vec2 topDir = here;
+  // Clumping and breeze turn a strand by at most 0.8 * uClump and 0.7 * uSway, and
+  // both fields are smooth, so strands rooted within reach of this pixel point
+  // inside a cone around its own direction. Roots whose strands can't reach the
+  // pixel, or can't rise above the strand already found, are skipped before their
+  // directions are worked out. Roots are visited upstream first, so the topmost
+  // strand tends to be found early and the rest skipped. (Hovering parts the fur
+  // near the pointer in any direction, so the cone isn't used there.)
+  float lie = radians(uLie);
+  float R = 1.25 * uLength + uWidth;
+  float cp = (gridNoise(p * 0.07, clumpBase, clumpGrid) - 0.5) * 1.6 * uClump;
+  float sp = uSway * 0.7 * sin(iTime * 1.3 + p.x * 0.05 + p.y * 0.03 + 2.0 * gridNoise(p * 0.02 + iTime * 0.15, swayBase, swayGrid));
+  // Bounds on each field's slope: 0.2376 * uClump and 0.10024 * uSway per cell.
+  float dc = 0.2376 * uClump * R;
+  float ds = 0.10024 * uSway * R;
+  vec2 lo = vec2(max(-0.8 * uClump, cp - dc), max(-0.7 * uSway, sp - ds));
+  vec2 hi = vec2(min(0.8 * uClump, cp + dc), min(0.7 * uSway, sp + ds));
+  float mid = lie + 0.5 * (lo.x + hi.x + lo.y + hi.y);
+  // At most 1.54, under a quarter turn.
+  float cone = 0.5 * (hi.x - lo.x + hi.y - lo.y) + 0.04;
+  vec2 axis = vec2(cos(mid), sin(mid));
+  float cosCone = cos(cone);
+  float sinCone = sin(cone);
+  float reach = 0.16 * uDensity;
+  bool parting = uPart * hov > 0.0;
+  // The box roots that reach this pixel lie in, relative to it: behind it within
+  // the cone (anywhere within reach where the pointer may be parting the fur).
+  float back = 1.25 * uLength;
+  vec2 e1 = -back * vec2(cos(mid + cone), sin(mid + cone));
+  vec2 e2 = -back * vec2(cos(mid - cone), sin(mid - cone));
+  vec2 boxLo = min(vec2(0.0), min(e1, e2));
+  vec2 boxHi = max(vec2(0.0), max(e1, e2));
+  if (-axis.x >= cosCone) boxHi.x = back;
+  if (axis.x >= cosCone) boxLo.x = -back;
+  if (-axis.y >= cosCone) boxHi.y = back;
+  if (axis.y >= cosCone) boxLo.y = -back;
+  float ptrGap = max(length(p - ptr) - R, 0.0);
+  if (uPart * hov * exp(-ptrGap * ptrGap / (reach * reach)) * 1.4 > 0.02) {
+    boxLo = vec2(-back);
+    boxHi = vec2(back);
+  }
+  boxLo += p - uWidth;
+  boxHi += p + uWidth;
+  bvec2 up = lessThan(here, vec2(0.0));
   for (int layer = 0; layer < 3; layer++) {
     float fl = float(layer);
     vec2 off = vec2(0.37, 0.71) * fl;
+    // Each layer's 5 x 5 cells around the middle of the strands through here,
+    // cut to those whose roots (in [id + off, id + off + 1)) can lie in the box.
     vec2 base = floor(p - here * uLength * 0.5 - off);
-    for (int j = -2; j <= 2; j++) {
-      for (int i = -2; i <= 2; i++) {
+    ivec2 first = ivec2(max(ceil(boxLo - off - 1.0), base - 2.0) - base);
+    ivec2 last = ivec2(min(floor(boxHi - off), base + 2.0) - base);
+    for (int row = 0; row < 5; row++) {
+      if (row > last.y - first.y) break;
+      int j = up.y ? last.y - row : first.y + row;
+      for (int column = 0; column < 5; column++) {
+        if (column > last.x - first.x) break;
+        int i = up.x ? last.x - column : first.x + column;
         vec2 id = base + vec2(float(i), float(j));
         vec2 h = hash22(id + fl * 31.7);
         vec2 root = id + off + h;
-        vec2 dir = strandDir(root, ptr, hov);
         float len = uLength * (0.75 + 0.5 * h.y);
         vec2 rp = p - root;
+        float r2 = dot(rp, rp);
+        // Too far away, or can't rise above the strand already found (along <= r / len).
+        float reachLen = len + uWidth;
+        if (r2 >= reachLen * reachLen || top >= 1.0 || (top >= 0.0 && r2 <= top * top * len * len)) continue;
+        bool parted = false;
+        if (parting) {
+          vec2 away = root - ptr;
+          parted = uPart * hov * exp(-dot(away, away) / (reach * reach)) * 1.4 > 0.02;
+        }
+        if (r2 > uWidth * uWidth && !parted) {
+          // Off the cone widened by the strand's width: it can't cover this pixel.
+          float da = dot(rp, axis);
+          if (da < cosCone * sqrt(r2 - uWidth * uWidth) - sinCone * uWidth) continue;
+        }
+        vec2 dir = strandDir(root, ptr, hov);
         float along = clamp(dot(rp, dir) / len, 0.0, 1.0);
         float w = uWidth * (1.0 - 0.75 * along);
         float dist = length(rp - dir * along * len);

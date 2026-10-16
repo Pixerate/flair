@@ -28,6 +28,7 @@ Before declaring any change complete:
    ```
 
 5. **Catalog shaders compile on a real GPU**: when adding or changing catalog shaders, run `pnpm dev` and open `http://localhost:3100/#check`; every shader must compile.
+6. **Catalog shaders stay cheap**: for new or heavier shaders, open `http://localhost:3100/#bench?only=<ids>` in a front tab with nothing else drawing, and keep a shader's frame within a few ms at 1080p; when tuning, compare frames before and after so the look stays the same.
 
 ---
 

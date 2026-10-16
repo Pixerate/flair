@@ -76,29 +76,61 @@ float poolY(float x, float m) {
   return m * (0.1 + 0.012 * sin(x * 9.0 + iTime * 0.7854) + 0.025 * vnoise(vec2(x * 6.0, 2.0))) - 0.006;
 }
 
-// Distance to the liquid (negative inside): a lip along the slumped edge, drips hanging from it, the puddle.
-float liquid(vec2 uv, float m) {
+vec4 smin4(vec4 a, vec4 b, float k) {
+  k = max(k, 1e-4);
+  vec4 h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
+  return mix(b, a, h) - k * h * (1.0 - h);
+}
+
+// Distances to the liquid (negative inside) at four nearby points (xs, ys) at
+// once: a lip along the slumped edge, drips hanging from it, the puddle. Each
+// point sees the drips of the five columns around its own; those columns'
+// drips are worked out once for all four. edge and pool are edgeY and poolY
+// at the points; a point's distance only matters below its entry in matter.
+vec4 liquid(vec4 xs, vec4 ys, vec4 edge, vec4 pool, float m, vec4 matter) {
   float n = float(uDrips);
   float grow = smoothstep(0.0, 0.2, m);
-  float e = edgeY(uv.x, m) + 0.01 * (1.0 - grow);
+  vec4 e = edge + 0.01 * (1.0 - grow);
   float lip = 0.022 * grow;
-  float d = max(uv.y - e, e - lip - uv.y);
-  float c = floor(uv.x * n);
-  for (int k = -2; k <= 2; k++) {
+  vec4 d = max(ys - e, e - lip - ys);
+  vec4 cs = floor(xs * n);
+  float c = cs.y;
+  // Where any drip's top and head can be, from the bounds of edgeY and poolY.
+  float topMin = 1.0 - m * 0.34 - lip * 0.5;
+  float topMax = 1.0 - m * 0.04 - lip * 0.5;
+  float poolMin = m * 0.088 - 0.006;
+  // A drip farther than this beyond where a distance matters can't change it
+  // there: the blends that follow can pull a distance down by at most this much.
+  vec4 reach = matter + 0.16;
+  for (int k = -3; k <= 3; k++) {
     float ci = c + float(k);
+    bvec4 near = lessThanEqual(abs(cs - ci), vec4(2.0));
+    if (!any(near)) continue;
     vec2 h = hash22(vec2(ci, 3.1));
     float xi = (ci + 0.2 + 0.6 * h.x) / n;
     float w = min(uViscosity * (0.7 + 0.6 * hash12(vec2(ci, 7.7))), 0.6 * aspect / n) * grow;
+    // The nearest this drip can be to each point, before working out its shape:
+    // skip it if it can't change any of them.
+    float f = pow(m, 1.4) * min(0.2 + 0.95 * h.y, 1.0);
+    float headMin = min(topMin, topMin * (1.0 - f) + f * poolMin);
+    vec4 gap = vec4(abs(xs - xi) * aspect);
+    vec4 rise = max(max(headMin - ys, ys - topMax), 0.0);
+    vec4 nearest = sqrt(gap * gap + rise * rise) - 1.3 * w;
+    bvec4 counts = bvec4(vec4(near) * step(nearest, d + 0.012 * grow) * step(nearest, reach));
+    if (!any(counts)) continue;
     float top = edgeY(xi, m) - lip * 0.5;
-    float len = pow(m, 1.4) * min(0.2 + 0.95 * h.y, 1.0) * max(top - poolY(xi, m), 0.0);
+    float len = f * max(top - poolY(xi, m), 0.0);
     float head = top - len;
-    float along = clamp(uv.y, head, top);
+    vec4 along = clamp(ys, head, top);
     // A stem thinning as it runs, then a round, heavier head.
-    float r = w * mix(0.85, 0.6, smoothstep(top, top - 0.3, uv.y));
-    r = mix(r, w * 1.3, smoothstep(head + 3.0 * w, head, uv.y));
-    d = smin(d, length(vec2((uv.x - xi) * aspect, uv.y - along)) - r, 0.012 * grow);
+    vec4 r = w * mix(vec4(0.85), vec4(0.6), smoothstep(top, top - 0.3, ys));
+    r = mix(r, vec4(w * 1.3), smoothstep(head + 3.0 * w, head, ys));
+    vec4 dx = (xs - xi) * aspect;
+    vec4 dy = ys - along;
+    vec4 dd = smin4(d, sqrt(dx * dx + dy * dy) - r, 0.012 * grow);
+    d = mix(d, dd, near);
   }
-  return smin(d, uv.y - poolY(uv.x, m), 0.03 * grow);
+  return smin4(d, ys - pool, 0.03 * grow);
 }
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
@@ -107,23 +139,32 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   float px = 1.0 / iResolution.y;
   float m = uAnimate ? meltCycle(uSpeed) : uProgress;
 
+  // The liquid is sampled at four points: under the shadow, here, and a step
+  // right and up for its normal. They share three columns of x.
+  float eps = 0.0015;
+  vec4 xs = uv.x + vec4(-0.004, 0.0, eps / aspect, 0.0);
+  vec4 ys = uv.y + vec4(0.009, 0.0, 0.0, eps);
+  vec3 edge3 = vec3(edgeY(xs.x, m), edgeY(xs.y, m), edgeY(xs.z, m));
+  vec3 pool3 = vec3(poolY(xs.x, m), poolY(xs.y, m), poolY(xs.z, m));
+  // The shadow shows below 0.012, the liquid below 4 px (its neighbours a little farther).
+  vec4 liq = liquid(xs, ys, edge3.xyzy, pool3.xyzy, m, vec4(0.012, 4.0 * px, vec2(4.0 * px + 0.005)));
+
   // The picture slumped under its edge: squashed towards the bottom, stretched thin at the top.
-  float e = edgeY(uv.x, m);
+  float e = edge3.y;
   float h = clamp(uv.y / e, 0.0, 1.0);
-  float ys = 1.0 - pow(1.0 - h, 1.0 + m * 1.3);
-  float xs = uv.x + m * 0.006 * sin(uv.y * 40.0 + uv.x * 13.0);
-  vec4 col = pictureRGBA(uImage, vec2(xs, ys));
+  float ys0 = 1.0 - pow(1.0 - h, 1.0 + m * 1.3);
+  float xs0 = uv.x + m * 0.006 * sin(uv.y * 40.0 + uv.x * 13.0);
+  vec4 col = pictureRGBA(uImage, vec2(xs0, ys0));
   vec4 behind = vec4(uBackground * (0.75 + 0.5 * uv.y), uBackdropAlpha);
   col = mix(col, behind, smoothstep(e - px, e + px, uv.y));
 
   // The liquid's shadow, down and to the right.
-  float shadow = liquid(uv + vec2(-0.004, 0.009), m);
+  float shadow = liq.x;
   col.rgb *= 1.0 - 0.4 * smoothstep(0.012, -0.004, shadow) * smoothstep(0.0, 0.1, m);
 
-  float d = liquid(uv, m);
+  float d = liq.y;
   if (d < 4.0 * px) {
-    float eps = 0.0015;
-    vec2 g = vec2(liquid(uv + vec2(eps / aspect, 0.0), m) - d, liquid(uv + vec2(0.0, eps), m) - d);
+    vec2 g = vec2(liq.z - d, liq.w - d);
     g /= max(length(g), 1e-5);
     float thick = sqrt(clamp(-d / 0.018, 0.0, 1.0));
     vec3 nrm = normalize(vec3(g * (1.0 - thick) * 1.6, 0.4 + thick));
@@ -131,7 +172,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     vec4 top = pictureRGBA(uImage, vec2(uv.x + 0.01 * sin(uv.y * 25.0), 0.965));
     float sx = uv.x + 0.04 * sin(uv.x * 11.0 + uv.y * 30.0);
     vec4 pool = (pictureRGBA(uImage, vec2(sx - 0.06, 0.25)) + pictureRGBA(uImage, vec2(sx + 0.06, 0.4)) + pictureRGBA(uImage, vec2(sx, 0.9))) / 3.0;
-    float inPool = smoothstep(poolY(uv.x, m) + 0.04, poolY(uv.x, m) - 0.01, uv.y);
+    float inPool = smoothstep(pool3.y + 0.04, pool3.y - 0.01, uv.y);
     vec4 base = mix(top, pool, inPool);
     base.rgb *= 0.9 + 0.12 * vnoise(vec2(uv.x * 90.0, uv.y * 3.0));
     vec3 wet = liquidShade(base.rgb * 1.05, nrm, uGloss);

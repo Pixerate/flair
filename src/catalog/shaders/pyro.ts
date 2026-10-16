@@ -415,7 +415,18 @@ uniform float uIntensity; // @control min=0.2 max=3 default=1 label="Intensity"`
   float w = max(0.0022, px);
   float k = 1.4;
   float g = 1.5;
+  // Past this distance a streak's glow is far below one level, so sparks farther
+  // away are skipped, and so is the whole loop outside the fountain's reach.
+  float margin = 30.0 * w;
+  float vmax = 1.35 * uHeight * 1.25;
+  float xmax = vmax * sin(min(uSpread * 1.2, 1.5708)) * (1.0 - exp(-k * 1.8)) / k;
+  float apex = log(1.0 + vmax * k / g) / k;
+  float ea = (1.0 - exp(-k * apex)) / k;
+  float ymax = vmax * ea - g / k * (apex - ea);
+  vec2 rel = p - base;
+  bool inReach = abs(rel.x) < xmax + margin && rel.y > -0.01 - margin && rel.y < ymax + margin;
   for (int j = 0; j < 112; j++) {
+    if (!inReach) break;
     float fj = float(j);
     vec2 h = hash22(vec2(fj, 2.31));
     float life = 1.0 + 0.8 * h.y;
@@ -425,11 +436,14 @@ uniform float uIntensity; // @control min=0.2 max=3 default=1 label="Intensity"`
     vec3 s = vec3(hash22(vec2(fj * 1.7, n)), hash12(vec2(n, fj + 0.37)));
     if (s.z > uDensity) continue;
     float a = (s.x - 0.5) * 2.0 * uSpread * 1.2;
+    // A spark only ever moves to its own side of the base.
+    if (a * rel.x < 0.0 && abs(rel.x) > margin) continue;
     vec2 v = vec2(sin(a), cos(a)) * mix(0.9, 1.35, s.y) * uHeight * 1.25;
     vec2 head = base + ballistic(v, k, g, age);
     vec2 tail = base + ballistic(v, k, g, max(age - 0.07, 0.0));
     // Sparks that fall back past the base are gone.
     if (head.y < base.y - 0.01) continue;
+    if (any(lessThan(p, min(head, tail) - margin)) || any(greaterThan(p, max(head, tail) + margin))) continue;
     float fade = 1.0 - smoothstep(0.5, 1.0, age / life);
     float twinkle = 0.6 + 0.4 * hash12(vec2(fj, floor(iTime * 24.0)));
     vec3 tint = mix(vec3(1.0, 0.96, 0.85), uColor, smoothstep(0.0, 0.5, age));
