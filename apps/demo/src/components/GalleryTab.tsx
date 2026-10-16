@@ -9,6 +9,7 @@ import {
   type EffectCategory,
   type EffectDefinition,
 } from "@pixerate/flair/catalog";
+import { showsOverPicture } from "../overPicture";
 import { CameraMoves } from "./CameraMoves";
 
 let overlayPool: ThumbnailPool | undefined;
@@ -151,7 +152,7 @@ function VectorThumb({ effect, hovered }: { effect: Extract<EffectDefinition, { 
   }, [trigger, hovered]);
   return (
     <>
-      <div ref={host} className={effect.category === "overlay" ? "absolute inset-0" : "absolute inset-[12%]"} />
+      <div ref={host} className={showsOverPicture(effect) ? "absolute inset-0" : "absolute inset-[12%]"} />
       {trigger && <DemoCursor cursor={cursor} ring={ring} />}
     </>
   );
@@ -167,8 +168,8 @@ function EffectCard({ effect, onOpen }: { effect: EffectDefinition; onOpen: () =
       onPointerLeave={() => setHovered(false)}
       className="group text-left rounded-xl border border-slate-800 bg-slate-900 overflow-hidden hover:border-violet-500/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet-500 transition"
     >
-      <div className={`relative aspect-video ${effect.kind === "vector" && effect.category !== "overlay" ? "bg-slate-100" : "bg-black"}`}>
-        {effect.category === "overlay" && <img src={SAMPLE_IMAGES.city} alt="" className="absolute inset-0 h-full w-full object-cover" />}
+      <div className={`relative aspect-video ${effect.kind === "vector" && !showsOverPicture(effect) ? "bg-slate-100" : "bg-black"}`}>
+        {showsOverPicture(effect) && <img src={SAMPLE_IMAGES.city} alt="" className="absolute inset-0 h-full w-full object-cover" />}
         {effect.kind === "shader" ? <ShaderThumb effect={effect} hovered={hovered} /> : <VectorThumb effect={effect} hovered={hovered} />}
         <span className="absolute top-2 left-2 rounded bg-black/60 px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-slate-200">
           {effect.kind}

@@ -19,7 +19,7 @@ Flair gives products a library of good-looking, configurable visual effects (her
 
 ### Core Capabilities
 
-- 🎨 **Effect catalog (`@pixerate/flair/catalog`)**: 186 effects, each with controls and presets. There are 126 WebGL2 shaders (gradients, organic textures, patterns, light, space, retro and pixel art, image treatments, transparent overlays, text fills, image morphs, pointer interactions, pyrotechnics, time warps, melting, electricity, transitions) and 60 animated SVG effects (loaders, status icons, animated titles, shape morphs, UI micro-interactions, pixel sprites, charts, counters, node graphs). [Browse them live](https://pixerate.github.io/flair/).
+- 🎨 **Effect catalog (`@pixerate/flair/catalog`)**: 216 effects, each with controls and presets. There are 147 WebGL2 shaders (gradients, organic textures and growth, patterns, light, space, retro and pixel art, image treatments, transparent overlays, text fills, image morphs, pointer interactions, pyrotechnics, time warps, melting, electricity, splatters, bubbles, stickers, transitions) and 69 animated SVG effects (loaders, status icons, animated titles, shape morphs, UI micro-interactions, pixel sprites, stickers, charts, counters, node graphs). [Browse them live](https://pixerate.github.io/flair/).
 - ⚡ **Shader engine**:
   - Shadertoy-style GLSL ES 3.00 fragment shaders, with controls declared in the source (`// @control`), including image inputs.
   - Compile errors come back with line numbers that match the source.
@@ -58,7 +58,7 @@ The `flair` CLI inspects shaders, writes standalone pages and directs scenes (se
 ```mermaid
 graph TD
   subgraph Effects["Effects (no dependencies)"]
-    Catalog["catalog: 186 effects + presets"]
+    Catalog["catalog: 216 effects + presets"]
     Shader["shader engine: controls, compile, render, GIF, HTML"]
     Vector["vector motion: SvgMotion, SvgPlayer"]
     Time["time: clocks, easing, keyframes, noise"]
@@ -354,7 +354,7 @@ The exporters carry the camera too:
 | Category | Effects |
 | :--- | :--- |
 | gradient | mesh gradient, aurora, gradient flow, conic sweep, silk |
-| organic | liquid marble, smoke, lava lamp, plasma, caustics, flames, blob morph |
+| organic | liquid marble, smoke, lava lamp, plasma, caustics, flames, reaction diffusion, cell division, coral growth, veins, ferrofluid, jellyfish, fur, blob morph |
 | pattern | dot wave, Truchet flow, hex pulse, living cells, moiré rings, kaleidoscope, stripes, neon circuit |
 | light / space | bokeh, god rays, sparkles, neon ripple, light ribbons, warp starfield, nebula, event horizon |
 | retro | synthwave, digital rain, dithered gradient, TV static, 8-bit, Game Boy screen, pixel fire, pixel landscape, OutRun road, palette cycle, raster bars, tape loading, pixel water, pixel text, coin spin, space invader, heart health bar, chomp loader |
@@ -367,6 +367,9 @@ The exporters carry the camera too:
 | timewarp | time echo, chrono split, time slice, VHS rewind, bullet time, time tunnel, speed ramp, stutter freeze, time-lapse clock |
 | melt | drip melt, heat haze, wax melt, melting text, liquify, melting clock, lava flow, ice cube melt, candle |
 | electric | lightning, Tesla arc, plasma ball, electric border, electric text, Jacob's ladder, short circuit, power surge, electric field, zap icon, power button, battery charge |
+| splatter | paint splatter, ink splash, splash crown, goo splat, paint roller, water splash, splat stamp |
+| bubble | soap bubbles, underwater bubbles, fizz, foam, bubble wrap, lava bubbles, chat bubble, bubble pop loader |
+| sticker | holo foil sticker, sticker peel reveal, sticker slap, sticker peel, holo sticker, sticker sheet, stamp badge, washi tape |
 | transition | liquid morph, displacement, luma fade, particle swap, ink bleed, pixel dissolve, wipe, iris, block dissolve, grid wipe, glass wipe, twister, light leak, cross zoom |
 | loader / icon / data | spinner, bouncing dots, pulse ping, equalizer, progress ring, bar chart, line chart, stat counter, route, timeline track, success check, error cross, heartbeat, signature, confetti, flow network |
 

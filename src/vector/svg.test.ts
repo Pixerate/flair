@@ -325,3 +325,35 @@ describe("SvgPlayer triggers", () => {
     player.dispose();
   });
 });
+
+describe("ids in live views", () => {
+  const picture: SvgMotion = {
+    svg: `<svg viewBox="0 0 10 10"><defs><linearGradient id="g"><stop offset="0" stop-color="#f00"/></linearGradient><path id="shape" d="M0 0 L5 5"/></defs><rect id="box" fill="url(#g)" style="stroke: url('#g')" width="4" height="4"/><use id="copy" href="#shape"/></svg>`,
+    animate: [{ id: "box", attrs: { width: [4, 8], fill: ["url(#g)", "url(#g)"] }, ms: 100 }],
+  };
+
+  it("gives the ids a picture refers to a suffix of its own, so two pictures never share them", () => {
+    const [a, b] = [svgView(picture), svgView(picture)];
+    a.draw(50);
+    b.draw(50);
+    const gradient = (v: typeof a) => v.element.querySelector("linearGradient")!.id;
+    expect(gradient(a)).not.toBe(gradient(b));
+    for (const v of [a, b]) {
+      const box = v.element.querySelector("rect")!;
+      expect(box.id).toBe("box");
+      expect(box.getAttribute("fill")).toBe(`url(#${gradient(v)})`);
+      expect(box.getAttribute("style")).toContain(`url('#${gradient(v)}')`);
+      expect(box.getAttribute("width")).not.toBe("4");
+      expect(v.element.querySelector("use")!.getAttribute("href")).toBe(`#${v.element.querySelector("path")!.id}`);
+      expect(v.element.querySelector("linearGradient")!.getAttribute("data-flair-id")).toBe("g");
+    }
+  });
+
+  it("reports picked elements by the ids as written", () => {
+    const picked: string[] = [];
+    const view = svgView(picture, { onPick: (id) => picked.push(id) });
+    view.draw(0);
+    view.element.querySelector("path")!.dispatchEvent(new Event("click", { bubbles: true }));
+    expect(picked).toEqual(["shape"]);
+  });
+});

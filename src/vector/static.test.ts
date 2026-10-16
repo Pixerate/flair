@@ -58,12 +58,19 @@ describe("svgFrameMarkup", () => {
       expect(still, effect.id).toBeDefined();
       // Moves along paths need layout, which neither has here.
       const along = new Set((motion.animate ?? []).filter((a) => a.along).map((a) => a.id));
+      // The live view gives ids it refers to a suffix (unique on the page): compare by the ids as written.
+      const scoped = new Map([...live.querySelectorAll("[data-flair-id]")].map((el) => [el.id, el.getAttribute("data-flair-id")!]));
+      const unscoped = (value: string) => value.replace(/#([\w.-]+)/g, (whole, id: string) => (scoped.has(id) ? `#${scoped.get(id)}` : whole));
       for (const el of live.querySelectorAll("[id]")) {
-        if (along.has(el.id)) continue;
-        const other = still!.querySelector(`[id="${CSS.escape(el.id)}"]`);
-        expect(other, `${effect.id} #${el.id}`).not.toBeNull();
-        for (const attr of el.attributes) expect(other!.getAttribute(attr.name), `${effect.id} #${el.id} ${attr.name}`).toBe(attr.value);
-        expect(other!.textContent, `${effect.id} #${el.id}`).toBe(el.textContent);
+        const id = el.getAttribute("data-flair-id") ?? el.id;
+        if (along.has(id)) continue;
+        const other = still!.querySelector(`[id="${CSS.escape(id)}"]`);
+        expect(other, `${effect.id} #${id}`).not.toBeNull();
+        for (const attr of el.attributes) {
+          if (attr.name === "data-flair-id" || attr.name === "id") continue;
+          expect(other!.getAttribute(attr.name), `${effect.id} #${id} ${attr.name}`).toBe(unscoped(attr.value));
+        }
+        expect(other!.textContent, `${effect.id} #${id}`).toBe(el.textContent);
       }
     }
   });

@@ -27,6 +27,9 @@ export type EffectCategory =
   | "timewarp"
   | "melt"
   | "electric"
+  | "splatter"
+  | "bubble"
+  | "sticker"
   | "transition"
   | "loader"
   | "data"
@@ -49,6 +52,9 @@ export const EFFECT_CATEGORIES: readonly EffectCategory[] = [
   "timewarp",
   "melt",
   "electric",
+  "splatter",
+  "bubble",
+  "sticker",
   "transition",
   "loader",
   "data",

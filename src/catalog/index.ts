@@ -28,6 +28,9 @@ import { blackHole, bokeh, godRays, lightRibbons, nebula, neonRipple, sparkles, 
 import { caustics, flames, lavaLamp, marble, plasma, smoke } from "./shaders/organic.js";
 import { barberStripes, dotWave, hexPulse, kaleidoscope, moire, neonCircuit, truchet, voronoi } from "./shaders/patterns.js";
 import { interactionEffects } from "./interaction.js";
+import { splatterEffects } from "./splatter.js";
+import { bubbleEffects } from "./bubble.js";
+import { stickerEffects } from "./sticker.js";
 import { electricEffects } from "./electric.js";
 import { meltEffects } from "./melt.js";
 import { pixelEffects } from "./pixel.js";
@@ -35,6 +38,10 @@ import { pyroEffects } from "./pyro.js";
 import { timewarpEffects } from "./timewarp.js";
 import { morphEffects } from "./morph.js";
 import { interactionShaders } from "./shaders/interaction.js";
+import { splatterShaders } from "./shaders/splatter.js";
+import { bubbleShaders } from "./shaders/bubble.js";
+import { growthShaders } from "./shaders/growth.js";
+import { stickerShaders } from "./shaders/sticker.js";
 import { electricShaders } from "./shaders/electric.js";
 import { meltShaders } from "./shaders/melt.js";
 import { pixelShaders } from "./shaders/pixel.js";
@@ -123,11 +130,15 @@ export const SHADER_EFFECTS: readonly ShaderEffect[] = [
   ...meltShaders,
   ...electricShaders,
   ...pixelShaders,
+  ...splatterShaders,
+  ...bubbleShaders,
+  ...growthShaders,
+  ...stickerShaders,
   ...transitions,
 ];
 
 /** Every effect in the catalog, shaders first, grouped by category. */
-export const EFFECTS: readonly EffectDefinition[] = [...SHADER_EFFECTS, ...vectorEffects, ...textEffects, ...morphEffects, ...interactionEffects, ...pyroEffects, ...timewarpEffects, ...meltEffects, ...electricEffects, ...pixelEffects].sort(
+export const EFFECTS: readonly EffectDefinition[] = [...SHADER_EFFECTS, ...vectorEffects, ...textEffects, ...morphEffects, ...interactionEffects, ...pyroEffects, ...timewarpEffects, ...meltEffects, ...electricEffects, ...pixelEffects, ...splatterEffects, ...bubbleEffects, ...stickerEffects].sort(
   (a, b) => EFFECT_CATEGORIES.indexOf(a.category) - EFFECT_CATEGORIES.indexOf(b.category),
 );
 
