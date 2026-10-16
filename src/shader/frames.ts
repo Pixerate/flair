@@ -6,7 +6,7 @@ import {
   ShaderCompileError,
   type CompiledShader,
 } from "./program.js";
-import { clicksUniform, type ShaderClick } from "./pointer.js";
+import { clicksUniform, trailUniform, type ShaderClick } from "./pointer.js";
 import { TextureCache, type LiveSource } from "./textures.js";
 
 export interface ShaderFramesOptions {
@@ -31,6 +31,8 @@ export interface RenderOptions {
   pointer?: [number, number, number, number];
   /** Clicks so far, for `iClicks` (the latest `MAX_CLICKS` at or before the frame's time count). */
   clicks?: readonly ShaderClick[];
+  /** Where the pointer has been, oldest first, for `iTrail` (the latest `MAX_TRAIL` at or before the frame's time count). */
+  trail?: readonly ShaderClick[];
 }
 
 /**
@@ -126,6 +128,7 @@ export class ShaderFrames {
         mouse: options.mouse ?? [0, 0, 0, 0],
         pointer: options.pointer,
         clicks: options.clicks && clicksUniform(options.clicks, time),
+        trail: options.trail && trailUniform(options.trail, time),
       },
       this.textures,
     );

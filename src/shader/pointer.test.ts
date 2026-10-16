@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clicksUniform, HOVER_SECONDS, MAX_CLICKS, PointerTracker } from "./pointer.js";
+import { clicksUniform, HOVER_SECONDS, MAX_CLICKS, MAX_TRAIL, PointerTracker, TRAIL_SECONDS, trailUniform } from "./pointer.js";
 
 describe("PointerTracker", () => {
   it("eases hovering in and out, from wherever it had got to", () => {
@@ -42,5 +42,36 @@ describe("clicksUniform", () => {
     const u = clicksUniform([{ x: 1, y: 2, time: 3 }], 5);
     expect(u).toHaveLength(MAX_CLICKS * 4);
     expect(Array.from(u.slice(0, 8))).toEqual([1, 2, 3, 1, 0, 0, 0, 0]);
+  });
+});
+
+describe("the trail", () => {
+  it("keeps the pointer's latest positions, newest first, a point per frame at most", () => {
+    const p = new PointerTracker();
+    p.move(1, 1, 0);
+    p.move(2, 2, TRAIL_SECONDS / 2); // too soon: moves the newest point
+    p.move(3, 3, TRAIL_SECONDS * 2);
+    const u = p.trailAt(1);
+    expect(Array.from(u.slice(0, 8))).toEqual([3, 3, Math.fround(TRAIL_SECONDS * 2), 1, 2, 2, 0, 1]);
+    expect(u[8 + 3]).toBe(0);
+  });
+
+  it("drops the oldest past MAX_TRAIL, hides points after the frame and clears", () => {
+    const p = new PointerTracker();
+    for (let i = 0; i < MAX_TRAIL + 4; i++) p.move(i, i, i);
+    const u = p.trailAt(100);
+    expect(u[0]).toBe(MAX_TRAIL + 3);
+    expect(u[(MAX_TRAIL - 1) * 4]).toBe(4);
+    expect(p.trailAt(10.5)[0]).toBe(10);
+    p.clear();
+    expect(p.trailAt(100).every((v) => v === 0)).toBe(true);
+  });
+
+  it("leaves the trail alone for moves without a time", () => {
+    const p = new PointerTracker();
+    p.move(5, 6);
+    expect(p.pointer(0).slice(0, 2)).toEqual([5, 6]);
+    expect(p.trailAt(1).every((v) => v === 0)).toBe(true);
+    expect(trailUniform([{ x: 1, y: 2, time: 3 }], 3)).toHaveLength(MAX_TRAIL * 4);
   });
 });

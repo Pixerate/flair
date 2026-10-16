@@ -19,11 +19,11 @@ Flair gives products a library of good-looking, configurable visual effects (her
 
 ### Core Capabilities
 
-- 🎨 **Effect catalog (`@pixerate/flair/catalog`)**: 216 effects, each with controls and presets. There are 147 WebGL2 shaders (gradients, organic textures and growth, patterns, light, space, retro and pixel art, image treatments, transparent overlays, text fills, image morphs, pointer interactions, pyrotechnics, time warps, melting, electricity, splatters, bubbles, stickers, transitions) and 69 animated SVG effects (loaders, status icons, animated titles, shape morphs, UI micro-interactions, pixel sprites, stickers, charts, counters, node graphs). [Browse them live](https://pixerate.github.io/flair/).
+- 🎨 **Effect catalog (`@pixerate/flair/catalog`)**: 255 effects, each with controls and presets. There are 176 WebGL2 shaders (gradients, organic textures and growth, patterns, light, space, retro and pixel art, image treatments, transparent overlays, text fills, image morphs, pointer interactions, pyrotechnics, time warps, melting, electricity, splatters, bubbles, stickers, pointer trails, particles, debris, impacts, comic looks, transitions) and 79 animated SVG effects (loaders, status icons, animated titles, shape morphs, UI micro-interactions, pixel sprites, stickers, cartoon effects, charts, counters, node graphs). [Browse them live](https://pixerate.github.io/flair/).
 - ⚡ **Shader engine**:
   - Shadertoy-style GLSL ES 3.00 fragment shaders, with controls declared in the source (`// @control`), including image inputs.
   - Compile errors come back with line numbers that match the source.
-  - Pointer input beyond Shadertoy's `iMouse`: `iPointer` (position while over the canvas, eased hover amount, seconds held or since release) and `iClicks[8]` (the latest clicks' positions and times), so effects answer hovers, presses and taps. `ShaderRenderer` and standalone pages feed them; `ShaderFrames` takes scripted `pointer` and `clicks` for recordings.
+  - Pointer input beyond Shadertoy's `iMouse`: `iPointer` (position while over the canvas, eased hover amount, seconds held or since release) `iClicks[8]` (the latest clicks' positions and times) and `iTrail[32]` (where the pointer has been over the last second, newest first), so effects answer hovers, presses, taps and moves. `ShaderRenderer` and standalone pages feed them; `ShaderFrames` takes scripted `pointer`, `clicks` and `trail` for recordings.
   - Live previews (`ShaderRenderer`, with optional `{ alpha: true }` for transparent overlays) and many animated or hover-activated thumbnails on one context (`ThumbnailPool`).
   - Frames at exact times (`ShaderFrames`), looping GIFs, and standalone HTML pages.
 - ✒️ **Vector motion (`@pixerate/flair/vector`)**: animated SVG described as data. Catalog vector effects declare their controls in the picture (`{{name: type …}}`), text included. It covers attribute tweens, draw-on strokes, motion along paths, counters (`animateCount` / `formatCount` for DOM elements too), text written letter by letter (`write`, with `scramble` and `caret`), shape morphs between any paths (`morphPaths`, `morphSequence`) and view zooms. Every frame is a pure function of time (`svgFrame`), and `SvgPlayer` plays it (with `scrollTrigger`, `hideWhenPaused`, `reset()`, and `trigger: "hover" | "press" | "click"` to play in answer to the pointer).
@@ -58,7 +58,7 @@ The `flair` CLI inspects shaders, writes standalone pages and directs scenes (se
 ```mermaid
 graph TD
   subgraph Effects["Effects (no dependencies)"]
-    Catalog["catalog: 216 effects + presets"]
+    Catalog["catalog: 255 effects + presets"]
     Shader["shader engine: controls, compile, render, GIF, HTML"]
     Vector["vector motion: SvgMotion, SvgPlayer"]
     Time["time: clocks, easing, keyframes, noise"]
@@ -370,7 +370,12 @@ The exporters carry the camera too:
 | splatter | paint splatter, ink splash, splash crown, goo splat, paint roller, water splash, splat stamp |
 | bubble | soap bubbles, underwater bubbles, fizz, foam, bubble wrap, lava bubbles, chat bubble, bubble pop loader |
 | sticker | holo foil sticker, sticker peel reveal, sticker slap, sticker peel, holo sticker, sticker sheet, stamp badge, washi tape |
-| transition | liquid morph, displacement, luma fade, particle swap, ink bleed, pixel dissolve, wipe, iris, block dissolve, grid wipe, glass wipe, twister, light leak, cross zoom |
+| trail | comet trail, ribbon trail, sparkle trail, brush trail, ghost trail, light painting, motion streak, dotted trail |
+| particles | flow particles, magnetic swarm, dust in light, boids, particle text, confetti cannon, fireflies |
+| debris | rubble fall, glass shatter, crumbling text, paper shreds, leaves blowing, sand erosion |
+| impact | shockwave, ground slam, impact frame, meteor strike, screen shake, hit marker |
+| comic | comic book, cel shade, focus lines, action lines, sound effect, speech bubble, fight cloud, dizzy stars, anime emotes, cartoon poof, line boil |
+| transition | liquid morph, displacement, luma fade, particle swap, ink bleed, pixel dissolve, comic panels, wipe, iris, block dissolve, grid wipe, glass wipe, twister, light leak, cross zoom |
 | loader / icon / data | spinner, bouncing dots, pulse ping, equalizer, progress ring, bar chart, line chart, stat counter, route, timeline track, success check, error cross, heartbeat, signature, confetti, flow network |
 
 Every shader is self-contained and compiles on WebGL2. Open [`#check`](https://pixerate.github.io/flair/#check) on the demo to compile the catalog on your own GPU.

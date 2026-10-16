@@ -330,6 +330,7 @@ export class ShaderRenderer {
         mouse: this.mouse,
         pointer: this.pointer.pointer(this.time),
         clicks: this.pointer.clicksAt(this.time),
+        trail: this.pointer.trailAt(this.time),
       },
       this.textures ?? undefined,
     );
@@ -404,7 +405,7 @@ export class ShaderRenderer {
 
   private onPointerMove = (e: PointerEvent) => {
     const [x, y] = this.toPixels(e);
-    this.pointer.move(x, y);
+    this.pointer.move(x, y, this.time);
     if (this.mouse[2] <= 0 || e.buttons === 0) {
       if (!this.playing) this.render();
       return;
@@ -414,7 +415,7 @@ export class ShaderRenderer {
   };
 
   private onPointerEnter = (e: PointerEvent) => {
-    this.pointer.move(...this.toPixels(e));
+    this.pointer.move(...this.toPixels(e), this.time);
     this.pointer.hover(true, this.time);
   };
 
