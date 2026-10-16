@@ -243,3 +243,12 @@ describe("writtenText", () => {
     );
   });
 });
+
+describe("svgMotionIssues and SMIL", () => {
+  it("asks for changes in `animate` rather than SMIL elements", () => {
+    const issue = expect.stringContaining("cannot animate itself");
+    expect(svgMotionIssues({ svg: `<svg viewBox="0 0 1 1"><rect><animate attributeName="x" dur="1s"/></rect></svg>` })).toContainEqual(issue);
+    expect(svgMotionIssues({ svg: `<svg viewBox="0 0 1 1"><set attributeName="x" to="1"/></svg>` })).toContainEqual(issue);
+    expect(svgMotionIssues({ svg: `<svg viewBox="0 0 1 1"><rect id="animated"/></svg>` })).toEqual([]);
+  });
+});

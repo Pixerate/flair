@@ -19,7 +19,7 @@ Flair gives products a library of good-looking, configurable visual effects (her
 
 ### Core Capabilities
 
-- 🎨 **Effect catalog (`@pixerate/flair/catalog`)**: 255 effects, each with controls and presets. There are 176 WebGL2 shaders (gradients, organic textures and growth, patterns, light, space, retro and pixel art, image treatments, transparent overlays, text fills, image morphs, pointer interactions, pyrotechnics, time warps, melting, electricity, splatters, bubbles, stickers, pointer trails, particles, debris, impacts, comic looks, transitions) and 79 animated SVG effects (loaders, status icons, animated titles, shape morphs, UI micro-interactions, pixel sprites, stickers, cartoon effects, charts, counters, node graphs). [Browse them live](https://pixerate.github.io/flair/).
+- 🎨 **Effect catalog (`@pixerate/flair/catalog`)**: 287 effects, each with controls and presets. There are 205 WebGL2 shaders (gradients, organic textures and growth, patterns, light, space, retro and pixel art, image treatments, transparent overlays, text fills, image morphs, pointer interactions, pyrotechnics, time warps, melting, electricity, splatters, bubbles, stickers, pointer trails, particles, debris, impacts, comic looks, atmosphere, glows, shadows, distortions, transitions) and 82 animated SVG effects (loaders, status icons, animated titles, shape morphs, UI micro-interactions, pixel sprites, stickers, cartoon effects, glowing and lifting UI, charts, counters, node graphs). [Browse them live](https://pixerate.github.io/flair/).
 - ⚡ **Shader engine**:
   - Shadertoy-style GLSL ES 3.00 fragment shaders, with controls declared in the source (`// @control`), including image inputs.
   - Compile errors come back with line numbers that match the source.
@@ -58,7 +58,7 @@ The `flair` CLI inspects shaders, writes standalone pages and directs scenes (se
 ```mermaid
 graph TD
   subgraph Effects["Effects (no dependencies)"]
-    Catalog["catalog: 255 effects + presets"]
+    Catalog["catalog: 287 effects + presets"]
     Shader["shader engine: controls, compile, render, GIF, HTML"]
     Vector["vector motion: SvgMotion, SvgPlayer"]
     Time["time: clocks, easing, keyframes, noise"]
@@ -375,6 +375,10 @@ The exporters carry the camera too:
 | debris | rubble fall, glass shatter, crumbling text, paper shreds, leaves blowing, sand erosion |
 | impact | shockwave, ground slam, impact frame, meteor strike, screen shake, hit marker |
 | comic | comic book, cel shade, focus lines, action lines, sound effect, speech bubble, fight cloud, dizzy stars, anime emotes, cartoon poof, line boil |
+| atmosphere | volumetric clouds, fog banks, rising steam, mist over image, sky timelapse, smoke curl, dry ice fog |
+| glow | aura, bloom, pulsing halo, neon outline, backlight glow, rim light, glow ring pulse, glow button |
+| shadow | long shadow, drop shadow lift, light sweep shadows, contact shadow, window shadows, shadow puppets, lift card |
+| distortion | twirl, pinch & bulge, fisheye, mirror tiles, wave warp, ribbed glass, shower glass, datamosh, polar warp, texture displace |
 | transition | liquid morph, displacement, luma fade, particle swap, ink bleed, pixel dissolve, comic panels, wipe, iris, block dissolve, grid wipe, glass wipe, twister, light leak, cross zoom |
 | loader / icon / data | spinner, bouncing dots, pulse ping, equalizer, progress ring, bar chart, line chart, stat counter, route, timeline track, success check, error cross, heartbeat, signature, confetti, flow network |
 
