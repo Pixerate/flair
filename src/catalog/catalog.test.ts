@@ -1133,3 +1133,200 @@ describe("debris effects", () => {
     expect(wind.max).toBeGreaterThan(0);
   });
 });
+
+describe("atmosphere effects", () => {
+  const atmosphere = findEffects({ category: "atmosphere" });
+  const source = (id: string) => {
+    const effect = getEffect(id)!;
+    return effect.kind === "shader" ? effect.source : "";
+  };
+
+  it("has clouds, fog banks, steam, mist, a sky timelapse, a smoke curl and dry ice fog", () => {
+    const ids = atmosphere.map((e) => e.id);
+    for (const id of ["volumetric-clouds", "fog-banks", "rising-steam", "mist-over-image", "sky-timelapse", "smoke-curl", "dry-ice-fog"])
+      expect(ids).toContain(id);
+    for (const effect of atmosphere) expect(effect.tags).toContain("atmosphere");
+  });
+
+  it("draws fog, steam and smoke as transparent overlays, and mist filters video", () => {
+    for (const id of ["fog-banks", "rising-steam", "smoke-curl", "dry-ice-fog"]) expect(getEffect(id), id).toMatchObject({ transparent: true });
+    for (const id of ["volumetric-clouds", "sky-timelapse", "mist-over-image"]) expect(getEffect(id), id).not.toHaveProperty("transparent");
+    expect(getEffect("mist-over-image")).toMatchObject({ video: "filter" });
+    for (const id of ["volumetric-clouds", "fog-banks", "rising-steam", "sky-timelapse", "smoke-curl", "dry-ice-fog"])
+      expect(getEffect(id), id).not.toHaveProperty("video");
+  });
+
+  it("keeps the cloud ray march bounded, with a sun direction and the three looks", () => {
+    const loops = [...source("volumetric-clouds").matchAll(/for \(int \w+ = \d+; \w+ <=? (\d+);/g)].map((m) => Number(m[1]));
+    expect(Math.max(...loops)).toBeLessThanOrEqual(48);
+    expect(effectControls(getEffect("volumetric-clouds")!).map((c) => c.name)).toEqual(expect.arrayContaining(["uSunAzimuth", "uSunHeight"]));
+    expect(getEffect("volumetric-clouds")!.presets!.map((p) => p.name)).toEqual(["Midday", "Sunset", "Storm"]);
+    expect(getEffect("rising-steam")!.presets!.map((p) => p.name)).toEqual(["Coffee cup", "Vent", "Kettle burst"]);
+  });
+
+  it("lets steam and smoke rise from a source anywhere", () => {
+    for (const id of ["rising-steam", "smoke-curl"]) {
+      const src = effectControls(getEffect(id)!).find((c) => c.name === "uSource")!;
+      expect(src.type, id).toBe("vec2");
+    }
+  });
+});
+
+describe("distortion effects", () => {
+  const distortion = findEffects({ category: "distortion" });
+  const ids = [
+    "twirl",
+    "pinch-bulge",
+    "fisheye",
+    "mirror-tiles",
+    "wave-warp",
+    "ribbed-glass",
+    "shower-glass",
+    "datamosh",
+    "polar-warp",
+    "texture-displace",
+  ];
+  const source = (id: string) => {
+    const effect = getEffect(id)!;
+    return effect.kind === "shader" ? effect.source : "";
+  };
+
+  it("has swirls, bulges, lenses, mirrors, waves, glass, moshing, polar and displacement", () => {
+    const found = distortion.map((e) => e.id);
+    for (const id of ids) expect(found).toContain(id);
+    for (const effect of distortion) expect(effect.tags).toContain("distortion");
+  });
+
+  it("distorts a picture, and says how it takes video", () => {
+    for (const id of ids) {
+      expect(effectControls(getEffect(id)!).find((c) => c.name === "uImage")?.type, id).toBe("sampler2D");
+      expect(getEffect(id), id).toHaveProperty("video");
+    }
+    for (const id of ["twirl", "pinch-bulge"]) expect(getEffect(id), id).toMatchObject({ video: "interactive" });
+  });
+
+  it("centres twirl and pinch on the pointer while hovered, reading the built-in without declaring it", () => {
+    for (const id of ["twirl", "pinch-bulge"]) {
+      expect(source(id), id).toMatch(/\biPointer\.z\b/);
+      expect(source(id), id).not.toMatch(/uniform\s+vec4\s+iPointer/);
+      expect(effectControls(getEffect(id)!).map((c) => c.name), id).toEqual(expect.arrayContaining(["uCentre", "uFollow"]));
+    }
+  });
+
+  it("folds mirror tiles 2 to 8 ways, square or hex", () => {
+    const fold = effectControls(getEffect("mirror-tiles")!).find((c) => c.name === "uFold")!;
+    expect(fold).toMatchObject({ type: "int", min: 2, max: 8 });
+    expect(effectControls(getEffect("mirror-tiles")!).map((c) => c.name)).toContain("uHex");
+  });
+
+  it("wraps or unwraps polar coordinates, and displaces by a second texture", () => {
+    expect(getEffect("polar-warp")!.presets!.map((p) => p.name)).toContain("Tiny planet");
+    expect(effectControls(getEffect("polar-warp")!).find((c) => c.name === "uUnwrap")?.type).toBe("bool");
+    expect(effectControls(getEffect("texture-displace")!).find((c) => c.name === "uMap")?.type).toBe("sampler2D");
+  });
+});
+
+describe("glow effects", () => {
+  const glows = findEffects({ category: "glow" });
+  const ids = ["aura", "bloom", "pulsing-halo", "neon-outline", "backlight-glow", "rim-light", "glow-ring-pulse", "glow-button"];
+  const render = (id: string, values: Record<string, unknown> = {}) => {
+    const effect = getEffect(id)!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    return renderVectorEffect(effect, values as never);
+  };
+  const frameAt = (motion: ReturnType<typeof render>, ms: number) => JSON.stringify([...svgFrame(motion.animate!, [], ms)].sort());
+
+  it("has the auras, halos, outlines and glowing UI, all tagged", () => {
+    expect(glows.map((e) => e.id)).toEqual(expect.arrayContaining(ids));
+    for (const effect of glows) expect(effect.tags, effect.id).toContain("glow");
+    for (const effect of glows) expect(effect.presets?.length ?? 0, effect.id).toBeGreaterThan(0);
+  });
+
+  it("says how pictures take video, and the overlays draw on a transparent canvas", () => {
+    expect(getEffect("aura")).toMatchObject({ video: "stills" });
+    for (const id of ["bloom", "rim-light"]) expect(getEffect(id), id).toMatchObject({ video: "filter" });
+    for (const id of ["neon-outline", "backlight-glow"]) expect(getEffect(id), id).toMatchObject({ video: "none" });
+    for (const id of ["pulsing-halo", "neon-outline"]) expect(getEffect(id), id).toMatchObject({ transparent: true });
+    expect(getEffect("pulsing-halo")).not.toHaveProperty("video");
+    expect(effectDefaults(getEffect("neon-outline")!).uMask).toBe(textImage("GLOW"));
+    expect(effectDefaults(getEffect("aura")!).uMask).toBe(SAMPLE_IMAGES.portrait);
+  });
+
+  it("ring pulse loops seamlessly at any speed: the last ring has faded out as the first is born under the core", () => {
+    for (const period of [0.8, 2.4, 6]) {
+      const motion = render("glow-ring-pulse", { period });
+      const ms = Math.round(period * 1000);
+      expect(svgDuration(motion)).toBe(ms);
+      const start = new Map(svgFrame(motion.animate!, [], 0));
+      const end = new Map(svgFrame(motion.animate!, [], ms));
+      for (const id of ["glowRingPulseCore", "glowRingPulseRing1", "glowRingPulseRing2"]) expect(end.get(id), id).toEqual(start.get(id));
+      expect(end.get("glowRingPulseRing0")).toMatchObject({ attrs: { opacity: "0" } });
+      expect(frameAt(motion, Math.round(period * 500))).not.toBe(frameAt(motion, 0));
+    }
+  });
+
+  it("glow button plays on hover to a lifted, brighter end and fits any label", () => {
+    expect(getEffect("glow-button")).toMatchObject({ trigger: "hover" });
+    const motion = render("glow-button");
+    expect(frameAt(motion, svgDuration(motion))).not.toBe(frameAt(motion, 0));
+    for (const label of ["A", "Supercalifragilistic & <co>", "Café 日本 🎉", ""]) {
+      const m = render("glow-button", { label });
+      expect(svgMotionIssues(m)).toEqual([]);
+      expect(JSON.stringify(m)).not.toMatch(/\{\{|NaN|undefined/);
+    }
+  });
+
+  it("prefixes every vector id with the effect's name", () => {
+    for (const [id, prefix] of [["glow-ring-pulse", "glowRingPulse"], ["glow-button", "glowButton"]] as const)
+      for (const [, name] of render(id).svg.matchAll(/\sid="([^"]+)"/g)) expect(name, id).toMatch(new RegExp(`^${prefix}`));
+  });
+});
+
+describe("shadow effects", () => {
+  const shadows = findEffects({ category: "shadow" });
+  const shaders = ["long-shadow", "drop-shadow-lift", "light-sweep-shadows", "contact-shadow", "window-shadows", "shadow-puppets"];
+
+  it("has the long, lifting, swept, contact, window and puppet shadows and the lift card, all tagged", () => {
+    const ids = shadows.map((e) => e.id);
+    for (const id of [...shaders, "lift-card"]) expect(ids).toContain(id);
+    for (const effect of shadows) expect(effect.tags).toContain("shadow");
+  });
+
+  it("say how their pictures suit video, draw opaque and read the pointer from the built-in", () => {
+    const video: Record<string, string | undefined> = { "long-shadow": "none", "drop-shadow-lift": "none", "window-shadows": "filter" };
+    for (const id of shaders) {
+      const effect = getEffect(id)!;
+      if (effect.kind !== "shader") throw new Error("shader expected");
+      expect(effect.video, id).toBe(video[id]);
+      expect(effect.transparent ?? false, id).toBe(false);
+      expect(effect.source, id).not.toMatch(/uniform\s+vec4\s+(iPointer|iClicks|iTrail)/);
+    }
+    for (const id of ["drop-shadow-lift", "light-sweep-shadows"]) {
+      const effect = getEffect(id)!;
+      expect(effect.kind === "shader" && effect.source, id).toMatch(/\biPointer\b/);
+    }
+    expect(effectControls(getEffect("drop-shadow-lift")!).map((c) => c.name)).toContain("uDemo");
+  });
+
+  it("switch between their shapes and patterns", () => {
+    expect(effectControls(getEffect("shadow-puppets")!).find((c) => c.name === "uPuppet")).toMatchObject({ type: "int", min: 0, max: 2 });
+    expect(effectControls(getEffect("window-shadows")!).find((c) => c.name === "uPattern")).toMatchObject({ type: "int", min: 0, max: 1 });
+    expect(effectControls(getEffect("contact-shadow")!).find((c) => c.name === "uShape")).toMatchObject({ type: "int", min: 0, max: 2 });
+  });
+
+  it("lift card rises on hover with any title", () => {
+    const effect = getEffect("lift-card")!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    expect(effect.trigger).toBe("hover");
+    for (const title of ["", "A", "A much longer card title that goes on & on <with> markup", "Café 日本 🎉"]) {
+      const motion = renderVectorEffect(effect, { title });
+      expect(svgMotionIssues(motion), title).toEqual([]);
+      expect(JSON.stringify(motion), title).not.toMatch(/\{\{|NaN|undefined/);
+      for (const [, id] of motion.svg.matchAll(/\sid="([^"]+)"/g)) expect(id).toMatch(/^liftCard/);
+    }
+    const motion = renderVectorEffect(effect, {});
+    const frame = (ms: number) => JSON.stringify([...svgFrame(motion.animate!, [], ms)].sort());
+    expect(frame(svgDuration(motion))).not.toBe(frame(0));
+    expect(frame(svgDuration(motion))).toContain("scale(1.02)");
+  });
+});

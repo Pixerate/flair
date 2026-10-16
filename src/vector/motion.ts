@@ -406,6 +406,10 @@ export function svgMotionIssues(motion: unknown): string[] {
     issues.push("the <svg> needs a `viewBox`, so it scales to where it is placed");
   if (/<script|<foreignObject|\son\w+\s*=/i.test(svg))
     issues.push("`svg` cannot have scripts, event handlers or <foreignObject>");
+  if (/<(animate|animateTransform|animateMotion|set)[\s/>]/i.test(svg))
+    issues.push(
+      "`svg` cannot animate itself (<animate>, <animateTransform>, <animateMotion>, <set>): give changes in `animate`, so every frame is a function of time",
+    );
   if (/(?:href|src)\s*=\s*["'](?!#|data:image\/)/i.test(svg))
     issues.push("`svg` cannot link outside itself (only #ids and data:image URLs)");
   const ids = new Set([...svg.matchAll(/\sid\s*=\s*["']([^"']+)["']/g)].map((x) => x[1]));

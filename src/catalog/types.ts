@@ -35,6 +35,10 @@ export type EffectCategory =
   | "debris"
   | "impact"
   | "comic"
+  | "atmosphere"
+  | "glow"
+  | "shadow"
+  | "distortion"
   | "transition"
   | "loader"
   | "data"
@@ -65,6 +69,10 @@ export const EFFECT_CATEGORIES: readonly EffectCategory[] = [
   "debris",
   "impact",
   "comic",
+  "atmosphere",
+  "glow",
+  "shadow",
+  "distortion",
   "transition",
   "loader",
   "data",

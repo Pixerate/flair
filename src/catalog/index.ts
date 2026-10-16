@@ -34,6 +34,8 @@ import { stickerEffects } from "./sticker.js";
 import { trailEffects } from "./trail.js";
 import { impactEffects } from "./impact.js";
 import { comicEffects } from "./comic.js";
+import { glowEffects } from "./glow.js";
+import { shadowEffects } from "./shadow.js";
 import { electricEffects } from "./electric.js";
 import { meltEffects } from "./melt.js";
 import { pixelEffects } from "./pixel.js";
@@ -60,6 +62,10 @@ import { particlesShaders } from "./shaders/particles.js";
 import { debrisShaders } from "./shaders/debris.js";
 import { impactShaders } from "./shaders/impact.js";
 import { comicShaders } from "./shaders/comic.js";
+import { atmosphereShaders } from "./shaders/atmosphere.js";
+import { glowShaders } from "./shaders/glow.js";
+import { shadowShaders } from "./shaders/shadow.js";
+import { distortionShaders } from "./shaders/distortion.js";
 import { textEffects } from "./text.js";
 import { CURRENT_COLOR, EFFECT_CATEGORIES, isCurrentColor, vectorEffectControls, type EffectCategory, type EffectDefinition, type ShaderEffect, type VideoUse } from "./types.js";
 import { vectorEffects } from "./vector.js";
@@ -147,11 +153,15 @@ export const SHADER_EFFECTS: readonly ShaderEffect[] = [
   ...debrisShaders,
   ...impactShaders,
   ...comicShaders,
+  ...atmosphereShaders,
+  ...glowShaders,
+  ...shadowShaders,
+  ...distortionShaders,
   ...transitions,
 ];
 
 /** Every effect in the catalog, shaders first, grouped by category. */
-export const EFFECTS: readonly EffectDefinition[] = [...SHADER_EFFECTS, ...vectorEffects, ...textEffects, ...morphEffects, ...interactionEffects, ...pyroEffects, ...timewarpEffects, ...meltEffects, ...electricEffects, ...pixelEffects, ...splatterEffects, ...bubbleEffects, ...stickerEffects, ...trailEffects, ...impactEffects, ...comicEffects].sort(
+export const EFFECTS: readonly EffectDefinition[] = [...SHADER_EFFECTS, ...vectorEffects, ...textEffects, ...morphEffects, ...interactionEffects, ...pyroEffects, ...timewarpEffects, ...meltEffects, ...electricEffects, ...pixelEffects, ...splatterEffects, ...bubbleEffects, ...stickerEffects, ...trailEffects, ...impactEffects, ...comicEffects, ...glowEffects, ...shadowEffects].sort(
   (a, b) => EFFECT_CATEGORIES.indexOf(a.category) - EFFECT_CATEGORIES.indexOf(b.category),
 );
 
