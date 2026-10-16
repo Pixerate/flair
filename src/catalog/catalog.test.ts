@@ -1372,5 +1372,12 @@ describe("lighting effects", () => {
     const start = at([], 0);
     expect(at([0], 5000)).not.toBe(start);
     expect(at([0, 5000], 10000)).toBe(start);
+describe("duotone", () => {
+  it("only maps colours: no glare and no motion of its own (shine-sweep adds a glare)", () => {
+    const duotone = getEffect("image-duotone")!;
+    if (duotone.kind !== "shader") throw new Error("shader expected");
+    expect(duotone.source).not.toMatch(/\biTime\b|uSweep/);
+    expect(effectControls(duotone).map((c) => c.name)).not.toContain("uSweep");
+    expect(getEffect("shine-sweep")).toMatchObject({ category: "overlay", transparent: true });
   });
 });

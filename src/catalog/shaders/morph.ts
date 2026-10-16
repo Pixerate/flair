@@ -141,7 +141,7 @@ export const silhouetteMorph: ShaderEffect = {
   name: "Silhouette morph",
   description: "One silhouette or logo flowing into another as a gooey blob, its colour blending from the first shape's to the second's.",
   category: "morph",
-  video: "stills",
+  video: "none",
   tags: ["morph", "shape", "logo", "goo", "blob", "text"],
   loop: 4,
   source: glsl(

@@ -6,6 +6,7 @@
  * - Video: shader effects with image controls say how they suit video
  *   (`video`, see `VideoUse`); `findEffects({ video: ["filter"] })` finds them.
  * - Controls: `effectControls`, `effectDefaults`.
+ * - Inputs: `effectInputs` (what an effect takes, how it answers the pointer).
  * - Vector effects: their pictures declare their controls (`vectorControls`),
  *   and `renderVectorEffect` fills them in.
  *
@@ -13,6 +14,7 @@
  */
 
 import { controlValue, parseControls, type ControlDef, type ControlValue } from "../shader/controls.js";
+import { inputsOf, type EffectInput, type EffectInputs, type EffectInteraction } from "./inputs.js";
 import { aurora, conicSweep, duotoneFlow, meshGradient, silk } from "./shaders/gradients.js";
 import {
   crt,
@@ -175,6 +177,33 @@ export function getEffect(id: string): EffectDefinition | undefined {
   return byId.get(id);
 }
 
+export {
+  EFFECT_INPUTS,
+  EFFECT_INTERACTIONS,
+  type EffectInput,
+  type EffectInputs,
+  type EffectInteraction,
+  type ImageSlot,
+  type TextSlot,
+} from "./inputs.js";
+
+const inputsCache = new WeakMap<EffectDefinition, EffectInputs>();
+
+/**
+ * What an effect takes and how it answers the pointer: what you can give it
+ * (`accepts`: image, video, svg, text, mask, path), its image controls and
+ * whether each wants a picture, a mask or text, its text controls (copy,
+ * font, path, glyphs), how it suits video, how it answers the pointer
+ * (`interactions`: hover, press, click, trail, pointer) and whether it draws
+ * over other content. Worked out from the effect itself, so it always agrees
+ * with its controls and source.
+ */
+export function effectInputs(effect: EffectDefinition): EffectInputs {
+  let inputs = inputsCache.get(effect);
+  if (!inputs) inputsCache.set(effect, (inputs = inputsOf(effect, effectControls(effect))));
+  return inputs;
+}
+
 export interface EffectQuery {
   /** Words to look for in the name, description, tags and id (all must match). */
   text?: string;
@@ -184,6 +213,12 @@ export interface EffectQuery {
   tags?: readonly string[];
   /** Effects that suit video in one of these ways (shader effects with image controls only). */
   video?: readonly VideoUse[];
+  /** Effects that can be given every one of these (see {@link effectInputs}): `["image"]`, `["text"]`, `["svg"]`… */
+  accepts?: readonly EffectInput[];
+  /** Effects that answer the pointer in at least one of these ways; `[]` for effects that don't answer it at all. */
+  interaction?: readonly EffectInteraction[];
+  /** Overlays (`true`), which draw over other content, or effects that fill their frame (`false`). */
+  transparent?: boolean;
 }
 
 /** Effects matching a query, in catalog order. */
@@ -194,6 +229,15 @@ export function findEffects(query: EffectQuery = {}): EffectDefinition[] {
     if (query.kind && e.kind !== query.kind) return false;
     if (query.tags && !query.tags.every((t) => e.tags.includes(t))) return false;
     if (query.video && !(e.kind === "shader" && e.video && query.video.includes(e.video))) return false;
+    if (query.accepts || query.interaction || query.transparent !== undefined) {
+      const inputs = effectInputs(e);
+      if (query.accepts && !query.accepts.every((i) => inputs.accepts.includes(i))) return false;
+      if (query.interaction) {
+        const answers = query.interaction.length === 0 ? inputs.interactions.length === 0 : query.interaction.some((i) => inputs.interactions.includes(i));
+        if (!answers) return false;
+      }
+      if (query.transparent !== undefined && inputs.transparent !== query.transparent) return false;
+    }
     const haystack = [e.id, e.name, e.description, e.category, ...e.tags].join(" ").toLowerCase();
     return words.every((w) => haystack.includes(w));
   });
