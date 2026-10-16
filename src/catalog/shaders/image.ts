@@ -126,17 +126,16 @@ export const imageDuotone: ShaderEffect = {
   kind: "shader",
   id: "image-duotone",
   name: "Duotone",
-  description: "An image mapped onto two colours, with a slow light sweep.",
+  description: "An image mapped onto two colours, from its shadows to its highlights. For a passing glare, lay `shine-sweep` over it.",
   category: "image",
   video: "filter",
   tags: ["image", "brand", "editorial", "colour"],
   source: glsl(
-    `// Duotone: an image mapped onto two colours, with a light sweep.
+    `// Duotone: an image mapped onto two colours by its brightness.
 uniform sampler2D uImage;  // @control filter=linear wrap=clamp default=${SAMPLE_IMAGES.landscape} label="Image"
 uniform vec3 uShadow;      // @control color default=#1E1B4B label="Shadows"
 uniform vec3 uHighlight;   // @control color default=#FB7185 label="Highlights"
 uniform float uContrast;   // @control min=0.5 max=3 default=1.2 label="Contrast"
-uniform float uSweep;      // @control min=0 max=1 default=0.3 label="Light sweep"
 ${BACKDROP_CONTROLS}`,
     PICTURE,
     `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
@@ -144,9 +143,7 @@ ${BACKDROP_CONTROLS}`,
   vec4 src = pictureRGBA(uImage, uv);
   float l = dot(src.rgb, vec3(0.2126, 0.7152, 0.0722));
   l = clamp((l - 0.5) * uContrast + 0.5, 0.0, 1.0);
-  float sweep = exp(-pow((uv.x + uv.y * 0.4 - fract(iTime * 0.15) * 2.0 + 0.4) * 6.0, 2.0));
-  vec3 col = mix(uShadow, uHighlight, l) + sweep * uSweep;
-  fragColor = vec4(col, src.a);
+  fragColor = vec4(mix(uShadow, uHighlight, l), src.a);
 }`,
   ),
   presets: [
