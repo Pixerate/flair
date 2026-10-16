@@ -1582,8 +1582,6 @@ describe("more gradients", () => {
     expect(getEffect("grainy-gradient")!.presets!.map((p) => p.name)).toContain("Stripe-like");
   });
 });
-  });
-});
 
 describe("3d, space, weather and water effects", () => {
   const ids = (category: EffectCategory) => findEffects({ category }).map((e) => e.id);
