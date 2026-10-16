@@ -1,5 +1,5 @@
 import { controlValue, type ControlDef, type ControlValue } from "./controls.js";
-import { MAX_CLICKS } from "./pointer.js";
+import { MAX_CLICKS, MAX_TRAIL } from "./pointer.js";
 import { applyTextureSettings, type TextureSource } from "./textures.js";
 
 /**
@@ -29,6 +29,12 @@ export const BUILTIN_UNIFORMS = [
     size: MAX_CLICKS,
     doc: "the latest clicks, newest first: xy = where (pixels), z = when (iTime seconds), w = 1 for a click, 0 for an empty slot",
   },
+  {
+    name: "iTrail",
+    type: "vec4",
+    size: MAX_TRAIL,
+    doc: "where the pointer has just been over the canvas, newest first (about 60 points a second): xy = where (pixels), z = when (iTime seconds), w = 1 for a point, 0 for an empty slot",
+  },
 ] as const;
 
 const PRELUDE = `#version 300 es
@@ -41,6 +47,7 @@ uniform int iFrame;
 uniform vec4 iMouse;
 uniform vec4 iPointer;
 uniform vec4 iClicks[${MAX_CLICKS}];
+uniform vec4 iTrail[${MAX_TRAIL}];
 out vec4 flair_FragColor;
 `;
 
@@ -207,6 +214,7 @@ export function compileShader(
 }
 
 const NO_CLICKS = new Float32Array(MAX_CLICKS * 4);
+const NO_TRAIL = new Float32Array(MAX_TRAIL * 4);
 
 /** What one frame shows: its size in pixels, its time and the pointer. */
 export interface FrameState {
@@ -224,6 +232,8 @@ export interface FrameState {
   pointer?: readonly [number, number, number, number];
   /** `iClicks`: {@link MAX_CLICKS} × (x, y, time, 1), newest first (default none; see `clicksUniform`). */
   clicks?: Float32Array;
+  /** `iTrail`: {@link MAX_TRAIL} × (x, y, time, 1), newest first (default none; see `trailUniform`). */
+  trail?: Float32Array;
 }
 
 /**
@@ -251,6 +261,7 @@ export function drawFrame(
   if (b.iMouse) gl.uniform4f(b.iMouse, ...state.mouse);
   if (b.iPointer) gl.uniform4f(b.iPointer, ...(state.pointer ?? [0, 0, 0, 0]));
   if (b.iClicks) gl.uniform4fv(b.iClicks, state.clicks ?? NO_CLICKS);
+  if (b.iTrail) gl.uniform4fv(b.iTrail, state.trail ?? NO_TRAIL);
   let unit = 0;
   for (const control of controls) {
     const loc = shader.uniforms.get(control.name);

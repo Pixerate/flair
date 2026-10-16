@@ -1,18 +1,25 @@
 /**
  * The pointer as shaders see it, beyond Shadertoy's `iMouse`: where it is
  * while it is over the canvas, how hovered the canvas is (eased in and out),
- * how long it has been pressed, and the last few clicks, so effects can
- * answer hovers, presses and taps. Times are in `iTime` seconds, so a
- * recording can script them (see `ShaderFrames`' `pointer` and `clicks`).
+ * how long it has been pressed, the last few clicks, and where it has just
+ * been (its trail), so effects can answer hovers, presses, taps and moves.
+ * Times are in `iTime` seconds, so a recording can script them (see
+ * `ShaderFrames`' `pointer`, `clicks` and `trail`).
  */
 
 /** How many clicks `iClicks` holds; older ones drop off. */
 export const MAX_CLICKS = 8;
 
+/** How many of the pointer's recent positions `iTrail` holds; older ones drop off. */
+export const MAX_TRAIL = 16;
+
+/** The least time between two positions in the trail, in seconds: moves in between update the newest. */
+export const TRAIL_SECONDS = 1 / 60;
+
 /** How long hovering eases in or out, in seconds. */
 export const HOVER_SECONDS = 0.25;
 
-/** A click: where (pixels from the bottom left, like `iMouse`) and when (`iTime` seconds). */
+/** A click, or a point of the trail: where (pixels from the bottom left, like `iMouse`) and when (`iTime` seconds). */
 export interface ShaderClick {
   x: number;
   y: number;
@@ -26,10 +33,23 @@ const smooth = (t: number) => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t));
  * each click at or before `time`, zeros for the rest.
  */
 export function clicksUniform(clicks: readonly ShaderClick[], time: number): Float32Array {
-  const out = new Float32Array(MAX_CLICKS * 4);
+  return latest(clicks, time, MAX_CLICKS);
+}
+
+/**
+ * `iTrail` from the pointer's positions, oldest first in the list: the
+ * newest {@link MAX_TRAIL} at or before `time`, newest first, as
+ * `vec4(x, y, time, 1)`, zeros for the rest.
+ */
+export function trailUniform(trail: readonly ShaderClick[], time: number): Float32Array {
+  return latest(trail, time, MAX_TRAIL);
+}
+
+function latest(events: readonly ShaderClick[], time: number, max: number): Float32Array {
+  const out = new Float32Array(max * 4);
   let i = 0;
-  for (let k = clicks.length - 1; k >= 0 && i < MAX_CLICKS; k--) {
-    const c = clicks[k]!;
+  for (let k = events.length - 1; k >= 0 && i < max; k--) {
+    const c = events[k]!;
     if (c.time > time) continue;
     out.set([c.x, c.y, c.time, 1], i * 4);
     i++;
@@ -50,11 +70,25 @@ export class PointerTracker {
   private pressedAt: number | null = null;
   private releasedAt: number | null = null;
   private clicks: ShaderClick[] = [];
+  private trail: ShaderClick[] = [];
 
-  /** The pointer moved to (x, y), in pixels from the bottom left. */
-  move(x: number, y: number) {
+  /**
+   * The pointer moved to (x, y), in pixels from the bottom left. With a
+   * `time`, the move joins the trail: a new point at most every
+   * {@link TRAIL_SECONDS}, the newest point following the pointer between.
+   */
+  move(x: number, y: number, time?: number) {
     this.x = x;
     this.y = y;
+    if (time === undefined) return;
+    const last = this.trail[this.trail.length - 1];
+    if (last && time >= last.time && time - last.time < TRAIL_SECONDS) {
+      last.x = x;
+      last.y = y;
+      return;
+    }
+    this.trail.push({ x, y, time });
+    if (this.trail.length > MAX_TRAIL) this.trail.shift();
   }
 
   /** The pointer came over the canvas (`true`) or left it. */
@@ -78,9 +112,10 @@ export class PointerTracker {
     this.pressedAt = null;
   }
 
-  /** Forgets clicks and presses (when time jumps back, say). */
+  /** Forgets clicks, presses and the trail (when time jumps back, say). */
   clear() {
     this.clicks = [];
+    this.trail = [];
     this.pressedAt = null;
     this.releasedAt = null;
   }
@@ -106,5 +141,10 @@ export class PointerTracker {
   /** `iClicks` at `time` (see {@link clicksUniform}). */
   clicksAt(time: number): Float32Array {
     return clicksUniform(this.clicks, time);
+  }
+
+  /** `iTrail` at `time` (see {@link trailUniform}). */
+  trailAt(time: number): Float32Array {
+    return trailUniform(this.trail, time);
   }
 }

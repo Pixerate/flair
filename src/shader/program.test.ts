@@ -1,4 +1,5 @@
 import { parseControls } from "./controls.js";
+import { MAX_TRAIL } from "./pointer.js";
 import {
   BUILTIN_UNIFORMS,
   compileShader,
@@ -330,8 +331,18 @@ describe("drawFrame", () => {
     expect(gl.uniform("uA")).toEqual([0]);
   });
 
+  it("sends the pointer, clicks and trail, zeros when there are none", () => {
+    const gl = new FakeGl();
+    const source = shaderSource("");
+    const trail = new Float32Array(MAX_TRAIL * 4).fill(2);
+    drawFrame(asGl(gl), compiled(gl, source), [], undefined, { ...STATE, pointer: [1, 2, 0.5, 0], trail });
+    expect(gl.uniform("iPointer")).toEqual([1, 2, 0.5, 0]);
+    expect(Array.from(gl.uniform("iTrail")![0] as Float32Array)).toEqual(Array.from(trail));
+    expect((gl.uniform("iClicks")![0] as Float32Array).every((v) => v === 0)).toBe(true);
+  });
+
   it("skips uniforms the driver removed", () => {
-    const gl = new FakeGl({ missingUniforms: ["uGone", "iMouse", "iPointer", "iClicks"] });
+    const gl = new FakeGl({ missingUniforms: ["uGone", "iMouse", "iPointer", "iClicks", "iTrail"] });
     const source = shaderSource("uniform float uGone; // @control");
     drawFrame(asGl(gl), compiled(gl, source), parseControls(source), undefined, STATE);
     expect(gl.named("uniform1f").some((c) => c.args[0] === null)).toBe(false);
