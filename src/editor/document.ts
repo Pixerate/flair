@@ -9,6 +9,7 @@ import { getEffect, renderVectorEffect, vectorControlIssues, vectorEffectControl
 import type { EffectDefinition, EffectPreset, VectorControl } from "../catalog/types.js";
 import { checkControlValue, controlValue, parseControls, type ControlDef, type ControlValue } from "../shader/controls.js";
 import { svgMotionIssues, type SvgMotion } from "../vector/motion.js";
+import { svgDuration } from "../vector/svg.js";
 import { evaluateTrack, isEasing, normalizeKeyframes, type Track } from "./timeline.js";
 
 /**
@@ -49,7 +50,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 }
 `;
 
-/** Ms of timeline a new document gets (the effect's loop when it has one). */
+/** Ms of timeline a new document gets when its effect sets none (a shader's `loop`, or a vector effect's motion plus `hold`). */
 const DEFAULT_DURATION = 5000;
 
 /**
@@ -76,7 +77,12 @@ export function createEffectDocument(from?: string | EffectDefinition | { source
           },
     values: {},
     tracks: {},
-    duration: effect.kind === "shader" && effect.loop ? Math.round(effect.loop * 1000) : DEFAULT_DURATION,
+    duration:
+      effect.kind === "vector"
+        ? Math.round(svgDuration(effect.motion) + (effect.hold ?? 600))
+        : effect.loop
+          ? Math.round(effect.loop * 1000)
+          : DEFAULT_DURATION,
     loop: true,
     presets: (effect.presets ?? []).map((p) => ({ name: p.name, values: { ...p.values } })),
   };

@@ -6,6 +6,8 @@ import { svgDuration } from "../vector/svg.js";
 import type { EffectCategory, VectorEffect } from "./types.js";
 import {
   EFFECT_CATEGORIES,
+  EFFECT_CATEGORY_GROUPS,
+  categoryGroup,
   EFFECTS,
   effectControls,
   effectDefaults,
@@ -1607,5 +1609,21 @@ describe("3d, space, weather and water effects", () => {
     for (const id of ["globe", "pond-ripples"]) {
       expect(effectControls(getEffect(id)!).find((c) => c.name === "uDemo"), id).toMatchObject({ type: "bool", default: true });
     }
+  });
+});
+
+describe("category groups", () => {
+  it("hold every category exactly once", () => {
+    const grouped = EFFECT_CATEGORY_GROUPS.flatMap((g) => g.categories);
+    expect([...grouped].sort()).toEqual([...EFFECT_CATEGORIES].sort());
+    expect(new Set(EFFECT_CATEGORY_GROUPS.map((g) => g.name)).size).toBe(EFFECT_CATEGORY_GROUPS.length);
+  });
+
+  it("find a category's group and filter by it", () => {
+    expect(categoryGroup("melt").name).toBe("Pictures");
+    const lights = findEffects({ group: "light" });
+    expect(lights.length).toBeGreaterThan(0);
+    expect(lights.every((e) => categoryGroup(e.category).name === "Light")).toBe(true);
+    expect(findEffects({ group: "nope" })).toEqual([]);
   });
 });

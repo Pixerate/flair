@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { getEffect } from "../catalog/index.js";
 import { ManualClock } from "../time/clock.js";
+import { svgDuration } from "../vector/svg.js";
 import { callTool, createEffectToolProvider, EFFECT_AGENT_INSTRUCTIONS, toolDefinitions } from "./agent.js";
 import { bindShaderRenderer, bindSvgView } from "./bind.js";
 import { createEffectDocument, documentIssues, parseEffectDocument, valuesAt } from "./document.js";
@@ -20,6 +21,13 @@ describe("documents", () => {
   it("uses each effect's loop as its timeline", () => {
     expect(createEffectDocument("stripes").duration).toBe(1000);
     expect(createEffectDocument("aurora").duration).toBe(5000);
+  });
+
+  it("gives a vector effect its motion and rest as its timeline", () => {
+    const spinner = getEffect("spinner");
+    if (spinner?.kind !== "vector") throw new Error("spinner is a vector effect");
+    expect(createEffectDocument("spinner").duration).toBe(Math.round(svgDuration(spinner.motion) + (spinner.hold ?? 600)));
+    expect(createEffectDocument("spinner").duration).not.toBe(5000);
   });
 
   it("evaluates values from tracks, picked values and defaults", () => {
