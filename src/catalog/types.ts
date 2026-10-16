@@ -44,6 +44,7 @@ export type EffectCategory =
   | "scroll"
   | "broadcast"
   | "annotation"
+  | "ui"
   | "3d"
   | "weather"
   | "water"
@@ -86,6 +87,7 @@ export const EFFECT_CATEGORIES: readonly EffectCategory[] = [
   "scroll",
   "broadcast",
   "annotation",
+  "ui",
   "3d",
   "weather",
   "water",

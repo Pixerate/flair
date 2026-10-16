@@ -1457,6 +1457,134 @@ describe("scroll effects", () => {
   });
 });
 
+describe("ui effects", () => {
+  const ui = findEffects({ category: "ui" });
+  const shaders = ["border-beam", "gradient-border", "meteors", "background-beams", "grid-spotlight", "dot-grid", "glass-card", "liquid-glass", "noise-grain-bg"];
+  const vectors = ["marquee", "number-ticker", "animated-badge"];
+  const render = (id: string, values: Record<string, unknown> = {}) => {
+    const effect = getEffect(id)!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    return renderVectorEffect(effect, values as never);
+  };
+
+  it("has the frames, backgrounds, glass and the marquee, ticker and badge, all tagged and with presets", () => {
+    expect(ui.map((e) => e.id).sort()).toEqual([...shaders, ...vectors].sort());
+    for (const effect of ui) {
+      expect(effect.tags, effect.id).toContain("ui");
+      expect(effect.presets?.length ?? 0, effect.id).toBeGreaterThan(1);
+    }
+  });
+
+  it("draws the frames and meteors over the page, says how the glass takes video, and follows the pointer with an idle demo", () => {
+    for (const id of ["border-beam", "gradient-border", "meteors"]) expect(getEffect(id), id).toMatchObject({ transparent: true });
+    for (const id of ["background-beams", "grid-spotlight", "dot-grid", "noise-grain-bg", "glass-card", "liquid-glass"]) expect(getEffect(id), id).not.toHaveProperty("transparent");
+    expect(getEffect("glass-card")).toMatchObject({ video: "filter" });
+    expect(getEffect("liquid-glass")).toMatchObject({ video: "interactive" });
+    for (const id of ["grid-spotlight", "dot-grid", "liquid-glass"]) {
+      expect(effectInputs(getEffect(id)!).interactions, id).toEqual(["hover", "pointer"]);
+      expect(effectDefaults(getEffect(id)!).uDemo, id).toBe(true);
+    }
+  });
+
+  it("prefixes every vector id with the effect's name", () => {
+    for (const [id, prefix] of [["marquee", "marquee"], ["number-ticker", "numberTicker"], ["animated-badge", "animatedBadge"]] as const)
+      for (const [, name] of render(id).svg.matchAll(/\sid="([^"]+)"/g)) expect(name, id).toMatch(new RegExp(`^${prefix}`));
+  });
+
+  it("marquee scrolls exactly one copy per loop, either way, for any words", () => {
+    for (const values of [{}, { words: "A" }, { words: "One · Two · Three · Four · Five · Six · Seven · Eight", reverse: true, size: 30 }]) {
+      const motion = render("marquee", values);
+      const xs = [...motion.svg.matchAll(/<text x="([-\d.]+)"/g)].map((m) => Number(m[1]));
+      const period = xs[1]! - xs[0]!;
+      expect(xs.length).toBe(6);
+      // The five copies after the first always reach past the right edge.
+      expect(period * 5).toBeGreaterThanOrEqual(399);
+      const [from, to] = motion.animate![0]!.attrs!.transform!;
+      const shift = (s: string | number) => Number(/translate\(([-\d.]+)/.exec(String(s))![1]);
+      expect(Math.abs(shift(to) - shift(from))).toBeCloseTo(period, 1);
+      expect(svgMotionIssues(motion)).toEqual([]);
+    }
+  });
+
+  it("number ticker rolls each digit to its value and keeps the rest of the format", () => {
+    const motion = render("number-ticker", { value: "$12,480" });
+    const end = svgFrame(motion.animate!, [], svgDuration(motion));
+    const rolls = [0, 1, 2, 3, 4, 5, 6].map((i) => end.get(`numberTickerDigit${i}`)!.attrs.transform);
+    expect(rolls).toEqual(["translate(0 0)", "translate(0 -704)", "translate(0 -768)", "translate(0 0)", "translate(0 -896)", "translate(0 -1152)", "translate(0 -640)"]);
+    expect(motion.svg).toContain(">$</text>");
+    expect(motion.svg).toContain(">,</text>");
+    for (const value of ["", "98.6%", "1,234,567,890,123", "<b>&"]) {
+      const m = render("number-ticker", { value });
+      expect(svgMotionIssues(m)).toEqual([]);
+      expect(JSON.stringify(m)).not.toMatch(/\{\{|NaN|undefined/);
+    }
+  });
+
+  it("badge fits any label", () => {
+    for (const label of ["A", "Early access & more", "Café 日本 🎉", ""]) {
+      const m = render("animated-badge", { label });
+      expect(svgMotionIssues(m)).toEqual([]);
+      expect(JSON.stringify(m)).not.toMatch(/\{\{|NaN|undefined/);
+    }
+  });
+});
+
+describe("more loaders", () => {
+  const ids = ["skeleton-shimmer", "progress-bar", "indeterminate-bar", "step-progress", "circle-dots-loader", "wave-bars"];
+  const render = (id: string, values: Record<string, unknown> = {}) => {
+    const effect = getEffect(id)!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    return renderVectorEffect(effect, values as never);
+  };
+  const frameAt = (motion: ReturnType<typeof render>, ms: number) => JSON.stringify([...svgFrame(motion.animate!, [], ms)].sort()).replace(/rotate\(360 /g, "rotate(0 "); // A whole turn ends where it starts.
+
+  it("are vector loaders, tagged and prefixed with their names", () => {
+    for (const id of ids) {
+      const effect = getEffect(id)!;
+      expect(effect, id).toMatchObject({ kind: "vector", category: "loader" });
+      expect(effect.tags, id).toContain("loader");
+      const prefix = id.replace(/-(\w)/g, (_, c: string) => c.toUpperCase());
+      for (const [, name] of render(id).svg.matchAll(/\sid="([^"]+)"/g)) expect(name, id).toMatch(new RegExp(`^${prefix}`));
+    }
+  });
+
+  it("loop seamlessly: each ends as it starts (the shimmer and racing bars end off the track, the progress bar fades its fill out first)", () => {
+    for (const id of ids.filter((i) => !["progress-bar", "skeleton-shimmer", "indeterminate-bar"].includes(i))) {
+      const motion = render(id);
+      expect(frameAt(motion, svgDuration(motion)), id).toBe(frameAt(motion, 0));
+      expect(frameAt(motion, svgDuration(motion) / 2), id).not.toBe(frameAt(motion, 0));
+    }
+    // The racing segments start and end off the track.
+    const race = render("indeterminate-bar");
+    for (const ms of [0, svgDuration(race)])
+      for (const [, f] of svgFrame(race.animate!, [], ms)) expect(Number(f.attrs.x) + Number(f.attrs.width) <= 0 || Number(f.attrs.x) >= 240).toBe(true);
+    const bar = render("progress-bar", { value: 50 });
+    expect(svgFrame(bar.animate!, [], svgDuration(bar)).get("progressBarBar")!.attrs.opacity).toBe("0");
+    expect(svgFrame(bar.animate!, [], 2000).get("progressBarFill")!.attrs.width).toBe("110");
+  });
+
+  it("step progress labels its steps from one text", () => {
+    const motion = render("step-progress", { labels: "One · Two" });
+    expect(motion.svg).toContain(">One</text>");
+    expect(motion.svg).toContain(">Two</text>");
+    expect(JSON.stringify(motion)).not.toMatch(/\{\{|NaN|undefined/);
+  });
+});
+
+describe("more gradients", () => {
+  it("are opaque full-frame shaders with presets, taking no pictures or pointer", () => {
+    for (const id of ["grainy-gradient", "stripe-gradient", "holographic-gradient", "radial-glow"]) {
+      const effect = getEffect(id)!;
+      expect(effect, id).toMatchObject({ kind: "shader", category: "gradient" });
+      expect(effectInputs(effect), id).toMatchObject({ accepts: [], interactions: [], transparent: false });
+      expect(effect.presets?.length ?? 0, id).toBeGreaterThan(1);
+    }
+    expect(getEffect("grainy-gradient")!.presets!.map((p) => p.name)).toContain("Stripe-like");
+  });
+});
+  });
+});
+
 describe("3d, space, weather and water effects", () => {
   const ids = (category: EffectCategory) => findEffects({ category }).map((e) => e.id);
 
