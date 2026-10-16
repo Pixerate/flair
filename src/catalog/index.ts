@@ -70,6 +70,10 @@ import { glowShaders } from "./shaders/glow.js";
 import { shadowShaders } from "./shaders/shadow.js";
 import { distortionShaders } from "./shaders/distortion.js";
 import { lightingShaders } from "./shaders/lighting.js";
+import { threeDShaders } from "./shaders/three-d.js";
+import { spaceShaders } from "./shaders/space-more.js";
+import { weatherShaders } from "./shaders/weather.js";
+import { waterShaders } from "./shaders/water.js";
 import { textEffects } from "./text.js";
 import { CURRENT_COLOR, EFFECT_CATEGORIES, isCurrentColor, vectorEffectControls, type EffectCategory, type EffectDefinition, type ShaderEffect, type VideoUse } from "./types.js";
 import { vectorEffects } from "./vector.js";
@@ -130,6 +134,7 @@ export const SHADER_EFFECTS: readonly ShaderEffect[] = [
   starfield,
   nebula,
   blackHole,
+  ...spaceShaders,
   synthwaveGrid,
   digitalRain,
   pixelSunset,
@@ -164,6 +169,9 @@ export const SHADER_EFFECTS: readonly ShaderEffect[] = [
   ...glowShaders,
   ...shadowShaders,
   ...distortionShaders,
+  ...threeDShaders,
+  ...weatherShaders,
+  ...waterShaders,
   ...transitions,
 ];
 
