@@ -193,15 +193,15 @@ export interface VectorTimeline {
 const REST = 300;
 
 /**
- * A vector effect's timeline: a loop plays and rests `hold` ms; a hover or
- * press trigger plays to the end, rests, and plays back; a click trigger is
+ * A vector effect's timeline: a loop plays and rests `hold` ms; a hover, press or
+ * scroll trigger plays to the end, rests, and plays back (a scroll down and up); a click trigger is
  * clicked through each of its steps (or, with none, clicked again after
  * each play-through).
  */
 export function vectorTimeline(effect: Pick<VectorEffect, 'hold' | 'trigger'>, motion: SvgMotion): VectorTimeline {
   const hold = effect.hold ?? 600;
   const d = svgDuration(motion);
-  if (effect.trigger === 'hover' || effect.trigger === 'press') {
+  if (effect.trigger === 'hover' || effect.trigger === 'press' || effect.trigger === 'scroll') {
     const length = REST + d + hold + d;
     return {
       length,

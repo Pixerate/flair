@@ -70,6 +70,9 @@ import { glowShaders } from "./shaders/glow.js";
 import { shadowShaders } from "./shaders/shadow.js";
 import { distortionShaders } from "./shaders/distortion.js";
 import { lightingShaders } from "./shaders/lighting.js";
+import { audioShaders } from "./shaders/audio.js";
+import { scrollShaders } from "./shaders/scroll.js";
+import { scrollEffects } from "./scroll.js";
 import { textEffects } from "./text.js";
 import { broadcastEffects } from "./broadcast.js";
 import { annotationEffects } from "./annotation.js";
@@ -166,11 +169,13 @@ export const SHADER_EFFECTS: readonly ShaderEffect[] = [
   ...glowShaders,
   ...shadowShaders,
   ...distortionShaders,
+  ...audioShaders,
+  ...scrollShaders,
   ...transitions,
 ];
 
 /** Every effect in the catalog, shaders first, grouped by category. */
-export const EFFECTS: readonly EffectDefinition[] = [...SHADER_EFFECTS, ...vectorEffects, ...textEffects, ...morphEffects, ...interactionEffects, ...pyroEffects, ...timewarpEffects, ...meltEffects, ...electricEffects, ...pixelEffects, ...splatterEffects, ...bubbleEffects, ...stickerEffects, ...trailEffects, ...impactEffects, ...comicEffects, ...glowEffects, ...shadowEffects, ...lightingEffects, ...broadcastEffects, ...annotationEffects].sort(
+export const EFFECTS: readonly EffectDefinition[] = [...SHADER_EFFECTS, ...vectorEffects, ...textEffects, ...morphEffects, ...interactionEffects, ...pyroEffects, ...timewarpEffects, ...meltEffects, ...electricEffects, ...pixelEffects, ...splatterEffects, ...bubbleEffects, ...stickerEffects, ...trailEffects, ...impactEffects, ...comicEffects, ...glowEffects, ...shadowEffects, ...lightingEffects, ...scrollEffects, ...broadcastEffects, ...annotationEffects].sort(
   (a, b) => EFFECT_CATEGORIES.indexOf(a.category) - EFFECT_CATEGORIES.indexOf(b.category),
 );
 
@@ -198,7 +203,7 @@ const inputsCache = new WeakMap<EffectDefinition, EffectInputs>();
  * (`accepts`: image, video, svg, text, mask, path), its image controls and
  * whether each wants a picture, a mask or text, its text controls (copy,
  * font, path, glyphs), how it suits video, how it answers the pointer
- * (`interactions`: hover, press, click, trail, pointer) and whether it draws
+ * (`interactions`: hover, press, click, trail, pointer, scroll) and whether it draws
  * over other content. Worked out from the effect itself, so it always agrees
  * with its controls and source.
  */

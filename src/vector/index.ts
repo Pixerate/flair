@@ -40,6 +40,7 @@ export {
   animateCount,
   parseSvg,
   svgDuration,
+  SCROLL_RANGE,
   SvgPlayer,
   svgView,
   type AnimateCountOptions,

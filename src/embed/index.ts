@@ -12,6 +12,7 @@
 
 import { effectDefaults, effectInputs, getEffect, textImage, type EffectDefinition, type ImageSlot, type TextSlot } from "../catalog/index.js";
 import { renderVectorEffect } from "../catalog/types.js";
+import type { AudioSource } from "../shader/audio.js";
 import type { ControlValue } from "../shader/controls.js";
 import { ShaderRenderer } from "../shader/renderer.js";
 import type { LiveSource } from "../shader/textures.js";
@@ -26,21 +27,28 @@ export { recordEffect, recordingPlan, type RecordFormat, type RecordOptions, typ
  * - `{ svg }`: an SVG, as markup (`"<svg …>"`) or a URL; drawn as a picture, keeping its transparency.
  * - `{ text }`: words, for a vector effect's text, or drawn with `textImage` for a shader's text or mask.
  * - `{ path }`: SVG path data (`d`), for a shape control.
+ * - `{ audio }`: sound for an audio-reactive shader (`iAudio`, `iSpectrum`,
+ *   `iBeat`): a playing `<audio>` or `<video>` (still heard), a microphone's
+ *   `MediaStream` (not played back) or a Web Audio node. See
+ *   `ShaderRenderer.setAudioSource`; to record, pass `audio` to `recordEffect`.
  */
 export type EffectSubject =
   | { image: string }
   | { video: LiveSource }
   | { svg: string }
   | { text: string; font?: string; weight?: number | string }
-  | { path: string };
+  | { path: string }
+  | { audio: AudioSource };
 
-/** What a subject becomes for an effect: control values, and live sources by image control. */
+/** What a subject becomes for an effect: control values, live sources by image control, and the sound it hears. */
 export interface SubjectValues {
   values: Record<string, ControlValue>;
   live: Record<string, LiveSource>;
+  /** The sound, from an `{ audio }` subject. */
+  audio?: AudioSource;
 }
 
-const kindOf = (subject: EffectSubject) => Object.keys(subject).find((k) => k !== "font" && k !== "weight") as "image" | "video" | "svg" | "text" | "path";
+const kindOf = (subject: EffectSubject) => Object.keys(subject).find((k) => k !== "font" && k !== "weight") as "image" | "video" | "svg" | "text" | "path" | "audio";
 
 /** An SVG as a URL: markup becomes a UTF-8 `data:` URL; a URL stays as it is. */
 function svgUrl(svg: string): string {
@@ -79,6 +87,12 @@ export function subjectValues(effect: EffectDefinition, subject: EffectSubject |
   for (const s of Array.isArray(subject) ? subject : [subject as EffectSubject]) {
     const kind = kindOf(s);
     const free = <T extends { name: string }>(slots: T[]) => slots.filter((x) => !used.has(x.name));
+    if (kind === "audio") {
+      if (!inputs.accepts.includes("audio"))
+        throw new Error(`"${effect.id}" does not react to sound; findEffects({ accepts: ["audio"] }) lists the effects that do.`);
+      out.audio = (s as { audio: AudioSource }).audio;
+      continue;
+    }
     if (kind === "path" || (kind === "text" && effect.kind === "vector")) {
       const holds = kind === "path" ? "path" : "copy";
       const text = pick<TextSlot>(free(inputs.texts), (t) => t.holds === holds, slot, effect, kind === "path" ? "path data" : "text");
@@ -140,14 +154,16 @@ export interface MountedEffect {
  * Runs a catalog effect (by id or definition) in `host`, applied to
  * `subject`: a shader on a canvas (transparent for overlays, so it lays over
  * the page), or a vector effect in an SVG player that answers its trigger
- * (hover, press, click). Throws a sentence when the effect is unknown or
- * takes no such subject.
+ * (hover, press, click, scroll). Shaders that read `iScroll` follow the
+ * page's scrolling, and audio-reactive shaders hear an `{ audio }` subject.
+ * Throws a sentence when the effect is unknown or takes no such subject.
  *
  * ```ts
  * mountEffect(el, "image-duotone", { subject: { image: "/team.jpg" }, preset: "Spotify" });
  * mountEffect(el, "crt", { subject: { video: videoElement } });
  * mountEffect(el, "typewriter", { subject: { text: "Hello there" } });
  * mountEffect(el, "neon-outline", { subject: { svg: logoMarkup } });
+ * mountEffect(el, "spectrum-bars", { subject: { audio: audioElement } });
  * ```
  */
 export function mountEffect(host: HTMLElement, effect: EffectDefinition | string, options: MountOptions = {}): MountedEffect {
@@ -155,11 +171,13 @@ export function mountEffect(host: HTMLElement, effect: EffectDefinition | string
   if (!def) throw new Error(`There is no effect "${String(effect)}" in the catalog; findEffects() lists them.`);
   let values: Record<string, ControlValue> = { ...effectDefaults(def, { ...(options.preset ? { preset: options.preset } : {}), ...(options.values ? { values: options.values } : {}) }) };
   let live: Record<string, LiveSource> = {};
+  let audio: AudioSource | undefined;
   const apply = (subject: EffectSubject | readonly EffectSubject[] | undefined) => {
     if (!subject) return;
     const s = subjectValues(def, subject);
     values = { ...values, ...s.values };
     live = s.live;
+    audio = s.audio;
   };
   apply(options.subject);
 
@@ -177,15 +195,18 @@ export function mountEffect(host: HTMLElement, effect: EffectDefinition | string
       for (const [name, source] of Object.entries(live)) renderer.setLiveSource(name, source);
     };
     setLive({});
+    if (audio) renderer.setAudioSource(audio);
     return {
       effect: def,
       element: renderer.canvas,
       renderer,
       setSubject(subject) {
         const before = live;
+        const heard = audio;
         apply(subject);
         renderer.setValues(values);
         setLive(before);
+        if (audio !== heard) renderer.setAudioSource(audio ?? null);
       },
       setValues(next) {
         values = { ...values, ...next };

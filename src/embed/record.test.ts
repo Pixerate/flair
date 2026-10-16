@@ -166,6 +166,40 @@ describe("recordEffect", () => {
     expect(bytes.join(",")).toContain([0x53, 0xc0, 0x81, 0x01].join(","));
   });
 
+  it("drives an audio-reactive shader from an audio buffer, frame for frame", async () => {
+    // A kick at 0.5 s: half a second of silence, then a loud 60 Hz thump.
+    const rate = 48000;
+    const data = Float32Array.from({ length: rate * 1.2 }, (_, i) => (i > rate / 2 ? Math.sin((2 * Math.PI * 60 * i) / rate) * Math.exp(-(i - rate / 2) / 4000) : 0));
+    const buffer = { sampleRate: rate, length: data.length, duration: 1.2, numberOfChannels: 1, getChannelData: () => data } as unknown as AudioBuffer;
+    await recordEffect("spectrum-bars", { format: "gif", width: 16, height: 16, fps: 10, duration: 1, audio: buffer });
+    const audio = rendered.map((r) => r.options.audio as { audio: number[]; beat: number });
+    expect(audio).toHaveLength(10);
+    expect(audio[2]!.audio[1]).toBe(0);
+    expect(audio[2]!.beat).toBe(-1);
+    expect(audio[6]!.audio[1]).toBeGreaterThan(0.3);
+    expect(audio[7]!.beat).toBeGreaterThan(0);
+    // Effects that don't hear sound are drawn without it.
+    rendered.length = 0;
+    await recordEffect("aurora", { format: "gif", width: 16, height: 16, fps: 10, duration: 0.2, audio: buffer });
+    expect(rendered[0]!.options.audio).toBeUndefined();
+  });
+
+  it("plans a sound track: AAC in an mp4, Opus in a webm, falling back to webm, or refusing with a way out", async () => {
+    const buffer = {} as AudioBuffer;
+    stubWebCodecs(["avc1", "vp09"]);
+    const encodes = (codecs: string[]) =>
+      vi.stubGlobal("AudioEncoder", { isConfigSupported: async (c: AudioEncoderConfig) => ({ supported: codecs.some((x) => c.codec.startsWith(x)) }) });
+    vi.stubGlobal("AudioData", class {});
+    encodes(["mp4a", "opus"]);
+    expect(await recordingPlan("spectrum-bars", { audio: buffer })).toMatchObject({ format: "mp4", audioEncoder: { codec: "mp4a.40.2", sampleRate: 48000, numberOfChannels: 2 } });
+    expect(await recordingPlan("spectrum-bars", { audio: buffer, format: "webm" })).toMatchObject({ format: "webm", audioEncoder: { codec: "opus" } });
+    encodes(["opus"]);
+    expect(await recordingPlan("spectrum-bars", { audio: buffer })).toMatchObject({ format: "webm", encoder: { codec: "vp09.00.10.08" }, audioEncoder: { codec: "opus" } });
+    await expect(recordingPlan("spectrum-bars", { audio: buffer, format: "mp4" })).rejects.toThrow(/cannot encode AAC audio.*record "webm" \(Opus\), or pass audioTrack: false/);
+    expect((await recordingPlan("spectrum-bars", { audio: buffer, format: "mp4", audioTrack: false })).audioEncoder).toBeUndefined();
+    expect((await recordingPlan("spectrum-bars", { audio: buffer, format: "gif" })).audioEncoder).toBeUndefined();
+  });
+
   it("stops when aborted", async () => {
     stubWebCodecs(["avc1"]);
     const controller = new AbortController();

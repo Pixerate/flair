@@ -6,6 +6,7 @@ import {
   ShaderCompileError,
   type CompiledShader,
 } from "./program.js";
+import { SPECTRUM_BINS, type AudioFrame } from "./audio.js";
 import { clicksUniform, trailUniform, type ShaderClick } from "./pointer.js";
 import { TextureCache, type LiveSource } from "./textures.js";
 
@@ -33,7 +34,19 @@ export interface RenderOptions {
   clicks?: readonly ShaderClick[];
   /** Where the pointer has been, oldest first, for `iTrail` (the latest `MAX_TRAIL` at or before the frame's time count). */
   trail?: readonly ShaderClick[];
+  /**
+   * The sound, for `iAudio`, `iSpectrum` and `iBeat`: a frame from
+   * `analyseAudioBuffer(buffer).at(t)` (frame-exact from an audio file), or
+   * values of your own; what is left out is silence (`beat` -1). Without
+   * it there is no audio at all (every audio uniform 0), and audio-reactive
+   * effects play their idle demos.
+   */
+  audio?: Partial<AudioFrame>;
+  /** `iScroll`: progress through the viewport, page scroll (0–1), velocity (viewport heights a second), scrolling (0–1). Default all zero: nothing scrolls it. */
+  scroll?: readonly [number, number, number, number];
 }
+
+const SILENT = new Float32Array(SPECTRUM_BINS);
 
 /**
  * Renders a shader at exact times you choose, off screen. There is no
@@ -129,6 +142,10 @@ export class ShaderFrames {
         pointer: options.pointer,
         clicks: options.clicks && clicksUniform(options.clicks, time),
         trail: options.trail && trailUniform(options.trail, time),
+        ...(options.audio
+          ? { audio: options.audio.audio ?? [0, 0, 0, 0], spectrum: options.audio.spectrum ?? SILENT, beat: options.audio.beat ?? -1 }
+          : {}),
+        ...(options.scroll ? { scroll: options.scroll } : {}),
       },
       this.textures,
     );

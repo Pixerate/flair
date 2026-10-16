@@ -157,7 +157,7 @@ export function SvgPlayerView(props: SvgPlayerViewProps) {
   const callbacks = useRef({ onPick, onPlayer });
   callbacks.current = { onPick, onPlayer };
 
-  const at = poster ?? (trigger === "hover" || trigger === "press" ? "first" : "last");
+  const at = poster ?? (trigger === "hover" || trigger === "press" || trigger === "scroll" ? "first" : "last");
   const markup = useMemo(() => svgFrameMarkup(motion, { at, steps }) ?? "", [motion, at, steps]);
   const stepsKey = steps?.join(",");
   // A one-shot waits until it is seen.
