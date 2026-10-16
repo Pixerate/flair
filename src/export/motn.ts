@@ -1,6 +1,6 @@
 import type { Scene, Shot } from '../scene/types.js';
-import { DEFAULT_STAGE, CAMERA_MS, DEFAULT_PERSPECTIVE, centreOf, isAngled, type View } from '../scene/camera.js';
-import { cameraSamples, sceneStage, type CameraSample } from '../scene/cameratrack.js';
+import { DEFAULT_STAGE, DEFAULT_PERSPECTIVE, centreOf, isAngled, type View } from '../scene/camera.js';
+import { cameraSamples, shotMoveMs, sceneStage, type CameraSample } from '../scene/cameratrack.js';
 import { isElementCommand } from '../scene/types.js';
 
 export interface MotnExportOptions {
@@ -49,6 +49,8 @@ function cameraGroupOpen(scene: Scene, frameRate: number, totalFrames: number, i
     lines.push(`      <!-- 3D group: view it through a camera ${distance}px from the canvas -->`);
   }
   for (const shot of scene.shots) {
+    const transition = shot.camera?.transition;
+    if (transition && transition !== 'move') lines.push(`      <!-- ${escapeXml(shot.title ?? 'Shot')}: ${transition} in -->`);
     if (shot.camera?.motionBlur) lines.push(`      <!-- ${escapeXml(shot.title ?? 'Shot')}: motion blur ${shot.camera.motionBlur} on the move in -->`);
   }
   lines.push(`      <timing in="0" out="${totalFrames - 1}" offset="0"/>`);
@@ -89,7 +91,7 @@ export function exportMotn(scene: Scene, options: MotnExportOptions = {}): strin
   // Calculate shot frame ranges
   let currentMs = 0;
   const shotTimings = scene.shots.map((shot, idx) => {
-    const camMs = idx > 0 && shot.camera ? CAMERA_MS : 0;
+    const camMs = shotMoveMs(shot, idx);
     const holdMs = shot.hold ?? 800;
     const durationMs = camMs + holdMs;
     const startMs = currentMs;

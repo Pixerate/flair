@@ -333,6 +333,7 @@ A shot's `camera` frames a box (`{ x, y, width, height }`) or elements (`{ frame
 - `tilt` leans the board back (top away, like a desk seen from above), `turn` swings it round its vertical axis (left side nearer when positive), `roll` rolls it clockwise. Tilt and turn go up to ±75°.
 - `perspective` is the lens distance as a multiple of the stage width (1.2 by default). Lower values look more dramatic.
 - `motionBlur` (0 to 3, with 1 as natural) blurs the move in proportion to its speed, so the blur peaks mid-move and clears when the camera settles. A pan streaks along its direction (`View.blurAngle`), while a zoom or turn blurs in every direction.
+- `transition` sets how the camera gets into the shot. `"move"` (the default) eases across. `"whip"` whip-pans off the last framing toward this one in a streak of blur and whips in onto it, cutting at the blurriest moment. `"zoom"` punches into the last framing and cuts to this one settling out, blurring every way. `"cut"` jumps straight there and takes no time. A whip or zoom blurs at `motionBlur` 2 unless the shot sets its own, and a zoom punches in to (1 + `motionBlur`)×: `{ "camera": { "frame": ["pricing"], "transition": "whip" } }`. `transitionView` gives the camera part-way through any of them.
 - Angles carry over to later shots until a shot changes them. `{ "camera": { "tilt": 0, "turn": 0 } }` flattens the board in place.
 
 `playScene` hands boards views with these fields (`View.tilt`, `View.blur`, `View.blurAngle`, …). For renderers:

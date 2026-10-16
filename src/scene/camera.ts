@@ -328,6 +328,92 @@ export function moveBlur(from: View, to: View, stage: Stage, strength: number): 
   return blurAngle === undefined ? { blur } : { blur, blurAngle };
 }
 
+/**
+ * How the camera gets into a shot (`ShotCamera.transition`):
+ * - `move` (the default) eases from the last framing to the new one.
+ * - `whip` whips off the last framing toward the new one in a streak of
+ *   motion blur and whips in onto it, cutting at the blurriest moment.
+ * - `zoom` punches into the last framing, blurring every way, and settles
+ *   out of a punched-in new one, cutting halfway.
+ * - `cut` jumps straight to the new framing, taking no time.
+ */
+export type CameraTransition = 'move' | 'whip' | 'zoom' | 'cut';
+
+export const CAMERA_TRANSITIONS: readonly CameraTransition[] = ['move', 'whip', 'zoom', 'cut'];
+
+/** The motion blur a whip or zoom uses when the shot does not set `motionBlur`. */
+export const TRANSITION_BLUR = 2;
+
+/** The blur strength a transition plays with: the shot's `motionBlur`, or {@link TRANSITION_BLUR} for a whip or zoom without one. */
+export function transitionStrength(kind: CameraTransition, motionBlur: number | undefined): number {
+  return motionBlur ?? (kind === 'whip' || kind === 'zoom' ? TRANSITION_BLUR : 0);
+}
+
+/** The steps a camera move is played in; its blur is measured over one. */
+export const CAMERA_STEPS = 15;
+
+const easeInCubic = (t: number): number => t * t * t;
+const easeOutCubic = (t: number): number => 1 - Math.pow(1 - t, 3);
+
+/**
+ * One half of a whip or zoom at `t` (0 to 1 through the half; the formula
+ * carries on smoothly before 0, which the blur step relies on arriving):
+ * leaving `from` (`out`) or arriving at `to`.
+ */
+function transitionHalf(kind: 'whip' | 'zoom', from: View, to: View, out: boolean, t: number, stage: Stage, strength: number): View {
+  const at = out ? from : to;
+  // How far off its framing the camera is: 0 settled, 1 at the cut.
+  const off = out ? easeInCubic(t) : 1 - easeOutCubic(t);
+  const [cx, cy] = centreOf(at, stage);
+  const angle = cameraAngle(at);
+  if (kind === 'zoom') {
+    return { ...viewAt(cx, cy, at.zoom * Math.pow(1 + strength, off), stage), ...angle };
+  }
+  const [x0, y0] = centreOf(from, stage);
+  const [x1, y1] = centreOf(to, stage);
+  const dist = Math.hypot(x1 - x0, y1 - y0);
+  const [dx, dy] = dist > 1e-6 ? [(x1 - x0) / dist, (y1 - y0) / dist] : [1, 0];
+  // A board's width at this framing's zoom: out ahead of `from`, behind `to`.
+  const reach = (stage.width / at.zoom) * off * (out ? 1 : -1);
+  return { ...viewAt(cx + dx * reach, cy + dy * reach, at.zoom, stage), ...angle };
+}
+
+/**
+ * The camera `u` (0 to 1) of the way through a transition from one view to
+ * another (see {@link CameraTransition}), with its motion blur measured over
+ * the step before (1/{@link CAMERA_STEPS} of the move). `strength` is the
+ * blur (`ShotCamera.motionBlur`; see {@link transitionStrength}) and, for a
+ * zoom, how far it punches in: to (1 + strength) × at the cut. Settled on
+ * `to`, with no blur, from `u` = 1 (and at once for a cut).
+ */
+export function transitionView(
+  kind: CameraTransition,
+  from: View,
+  to: View,
+  u: number,
+  stage: Stage,
+  strength: number,
+): View {
+  if (kind === 'cut' || u >= 1) return to;
+  const step = 1 / CAMERA_STEPS;
+  if (kind === 'move') {
+    const view = between(from, to, easeInOutCubic(Math.max(0, u)), stage);
+    if (!(strength > 0)) return view;
+    const before = between(from, to, easeInOutCubic(Math.max(0, u - step)), stage);
+    return { ...view, ...moveBlur(before, view, stage, strength) };
+  }
+  // Each half takes half the move, so a step is twice as far through it; the
+  // step before is taken on the same side of the cut, never across it.
+  const out = u < 0.5;
+  const t = out ? Math.max(0, u) * 2 : (u - 0.5) * 2;
+  const view = transitionHalf(kind, from, to, out, t, stage, strength);
+  if (!(strength > 0)) return view;
+  // Leaving, the camera was still before it set off; arriving, the step before carries on from behind the cut.
+  const before = transitionHalf(kind, from, to, out, out ? Math.max(0, t - 2 * step) : t - 2 * step, stage, strength);
+  // A whip or zoom covers a board's width in a few steps, so it blurs at a quarter of a move's strength to build up to the cut rather than smear throughout.
+  return { ...view, ...moveBlur(before, view, stage, strength * 0.25) };
+}
+
 /** The part of the scene the camera currently shows. */
 export function visibleRect(view: View, stage: Stage): Rect {
   return {

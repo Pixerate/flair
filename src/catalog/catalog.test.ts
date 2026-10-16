@@ -335,7 +335,7 @@ describe("catalog", () => {
   });
 
   it("gives the image morphs two pictures and a progress control", () => {
-    for (const id of ["feature-morph", "silhouette-morph", "transition-liquid-morph", "transition-displacement", "transition-luma", "transition-particle-swap", "transition-ink-bleed"]) {
+    for (const id of ["feature-morph", "silhouette-morph", "transition-liquid-morph", "transition-displacement", "transition-luma", "transition-particle-swap", "transition-ink-bleed", "transition-whip-pan"]) {
       const effect = getEffect(id)!;
       expect(effect, id).toBeDefined();
       const names = effectControls(effect).map((c) => c.name);

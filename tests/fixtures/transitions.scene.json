@@ -1,0 +1,23 @@
+{
+  "name": "transitions",
+  "title": "Whip, zoom and cut",
+  "description": "Each camera transition between three cards: an eased move, a whip pan, a zoom punch and a hard cut",
+  "stage": { "width": 1920, "height": 1080 },
+  "shots": [
+    {
+      "title": "Write",
+      "camera": { "x": 0, "y": 0, "width": 1920, "height": 1080 },
+      "hold": 600,
+      "run": [
+        { "type": "element", "element": { "id": "write", "type": "rectangle", "x": 160, "y": 380, "width": 420, "height": 300, "text": "Write" } },
+        { "type": "element", "element": { "id": "render", "type": "rectangle", "x": 750, "y": 380, "width": 420, "height": 300, "text": "Render" } },
+        { "type": "element", "element": { "id": "ship", "type": "rectangle", "x": 1340, "y": 380, "width": 420, "height": 300, "text": "Ship" } }
+      ]
+    },
+    { "title": "Write", "camera": { "frame": ["write"] }, "hold": 700 },
+    { "title": "Render", "camera": { "frame": ["render"], "transition": "whip" }, "hold": 700 },
+    { "title": "Ship", "camera": { "frame": ["ship"], "transition": "zoom" }, "hold": 700 },
+    { "title": "Write", "camera": { "frame": ["write"], "transition": "cut" }, "hold": 700 },
+    { "title": "All three", "camera": { "x": 0, "y": 0, "width": 1920, "height": 1080, "transition": "whip", "motionBlur": 3 }, "hold": 900 }
+  ]
+}

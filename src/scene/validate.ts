@@ -1,4 +1,4 @@
-import { MAX_TILT } from './camera.js';
+import { CAMERA_TRANSITIONS, MAX_TILT } from './camera.js';
 import type { Scene, Shot } from './types.js';
 import { EFFECT_TYPES } from './effects.js';
 
@@ -69,6 +69,10 @@ export function validateScene(scene: Scene): SceneIssue[] {
         say(shotNum, 'Camera perspective is the lens distance as a multiple of the stage width, 0.3 or more (1.2 by default).');
       if (cam.motionBlur !== undefined && !(typeof cam.motionBlur === 'number' && cam.motionBlur >= 0 && cam.motionBlur <= 3))
         say(shotNum, 'Camera motionBlur is 0 (none) to 3 (a whip); 1 is natural.');
+      if (cam.transition !== undefined && !CAMERA_TRANSITIONS.includes(cam.transition))
+        say(shotNum, `Camera transition is one of ${CAMERA_TRANSITIONS.map((t) => `"${t}"`).join(', ')}; leave it out to move.`);
+      else if (idx === 0 && (cam.transition === 'whip' || cam.transition === 'zoom'))
+        say(shotNum, `The first shot has no framing to ${cam.transition} from, so its camera starts in place; move the transition to a later shot or leave it out.`);
     }
 
     // Check hold

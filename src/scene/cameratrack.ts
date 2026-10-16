@@ -1,4 +1,14 @@
-import { between, CAMERA_MS, DEFAULT_STAGE, easeInOutCubic, moveBlur, viewAt, type Stage, type View } from './camera.js';
+import {
+  CAMERA_MS,
+  CAMERA_STEPS,
+  DEFAULT_STAGE,
+  transitionStrength,
+  transitionView,
+  viewAt,
+  type CameraTransition,
+  type Stage,
+  type View,
+} from './camera.js';
 import type { SceneElement } from './geometry.js';
 import { MemorySceneBoard, shotView } from './player.js';
 import type { Scene, Shot } from './types.js';
@@ -15,10 +25,17 @@ export interface CameraShot {
   holdMs: number;
   from: View;
   to: View;
-  /** The shot's `camera.motionBlur` (0 for none). */
+  /** How the camera gets into the shot (`camera.transition`, `move` by default). */
+  transition: CameraTransition;
+  /** The blur strength the move plays with: `camera.motionBlur`, or 2 for a whip or zoom without one (0 for none). */
   motionBlur: number;
   /** The elements on stage once the shot's commands have run. */
   elements: SceneElement[];
+}
+
+/** How long the camera moves at the start of a shot, in ms: none for the first shot, a shot without a camera, or a cut. */
+export function shotMoveMs(shot: Shot, index: number): number {
+  return index > 0 && shot.camera && shot.camera.transition !== 'cut' ? CAMERA_MS : 0;
 }
 
 /** The scene's stage with defaults filled in. */
@@ -42,7 +59,8 @@ export function cameraTrack(scene: Scene): CameraShot[] {
   let startMs = 0;
   return scene.shots.map((shot, index) => {
     const target = shotView(shot, board.elements(), stage, view);
-    const moveMs = index > 0 && shot.camera ? CAMERA_MS : 0;
+    const transition = shot.camera?.transition ?? 'move';
+    const moveMs = shotMoveMs(shot, index);
     const from = index === 0 && target ? target : view;
     const to = target ?? view;
     const holdMs = shot.hold ?? 800;
@@ -55,7 +73,8 @@ export function cameraTrack(scene: Scene): CameraShot[] {
       holdMs,
       from,
       to,
-      motionBlur: shot.camera?.motionBlur ?? 0,
+      transition,
+      motionBlur: transitionStrength(transition, shot.camera?.motionBlur),
       elements: board.elements().map((e) => ({ ...e })),
     };
     view = to;
@@ -65,7 +84,7 @@ export function cameraTrack(scene: Scene): CameraShot[] {
 }
 
 /** The time the player waits between steps of a camera move, in ms (its blur is measured over one). */
-export const CAMERA_STEP_MS = CAMERA_MS / 15;
+export const CAMERA_STEP_MS = CAMERA_MS / CAMERA_STEPS;
 
 /**
  * The camera `ms` into a shot: part-way through its move (eased, with its
@@ -73,12 +92,12 @@ export const CAMERA_STEP_MS = CAMERA_MS / 15;
  */
 export function cameraAt(entry: CameraShot, ms: number, stage: Stage): View {
   if (!(entry.moveMs > 0) || ms >= entry.moveMs) return entry.to;
-  const u = Math.max(0, ms) / entry.moveMs;
-  const view = between(entry.from, entry.to, easeInOutCubic(u), stage);
-  if (!(entry.motionBlur > 0)) return view;
-  const before = between(entry.from, entry.to, easeInOutCubic(Math.max(0, u - CAMERA_STEP_MS / entry.moveMs)), stage);
-  return { ...view, ...moveBlur(before, view, stage, entry.motionBlur) };
+  return transitionView(entry.transition, entry.from, entry.to, Math.max(0, ms) / entry.moveMs, stage, entry.motionBlur);
 }
+
+/** Whether the shot's move jumps from one framing to the other halfway (a whip or zoom). */
+export const cutsHalfway = (entry: CameraShot): boolean =>
+  entry.moveMs > 0 && (entry.transition === 'whip' || entry.transition === 'zoom');
 
 /** The camera at one frame of a scene's timeline. */
 export interface CameraSample {
@@ -105,8 +124,17 @@ export function cameraSamples(scene: Scene, frameRate: number, every = 2): Camer
   for (const entry of cameraTrack(scene)) {
     const start = Math.round((entry.startMs / 1000) * frameRate);
     const moveFrames = Math.round((entry.moveMs / 1000) * frameRate);
+    const at = (f: number) => add({ frame: start + f, view: cameraAt(entry, (f / frameRate) * 1000, stage), shot: entry.index });
+    // A whip or zoom jumps halfway: key the frames either side of the jump, so straight-line interpolation never tweens across it.
+    const cut = cutsHalfway(entry) ? Math.ceil((entry.moveMs / 2000) * frameRate) : -1;
     for (let f = 0; f < moveFrames; f += every) {
-      add({ frame: start + f, view: cameraAt(entry, (f / frameRate) * 1000, stage), shot: entry.index });
+      if (cut > 0 && f < cut && f + every >= cut) {
+        at(f);
+        if (cut - 1 > f) at(cut - 1);
+        at(cut);
+        continue;
+      }
+      at(f);
     }
     add({ frame: start + moveFrames, view: entry.to, shot: entry.index });
   }

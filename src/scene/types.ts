@@ -1,5 +1,5 @@
 import type { Rect, SceneElement } from './geometry.js';
-import type { CameraAngle, Stage } from './camera.js';
+import type { CameraAngle, CameraTransition, Stage } from './camera.js';
 import type { Effect } from './effects.js';
 import type { Behavior } from './behavior.js';
 import type { SceneRig } from './rig.js';
@@ -80,6 +80,14 @@ export interface CameraLens extends CameraAngle {
    * speed, so it peaks mid-move and is gone when the camera settles.
    */
   motionBlur?: number;
+  /**
+   * How the camera gets into this shot: `move` (the default) eases across,
+   * `whip` whip-pans off the last framing and onto this one, `zoom` punches
+   * in and cuts to this one settling out, and `cut` jumps straight here
+   * (see `CameraTransition`). A whip or zoom blurs at `motionBlur` 2 unless
+   * the shot sets one; a zoom punches in to (1 + motionBlur) ×.
+   */
+  transition?: CameraTransition;
 }
 
 /**

@@ -1,6 +1,6 @@
 import type { Scene, Shot } from '../scene/types.js';
-import { DEFAULT_STAGE, CAMERA_MS, boardHeight, centreOf, projectPoint, type View } from '../scene/camera.js';
-import { cameraSamples, cameraTrack, sceneStage, type CameraSample } from '../scene/cameratrack.js';
+import { DEFAULT_STAGE, boardHeight, centreOf, projectPoint, type CameraTransition, type View } from '../scene/camera.js';
+import { cameraSamples, shotMoveMs, cameraTrack, sceneStage, type CameraSample } from '../scene/cameratrack.js';
 
 export interface Fcp7ExportOptions {
   /** Timeline timebase / frame rate (default 30). */
@@ -55,7 +55,7 @@ function escapeXml(unsafe: string): string {
 export function calculateShotTimings(scene: Scene, frameRate: number = 30): ShotTiming[] {
   let currentMs = 0;
   return scene.shots.map((shot, index) => {
-    const camMs = index > 0 && shot.camera ? CAMERA_MS : 0;
+    const camMs = shotMoveMs(shot, index);
     const holdMs = shot.hold ?? 800;
     const durationMs = camMs + holdMs;
     const startMs = currentMs;
@@ -425,10 +425,11 @@ export function exportFcp7Xml(scene: Scene, options: Fcp7ExportOptions = {}): st
   return lines.join('\n');
 }
 
-/** A camera view as a line an editor can follow: "zoom 1.6x on (800, 450), tilt 35°, turn -15°, motion blur 1.5". */
-function describeCamera(view: View, motionBlur: number, stage: ReturnType<typeof sceneStage>): string {
+/** A camera view as a line an editor can follow: "whip to zoom 1.6x on (800, 450), tilt 35°, turn -15°, motion blur 1.5". */
+function describeCamera(view: View, motionBlur: number, stage: ReturnType<typeof sceneStage>, transition: CameraTransition = 'move'): string {
   const [cx, cy] = centreOf(view, stage);
-  const parts = [`zoom ${r4(view.zoom).toFixed(2)}x on (${Math.round(cx)}, ${Math.round(cy)})`];
+  const lead = transition === 'move' ? '' : `${transition} to `;
+  const parts = [`${lead}zoom ${r4(view.zoom).toFixed(2)}x on (${Math.round(cx)}, ${Math.round(cy)})`];
   if (view.tilt) parts.push(`tilt ${r4(view.tilt)}°`);
   if (view.turn) parts.push(`turn ${r4(view.turn)}°`);
   if (view.roll) parts.push(`roll ${r4(view.roll)}°`);
@@ -480,7 +481,7 @@ export function exportCmx3600Edl(scene: Scene, options: EdlExportOptions = {}): 
     }
     // CMX 3600 has no transforms, so the camera is a note for the editor.
     const camera = track?.[index];
-    if (camera && shot.camera) lines.push(`* CAMERA: ${describeCamera(camera.to, camera.motionBlur, sceneStage(scene))}`);
+    if (camera && shot.camera) lines.push(`* CAMERA: ${describeCamera(camera.to, camera.motionBlur, sceneStage(scene), camera.transition)}`);
     lines.push('');
   });
 
