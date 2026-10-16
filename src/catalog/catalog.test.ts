@@ -18,6 +18,7 @@ import {
   vectorControlIssues,
   vectorControls,
   VIDEO_USES,
+  effectInputs,
 } from "./index.js";
 
 describe("catalog", () => {
@@ -1376,11 +1377,22 @@ describe("lighting effects", () => {
 });
 
 describe("duotone", () => {
-  it("only maps colours: no glare and no motion of its own (shine-sweep adds a glare)", () => {
+  it("only maps colours: no glare and no motion of its own (glare-sweep adds it back)", () => {
     const duotone = getEffect("image-duotone")!;
     if (duotone.kind !== "shader") throw new Error("shader expected");
     expect(duotone.source).not.toMatch(/\biTime\b|uSweep/);
     expect(effectControls(duotone).map((c) => c.name)).not.toContain("uSweep");
-    expect(getEffect("shine-sweep")).toMatchObject({ category: "overlay", transparent: true });
+    expect(getEffect("glare-sweep")).toMatchObject({ category: "overlay", transparent: true });
+  });
+});
+
+describe("glare sweep", () => {
+  it("is duotone's old light sweep on its own: the same band, the same speed and strength by default", () => {
+    const glare = getEffect("glare-sweep")!;
+    if (glare.kind !== "shader") throw new Error("shader expected");
+    expect(glare.source).toContain("exp(-pow((uv.x + uv.y * uTilt - fract(iTime * uSpeed) * 2.0 + 0.4) * uSharpness, 2.0))");
+    expect(effectDefaults(glare)).toMatchObject({ uStrength: 0.3, uSpeed: 0.15, uTilt: 0.4, uSharpness: 6, uColor: [1, 1, 1] });
+    expect(glare.loop).toBeCloseTo(1 / 0.15);
+    expect(effectInputs(glare)).toMatchObject({ accepts: [], transparent: true, interactions: [] });
   });
 });

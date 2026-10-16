@@ -19,7 +19,7 @@ Flair gives products a library of good-looking, configurable visual effects (her
 
 ### Core Capabilities
 
-- 🎨 **Effect catalog (`@pixerate/flair/catalog`)**: 309 effects, each with controls and presets. There are 220 WebGL2 shaders (gradients, organic textures and growth, patterns, light, lighting that relights pictures, space, retro and pixel art, image treatments, transparent overlays, text fills, image morphs, pointer interactions, pyrotechnics, time warps, melting, electricity, splatters, bubbles, stickers, pointer trails, particles, debris, impacts, comic looks, atmosphere, glows, shadows, distortions, transitions) and 89 animated SVG effects (loaders, status icons, animated titles, shape morphs, UI micro-interactions, pixel sprites, stickers, cartoon effects, glowing and lifting UI, a lamp switch, charts, counters, node graphs). [Browse them live](https://pixerate.github.io/flair/).
+- 🎨 **Effect catalog (`@pixerate/flair/catalog`)**: 310 effects, each with controls and presets. There are 221 WebGL2 shaders (gradients, organic textures and growth, patterns, light, lighting that relights pictures, space, retro and pixel art, image treatments, transparent overlays, text fills, image morphs, pointer interactions, pyrotechnics, time warps, melting, electricity, splatters, bubbles, stickers, pointer trails, particles, debris, impacts, comic looks, atmosphere, glows, shadows, distortions, transitions) and 89 animated SVG effects (loaders, status icons, animated titles, shape morphs, UI micro-interactions, pixel sprites, stickers, cartoon effects, glowing and lifting UI, a lamp switch, charts, counters, node graphs). [Browse them live](https://pixerate.github.io/flair/).
 - ⚡ **Shader engine**:
   - Shadertoy-style GLSL ES 3.00 fragment shaders, with controls declared in the source (`// @control`), including image inputs.
   - Compile errors come back with line numbers that match the source.
@@ -59,7 +59,7 @@ The `flair` CLI inspects shaders, writes standalone pages and directs scenes (se
 ```mermaid
 graph TD
   subgraph Effects["Effects (no dependencies)"]
-    Catalog["catalog: 297 effects + presets"]
+    Catalog["catalog: 310 effects + presets"]
     Shader["shader engine: controls, compile, render, GIF, HTML"]
     Vector["vector motion: SvgMotion, SvgPlayer"]
     Time["time: clocks, easing, keyframes, noise"]
@@ -260,7 +260,7 @@ Each shader with an image control has a `video` field that says how it suits vid
 
 A video from another site needs `crossOrigin = "anonymous"` and that site's CORS consent. Without it, the control shows black and `onImageError` explains why. For frame-exact output, step the video with `ShaderFrames`: pause the video, then for each frame `await seekVideo(video, t); frames.render(t)`. Both `ShaderRenderer.ready()` and `ShaderFrames.ready()` wait for each live video's first frame.
 
-Overlay shaders (`category: "overlay"`) have `transparent: true`: they write coverage to `fragColor.a` and draw nothing elsewhere, so render them with `new ShaderRenderer(host, { alpha: true })` (or `new ThumbnailPool({ alpha: true })`) and lay the canvas over a picture, video or page. Interaction effects answer the pointer. Interactive shaders read `iPointer` and `iClicks`, so they work in any `ShaderRenderer` with no wiring, and play an idle demo when nobody is pointing (turn off "Demo when idle" to stop it). Vector micro-interactions carry a `trigger`: pass it to the player, `new SvgPlayer(host, renderVectorEffect(effect), { trigger: effect.trigger })`. A hover or press trigger plays to the end while hovered or held and back again after; a click trigger plays the next step on each click, so toggles turn on and off. Hosts can drive them too, with `player.setActive(on)` and `player.advance()` (from a keyboard handler, say).
+Overlay shaders (`category: "overlay"`) have `transparent: true`: they write coverage to `fragColor.a` and draw nothing elsewhere, so render them with `new ShaderRenderer(host, { alpha: true })` (or `new ThumbnailPool({ alpha: true })`) and lay the canvas over a picture, video or page. Some overlays are added light: give `glare-sweep`'s canvas `mix-blend-mode: plus-lighter` and it adds exactly (over `image-duotone`, that is the duotone with the gliding glare it used to have built in). Interaction effects answer the pointer. Interactive shaders read `iPointer` and `iClicks`, so they work in any `ShaderRenderer` with no wiring, and play an idle demo when nobody is pointing (turn off "Demo when idle" to stop it). Vector micro-interactions carry a `trigger`: pass it to the player, `new SvgPlayer(host, renderVectorEffect(effect), { trigger: effect.trigger })`. A hover or press trigger plays to the end while hovered or held and back again after; a click trigger plays the next step on each click, so toggles turn on and off. Hosts can drive them too, with `player.setActive(on)` and `player.advance()` (from a keyboard handler, say).
 
 To morph between any two SVG shapes, `morphPaths(from, to)` (from `@pixerate/flair/vector`) returns two paths with one structure, so `attrs: { d: [a, b] }` blends them point by point: curves and arcs are read, pieces are paired by position and size, and a piece with no partner grows from or shrinks to a point (draw them with `fill-rule="evenodd"`). `morphSequence` does the same for three or more shapes. `feature-morph` morphs two photos from five matching points, and `silhouette-morph` morphs any two silhouettes or logos (or words, through `textImage`).
 
@@ -462,7 +462,7 @@ The exporters carry the camera too:
 | lighting | relight, point light, studio lighting, time of day, gobo projection, neon spill, candlelight, pool caustics, party lights, lamp switch |
 | retro | synthwave, digital rain, dithered gradient, TV static, 8-bit, Game Boy screen, pixel fire, pixel landscape, OutRun road, palette cycle, raster bars, tape loading, pixel water, pixel text, coin spin, space invader, heart health bar, chomp loader |
 | image | ripple, glitch, duotone, halftone, pixel reveal, Ken Burns, ASCII art, shatter, melt, risograph, thermal, edge glow, tilt-shift, slit-scan, mosaic flip, chromatic lens, oil paint, CRT screen, film look |
-| overlay | rain on glass, snowfall, lens flare, vignette & grain, scanline sweep, spotlight, embers, shine sweep, frost creep, viewfinder |
+| overlay | rain on glass, snowfall, lens flare, vignette & grain, scanline sweep, spotlight, embers, shine sweep, glare sweep, frost creep, viewfinder |
 | text | shader text, drip text, typewriter, scramble text, kinetic stagger, neon sign, stroke draw text, split reveal, highlighter, word cycle, liquid fill, glitch text, extruded text |
 | morph | feature morph, silhouette morph, shape morph, icon toggle, morph sequence, gooey morph, particle morph, digit morph |
 | interaction | click ripple, click burst, cursor glow, hover liquid, X-ray reveal, magnifier, holo card, press charge, hover swap, like button, toggle switch, checkbox, menu toggle, bookmark, copy button, send button, download button, link hover, button hover fill, tooltip pop, press button, toast notification, slider scrub |

@@ -485,6 +485,44 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 };
 
 /** Effects drawn over other content: transparent where there is nothing to draw (see `ShaderEffect.transparent`). */
+/**
+ * The light sweep duotone used to have built in, on its own: a soft diagonal
+ * glare gliding across without a pause. It is added light, so lay it over a
+ * picture with `mix-blend-mode: plus-lighter` for the glare exactly as it was
+ * (duotone plus this, at its defaults, is the old duotone to the pixel), or
+ * as it is for a slightly softer, screen-like one.
+ */
+export const glareSweep: ShaderEffect = {
+  kind: "shader",
+  id: "glare-sweep",
+  name: "Glare sweep",
+  description: "A soft diagonal glare gliding across without a pause, added light to lay over a picture (with plus-lighter blending it adds exactly).",
+  category: "overlay",
+  tags: ["overlay", "glare", "light", "sweep", "gloss", "editorial"],
+  transparent: true,
+  // One sweep every 1 / 0.15 s at the default speed.
+  loop: 20 / 3,
+  source: glsl(
+    `// Glare sweep: a soft diagonal band of added light gliding across, again and again.
+uniform float uStrength;  // @control min=0 max=1 default=0.3 label="Strength"
+uniform float uSpeed;     // @control min=0.02 max=1 default=0.15 label="Sweeps per second"
+uniform float uTilt;      // @control min=-1 max=1 default=0.4 label="Tilt"
+uniform float uSharpness; // @control min=1 max=20 default=6 label="Sharpness"
+uniform vec3 uColor;      // @control color default=#FFFFFF label="Colour"`,
+    `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec2 uv = fragCoord / iResolution.xy;
+  // A band along x + tilt·y, travelling from off one side to off the other each sweep.
+  float sweep = exp(-pow((uv.x + uv.y * uTilt - fract(iTime * uSpeed) * 2.0 + 0.4) * uSharpness, 2.0));
+  // Straight colour with the glare as coverage: added over a picture (plus-lighter), that is colour × strength × sweep.
+  fragColor = vec4(uColor, clamp(sweep * uStrength, 0.0, 1.0));
+}`,
+  ),
+  presets: [
+    { name: "Gold", values: { uColor: [1, 0.85, 0.55], uStrength: 0.45 } },
+    { name: "Quick flash", values: { uSpeed: 0.6, uSharpness: 12, uStrength: 0.6 } },
+  ],
+};
+
 export const overlayEffects: ShaderEffect[] = [
   rainOnGlass,
   snowfall,
@@ -494,5 +532,6 @@ export const overlayEffects: ShaderEffect[] = [
   spotlight,
   embers,
   shineSweep,
+  glareSweep,
   frostCreep,
 ];
