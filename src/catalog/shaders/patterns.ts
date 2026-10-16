@@ -1,4 +1,4 @@
-import { glsl, HASH, ROTATE } from "../glsl.js";
+import { glsl, HASH, NOISE, ROTATE } from "../glsl.js";
 import type { ShaderEffect } from "../types.js";
 
 export const dotWave: ShaderEffect = {
@@ -339,5 +339,168 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     { name: "Mainframe", values: { uBackground: [0.0, 0.04, 0.02], uColorA: [0.2, 1, 0.45], uColorB: [0.1, 0.75, 0.35], uColorC: [0.6, 1, 0.7], uColorD: [0.1, 0.5, 0.25] } },
     { name: "Blueprint", values: { uBackground: [0.02, 0.06, 0.16], uColorA: [0.35, 0.75, 1], uColorB: [0.6, 0.9, 1], uColorC: [1, 1, 1], uColorD: [0.25, 0.45, 0.9], uGlow: 0.6, uPulses: 0.3 } },
     { name: "Dense", values: { uLanes: 26, uDensity: 1, uWidth: 0.12, uPulses: 0.8 } },
+  ],
+};
+
+export const memphisPattern: ShaderEffect = {
+  kind: "shader",
+  id: "memphis-pattern",
+  name: "Memphis pattern",
+  description: "An 80s Memphis-design field of squiggles, zigzags, triangles, rings, dots and confetti, bobbing, drifting and boiling like hand-drawn ink.",
+  category: "pattern",
+  tags: ["background", "retro", "80s", "playful", "confetti"],
+  loop: 8,
+  source: glsl(
+    `// Memphis pattern: scattered flat-colour shapes that bob, drift and boil.
+uniform vec3 uBackground; // @control color default=#FFF3DC label="Background"
+uniform vec3 uInkA;       // @control color default=#FF4FA3 label="Ink A"
+uniform vec3 uInkB;       // @control color default=#00B3C7 label="Ink B"
+uniform vec3 uInkC;       // @control color default=#FFC23C label="Ink C"
+uniform vec3 uInkD;       // @control color default=#1B1B1B label="Ink D"
+uniform float uDensity;   // @control min=0 max=1 default=0.7 label="Density"
+uniform float uScale;     // @control min=2 max=20 default=7 label="Shapes across"
+uniform float uDrift;     // @control min=0 max=1 default=0.3 label="Drift"
+uniform float uWobble;    // @control min=0 max=1 default=0.5 label="Wobble"
+uniform float uWeight;    // @control min=0.02 max=0.16 default=0.07 label="Line weight"`,
+    HASH,
+    NOISE,
+    ROTATE,
+    `#define TAU 6.28318
+#define LOOP 8.0
+
+float segDist(vec2 p, vec2 a, vec2 b) {
+  vec2 pa = p - a;
+  vec2 ba = b - a;
+  float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+  return length(pa - ba * h);
+}
+
+float triDist(vec2 p, float r) {
+  const float k = 1.7320508;
+  p.x = abs(p.x) - r;
+  p.y = p.y + r / k;
+  if (p.x + k * p.y > 0.0) p = vec2(p.x - k * p.y, -k * p.x - p.y) / 2.0;
+  p.x -= clamp(p.x, -2.0 * r, 0.0);
+  return -length(p) * sign(p.y);
+}
+
+// Distance to a sine (or zigzag) stroke centred on the origin, halfLen long.
+float waveDist(vec2 q, float amp, float freq, bool zig, float halfLen) {
+  float x = clamp(q.x, -halfLen, halfLen);
+  float y;
+  float slope;
+  if (zig) {
+    float f = fract(x * freq + 0.25);
+    y = amp * (abs(f - 0.5) * 4.0 - 1.0);
+    slope = 4.0 * amp * freq;
+  } else {
+    y = amp * sin(x * freq * TAU);
+    slope = amp * freq * TAU * cos(x * freq * TAU);
+  }
+  return length(vec2(q.x - x, (q.y - y) / sqrt(1.0 + slope * slope)));
+}
+
+float shapeDist(int kind, vec2 q, float w) {
+  if (kind == 0) return waveDist(q, 0.08, 2.2, false, 0.36) - w;
+  if (kind == 1) return waveDist(q, 0.08, 2.5, true, 0.34) - w;
+  if (kind == 2) return triDist(q, 0.2);
+  if (kind == 3) return abs(length(q) - 0.16) - w;
+  if (kind == 4) return length(q) - 0.1;
+  if (kind == 5) return segDist(q, vec2(-0.13, 0.0), vec2(0.13, 0.0)) - w;
+  vec2 g = q - clamp(round(q / 0.11), -1.0, 1.0) * 0.11;
+  return length(g) - 0.028;
+}
+
+vec3 ink(float h) {
+  if (h < 0.25) return uInkA;
+  if (h < 0.5) return uInkB;
+  if (h < 0.75) return uInkC;
+  return uInkD;
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  float px = uScale / iResolution.y;
+  float t = TAU * iTime / LOOP;
+  vec2 p = (fragCoord - 0.5 * iResolution.xy) * px;
+  p += uDrift * vec2(2.0 * cos(t), sin(2.0 * t));
+  // Boil: the line wobble jumps six times a second, like redrawn frames.
+  float frame = mod(floor(iTime * 6.0), LOOP * 6.0);
+  vec2 n = vec2(vnoise(p * 3.0 + frame * 7.13), vnoise(p * 3.0 + frame * 3.71 + 19.0)) - 0.5;
+  p += n * uWobble * 0.07;
+
+  vec3 col = uBackground;
+  vec2 id0 = floor(p);
+  for (int j = -1; j <= 1; j++) {
+    for (int i = -1; i <= 1; i++) {
+      vec2 id = id0 + vec2(float(i), float(j));
+      if (hash12(id) > uDensity) continue;
+      float ph = hash12(id + 11.1) * TAU;
+      vec2 c = id + 0.5 + (hash22(id + 3.7) - 0.5) * 0.6;
+      c.y += 0.06 * sin(t * 2.0 + ph);
+      float ang = hash12(id + 5.3) * TAU + 0.35 * sin(t + ph);
+      float sz = 0.8 + 0.5 * hash12(id + 8.8);
+      vec2 q = rot(ang) * (p - c) / sz;
+      int kind = min(int(hash12(id + 2.2) * 7.0), 6);
+      float d = shapeDist(kind, q, uWeight * 0.5 / sz) * sz;
+      float cover = 1.0 - smoothstep(-0.75 * px, 0.75 * px, d);
+      col = mix(col, ink(hash12(id + 9.9)), cover);
+    }
+  }
+  fragColor = vec4(col, 1.0);
+}`,
+  ),
+  presets: [
+    { name: "Saved by the bell", values: {} },
+    { name: "Pastel", values: { uBackground: [0.97, 0.95, 1], uInkA: [1, 0.7, 0.8], uInkB: [0.62, 0.85, 0.95], uInkC: [1, 0.87, 0.55], uInkD: [0.72, 0.65, 0.95], uWobble: 0.3 } },
+    { name: "After dark", values: { uBackground: [0.07, 0.06, 0.14], uInkA: [1, 0.25, 0.65], uInkB: [0.15, 0.95, 0.9], uInkC: [1, 0.85, 0.2], uInkD: [0.98, 0.98, 0.98] } },
+    { name: "Sparse", values: { uDensity: 0.35, uScale: 5, uDrift: 0.15, uWeight: 0.05 } },
+  ],
+};
+
+export const chevronTunnel: ShaderEffect = {
+  kind: "shader",
+  id: "chevron-tunnel",
+  name: "Chevron tunnel",
+  description: "Two-tone hazard chevrons radiating from a centre point and streaming outward like a tunnel, behind a title card.",
+  category: "pattern",
+  tags: ["background", "hazard", "warning", "tunnel", "title", "loop"],
+  loop: 1,
+  source: glsl(
+    `// Chevron tunnel: hazard chevrons streaming out of (or into) a centre point.
+uniform vec3 uColorA;     // @control color default=#FACC15 label="Colour A"
+uniform vec3 uColorB;     // @control color default=#111111 label="Colour B"
+uniform int uCount;       // @control min=2 max=16 default=8 label="Chevrons around"
+uniform float uFrequency; // @control min=0.5 max=12 default=3 label="Stripe frequency"
+uniform float uSpeed;     // @control min=0 max=4 default=1 label="Speed"
+uniform bool uInward;     // @control default=false label="Stream inward"
+uniform vec2 uCentre;     // @control min=0 max=1 default=0.5,0.5 label="Centre"
+uniform float uAngle;     // @control min=-180 max=180 default=0 label="Angle (°)"
+uniform float uTwist;     // @control min=-3 max=3 default=0 label="Twist"
+uniform float uDepth;     // @control min=0 max=3 default=1 label="Chevron point"
+uniform float uSoft;      // @control min=0 max=1 default=0 label="Softness"
+uniform float uVignette;  // @control min=0 max=1 default=0.35 label="Vignette"`,
+    `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec2 p = (fragCoord - uCentre * iResolution.xy) / iResolution.y;
+  float lr = log(max(length(p), 1e-4));
+  float a = atan(p.y, p.x) - radians(uAngle) - uTwist * lr;
+  // 0 down the middle of each chevron, 1 at its edges.
+  float side = abs(fract(a * float(uCount) / 6.28318) - 0.5) * 2.0;
+  float dir = uInward ? 1.0 : -1.0;
+  // Log radius gives tunnel perspective; chevrons point the way they travel.
+  float s = lr * uFrequency - dir * uDepth * side + dir * iTime * uSpeed;
+  float tri = abs(fract(s) - 0.5);
+  float e = max(fwidth(s) * 0.75, uSoft * 0.25) + 1e-4;
+  float m = smoothstep(0.25 - e, 0.25 + e, tri);
+  vec3 col = mix(uColorA, uColorB, m);
+  vec2 uv = fragCoord / iResolution.xy - 0.5;
+  col *= 1.0 - uVignette * smoothstep(0.1, 0.75, dot(uv, uv) * 2.0);
+  fragColor = vec4(col, 1.0);
+}`,
+  ),
+  presets: [
+    { name: "Hazard", values: {} },
+    { name: "Red alert", values: { uColorA: [0.95, 0.12, 0.15], uColorB: [0.98, 0.96, 0.92], uCount: 6, uSpeed: 1.5, uVignette: 0.5 } },
+    { name: "Rave warp", values: { uColorA: [1, 0.2, 0.7], uColorB: [0.1, 0.9, 1], uTwist: 1.2, uFrequency: 4, uSpeed: 2, uCount: 10 } },
+    { name: "Suck in", values: { uInward: true, uDepth: 1.6, uCount: 4, uSoft: 0.1 } },
   ],
 };

@@ -28,7 +28,7 @@ import {
 } from "./shaders/image.js";
 import { blackHole, bokeh, godRays, lightRibbons, nebula, neonRipple, sparkles, starfield } from "./shaders/light.js";
 import { caustics, flames, lavaLamp, marble, plasma, smoke } from "./shaders/organic.js";
-import { barberStripes, dotWave, hexPulse, kaleidoscope, moire, neonCircuit, truchet, voronoi } from "./shaders/patterns.js";
+import { barberStripes, chevronTunnel, dotWave, hexPulse, kaleidoscope, memphisPattern, moire, neonCircuit, truchet, voronoi } from "./shaders/patterns.js";
 import { interactionEffects } from "./interaction.js";
 import { splatterEffects } from "./splatter.js";
 import { bubbleEffects } from "./bubble.js";
@@ -118,6 +118,8 @@ export const SHADER_EFFECTS: readonly ShaderEffect[] = [
   moire,
   kaleidoscope,
   barberStripes,
+  memphisPattern,
+  chevronTunnel,
   neonCircuit,
   bokeh,
   godRays,

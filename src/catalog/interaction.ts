@@ -589,6 +589,120 @@ export const pressButton: VectorEffect = {
   },
 };
 
+/** The toast card's box and how far right it waits, off the picture, before and after. */
+const TOAST = { x: 92, y: 24, w: 252, h: 68 };
+const TOAST_OFF = "translate(300 0)";
+const TOAST_IN = 520;
+const toastAt = (x: number) => `translate(${x} 0)`;
+const BADGE_X = TOAST.x + 32;
+const BADGE_Y = TOAST.y + 34;
+
+export const toastNotification: VectorEffect = {
+  kind: "vector",
+  id: "toast-notification",
+  name: "Toast notification",
+  description: "A toast card that slides in from the top right with a slight overshoot, draws a tick in its badge as its timer bar runs down, then slides away by itself.",
+  category: "interaction",
+  tags: ["interactive", "ui", "click", "toast", "notification", "alert", "success", "feedback", "micro-interaction"],
+  trigger: "click",
+  hold: 600,
+  presets: [
+    { name: "Light", values: { background: [0.96, 0.97, 0.98], card: [1, 1, 1], ink: [0.07, 0.09, 0.15], accent: [0.09, 0.64, 0.29] } },
+    { name: "Indigo", values: { title: "Deploy complete", message: "Live on production in 42s", accent: [0.39, 0.4, 0.95] } },
+  ],
+  derived: (v) => {
+    const title = fit(v.title, 164, 15);
+    const message = fit(v.message, 164, 12.5);
+    const stay = Math.round(Math.min(5, Math.max(1, Number(v.duration) || 2.4)) * 1000);
+    const leave = TOAST_IN + stay;
+    return { titleSize: title.size, titleLen: title.length, messageSize: message.size, messageLen: message.length, stay, leave, nudged: leave + 120, fade: leave + 300, gone: leave + 520 };
+  },
+  motion: {
+    svg: `<svg viewBox="0 0 360 200"><!-- {{title: text default='Key generated' label='Title'}} {{message: text default='Ready for remote calls' label='Message'}} {{duration: float min=1 max=5 default=2.4 step=0.1 label='Time on screen (s)'}} {{background: color default=#0B0F17 label='Background'}} {{card: color default=#171C27 label='Card'}} {{accent: color default=#22C55E label='Accent'}} {{ink: color default=#F3F4F6 label='Text colour'}} --><defs><clipPath id="toastClip"><rect x="${TOAST.x}" y="${TOAST.y}" width="${TOAST.w}" height="${TOAST.h}" rx="14"/></clipPath><filter id="toastShadow" x="-20%" y="-40%" width="140%" height="180%"><feGaussianBlur stdDeviation="8"/></filter></defs><rect width="360" height="200" fill="{{background}}"/><g fill="{{ink}}" fill-opacity="0.07"><circle cx="34" cy="34" r="9"/><rect x="50" y="29" width="64" height="10" rx="5"/><rect x="24" y="118" width="140" height="12" rx="6"/><rect x="24" y="142" width="312" height="8" rx="4"/><rect x="24" y="158" width="282" height="8" rx="4"/><rect x="24" y="174" width="220" height="8" rx="4"/></g><g id="toast" transform="${TOAST_OFF}" opacity="0"><rect x="${TOAST.x}" y="${TOAST.y + 8}" width="${TOAST.w}" height="${TOAST.h}" rx="14" fill="#000000" opacity="0.3" filter="url(#toastShadow)"/><rect x="${TOAST.x}" y="${TOAST.y}" width="${TOAST.w}" height="${TOAST.h}" rx="14" fill="{{card}}" stroke="{{ink}}" stroke-opacity="0.08"/><g id="badge" transform="${about(BADGE_X, BADGE_Y, 0)}"><circle id="halo" cx="${BADGE_X}" cy="${BADGE_Y}" r="15" fill="{{accent}}" opacity="0"/><circle cx="${BADGE_X}" cy="${BADGE_Y}" r="15" fill="{{accent}}"/><path id="tick" d="M${BADGE_X - 6.5} ${BADGE_Y + 0.5} L${BADGE_X - 2} ${BADGE_Y + 5} L${BADGE_X + 6.5} ${BADGE_Y - 4.5}" fill="none" stroke="{{card}}" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" opacity="0"/></g><text x="${TOAST.x + 58}" y="${TOAST.y + 28}" textLength="{{titleLen}}" lengthAdjust="spacingAndGlyphs" font-family="${SANS}" font-size="{{titleSize}}" font-weight="650" fill="{{ink}}">{{title}}</text><text x="${TOAST.x + 58}" y="${TOAST.y + 47}" textLength="{{messageLen}}" lengthAdjust="spacingAndGlyphs" font-family="${SANS}" font-size="{{messageSize}}" font-weight="400" fill="{{ink}}" fill-opacity="0.62">{{message}}</text><path d="M324 36 L332 44 M332 36 L324 44" stroke="{{ink}}" stroke-opacity="0.35" stroke-width="1.6" stroke-linecap="round"/><rect id="timer" x="${TOAST.x}" y="${TOAST.y + TOAST.h - 4}" width="${TOAST.w}" height="4" fill="{{accent}}" clip-path="url(#toastClip)"/></g></svg>`,
+    animate: [
+      // One step that returns by itself: in past its place and back, a while on screen, then away right.
+      { id: "toast", step: 1, attrs: { transform: [TOAST_OFF, toastAt(-9)] }, ms: 340, ease: "out" },
+      { id: "toast", step: 1, attrs: { transform: [toastAt(-9), toastAt(0)] }, delay: 340, ms: 200, ease: "in-out" },
+      { id: "toast", step: 1, attrs: { opacity: [0, 1] }, ms: 160 },
+      // The badge pops, its tick draws on and a soft ring breathes out.
+      { id: "badge", step: 1, attrs: { transform: [about(BADGE_X, BADGE_Y, 0), about(BADGE_X, BADGE_Y, 1.18)] }, delay: 220, ms: 200, ease: "out" },
+      { id: "badge", step: 1, attrs: { transform: [about(BADGE_X, BADGE_Y, 1.18), about(BADGE_X, BADGE_Y, 1)] }, delay: 420, ms: 180, ease: "in-out" },
+      { id: "tick", step: 1, attrs: { opacity: [0, 1] }, delay: 400, ms: 40 },
+      { id: "tick", step: 1, draw: true, delay: 400, ms: 300, ease: "out" },
+      { id: "halo", step: 1, attrs: { r: [15, 26], opacity: [0.45, 0] }, delay: 440, ms: 650, ease: "out" },
+      // The timer runs down, then the card nudges left and slides off.
+      { id: "timer", step: 1, attrs: { width: [TOAST.w, 0] }, delay: TOAST_IN, ms: n("stay"), ease: "linear" },
+      { id: "toast", step: 1, attrs: { transform: [toastAt(0), toastAt(-6)] }, delay: n("leave"), ms: 120, ease: "out" },
+      { id: "toast", step: 1, attrs: { transform: [toastAt(-6), TOAST_OFF] }, delay: n("nudged"), ms: 380, ease: "in-out" },
+      { id: "toast", step: 1, attrs: { opacity: [1, 0] }, delay: n("fade"), ms: 200 },
+      // Out of sight, everything it flashed goes back for the next round.
+      snap("badge", "transform", about(BADGE_X, BADGE_Y, 0), n("gone")),
+      snap("tick", "opacity", 0, n("gone")),
+      { id: "tick", step: 1, draw: [0, 0], delay: n("gone"), ms: 0 },
+      snap("halo", "r", 15, n("gone")),
+      snap("halo", "opacity", 0.45, n("gone")),
+      snap("timer", "width", TOAST.w, n("gone")),
+    ],
+  },
+};
+
+/** Slider scrub's track, the knob's start and end along it, and where the cursor rests. */
+const SLIDER = { x: 40, y: 90, w: 280 };
+const KNOB_FROM = r1(SLIDER.x + SLIDER.w * 0.14);
+const KNOB_TO = r1(SLIDER.x + SLIDER.w * 0.82);
+const knobAt = (x: number) => `translate(${r1(x)} ${SLIDER.y})`;
+const cursorAt = (x: number, y = SLIDER.y + 3) => `translate(${r1(x)} ${y})`;
+const CURSOR_REST = cursorAt(304, 138);
+const SCRUB_BACK = 2800;
+
+export const sliderScrub: VectorEffect = {
+  kind: "vector",
+  id: "slider-scrub",
+  name: "Slider scrub",
+  description: "A labelled slider whose knob a cursor grabs and drags along the track, the fill and value readout counting with it, settling with a small bounce before it glides back.",
+  category: "interaction",
+  tags: ["interactive", "ui", "click", "slider", "range", "input", "settings", "cursor", "micro-interaction"],
+  trigger: "click",
+  hold: 600,
+  presets: [
+    { name: "Light", values: { background: [1, 1, 1], track: [0.9, 0.91, 0.94], ink: [0.07, 0.09, 0.15], accent: [0.31, 0.27, 0.9] } },
+    { name: "Volume", values: { label: "Volume", from: 20, to: 85, accent: [0.96, 0.45, 0.2] } },
+  ],
+  derived: (v) => {
+    const { size, length } = fit(v.label, 200, 16);
+    return { size, length };
+  },
+  motion: ((): SvgMotion => {
+    // The knob, its fill and (while held) the cursor move together.
+    const move = (from: number, to: number, delay: number, ms: number, withCursor: boolean): SvgAnimation[] => [
+      { id: "knob", step: 1, attrs: { transform: [knobAt(from), knobAt(to)] }, delay, ms, ease: "in-out" },
+      { id: "fill", step: 1, attrs: { width: [r1(from - SLIDER.x), r1(to - SLIDER.x)] }, delay, ms, ease: "in-out" },
+      ...(withCursor ? [{ id: "cursor", step: 1, attrs: { transform: [cursorAt(from + 2), cursorAt(to + 2)] }, delay, ms, ease: "in-out" } satisfies SvgAnimation] : []),
+    ];
+    return {
+      svg: `<svg viewBox="0 0 360 160"><!-- {{label: text default='Number of results' label='Label'}} {{from: int min=0 max=99999 default=50 label='From value'}} {{to: int min=0 max=99999 default=306 label='To value'}} {{background: color default=#0B0F17 label='Background'}} {{accent: color default=#8B5CF6 label='Accent'}} {{track: color default=#272D3A label='Track'}} {{ink: color default=#F3F4F6 label='Text colour'}} --><rect width="360" height="160" fill="{{background}}"/><text x="${SLIDER.x}" y="58" textLength="{{length}}" lengthAdjust="spacingAndGlyphs" font-family="${SANS}" font-size="{{size}}" font-weight="600" fill="{{ink}}">{{label}}</text><text id="value" x="${SLIDER.x + SLIDER.w}" y="58" text-anchor="end" font-family="${SANS}" font-size="16" font-weight="700" fill="{{accent}}">{{from}}</text><rect x="${SLIDER.x}" y="${SLIDER.y - 3}" width="${SLIDER.w}" height="6" rx="3" fill="{{track}}"/><rect id="fill" x="${SLIDER.x}" y="${SLIDER.y - 3}" width="${r1(KNOB_FROM - SLIDER.x)}" height="6" rx="3" fill="{{accent}}"/><g id="knob" transform="${knobAt(KNOB_FROM)}"><circle id="halo" r="11" fill="{{accent}}" opacity="0"/><circle cy="1.5" r="11" fill="#000000" opacity="0.2"/><circle id="dot" r="10" fill="#FFFFFF" stroke="{{accent}}" stroke-width="3"/></g><g id="cursor" transform="${CURSOR_REST}"><path d="M0 0 L0 17 L4.6 12.8 L7.8 19.6 L10.6 18.3 L7.5 11.7 L13.4 11.4 Z" fill="#FFFFFF" stroke="#111827" stroke-width="1.3" stroke-linejoin="round"/></g></svg>`,
+      animate: [
+        // One step that returns by itself: the cursor comes to the knob and grabs it.
+        { id: "cursor", step: 1, attrs: { transform: [CURSOR_REST, cursorAt(KNOB_FROM + 2)] }, ms: 420, ease: "in-out" },
+        { id: "dot", step: 1, attrs: { r: [10, 12] }, delay: 420, ms: 120, ease: "out" },
+        { id: "halo", step: 1, attrs: { r: [11, 20], opacity: [0, 0.22] }, delay: 420, ms: 160, ease: "out" },
+        // Dragged a touch past, let go, it springs back and settles as the value counts.
+        ...move(KNOB_FROM, KNOB_TO + 7, 540, 1000, true),
+        { id: "value", step: 1, count: [n("from"), n("to")], delay: 540, ms: 1000, ease: "in-out" },
+        { id: "dot", step: 1, attrs: { r: [12, 10] }, delay: 1540, ms: 160, ease: "out" },
+        { id: "halo", step: 1, attrs: { r: [20, 26], opacity: [0.22, 0] }, delay: 1540, ms: 260, ease: "out" },
+        snap("halo", "r", 11, 1900),
+        ...move(KNOB_TO + 7, KNOB_TO - 3, 1540, 170, false),
+        ...move(KNOB_TO - 3, KNOB_TO, 1710, 150, false),
+        // Back to where it began: the cursor leaves and the knob glides home.
+        { id: "cursor", step: 1, attrs: { transform: [cursorAt(KNOB_TO + 9), CURSOR_REST] }, delay: SCRUB_BACK, ms: 450, ease: "in-out" },
+        ...move(KNOB_TO, KNOB_FROM, SCRUB_BACK + 100, 600, false),
+        { id: "value", step: 1, count: [n("to"), n("from")], delay: SCRUB_BACK + 100, ms: 600, ease: "in-out" },
+      ],
+    };
+  })(),
+};
+
 /** UI micro-interactions as vector effects, each played by a hover, press or click (`trigger`). */
 export const interactionEffects: VectorEffect[] = [
   likeButton,
@@ -603,4 +717,6 @@ export const interactionEffects: VectorEffect[] = [
   buttonHoverFill,
   tooltipPop,
   pressButton,
+  toastNotification,
+  sliderScrub,
 ];
