@@ -8,7 +8,7 @@ import {
   type CompiledShader,
 } from "./program.js";
 import { PointerTracker } from "./pointer.js";
-import { TextureCache, type ImageLoadError } from "./textures.js";
+import { TextureCache, type ImageLoadError, type LiveSource } from "./textures.js";
 
 /** Whether the latest source compiled, and if not, why. */
 export interface CompileStatus {
@@ -55,6 +55,8 @@ export class ShaderRenderer {
   private readonly alpha: boolean;
   private shader: CompiledShader | null = null;
   private textures: TextureCache | null = null;
+  /** Live sources by image control, kept to set again on a restored context. */
+  private live = new Map<string, LiveSource>();
   private controls: ControlDef[] = [];
   private values: Record<string, ControlValue> | undefined;
   private source = "";
@@ -85,7 +87,7 @@ export class ShaderRenderer {
   onStats?: (stats: RendererStats) => void;
   /** Called with `true` when the GL context is lost and `false` once it is restored and recompiled. */
   onContextLost?: (lost: boolean) => void;
-  /** Called when an image control's URL cannot be loaded; the control shows black. */
+  /** Called when an image control's URL (or live video) cannot be loaded; the control shows black. */
   onImageError?: (error: ImageLoadError) => void;
 
   /**
@@ -194,11 +196,32 @@ export class ShaderRenderer {
   }
 
   /**
-   * Settles once the images the current controls show have loaded. Rejects
-   * with an {@link ImageLoadError} when one cannot be (it shows black).
+   * Shows a `<video>` (or a canvas) in the image control `name` (the
+   * uniform's name, such as `uImage`) in place of its URL, frame by frame;
+   * `null` goes back to the URL. The preview follows the video even while
+   * the shader's own clock is paused, and the video plays, seeks and loops
+   * on its own: the renderer never controls it. A video from another site
+   * needs `crossOrigin = "anonymous"` and CORS, or `onImageError` hears why
+   * it shows black. The value stays as it is, so documents, presets and
+   * agents keep seeing the URL.
+   */
+  setLiveSource(name: string, source: LiveSource | null) {
+    if (source) this.live.set(name, source);
+    else this.live.delete(name);
+    this.textures?.setLive(name, source);
+    if (!this.playing) this.render();
+  }
+
+  /**
+   * Settles once the images the current controls show have loaded, and
+   * every live video has a frame. Rejects with an {@link ImageLoadError}
+   * when one cannot be (it shows black).
    */
   async ready(): Promise<void> {
-    await this.textures?.ready(imageUrls(this.controls, this.values));
+    await Promise.all([
+      this.textures?.ready(imageUrls(this.controls, this.values)),
+      this.textures?.liveReady(),
+    ]);
   }
 
   play() {
@@ -313,10 +336,12 @@ export class ShaderRenderer {
   }
 
   private textureCache(gl: WebGL2RenderingContext): TextureCache {
-    return new TextureCache(gl, (_url, error) => {
+    const cache = new TextureCache(gl, (_url, error) => {
       if (error) this.onImageError?.(error);
       else if (!this.playing) this.render();
     });
+    for (const [name, source] of this.live) cache.setLive(name, source);
+    return cache;
   }
 
   /** Starts loading the images now shown, and frees the ones no longer shown. */
@@ -337,6 +362,9 @@ export class ShaderRenderer {
       this.frame += 1;
       this.render(delta * this.speed);
       this.fpsFrames += 1;
+    } else if (this.textures?.liveChanged()) {
+      // A live video moved on (played, seeked or loaded) while the clock is paused.
+      this.render();
     }
     if (now - this.fpsSince >= 500) {
       this.fps = this.playing

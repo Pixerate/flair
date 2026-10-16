@@ -43,6 +43,7 @@ export const dripMelt: ShaderEffect = {
   name: "Drip melt",
   description: "An image melting from the top edge down: columns slump, thick glossy drips run down and pool in a puddle, then it all reforms.",
   category: "melt",
+  video: "filter",
   tags: ["melt", "image", "drip", "liquid", "glossy", "loop"],
   loop: 8,
   source: glsl(
@@ -152,6 +153,7 @@ export const heatHaze: ShaderEffect = {
   name: "Heat haze",
   description: "A mirage shimmer rising off a hot image: wavering refraction strongest near the ground, with a warm tint and a faint reflection.",
   category: "melt",
+  video: "filter",
   tags: ["melt", "image", "heat", "mirage", "shimmer", "desert", "distortion"],
   source: glsl(
     `// Heat haze: rising, wavering refraction over a picture, strongest near the bottom.
@@ -212,6 +214,7 @@ export const waxMelt: ShaderEffect = {
   name: "Wax melt",
   description: "A silhouette softening like warm wax: its edges round off, its top sags and it slumps into a glossy puddle, then sets again.",
   category: "melt",
+  video: "none",
   tags: ["melt", "wax", "text", "silhouette", "glossy", "loop"],
   loop: 8,
   source: glsl(
@@ -313,6 +316,7 @@ export const meltingText: ShaderEffect = {
   name: "Melting text",
   description: "Letters sagging and stretching downwards as long glossy drips run from their bottoms and droplets break off and fall.",
   category: "melt",
+  video: "none",
   tags: ["melt", "text", "title", "drip", "liquid", "glossy", "loop"],
   loop: 8,
   transparent: true,
@@ -431,6 +435,7 @@ export const liquify: ShaderEffect = {
   name: "Liquify",
   description: "An image pushed and smeared like wet paint by a moving brush (or the pointer), the smears slowly relaxing back.",
   category: "melt",
+  video: "filter",
   tags: ["melt", "image", "liquify", "smear", "paint", "interactive", "hover"],
   source: glsl(
     `// Liquify: a brush pushes the picture around; its recent path leaves smears that relax over time.

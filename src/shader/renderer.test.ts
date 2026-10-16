@@ -1,6 +1,7 @@
 import { ShaderRenderer, type RendererStats } from "./renderer.js";
 import { ImageLoadError } from "./textures.js";
 import {
+  FakeVideo,
   flush,
   installFakeImages,
   installFakeWebGl,
@@ -413,6 +414,41 @@ describe("ShaderRenderer", () => {
       const texture = gl!.textures.find((t) => t.image !== "1x1" && t.image !== null)!;
       renderer.setValues({ uPhoto: "b.png" });
       expect(texture.deleted).toBe(true);
+    });
+
+    it("draws a live video in place of the URL, and follows it while paused", () => {
+      installFakeImages();
+      const { renderer, gl, raf } = setup();
+      renderer.setSource(photo);
+      renderer.setValues({ uPhoto: "https://example.com/a.png" });
+      renderer.pause();
+      const video = new FakeVideo();
+      video.readyState = 4;
+      renderer.setLiveSource("uPhoto", video as unknown as HTMLVideoElement);
+      expect(bound(gl!)!.image).toBe(video);
+      const draws = gl!.named("drawArrays").length;
+      raf.frame(16);
+      expect(gl!.named("drawArrays")).toHaveLength(draws);
+      video.playTo(0.5);
+      raf.frame(32);
+      expect(gl!.named("drawArrays")).toHaveLength(draws + 1);
+      expect(gl!.named("texImage2D").filter((c) => c.args[5] === video)).toHaveLength(2);
+      renderer.setLiveSource("uPhoto", null);
+      expect(bound(gl!)!.image).not.toBe(video);
+    });
+
+    it("ready waits for a live video's first frame", async () => {
+      const { renderer } = setup();
+      renderer.setSource(photo);
+      const video = new FakeVideo();
+      renderer.setLiveSource("uPhoto", video as unknown as HTMLVideoElement);
+      let done = false;
+      const ready = renderer.ready().then(() => (done = true));
+      await flush();
+      expect(done).toBe(false);
+      video.readyState = 2;
+      video.emit("loadeddata");
+      await ready;
     });
 
     it("deletes its textures on dispose", async () => {

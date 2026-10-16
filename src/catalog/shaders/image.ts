@@ -58,6 +58,7 @@ export const imageRipple: ShaderEffect = {
   name: "Ripple",
   description: "An image rippling as if seen through water, from the pointer or the centre.",
   category: "image",
+  video: "filter",
   tags: ["image", "water", "interactive", "distortion"],
   source: glsl(
     `// Ripple: an image rippling as if under water.
@@ -88,6 +89,7 @@ export const imageGlitch: ShaderEffect = {
   name: "Glitch",
   description: "Digital glitch on an image: RGB split, slice displacement and blocky corruption in bursts.",
   category: "image",
+  video: "filter",
   tags: ["image", "glitch", "cyber", "transition"],
   source: glsl(
     `// Glitch: RGB split, slice displacement and blocky corruption in bursts.
@@ -126,6 +128,7 @@ export const imageDuotone: ShaderEffect = {
   name: "Duotone",
   description: "An image mapped onto two colours, with a slow light sweep.",
   category: "image",
+  video: "filter",
   tags: ["image", "brand", "editorial", "colour"],
   source: glsl(
     `// Duotone: an image mapped onto two colours, with a light sweep.
@@ -158,6 +161,7 @@ export const imagePixelate: ShaderEffect = {
   name: "Pixel reveal",
   description: "An image resolving from big blocks to full detail, then back, in a loop.",
   category: "image",
+  video: "filter",
   tags: ["image", "reveal", "transition", "8-bit"],
   loop: 4,
   source: glsl(
@@ -183,6 +187,7 @@ export const imageHalftone: ShaderEffect = {
   name: "Halftone",
   description: "An image printed as rotated halftone dots, breathing slightly.",
   category: "image",
+  video: "filter",
   tags: ["image", "print", "comic", "pop-art"],
   source: glsl(
     `// Halftone: an image as rotated print dots.
@@ -215,6 +220,7 @@ export const crt: ShaderEffect = {
   name: "CRT screen",
   description: "An image on a curved CRT: scanlines, shadow mask, bloom and flicker.",
   category: "image",
+  video: "filter",
   tags: ["image", "retro", "screen", "arcade"],
   source: glsl(
     `// CRT screen: an image on a curved tube with scanlines and a shadow mask.
@@ -254,6 +260,7 @@ export const filmGrain: ShaderEffect = {
   name: "Film look",
   description: "An image graded like film: grain, gate weave, halation and vignette.",
   category: "image",
+  video: "filter",
   tags: ["image", "cinematic", "grain", "vintage"],
   source: glsl(
     `// Film look: grain, gate weave, halation and vignette.
@@ -303,6 +310,7 @@ export const transitions: ShaderEffect[] = TRANSITIONS.map(({ type, id, name, de
   name,
   description: `${description} Loops back and forth; or turn Animate off and set Progress.`,
   category: "transition",
+  video: "transition",
   tags: ["transition", "image", "slideshow"],
   loop: 4,
   source: glsl(

@@ -38,9 +38,11 @@ export {
   loadImage,
   preloadImages,
   releaseImages,
+  seekVideo,
   sizeSvg,
   SVG_EDGE,
   TextureCache,
+  type LiveSource,
   type TextureSource,
 } from "./textures.js";
 export {

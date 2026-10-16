@@ -3,6 +3,8 @@
  * controls and presets, to drop into a product or start an edit from.
  *
  * - Browsing: `EFFECTS`, `getEffect`, `findEffects`, `EFFECT_CATEGORIES`.
+ * - Video: shader effects with image controls say how they suit video
+ *   (`video`, see `VideoUse`); `findEffects({ video: ["filter"] })` finds them.
  * - Controls: `effectControls`, `effectDefaults`.
  * - Vector effects: their pictures declare their controls (`vectorControls`),
  *   and `renderVectorEffect` fills them in.
@@ -44,7 +46,7 @@ import { digitalRain, pixelSunset, synthwaveGrid, tvStatic } from "./shaders/ret
 import { textShaders } from "./shaders/text.js";
 import { imageTreatments } from "./shaders/treatments.js";
 import { textEffects } from "./text.js";
-import { CURRENT_COLOR, EFFECT_CATEGORIES, isCurrentColor, vectorEffectControls, type EffectCategory, type EffectDefinition, type ShaderEffect } from "./types.js";
+import { CURRENT_COLOR, EFFECT_CATEGORIES, isCurrentColor, vectorEffectControls, type EffectCategory, type EffectDefinition, type ShaderEffect, type VideoUse } from "./types.js";
 import { vectorEffects } from "./vector.js";
 
 export {
@@ -59,12 +61,14 @@ export {
   vectorControlIssues,
   vectorControls,
   vectorEffectControls,
+  VIDEO_USES,
   type EffectCategory,
   type EffectDefinition,
   type EffectPreset,
   type ShaderEffect,
   type VectorControl,
   type VectorEffect,
+  type VideoUse,
 } from "./types.js";
 export { SAMPLE_IMAGES, svgDataUrl, textImage } from "./images.js";
 export { FBM, glsl, HASH, NOISE, OKLAB_MIX, PALETTE, ROTATE } from "./glsl.js";
@@ -141,6 +145,8 @@ export interface EffectQuery {
   kind?: EffectDefinition["kind"];
   /** Effects with every one of these tags. */
   tags?: readonly string[];
+  /** Effects that suit video in one of these ways (shader effects with image controls only). */
+  video?: readonly VideoUse[];
 }
 
 /** Effects matching a query, in catalog order. */
@@ -150,6 +156,7 @@ export function findEffects(query: EffectQuery = {}): EffectDefinition[] {
     if (query.category && e.category !== query.category) return false;
     if (query.kind && e.kind !== query.kind) return false;
     if (query.tags && !query.tags.every((t) => e.tags.includes(t))) return false;
+    if (query.video && !(e.kind === "shader" && e.video && query.video.includes(e.video))) return false;
     const haystack = [e.id, e.name, e.description, e.category, ...e.tags].join(" ").toLowerCase();
     return words.every((w) => haystack.includes(w));
   });

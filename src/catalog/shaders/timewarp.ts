@@ -47,6 +47,7 @@ export const timeEcho: ShaderEffect = {
   name: "Time echo",
   description: "A swaying picture trailed by fading, tinted ghost echoes of where it just was.",
   category: "timewarp",
+  video: "stills",
   tags: ["time", "image", "echo", "trail", "ghost"],
   loop: 8,
   source: glsl(
@@ -95,6 +96,7 @@ export const chronoSplit: ShaderEffect = {
   name: "Chrono split",
   description: "Red, green and blue each lagging a little further behind in time, so movement leaves colour fringes.",
   category: "timewarp",
+  video: "stills",
   tags: ["time", "image", "rgb", "chromatic", "echo"],
   loop: 8,
   source: glsl(
@@ -129,6 +131,7 @@ export const timeSlice: ShaderEffect = {
   name: "Time slice",
   description: "Bands of a moving picture each showing a different moment, staggered like a time-displacement.",
   category: "timewarp",
+  video: "stills",
   tags: ["time", "image", "slices", "stagger", "displacement"],
   loop: 8,
   source: glsl(
@@ -196,6 +199,7 @@ export const rewind: ShaderEffect = {
   name: "VHS rewind",
   description: "A tape playing, then rewinding fast with tracking noise, jittering lines, colour bleed and a ◀◀ display.",
   category: "timewarp",
+  video: "stills",
   tags: ["time", "image", "vhs", "retro", "rewind", "tape"],
   loop: 6,
   source: glsl(
@@ -303,6 +307,7 @@ export const bulletTime: ShaderEffect = {
   name: "Bullet time",
   description: "A shockwave sweeping out from the centre or a click, freezing the picture grey and zoomed behind it while the rest moves on.",
   category: "timewarp",
+  video: "stills",
   tags: ["time", "image", "freeze", "shockwave", "click", "cinematic"],
   loop: 8,
   source: glsl(
@@ -363,6 +368,7 @@ export const timeTunnel: ShaderEffect = {
   name: "Time tunnel",
   description: "A picture wrapped round a spiralling tunnel rushing at the viewer, with light streaks and a blazing core.",
   category: "timewarp",
+  video: "filter",
   tags: ["time", "image", "tunnel", "vortex", "sci-fi", "warp"],
   loop: 8,
   source: glsl(
@@ -422,6 +428,7 @@ export const speedRamp: ShaderEffect = {
   name: "Speed ramp",
   description: "A panning picture lurching from a crawl to a blur and back, motion-blurred in proportion to its speed.",
   category: "timewarp",
+  video: "stills",
   tags: ["time", "image", "speed", "motion blur", "cinematic"],
   loop: 4,
   source: glsl(
@@ -470,6 +477,7 @@ export const stutterFreeze: ShaderEffect = {
   name: "Stutter freeze",
   description: "A moving picture that catches in irregular bursts, holding or stuttering frames with a flash on each freeze.",
   category: "timewarp",
+  video: "stills",
   tags: ["time", "image", "freeze", "stutter", "glitch"],
   source: glsl(
     `// Stutter freeze: some moments end in a hold (or a skipping stutter) before cutting back to live.

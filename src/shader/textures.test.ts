@@ -5,12 +5,14 @@ import {
   loadImage,
   preloadImages,
   releaseImages,
+  seekVideo,
   shortUrl,
   sizeSvg,
   SVG_EDGE,
   TextureCache,
 } from "./textures.js";
-import { asGl, FakeGl, flush, installFakeImages } from "./test-utils.js";
+import { asGl, FakeGl, FakeVideo, flush, installFakeImages } from "./test-utils.js";
+import type { LiveSource } from "./textures.js";
 
 function setup(load?: (url: string) => Promise<TexImageSource>) {
   const gl = new FakeGl();
@@ -223,6 +225,140 @@ describe("TextureCache", () => {
     await flush();
     expect(gl.textures).toHaveLength(0);
     expect(onLoad).not.toHaveBeenCalled();
+  });
+});
+
+describe("TextureCache live sources", () => {
+  const live = (v: FakeVideo) => v as unknown as LiveSource;
+
+  it("is undefined for a control with none, so its URL is drawn", () => {
+    const { cache } = setup(async (url) => image(url));
+    expect(cache.liveTexture("uImage")).toBeUndefined();
+  });
+
+  it("shows black until a video has a frame, then uploads it flipped and mipmapped", () => {
+    const { cache, gl } = setup();
+    const video = new FakeVideo();
+    cache.setLive("uImage", live(video));
+    const placeholder = cache.liveTexture("uImage");
+    expect(gl.textures[0]!.image).toBe("1x1");
+    expect(placeholder).toBe(gl.textures[0]);
+    expect(cache.liveChanged()).toBe(false);
+    video.readyState = 2;
+    expect(cache.liveChanged()).toBe(true);
+    const texture = cache.liveTexture("uImage");
+    expect(texture).toBe(gl.textures[1]);
+    expect(gl.textures[1]).toMatchObject({ image: video, flipped: true, mipmapped: true });
+    expect(gl.named("pixelStorei").at(-1)!.args).toEqual([gl.UNPACK_FLIP_Y_WEBGL, false]);
+    expect(cache.liveChanged()).toBe(false);
+  });
+
+  it("uploads a video again only when its frame changes, into the same texture", () => {
+    const { cache, gl } = setup();
+    const video = new FakeVideo();
+    video.readyState = 4;
+    cache.setLive("uImage", live(video));
+    cache.liveTexture("uImage");
+    cache.liveTexture("uImage");
+    expect(gl.named("texImage2D")).toHaveLength(1);
+    video.playTo(0.04);
+    expect(cache.liveChanged()).toBe(true);
+    expect(cache.liveTexture("uImage")).toBe(gl.textures[0]);
+    expect(gl.named("texImage2D")).toHaveLength(2);
+    expect(gl.textures).toHaveLength(1);
+  });
+
+  it("uploads a canvas on every frame", () => {
+    const { cache, gl } = setup();
+    const canvas = document.createElement("canvas");
+    cache.setLive("uImage", canvas);
+    cache.liveTexture("uImage");
+    cache.liveTexture("uImage");
+    expect(gl.named("texImage2D")).toHaveLength(2);
+    expect(gl.textures[0]!.image).toBe(canvas);
+  });
+
+  it("reports a video it may not read (CORS) once, and shows black", () => {
+    const { cache, gl, onLoad } = setup();
+    const video = new FakeVideo();
+    video.readyState = 4;
+    const upload = gl.texImage2D.bind(gl);
+    gl.texImage2D = (...args: unknown[]) => {
+      if (args.length === 6) throw new DOMException("tainted", "SecurityError");
+      upload(...args);
+    };
+    cache.setLive("uImage", live(video));
+    const texture = cache.liveTexture("uImage");
+    expect(texture).toBe(gl.textures.find((t) => t.image === "1x1"));
+    expect(onLoad).toHaveBeenCalledTimes(1);
+    const error = onLoad.mock.calls[0]![1] as ImageLoadError;
+    expect(error).toBeInstanceOf(ImageLoadError);
+    expect(error.url).toBe("https://example.com/clip.mp4");
+    expect(error.message).toContain('crossOrigin = "anonymous"');
+    video.playTo(1);
+    cache.liveTexture("uImage");
+    expect(onLoad).toHaveBeenCalledTimes(1);
+    expect(cache.liveChanged()).toBe(false);
+  });
+
+  it("setting null or another source deletes the texture; dispose deletes them all", () => {
+    const { cache, gl } = setup();
+    const canvas = document.createElement("canvas");
+    cache.setLive("uImage", canvas);
+    cache.liveTexture("uImage");
+    cache.setLive("uImage", canvas);
+    expect(gl.textures[0]!.deleted).toBeFalsy();
+    cache.setLive("uImage", null);
+    expect(gl.textures[0]!.deleted).toBe(true);
+    expect(cache.liveTexture("uImage")).toBeUndefined();
+    cache.setLive("uOther", canvas);
+    cache.liveTexture("uOther");
+    cache.dispose();
+    expect(gl.textures.every((t) => t.deleted)).toBe(true);
+  });
+
+  it("liveReady waits for each video's first frame, and rejects when one fails", async () => {
+    const { cache } = setup();
+    const video = new FakeVideo();
+    cache.setLive("uImage", live(video));
+    let done = false;
+    const ready = cache.liveReady().then(() => (done = true));
+    await flush();
+    expect(done).toBe(false);
+    video.readyState = 2;
+    video.emit("loadeddata");
+    await ready;
+    expect(done).toBe(true);
+
+    const broken = new FakeVideo();
+    cache.setLive("uOther", live(broken));
+    const failed = cache.liveReady();
+    broken.emit("error");
+    await expect(failed).rejects.toBeInstanceOf(ImageLoadError);
+  });
+});
+
+describe("seekVideo", () => {
+  it("waits for metadata, seeks within the video's length and settles on seeked", async () => {
+    const video = new FakeVideo();
+    const seeking = seekVideo(video as unknown as HTMLVideoElement, 25);
+    await flush();
+    expect(video.currentTime).toBe(0);
+    video.readyState = 1;
+    video.emit("loadedmetadata");
+    await seeking;
+    expect(video.currentTime).toBe(10);
+    expect(video.readyState).toBe(2);
+  });
+
+  it("settles at once when the frame is already there", async () => {
+    const video = new FakeVideo();
+    video.readyState = 4;
+    video.playTo(3);
+    const seeked = vi.fn();
+    video.addEventListener("seeked", seeked);
+    await seekVideo(video as unknown as HTMLVideoElement, 3);
+    expect(seeked).not.toHaveBeenCalled();
   });
 });
 

@@ -5,7 +5,7 @@
  */
 
 import type { CommandSpec } from "@pixerate/editor/commands";
-import { EFFECT_CATEGORIES } from "../catalog/types.js";
+import { EFFECT_CATEGORIES, VIDEO_USES, type VideoUse } from "../catalog/types.js";
 import { findEffects } from "../catalog/index.js";
 import type { EditResult, EffectEditor } from "./editor.js";
 import { EASING_PRESETS, type Easing } from "./timeline.js";
@@ -75,11 +75,24 @@ export function effectCommands(): CommandSpec<EffectEditor>[] {
           text: { type: "string", description: "Words to look for (all must match)." },
           category: { type: "string", enum: EFFECT_CATEGORIES },
           kind: { type: "string", enum: ["shader", "vector"] },
+          video: {
+            type: "array",
+            items: { type: "string", enum: VIDEO_USES },
+            description: "Only effects that suit video in one of these ways: filter (live video filter), transition (between two clips), interactive (pointer over video), stills (runs on video, made for stills), none.",
+          },
         },
         additionalProperties: false,
       },
-      run: (_, params: { text?: string; category?: (typeof EFFECT_CATEGORIES)[number]; kind?: "shader" | "vector" }) =>
-        findEffects(params ?? {}).map((e) => ({ id: e.id, name: e.name, kind: e.kind, category: e.category, description: e.description, presets: e.presets?.map((p) => p.name) ?? [] })),
+      run: (_, params: { text?: string; category?: (typeof EFFECT_CATEGORIES)[number]; kind?: "shader" | "vector"; video?: VideoUse[] }) =>
+        findEffects(params ?? {}).map((e) => ({
+          id: e.id,
+          name: e.name,
+          kind: e.kind,
+          category: e.category,
+          description: e.description,
+          ...(e.kind === "shader" && e.video ? { video: e.video } : {}),
+          presets: e.presets?.map((p) => p.name) ?? [],
+        })),
     },
     {
       id: "effect.load",

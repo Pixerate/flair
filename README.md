@@ -42,7 +42,7 @@ Flair gives products a library of good-looking, configurable visual effects (her
 | Import | What it provides | Runtime dependencies |
 | :--- | :--- | :--- |
 | `@pixerate/flair` | Shader engine, vector motion, time and easing, colour, blending, transitions, scenes, interchange exporters | None (browser-safe) |
-| `@pixerate/flair/catalog` | `EFFECTS`, `getEffect`, `findEffects`, `effectDefaults`, `renderVectorEffect`, `vectorControls`, GLSL helpers, sample images, `textImage` | None |
+| `@pixerate/flair/catalog` | `EFFECTS`, `getEffect`, `findEffects` (also by `video` use), `effectDefaults`, `renderVectorEffect`, `vectorControls`, GLSL helpers, sample images, `textImage` | None |
 | `@pixerate/flair/vector` | `SvgMotion`, `svgFrame`, `svgView`, `SvgPlayer`, `svgFrameMarkup`, `svgViewBox`, `animateCount`, `formatCount`, `morphPaths`, `morphSequence`, `svgMotionIssues` | None |
 | `@pixerate/flair/react` | `<VectorEffect>`, `<SvgPlayerView>`: vector effects as React components, server-rendered as a still | `react` ≥ 18 (optional peer) |
 | `@pixerate/flair/svelte` | `vectorEffect` action, `vectorEffectStill`: vector effects in Svelte, server-rendered as a still | `svelte` ≥ 5 (optional peer; types only) |
@@ -151,6 +151,31 @@ new SvgPlayer(host, motion, { loop: false });
 Find effects with `findEffects({ text: "glow", category: "light", kind: "shader" })`. Each effect has an `id`, `name`, `description`, `category`, `tags` and optional `presets`. Image effects default to built-in sample pictures, so they look right before you set `uImage` to your own URL.
 
 Effects that show a picture (image, transition, morph, time-warp and the like) take transparent pictures too, such as SVG icons (Lucide and similar sets draw black `currentColor` strokes on a clear background). They lay the picture over a backdrop: `uBackdrop` (white by default) shows through its clear parts. Set `uBackdropAlpha` to 0 to keep the picture's alpha instead, and render with `{ alpha: true }` to lay the result over the page. `SAMPLE_IMAGES.icon` is a Lucide-style sample icon. SVGs are rasterised at 2048 px on the long edge, so icons stay sharp.
+
+#### Effects on video
+
+Image controls can show a playing `<video>` (or a canvas) instead of a picture. `setLiveSource(name, video)` puts it in the control named `name`. The video's current frame is uploaded each time it changes, and a paused preview still follows the video. The renderer never plays, seeks or loops the video itself. The control's value keeps its URL, so documents, presets and agents still see a plain string.
+
+```ts
+const crt = getEffect("crt") as ShaderEffect;
+const video = Object.assign(document.createElement("video"), { src: "/clip.mp4", muted: true, loop: true, crossOrigin: "anonymous" });
+await video.play();
+const preview = new ShaderRenderer(host);
+preview.setSource(crt.source);
+preview.setLiveSource("uImage", video); // null goes back to the URL
+```
+
+Each shader with an image control has a `video` field that says how it suits video:
+
+- `filter`: treats each frame on its own, so it works as a live filter (CRT, film look, duotone, glitch, ASCII and others).
+- `transition`: blends two pictures, so it works between two clips (put one video in `uFrom` and one in `uTo`).
+- `interactive`: reacts to the pointer, and works over video too (magnifier, hover reveal and others).
+- `stills`: runs on video but is made for a still picture. Time-warp effects move the picture to fake motion of their own, and the morph effects need shapes in fixed places.
+- `none`: its picture is rendered text or a silhouette mask.
+
+`findEffects({ video: ["filter", "transition"] })` lists the effects that suit video. The `catalog.search` command takes the same filter.
+
+A video from another site needs `crossOrigin = "anonymous"` and that site's CORS consent. Without it, the control shows black and `onImageError` explains why. For frame-exact output, step the video with `ShaderFrames`: pause the video, then for each frame `await seekVideo(video, t); frames.render(t)`. Both `ShaderRenderer.ready()` and `ShaderFrames.ready()` wait for each live video's first frame.
 
 Overlay shaders (`category: "overlay"`) have `transparent: true`: they write coverage to `fragColor.a` and draw nothing elsewhere, so render them with `new ShaderRenderer(host, { alpha: true })` (or `new ThumbnailPool({ alpha: true })`) and lay the canvas over a picture, video or page. Interaction effects answer the pointer. Interactive shaders read `iPointer` and `iClicks`, so they work in any `ShaderRenderer` with no wiring, and play an idle demo when nobody is pointing (turn off "Demo when idle" to stop it). Vector micro-interactions carry a `trigger`: pass it to the player, `new SvgPlayer(host, renderVectorEffect(effect), { trigger: effect.trigger })`. A hover or press trigger plays to the end while hovered or held and back again after; a click trigger plays the next step on each click, so toggles turn on and off. Hosts can drive them too, with `player.setActive(on)` and `player.advance()` (from a keyboard handler, say).
 

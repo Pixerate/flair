@@ -8,6 +8,7 @@ export const shaderText: ShaderEffect = {
   name: "Shader text",
   description: "A title filled with a living texture (plasma, fire, caustics or liquid chrome), with a soft glow and outline.",
   category: "text",
+  video: "none",
   tags: ["text", "title", "plasma", "fire", "chrome", "glow"],
   source: glsl(
     `// Shader text: the letters of a text image filled with an animated pattern.
