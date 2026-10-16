@@ -30,6 +30,11 @@ export type EffectCategory =
   | "splatter"
   | "bubble"
   | "sticker"
+  | "trail"
+  | "particles"
+  | "debris"
+  | "impact"
+  | "comic"
   | "transition"
   | "loader"
   | "data"
@@ -55,6 +60,11 @@ export const EFFECT_CATEGORIES: readonly EffectCategory[] = [
   "splatter",
   "bubble",
   "sticker",
+  "trail",
+  "particles",
+  "debris",
+  "impact",
+  "comic",
   "transition",
   "loader",
   "data",

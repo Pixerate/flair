@@ -900,3 +900,236 @@ describe("sticker effects", () => {
     expect(effectControls(peel).map((c) => c.name)).toEqual(expect.arrayContaining(["uFrom", "uTo", "uAnimate", "uProgress"]));
   });
 });
+
+describe("impact effects", () => {
+  const impacts = findEffects({ category: "impact" });
+
+  it("has the shockwave, slam, impact frame, meteor, shake and hit marker, all tagged", () => {
+    const ids = impacts.map((e) => e.id);
+    for (const id of ["shockwave", "ground-slam", "impact-frame", "meteor-strike", "screen-shake", "hit-marker"]) expect(ids).toContain(id);
+    for (const effect of impacts) expect(effect.tags).toContain("impact");
+  });
+
+  it.each(impacts.filter((e) => e.kind === "shader").map((e) => [e.id, e] as const))("%s strikes at clicks and on a schedule while idle", (_, effect) => {
+    if (effect.kind !== "shader") return;
+    expect(effect.source).toMatch(/\biClicks\b/);
+    expect(effect.source).not.toMatch(/uniform\s+vec4\s+(iPointer|iClicks)/);
+    expect(effectControls(effect).find((c) => c.name === "uDemo")).toMatchObject({ type: "bool", default: true });
+    const image = effectControls(effect).some((c) => c.type === "sampler2D");
+    expect(effect.video === "interactive").toBe(image);
+    expect(effect.transparent).toBeFalsy();
+  });
+
+  it("hit marker replays on every click, ending as it started, and can hide its number", () => {
+    const effect = getEffect("hit-marker")!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    expect(effect.trigger).toBe("click");
+    const motion = renderVectorEffect(effect, { damage: 1234 });
+    expect(motion.svg).toContain(">1234</text>");
+    expect(motion.animate!.every((a) => a.step === 1)).toBe(true);
+    const frameAt = (clicks: number[], ms: number) => JSON.stringify([...svgFrame(motion.animate!, clicks, ms)].sort());
+    const start = frameAt([], 0);
+    expect(frameAt([0], 200)).not.toBe(start);
+    expect(frameAt([0], 10000)).toBe(start);
+    const hidden = renderVectorEffect(effect, { showNumber: false });
+    expect(hidden.animate!.find((a) => a.id === "hitMarkerNumber")!.attrs!.opacity).toEqual([0, 0]);
+  });
+});
+
+describe("particle effects", () => {
+  const particles = findEffects({ category: "particles" });
+
+  it("has the flow, swarm, dust, flock, text, confetti and firefly systems, all tagged", () => {
+    const ids = particles.map((e) => e.id);
+    for (const id of ["flow-particles", "magnetic-swarm", "dust-in-light", "boids", "particle-text", "confetti-cannon", "fireflies"]) expect(ids).toContain(id);
+    for (const effect of particles) expect(effect.tags).toContain("particles");
+  });
+
+  it("draws the swarm, dust and confetti as transparent overlays", () => {
+    for (const id of ["magnetic-swarm", "dust-in-light", "confetti-cannon"]) expect(getEffect(id)!).toMatchObject({ transparent: true });
+  });
+
+  it("reads the pointer built-ins without declaring them, with idle demos where clicks matter", () => {
+    for (const id of ["magnetic-swarm", "confetti-cannon", "fireflies"]) {
+      const effect = getEffect(id)!;
+      if (effect.kind !== "shader") throw new Error("shader expected");
+      expect(effect.tags, id).toContain("interactive");
+      expect(effect.source, id).toMatch(/\biPointer\b|\biClicks\b/);
+      expect(effect.source, id).not.toMatch(/uniform\s+vec4\s+(iPointer|iClicks|iTrail)/);
+    }
+    for (const id of ["magnetic-swarm", "confetti-cannon"])
+      expect(effectControls(getEffect(id)!).find((c) => c.name === "uDemo"), id).toMatchObject({ type: "bool", default: true });
+  });
+
+  it("dissolves FLAIR by default on a 6 s loop, an image control not meant for video", () => {
+    const text = getEffect("particle-text")!;
+    expect(text).toMatchObject({ video: "none", loop: 6 });
+    expect(effectDefaults(text).uText).toBe(textImage("FLAIR"));
+    for (const effect of particles.filter((e) => e.id !== "particle-text")) expect(effect.kind === "shader" && effect.video, effect.id).toBeUndefined();
+  });
+});
+
+describe("trail effects", () => {
+  const trails = findEffects({ category: "trail" });
+  const shaders = ["comet-trail", "ribbon-trail", "sparkle-trail", "brush-trail", "ghost-trail", "light-painting"];
+
+  it("has the comet, ribbon, sparkle, brush, ghost, light painting, streak and dotted trails, all tagged", () => {
+    const ids = trails.map((e) => e.id);
+    for (const id of [...shaders, "motion-streak", "dotted-trail"]) expect(ids).toContain(id);
+    for (const effect of trails) expect(effect.tags).toContain("trail");
+  });
+
+  it("follow iTrail with an idle demo, draw over the page (light painting opaque) and take no pictures", () => {
+    for (const id of shaders) {
+      const effect = getEffect(id)!;
+      if (effect.kind !== "shader") throw new Error("shader expected");
+      expect(effect.source, id).toMatch(/\biTrail\[/);
+      expect(effect.source, id).not.toMatch(/uniform\s+vec4\s+(iTrail|iPointer|iClicks)/);
+      expect(effectControls(effect).map((c) => c.name), id).toContain("uDemo");
+      expect(effect.transparent ?? false, id).toBe(id !== "light-painting");
+      expect(effect.video, id).toBeUndefined();
+    }
+  });
+
+  it("ghost trail switches between its shapes", () => {
+    const ghost = getEffect("ghost-trail")!;
+    expect(effectControls(ghost).find((c) => c.name === "uShape")).toMatchObject({ type: "int", min: 0, max: 2 });
+  });
+
+  it("motion streak switches shape, and the dotted trail moves its dots along its paths", () => {
+    const streak = getEffect("motion-streak")!;
+    const dotted = getEffect("dotted-trail")!;
+    if (streak.kind !== "vector" || dotted.kind !== "vector") throw new Error("vector expected");
+    expect(renderVectorEffect(streak, { shape: 0 }).svg).not.toBe(renderVectorEffect(streak, { shape: 1 }).svg);
+    const motion = renderVectorEffect(dotted, {});
+    expect(motion.animate!.filter((a) => a.along).length).toBe(12);
+    // The stagger moves the two sides apart.
+    expect(renderVectorEffect(dotted, { stagger: 0 }).svg).not.toBe(renderVectorEffect(dotted, { stagger: 20 }).svg);
+    for (const values of [{}, { keep: 2, gap: 60 }, { keep: 12, gap: 400, footprints: true }] as Record<string, number | boolean>[])
+      expect(JSON.stringify(renderVectorEffect(dotted, values))).not.toMatch(/\{\{|NaN|undefined/);
+  });
+});
+
+describe("comic effects", () => {
+  const comics = findEffects({ category: "comic" });
+  const render = (id: string, values: Record<string, unknown> = {}) => {
+    const effect = getEffect(id)!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    return renderVectorEffect(effect, { ...effectDefaults(effect), ...values } as never);
+  };
+  const frameAt = (motion: ReturnType<typeof render>, clicks: number[], ms: number) => JSON.stringify([...svgFrame(motion.animate!, clicks, ms)].sort());
+
+  it("has the inked, toon, speed-line, panel and cartoon effects, all tagged", () => {
+    const ids = comics.map((e) => e.id);
+    for (const id of ["comic-book", "cel-shade", "focus-lines", "action-lines", "sound-effect", "speech-bubble", "fight-cloud", "dizzy-stars", "anime-emotes", "cartoon-poof", "line-boil"])
+      expect(ids).toContain(id);
+    for (const effect of comics) expect(effect.tags.some((t) => t === "comic" || t === "cartoon"), effect.id).toBe(true);
+    expect(getEffect("transition-comic-panels")).toMatchObject({ category: "transition", video: "transition", loop: 4 });
+    expect(getEffect("transition-comic-panels")!.tags).toEqual(expect.arrayContaining(["transition", "comic"]));
+  });
+
+  it("says how the image ones suit video, and focus lines follow the pointer", () => {
+    for (const id of ["comic-book", "cel-shade", "action-lines"]) expect(getEffect(id), id).toMatchObject({ video: "filter" });
+    const focus = getEffect("focus-lines")!;
+    expect(focus).toMatchObject({ transparent: true });
+    expect(focus.kind === "shader" && focus.source).toMatch(/\biPointer\b/);
+    expect(focus.kind === "shader" && focus.source).not.toMatch(/uniform\s+vec4\s+iPointer/);
+  });
+
+  it("sound effect and speech bubble take any text", () => {
+    for (const [id, name] of [["sound-effect", "word"], ["speech-bubble", "text"], ["cartoon-poof", "word"]] as const)
+      for (const text of ["A", "Supercalifragilistic expialidocious & <co> with a very long tail of words that goes on and on", "Café 日本 🎉", ""]) {
+        for (const thought of [false, true]) {
+          const motion = render(id, { [name]: text, thought });
+          expect(svgMotionIssues(motion), id).toEqual([]);
+          expect(JSON.stringify(motion), id).not.toMatch(/\{\{|NaN|undefined/);
+        }
+      }
+    const written = render("speech-bubble", { text: "Holy guacamole, it really works" }).animate!.filter((a) => a.write !== undefined).map((a) => a.write).join(" ");
+    expect(written.trim()).toBe("Holy guacamole, it really works");
+  });
+
+  it("speech bubble switches to a thought cloud with trailing circles", () => {
+    const speech = render("speech-bubble").svg;
+    const thought = render("speech-bubble", { thought: true }).svg;
+    expect(speech).not.toBe(thought);
+    expect(thought).toMatch(/<g display="inline"><circle id="sbTrail0"/);
+    expect(speech).toMatch(/<g display="none"><circle id="sbTrail0"/);
+  });
+
+  it("anime emotes show one emote at a time", () => {
+    for (const emote of [0, 1, 2, 3]) {
+      const svg = render("anime-emotes", { emote }).svg;
+      expect(svg.match(/display="inline"/g)!.length, String(emote)).toBe(1);
+    }
+  });
+
+  it("cartoon poof vanishes on a click and comes back as it was", () => {
+    const effect = getEffect("cartoon-poof")!;
+    expect(effect.kind === "vector" && effect.trigger).toBe("click");
+    for (const shape of [0, 1, 2]) {
+      const motion = render("cartoon-poof", { shape });
+      expect(motion.animate!.every((a) => a.step === 1)).toBe(true);
+      const start = frameAt(motion, [], 0);
+      expect(frameAt(motion, [0], 500)).not.toBe(start);
+      expect(frameAt(motion, [0], 10000)).toBe(start);
+    }
+  });
+
+  it("loops end where they start", () => {
+    for (const id of ["fight-cloud", "dizzy-stars", "anime-emotes"]) {
+      const motion = render(id);
+      expect(frameAt(motion, [], svgDuration(motion)), id).toBe(frameAt(motion, [], 0));
+    }
+  });
+
+  it("line boil redraws its noise in steps over any path", () => {
+    const motion = render("line-boil", { rate: 100, d: "M0 0 L10 10" });
+    expect(motion.svg).toContain('d="M0 0 L10 10"');
+    expect(motion.svg).toMatch(/<feTurbulence id="lineBoilNoise"/);
+    expect(svgDuration(motion)).toBe(400);
+    const seeds = new Set([0, 150, 250, 350].map((t) => svgFrame(motion.animate!, [], t).get("lineBoilNoise")!.attrs.seed));
+    expect(seeds.size).toBe(4);
+  });
+});
+
+describe("debris effects", () => {
+  const debris = findEffects({ category: "debris" });
+  const source = (id: string) => {
+    const effect = getEffect(id)!;
+    return effect.kind === "shader" ? effect.source : "";
+  };
+
+  it("has rubble, glass, crumbling text, shreds, leaves and sand", () => {
+    const ids = debris.map((e) => e.id);
+    for (const id of ["rubble-fall", "glass-shatter", "crumbling-text", "paper-shreds", "leaves-blowing", "sand-erosion"]) expect(ids).toContain(id);
+    for (const effect of debris) expect(effect.tags).toContain("debris");
+  });
+
+  it("draws the falling debris as transparent overlays, and says how pictures take video", () => {
+    for (const id of ["rubble-fall", "paper-shreds", "leaves-blowing", "crumbling-text", "sand-erosion"]) expect(getEffect(id), id).toMatchObject({ transparent: true });
+    expect(getEffect("glass-shatter")).toMatchObject({ video: "interactive" });
+    expect(getEffect("crumbling-text")).toMatchObject({ video: "none", loop: 8 });
+    expect(getEffect("sand-erosion")).toMatchObject({ video: "none", loop: 8 });
+    for (const id of ["rubble-fall", "paper-shreds", "leaves-blowing"]) expect(getEffect(id), id).not.toHaveProperty("video");
+  });
+
+  it("shatters glass at clicks, with a demo while idle, and reads the built-in without declaring it", () => {
+    expect(source("glass-shatter")).toMatch(/\biClicks\[0\]/);
+    expect(source("glass-shatter")).not.toMatch(/uniform\s+vec4\s+iClicks/);
+    expect(effectControls(getEffect("glass-shatter")!).map((c) => c.name)).toContain("uDemo");
+  });
+
+  it("crumbles and erodes text masks by default, with a still progress control", () => {
+    expect(effectDefaults(getEffect("crumbling-text")!).uText).toBe(textImage("DECAY"));
+    expect(effectDefaults(getEffect("sand-erosion")!).uMask).toBe(textImage("SAND"));
+    for (const id of ["crumbling-text", "sand-erosion"])
+      expect(effectControls(getEffect(id)!).map((c) => c.name), id).toEqual(expect.arrayContaining(["uAnimate", "uProgress"]));
+  });
+
+  it("lets the wind blow either way", () => {
+    const wind = effectControls(getEffect("leaves-blowing")!).find((c) => c.name === "uWind")!;
+    expect(wind.min).toBeLessThan(0);
+    expect(wind.max).toBeGreaterThan(0);
+  });
+});

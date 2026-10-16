@@ -33,7 +33,7 @@ export const BUILTIN_UNIFORMS = [
     name: "iTrail",
     type: "vec4",
     size: MAX_TRAIL,
-    doc: "where the pointer has just been over the canvas, newest first (about 60 points a second): xy = where (pixels), z = when (iTime seconds), w = 1 for a point, 0 for an empty slot",
+    doc: "where the pointer has just been over the canvas, newest first (about 30 points a second, so a second of path): xy = where (pixels), z = when (iTime seconds), w = 1 for a point, 0 for an empty slot",
   },
 ] as const;
 

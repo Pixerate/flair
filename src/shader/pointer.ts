@@ -11,10 +11,13 @@
 export const MAX_CLICKS = 8;
 
 /** How many of the pointer's recent positions `iTrail` holds; older ones drop off. */
-export const MAX_TRAIL = 16;
+export const MAX_TRAIL = 32;
 
-/** The least time between two positions in the trail, in seconds: moves in between update the newest. */
-export const TRAIL_SECONDS = 1 / 60;
+/**
+ * The least time between two positions in the trail, in seconds: moves in
+ * between update the newest. With {@link MAX_TRAIL}, about a second of path.
+ */
+export const TRAIL_SECONDS = 1 / 30;
 
 /** How long hovering eases in or out, in seconds. */
 export const HOVER_SECONDS = 0.25;
