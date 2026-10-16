@@ -84,15 +84,17 @@ import { waterShaders } from "./shaders/water.js";
 import { textEffects } from "./text.js";
 import { broadcastEffects } from "./broadcast.js";
 import { annotationEffects } from "./annotation.js";
-import { CURRENT_COLOR, EFFECT_CATEGORIES, isCurrentColor, vectorEffectControls, type EffectCategory, type EffectDefinition, type ShaderEffect, type VideoUse } from "./types.js";
+import { CURRENT_COLOR, EFFECT_CATEGORIES, EFFECT_CATEGORY_GROUPS, isCurrentColor, vectorEffectControls, type EffectCategory, type EffectDefinition, type ShaderEffect, type VideoUse } from "./types.js";
 import { vectorEffects } from "./vector.js";
 import { dataEffects } from "./data.js";
 import { iconEffects } from "./icons.js";
 
 export {
   colorControl,
+  categoryGroup,
   CURRENT_COLOR,
   EFFECT_CATEGORIES,
+  EFFECT_CATEGORY_GROUPS,
   isCurrentColor,
   numberControl,
   renderVectorEffect,
@@ -103,6 +105,7 @@ export {
   vectorEffectControls,
   VIDEO_USES,
   type EffectCategory,
+  type EffectCategoryGroup,
   type EffectDefinition,
   type EffectPreset,
   type ShaderEffect,
@@ -233,6 +236,8 @@ export interface EffectQuery {
   /** Words to look for in the name, description, tags and id (all must match). */
   text?: string;
   category?: EffectCategory;
+  /** Effects in any category of the group with this name (`EFFECT_CATEGORY_GROUPS`, any case). */
+  group?: string;
   kind?: EffectDefinition["kind"];
   /** Effects with every one of these tags. */
   tags?: readonly string[];
@@ -251,6 +256,7 @@ export function findEffects(query: EffectQuery = {}): EffectDefinition[] {
   const words = (query.text ?? "").toLowerCase().split(/\s+/).filter(Boolean);
   return EFFECTS.filter((e) => {
     if (query.category && e.category !== query.category) return false;
+    if (query.group && !EFFECT_CATEGORY_GROUPS.find((g) => g.name.toLowerCase() === query.group!.toLowerCase())?.categories.includes(e.category)) return false;
     if (query.kind && e.kind !== query.kind) return false;
     if (query.tags && !query.tags.every((t) => e.tags.includes(t))) return false;
     if (query.video && !(e.kind === "shader" && e.video && query.video.includes(e.video))) return false;

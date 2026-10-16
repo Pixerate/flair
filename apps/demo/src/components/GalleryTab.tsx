@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { sharedThumbnailPool, SvgPlayer, ThumbnailPool, type ThumbnailHandle } from "@pixerate/flair";
 import {
-  EFFECT_CATEGORIES,
+  EFFECT_CATEGORY_GROUPS,
   effectDefaults,
   findEffects,
   renderVectorEffect,
@@ -205,8 +205,13 @@ function EffectCard({ effect, onOpen }: { effect: EffectDefinition; onOpen: () =
 
 export function GalleryTab({ onOpen }: { onOpen: (id: string) => void }) {
   const [text, setText] = useState("");
+  const [group, setGroup] = useState<string | "all">("all");
   const [category, setCategory] = useState<EffectCategory | "all">("all");
-  const effects = findEffects({ text, category: category === "all" ? undefined : category });
+  const effects = findEffects({ text, group: group === "all" ? undefined : group, category: category === "all" ? undefined : category });
+  const categories = EFFECT_CATEGORY_GROUPS.find((g) => g.name === group)?.categories ?? [];
+  const count = (query: { group?: string; category?: EffectCategory }) => findEffects({ text, ...query }).length;
+  const chip = (on: boolean) =>
+    `rounded-full px-3 py-1 text-sm border transition ${on ? "border-violet-500 bg-violet-500/15 text-violet-100" : "border-slate-700 text-slate-400 hover:text-slate-100"}`;
 
   return (
     <div className="space-y-5">
@@ -235,20 +240,31 @@ preview.setValues(effectDefaults(aurora, { preset: "Ember" }));`}</code>
           className="w-full sm:w-64 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm placeholder:text-slate-500 focus:outline-none focus:border-violet-500"
           aria-label="Search effects"
         />
-        {(["all", ...EFFECT_CATEGORIES] as const).map((c) => (
+        {(["all", ...EFFECT_CATEGORY_GROUPS.map((g) => g.name)] as const).map((g) => (
           <button
-            key={c}
-            onClick={() => setCategory(c)}
-            className={`rounded-full px-3 py-1 text-sm border transition ${
-              category === c ? "border-violet-500 bg-violet-500/15 text-violet-100" : "border-slate-700 text-slate-400 hover:text-slate-100"
-            }`}
+            key={g}
+            onClick={() => {
+              setGroup(g);
+              setCategory("all");
+            }}
+            className={chip(group === g)}
+            aria-pressed={group === g}
           >
-            {c}
+            {g} <span className="text-slate-500">{count(g === "all" ? {} : { group: g })}</span>
           </button>
         ))}
       </div>
+      {categories.length > 1 && (
+        <div className="-mt-2 flex flex-wrap items-center gap-2" aria-label={`${group} categories`}>
+          {(["all", ...categories] as const).map((c) => (
+            <button key={c} onClick={() => setCategory(c)} className={chip(category === c)} aria-pressed={category === c}>
+              {c === "all" ? `all ${group.toLowerCase()}` : c} <span className="text-slate-500">{count(c === "all" ? { group } : { category: c })}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
-      {category === "all" && !text && <CameraMoves />}
+      {group === "all" && !text && <CameraMoves />}
 
       {effects.length === 0 ? (
         <p className="text-slate-400">No effects match.</p>

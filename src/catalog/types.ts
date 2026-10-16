@@ -97,6 +97,29 @@ export const EFFECT_CATEGORIES: readonly EffectCategory[] = [
   "icon",
 ];
 
+/** A set of related categories, for browsing a catalog too long for one row of filters. */
+export interface EffectCategoryGroup {
+  name: string;
+  categories: readonly EffectCategory[];
+}
+
+/** Every category in exactly one group, the groups in browsing order. */
+export const EFFECT_CATEGORY_GROUPS: readonly EffectCategoryGroup[] = [
+  { name: "Backgrounds", categories: ["gradient", "organic", "pattern", "space", "3d", "weather", "water", "atmosphere"] },
+  { name: "Light", categories: ["light", "lighting", "glow", "shadow", "electric"] },
+  { name: "Pictures", categories: ["image", "distortion", "retro", "comic", "timewarp", "melt"] },
+  { name: "Particles & FX", categories: ["overlay", "splatter", "bubble", "particles", "trail", "debris", "impact", "pyrotechnics"] },
+  { name: "Type & titles", categories: ["text", "morph", "broadcast", "annotation", "sticker"] },
+  { name: "Inputs", categories: ["interaction", "audio", "scroll"] },
+  { name: "Interface", categories: ["ui", "loader", "icon", "data"] },
+  { name: "Transitions", categories: ["transition"] },
+];
+
+/** The group a category is browsed under. */
+export function categoryGroup(category: EffectCategory): EffectCategoryGroup {
+  return EFFECT_CATEGORY_GROUPS.find((g) => g.categories.includes(category))!;
+}
+
 /**
  * How a shader effect suits video in its image controls (see
  * `ShaderRenderer.setLiveSource`):
