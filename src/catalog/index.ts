@@ -16,6 +16,10 @@
 import { controlValue, parseControls, type ControlDef, type ControlValue } from "../shader/controls.js";
 import { inputsOf, type EffectInput, type EffectInputs, type EffectInteraction } from "./inputs.js";
 import { aurora, conicSweep, duotoneFlow, meshGradient, silk } from "./shaders/gradients.js";
+import { moreGradientShaders } from "./shaders/gradients-more.js";
+import { uiShaders } from "./shaders/ui.js";
+import { uiEffects } from "./ui.js";
+import { loaderEffects } from "./loaders.js";
 import {
   crt,
   filmGrain,
@@ -105,6 +109,7 @@ export const SHADER_EFFECTS: readonly ShaderEffect[] = [
   duotoneFlow,
   conicSweep,
   silk,
+  ...moreGradientShaders,
   marble,
   smoke,
   lavaLamp,
@@ -164,11 +169,12 @@ export const SHADER_EFFECTS: readonly ShaderEffect[] = [
   ...glowShaders,
   ...shadowShaders,
   ...distortionShaders,
+  ...uiShaders,
   ...transitions,
 ];
 
 /** Every effect in the catalog, shaders first, grouped by category. */
-export const EFFECTS: readonly EffectDefinition[] = [...SHADER_EFFECTS, ...vectorEffects, ...textEffects, ...morphEffects, ...interactionEffects, ...pyroEffects, ...timewarpEffects, ...meltEffects, ...electricEffects, ...pixelEffects, ...splatterEffects, ...bubbleEffects, ...stickerEffects, ...trailEffects, ...impactEffects, ...comicEffects, ...glowEffects, ...shadowEffects, ...lightingEffects].sort(
+export const EFFECTS: readonly EffectDefinition[] = [...SHADER_EFFECTS, ...vectorEffects, ...textEffects, ...morphEffects, ...interactionEffects, ...pyroEffects, ...timewarpEffects, ...meltEffects, ...electricEffects, ...pixelEffects, ...splatterEffects, ...bubbleEffects, ...stickerEffects, ...trailEffects, ...impactEffects, ...comicEffects, ...glowEffects, ...shadowEffects, ...lightingEffects, ...uiEffects, ...loaderEffects].sort(
   (a, b) => EFFECT_CATEGORIES.indexOf(a.category) - EFFECT_CATEGORIES.indexOf(b.category),
 );
 

@@ -40,6 +40,7 @@ export type EffectCategory =
   | "glow"
   | "shadow"
   | "distortion"
+  | "ui"
   | "transition"
   | "loader"
   | "data"
@@ -75,6 +76,7 @@ export const EFFECT_CATEGORIES: readonly EffectCategory[] = [
   "glow",
   "shadow",
   "distortion",
+  "ui",
   "transition",
   "loader",
   "data",
