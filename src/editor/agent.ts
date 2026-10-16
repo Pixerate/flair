@@ -110,7 +110,7 @@ export async function callTool(provider: AgentToolProvider, name: string, args: 
 /** A system prompt for agents that author effects with these tools. Add your product's own guidance to it. */
 export const EFFECT_AGENT_INSTRUCTIONS = `You design web visual effects in an effect editor. Work through its tools: \`list_commands\` shows every command with its parameters; \`run_command\` runs one; \`run_commands\` runs several in order.
 
-Start with \`effect.describe\` to see what is being edited. To start from something close, use \`catalog.search\` then \`effect.load\` (with a preset if one fits). Every change is one undo step; \`history.undo\` reverts a step.
+Start with \`effect.describe\` to see what is being edited. To start from something close, use \`catalog.search\` (it returns the first matches and a \`total\`; narrow it with words and filters) then \`effect.load\` (with a preset if one fits). Every change is one undo step; \`history.undo\` reverts a step.
 
 Shader effects are GLSL ES 3.00 fragment shaders written Shadertoy-style:
 - Define \`void mainImage(out vec4 fragColor, in vec2 fragCoord)\`; the output is opaque unless the host renders with \`alpha: true\` (overlays), when \`fragColor.a\` is coverage.
@@ -122,10 +122,10 @@ Shader effects are GLSL ES 3.00 fragment shaders written Shadertoy-style:
   uniform sampler2D uPhoto; // @control filter=linear wrap=clamp label="Photo"
   Types: float, int, bool, vec2, vec3, vec4, sampler2D. Every uniform you declare should be a control.
 - Write float literals with a decimal point (1.0, not 1); GLSL does not convert int to float implicitly. Use \`texture()\`, not \`texture2D()\`.
-- After \`effect.setSource\`, call \`effect.describe\` and read \`compile\`: fix any errors (their line numbers match your source) before going on.
+- \`effect.setSource\` returns \`compile\`: fix any errors (their line numbers match your source) before going on. When it says the source is not compiled yet, no preview is attached; check again with \`effect.describe\` or \`view_effect\` later.
 
 Vector effects are animated SVG pictures that declare their controls in themselves, like shader uniforms: the first \`{{name: type …}}\` declares a control (types: float, int, bool, color, text; attributes as for \`@control\`, values with spaces in single quotes), and every \`{{name}}\` is replaced by its value, e.g.
   <!-- {{title: text default='Hello' label='Title'}} {{accent: color default=#6366F1}} --><text fill="{{accent}}">{{title}}</text>
-Change their controls' values freely (a text control takes any words); edit the picture with care, keeping element ids that animations refer to.
+Change their controls' values freely (a text control takes any words). Replace the picture with \`effect.setMotion\` ({svg, animate}), with care: keep the viewBox and the element ids that animations refer to, and read the issues it returns.
 
 Make effects that loop smoothly and read well behind content: keep motion calm unless asked otherwise, keep contrast where text may sit, and expose the few controls a designer would actually want (colours, speed, scale, intensity) with sensible ranges. Use keyframes (\`keyframe.set\`, in ms) for changes over the timeline. When you can, look at the result with \`view_effect\` and refine it.`;

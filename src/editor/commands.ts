@@ -5,7 +5,8 @@
  */
 
 import type { CommandSpec } from "@pixerate/editor/commands";
-import { EFFECT_CATEGORIES, EFFECT_CATEGORY_GROUPS, VIDEO_USES, type VideoUse } from "../catalog/types.js";
+import { EFFECT_CATEGORIES, EFFECT_CATEGORY_GROUPS, VIDEO_USES, type VectorControl, type VideoUse } from "../catalog/types.js";
+import type { SvgMotion } from "../vector/motion.js";
 import { EFFECT_INPUTS, EFFECT_INTERACTIONS, effectInputs, findEffects, type EffectInput, type EffectInteraction } from "../catalog/index.js";
 import type { EditResult, EffectEditor } from "./editor.js";
 import { EASING_PRESETS, type Easing } from "./timeline.js";
@@ -24,6 +25,16 @@ const valueSchema = {
   description:
     'A control value: a number (float, int), true/false (bool), an array of numbers (vec2–vec4; colours 0–1), a "#RRGGBB" colour, an image URL (sampler2D), or a string (text).',
 } as const;
+
+/** Catalog results `catalog.search` returns when no `limit` is given. */
+export const CATALOG_SEARCH_LIMIT = 20;
+
+/** What an agent should know about the compile: the report, or why there is none yet. */
+function compileStatus(editor: EffectEditor) {
+  const state = editor.getState();
+  if (state.document.effect.kind !== "shader") return undefined;
+  return state.compile ?? "not compiled yet: no renderer has compiled this source, so compile errors are unknown";
+}
 
 /** A summary of the editor's state for agents: the document, controls, values at the playhead, issues and compile errors. */
 export function describeEditor(editor: EffectEditor) {
@@ -47,7 +58,7 @@ export function describeEditor(editor: EffectEditor) {
     presets: doc.presets.map((p) => p.name),
     timeline: { duration: doc.duration, loop: doc.loop, time: state.time, playing: state.playing, recording: state.recording },
     issues: state.issues,
-    compile: state.compile,
+    ...(doc.effect.kind === "shader" && { compile: compileStatus(editor) }),
     history: { canUndo: state.history.canUndo, canRedo: state.history.canRedo },
   };
 }
@@ -67,7 +78,7 @@ export function effectCommands(): CommandSpec<EffectEditor>[] {
       id: "catalog.search",
       label: "Search effects",
       group: "Catalog",
-      description: "Searches the built-in effect catalog. Load one with effect.load to start from it.",
+      description: `Searches the built-in effect catalog: {total, effects}, at most \`limit\` effects (default ${CATALOG_SEARCH_LIMIT}). Narrow with words and filters rather than raising the limit. Load one with effect.load to start from it.`,
       readOnly: true,
       params: {
         type: "object",
@@ -96,6 +107,8 @@ export function effectCommands(): CommandSpec<EffectEditor>[] {
             description: "Only effects that answer the pointer in one of these ways: hover, press, click, trail (follows where it has been), pointer (follows where it is). An empty list finds effects that don't answer it.",
           },
           transparent: { type: "boolean", description: "Only overlays (true), drawn over other content, or only effects that fill their frame (false)." },
+          limit: { type: "integer", minimum: 1, description: `Most effects to return (default ${CATALOG_SEARCH_LIMIT}).` },
+          offset: { type: "integer", minimum: 0, description: "Effects to skip first, to page through more (default 0)." },
         },
         additionalProperties: false,
       },
@@ -110,9 +123,13 @@ export function effectCommands(): CommandSpec<EffectEditor>[] {
           accepts?: EffectInput[];
           interaction?: EffectInteraction[];
           transparent?: boolean;
+          limit?: number;
+          offset?: number;
         },
-      ) =>
-        findEffects(params ?? {}).map((e) => {
+      ) => {
+        const { limit = CATALOG_SEARCH_LIMIT, offset = 0, ...filters } = params ?? {};
+        const found = findEffects(filters);
+        const effects = found.slice(offset, offset + limit).map((e) => {
           const inputs = effectInputs(e);
           return {
             id: e.id,
@@ -126,7 +143,14 @@ export function effectCommands(): CommandSpec<EffectEditor>[] {
             ...(inputs.transparent ? { transparent: true } : {}),
             presets: e.presets?.map((p) => p.name) ?? [],
           };
-        }),
+        });
+        const more = found.length - offset - effects.length;
+        return {
+          total: found.length,
+          effects,
+          ...(more > 0 && { more: `${more} more match; narrow the search, or pass offset ${offset + effects.length} for the next ones.` }),
+        };
+      },
     },
     {
       id: "effect.load",
@@ -151,9 +175,41 @@ export function effectCommands(): CommandSpec<EffectEditor>[] {
       label: "Set shader source",
       group: "Effect",
       description:
-        "Replaces the shader's GLSL ES 3.00 source (Shadertoy-style mainImage; controls are uniforms annotated `// @control`). Compile errors show up in effect.describe once the preview has compiled it.",
+        "Replaces a shader effect's GLSL ES 3.00 source (Shadertoy-style mainImage; controls are uniforms annotated `// @control`). Returns the compile report when a preview compiled it (errors carry your source's line numbers), and the document's issues.",
       params: { type: "object", properties: { source: { type: "string" } }, required: ["source"], additionalProperties: false },
-      run: (editor, p: { source: string }) => done(editor.setSource(p.source)),
+      run: (editor, p: { source: string }) => {
+        done(editor.setSource(p.source));
+        return { ok: true, compile: compileStatus(editor), issues: editor.getState().issues };
+      },
+    },
+    {
+      id: "effect.setMotion",
+      label: "Set vector picture",
+      group: "Effect",
+      description:
+        "Replaces a vector effect's picture: {svg, animate?}. `svg` is one self-contained <svg> with a viewBox (no scripts); `{{name: type …}}` placeholders in it declare controls and `{{name}}` fills them. `animate` lists changes to elements by id: {id, step?, delay?, ms?, ease?, attrs?: {name: [from, to]}, draw?, view?, along?, count?, write?}. Returns the document's issues.",
+      params: {
+        type: "object",
+        properties: {
+          motion: {
+            type: "object",
+            properties: { svg: { type: "string" }, animate: { type: "array", items: { type: "object" } } },
+            required: ["svg"],
+            description: "The picture and its animation.",
+          },
+          controls: {
+            type: "array",
+            items: { type: "object" },
+            description: "Controls declared outside the picture, for older pictures: {name, type, default, label?, color?, min?, max?, step?}. Leave out to keep the current list.",
+          },
+        },
+        required: ["motion"],
+        additionalProperties: false,
+      },
+      run: (editor, p: { motion: SvgMotion; controls?: VectorControl[] }) => {
+        done(editor.setMotion(p.motion, p.controls));
+        return { ok: true, issues: editor.getState().issues };
+      },
     },
     {
       id: "effect.rename",
