@@ -62,7 +62,7 @@ export const fireworks: ShaderEffect = {
   name: "Fireworks",
   description: "Shells rising on faint trails and bursting into peonies, chrysanthemums, gold willows and rings that droop and twinkle out; clicks fire more.",
   category: "pyrotechnics",
-  tags: ["pyro", "overlay", "fireworks", "celebration", "festive", "night", "click"],
+  tags: ["pyro", "overlay", "fireworks", "celebration", "festive", "night", "click", "interactive"],
   transparent: true,
   source: glsl(
     `// Fireworks: staggered shells rising and bursting into peony, chrysanthemum, willow and ring patterns.
@@ -283,7 +283,7 @@ export const explosion: ShaderEffect = {
   name: "Explosion",
   description: "A fireball cooling from white-hot to orange to rolling dark smoke, with a shockwave ring and flying debris; it loops and also goes off at each click.",
   category: "pyrotechnics",
-  tags: ["pyro", "overlay", "explosion", "fire", "smoke", "action", "click"],
+  tags: ["pyro", "overlay", "explosion", "fire", "smoke", "action", "click", "interactive"],
   transparent: true,
   loop: 3,
   source: glsl(
