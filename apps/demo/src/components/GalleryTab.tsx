@@ -76,6 +76,21 @@ function VectorThumb({ effect, hovered }: { effect: Extract<EffectDefinition, { 
     const p = new SvgPlayer(host.current!, motion, { hold: effect.hold, trigger, triggerTarget: document.createElement("div"), pauseWhenHidden: true });
     player.current = p;
     if (!trigger || prefersReducedMotion()) return () => p.dispose();
+    if (trigger === "scroll") {
+      // A scroll effect's demo: as if the page scrolled it down and back up, every 5 s.
+      let raf = 0;
+      const start = performance.now();
+      const step = (now: number) => {
+        raf = requestAnimationFrame(step);
+        const u = ((now - start) / 5000) % 1;
+        p.setProgress(0.5 - 0.5 * Math.cos(u * 2 * Math.PI));
+      };
+      raf = requestAnimationFrame(step);
+      return () => {
+        cancelAnimationFrame(raf);
+        p.dispose();
+      };
+    }
 
     let visible = false;
     const observer = new IntersectionObserver(([entry]) => (visible = Boolean(entry?.isIntersecting)));
@@ -153,14 +168,15 @@ function VectorThumb({ effect, hovered }: { effect: Extract<EffectDefinition, { 
   return (
     <>
       <div ref={host} className={showsOverPicture(effect) ? "absolute inset-0" : "absolute inset-[12%]"} />
-      {trigger && <DemoCursor cursor={cursor} ring={ring} />}
+      {trigger && trigger !== "scroll" && <DemoCursor cursor={cursor} ring={ring} />}
     </>
   );
 }
 
 function EffectCard({ effect, onOpen }: { effect: EffectDefinition; onOpen: () => void }) {
   const [hovered, setHovered] = useState(false);
-  const trigger = effect.kind === "vector" ? effect.trigger : effect.category === "interaction" ? "pointer" : undefined;
+  const trigger =
+    effect.kind === "vector" ? effect.trigger : effect.category === "interaction" ? "pointer" : effect.category === "scroll" || effect.category === "audio" ? effect.category : undefined;
   return (
     <button
       onClick={onOpen}

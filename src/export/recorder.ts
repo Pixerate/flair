@@ -267,7 +267,9 @@ const scriptJson = (value: unknown) => JSON.stringify(value).replace(/</g, '\\u0
 /**
  * The page headless Chrome runs: it compiles the shader with the same
  * wrapper as `ShaderRenderer` (`wrapSource`, so every built-in, `iPointer`,
- * `iClicks` and `iTrail` included, is declared), sets each control by its
+ * `iClicks`, `iTrail`, `iAudio`, `iSpectrum`, `iBeat` and `iScroll` included, is
+ * declared; the audio and scroll ones stay 0, so those effects play their idle
+ * demos), sets each control by its
  * type (`int` and `bool` as integers), loads image controls the way
  * `loadImage` does (SVGs sized to their long edge first) before the first
  * frame, and flips them as the renderer does. Each frame asks `/state` for

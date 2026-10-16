@@ -10,8 +10,11 @@ interface Result {
 
 /** Effects that show a picture over a backdrop (see `BACKDROP` in the catalog). */
 const PICTURE_EFFECTS = SHADER_EFFECTS.filter((e) => /uniform float uBackdropAlpha;/.test(e.source));
-/** These draw a whole opaque device around the picture, so they stay opaque with a clear backdrop. */
-const OPAQUE = new Set(["gameboy-screen"]);
+/**
+ * These draw a whole opaque device or scene around the picture, so they stay opaque with a clear
+ * backdrop (the audio ones clear it with their own background opacity control instead).
+ */
+const OPAQUE = new Set(["gameboy-screen", "circular-spectrum", "bass-pulse", "vinyl"]);
 
 /**
  * Renders `effect` with the sample icon (black strokes on clear, like a Lucide

@@ -33,6 +33,14 @@ describe("effectInputs", () => {
     expect(inputs("aurora")).toMatchObject({ accepts: [], images: [], texts: [], interactions: [], transparent: false });
   });
 
+  it("knows which effects hear sound and which follow the scroll", () => {
+    expect(inputs("spectrum-bars")).toMatchObject({ accepts: ["audio"], interactions: [] });
+    expect(inputs("bass-pulse").accepts).toEqual(["image", "video", "svg", "audio"]);
+    expect(inputs("parallax-layers")).toMatchObject({ accepts: [], interactions: ["scroll"] });
+    expect(inputs("scroll-draw")).toMatchObject({ trigger: "scroll", interactions: ["scroll"] });
+    expect(findEffects({ interaction: ["scroll"] }).every((e) => e.category === "scroll")).toBe(true);
+  });
+
   it("agrees with every effect's controls and fields", () => {
     for (const effect of EFFECTS) {
       const i = effectInputs(effect);
