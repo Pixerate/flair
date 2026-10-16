@@ -24,9 +24,11 @@ Flair gives products a library of good-looking, configurable visual effects (her
   - Shadertoy-style GLSL ES 3.00 fragment shaders, with controls declared in the source (`// @control`), including image inputs.
   - Compile errors come back with line numbers that match the source.
   - Pointer input beyond Shadertoy's `iMouse`: `iPointer` (position while over the canvas, eased hover amount, seconds held or since release) `iClicks[8]` (the latest clicks' positions and times) and `iTrail[32]` (where the pointer has been over the last second, newest first), so effects answer hovers, presses, taps and moves. `ShaderRenderer` and standalone pages feed them; `ShaderFrames` takes scripted `pointer`, `clicks` and `trail` for recordings.
+  - Sound: `iAudio` (level, bass, mid, treble), `iSpectrum[16]` (64 log-spaced bins) and `iBeat` (seconds since the last beat). `ShaderRenderer.setAudioSource` listens to an `<audio>`/`<video>`, a microphone or any Web Audio node; `analyseAudioBuffer` analyses a decoded track offline, so recordings follow it frame for frame (see [Sound and scrolling](#sound-and-scrolling)).
+  - Scrolling: `iScroll` (the canvas's progress through the viewport, page scroll, velocity, and whether it is scrolling), fed by `ShaderRenderer` and scriptable in `ShaderFrames`; vector effects scrub with the page under `trigger: "scroll"`.
   - Live previews (`ShaderRenderer`, with optional `{ alpha: true }` for transparent overlays) and many animated or hover-activated thumbnails on one context (`ThumbnailPool`).
   - Frames at exact times (`ShaderFrames`), looping GIFs, and standalone HTML pages.
-- ✒️ **Vector motion (`@pixerate/flair/vector`)**: animated SVG described as data. Catalog vector effects declare their controls in the picture (`{{name: type …}}`), text included. It covers attribute tweens, draw-on strokes, motion along paths, counters (`animateCount` / `formatCount` for DOM elements too), text written letter by letter (`write`, with `scramble` and `caret`), shape morphs between any paths (`morphPaths`, `morphSequence`) and view zooms. Every frame is a pure function of time (`svgFrame`), and `SvgPlayer` plays it (with `scrollTrigger`, `hideWhenPaused`, `reset()`, and `trigger: "hover" | "press" | "click"` to play in answer to the pointer).
+- ✒️ **Vector motion (`@pixerate/flair/vector`)**: animated SVG described as data. Catalog vector effects declare their controls in the picture (`{{name: type …}}`), text included. It covers attribute tweens, draw-on strokes, motion along paths, counters (`animateCount` / `formatCount` for DOM elements too), text written letter by letter (`write`, with `scramble` and `caret`), shape morphs between any paths (`morphPaths`, `morphSequence`) and view zooms. Every frame is a pure function of time (`svgFrame`), and `SvgPlayer` plays it (with `scrollTrigger`, `hideWhenPaused`, `reset()`, and `trigger: "hover" | "press" | "click" | "scroll"` to play in answer to the pointer or scrub with the page).
 - 🎛️ **Effect editor (`@pixerate/flair/editor`)**:
   - A headless editor for an effect's source, values, keyframes, presets and timeline.
   - Built on [`@pixerate/editor`](https://github.com/Pixerate/editor)'s undo history and command registry, with no UI framework assumed.
@@ -170,10 +172,10 @@ findEffects({ accepts: ["image"], interaction: ["hover"] }); // pictures that re
 findEffects({ transparent: true }); // overlays to lay over a page, picture or video
 ```
 
-- `accepts`: `image` (any picture URL), `video` (a live `<video>`, with `setLiveSource`), `svg` (an SVG URL, drawn with its transparency), `text` (words for a text control, or for a text mask through `textImage("…")`), `mask` (a shape with transparency whose silhouette the effect uses: an icon, a logo, a word), `path` (SVG path data for a shape control).
+- `accepts`: `image` (any picture URL), `video` (a live `<video>`, with `setLiveSource`), `svg` (an SVG URL, drawn with its transparency), `text` (words for a text control, or for a text mask through `textImage("…")`), `mask` (a shape with transparency whose silhouette the effect uses: an icon, a logo, a word), `path` (SVG path data for a shape control), `audio` (sound it reacts to, from reading `iAudio`, `iSpectrum` or `iBeat`).
 - `images`: each image control's name, and whether it `wants` a `picture`, a `mask` or `text`.
 - `texts`: each text control's name, and whether it `holds` `copy`, a `font`, a `path` or `glyphs`.
-- `interactions`: `hover`, `press`, `click`, `trail` (follows where the pointer has been) or `pointer` (follows where it is), from the pointer built-ins a shader reads or a vector effect's `trigger`.
+- `interactions`: `hover`, `press`, `click`, `trail` (follows where the pointer has been), `pointer` (follows where it is) or `scroll` (follows the page's scrolling), from the pointer and scroll built-ins a shader reads or a vector effect's `trigger`.
 - `transparent`, `video` and `trigger`, as on the effect.
 
 `findEffects` filters on `accepts` (all of them), `interaction` (any of them; `[]` for effects that don't answer the pointer) and `transparent`, and the `catalog.search` command takes the same filters and lists each effect's `accepts` and `interactions`. The `interactive` tag is kept in step with `interactions`.
@@ -186,6 +188,7 @@ findEffects({ transparent: true }); // overlays to lay over a page, picture or v
 - `{ svg }`: an SVG, as markup or a URL.
 - `{ text }`: words, typed into a vector effect, or drawn with `textImage` for a shader's text or mask.
 - `{ path }`: path data.
+- `{ audio }`: sound for an audio-reactive shader: a playing `<audio>` or `<video>` (still heard), a microphone's `MediaStream` (not played back) or a Web Audio node.
 
 It puts the subject in the right control (see `effectInputs`) and throws a sentence if the effect can't take it.
 
@@ -197,6 +200,8 @@ mountEffect(el, "crt", { subject: { video: document.querySelector("video")! } })
 mountEffect(el, "neon-outline", { subject: { svg: logoMarkup } });
 mountEffect(el, "typewriter", { subject: { text: "Hello there" } });
 mountEffect(el, "transition-wipe", { subject: [{ image: "/a.jpg" }, { image: "/b.jpg" }] });
+mountEffect(el, "spectrum-bars", { subject: { audio: document.querySelector("audio")! } });
+mountEffect(el, "scroll-draw"); // scroll effects follow the page by themselves
 const m = mountEffect(el, "click-ripple"); // overlays get a transparent canvas, interactive effects answer the pointer
 m.setValues({ uSpeed: 2 });
 m.dispose();
@@ -217,6 +222,7 @@ import { recordEffect } from "@pixerate/flair/embed";
 
 const mp4 = await recordEffect("image-duotone", { subject: { image: "/team.jpg" }, preset: "Spotify" });
 const webm = await recordEffect("crt", { subject: { video }, format: "webm", duration: 5 });
+const music = await recordEffect("spectrum-bars", { audio: "/song.mp3", duration: 10 }); // the sound drives it and is muxed in
 const gif = await recordEffect("typewriter", { subject: { text: "Hello there" }, format: "gif", width: 640, height: 360, fps: 25 });
 const overlay = await recordEffect("click-ripple", {
   format: "webm",
@@ -230,7 +236,8 @@ download(mp4); // a Blob
 - **Formats.** `mp4` (H.264) or `webm` (VP9, else VP8) are encoded with WebCodecs and written by small built-in muxers: a faststart MP4 (`moov` before `mdat`) and a WebM with no `Cues`. `gif` uses gifenc. `png` gives a ZIP of numbered frames (`frame-0001.png`, …), so every format is one `Blob`. The default is `mp4` where the browser encodes H.264, else `webm`. When the browser can't make a format, it rejects with a sentence that names the formats that would work.
 - **Exact frames.** Frame `i` is drawn at `start + i / fps` off screen, so the result is the same whatever the page is doing. Shaders render with `ShaderFrames`. A `<video>` subject is paused and sought to each frame's time, then put back. A canvas subject is drawn as it is, so draw it for each frame in `beforeFrame(time)`. Vector effects are drawn with `svgView` and rasterised.
 - **Defaults.** 1280 × 720 at 30 fps. The length is a shader's `loop`, or a vector effect's picture plus its `hold`, else 4 s. The bitrate is `width × height × fps × 0.15`. Video sizes round up to even numbers. `recordingPlan(effect, options)` tells you what a recording will be (format, size, frames, encoder) before any frame is drawn.
-- **Interaction.** Shaders that answer the pointer play their idle demo unless `pointer` scripts it, with the same `pointer`, `clicks` and `trail` that `ShaderFrames.render` takes. Click-triggered vector effects take `steps` (ms).
+- **Interaction.** Shaders that answer the pointer play their idle demo unless `pointer` scripts it, with the same `pointer`, `clicks` and `trail` that `ShaderFrames.render` takes. Click-triggered vector effects take `steps` (ms). Scroll effects play their idle demos too.
+- **Sound.** `audio` takes a decoded `AudioBuffer` or an audio file's URL (fetched and decoded at 48 kHz). Audio-reactive shaders follow it frame for frame: each frame's `iAudio`, `iSpectrum` and `iBeat` come from `analyseAudioBuffer` at that frame's time, so the same file always makes the same video. The stretch from `start` to `start + duration` becomes the video's sound track: AAC in an `mp4`, Opus in a `webm` (encoded with WebCodecs' `AudioEncoder`, muxed by the same built-in muxers). Where the browser has no AAC encoder, the default format falls back to `webm`, and an explicit `mp4` is refused with a sentence. Pass `audioTrack: false` for the picture alone. `gif` and `png` have no sound, so there the audio only drives the picture.
 - **Transparency.** `alpha` defaults to the effect's `transparent`. It is kept in `webm` (VP9/VP8 with an alpha channel, encoded as a second stream and stored as `BlockAdditions`, as Chrome does), in `png`, and in `gif` (one see-through colour, so edges are hard). An `mp4` has no alpha, so asking for both is refused. When alpha is off, transparent pixels are laid over `background` (black for shaders, white for vector effects).
 
 Limits: video needs WebCodecs (Chrome and Edge 94+, Safari 16.4+ for H.264, and Firefox 130+). Safari doesn't play alpha WebM, so use PNG frames there. Everything is held in memory until the end, so record long or 4K clips in parts. Vector effects are rasterised once per frame, which is slower than shaders. A picture from another site needs CORS, as on screen.
@@ -355,7 +362,7 @@ const status = renderer.setSource(source); // { ok, errors: [{ line, message }] 
 parseControls(source); // [{ name: "uTint", type: "vec3", color: true, default: [...] }, ...]
 const gif = await recordGif({ source, width: 480, height: 270, fps: 30, duration: 3 });
 const frames = new ShaderFrames({ source, width: 480, height: 270, alpha: true }); // alpha: keep fragColor.a
-const page = standaloneHtml("My effect", source, { uSpeed: 2 });
+const page = standaloneHtml("My effect", source, { uSpeed: 2 }); // { audio: "song.mp3" } or { audio: "mic" } for sound
 ```
 
 ### 3. Build an editor (any UI)
@@ -451,6 +458,39 @@ The exporters carry the camera too:
 - **FCP7 XML:** a keyframed Distort corner pin on each shot's clip, plus Motion Blur.
 - **EDL:** a `* CAMERA:` note, since CMX 3600 has no transforms.
 
+#### Sound and scrolling
+
+Two more inputs, beside the pointer, that shaders read as built-ins (declared by the wrapper, so never in a source):
+
+| Built-in | What it holds |
+| --- | --- |
+| `vec4 iAudio` | x level (loudness from RMS, 0–1), y bass (20–250 Hz), z mid (250–2000 Hz), w treble (2–16 kHz), each 0–1, smoothed (quick attack, slower release) |
+| `vec4 iSpectrum[16]` | 64 log-spaced frequency bins (about 30 Hz to 16 kHz), 0–1, four to a `vec4`, low to high: bin `i` is `iSpectrum[i / 4][i % 4]` |
+| `float iBeat` | seconds since the last beat (an onset on the bass band over its recent average), -1 before the first |
+| `vec4 iScroll` | x the canvas's progress through the viewport (0 as its top comes in at the bottom, 1 as its bottom leaves at the top), y the page's scroll (0–1), z velocity (viewport heights per second, positive scrolling down, smoothed), w 1 while scrolling, easing back to 0 |
+
+With no audio at all every audio uniform is 0, `iBeat` included; with a source connected `iBeat` is -1 or above 0. So an effect can tell silence from "nothing connected". Where nothing scrolls (thumbnails, recordings), `iScroll` is all zero. The catalog's audio and scroll effects play an idle demo then (a synthetic 120 bpm beat, or a page scrolled down and back), which their "Demo" control turns off.
+
+```ts
+import { ShaderRenderer, sharedAudioContext, analyseAudioBuffer, ShaderFrames } from "@pixerate/flair";
+
+const preview = new ShaderRenderer(host);
+preview.setSource(getEffect("spectrum-bars").source);
+button.onclick = () => preview.setAudioSource(audioElement); // or a mic MediaStream, or any AudioNode; null stops
+preview.setScrollProgress(0.5); // pin iScroll for a scrubber; null follows the page again
+
+// Frame-exact, offline: the uniforms at any time of a decoded track.
+const track = analyseAudioBuffer(await sharedAudioContext().decodeAudioData(bytes));
+frames.render(t, { audio: track.at(t), scroll: [0.5, 0.5, 0, 0] });
+```
+
+- **Live sound.** `setAudioSource` makes an `AudioContext` (shared by every renderer: `sharedAudioContext()`) and an `AnalyserNode` on first use, and reads them each frame. A media element keeps playing to the speakers through Web Audio (an element can only be wired in once, so the node is reused). A microphone `MediaStream` is listened to, not played. Any `AudioNode` is analysed in its own context. Browsers start an audio context suspended until the page has a click or key press (the autoplay policy). Call `setAudioSource` from a click, or the context resumes on the first one. A media file from another site needs `crossOrigin = "anonymous"` and CORS, or the browser feeds silence. While a source is set, a paused preview still follows the sound. Dispose (or `null`) disconnects it.
+- **The analysis.** `AudioAnalysis` is pure and unit-tested: it turns byte or decibel frequency data (`fftSize / 2` values) into the uniforms with log binning, band averages, attack/release smoothing and beat detection, and the same data at the same times always gives the same result. `analyseAudioBuffer(buffer)` runs it over a decoded track: a Blackman-windowed radix-2 FFT (`fft`, no dependencies) of the samples just before each time, as `AnalyserNode` would hear them, stepped 120 times a second from the start and kept, so frames asked in any order agree.
+- **Scrolling.** `ShaderRenderer` follows the page with passive scroll listeners and `getBoundingClientRect` each frame (only when the shader reads `iScroll`), so a page or a scrolling element moving the canvas both count, and a paused preview still follows. `ScrollTracker` and `viewportProgress` are the pure parts.
+- **Vector effects.** `new SvgPlayer(host, motion, { trigger: "scroll" })` scrubs the picture with its element's progress through the viewport instead of playing it on a clock: from the start at progress 0.1 to the end at 0.6 by default (`scrollRange`), back again as you scroll up. Hosts can drive any player with `player.setProgress(p)` (0–1), which stops a scroll trigger following the page.
+- **Standalone pages.** `standaloneHtml(title, source, values, { audio: "song.mp3" })` adds a looping player in the corner that the page listens to once it plays, and `{ audio: "mic" }` a microphone button. The page itself does not scroll, so scroll effects play their idle demos there.
+- **Thumbnails and the Node exporter.** `ThumbnailPool` and `flair render`/`flair export` declare the built-ins but feed no sound or scroll, so audio and scroll effects show their idle demos.
+
 ## 🎨 The catalog
 
 | Category | Effects |
@@ -482,6 +522,8 @@ The exporters carry the camera too:
 | glow | aura, bloom, pulsing halo, neon outline, backlight glow, rim light, glow ring pulse, glow button |
 | shadow | long shadow, drop shadow lift, light sweep shadows, contact shadow, window shadows, shadow puppets, lift card, exploded layers |
 | distortion | twirl, pinch & bulge, fisheye, mirror tiles, wave warp, ribbed glass, shower glass, datamosh, polar warp, texture displace |
+| audio | spectrum bars, circular spectrum, waveform line, bass pulse, audio particles, audio plasma, vinyl |
+| scroll | scroll reveal, parallax layers, scroll progress glow, scroll velocity blur, scroll zoom, scroll draw, scroll counter, scroll steps |
 | 3d | globe, rotating shapes, isometric city, wireframe terrain, 3D metaballs, torus knot |
 | weather | rain streaks, thunderstorm, rainbow, wind gust, hail |
 | water | ocean waves, underwater scene, pond ripples, waterfall |
@@ -517,7 +559,7 @@ npx flair export ./effect.frag -o out.mp4 -w 1280 -h 720 -d 5 --values '{"speed"
 
 #### Rendering in Node
 
-`flair render` and `flair export` render in headless Chrome, so a shader draws exactly as `ShaderRenderer` draws it: the same GLSL wrapper and built-ins (`iPointer`, `iClicks`, `iTrail`), image controls (SVGs sized up first), `int` and `bool` controls. The output format comes from the extension:
+`flair render` and `flair export` render in headless Chrome, so a shader draws exactly as `ShaderRenderer` draws it: the same GLSL wrapper and built-ins (`iPointer`, `iClicks`, `iTrail`, and `iAudio`, `iSpectrum`, `iBeat`, `iScroll`, left at 0 so those effects play their idle demos), image controls (SVGs sized up first), `int` and `bool` controls. The output format comes from the extension:
 
 | Output | Notes |
 | --- | --- |

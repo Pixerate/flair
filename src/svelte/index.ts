@@ -190,7 +190,7 @@ function hostStyle(svg: string, inline: boolean | string | undefined, contain?: 
 const enters = (r: Resolved, p: SvgPlayerParams) => p.playOnEnter ?? (p.loop === false && !r.trigger);
 
 function stillMarkup(r: Resolved, params: SvgPlayerParams): string {
-  const at = params.poster ?? (r.trigger === "hover" || r.trigger === "press" ? "first" : "last");
+  const at = params.poster ?? (r.trigger === "hover" || r.trigger === "press" || r.trigger === "scroll" ? "first" : "last");
   return svgFrameMarkup(r.motion, { at, steps: params.steps }) ?? "";
 }
 

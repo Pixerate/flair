@@ -310,6 +310,42 @@ describe("SvgPlayer triggers", () => {
     player.dispose();
   });
 
+  it("scrubs with the page under a scroll trigger, over its scroll range", () => {
+    vi.stubGlobal("innerHeight", 1000);
+    vi.stubGlobal("requestAnimationFrame", undefined);
+    const host = document.createElement("div");
+    let top = 1000;
+    host.getBoundingClientRect = () => ({ top, height: 0, bottom: top, left: 0, right: 0, width: 0, x: 0, y: top, toJSON() {} }) as DOMRect;
+    const player = new SvgPlayer(host, media, { trigger: "scroll" });
+    const height = () => Number(host.querySelector("#bar")!.getAttribute("height"));
+    expect(player.currentTime).toBe(0);
+    expect(player.isPlaying).toBe(false);
+    // Progress 0.35, halfway through the default range [0.1, 0.6].
+    top = 650;
+    window.dispatchEvent(new Event("scroll"));
+    expect(player.currentTime).toBeCloseTo(player.duration / 2);
+    expect(height()).toBeGreaterThan(0);
+    top = 0;
+    window.dispatchEvent(new Event("scroll"));
+    expect(player.currentTime).toBe(player.duration);
+    top = 950;
+    window.dispatchEvent(new Event("scroll"));
+    expect(player.currentTime).toBe(0);
+    expect(player.scrollPosition(0.6)).toBe(1);
+    player.dispose();
+  });
+
+  it("can be scrubbed by its host, which stops it following the page", () => {
+    vi.stubGlobal("requestAnimationFrame", undefined);
+    const host = document.createElement("div");
+    const player = new SvgPlayer(host, media, { trigger: "scroll", scrollRange: [0, 1] });
+    player.setProgress(0.25);
+    expect(player.currentTime).toBeCloseTo(player.duration / 4);
+    window.dispatchEvent(new Event("scroll"));
+    expect(player.currentTime).toBeCloseTo(player.duration / 4);
+    player.dispose();
+  });
+
   it("can be driven by its host", async () => {
     const clock = new ManualClock();
     const host = document.createElement("div");
