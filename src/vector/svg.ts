@@ -412,18 +412,32 @@ export interface SvgPlayerOptions extends SvgViewOptions {
   /** Hide the view (`visibility: hidden`) whenever playback is paused or reset (default false). */
   hideWhenPaused?: boolean;
   /**
-   * Plays in answer to the pointer instead of on its own (see {@link SvgTrigger}):
-   * `"hover"` and `"press"` play to the end while hovered or held and back to
-   * the start after; `"click"` plays the next step on each click, starting
-   * over after the last. `autoplay`, `loop` and `steps` are ignored.
+   * Plays in answer to the pointer or the page instead of on its own (see
+   * {@link SvgTrigger}): `"hover"` and `"press"` play to the end while
+   * hovered or held and back to the start after; `"click"` plays the next
+   * step on each click, starting over after the last; `"scroll"` follows
+   * the trigger target's progress through the viewport (see `scrollRange`),
+   * scrubbing back and forth as the page scrolls. `autoplay`, `loop` and
+   * `steps` are ignored.
    */
   trigger?: SvgTrigger;
-  /** The element whose pointer events trigger it (default the container). */
+  /** The element whose pointer events trigger it, or whose scrolling a scroll trigger follows (default the container). */
   triggerTarget?: HTMLElement;
+  /**
+   * For a scroll trigger: the stretch of the target's progress through the
+   * viewport (0 as its top comes in at the bottom, 1 as its bottom leaves at
+   * the top) over which the picture plays from start to end (default
+   * `[0.1, 0.6]`: from just after it comes into view to a little past the
+   * middle).
+   */
+  scrollRange?: readonly [number, number];
 }
 
 /** What makes a triggered {@link SvgPlayer} play. */
-export type SvgTrigger = "hover" | "press" | "click";
+export type SvgTrigger = "hover" | "press" | "click" | "scroll";
+
+/** The stretch of the viewport a scroll-triggered picture plays over (see `SvgPlayerOptions.scrollRange`). */
+export const SCROLL_RANGE: readonly [number, number] = [0.1, 0.6];
 
 /**
  * Plays an {@link SvgMotion} inside `container`: loops by default, and can be
@@ -451,6 +465,10 @@ export class SvgPlayer {
   private wasPlayingBeforeHidden = false;
   private hasEnteredViewport = false;
   private intersectionObserver?: IntersectionObserver;
+  private readonly scrollRange: readonly [number, number];
+  /** A scroll trigger's pending update (one per frame). */
+  private scrollFrame = 0;
+  private followingScroll = false;
 
   constructor(
     private readonly container: HTMLElement,
@@ -464,6 +482,7 @@ export class SvgPlayer {
     this.loop = this.trigger ? false : (options.loop ?? true);
     this.speed = options.speed ?? 1;
     this.hideWhenPaused = Boolean(options.hideWhenPaused);
+    this.scrollRange = options.scrollRange ?? SCROLL_RANGE;
     this.length = options.duration ?? svgDuration(motion, this.steps) + (options.hold ?? 600);
     this.view = svgView(motion, options);
     container.appendChild(this.view.element);
@@ -493,6 +512,15 @@ export class SvgPlayer {
         }
       });
       this.intersectionObserver.observe(this.view.element);
+    }
+
+    if (this.trigger === "scroll") {
+      this.length = options.duration ?? svgDuration(motion);
+      this.triggerTarget = options.triggerTarget ?? container;
+      this.followingScroll = true;
+      this.listen(true);
+      this.followScroll();
+      return;
     }
 
     if (this.trigger) {
@@ -556,6 +584,29 @@ export class SvgPlayer {
     this.view.draw(this.time, this.steps);
   }
 
+  /**
+   * Shows the picture at `progress` of the way through it, 0–1: how hosts
+   * scrub it themselves (a slider, a scroll position of their own). A scroll
+   * trigger stops following the page once a host calls this.
+   */
+  setProgress(progress: number): void {
+    if (this.followingScroll) {
+      this.followingScroll = false;
+      this.listen(false);
+    }
+    this.playing = false;
+    this.seek(Math.min(1, Math.max(0, progress)) * (Number.isFinite(this.length) ? this.length : svgDuration(this.motion, this.steps)));
+  }
+
+  /**
+   * A scroll trigger's playback position, 0–1, for the trigger target's
+   * `progress` through the viewport (see {@link SvgPlayerOptions.scrollRange}).
+   */
+  scrollPosition(progress: number): number {
+    const [from, to] = this.scrollRange;
+    return to > from ? Math.min(1, Math.max(0, (progress - from) / (to - from))) : progress >= to ? 1 : 0;
+  }
+
   setSpeed(speed: number): void {
     this.speed = speed;
   }
@@ -592,7 +643,8 @@ export class SvgPlayer {
   dispose(): void {
     this.disposed = true;
     this.playing = false;
-    if (this.trigger) this.listen(false);
+    if (this.trigger && (this.trigger !== "scroll" || this.followingScroll)) this.listen(false);
+    if (this.scrollFrame && typeof cancelAnimationFrame !== "undefined") cancelAnimationFrame(this.scrollFrame);
     this.intersectionObserver?.disconnect();
     this.view.element.remove();
   }
@@ -601,10 +653,31 @@ export class SvgPlayer {
   private onLeave = () => this.setActive(false);
   private onClick = () => this.advance();
 
+  /** Seeks to where the trigger target is in the viewport. */
+  private followScroll = () => {
+    this.scrollFrame = 0;
+    if (!this.followingScroll || this.disposed) return;
+    const rect = this.triggerTarget!.getBoundingClientRect();
+    const viewport = window.innerHeight || document.documentElement.clientHeight || 1;
+    const travel = viewport + rect.height;
+    const progress = travel > 0 ? Math.min(1, Math.max(0, (viewport - rect.top) / travel)) : 0;
+    this.seek(this.scrollPosition(progress) * this.length);
+  };
+
+  /** A scroll or resize: follow it on the next frame (or now, without frames). */
+  private onScroll = () => {
+    if (typeof requestAnimationFrame === "undefined") return this.followScroll();
+    if (!this.scrollFrame) this.scrollFrame = requestAnimationFrame(this.followScroll);
+  };
+
   private listen(on: boolean) {
     const target = this.triggerTarget!;
     const method = on ? "addEventListener" : "removeEventListener";
-    if (this.trigger === "hover") {
+    if (this.trigger === "scroll") {
+      // Any scroll that may move the target: the page's or a scrolling element's.
+      window[method]("scroll", this.onScroll, { capture: true, passive: true } as AddEventListenerOptions);
+      window[method]("resize", this.onScroll, { passive: true } as AddEventListenerOptions);
+    } else if (this.trigger === "hover") {
       target[method]("pointerenter", this.onEnter);
       target[method]("pointerleave", this.onLeave);
     } else if (this.trigger === "press") {

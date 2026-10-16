@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { ShaderRenderer, standaloneHtml, SvgPlayer, type SvgTrigger } from "@pixerate/flair";
-import { EFFECTS, getEffect, SAMPLE_IMAGES } from "@pixerate/flair/catalog";
+import { ShaderRenderer, sharedAudioContext, standaloneHtml, SvgPlayer, type SvgTrigger } from "@pixerate/flair";
+import { EFFECTS, effectInputs, getEffect, SAMPLE_IMAGES } from "@pixerate/flair/catalog";
 import { bindShaderRenderer, bindSvgView, motionAt, valuesAt, type EffectEditor } from "@pixerate/flair/editor";
 import { useEditorState } from "../hooks";
 import { showsOverPicture } from "../overPicture";
@@ -16,7 +16,7 @@ function download(name: string, text: string, type: string) {
 
 /** The preview: a shader renderer or an SVG view, driven by the editor. */
 /** A vector effect played by the pointer (hover, press or click), rebuilt whenever the edit changes it. */
-function bindTriggeredSvg(editor: EffectEditor, container: HTMLElement, trigger: SvgTrigger): () => void {
+function bindTriggeredSvg(editor: EffectEditor, container: HTMLElement, trigger: SvgTrigger, onPlayer?: (player: SvgPlayer | undefined) => void): () => void {
   let player: SvgPlayer | undefined;
   let key: string | undefined;
   const sync = () => {
@@ -27,6 +27,7 @@ function bindTriggeredSvg(editor: EffectEditor, container: HTMLElement, trigger:
     key = next;
     player?.dispose();
     player = motion ? new SvgPlayer(container, motion, { trigger, triggerTarget: container.parentElement ?? container }) : undefined;
+    onPlayer?.(player);
   };
   sync();
   const unsubscribe = editor.subscribe(sync);
@@ -36,7 +37,105 @@ function bindTriggeredSvg(editor: EffectEditor, container: HTMLElement, trigger:
   };
 }
 
-const TRIGGER_HINTS: Record<SvgTrigger, string> = { hover: "Hover to play", press: "Press and hold", click: "Click to play" };
+const TRIGGER_HINTS: Record<SvgTrigger, string> = { hover: "Hover to play", press: "Press and hold", click: "Click to play", scroll: "Scroll over it, or drag the slider" };
+
+/**
+ * A short loop to listen with, made on the spot: a kick on every beat at
+ * 120 bpm, a hat between, a bass line and a chord, as an `AudioBuffer`.
+ */
+function sampleLoop(ctx: BaseAudioContext): AudioBuffer {
+  const rate = ctx.sampleRate;
+  const seconds = 4;
+  const buffer = ctx.createBuffer(1, rate * seconds, rate);
+  const out = buffer.getChannelData(0);
+  const notes = [55, 55, 65.4, 49];
+  let seed = 1;
+  const noise = () => ((seed = (seed * 16807) % 2147483647) / 2147483647) * 2 - 1;
+  for (let i = 0; i < out.length; i++) {
+    const t = i / rate;
+    const beat = t % 0.5;
+    const kick = Math.sin(2 * Math.PI * (50 + 90 * Math.exp(-beat * 30)) * beat) * Math.exp(-beat * 9) * 0.9;
+    const off = (t + 0.25) % 0.5;
+    const hat = noise() * Math.exp(-off * 60) * 0.25;
+    const f = notes[Math.floor(t)]!;
+    const bass = Math.sin(2 * Math.PI * f * t) * 0.25 * (0.6 + 0.4 * Math.exp(-beat * 4));
+    const chord = [2, 2.52, 3].reduce((n, k) => n + Math.sin(2 * Math.PI * f * 4 * k * t), 0) * 0.04;
+    out[i] = Math.tanh(kick + hat + bass + chord);
+  }
+  return buffer;
+}
+
+type Sound = "demo" | "loop" | "mic";
+
+/** What an audio effect hears in the editor: its idle demo, a generated loop (played), or the microphone. */
+function SoundPicker({ renderer }: { renderer: ShaderRenderer | undefined }) {
+  const [sound, setSound] = useState<Sound>("demo");
+  const [error, setError] = useState<string>();
+  const stop = useRef<() => void>(() => {});
+  useEffect(() => () => stop.current(), []);
+  useEffect(() => {
+    // A new preview (another effect) starts on the demo.
+    stop.current();
+    setSound("demo");
+  }, [renderer]);
+  const pick = async (next: Sound) => {
+    stop.current();
+    stop.current = () => {};
+    setError(undefined);
+    setSound(next);
+    if (!renderer) return;
+    if (next === "demo") return renderer.setAudioSource(null);
+    // Picked by a click, so the browser lets the context start.
+    const ctx = sharedAudioContext();
+    await ctx.resume();
+    if (next === "loop") {
+      const source = ctx.createBufferSource();
+      source.buffer = sampleLoop(ctx);
+      source.loop = true;
+      const gain = ctx.createGain();
+      gain.gain.value = 0.35;
+      source.connect(gain).connect(ctx.destination);
+      source.start();
+      renderer.setAudioSource(gain);
+      stop.current = () => {
+        source.stop();
+        gain.disconnect();
+        renderer.setAudioSource(null);
+      };
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      renderer.setAudioSource(stream);
+      stop.current = () => {
+        for (const track of stream.getTracks()) track.stop();
+        renderer.setAudioSource(null);
+      };
+    } catch (e) {
+      setError(`No microphone: ${(e as Error).message}`);
+      setSound("demo");
+      renderer.setAudioSource(null);
+    }
+  };
+  const options: [Sound, string][] = [
+    ["demo", "Idle demo"],
+    ["loop", "Sample loop"],
+    ["mic", "Microphone"],
+  ];
+  return (
+    <div className="flex flex-wrap items-center gap-2 text-sm">
+      <span className="text-slate-400">Sound</span>
+      <div className="flex gap-1 rounded-lg border border-slate-800 bg-slate-900 p-1">
+        {options.map(([id, label]) => (
+          <button key={id} onClick={() => void pick(id)} className={`rounded-md px-2.5 py-1 ${sound === id ? "bg-slate-700 text-white" : "text-slate-400 hover:text-slate-100"}`} aria-pressed={sound === id}>
+            {label}
+          </button>
+        ))}
+      </div>
+      {error && <span className="text-rose-300">{error}</span>}
+    </div>
+  );
+}
 
 function Preview({
   editor,
@@ -45,6 +144,8 @@ function Preview({
   transparent,
   trigger,
   hint,
+  scroll,
+  audio,
 }: {
   editor: EffectEditor;
   kind: "shader" | "vector";
@@ -52,30 +153,75 @@ function Preview({
   transparent: boolean;
   trigger?: SvgTrigger;
   hint?: string;
+  /** Follows the scroll: show a scrubber, and let the wheel over the preview drive it. */
+  scroll?: boolean;
+  /** Hears sound: show the sound picker. */
+  audio?: boolean;
 }) {
   const host = useRef<HTMLDivElement>(null);
+  const frame = useRef<HTMLDivElement>(null);
+  const [renderer, setRenderer] = useState<ShaderRenderer>();
+  const [progress, setProgress] = useState(0.3);
+  const progressRef = useRef(progress);
+  progressRef.current = progress;
+  /** Puts a scroll position into the preview (a shader's iScroll, or a vector player's place). */
+  const drive = useRef<(p: number) => void>(() => {});
   useEffect(() => {
-    if (kind === "vector") return trigger ? bindTriggeredSvg(editor, host.current!, trigger) : bindSvgView(editor, host.current!);
+    if (kind === "vector") {
+      if (!trigger) return bindSvgView(editor, host.current!);
+      return bindTriggeredSvg(editor, host.current!, trigger, (player) => {
+        drive.current = (p) => player?.setProgress(player.scrollPosition(p));
+        if (trigger === "scroll") drive.current(progressRef.current);
+      });
+    }
     const renderer = new ShaderRenderer(host.current!, { className: "absolute inset-0 h-full w-full", alpha: transparent });
     const unbind = bindShaderRenderer(editor, renderer);
+    drive.current = (p) => renderer.setScrollProgress(p);
+    if (scroll) drive.current(progressRef.current);
+    setRenderer(renderer);
     // The agent tab's `view_effect` tool captures this preview.
     const page = window as unknown as { flairPreview?: ShaderRenderer };
     page.flairPreview = renderer;
     return () => {
       if (page.flairPreview === renderer) delete page.flairPreview;
+      setRenderer(undefined);
       unbind();
       renderer.dispose();
     };
-  }, [editor, kind, transparent, trigger]);
+  }, [editor, kind, transparent, trigger, scroll]);
+  useEffect(() => {
+    if (scroll) drive.current(progress);
+  }, [scroll, progress]);
+  // Scrolling over the preview scrolls the effect (not the page).
+  useEffect(() => {
+    const el = frame.current;
+    if (!el || !scroll) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      setProgress((p) => Math.min(1, Math.max(0, p + e.deltaY / 1500)));
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [scroll]);
   return (
-    <div className={`relative aspect-video overflow-hidden rounded-xl border border-slate-800 ${overlay ? "bg-black" : kind === "vector" ? "bg-slate-100 p-[8%]" : "bg-black"}`}>
-      {overlay && <img src={SAMPLE_IMAGES.city} alt="" className="absolute inset-0 h-full w-full object-cover" />}
-      <div ref={host} className={kind === "vector" && !overlay ? "h-full w-full" : "absolute inset-0"} />
-      {(hint ?? (trigger && TRIGGER_HINTS[trigger])) && (
-        <span className="pointer-events-none absolute bottom-2 right-2 rounded bg-black/60 px-2 py-0.5 text-xs text-slate-200">
-          {hint ?? TRIGGER_HINTS[trigger!]}
-        </span>
+    <div className="space-y-2">
+      <div ref={frame} className={`relative aspect-video overflow-hidden rounded-xl border border-slate-800 ${overlay ? "bg-black" : kind === "vector" ? "bg-slate-100 p-[8%]" : "bg-black"}`}>
+        {overlay && <img src={SAMPLE_IMAGES.city} alt="" className="absolute inset-0 h-full w-full object-cover" />}
+        <div ref={host} className={kind === "vector" && !overlay ? "h-full w-full" : "absolute inset-0"} />
+        {(hint ?? (trigger && TRIGGER_HINTS[trigger])) && (
+          <span className="pointer-events-none absolute bottom-2 right-2 rounded bg-black/60 px-2 py-0.5 text-xs text-slate-200">
+            {hint ?? TRIGGER_HINTS[trigger!]}
+          </span>
+        )}
+      </div>
+      {scroll && (
+        <label className="flex items-center gap-3 text-sm text-slate-400">
+          <span>Scroll</span>
+          <input type="range" min={0} max={1} step={0.001} value={progress} onChange={(e) => setProgress(Number(e.target.value))} className="flex-1 accent-violet-500" aria-label="Scroll position" />
+          <span className="w-12 text-right tabular-nums">{Math.round(progress * 100)}%</span>
+        </label>
       )}
+      {audio && <SoundPicker renderer={renderer} />}
     </div>
   );
 }
@@ -137,7 +283,10 @@ export function EditorTab({ editor }: { editor: EffectEditor }) {
   const overlay = showsOverPicture(based);
   const transparent = based?.kind === "shader" && Boolean(based.transparent);
   const trigger = based?.kind === "vector" ? based.trigger : undefined;
-  const hint = based?.kind === "shader" && based.category === "interaction" ? "Hover, press or click" : undefined;
+  const hint = based?.kind === "shader" && based.category === "interaction" ? "Hover, press or click" : based?.kind === "shader" && based.category === "scroll" ? "Scroll over it, or drag the slider" : undefined;
+  const inputs = based ? effectInputs(based) : undefined;
+  const scroll = Boolean(inputs?.interactions.includes("scroll"));
+  const audio = Boolean(inputs?.accepts.includes("audio"));
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -181,7 +330,7 @@ export function EditorTab({ editor }: { editor: EffectEditor }) {
           </div>
         </div>
 
-        <Preview key={kind} editor={editor} kind={kind} overlay={overlay} transparent={transparent} trigger={trigger} hint={hint} />
+        <Preview key={kind} editor={editor} kind={kind} overlay={overlay} transparent={transparent} trigger={trigger} hint={hint} scroll={scroll} audio={audio} />
         <Timeline editor={editor} state={state} />
 
         {state.issues.length > 0 && (

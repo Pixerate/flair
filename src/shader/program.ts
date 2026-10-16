@@ -1,4 +1,5 @@
 import { controlValue, type ControlDef, type ControlValue } from "./controls.js";
+import { SPECTRUM_BINS } from "./audio.js";
 import { MAX_CLICKS, MAX_TRAIL } from "./pointer.js";
 import { applyTextureSettings, type TextureSource } from "./textures.js";
 
@@ -35,6 +36,27 @@ export const BUILTIN_UNIFORMS = [
     size: MAX_TRAIL,
     doc: "where the pointer has just been over the canvas, newest first (about 30 points a second, so a second of path): xy = where (pixels), z = when (iTime seconds), w = 1 for a point, 0 for an empty slot",
   },
+  {
+    name: "iAudio",
+    type: "vec4",
+    doc: "the sound (see setAudioSource): x = level (loudness 0–1), y = bass, z = mid, w = treble (0–1, smoothed); all zero with no audio",
+  },
+  {
+    name: "iSpectrum",
+    type: "vec4",
+    size: SPECTRUM_BINS / 4,
+    doc: "64 log-spaced frequency bins (about 30 Hz to 16 kHz), 0–1, four to a vec4, low to high: bin i is iSpectrum[i / 4][i % 4]",
+  },
+  {
+    name: "iBeat",
+    type: "float",
+    doc: "seconds since the last beat (an onset on the bass), -1 before the first; 0 like every audio uniform when there is no audio at all",
+  },
+  {
+    name: "iScroll",
+    type: "vec4",
+    doc: "scrolling: x = the canvas's progress through the viewport (0 as its top enters at the bottom, 1 as its bottom leaves at the top), y = page scroll (0–1), z = velocity (viewport heights per second, + down, smoothed), w = 1 while scrolling, easing to 0; all zero where nothing scrolls",
+  },
 ] as const;
 
 const PRELUDE = `#version 300 es
@@ -48,6 +70,10 @@ uniform vec4 iMouse;
 uniform vec4 iPointer;
 uniform vec4 iClicks[${MAX_CLICKS}];
 uniform vec4 iTrail[${MAX_TRAIL}];
+uniform vec4 iAudio;
+uniform vec4 iSpectrum[${SPECTRUM_BINS / 4}];
+uniform float iBeat;
+uniform vec4 iScroll;
 out vec4 flair_FragColor;
 `;
 
@@ -215,8 +241,9 @@ export function compileShader(
 
 const NO_CLICKS = new Float32Array(MAX_CLICKS * 4);
 const NO_TRAIL = new Float32Array(MAX_TRAIL * 4);
+const NO_SPECTRUM = new Float32Array(SPECTRUM_BINS);
 
-/** What one frame shows: its size in pixels, its time and the pointer. */
+/** What one frame shows: its size in pixels, its time, the pointer, the sound and the scroll. */
 export interface FrameState {
   width: number;
   height: number;
@@ -234,6 +261,14 @@ export interface FrameState {
   clicks?: Float32Array;
   /** `iTrail`: {@link MAX_TRAIL} × (x, y, time, 1), newest first (default none; see `trailUniform`). */
   trail?: Float32Array;
+  /** `iAudio`: level, bass, mid, treble (default all zero: no audio). */
+  audio?: readonly [number, number, number, number];
+  /** `iSpectrum`: {@link SPECTRUM_BINS} values, 0–1, low to high (default all zero). */
+  spectrum?: Float32Array;
+  /** `iBeat`: seconds since the last beat, -1 before the first (default 0, with no audio at all). */
+  beat?: number;
+  /** `iScroll`: progress, page, velocity, scrolling (default all zero: nothing scrolls it). */
+  scroll?: readonly [number, number, number, number];
 }
 
 /**
@@ -262,6 +297,10 @@ export function drawFrame(
   if (b.iPointer) gl.uniform4f(b.iPointer, ...(state.pointer ?? [0, 0, 0, 0]));
   if (b.iClicks) gl.uniform4fv(b.iClicks, state.clicks ?? NO_CLICKS);
   if (b.iTrail) gl.uniform4fv(b.iTrail, state.trail ?? NO_TRAIL);
+  if (b.iAudio) gl.uniform4f(b.iAudio, ...(state.audio ?? ([0, 0, 0, 0] as const)));
+  if (b.iSpectrum) gl.uniform4fv(b.iSpectrum, state.spectrum ?? NO_SPECTRUM);
+  if (b.iBeat) gl.uniform1f(b.iBeat, state.beat ?? 0);
+  if (b.iScroll) gl.uniform4f(b.iScroll, ...(state.scroll ?? ([0, 0, 0, 0] as const)));
   let unit = 0;
   for (const control of controls) {
     const loc = shader.uniforms.get(control.name);
