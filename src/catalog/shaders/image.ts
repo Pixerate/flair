@@ -126,7 +126,7 @@ export const imageDuotone: ShaderEffect = {
   kind: "shader",
   id: "image-duotone",
   name: "Duotone",
-  description: "An image mapped onto two colours, from its shadows to its highlights. For a passing glare, lay `shine-sweep` over it.",
+  description: "An image mapped onto two colours, from its shadows to its highlights. For the gliding glare it used to have, lay `glare-sweep` over it.",
   category: "image",
   video: "filter",
   tags: ["image", "brand", "editorial", "colour"],
