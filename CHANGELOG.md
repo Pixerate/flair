@@ -1,5 +1,33 @@
 # @pixerate/flair
 
+## 0.34.0
+
+### Minor Changes
+
+- a3be887: Catalog: `EFFECT_CATEGORY_GROUPS` sorts the 40 categories into 8 groups (Backgrounds, Light, Pictures, Particles & FX, Type & titles, Inputs, Interface, Transitions). `categoryGroup(category)` gives a category's group, and `findEffects({ group })` and the `catalog.search` command filter by group. The demo gallery browses by group, then by category. Editor documents for vector effects now get the effect's own length (its motion plus `hold`) as their timeline instead of a fixed 5 s.
+
+## 0.33.0
+
+### Minor Changes
+
+- 8a5a3b0: Data and icon effects (vector, so they render crisp and export to animated SVG and recordings).
+
+  - **data**: `donut-chart`, `pie-chart`, `gauge`, `bar-race`, `sparkline`, `leaderboard`, `area-chart` and `kpi-tile`. Lists come in through text controls of comma-separated values with a matching labels control (`values: "42,28,18,12"`, `labels: "Direct,Social,Search,Email"`); stacked series and race rows are separated by semicolons (`series: "12,18,15;8,10,14"`, `rows: "Lumen:12,28,41;Pixel:30,36,48"`). Any text is safe: unreadable numbers count as nothing, units and currency signs are ignored, and the defaults come back when nothing is readable. Long labels are cut short with an ellipsis.
+  - **icon**: `weather-icons` (sun, partly cloudy, cloudy, rain, thunder, snow or wind, picked by `kind`), `notification-bell`, `animated-arrows` (nudge, chevrons, refresh or external link), `emoji-reactions` (hover), `bookmark-star` (a five-star rating filling on hover; `like-button` already covers the heart burst), `trash-delete` (click, replays), `lock-unlock` (click toggle) and `wifi-signal`.
+
+## 0.32.0
+
+### Minor Changes
+
+- 2db30d4: Eighteen catalog shaders in three new categories, `3d`, `weather` and `water`, and more `space`:
+
+  - `3d`: `globe` (a dotted or realistic Earth-like globe with glowing arcs between cities and an atmosphere rim; drag it to turn it), `rotating-shapes` (a torus, rounded cube and icosahedron in a soft-shadowed studio), `isometric-city` (buildings rising, windows lighting through a day and night cycle), `wireframe-terrain` (a glowing mesh fly-over with fog), `metaballs-3d` (glossy merging blobs reflecting a studio) and `torus-knot` (an iridescent, glowing (p, q) knot).
+  - `space`: `planet` (banded or rocky, with atmosphere, terminator and optional rings), `spiral-galaxy` and `solar-system`.
+  - `weather`: `rain-streaks`, `wind-gust` and `hail` (transparent overlays), `thunderstorm`, and `rainbow` (over a picture or video).
+  - `water`: `ocean-waves` (sunset or day, foam and sun glint), `underwater-scene`, `pond-ripples` (raindrops and clicked stones rippling a picture or video) and `waterfall`.
+
+  `EFFECT_CATEGORIES` lists the new categories before `transition`. The 3D effects meet their shapes analytically or march only inside bounding volumes with bounded steps, so each stays at about 3 ms or less a frame at 1080p on an M4 Pro.
+
 ## 0.31.0
 
 ### Minor Changes

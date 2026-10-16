@@ -4,7 +4,7 @@ import type { ShaderEffect } from "../types.js";
 import { BACKDROP_CONTROLS, PICTURE } from "./image.js";
 
 /** 3D value noise, 0–1: `vnoise3(p)` and `fbm3(p, octaves)`. */
-const NOISE_3D = `
+export const NOISE_3D = `
 float hash13(vec3 p3) {
   p3 = fract(p3 * 0.1031);
   p3 += dot(p3, p3.zyx + 31.32);

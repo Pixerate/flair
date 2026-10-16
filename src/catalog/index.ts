@@ -77,16 +77,24 @@ import { lightingShaders } from "./shaders/lighting.js";
 import { audioShaders } from "./shaders/audio.js";
 import { scrollShaders } from "./shaders/scroll.js";
 import { scrollEffects } from "./scroll.js";
+import { threeDShaders } from "./shaders/three-d.js";
+import { spaceShaders } from "./shaders/space-more.js";
+import { weatherShaders } from "./shaders/weather.js";
+import { waterShaders } from "./shaders/water.js";
 import { textEffects } from "./text.js";
 import { broadcastEffects } from "./broadcast.js";
 import { annotationEffects } from "./annotation.js";
-import { CURRENT_COLOR, EFFECT_CATEGORIES, isCurrentColor, vectorEffectControls, type EffectCategory, type EffectDefinition, type ShaderEffect, type VideoUse } from "./types.js";
+import { CURRENT_COLOR, EFFECT_CATEGORIES, EFFECT_CATEGORY_GROUPS, isCurrentColor, vectorEffectControls, type EffectCategory, type EffectDefinition, type ShaderEffect, type VideoUse } from "./types.js";
 import { vectorEffects } from "./vector.js";
+import { dataEffects } from "./data.js";
+import { iconEffects } from "./icons.js";
 
 export {
   colorControl,
+  categoryGroup,
   CURRENT_COLOR,
   EFFECT_CATEGORIES,
+  EFFECT_CATEGORY_GROUPS,
   isCurrentColor,
   numberControl,
   renderVectorEffect,
@@ -97,6 +105,7 @@ export {
   vectorEffectControls,
   VIDEO_USES,
   type EffectCategory,
+  type EffectCategoryGroup,
   type EffectDefinition,
   type EffectPreset,
   type ShaderEffect,
@@ -140,6 +149,7 @@ export const SHADER_EFFECTS: readonly ShaderEffect[] = [
   starfield,
   nebula,
   blackHole,
+  ...spaceShaders,
   synthwaveGrid,
   digitalRain,
   pixelSunset,
@@ -177,11 +187,14 @@ export const SHADER_EFFECTS: readonly ShaderEffect[] = [
   ...audioShaders,
   ...scrollShaders,
   ...uiShaders,
+  ...threeDShaders,
+  ...weatherShaders,
+  ...waterShaders,
   ...transitions,
 ];
 
 /** Every effect in the catalog, shaders first, grouped by category. */
-export const EFFECTS: readonly EffectDefinition[] = [...SHADER_EFFECTS, ...vectorEffects, ...textEffects, ...morphEffects, ...interactionEffects, ...pyroEffects, ...timewarpEffects, ...meltEffects, ...electricEffects, ...pixelEffects, ...splatterEffects, ...bubbleEffects, ...stickerEffects, ...trailEffects, ...impactEffects, ...comicEffects, ...glowEffects, ...shadowEffects, ...lightingEffects, ...scrollEffects, ...broadcastEffects, ...annotationEffects, ...uiEffects, ...loaderEffects].sort(
+export const EFFECTS: readonly EffectDefinition[] = [...SHADER_EFFECTS, ...vectorEffects, ...textEffects, ...morphEffects, ...interactionEffects, ...pyroEffects, ...timewarpEffects, ...meltEffects, ...electricEffects, ...pixelEffects, ...splatterEffects, ...bubbleEffects, ...stickerEffects, ...trailEffects, ...impactEffects, ...comicEffects, ...glowEffects, ...shadowEffects, ...lightingEffects, ...scrollEffects, ...broadcastEffects, ...annotationEffects, ...uiEffects, ...loaderEffects, ...dataEffects, ...iconEffects].sort(
   (a, b) => EFFECT_CATEGORIES.indexOf(a.category) - EFFECT_CATEGORIES.indexOf(b.category),
 );
 
@@ -223,6 +236,8 @@ export interface EffectQuery {
   /** Words to look for in the name, description, tags and id (all must match). */
   text?: string;
   category?: EffectCategory;
+  /** Effects in any category of the group with this name (`EFFECT_CATEGORY_GROUPS`, any case). */
+  group?: string;
   kind?: EffectDefinition["kind"];
   /** Effects with every one of these tags. */
   tags?: readonly string[];
@@ -241,6 +256,7 @@ export function findEffects(query: EffectQuery = {}): EffectDefinition[] {
   const words = (query.text ?? "").toLowerCase().split(/\s+/).filter(Boolean);
   return EFFECTS.filter((e) => {
     if (query.category && e.category !== query.category) return false;
+    if (query.group && !EFFECT_CATEGORY_GROUPS.find((g) => g.name.toLowerCase() === query.group!.toLowerCase())?.categories.includes(e.category)) return false;
     if (query.kind && e.kind !== query.kind) return false;
     if (query.tags && !query.tags.every((t) => e.tags.includes(t))) return false;
     if (query.video && !(e.kind === "shader" && e.video && query.video.includes(e.video))) return false;

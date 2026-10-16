@@ -5,7 +5,7 @@
  */
 
 import type { CommandSpec } from "@pixerate/editor/commands";
-import { EFFECT_CATEGORIES, VIDEO_USES, type VectorControl, type VideoUse } from "../catalog/types.js";
+import { EFFECT_CATEGORIES, EFFECT_CATEGORY_GROUPS, VIDEO_USES, type VectorControl, type VideoUse } from "../catalog/types.js";
 import type { SvgMotion } from "../vector/motion.js";
 import { EFFECT_INPUTS, EFFECT_INTERACTIONS, effectInputs, findEffects, type EffectInput, type EffectInteraction } from "../catalog/index.js";
 import type { EditResult, EffectEditor } from "./editor.js";
@@ -85,6 +85,11 @@ export function effectCommands(): CommandSpec<EffectEditor>[] {
         properties: {
           text: { type: "string", description: "Words to look for (all must match)." },
           category: { type: "string", enum: EFFECT_CATEGORIES },
+          group: {
+            type: "string",
+            enum: EFFECT_CATEGORY_GROUPS.map((g) => g.name),
+            description: `A set of related categories: ${EFFECT_CATEGORY_GROUPS.map((g) => `${g.name} (${g.categories.join(", ")})`).join("; ")}.`,
+          },
           kind: { type: "string", enum: ["shader", "vector"] },
           video: {
             type: "array",
@@ -112,6 +117,7 @@ export function effectCommands(): CommandSpec<EffectEditor>[] {
         params: {
           text?: string;
           category?: (typeof EFFECT_CATEGORIES)[number];
+          group?: string;
           kind?: "shader" | "vector";
           video?: VideoUse[];
           accepts?: EffectInput[];
