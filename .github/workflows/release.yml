@@ -20,9 +20,13 @@ jobs:
     if: github.repository_owner == 'Pixerate' || github.event_name == 'workflow_dispatch'
 
     steps:
+      # The tip of main, not the commit that triggered this run: when merges land
+      # close together, an earlier run's version commit is already on main, and
+      # versioning the older commit again would compute a version that is published.
       - name: Checkout repository
         uses: actions/checkout@v7
         with:
+          ref: main
           token: ${{ secrets.GH_PAT || secrets.GH_TOKEN_FOR_PACKAGES || secrets.PERSONAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}
           fetch-depth: 0
 
@@ -72,6 +76,30 @@ jobs:
         if: steps.changeset_check.outputs.should_release == 'true'
         run: pnpm test
 
+      # Push the version commit before publishing, so a version is only ever
+      # published once main records it. If another merge landed meanwhile, rebase
+      # onto it (the version commit only touches package.json, the changelog and
+      # the changesets it used); a push that still fails stops before publishing,
+      # and the next run (or a manual run) releases from main as it is.
+      - name: Commit version bumps & changelogs
+        if: steps.changeset_check.outputs.should_release == 'true'
+        run: |
+          git add .
+          if git diff --cached --quiet; then
+            echo "No version changes to commit"
+            exit 0
+          fi
+          git commit -m "chore(release): version package and update changelog [skip ci]"
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then exit 0; fi
+            echo "main moved on; rebasing the version commit (attempt $attempt)"
+            git pull --rebase origin main || { git rebase --abort; exit 1; }
+          done
+          echo "Could not push the version commit; nothing was published."
+          exit 1
+
+      # Publishes whatever version package.json says that npm doesn't have yet,
+      # so a manual run after a failed publish finishes the release.
       - name: Publish to npm (OIDC)
         if: steps.changeset_check.outputs.should_release == 'true'
         run: pnpm release
@@ -80,9 +108,6 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: "true"
 
-      - name: Commit version bumps & changelogs, push git tags
+      - name: Push release tags
         if: steps.changeset_check.outputs.should_release == 'true'
-        run: |
-          git add .
-          git commit -m "chore(release): version package and update changelog [skip ci]" || echo "No changes to commit"
-          git push origin HEAD --tags || echo "Failed to push tags"
+        run: git push origin --tags

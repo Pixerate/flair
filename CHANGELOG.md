@@ -1,5 +1,11 @@
 # @pixerate/flair
 
+## 0.22.0
+
+### Minor Changes
+
+- 4eb5f23: `image-duotone` is now only a duotone: it maps the picture onto two colours by brightness, still and without its built-in light sweep (the `uSweep` control is gone). For the glare, lay the `shine-sweep` overlay over it.
+
 ## 0.21.1
 
 ### Patch Changes
