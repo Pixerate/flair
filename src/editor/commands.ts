@@ -6,7 +6,7 @@
 
 import type { CommandSpec } from "@pixerate/editor/commands";
 import { EFFECT_CATEGORIES, VIDEO_USES, type VideoUse } from "../catalog/types.js";
-import { findEffects } from "../catalog/index.js";
+import { EFFECT_INPUTS, EFFECT_INTERACTIONS, effectInputs, findEffects, type EffectInput, type EffectInteraction } from "../catalog/index.js";
 import type { EditResult, EffectEditor } from "./editor.js";
 import { EASING_PRESETS, type Easing } from "./timeline.js";
 
@@ -80,19 +80,47 @@ export function effectCommands(): CommandSpec<EffectEditor>[] {
             items: { type: "string", enum: VIDEO_USES },
             description: "Only effects that suit video in one of these ways: filter (live video filter), transition (between two clips), interactive (pointer over video), stills (runs on video, made for stills), none.",
           },
+          accepts: {
+            type: "array",
+            items: { type: "string", enum: EFFECT_INPUTS },
+            description: "Only effects that can be given all of these: image (a picture), video, svg, text (words), mask (a shape with transparency: icon, logo, word), path (SVG path data).",
+          },
+          interaction: {
+            type: "array",
+            items: { type: "string", enum: EFFECT_INTERACTIONS },
+            description: "Only effects that answer the pointer in one of these ways: hover, press, click, trail (follows where it has been), pointer (follows where it is). An empty list finds effects that don't answer it.",
+          },
+          transparent: { type: "boolean", description: "Only overlays (true), drawn over other content, or only effects that fill their frame (false)." },
         },
         additionalProperties: false,
       },
-      run: (_, params: { text?: string; category?: (typeof EFFECT_CATEGORIES)[number]; kind?: "shader" | "vector"; video?: VideoUse[] }) =>
-        findEffects(params ?? {}).map((e) => ({
-          id: e.id,
-          name: e.name,
-          kind: e.kind,
-          category: e.category,
-          description: e.description,
-          ...(e.kind === "shader" && e.video ? { video: e.video } : {}),
-          presets: e.presets?.map((p) => p.name) ?? [],
-        })),
+      run: (
+        _,
+        params: {
+          text?: string;
+          category?: (typeof EFFECT_CATEGORIES)[number];
+          kind?: "shader" | "vector";
+          video?: VideoUse[];
+          accepts?: EffectInput[];
+          interaction?: EffectInteraction[];
+          transparent?: boolean;
+        },
+      ) =>
+        findEffects(params ?? {}).map((e) => {
+          const inputs = effectInputs(e);
+          return {
+            id: e.id,
+            name: e.name,
+            kind: e.kind,
+            category: e.category,
+            description: e.description,
+            ...(e.kind === "shader" && e.video ? { video: e.video } : {}),
+            accepts: inputs.accepts,
+            ...(inputs.interactions.length ? { interactions: inputs.interactions } : {}),
+            ...(inputs.transparent ? { transparent: true } : {}),
+            presets: e.presets?.map((p) => p.name) ?? [],
+          };
+        }),
     },
     {
       id: "effect.load",

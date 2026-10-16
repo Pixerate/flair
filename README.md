@@ -150,6 +150,33 @@ new SvgPlayer(host, motion, { loop: false });
 
 Find effects with `findEffects({ text: "glow", category: "light", kind: "shader" })`. Each effect has an `id`, `name`, `description`, `category`, `tags` and optional `presets`. Image effects default to built-in sample pictures, so they look right before you set `uImage` to your own URL.
 
+#### What an effect takes
+
+`effectInputs(effect)` says what you can give an effect and how it answers the pointer, worked out from the effect itself:
+
+```ts
+import { effectInputs, findEffects, getEffect, textImage } from "@pixerate/flair/catalog";
+
+effectInputs(getEffect("image-duotone")!);
+// { accepts: ["image", "video", "svg"], images: [{ name: "uImage", wants: "picture" }], video: "filter", interactions: [], transparent: false, … }
+effectInputs(getEffect("typewriter")!);
+// { accepts: ["text"], texts: [{ name: "text", holds: "copy" }, { name: "font", holds: "font" }], interactions: [], … }
+effectInputs(getEffect("click-ripple")!).interactions; // ["click"]
+
+findEffects({ accepts: ["video"] }); // effects that run on video
+findEffects({ accepts: ["text"], kind: "vector" }); // animated titles and labels
+findEffects({ accepts: ["image"], interaction: ["hover"] }); // pictures that react to hovering
+findEffects({ transparent: true }); // overlays to lay over a page, picture or video
+```
+
+- `accepts`: `image` (any picture URL), `video` (a live `<video>`, with `setLiveSource`), `svg` (an SVG URL, drawn with its transparency), `text` (words for a text control, or for a text mask through `textImage("…")`), `mask` (a shape with transparency whose silhouette the effect uses: an icon, a logo, a word), `path` (SVG path data for a shape control).
+- `images`: each image control's name, and whether it `wants` a `picture`, a `mask` or `text`.
+- `texts`: each text control's name, and whether it `holds` `copy`, a `font`, a `path` or `glyphs`.
+- `interactions`: `hover`, `press`, `click`, `trail` (follows where the pointer has been) or `pointer` (follows where it is), from the pointer built-ins a shader reads or a vector effect's `trigger`.
+- `transparent`, `video` and `trigger`, as on the effect.
+
+`findEffects` filters on `accepts` (all of them), `interaction` (any of them; `[]` for effects that don't answer the pointer) and `transparent`, and the `catalog.search` command takes the same filters and lists each effect's `accepts` and `interactions`. The `interactive` tag is kept in step with `interactions`.
+
 Effects that show a picture (image, transition, morph, time-warp and the like) take transparent pictures too, such as SVG icons (Lucide and similar sets draw black `currentColor` strokes on a clear background). They lay the picture over a backdrop: `uBackdrop` (white by default) shows through its clear parts. Set `uBackdropAlpha` to 0 to keep the picture's alpha instead, and render with `{ alpha: true }` to lay the result over the page. `SAMPLE_IMAGES.icon` is a Lucide-style sample icon. SVGs are rasterised at 2048 px on the long edge, so icons stay sharp.
 
 #### Effects on video

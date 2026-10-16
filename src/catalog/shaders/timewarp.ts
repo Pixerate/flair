@@ -308,7 +308,7 @@ export const bulletTime: ShaderEffect = {
   description: "A shockwave sweeping out from the centre or a click, freezing the picture grey and zoomed behind it while the rest moves on.",
   category: "timewarp",
   video: "stills",
-  tags: ["time", "image", "freeze", "shockwave", "click", "cinematic"],
+  tags: ["time", "image", "freeze", "shockwave", "click", "cinematic", "interactive"],
   loop: 8,
   source: glsl(
     `// Bullet time: every 4 s (or on a click) a wave freezes the picture behind it, then lets go.
