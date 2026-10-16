@@ -29,6 +29,14 @@ describe("subjectValues", () => {
     expect(subjectValues(effect("shape-morph"), { path: "M0 0 L10 0 L5 9 Z" }).values).toEqual({ from: "M0 0 L10 0 L5 9 Z" });
   });
 
+  it("hands sound to an audio-reactive effect, and refuses it elsewhere", () => {
+    const audio = {} as HTMLAudioElement;
+    expect(subjectValues(effect("spectrum-bars"), { audio })).toEqual({ values: {}, live: {}, audio });
+    expect(subjectValues(effect("bass-pulse"), [{ image: "/logo.svg" }, { audio }])).toEqual({ values: { uImage: "/logo.svg" }, live: {}, audio });
+    expect(() => subjectValues(effect("aurora"), { audio })).toThrow(/"aurora" does not react to sound; findEffects\(\{ accepts: \["audio"\] \}\)/);
+    expect(() => subjectValues(effect("typewriter"), { audio })).toThrow(/does not react to sound/);
+  });
+
   it("explains a subject an effect can't take", () => {
     expect(() => subjectValues(effect("aurora"), { image: "/a.jpg" })).toThrow(/"aurora" takes no image/);
     expect(() => subjectValues(effect("typewriter"), { image: "/a.jpg" })).toThrow(/vector effect/);

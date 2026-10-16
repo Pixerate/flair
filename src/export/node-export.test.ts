@@ -64,7 +64,7 @@ describe('the render page', () => {
       send: 'png',
       shader: { fragment: fragmentSource(source), controls: [], opaque: false },
     });
-    for (const decl of ['uniform vec4 iPointer;', 'uniform vec4 iClicks[8];', 'uniform vec4 iTrail[32];', 'uniform vec3 iResolution;', '#line 1']) {
+    for (const decl of ['uniform vec4 iPointer;', 'uniform vec4 iClicks[8];', 'uniform vec4 iTrail[32];', 'uniform vec4 iAudio;', 'uniform vec4 iSpectrum[16];', 'uniform float iBeat;', 'uniform vec4 iScroll;', 'uniform vec3 iResolution;', '#line 1']) {
       expect(html).toContain(decl);
     }
     expect(html).toContain('premultipliedAlpha: false');

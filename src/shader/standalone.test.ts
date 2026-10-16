@@ -64,7 +64,7 @@ describe("standaloneHtml", () => {
   });
 
   /** Runs the page's script against a recording WebGL2 stand-in; `calls` are its calls, as text. */
-  function run(html: string) {
+  function run(html: string, elements: Record<string, unknown> = {}) {
     const script = /<script>([\s\S]*)<\/script>/.exec(html)![1]!;
     const calls: string[] = [];
     const constants = {
@@ -116,7 +116,7 @@ describe("standaloneHtml", () => {
       "Image",
       script,
     )(
-      { getElementById: () => canvas, body: {} },
+      { getElementById: (id: string) => (id === "c" ? canvas : (elements[id] ?? null)), body: {} },
       (cb: FrameRequestCallback) => frames.push(cb),
       () => {},
       2,
@@ -136,6 +136,52 @@ describe("standaloneHtml", () => {
     expect([canvas.width, canvas.height]).toEqual([200, 100]);
     expect(calls).toContain('uniform3f("iResolution",200,100,1)');
     expect(calls).toContain("drawArrays(4,0,3)");
+  });
+
+  describe("audio", () => {
+    const sound = shaderSource("// uses iAudio and iSpectrum and iBeat");
+
+    it("adds a player or a microphone button only when asked", () => {
+      expect(standaloneHtml("A", sound)).not.toMatch(/<audio|<button|iAudio"/);
+      const withFile = standaloneHtml("A", sound, undefined, { audio: 'song.mp3?a="b"' });
+      expect(withFile).toContain('<audio id="a" src="song.mp3?a=&quot;b&quot;" controls loop crossorigin="anonymous"');
+      expect(withFile.match(/<\/script>/g)).toHaveLength(1);
+      expect(standaloneHtml("A", sound, undefined, { audio: "mic" })).toContain('<button id="m"');
+    });
+
+    it("listens to the player once it plays, feeding the audio uniforms", () => {
+      const connected: string[] = [];
+      class FakeContext {
+        sampleRate = 48000;
+        destination = "speakers";
+        resume() {
+          return Promise.resolve();
+        }
+        createMediaElementSource() {
+          return { connect: (to: unknown) => connected.push(to === "speakers" ? "speakers" : "analyser") };
+        }
+        createAnalyser() {
+          return {
+            fftSize: 2048,
+            frequencyBinCount: 1024,
+            getFloatFrequencyData: (out: Float32Array) => out.fill(-30),
+            getFloatTimeDomainData: (out: Float32Array) => out.fill(1),
+          };
+        }
+      }
+      vi.stubGlobal("AudioContext", FakeContext);
+      delete (window as { flairAudio?: unknown }).flairAudio;
+      const listeners: Record<string, () => void> = {};
+      const player = { addEventListener: (type: string, f: () => void) => (listeners[type] = f) };
+      const { calls, frames } = run(standaloneHtml("A", sound, undefined, { audio: "song.mp3" }), { a: player });
+      frames[0]!(16);
+      expect(calls.some((c) => c.startsWith('uniform4f("iAudio"'))).toBe(false);
+      listeners.play!();
+      expect(connected).toEqual(["speakers", "analyser"]);
+      frames[1]!(32);
+      expect(calls).toContain('uniform4f("iAudio",1,1,1,1)');
+      expect(calls).toContain('uniform1f("iBeat",-1)');
+    });
   });
 
   describe("images", () => {

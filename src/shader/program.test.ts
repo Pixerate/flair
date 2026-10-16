@@ -341,8 +341,30 @@ describe("drawFrame", () => {
     expect((gl.uniform("iClicks")![0] as Float32Array).every((v) => v === 0)).toBe(true);
   });
 
+  it("sends the audio and the scroll, zeros (iBeat included) when there are none", () => {
+    const gl = new FakeGl();
+    const source = shaderSource("");
+    drawFrame(asGl(gl), compiled(gl, source), [], undefined, STATE);
+    expect(gl.uniform("iAudio")).toEqual([0, 0, 0, 0]);
+    expect(gl.uniform("iBeat")).toEqual([0]);
+    expect(gl.uniform("iScroll")).toEqual([0, 0, 0, 0]);
+    expect((gl.uniform("iSpectrum")![0] as Float32Array)).toHaveLength(64);
+    const spectrum = new Float32Array(64).fill(0.5);
+    drawFrame(asGl(gl), compiled(gl, source), [], undefined, { ...STATE, audio: [0.1, 0.2, 0.3, 0.4], spectrum, beat: -1, scroll: [0.5, 0.25, -1, 1] });
+    expect(gl.uniform("iAudio")).toEqual([0.1, 0.2, 0.3, 0.4]);
+    expect(gl.uniform("iSpectrum")![0]).toBe(spectrum);
+    expect(gl.uniform("iBeat")).toEqual([-1]);
+    expect(gl.uniform("iScroll")).toEqual([0.5, 0.25, -1, 1]);
+  });
+
+  it("declares the audio and scroll built-ins in the wrapper", () => {
+    const wrapped = wrapSource("void mainImage(out vec4 c, in vec2 p) { c = iAudio + iSpectrum[15] + iScroll + vec4(iBeat); }");
+    for (const decl of ["uniform vec4 iAudio;", "uniform vec4 iSpectrum[16];", "uniform float iBeat;", "uniform vec4 iScroll;"]) expect(wrapped).toContain(decl);
+    expect(BUILTIN_UNIFORMS.map((u) => u.name)).toEqual(expect.arrayContaining(["iAudio", "iSpectrum", "iBeat", "iScroll"]));
+  });
+
   it("skips uniforms the driver removed", () => {
-    const gl = new FakeGl({ missingUniforms: ["uGone", "iMouse", "iPointer", "iClicks", "iTrail"] });
+    const gl = new FakeGl({ missingUniforms: ["uGone", "iMouse", "iPointer", "iClicks", "iTrail", "iAudio", "iSpectrum", "iScroll"] });
     const source = shaderSource("uniform float uGone; // @control");
     drawFrame(asGl(gl), compiled(gl, source), parseControls(source), undefined, STATE);
     expect(gl.named("uniform1f").some((c) => c.args[0] === null)).toBe(false);
