@@ -57,7 +57,20 @@ Upon successful completion and full test verification of any feature, fix, or up
 
 ---
 
-## 3. Code Standards & Architecture
+## 3. Agents Are First-Class Users
+
+Agents use Flair as much as people do, through the editor commands (`src/editor/commands.ts`, served by `createEffectToolProvider`) and the scene tools (`FLAIR_AGENT_TOOLS` / `applySceneTool` in `src/agent`). Treat that surface as a product, not an afterthought:
+
+- **Every capability reaches agents.** A feature a person can use through the API or a UI ships with the command or tool an agent uses for it, in the same change. A refusal never points at something an agent cannot call.
+- **Inputs are checked, never guessed.** Arguments are validated against the tool's schema; a missing, mistyped or out-of-range argument is refused with `ok: false` and the state is left alone. Nothing silently does nothing, and nothing quietly writes a bad value.
+- **Errors say what to do next.** A refusal names what was wrong and the valid choices ("there is no shot 9; the scene has 2 shots (1 to 2)").
+- **Results stay small.** Return what the call asked for: summaries and issues after edits, not the whole document; lists are limited, say how many there are and how to get more.
+- **Agents can check their work.** After a change an agent can see whether it worked (validation issues, compile reports, a preview, a headless review), and is told plainly when that is not known yet.
+- **Tested from the agent's side.** New tools and commands get tests that call them the way a model would, including bad arguments, and keep `EFFECT_AGENT_INSTRUCTIONS`, the tool descriptions and the README in step with what they do.
+
+---
+
+## 4. Code Standards & Architecture
 
 - **Pure TypeScript & Lightweight**: Maintain zero heavy runtime dependencies. Keep core shader, animation, and geometric logic testable without a real GPU (using mock WebGL context).
 - **Line-Numbered Error Reporting**: Shader compilation and parsing errors must maintain exact line numbers matching user/agent source code (`#line 1` convention).
@@ -69,7 +82,7 @@ Upon successful completion and full test verification of any feature, fix, or up
 
 ---
 
-## 4. Separation of Concerns with `@pixerate/ai-core`
+## 5. Separation of Concerns with `@pixerate/ai-core`
 
 There is a strict architectural boundary between **Flair** and **`@pixerate/ai-core`**:
 

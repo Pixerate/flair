@@ -5,6 +5,7 @@ import { callTool, createEffectToolProvider, EFFECT_AGENT_INSTRUCTIONS, toolDefi
 import { bindShaderRenderer, bindSvgView } from "./bind.js";
 import { createEffectDocument, documentIssues, parseEffectDocument, valuesAt } from "./document.js";
 import { createEffectEditor } from "./editor.js";
+import { CATALOG_SEARCH_LIMIT } from "./commands.js";
 
 describe("documents", () => {
   it("start blank, from the catalog, or from source", () => {
@@ -150,10 +151,48 @@ describe("commands and agent tools", () => {
     expect(editor.commands.execute("values.set", { values: { uNope: 1 } })).toMatchObject({ ok: false, message: expect.stringMatching(/uNope/) });
     expect(editor.commands.execute("history.undo")).toMatchObject({ ok: true });
     expect(editor.document.values.uSpeed).toBeUndefined();
-    const found = editor.commands.execute<{ id: string }[]>("catalog.search", { text: "fire" });
-    expect(found.ok && found.result.map((e) => e.id)).toContain("flames");
-    const video = editor.commands.execute<{ id: string; video?: string }[]>("catalog.search", { video: ["transition"] });
-    expect(video.ok && video.result.length > 5 && video.result.every((e) => e.video === "transition")).toBe(true);
+    type Search = { total: number; effects: { id: string; video?: string }[]; more?: string };
+    const found = editor.commands.execute<Search>("catalog.search", { text: "fire" });
+    expect(found.ok && found.result.effects.map((e) => e.id)).toContain("flames");
+    const video = editor.commands.execute<Search>("catalog.search", { video: ["transition"], limit: 200 });
+    expect(video.ok && video.result.effects.length > 5 && video.result.effects.every((e) => e.video === "transition")).toBe(true);
+  });
+
+  it("keeps catalog searches small and says how to see more", () => {
+    const editor = createEffectEditor({ from: "aurora" });
+    type Search = { total: number; effects: { id: string }[]; more?: string };
+    const first = editor.commands.execute<Search>("catalog.search", {});
+    if (!first.ok) throw new Error("search failed");
+    expect(first.result.effects).toHaveLength(CATALOG_SEARCH_LIMIT);
+    expect(first.result.total).toBeGreaterThan(CATALOG_SEARCH_LIMIT);
+    expect(first.result.more).toMatch(new RegExp(`offset ${CATALOG_SEARCH_LIMIT}`));
+    const next = editor.commands.execute<Search>("catalog.search", { offset: CATALOG_SEARCH_LIMIT, limit: 5 });
+    expect(next.ok && next.result.effects[0]!.id).not.toBe(first.result.effects[0]!.id);
+    const narrow = editor.commands.execute<Search>("catalog.search", { text: "fire", limit: 200 });
+    expect(narrow.ok && narrow.result.more).toBeUndefined();
+  });
+
+  it("lets agents edit vector pictures and see shader compiles", async () => {
+    const shader = createEffectEditor({ from: "aurora" });
+    const provider = createEffectToolProvider(shader);
+    const wrongKind = await callTool(provider, "run_command", { id: "effect.setMotion", params: { motion: { svg: "<svg/>" } } });
+    expect(wrongKind.isError && JSON.stringify(wrongKind)).toMatch(/effect\.setSource/);
+    const set = await callTool(provider, "run_command", { id: "effect.setSource", params: { source: "void mainImage(out vec4 c, in vec2 f) { c = vec4(1.0); }" } });
+    expect(JSON.stringify(set.structuredContent)).toMatch(/not compiled yet/);
+    bindShaderRenderer(shader, { setSource: () => ({ ok: false, errors: [{ line: 1, message: "bad" }] }), setValues() {}, seek() {}, pause() {} });
+    const compiled = await callTool(provider, "run_command", { id: "effect.setSource", params: { source: "void mainImage(out vec4 c, in vec2 f) { c = 1; }" } });
+    expect(compiled.structuredContent).toMatchObject({ result: { compile: { ok: false, errors: [{ line: 1, message: "bad" }] } } });
+
+    const vector = createEffectEditor({ from: "drip-text" });
+    const tools = createEffectToolProvider(vector);
+    const svg = `<svg viewBox="0 0 10 10"><text id="t">{{title: text default=Hi}}</text></svg>`;
+    const ok = await callTool(tools, "run_command", { id: "effect.setMotion", params: { motion: { svg, animate: [{ id: "t", attrs: { opacity: [0, 1] } }] } } });
+    expect(ok.isError).toBeFalsy();
+    expect(vector.document.effect.kind === "vector" && vector.document.effect.motion.svg).toBe(svg);
+    const empty = await callTool(tools, "run_command", { id: "effect.setMotion", params: { motion: { svg: "" } } });
+    expect(empty.isError).toBe(true);
+    const wrong = await callTool(tools, "run_command", { id: "effect.setSource", params: { source: "x" } });
+    expect(JSON.stringify(wrong)).toMatch(/effect\.setMotion/);
   });
 
   it("exposes the commands as MCP tools an agent can call", async () => {

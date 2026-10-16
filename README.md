@@ -419,14 +419,32 @@ const registry = createEffectToolRegistry(editor); // registry.listTools(), regi
 
 The tools are `list_commands`, `run_command` and `run_commands`, plus `view_effect` when you can capture the preview. The commands they run:
 
-- **Inspect and start:** `effect.describe`, `catalog.search`, `effect.load`.
-- **Edit the effect:** `effect.setSource`.
+- **Inspect and start:** `effect.describe`, `catalog.search` (`{ total, effects }`, 20 at a time unless you pass `limit`; `offset` pages on), `effect.load`.
+- **Edit the effect:** `effect.setSource` for shaders (it returns the compile report when a preview is bound, or says the source has not been compiled yet), `effect.setMotion` for vector pictures.
 - **Values and presets:** `values.set`, `values.reset`, `values.randomize`, `preset.apply` and `preset.save`.
 - **Keyframes:** `keyframe.set`, `keyframe.setTrack`, `keyframe.remove`, `keyframe.setEasing` and `keyframe.clear`.
 - **Timeline:** `timeline.setTiming`, `timeline.play`, `timeline.pause` and `timeline.seek`.
 - **History:** `history.undo` and `history.redo`.
 
 Every change is one undo step, and refusals come back as messages the model can act on.
+
+### 5. Let an agent direct a scene
+
+Scenes have their own tools, `FLAIR_AGENT_TOOLS` (Anthropic-style `{ name, description, input_schema }`), applied by a pure state machine:
+
+```ts
+import { FLAIR_AGENT_TOOLS, applySceneTool } from "@pixerate/flair";
+
+let scene = initialScene;
+// Send FLAIR_AGENT_TOOLS to your model, then for each tool call:
+const result = await applySceneTool(scene, call.name, call.input);
+if (result.ok) scene = result.scene; // keep the new state
+reply(call.id, result.output); // send the model only `output`
+```
+
+The tools are `get_scene` (the scene, or with `view: "outline"` just its structure), `write_scene`, `update_shot`, `insert_shots`, `delete_shots`, `set_media`, `set_rig_widget`, `preview_scene` (a headless run: length, warnings, notes) and `batch_scene`, which runs several of them as one all-or-nothing change and lets a step use an earlier step's result (`"$1.output.outline.shots[0].hold"`).
+
+Arguments are checked against each tool's schema, and a call that cannot apply (a shot that does not exist, an unresolved reference) is refused with `ok: false` and a sentence saying what to fix, leaving the scene as it was. Edits that apply return the scene's validation issues (unknown shot fields, wrong types, a shader without `mainImage`) so the model can correct them. `output` keeps replies small: an edit returns a one-line summary and the issues, not the whole scene.
 
 ---
 

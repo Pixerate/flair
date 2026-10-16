@@ -175,7 +175,7 @@ export class EffectEditor {
 
   /** Replaces a shader's source. Compile errors arrive later, from the renderer (see `reportCompile`). */
   setSource(source: string): EditResult {
-    if (this.doc.effect.kind !== "shader") return fail("This is a vector effect; use setMotion.");
+    if (this.doc.effect.kind !== "shader") return fail("This is a vector effect; change its picture with setMotion (the effect.setMotion command).");
     if (source === this.doc.effect.source) return ok;
     this.commit("Edit source", { ...this.doc, effect: { kind: "shader", source } }, "source");
     return ok;
@@ -183,7 +183,9 @@ export class EffectEditor {
 
   /** Replaces a vector effect's picture, whose `{{name: type …}}` placeholders declare its controls (and optionally a `controls` list). */
   setMotion(motion: SvgMotion, controls?: Extract<EffectDocument["effect"], { kind: "vector" }>["controls"]): EditResult {
-    if (this.doc.effect.kind !== "vector") return fail("This is a shader effect; use setSource.");
+    if (this.doc.effect.kind !== "vector") return fail("This is a shader effect; change its source with setSource (the effect.setSource command).");
+    if (!motion || typeof motion.svg !== "string" || !motion.svg.trim()) return fail("The picture needs `svg`: one <svg>…</svg> element with a viewBox.");
+    if (motion.animate !== undefined && !Array.isArray(motion.animate)) return fail("`animate` must be a list of changes to the picture's elements.");
     this.commit("Edit picture", { ...this.doc, effect: { ...this.doc.effect, motion, controls: controls ?? this.doc.effect.controls } });
     return ok;
   }

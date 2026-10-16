@@ -10,7 +10,7 @@ import type { Scene } from '../scene/types.js';
 import { applySceneTool, type SceneToolResult } from './tools.js';
 
 export interface BatchCommand {
-  /** Name of the tool to execute (e.g. 'update_shot', 'insert_shots', 'set_rig_widget'). */
+  /** Name of the tool to execute (e.g. 'update_shot', 'insert_shots', 'set_rig_widget'; not 'batch_scene'). */
   tool: string;
   /** Parameters for the tool call. */
   params?: Record<string, any>;
@@ -44,40 +44,40 @@ function getByPath(obj: any, path: string): any {
   return curr;
 }
 
+/** A `$N.path` reference: a step number, then a path that starts with a field name (so "$5.99" is left alone). */
+const REFERENCE = /\$(\d+)\.([A-Za-z_][\w.[\]]*)/g;
+
+function resolve(stepResults: Map<number, SceneToolResult>, stepStr: string, path: string, text: string): unknown {
+  const stepIdx = parseInt(stepStr, 10);
+  const prevResult = stepResults.get(stepIdx);
+  if (!prevResult) {
+    throw new Error(`"${text}" refers to step ${stepIdx}, which has not run before this step.`);
+  }
+  const resolved = getByPath(prevResult, path);
+  if (resolved === undefined) {
+    throw new Error(`"${text}" does not resolve: step ${stepIdx}'s result has nothing at "${path}".`);
+  }
+  return resolved;
+}
+
 /**
  * Recursively substitutes `$stepIndex.path` references in parameters using previous step results.
- * E.g., "$1.scene.shots[0].duration" -> substituted with the duration value from step 1 result.
+ * E.g., "$1.scene.shots[0].hold" -> the hold of the first shot after step 1. A string that is
+ * only a reference takes the value as it is; a reference inside a longer string is filled in
+ * as text. Throws when a reference names a step that has not run or a path that is not there.
  */
 export function substituteVariables(
   value: any,
   stepResults: Map<number, SceneToolResult>,
 ): any {
   if (typeof value === 'string') {
-    // Check if the entire string is a substitution reference: "$1.path.to.prop"
-    const match = /^\$(\d+)\.(.+)$/.exec(value);
-    if (match) {
-      const stepIdx = parseInt(match[1]!, 10);
-      const path = match[2]!;
-      const prevResult = stepResults.get(stepIdx);
-      if (prevResult) {
-        const resolved = getByPath(prevResult, path);
-        if (resolved !== undefined) {
-          return resolved;
-        }
-      }
-    }
+    // The entire string is a reference: "$1.path.to.prop"
+    const match = /^\$(\d+)\.([A-Za-z_][\w.[\]]*)$/.exec(value);
+    if (match) return resolve(stepResults, match[1]!, match[2]!, value);
     // Partial template string substitution: "Hello $1.scene.name"
-    return value.replace(/\$(\d+)\.([a-zA-Z0-9_.[\]]+)/g, (fullMatch, stepStr, path) => {
-      const stepIdx = parseInt(stepStr, 10);
-      const prevResult = stepResults.get(stepIdx);
-      if (prevResult) {
-        const resolved = getByPath(prevResult, path);
-        if (resolved !== undefined) {
-          return String(resolved);
-        }
-      }
-      return fullMatch;
-    });
+    return value.replace(REFERENCE, (fullMatch, stepStr, path) =>
+      String(resolve(stepResults, stepStr, path, fullMatch)),
+    );
   }
 
   if (Array.isArray(value)) {
@@ -114,16 +114,27 @@ export async function applySceneBatch(
     const stepNumber = i + 1; // 1-based indexing for user/agent ergonomics
     const cmd = commands[i]!;
 
-    // Perform variable substitution using results of earlier steps
-    const resolvedParams = substituteVariables(cmd.params || {}, stepResults);
-
     // Prevent recursive batch execution to avoid cycles
-    if (cmd.tool === 'batch_scene_tool') {
+    if (cmd.tool === 'batch_scene') {
       return {
         ok: false,
         scene, // Rollback
         steps: executedSteps,
-        error: `Nested batch_scene_tool is not allowed at step ${stepNumber}.`,
+        error: `Step ${stepNumber} is a batch_scene; batches cannot be nested, so list its steps here instead.`,
+        failedStep: stepNumber,
+      };
+    }
+
+    // Perform variable substitution using results of earlier steps
+    let resolvedParams: Record<string, any>;
+    try {
+      resolvedParams = substituteVariables(cmd.params || {}, stepResults);
+    } catch (err) {
+      return {
+        ok: false,
+        scene, // Rollback
+        steps: executedSteps,
+        error: `Step ${stepNumber} (${cmd.tool}) failed: ${(err as Error).message}`,
         failedStep: stepNumber,
       };
     }

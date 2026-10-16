@@ -12,6 +12,10 @@ const LONG_CAPTION = 120;
 const LONG_TITLE = 60;
 const MAX_EFFECTS_PER_SHOT = 5;
 
+const SCENE_FIELDS = ['name', 'title', 'description', 'stage', 'media', 'target', 'rig', 'shots'];
+const SHOT_FIELDS = ['caption', 'title', 'camera', 'hold', 'run', 'effects', 'stopEffects', 'behaviors'];
+const list = (names: string[]) => names.map((n) => `"${n}"`).join(', ');
+
 /** Validates a Scene before running or rendering it. */
 export function validateScene(scene: Scene): SceneIssue[] {
   const issues: SceneIssue[] = [];
@@ -21,6 +25,10 @@ export function validateScene(scene: Scene): SceneIssue[] {
     say(0, 'Scene needs a string name.');
   } else if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(scene.name)) {
     say(0, `Scene name "${scene.name}" should be lowercase words and dashes.`);
+  }
+
+  for (const key of Object.keys(scene)) {
+    if (!SCENE_FIELDS.includes(key)) say(0, `Scene has an unknown field "${key}"; scene fields are ${list(SCENE_FIELDS)}.`);
   }
 
   if (!Array.isArray(scene.shots) || scene.shots.length === 0) {
@@ -38,14 +46,37 @@ export function validateScene(scene: Scene): SceneIssue[] {
         say(0, `Media "${id}" must be an object.`);
       } else if (!m.type) {
         say(0, `Media "${id}" needs a type.`);
-      } else if (m.type === 'shader' && !m.source) {
+      } else if (m.type === 'shader' && (!m.source || typeof m.source !== 'string')) {
         say(0, `Shader media "${id}" needs a source string.`);
+      } else if (m.type === 'shader' && !/\bmainImage\s*\(/.test(m.source as string)) {
+        say(0, `Shader media "${id}" needs a function void mainImage(out vec4 fragColor, in vec2 fragCoord).`);
       }
     }
   }
 
   for (const [idx, shot] of scene.shots.entries()) {
     const shotNum = idx + 1;
+
+    if (!shot || typeof shot !== 'object' || Array.isArray(shot)) {
+      say(shotNum, 'Each shot must be an object.');
+      continue;
+    }
+    for (const key of Object.keys(shot)) {
+      if (!SHOT_FIELDS.includes(key)) say(shotNum, `Shot has an unknown field "${key}"; shot fields are ${list(SHOT_FIELDS)}.`);
+    }
+    for (const key of ['caption', 'title'] as const) {
+      if (shot[key] !== undefined && typeof shot[key] !== 'string') say(shotNum, `Shot ${key} must be a string.`);
+    }
+    if (shot.hold !== undefined && typeof shot.hold !== 'number') say(shotNum, 'Shot hold must be a number of milliseconds.');
+    for (const key of ['run', 'effects', 'stopEffects', 'behaviors'] as const) {
+      if (shot[key] !== undefined && !Array.isArray(shot[key])) say(shotNum, `Shot ${key} must be an array.`);
+    }
+    if (Array.isArray(shot.run)) {
+      shot.run.forEach((cmd, i) => {
+        if (!cmd || typeof cmd !== 'object' || typeof cmd.type !== 'string')
+          say(shotNum, `Command ${i + 1} in run needs a string type ("element", "update", "delete" or "clear").`);
+      });
+    }
 
     // Check camera
     if (shot.camera) {
@@ -81,15 +112,15 @@ export function validateScene(scene: Scene): SceneIssue[] {
     }
 
     // Check text lengths
-    if (shot.caption && shot.caption.length > LONG_CAPTION) {
+    if (typeof shot.caption === 'string' && shot.caption.length > LONG_CAPTION) {
       say(shotNum, `Caption is long (${shot.caption.length} chars); consider breaking into multiple shots.`);
     }
-    if (shot.title && shot.title.length > LONG_TITLE) {
+    if (typeof shot.title === 'string' && shot.title.length > LONG_TITLE) {
       say(shotNum, `Title is long (${shot.title.length} chars); titles should be concise headings.`);
     }
 
     // Check effects
-    const effects = shot.effects ?? [];
+    const effects = Array.isArray(shot.effects) ? shot.effects : [];
     if (effects.length > MAX_EFFECTS_PER_SHOT) {
       say(shotNum, `Shot starts ${effects.length} effects at once; consider keeping effects focused.`);
     }
