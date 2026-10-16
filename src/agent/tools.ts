@@ -36,7 +36,7 @@ export const FLAIR_AGENT_TOOLS: AgentToolDefinition[] = [
         scene: {
           type: 'object',
           description:
-            'Full Scene object with name, stage, media, and shots. A shot camera frames a box {x, y, width, height} or elements {frame: [ids]}, and may add tilt, turn, roll (degrees, tilt/turn up to 75), perspective (default 1.2) and motionBlur (0-3, 1 natural); angles persist until changed.',
+            'Full Scene object with name, stage, media, and shots. A shot camera frames a box {x, y, width, height} or elements {frame: [ids]}, and may add tilt, turn, roll (degrees, tilt/turn up to 75), perspective (default 1.2), motionBlur (0-3, 1 natural) and transition ("move" eases across, the default; "whip" whip-pans in; "zoom" punches through; "cut" jumps); angles persist until changed.',
         },
       },
       required: ['scene'],

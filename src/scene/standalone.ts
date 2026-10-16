@@ -1,4 +1,4 @@
-import { CAMERA_MS, type Stage, type View } from './camera.js';
+import type { Stage, View } from './camera.js';
 import { CAMERA_STEP_MS, cameraAt, cameraTrack, sceneStage } from './cameratrack.js';
 import type { SceneElement } from './geometry.js';
 import type { Scene } from './types.js';
@@ -7,6 +7,8 @@ import type { Scene } from './types.js';
 interface ShotPlan {
   /** The camera at each step of its move into the shot (one view when it does not move). */
   move: View[];
+  /** How long the move takes, in ms (0 when the shot cuts or stays). */
+  moveMs: number;
   elements: SceneElement[];
 }
 
@@ -17,7 +19,7 @@ function planShots(scene: Scene, stage: Stage): ShotPlan[] {
     const steps = Math.round(entry.moveMs / CAMERA_STEP_MS);
     const move = Array.from({ length: Math.max(0, steps - 1) }, (_, i) => cameraAt(entry, (i + 1) * CAMERA_STEP_MS, stage));
     move.push(entry.to);
-    return { move, elements: entry.elements };
+    return { move, moveMs: entry.moveMs, elements: entry.elements };
   });
 }
 
@@ -30,7 +32,7 @@ function planShots(scene: Scene, stage: Stage): ShotPlan[] {
 export function standaloneSceneHtml(scene: Scene): string {
   const stage = sceneStage(scene);
   const serializedScene = JSON.stringify(scene).replace(/</g, '\\u003c');
-  const serializedPlan = JSON.stringify({ stage, cameraMs: CAMERA_MS, shots: planShots(scene, stage) }).replace(/</g, '\\u003c');
+  const serializedPlan = JSON.stringify({ stage, shots: planShots(scene, stage) }).replace(/</g, '\\u003c');
   const title = scene.title || scene.name;
 
   return `<!DOCTYPE html>
@@ -293,8 +295,8 @@ export function standaloneSceneHtml(scene: Scene): string {
 
     // The camera at time 'now': a step of the current shot's move, or where it settled.
     function cameraNow(now) {
-      const move = plan.shots[currentShotIdx].move;
-      const u = Math.min(1, (now - moveFrom) / plan.cameraMs);
+      const { move, moveMs } = plan.shots[currentShotIdx];
+      const u = moveMs > 0 ? Math.min(1, (now - moveFrom) / moveMs) : 1;
       return move[Math.min(move.length - 1, Math.floor(u * move.length))];
     }
 
@@ -346,10 +348,10 @@ export function standaloneSceneHtml(scene: Scene): string {
 
       // Playing moves on to the next shot once this one's move and hold are over.
       const shot = scene.shots[currentShotIdx];
-      if (isPlaying && now - shotStartTime > plan.cameraMs + (shot.hold ?? 800) && currentShotIdx < scene.shots.length - 1) {
+      if (isPlaying && now - shotStartTime > plan.shots[currentShotIdx].moveMs + (shot.hold ?? 800) && currentShotIdx < scene.shots.length - 1) {
         goTo(currentShotIdx + 1, true);
       }
-      if (isPlaying || now - moveFrom < plan.cameraMs) {
+      if (isPlaying || now - moveFrom < plan.shots[currentShotIdx].moveMs) {
         requestAnimationFrame(draw);
       }
     }
@@ -358,7 +360,7 @@ export function standaloneSceneHtml(scene: Scene): string {
     function goTo(idx, animate) {
       currentShotIdx = idx;
       shotStartTime = performance.now();
-      moveFrom = animate ? shotStartTime : shotStartTime - plan.cameraMs;
+      moveFrom = animate ? shotStartTime : shotStartTime - plan.shots[idx].moveMs;
       updateShotUI();
       requestAnimationFrame(draw);
     }
@@ -368,7 +370,7 @@ export function standaloneSceneHtml(scene: Scene): string {
       playBtn.textContent = isPlaying ? 'Pause' : 'Play';
       // The current shot counts as settled, so its hold runs from now.
       if (isPlaying) {
-        shotStartTime = performance.now() - plan.cameraMs;
+        shotStartTime = performance.now() - plan.shots[currentShotIdx].moveMs;
         requestAnimationFrame(draw);
       }
     });

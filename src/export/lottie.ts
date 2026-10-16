@@ -7,8 +7,8 @@
  */
 
 import type { Scene } from '../scene/types.js';
-import { DEFAULT_STAGE, CAMERA_MS, DEFAULT_PERSPECTIVE, boardHeight, centreOf, isAngled, type View } from '../scene/camera.js';
-import { cameraSamples, sceneStage } from '../scene/cameratrack.js';
+import { DEFAULT_STAGE, DEFAULT_PERSPECTIVE, boardHeight, centreOf, isAngled, type View } from '../scene/camera.js';
+import { cameraSamples, shotMoveMs, sceneStage } from '../scene/cameratrack.js';
 import { isElementCommand, isUpdateCommand } from '../scene/types.js';
 import type { KeyframeEase } from '../time/keyframe.js';
 
@@ -205,7 +205,7 @@ export function exportLottie(scene: Scene, options: LottieExportOptions = {}): L
   // Compute shot timeline frames
   let currentMs = 0;
   const shotTimings = scene.shots.map((shot, idx) => {
-    const camMs = idx > 0 && shot.camera ? CAMERA_MS : 0;
+    const camMs = shotMoveMs(shot, idx);
     const holdMs = shot.hold ?? 800;
     const durationMs = camMs + holdMs;
     const startMs = currentMs;

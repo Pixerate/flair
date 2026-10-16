@@ -487,6 +487,83 @@ ${BACKDROP_CONTROLS}`,
   ],
 };
 
+export const transitionWhipPan: ShaderEffect = {
+  kind: "shader",
+  id: "transition-whip-pan",
+  name: "Whip pan",
+  description: "A beat-cut whip pan or zoom punch: the first image flies off in a motion blur that peaks at the cut, and the next one lands from the other side.",
+  category: "transition",
+  video: "transition",
+  tags: ["transition", "whip", "pan", "zoom", "motion blur", "image", "cut"],
+  loop: 4,
+  source: glsl(
+    `// Whip pan: From accelerates away under a motion blur (directional, or radial in zoom mode), swaps at mid-progress, and To decelerates in.
+${pair(SAMPLE_IMAGES.landscape, SAMPLE_IMAGES.city)}
+uniform int uMode;         // @control min=0 max=1 default=0 label="Mode (0 whip, 1 zoom)"
+uniform float uAngle;      // @control min=0 max=360 default=0 label="Direction (°)"
+uniform float uStrength;   // @control min=0 max=1 default=0.6 label="Blur strength"
+uniform float uPunch;      // @control min=0 max=1 default=0.15 label="Scale punch"
+${BACKDROP_CONTROLS}`,
+    PICTURE,
+    COMMON,
+    `// Mirrored at the frame edges, so a moving image never runs out of picture.
+vec4 folded(sampler2D tex, vec2 uv) {
+  return coverRGBA(tex, 1.0 - abs(1.0 - mod(uv, 2.0)));
+}
+
+// 24 taps spread len along dir, centred on uv: a directional motion blur.
+vec4 smear(sampler2D tex, vec2 uv, vec2 dir, float len) {
+  vec4 sum = vec4(0.0);
+  for (int i = 0; i < 24; i++) {
+    sum += folded(tex, uv + dir * len * ((float(i) + 0.5) / 24.0 - 0.5));
+  }
+  return sum / 24.0;
+}
+
+// 24 taps from uv towards the centre, a zoom blur.
+vec4 zoomSmear(sampler2D tex, vec2 uv, float len) {
+  vec4 sum = vec4(0.0);
+  for (int i = 0; i < 24; i++) {
+    float k = 1.0 - len * (float(i) + 0.5) / 24.0;
+    sum += folded(tex, 0.5 + (uv - 0.5) * k);
+  }
+  return sum / 24.0;
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec2 uv = fragCoord / iResolution.xy;
+  float t = progress();
+  bool second = t >= 0.5;
+  // Each half runs 0 at its far end to 1 at the cut; travel eases in (u³), so speed (u²) peaks at the cut.
+  float u = second ? 2.0 - 2.0 * t : 2.0 * t;
+  float travel = u * u * u;
+  float speed = u * u;
+  vec4 col;
+  if (uMode == 0) {
+    vec2 dir = vec2(cos(radians(uAngle)), sin(radians(uAngle))) * vec2(iResolution.y / iResolution.x, 1.0);
+    // From leaves along dir; To arrives from behind, so it is offset back along dir.
+    vec2 shift = dir * travel * (0.4 + 0.6 * uStrength) * (second ? -1.0 : 1.0);
+    vec2 p = 0.5 + (uv - 0.5) / (1.0 + uPunch * speed) - shift;
+    float len = uStrength * 0.6 * speed;
+    col = second ? smear(uTo, p, dir, len) : smear(uFrom, p, dir, len);
+  } else {
+    vec2 p = 0.5 + (uv - 0.5) / (1.0 + 4.0 * uPunch * travel + 0.2 * uStrength * travel);
+    float len = uStrength * 0.5 * speed;
+    col = second ? zoomSmear(uTo, p, len) : zoomSmear(uFrom, p, len);
+  }
+  // A touch of exposure at the cut sells the speed.
+  col.rgb *= 1.0 + 0.25 * uStrength * speed * speed;
+  fragColor = col;
+}`,
+  ),
+  presets: [
+    { name: "Whip left", values: { uMode: 0, uAngle: 180 } },
+    { name: "Whip up", values: { uMode: 0, uAngle: 90 } },
+    { name: "Zoom punch", values: { uMode: 1, uStrength: 0.7, uPunch: 0.4 } },
+    { name: "Hard whip", values: { uMode: 0, uAngle: 0, uStrength: 1, uPunch: 0.3 } },
+  ],
+};
+
 /** Shaders that turn one image into another: true morphs (category "morph") and morph-like transitions. */
 export const morphShaders: ShaderEffect[] = [
   featureMorph,
@@ -496,4 +573,5 @@ export const morphShaders: ShaderEffect[] = [
   transitionLuma,
   transitionParticleSwap,
   transitionInkBleed,
+  transitionWhipPan,
 ];

@@ -1,18 +1,18 @@
 import type { Clock } from '../time/clock.js';
 import { ManualClock } from '../time/clock.js';
 import {
-  between,
   boardHeight,
   cameraAngle,
   centreOf,
   CAMERA_MS,
+  CAMERA_STEPS,
   DEFAULT_STAGE,
-  easeInOutCubic,
   frame,
   calculateFramingRect,
   isAngled,
-  moveBlur,
   projectPoint,
+  transitionStrength,
+  transitionView,
   viewAt,
   type Stage,
   type View,
@@ -222,17 +222,17 @@ export async function playScene(
       if (idx === 0) {
         board.setView(targetView);
       } else {
-        const fromView = board.getView();
-        const strength = shot.camera?.motionBlur ?? 0;
-        const steps = 15;
-        const stepMs = CAMERA_MS / steps;
-        let last = fromView;
-        for (let s = 1; s <= steps; s++) {
-          const t = easeInOutCubic(s / steps);
-          const view = between(fromView, targetView, t, stage);
-          board.setView(s < steps ? { ...view, ...moveBlur(last, view, stage, strength) } : view);
-          last = view;
-          await clock.sleep(stepMs);
+        const kind = shot.camera?.transition ?? 'move';
+        const strength = transitionStrength(kind, shot.camera?.motionBlur);
+        if (kind === 'cut') {
+          board.setView(targetView);
+        } else {
+          const fromView = board.getView();
+          const stepMs = CAMERA_MS / CAMERA_STEPS;
+          for (let s = 1; s <= CAMERA_STEPS; s++) {
+            board.setView(transitionView(kind, fromView, targetView, s / CAMERA_STEPS, stage, strength));
+            await clock.sleep(stepMs);
+          }
         }
       }
     }
