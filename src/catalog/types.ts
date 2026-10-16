@@ -16,6 +16,7 @@ export type EffectCategory =
   | "organic"
   | "pattern"
   | "light"
+  | "lighting"
   | "space"
   | "retro"
   | "image"
@@ -50,6 +51,7 @@ export const EFFECT_CATEGORIES: readonly EffectCategory[] = [
   "organic",
   "pattern",
   "light",
+  "lighting",
   "space",
   "retro",
   "image",

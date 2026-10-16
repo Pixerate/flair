@@ -1331,6 +1331,50 @@ describe("shadow effects", () => {
   });
 });
 
+describe("lighting effects", () => {
+  const lighting = findEffects({ category: "lighting" });
+  const shaders = ["relight", "point-light", "studio-lighting", "time-of-day", "gobo-projection", "neon-spill", "candlelight", "pool-caustics", "party-lights"];
+
+  it("has the relights, lamps, gobos, neon, candles, caustics, party lights and the lamp switch, all tagged", () => {
+    expect(lighting.map((e) => e.id)).toEqual(expect.arrayContaining([...shaders, "lamp-switch"]));
+    for (const effect of lighting) expect(effect.tags, effect.id).toContain("lighting");
+    for (const effect of lighting) expect(effect.presets?.length ?? 0, effect.id).toBeGreaterThan(0);
+    expect(EFFECT_CATEGORIES.indexOf("lighting")).toBe(EFFECT_CATEGORIES.indexOf("light") + 1);
+  });
+
+  it("relight pictures opaque, say how they suit video, and follow the pointer from the built-in", () => {
+    for (const id of shaders) {
+      const effect = getEffect(id)!;
+      if (effect.kind !== "shader") throw new Error("shader expected");
+      expect(effect.video, id).toBe(id === "point-light" ? "interactive" : "filter");
+      expect(effect.transparent ?? false, id).toBe(false);
+      expect(effectControls(effect).find((c) => c.name === "uImage"), id).toMatchObject({ type: "sampler2D" });
+      expect(effect.source, id).not.toMatch(/uniform\s+vec4\s+(iPointer|iClicks|iTrail)/);
+    }
+    const point = getEffect("point-light")!;
+    expect(point.kind === "shader" && point.source).toMatch(/\biPointer\b/);
+  });
+
+  it("gobo projection picks a pattern or the gobo image, text by default", () => {
+    const gobo = getEffect("gobo-projection")!;
+    expect(effectControls(gobo).find((c) => c.name === "uPattern")).toMatchObject({ type: "int", min: 0, max: 4 });
+    expect(effectDefaults(gobo).uGobo).toBe(textImage("LIGHTS"));
+  });
+
+  it("lamp switch turns on with its first click and back off with its second, its ids prefixed", () => {
+    const effect = getEffect("lamp-switch")!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    expect(effect.trigger).toBe("click");
+    const motion = renderVectorEffect(effect, effectDefaults(effect));
+    expect(motion.animate!.every((a) => a.step === 1 || a.step === 2)).toBe(true);
+    for (const [, id] of motion.svg.matchAll(/\sid="([^"]+)"/g)) expect(id).toMatch(/^lampSwitch/);
+    const at = (clicks: number[], ms: number) => JSON.stringify([...svgFrame(motion.animate!, clicks, ms)].sort());
+    const start = at([], 0);
+    expect(at([0], 5000)).not.toBe(start);
+    expect(at([0, 5000], 10000)).toBe(start);
+  });
+});
+
 describe("duotone", () => {
   it("only maps colours: no glare and no motion of its own (shine-sweep adds a glare)", () => {
     const duotone = getEffect("image-duotone")!;
