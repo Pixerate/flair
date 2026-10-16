@@ -730,5 +730,408 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   ],
 };
 
-/** The splatter shaders: paint, ink, liquid crowns, goo, a paint roller and water. */
-export const splatterShaders: ShaderEffect[] = [paintSplatter, inkSplash, splashCrown, gooSplat, paintRoller, waterSplash];
+/** `smax(a, b, k)`: a smooth intersection of two distances (needs {@link SMIN}). */
+const SMAX = `
+float smax(float a, float b, float k) {
+  return -smin(-a, -b, k);
+}`.trim();
+
+/**
+ * `gooShade(goo, n, thick, gloss)`: glossy jelly in colour `goo` with surface
+ * normal `n`, deeper where it is thick (0–1), with light glowing through the
+ * rim, a soft shade where it curls under and a wet highlight.
+ */
+const GOO_SHADE = `
+vec3 gooShade(vec3 goo, vec3 n, float thick, float gloss) {
+  vec3 light = normalize(vec3(-0.45, 0.6, 1.0));
+  vec3 col = mix(goo * 1.15, goo * 0.62, thick * 0.6) * (0.78 + 0.22 * dot(n, light));
+  col = mix(col, vec3(1.0), pow(1.0 - n.z, 2.0) * 0.35);
+  col *= 1.0 - 0.25 * smoothstep(0.0, 0.6, -n.y) * (1.0 - thick);
+  float rz = max(reflect(-light, n).z, 0.0);
+  return min(col + gloss * (pow(rz, 40.0) * 0.9 + pow(rz, 6.0) * 0.12), vec3(1.0));
+}`.trim();
+
+export const slimeCurtainWipe: ShaderEffect = {
+  kind: "shader",
+  id: "slime-curtain-wipe",
+  name: "Slime curtain wipe",
+  description: "Thick, glossy slime pouring down from the top with a wobbling front and long beaded drips until it covers the frame, then sliding off in stretchy strings to reveal the next picture.",
+  category: "splatter",
+  video: "transition",
+  tags: ["splatter", "slime", "goo", "transition", "image", "reveal", "slideshow", "playful"],
+  loop: 6,
+  source: glsl(
+    `// Slime curtain wipe: goo pours down over the From picture, then slides off to show the To one, and back again.
+uniform sampler2D uFrom;   // @control filter=linear wrap=clamp default=${SAMPLE_IMAGES.landscape} label="From image"
+uniform sampler2D uTo;     // @control filter=linear wrap=clamp default=${SAMPLE_IMAGES.city} label="To image"
+uniform bool uSwap;        // @control default=true label="Reveal the To image"
+uniform vec3 uColorA;      // @control color default=#FF4FA3 label="Goo"
+uniform vec3 uColorB;      // @control color default=#A3E635 label="Swirl colour"
+uniform float uMarble;     // @control min=0 max=1 default=0.3 label="Swirl amount"
+uniform int uDripCount;    // @control min=0 max=24 default=14 label="Drips"
+uniform float uThickness;  // @control min=0.4 max=2 default=1 label="Thickness"
+uniform float uGloss;      // @control min=0 max=1 default=0.9 label="Gloss"
+uniform bool uAnimate;     // @control default=true label="Animate"
+uniform float uProgress;   // @control min=0 max=1 default=0.45 label="Progress (when still)"
+${BACKDROP_CONTROLS}`,
+    HASH,
+    NOISE,
+    FBM,
+    SMIN,
+    SMAX,
+    SEGMENT,
+    GOO_SHADE,
+    PICTURE,
+    `// The pass: x cover (0–1), y reveal (0–1), z seconds into it, w a seed.
+vec4 gPass;
+
+// The pouring front's height at x: uneven, sagging in fat bellies, wobbling as it comes.
+float frontAt(float x) {
+  float s = gPass.w;
+  float lag = 0.14 * (vnoise(vec2(x * 2.3 + s, 0.5)) - 0.5) + 0.05 * (vnoise(vec2(x * 6.1 + s, 2.5)) - 0.5);
+  float belly = 0.022 * sqrt(abs(sin(x * 6.5 + s)) + 0.02);
+  float wob = 0.012 * sin(x * 9.0 + gPass.z * 5.0 + s) * (1.0 - gPass.y);
+  return mix(1.13, -0.3, gPass.x) - 0.75 * gPass.y + lag - belly + wob;
+}
+
+// The top edge as the goo slides off.
+float topAt(float x) {
+  float e = gPass.y * gPass.y * (3.0 - 2.0 * gPass.y);
+  return mix(1.1, -0.16, e) + 0.04 * (vnoise(vec2(x * 3.1 + gPass.w, 7.0)) - 0.5) - 0.025 * sin(x * 2.0 + gPass.w);
+}
+
+// The goo's signed distance (frame heights) at P: the curtain, its drips and, sliding off, its strings.
+float curtain(vec2 P, float aspect) {
+  float d = frontAt(P.x) - P.y;
+  float s = gPass.w;
+  for (int k = 0; k < 24; k++) {
+    if (k >= uDripCount) break;
+    vec3 h = vec3(hash22(vec2(float(k) + 0.5, s + 3.3)), hash12(vec2(s + 1.7, float(k) * 2.9)));
+    float x = (float(k) + 0.5 + (h.x - 0.5) * 0.7) / float(uDripCount) * aspect;
+    if (abs(P.x - x) > 0.12) continue;
+    float fx = frontAt(x);
+    float len = (0.08 + 0.3 * h.y) * smoothstep(0.08, 0.7, gPass.x) * (1.0 + 0.8 * gPass.y) * (1.0 + 0.05 * sin(gPass.z * 4.0 + h.x * 6.28));
+    float w = (0.01 + 0.015 * h.z) * uThickness;
+    vec2 b = vec2(x, fx - len);
+    vec2 sg = segment(P, vec2(x, fx + 0.03), b);
+    d = smin(d, sg.x - w * mix(1.15, 0.7, sg.y), 0.03);
+    d = smin(d, length((P - b + vec2(0.0, w * 0.5)) * vec2(1.0, 0.85)) - w * 1.6, 0.012);
+  }
+  if (gPass.y > 0.0) {
+    d = smax(d, P.y - topAt(P.x), 0.02);
+    // Strings still stuck to the top, stretching thin and snapping.
+    for (int j = 0; j < 6; j++) {
+      vec3 h = vec3(hash22(vec2(float(j) + 0.5, s + 8.1)), hash12(vec2(s + 4.3, float(j) * 1.3)));
+      float x = (float(j) + 0.2 + 0.6 * h.x) / 6.0 * aspect;
+      float wj = (0.016 + 0.02 * h.y) * uThickness * (1.0 - smoothstep(0.3, 0.7 + 0.25 * h.z, gPass.y));
+      if (wj <= 0.0 || abs(P.x - x) > 0.06) continue;
+      vec2 sg = segment(P, vec2(x, topAt(x) - 0.01), vec2(x, 1.1));
+      d = smin(d, sg.x - wj * mix(1.0, 0.55, sin(3.14159 * sg.y)), 0.05);
+    }
+  }
+  return d;
+}
+
+// The goo's surface height: a dome falling away at the rim, rippled where it runs.
+float gooHeight(vec2 P, float aspect, out float d) {
+  d = curtain(P, aspect);
+  float k = 0.028 * uThickness;
+  float ripple = fbm(vec2(P.x * 9.0, (P.y + gPass.z * 0.35) * 2.5) + gPass.w, 3);
+  return -1.6 * k * exp(min(d, 0.0) / k) + 0.03 * uThickness * ripple * smoothstep(-0.01, -0.09, d);
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec2 uv = fragCoord / iResolution.xy;
+  float px = 1.0 / iResolution.y;
+  float aspect = iResolution.x / iResolution.y;
+  vec2 P = vec2(uv.x * aspect, uv.y);
+  // Two passes a loop: pour over the From picture and slide off the To one, then back.
+  float t = mod(iTime, 6.0);
+  bool second = uAnimate && t >= 3.0;
+  float prog = uAnimate ? (t - (second ? 3.0 : 0.0)) / 3.0 : uProgress;
+  gPass = vec4(smoothstep(0.03, 0.42, prog), smoothstep(0.5, 0.98, prog), prog * 3.0, second ? 7.0 : 0.0);
+  vec4 a = pictureRGBA(uFrom, uv);
+  vec4 b = uSwap ? pictureRGBA(uTo, uv) : a;
+  vec4 below = gPass.y > 0.0 ? (second ? a : b) : (second ? b : a);
+  // A soft shadow the goo casts down on the picture.
+  float dS = curtain(P + vec2(-0.006, 0.016), aspect);
+  below.rgb *= 1.0 - 0.38 * smoothstep(0.022, -0.012, dS);
+  float d;
+  float h = gooHeight(P, aspect, d);
+  float cover = clamp(0.5 - d / px, 0.0, 1.0);
+  vec4 col = below;
+  if (cover > 0.0) {
+    float eps = px;
+    float dd;
+    vec2 g = vec2(gooHeight(P + vec2(eps, 0.0), aspect, dd), gooHeight(P + vec2(0.0, eps), aspect, dd)) - h;
+    vec3 n = normalize(vec3(-g / eps, 1.0));
+    // Swirls of the second colour running through it.
+    float v = fbm(vec2(P.x * 2.5 + gPass.w, (P.y + gPass.z * 0.35) * 0.9), 4);
+    float m = uMarble > 0.0 ? smoothstep(0.74 - 0.4 * uMarble, 0.75 - 0.4 * uMarble, v) : 0.0;
+    vec3 goo = mix(uColorA, uColorB, m);
+    col = mix(below, vec4(gooShade(goo, n, smoothstep(0.0, -0.08, d), uGloss), 1.0), cover);
+  }
+  fragColor = col;
+}`,
+  ),
+  presets: [
+    { name: "Lime slime", values: { uColorA: [0.64, 0.9, 0.21], uColorB: [1, 0.31, 0.64], uMarble: 0.15 } },
+    { name: "Clear off", values: { uSwap: false, uMarble: 0.55, uDripCount: 20 } },
+    { name: "Chocolate", values: { uColorA: [0.36, 0.2, 0.11], uColorB: [0.55, 0.33, 0.18], uMarble: 0.4, uThickness: 1.5, uGloss: 0.75 } },
+  ],
+};
+
+export const gooeyFrame: ShaderEffect = {
+  kind: "shader",
+  id: "gooey-frame",
+  name: "Gooey frame",
+  description: "A wobbling rim of glossy slime round a rounded frame, with drips swelling on its edges, sliding down and dropping off in beads, for cards and buttons.",
+  category: "splatter",
+  tags: ["splatter", "slime", "goo", "border", "frame", "ui", "card", "overlay", "playful"],
+  transparent: true,
+  loop: 8,
+  source: glsl(
+    `// Gooey frame: a slime rim round a rounded rectangle, wobbling, with drips that swell, run and drop.
+uniform vec3 uColor;      // @control color default=#A3E635 label="Goo"
+uniform float uInset;     // @control min=0 max=0.3 default=0.14 label="Inset"
+uniform float uRadius;    // @control min=0 max=0.5 default=0.08 label="Corner radius"
+uniform float uThickness; // @control min=0.005 max=0.08 default=0.022 label="Thickness"
+uniform float uDrips;     // @control min=0 max=1 default=0.6 label="Drip rate"
+uniform float uWobble;    // @control min=0 max=1 default=0.5 label="Wobble"
+uniform float uGloss;     // @control min=0 max=1 default=0.9 label="Gloss"
+uniform bool uShadow;     // @control default=true label="Shadow"`,
+    HASH,
+    NOISE,
+    SMIN,
+    SEGMENT,
+    OVER,
+    GOO_SHADE,
+    `float boxSdf(vec2 p, vec2 b, float r) {
+  vec2 q = abs(p) - b + r;
+  return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
+}
+
+// The rim's signed distance (frame heights) at p, T seconds into the loop.
+float gooFrame(vec2 p, vec2 box, float rad, float T) {
+  // Noise drifting round a circle, so the wobble loops.
+  float ph = 6.28318 * T / 8.0;
+  float n1 = vnoise(p * 6.0 + vec2(cos(ph), sin(ph)) * 1.3);
+  float n2 = vnoise(p * 14.0 + vec2(cos(2.0 * ph + 1.0), sin(2.0 * ph + 1.0)) * 0.9 + 9.0);
+  float th = uThickness * (1.0 + uWobble * ((n1 - 0.5) * 1.1 + (n2 - 0.5) * 0.4));
+  // It sags, so it is fatter along the bottom.
+  th *= mix(1.0, 1.35, smoothstep(0.2, -1.0, p.y / box.y));
+  float d = abs(boxSdf(p, box, rad) + uWobble * uThickness * (n2 - 0.5) * 0.8) - th;
+  // Drips: each swells on an edge, runs down and, off the bottom, drops away; on the top it soaks back in.
+  for (int k = 0; k < 12; k++) {
+    vec3 h = vec3(hash22(vec2(float(k) + 0.5, 7.3)), hash12(vec2(4.1, float(k) * 1.9 + 0.3)));
+    if (h.z > uDrips) continue;
+    float cyc = mod(T + h.x * 8.0, 8.0);
+    float which = floor(cyc / 4.0);
+    float a = cyc - which * 4.0;
+    vec2 hh = hash22(vec2(float(k) * 3.1 + which * 17.0, 2.2));
+    bool top = hh.y < 0.3;
+    float x = (hh.x * 2.0 - 1.0) * max(box.x - rad - uThickness * 2.0, 0.0);
+    if (abs(p.x - x) > 0.12) continue;
+    float y0 = top ? box.y : -box.y;
+    float grow = smoothstep(0.0, 0.8, a);
+    float w = uThickness * (0.6 + 0.35 * h.y) * (top ? 1.0 - smoothstep(2.8, 3.9, a) : 1.0);
+    float lmax = top ? 0.05 + 0.1 * h.y : 0.07 + 0.15 * h.y;
+    float run = smoothstep(0.6, 2.6, a);
+    bool dropped = !top && a > 2.6;
+    float len = lmax * run * (dropped ? 1.0 - smoothstep(2.6, 3.3, a) : 1.0);
+    vec2 sg = segment(p, vec2(x, y0), vec2(x, y0 - len));
+    d = smin(d, sg.x - w * mix(0.8, 0.5, sg.y) * grow, w * 1.2 * grow + 1e-4);
+    float fall = dropped ? 1.25 * (a - 2.6) * (a - 2.6) : 0.0;
+    vec2 bead = vec2(x, y0 - lmax * run - fall - w * 0.3);
+    float db = length((p - bead) * vec2(1.0, 0.85)) - w * mix(0.8, 1.5, grow);
+    d = dropped ? min(d, db) : smin(d, db, w * 0.8 * grow + 1e-4);
+  }
+  return d;
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  float px = 1.0 / iResolution.y;
+  vec2 p = (fragCoord - 0.5 * iResolution.xy) * px;
+  vec2 box = max(0.5 * iResolution.xy * px - uInset, vec2(0.05));
+  float rad = min(uRadius, min(box.x, box.y));
+  float T = mod(iTime, 8.0);
+  vec4 acc = vec4(0.0);
+  float d = gooFrame(p, box, rad, T);
+  float cover = clamp(0.5 - d / px, 0.0, 1.0);
+  if (uShadow) {
+    float dS = gooFrame(p + vec2(-0.007, 0.013), box, rad, T);
+    acc = over(acc, vec3(0.0), 0.32 * smoothstep(0.02, -0.01, dS) * (1.0 - cover));
+  }
+  if (cover > 0.0) {
+    float eps = px;
+    vec2 g = vec2(gooFrame(p + vec2(eps, 0.0), box, rad, T), gooFrame(p + vec2(0.0, eps), box, rad, T)) - d;
+    g /= eps;
+    vec3 n = normalize(vec3(g * exp(min(d, 0.0) / (uThickness * 0.9)) * 1.6, 1.0));
+    float thick = smoothstep(0.0, -uThickness * 1.2, d);
+    acc = over(acc, gooShade(uColor, n, thick, uGloss), cover * mix(0.97, 0.9, thick));
+  }
+  fragColor = unpremultiply(acc);
+}`,
+  ),
+  presets: [
+    { name: "Slime button", values: { uInset: 0.05, uRadius: 0.5, uThickness: 0.016, uDrips: 0.4 } },
+    { name: "Bubblegum", values: { uColor: [1, 0.42, 0.7], uRadius: 0.12, uWobble: 0.7 } },
+    { name: "Heavy drip", values: { uThickness: 0.035, uDrips: 1, uWobble: 0.8, uInset: 0.18 } },
+  ],
+};
+
+export const gooVortex: ShaderEffect = {
+  kind: "shader",
+  id: "goo-vortex",
+  name: "Goo vortex",
+  description: "Two glossy ribbons of goo spiralling in round the centre, coiling into a ball and flinging out to splat round the frame, an intro on a loop.",
+  category: "splatter",
+  tags: ["splatter", "slime", "goo", "intro", "spiral", "paint", "playful"],
+  loop: 6,
+  source: glsl(
+    `// Goo vortex: ribbons of goo spiral in, coil up, fling out and splat; then it starts again.
+uniform vec3 uColorA;     // @control color default=#FF4FA3 label="Goo 1"
+uniform vec3 uColorB;     // @control color default=#A3E635 label="Goo 2"
+uniform vec3 uBackground; // @control color default=#FFD93D label="Background"
+uniform float uSpin;      // @control min=0 max=3 default=1 label="Spin speed"
+uniform float uWidth;     // @control min=0.015 max=0.12 default=0.05 label="Ribbon width"
+uniform int uArms;        // @control min=1 max=6 default=2 label="Arms"
+uniform float uSplat;     // @control min=0 max=1 default=0.7 label="Splat amount"
+uniform float uGloss;     // @control min=0 max=1 default=0.9 label="Gloss"`,
+    HASH,
+    NOISE,
+    SMIN,
+    SMAX,
+    SEGMENT,
+    GOO_SHADE,
+    `// The union of two (distance, colour) pairs, melted together within k.
+vec2 meld(vec2 a, vec2 b, float k) {
+  float h = clamp(0.5 + 0.5 * (b.x - a.x) / k, 0.0, 1.0);
+  return vec2(mix(b.x, a.x, h) - k * h * (1.0 - h), mix(b.y, a.y, smoothstep(0.3, 0.7, h)));
+}
+
+// A splat in units of its radius, age seconds after it landed flying along dir.
+float splatSd(vec2 q, float seed, float age, vec2 dir) {
+  float grow = 1.0 - exp(-age * 14.0);
+  float wob = 0.25 * exp(-age * 5.0) * cos(age * 24.0);
+  float s = mix(0.45, 1.0, grow);
+  // Its own frame: x along the flight. It lands squashed and wobbles back.
+  vec2 L = vec2(dot(q, dir), dot(q, vec2(-dir.y, dir.x)));
+  vec2 b = L / vec2(1.0 - wob, 1.0 + wob) / s;
+  float d = length(b) - 0.5;
+  for (int k = 0; k < 5; k++) {
+    vec2 h = hash22(vec2(seed, float(k) + 0.5));
+    float a = h.x * 6.28318;
+    d = smin(d, length(b - vec2(cos(a), sin(a)) * (0.3 + 0.3 * h.y)) - 0.16 - 0.12 * hash12(h + seed), 0.2);
+  }
+  d = (d + (vnoise(b * 3.5 + seed) - 0.5) * 0.08) * s;
+  // Rays thrown on ahead, each ending in a drop.
+  for (int k = 0; k < 4; k++) {
+    vec3 h = vec3(hash22(vec2(seed + 3.3, float(k) + 0.5)), hash12(vec2(float(k) * 2.1, seed)));
+    float a = (h.x - 0.5) * 2.2;
+    vec2 rd = vec2(cos(a), sin(a));
+    float len = (0.5 + 0.55 * h.y) * grow;
+    vec2 sg = segment(L, rd * 0.3, rd * len);
+    d = smin(d, sg.x - mix(0.17, 0.07, sg.y), 0.14);
+    d = smin(d, length(L - rd * len) - 0.1 - 0.05 * h.z, 0.08);
+    d = min(d, length(L - rd * (len + (0.2 + 0.2 * h.z) * grow)) - (0.05 + 0.06 * h.z) * grow);
+  }
+  // Two drips running down, with beads on their ends.
+  for (int j = 0; j < 2; j++) {
+    vec2 h = hash22(vec2(seed + 6.1, float(j) + 0.5));
+    vec2 top = vec2((h.x - 0.5) * 0.8, -0.3);
+    float len = (0.3 + 0.8 * h.y) * (1.0 - exp(-max(age - 0.3, 0.0) * 0.6));
+    float w = 0.08;
+    vec2 sg = segment(q, top, top - vec2(0.0, len));
+    d = smin(d, sg.x - w * mix(1.0, 0.7, sg.y), 0.1);
+    d = smin(d, length(q - top + vec2(0.0, len + w * 0.4)) - w * 1.4, 0.05);
+  }
+  return d;
+}
+
+// The goo at p, T seconds into the loop: x its signed distance (frame heights), y its colour (0 the first, 1 the second).
+vec2 vortex(vec2 p, float T, float aspect) {
+  float N = float(uArms);
+  float r = max(length(p), 1e-4);
+  float lr = log(r);
+  float ang = atan(p.y, p.x);
+  // The ribbons are arms of a log spiral turning in; as they fling out it unwinds.
+  float fl = smoothstep(2.45, 3.3, T);
+  float c = mix(2.4, 0.4, fl);
+  float f = (ang - uSpin * T * 2.2 - c * lr) * N / 6.28318;
+  float idx = floor(f + 0.5);
+  float del = (f - idx) * 6.28318 / N;
+  float perp = r * del / sqrt(1.0 + c * c);
+  float arm = mod(idx, N);
+  float other = mod(mod(idx + (del > 0.0 ? 1.0 : -1.0), N), 2.0);
+  float colour = mix(mod(arm, 2.0), other, 0.5 * smoothstep(3.14159 / N - 0.05, 3.14159 / N, abs(del)));
+  // Thinner at the middle, twisting along its length, and breaking into blobs as it flings.
+  float w = uWidth * (0.35 + 0.65 * smoothstep(0.0, 0.3, r)) * (0.65 + 0.35 * cos(lr * 10.0 - T * 6.0 + arm * 3.4));
+  float brk = vnoise(vec2(lr * 7.0 + arm * 3.1, arm * 1.3 + 2.0));
+  w *= smoothstep(fl * 1.1 - 0.1, fl * 1.1 + 0.1, brk);
+  float e = clamp(T / 2.4, 0.0, 1.0);
+  float head = mix(1.05, 0.03, 1.0 - (1.0 - e) * (1.0 - e)) + fl * fl * 1.3;
+  vec2 res = vec2(smax(abs(perp) - w, head - r, uWidth * 0.8), colour);
+  // The coil balling up in the middle before it bursts.
+  float ballR = 0.12 * smoothstep(1.6, 2.5, T) * (1.0 - smoothstep(2.65, 2.95, T));
+  if (ballR > 0.0) res = meld(res, vec2(r - ballR * (1.0 + 0.06 * sin(ang * 3.0 + T * 9.0)), colour), 0.04);
+  // Blobs flung out from the burst, splatting round the frame.
+  int count = int(uSplat * 12.0 + 0.5);
+  for (int k = 0; k < 12; k++) {
+    if (k >= count) break;
+    vec3 h = vec3(hash22(vec2(float(k) + 0.5, 3.1)), hash12(vec2(5.7, float(k) * 1.3)));
+    float a0 = float(k) * 2.39996 + h.x * 0.8 + 0.6;
+    vec2 rest = vec2(cos(a0) * 0.5 * aspect, sin(a0) * 0.5) * (0.35 + 0.55 * h.y);
+    vec2 dir = normalize(rest);
+    float R = (0.065 + 0.06 * h.z) * (0.7 + 0.5 * uSplat);
+    float age = T - 2.75 - 0.12 * h.y;
+    if (age < 0.0) continue;
+    float ff = min(age / 0.3, 1.0);
+    vec2 pos = rest * (1.0 - (1.0 - ff) * (1.0 - ff));
+    float ds;
+    if (age < 0.3) {
+      vec2 sg = segment(p, pos - dir * R * 2.5 * (1.0 - ff), pos);
+      ds = sg.x - R * 0.6 * (0.7 + 0.3 * sg.y);
+    } else {
+      vec2 q = (p - pos) / R;
+      float lq = length(q);
+      ds = (lq > 3.4 ? lq - 2.8 : splatSd(q, float(k) * 7.3 + 1.0, age - 0.3, dir)) * R;
+    }
+    res = meld(res, vec2(ds, mod(float(k), 2.0)), 0.015);
+  }
+  return res;
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  float px = 1.0 / iResolution.y;
+  float aspect = iResolution.x / iResolution.y;
+  vec2 p = (fragCoord - 0.5 * iResolution.xy) * px;
+  float T = mod(iTime, 6.0);
+  float fade = 1.0 - smoothstep(5.2, 5.95, T);
+  vec3 bg = uBackground * (1.06 - 0.22 * dot(p, p));
+  // A soft shadow under the goo.
+  float dS = vortex(p + vec2(-0.012, 0.022), T, aspect).x;
+  bg *= 1.0 - 0.3 * smoothstep(0.03, -0.02, dS) * fade;
+  vec2 v = vortex(p, T, aspect);
+  float cover = clamp(0.5 - v.x / px, 0.0, 1.0) * fade;
+  vec3 col = bg;
+  if (cover > 0.0) {
+    float eps = px;
+    vec2 g = vec2(vortex(p + vec2(eps, 0.0), T, aspect).x, vortex(p + vec2(0.0, eps), T, aspect).x) - v.x;
+    g /= eps;
+    vec3 n = normalize(vec3(g * exp(min(v.x, 0.0) / (uWidth * 1.1)) * 1.6, 1.0));
+    float thick = smoothstep(0.0, -uWidth * 1.2, v.x);
+    col = mix(bg, gooShade(mix(uColorA, uColorB, v.y), n, thick, uGloss), cover);
+  }
+  fragColor = vec4(col, 1.0);
+}`,
+  ),
+  presets: [
+    { name: "Three-way", values: { uArms: 3, uWidth: 0.04, uSpin: 1.4 } },
+    { name: "Candy", values: { uColorA: [0.5, 0.75, 1], uColorB: [1, 0.62, 0.85], uBackground: [0.98, 0.95, 0.9] } },
+    { name: "Calm", values: { uSpin: 0.4, uSplat: 0.3, uWidth: 0.07 } },
+  ],
+};
+
+/** The splatter shaders: paint, ink, liquid crowns, goo, a paint roller, water, a slime curtain, a gooey frame and a goo vortex. */
+export const splatterShaders: ShaderEffect[] = [paintSplatter, inkSplash, splashCrown, gooSplat, paintRoller, waterSplash, slimeCurtainWipe, gooeyFrame, gooVortex];

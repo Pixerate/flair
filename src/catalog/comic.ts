@@ -749,5 +749,104 @@ export const lineBoil: VectorEffect = {
   },
 };
 
-/** Cartoon and comic as vector effects: sound-effect bursts, speech bubbles, emotes and puffs. */
-export const comicEffects: VectorEffect[] = [soundEffect, speechBubble, fightCloud, dizzyStars, animeEmotes, cartoonPoof, lineBoil];
+// ── Doodle burst ───────────────────────────────────────────────────────
+
+const DB_X = 200;
+const DB_Y = 120;
+/** When the doodles and then the card shrink away; the loop ends with the card gone. */
+const DB_OUT = 2450;
+const DB_END = 2860;
+/** Ms per drawing of the line boil. */
+const DB_BOIL = 120;
+const DB_SEEDS = [3, 11, 19, 27];
+
+/** The doodles, drawn round (0, 0) about 7 units across: triangle, ring, dash, squiggle, plus. */
+const DB_SHAPES = [
+  `<path d="M0 -7 L6.5 5 L-6.5 5 Z"/>`,
+  `<circle cx="0" cy="0" r="6"/>`,
+  `<path d="M-7 0 H7"/>`,
+  `<path d="M-11 1 q2.75 -7 5.5 0 t5.5 0 t5.5 0 t5.5 0"/>`,
+  `<path d="M-6.5 0 H6.5 M0 -6.5 V6.5"/>`,
+  `<path d="M-6 -3 H6 M-3.5 3.5 H3.5"/>`,
+];
+
+/** Each doodle: where it lands, which shape and colour, its turn, and when it pops (staggered round the card out of order). */
+const DB_DOODLES = Array.from({ length: 14 }, (_, k) => {
+  const a = -Math.PI / 2 + (k / 14) * Math.PI * 2 + (rand(k + 200) - 0.5) * 0.3;
+  const reach = 1 + rand(k + 210) * 0.1;
+  return {
+    a,
+    x: DB_X + 152 * reach * Math.cos(a),
+    y: DB_Y + 96 * reach * Math.sin(a),
+    shape: (k * 7 + 3) % DB_SHAPES.length,
+    colour: ["doodleA", "doodleB", "doodleC"][((k * 5) % 14) % 3]!,
+    turn: Math.round((rand(k + 220) - 0.5) * 80),
+    at: 110 + ((k * 5) % 14) * 42,
+  };
+});
+
+/** A doodle `u` of the way out along its ray (1 where it lands), scaled `s` and turned `rot` degrees. */
+const dbPose = (d: (typeof DB_DOODLES)[number], u: number, s: number, rot: number) =>
+  `translate(${r1(DB_X + (d.x - DB_X) * u)} ${r1(DB_Y + (d.y - DB_Y) * u)}) rotate(${r1(rot)}) scale(${r2(s)})`;
+
+/** The card about its middle, scaled `s` and turned `rot` degrees off its tilt. */
+const dbCard = (s: number, rot: number) => `translate(${DB_X} ${DB_Y}) rotate(${r1(rot)}) rotate({{tilt}}) scale(${r2(s)}) translate(${-DB_X} ${-DB_Y})`;
+
+export const doodleBurst: VectorEffect = {
+  kind: "vector",
+  id: "doodle-burst",
+  name: "Doodle burst",
+  description: "A tilted label card that pops in past its size while hand-drawn doodles (triangles, rings, dashes, squiggles and plus signs) burst out round it one after another, linger drifting and twinkling with a line boil, then shrink away and play again.",
+  category: "comic",
+  tags: ["cartoon", "comic", "doodle", "hand-drawn", "line-boil", "label", "burst", "announcement", "loop"],
+  hold: 340,
+  presets: [
+    { name: "Night", values: { background: [0.08, 0.09, 0.13], card: [0.98, 0.84, 0.2], ink: [0.04, 0.04, 0.06], text: [0.08, 0.08, 0.1], doodleA: [0.98, 0.42, 0.62], doodleB: [0.4, 0.86, 1], doodleC: [1, 1, 1] } },
+    { name: "New feature", values: { label: "NEW FEATURE", card: [0.39, 0.4, 0.95], text: [1, 1, 1], tilt: 5, doodleA: [0.98, 0.45, 0.2], doodleB: [0.13, 0.77, 0.55], doodleC: [0.39, 0.4, 0.95] } },
+    { name: "Calm", values: { tilt: -2, wobble: 1, background: [0.96, 0.96, 0.94], doodleA: [0.55, 0.6, 0.7], doodleB: [0.55, 0.6, 0.7], doodleC: [0.55, 0.6, 0.7] } },
+  ],
+  derived: (v) => {
+    const e = Math.max(0.6, textWidthEm(String(v.label)));
+    const size = Math.min(30, 210 / e);
+    const length = e * size;
+    const [w, h] = [length + 44, size + 30];
+    return { size: r1(size), length: r1(length), w: r1(w), h: r1(h), x: r1(DB_X - w / 2), y: r1(DB_Y - h / 2), base: r1(DB_Y + size * 0.36) };
+  },
+  motion: {
+    svg: `<svg viewBox="0 0 400 240"><!-- {{label: text default='SOFTWARE UPDATE' label='Label'}} {{tilt: float min=-20 max=20 default=-6 step=0.5 label='Tilt (degrees)'}} {{background: color default=#FFF4DC label='Background'}} {{card: color default=#FFFFFF label='Card'}} {{text: color default=#111827 label='Text colour'}} {{ink: color default=#111827 label='Ink'}} {{doodleA: color default=#FF4D6D label='Doodle colour 1'}} {{doodleB: color default=#3B82F6 label='Doodle colour 2'}} {{doodleC: color default=#F5B700 label='Doodle colour 3'}} {{font: text default="${LETTERING}" label='Font'}} --><defs><filter id="doodleBurstBoil" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence id="dbNoise" type="turbulence" baseFrequency="0.04" numOctaves="2" seed="${DB_SEEDS[0]}" result="doodleBurstWarp"/><feDisplacementMap in="SourceGraphic" in2="doodleBurstWarp" scale="{{wobble: float min=0 max=8 default=3 step=0.5 label='Line boil'}}" xChannelSelector="R" yChannelSelector="G"/></filter></defs><rect width="400" height="240" fill="{{background}}"/><g filter="url(#doodleBurstBoil)" fill="none" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">${DB_DOODLES.map(
+      (d, k) => `<g id="db${k}" transform="${dbPose(d, 0.55, 0, d.turn - 40)}" stroke="{{${d.colour}}}">${DB_SHAPES[d.shape]}</g>`,
+    ).join("")}</g><g id="dbCard" transform="${dbCard(0, -24)}" filter="url(#doodleBurstBoil)"><rect x="{{x}}" y="{{y}}" width="{{w}}" height="{{h}}" rx="9" fill="{{ink}}" transform="translate(6 6)"/><rect x="{{x}}" y="{{y}}" width="{{w}}" height="{{h}}" rx="9" fill="{{card}}" stroke="{{ink}}" stroke-width="3.5"/><text x="${DB_X}" y="{{base}}" text-anchor="middle" textLength="{{length}}" lengthAdjust="spacingAndGlyphs" font-family="{{font}}" font-size="{{size}}" font-weight="900" fill="{{text}}">{{label}}</text></g></svg>`,
+    animate: [
+      // The card pops in past its size with a twist, breathes, then shrinks away.
+      ...keys("dbCard", "transform", [
+        [0, dbCard(0, -24)],
+        [260, dbCard(1.16, 5)],
+        [380, dbCard(0.95, -2)],
+        [500, dbCard(1, 0)],
+        [DB_OUT + 120, dbCard(1.04, 0)],
+        [DB_OUT + 240, dbCard(1.12, -3)],
+        [DB_END, dbCard(0, 16)],
+      ], { ease: "out" }),
+      // Each doodle pops out along its ray, drifts on twinkling, then pops off.
+      ...DB_DOODLES.flatMap((d, k) => {
+        const spin = k % 2 ? 14 : -14;
+        const out = DB_OUT + ((k * 3) % 14) * 14;
+        return keys(`db${k}`, "transform", [
+          [0, dbPose(d, 0.55, 0, d.turn - 40)],
+          [d.at, dbPose(d, 0.55, 0, d.turn - 40)],
+          [d.at + 230, dbPose(d, 1.08, 1.3, d.turn + 6)],
+          [d.at + 380, dbPose(d, 1, 1, d.turn)],
+          [Math.round((d.at + 380 + out) / 2), dbPose(d, 1.03, k % 3 ? 0.82 : 1.12, d.turn + spin / 2)],
+          [out, dbPose(d, 1.06, 1, d.turn + spin)],
+          [out + 90, dbPose(d, 1.1, 1.2, d.turn + spin)],
+          [out + 260, dbPose(d, 1.16, 0, d.turn + spin + 30)],
+        ], { ease: "out" });
+      }),
+      // The line boil: the noise redrawn every few frames all the way round the loop.
+      ...Array.from({ length: Math.ceil(DB_END / DB_BOIL) }, (_, k) => snap("dbNoise", "seed", DB_SEEDS[k % DB_SEEDS.length]!, k * DB_BOIL)),
+    ],
+  },
+};
+
+/** Cartoon and comic as vector effects: sound-effect bursts, speech bubbles, emotes, puffs and doodles. */
+export const comicEffects: VectorEffect[] = [soundEffect, speechBubble, fightCloud, dizzyStars, animeEmotes, cartoonPoof, lineBoil, doodleBurst];

@@ -444,5 +444,92 @@ export const washiTape: VectorEffect = {
   },
 };
 
-/** Stickers: slapped on, peeled, holographic and stamped. */
-export const stickerEffects: VectorEffect[] = [stickerSlap, stickerPeel, holoSticker, stickerSheet, stampBadge, washiTape];
+// ── Seal badge ─────────────────────────────────────────────────────────
+
+/** A seal's outline round (120, 120): rounded scallops, or sharp points with `sharp`. */
+function sealOutline(points: unknown, sharp: unknown): string {
+  const count = Math.max(6, Math.round(Number(points)));
+  if (sharp) return star(120, 120, 90, 79, count);
+  const samples = Math.max(112, count * 8);
+  return outline(
+    Array.from({ length: samples }, (_, k) => {
+      const a = (k / samples) * Math.PI * 2 - Math.PI / 2;
+      const rr = 88 * (0.93 + 0.07 * Math.cos(a * count + Math.PI / 2 * count));
+      return [120 + rr * Math.cos(a), 120 + rr * Math.sin(a)] as const;
+    }),
+  );
+}
+
+/** When each pulse comes, as a fraction of a turn, and its scale keyframes `[ms after, scale]`. */
+const SEAL_PULSES = [0.22, 0.68];
+const SEAL_BEAT: readonly (readonly [number, number])[] = [
+  [0, 1],
+  [170, 1.12],
+  [320, 0.96],
+  [460, 1],
+];
+const SEAL_GLINT_MS = 560;
+
+export const sealBadge: VectorEffect = {
+  kind: "vector",
+  id: "seal-badge",
+  name: "Seal badge",
+  description: "A scalloped seal sticker (a \"NEW\" or \"UPDATE LIVE\" price-tag burst) turning slowly under upright one- or two-line text, pulsing now and then as a glint sweeps across its face.",
+  category: "sticker",
+  tags: ["sticker", "seal", "badge", "burst", "price-tag", "label", "spin", "new", "loop"],
+  hold: 0,
+  presets: [
+    { name: "New", values: { top: "NEW", bottom: "", seal: [0.98, 0.8, 0.12], ink: [0.25, 0.13, 0.01], points: 16 } },
+    { name: "Sale", values: { top: "50%", bottom: "OFF", seal: [0.93, 0.16, 0.24], sharp: true, points: 28, turn: 8 } },
+    { name: "Mint", values: { top: "JUST", bottom: "LAUNCHED", seal: [0.2, 0.83, 0.6], ink: [0.03, 0.2, 0.14], background: [0.09, 0.1, 0.13], border: [0.95, 0.97, 0.96] } },
+  ],
+  derived: (v) => {
+    const period = Math.round(Number(v.turn) * 1000);
+    const d = sealOutline(v.points, v.sharp);
+    const two = String(v.bottom).trim() !== "";
+    const top = fit(v.top, two ? 118 : 124, two ? 36 : 46);
+    const bottom = two ? fit(v.bottom, 104, 30) : { size: 0, length: 0 };
+    const gap = two ? 4 : 0;
+    const height = top.size + gap + bottom.size;
+    const topMid = 120 - height / 2 + top.size / 2;
+    const bottomMid = topMid + top.size / 2 + gap + bottom.size / 2;
+    const beats = Object.fromEntries(
+      SEAL_PULSES.flatMap((f, i) => {
+        const at = Math.round(period * f);
+        return [...SEAL_BEAT.map(([ms], j) => [`beat${i}_${j}`, at + ms] as const), [`glint${i}`, at + 60] as const];
+      }),
+    );
+    return {
+      period,
+      d,
+      topSize: top.size,
+      topLength: top.length,
+      topBase: r1(topMid + top.size * 0.36),
+      bottomSize: Math.max(1, bottom.size),
+      bottomLength: Math.max(1, bottom.length),
+      bottomBase: r1(bottomMid + bottom.size * 0.36),
+      ...beats,
+    };
+  },
+  motion: {
+    svg: `<svg viewBox="0 0 240 240"><!-- {{top: text default='UPDATE' label='Top line'}} {{bottom: text default='LIVE' label='Bottom line (may be empty)'}} {{background: color default=#F3EFE6 label='Background'}} {{seal: color default=#FF3D6E label='Seal'}} {{ink: color default=#FFFFFF label='Text colour'}} {{border: color default=#FFFFFF label='Border'}} {{points: int min=8 max=40 default=20 label='Points'}} {{sharp: bool default=false label='Sharp points'}} {{turn: float min=3 max=40 default=14 step=0.5 label='Spin (seconds per turn)'}} ${FONT} --><defs><filter id="sealBadgeSoft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="5"/></filter>${gloss("sealBadgeGloss")}<linearGradient id="sealBadgeGlintFill" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0"/><stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0.65"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></linearGradient><clipPath id="sealBadgeClip"><path id="sealClipShape" d="{{d}}" transform="rotate(0 120 120)"/></clipPath></defs><rect width="240" height="240" fill="{{background}}"/><g id="sealPulse" transform="${pose(120, 120, 1, 0)}"><circle cx="120" cy="127" r="92" fill="#000000" opacity="0.28" filter="url(#sealBadgeSoft)"/><g id="sealSpin" transform="rotate(0 120 120)"><path d="{{d}}" fill="{{border}}" stroke="{{border}}" stroke-width="10" stroke-linejoin="round"/><path d="{{d}}" fill="{{seal}}"/><circle cx="120" cy="120" r="70" fill="none" stroke="{{ink}}" stroke-opacity="0.6" stroke-width="2" stroke-dasharray="1.5 5.5" stroke-linecap="round"/><circle cx="120" cy="120" r="63" fill="none" stroke="{{ink}}" stroke-opacity="0.3" stroke-width="1.2"/></g><g clip-path="url(#sealBadgeClip)"><rect width="240" height="240" fill="url(#sealBadgeGloss)"/><rect id="sealGlint" x="0" y="20" width="40" height="200" fill="url(#sealBadgeGlintFill)" transform="translate(-14 0) skewX(-20)"/></g><g font-family="{{font}}" font-weight="900" fill="{{ink}}" text-anchor="middle"><text x="120" y="{{topBase}}" textLength="{{topLength}}" lengthAdjust="spacingAndGlyphs" font-size="{{topSize}}">{{top}}</text><text x="120" y="{{bottomBase}}" textLength="{{bottomLength}}" lengthAdjust="spacingAndGlyphs" font-size="{{bottomSize}}">{{bottom}}</text></g></g></svg>`,
+    animate: [
+      // One whole turn a loop, the clip turning with it so the shine stays on the seal.
+      ...["sealSpin", "sealClipShape"].map((id): SvgAnimation => ({ id, attrs: { transform: ["rotate(0 120 120)", "rotate(360 120 120)"] }, ms: n("period"), ease: "linear" })),
+      // Now and then it pulses and a glint sweeps across.
+      ...SEAL_PULSES.flatMap((_, i): SvgAnimation[] => [
+        ...SEAL_BEAT.slice(1).map(([at, scale], j): SvgAnimation => ({
+          id: "sealPulse",
+          attrs: { transform: [pose(120, 120, SEAL_BEAT[j]![1], 0), pose(120, 120, scale, 0)] },
+          delay: n(`beat${i}_${j}`),
+          ms: at - SEAL_BEAT[j]![0],
+          ease: j === 0 ? "out" : "in-out",
+        })),
+        { id: "sealGlint", attrs: { transform: ["translate(-14 0) skewX(-20)", "translate(300 0) skewX(-20)"] }, delay: n(`glint${i}`), ms: SEAL_GLINT_MS, ease: "in-out" },
+      ]),
+    ],
+  },
+};
+
+/** Stickers: slapped on, peeled, holographic, stamped and sealed. */
+export const stickerEffects: VectorEffect[] = [stickerSlap, stickerPeel, holoSticker, stickerSheet, stampBadge, washiTape, sealBadge];
