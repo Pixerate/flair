@@ -532,6 +532,7 @@ frames.render(t, { audio: track.at(t), scroll: [0.5, 0.5, 0, 0] });
 | water | ocean waves, underwater scene, pond ripples, waterfall |
 | transition | liquid morph, displacement, luma fade, particle swap, ink bleed, pixel dissolve, comic panels, wipe, iris, block dissolve, grid wipe, glass wipe, twister, light leak, cross zoom, whip pan |
 | loader / icon / data | spinner, bouncing dots, pulse ping, equalizer, skeleton shimmer, progress bar, indeterminate bar, step progress, circle dots loader, wave bars, progress ring, bar chart, line chart, stat counter, route, timeline track, success check, error cross, heartbeat, signature, confetti, flow network, upload card |
+| loader / icon / data | spinner, bouncing dots, pulse ping, equalizer, progress ring, bar chart, line chart, stat counter, route, timeline track, success check, error cross, heartbeat, signature, confetti, flow network, upload card, donut chart, pie chart, gauge, bar race, sparkline, leaderboard, area chart, KPI tile, weather icons, notification bell, animated arrows, emoji reactions, star rating, trash delete, lock and unlock, Wi-Fi signal |
 
 #### Broadcast graphics and annotations
 
