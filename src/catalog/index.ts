@@ -36,6 +36,7 @@ import { impactEffects } from "./impact.js";
 import { comicEffects } from "./comic.js";
 import { glowEffects } from "./glow.js";
 import { shadowEffects } from "./shadow.js";
+import { lightingEffects } from "./lighting.js";
 import { electricEffects } from "./electric.js";
 import { meltEffects } from "./melt.js";
 import { pixelEffects } from "./pixel.js";
@@ -66,6 +67,7 @@ import { atmosphereShaders } from "./shaders/atmosphere.js";
 import { glowShaders } from "./shaders/glow.js";
 import { shadowShaders } from "./shaders/shadow.js";
 import { distortionShaders } from "./shaders/distortion.js";
+import { lightingShaders } from "./shaders/lighting.js";
 import { textEffects } from "./text.js";
 import { CURRENT_COLOR, EFFECT_CATEGORIES, isCurrentColor, vectorEffectControls, type EffectCategory, type EffectDefinition, type ShaderEffect, type VideoUse } from "./types.js";
 import { vectorEffects } from "./vector.js";
@@ -120,6 +122,7 @@ export const SHADER_EFFECTS: readonly ShaderEffect[] = [
   sparkles,
   neonRipple,
   lightRibbons,
+  ...lightingShaders,
   starfield,
   nebula,
   blackHole,
@@ -161,7 +164,7 @@ export const SHADER_EFFECTS: readonly ShaderEffect[] = [
 ];
 
 /** Every effect in the catalog, shaders first, grouped by category. */
-export const EFFECTS: readonly EffectDefinition[] = [...SHADER_EFFECTS, ...vectorEffects, ...textEffects, ...morphEffects, ...interactionEffects, ...pyroEffects, ...timewarpEffects, ...meltEffects, ...electricEffects, ...pixelEffects, ...splatterEffects, ...bubbleEffects, ...stickerEffects, ...trailEffects, ...impactEffects, ...comicEffects, ...glowEffects, ...shadowEffects].sort(
+export const EFFECTS: readonly EffectDefinition[] = [...SHADER_EFFECTS, ...vectorEffects, ...textEffects, ...morphEffects, ...interactionEffects, ...pyroEffects, ...timewarpEffects, ...meltEffects, ...electricEffects, ...pixelEffects, ...splatterEffects, ...bubbleEffects, ...stickerEffects, ...trailEffects, ...impactEffects, ...comicEffects, ...glowEffects, ...shadowEffects, ...lightingEffects].sort(
   (a, b) => EFFECT_CATEGORIES.indexOf(a.category) - EFFECT_CATEGORIES.indexOf(b.category),
 );
 
