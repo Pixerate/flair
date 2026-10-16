@@ -1372,6 +1372,9 @@ describe("lighting effects", () => {
     const start = at([], 0);
     expect(at([0], 5000)).not.toBe(start);
     expect(at([0, 5000], 10000)).toBe(start);
+  });
+});
+
 describe("duotone", () => {
   it("only maps colours: no glare and no motion of its own (shine-sweep adds a glare)", () => {
     const duotone = getEffect("image-duotone")!;
