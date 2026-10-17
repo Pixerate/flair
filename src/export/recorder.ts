@@ -585,6 +585,9 @@ async function gifSink(plan: OutputPlan, width: number, height: number, fps: num
 function chromeArgs(userDataDir: string, width: number, height: number, url: string): string[] {
   return [
     '--headless=new',
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
+    '--disable-dev-shm-usage',
     `--user-data-dir=${userDataDir}`,
     `--window-size=${Math.max(64, width)},${Math.max(64, height)}`,
     '--use-gl=angle',
@@ -604,7 +607,7 @@ function chromeArgs(userDataDir: string, width: number, height: number, url: str
   ];
 }
 
-const STALL_MS = 60_000;
+const STALL_MS = Number(process.env.FLAIR_STALL_TIMEOUT_MS) || 120_000;
 
 /**
  * Runs a render: serves the page to headless Chrome on 127.0.0.1, hands it
