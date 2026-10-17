@@ -64,14 +64,13 @@ export interface EffectExportOptions {
   values?: Record<string, ControlValue>;
   /** .mp4, .webm, .mov, .gif, .svg (vector effects), or PNG frames (a folder, or `out_%04d.png`). */
   outputPath: string;
-  /** Pixels (default: 1280 × 720 for effects that show a picture, 720 × 720 for other shaders, a vector's own shape 720 px on its long edge). */
+  /** Pixels (default: input video size if video subject provided, 1280 × 720 for effects that show a picture, 720 × 720 for other shaders, a vector's own shape 720 px on its long edge). */
   width?: number;
   height?: number;
   fps?: number;
   /**
-   * Seconds. Default: a shader's loop (when it loops in 12 s or less), a
-   * video subject's length (up to 10 s), else 3; a vector effect's one
-   * play-through (with its trigger acted out).
+   * Seconds. Default: a video subject's duration, a shader's loop (when it loops in 12 s or less),
+   * else 3; a vector effect's one play-through (with its trigger acted out).
    */
   duration?: number;
   /** Keep transparency (WebM, MOV, GIF, PNG and SVG; MP4 is always opaque). */
@@ -85,6 +84,17 @@ export interface EffectExportOptions {
    * their steps, or hovered and let go).
    */
   pointer?: PointerMode;
+  /**
+   * How to handle audio when exporting video (MP4, WebM, MOV):
+   * - `true` or `'copy'` (default when subject has audio): pass through the audio stream from the video subject.
+   * - `false` or `'mute'`: do not include audio.
+   * - A file path or URL to an audio or video file to mux as the soundtrack.
+   */
+  audio?: boolean | 'copy' | 'mute' | string;
+  /** Extra flags to pass to headless Chrome. */
+  chromeFlags?: string[];
+  /** When true, ignores control values not present on the effect definition instead of throwing. */
+  ignoreUnknownControls?: boolean;
   onProgress?: (frame: number, total: number) => void;
 }
 
@@ -158,12 +168,19 @@ export function resolveEffect(effect: string | EffectDefinition): EffectDefiniti
  * values a control cannot take, are sentences. Image controls take file
  * paths too (read into `data:` URLs).
  */
-export async function checkEffectValues(effect: EffectDefinition, values: Record<string, ControlValue>): Promise<Record<string, ControlValue>> {
+export async function checkEffectValues(
+  effect: EffectDefinition,
+  values: Record<string, ControlValue>,
+  options: { ignoreUnknownControls?: boolean } = {},
+): Promise<Record<string, ControlValue>> {
   const controls = new Map(effectControls(effect).map((c) => [c.name, c]));
   const out: Record<string, ControlValue> = {};
   for (const [name, raw] of Object.entries(values)) {
     const control = controls.get(name);
-    if (!control) throw new Error(`"${effect.id}" has no control "${name}"; it has ${[...controls.keys()].join(', ') || 'none'}.`);
+    if (!control) {
+      if (options.ignoreUnknownControls) continue;
+      throw new Error(`"${effect.id}" has no control "${name}"; it has ${[...controls.keys()].join(', ') || 'none'}.`);
+    }
     if (control.type === 'sampler2D' && typeof raw === 'string') {
       out[name] = await imageDataUrl(raw);
       continue;
@@ -266,11 +283,89 @@ function run(bin: string, args: string[]): Promise<{ code: number; stderr: strin
   });
 }
 
+/** Metadata probed from a video file using ffmpeg. */
+export interface VideoProbe {
+  duration?: number;
+  width?: number;
+  height?: number;
+  hasAudio: boolean;
+}
+
+/** Probes duration, dimensions, and audio presence of a video file. */
+export async function probeVideo(file: string): Promise<VideoProbe> {
+  const { stderr } = await run(ffmpegPath(), ['-hide_banner', '-i', file]);
+  const durMatch = /Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)/.exec(stderr);
+  const duration = durMatch ? Number(durMatch[1]) * 3600 + Number(durMatch[2]) * 60 + Number(durMatch[3]) : undefined;
+
+  const vidLine = stderr.split('\n').find((l) => /Stream #\d+:\d+.*Video:/.test(l));
+  let width: number | undefined;
+  let height: number | undefined;
+  if (vidLine) {
+    const m = /\b(\d{2,5})x(\d{2,5})\b/.exec(vidLine);
+    if (m) {
+      width = Number(m[1]);
+      height = Number(m[2]);
+    }
+  }
+
+  const hasAudio = /Stream #\d+:\d+.*Audio:/.test(stderr);
+  return { duration, width, height, hasAudio };
+}
+
 /** A video's length in seconds, from ffmpeg's report (undefined when it does not say). */
 export async function videoSeconds(file: string): Promise<number | undefined> {
-  const { stderr } = await run(ffmpegPath(), ['-hide_banner', '-i', file]);
-  const m = /Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)/.exec(stderr);
-  return m ? Number(m[1]) * 3600 + Number(m[2]) * 60 + Number(m[3]) : undefined;
+  const probe = await probeVideo(file);
+  return probe.duration;
+}
+
+async function muxAudio(
+  videoPath: string,
+  audioSource: string,
+  format: string,
+  duration: number,
+  strict = false,
+): Promise<void> {
+  const isVideoFormat = format === 'mp4' || format === 'webm' || format === 'mov';
+  if (!isVideoFormat) return;
+  const ext = path.extname(videoPath);
+  const muxedPath = path.join(path.dirname(videoPath), `.${path.basename(videoPath, ext)}.muxed${ext}`);
+  const aCodec = format === 'webm' ? ['-c:a', 'libopus'] : ['-c:a', 'aac'];
+  const muxArgs = [
+    '-y', '-hide_banner', '-loglevel', 'error',
+    '-i', videoPath,
+    '-i', audioSource,
+    '-c:v', 'copy',
+    ...aCodec,
+    '-map', '0:v:0',
+    '-map', '1:a:0',
+    '-t', String(duration),
+    ...(format === 'mp4' ? ['-movflags', '+faststart'] : []),
+    muxedPath,
+  ];
+  let muxRes = await run(ffmpegPath(), muxArgs);
+  if (muxRes.code !== 0) {
+    const fallbackArgs = [
+      '-y', '-hide_banner', '-loglevel', 'error',
+      '-i', videoPath,
+      '-i', audioSource,
+      '-c:v', 'copy',
+      '-c:a', 'copy',
+      '-map', '0:v:0',
+      '-map', '1:a:0',
+      '-t', String(duration),
+      ...(format === 'mp4' ? ['-movflags', '+faststart'] : []),
+      muxedPath,
+    ];
+    muxRes = await run(ffmpegPath(), fallbackArgs);
+  }
+  if (muxRes.code === 0 && fs.existsSync(muxedPath)) {
+    fs.renameSync(muxedPath, videoPath);
+  } else {
+    try { fs.unlinkSync(muxedPath); } catch {}
+    if (strict) {
+      throw new Error(`ffmpeg could not mux audio from "${audioSource}": ${muxRes.stderr.trim() || `exit ${muxRes.code}`}`);
+    }
+  }
 }
 
 /**
@@ -313,7 +408,7 @@ export async function exportEffect(effect: string | EffectDefinition, options: E
     throw new Error(`"${def.id}" has no preset "${options.preset}"; ${names ? `its presets are ${names}` : 'it has no presets'}.`);
   }
   const fromSubject = options.subject ? await nodeSubjectValues(def, options.subject) : { values: {}, video: {} };
-  const explicit = await checkEffectValues(def, options.values ?? {});
+  const explicit = await checkEffectValues(def, options.values ?? {}, { ignoreUnknownControls: options.ignoreUnknownControls });
   const values = { ...effectDefaults(def, options.preset ? { preset: options.preset } : {}), ...fromSubject.values, ...explicit };
   const fps = options.fps ?? 30;
   const background = options.background ?? (def.kind === 'vector' ? '#ffffff' : '#000000');
@@ -355,21 +450,29 @@ export async function exportEffect(effect: string | EffectDefinition, options: E
       const { time, steps } = pointer === 'none' && def.trigger ? { time: 0, steps: [] } : timeline.at(ms);
       return { ...base[i]!, svg: svgFrameMarkup(motion, { at: time, steps })! };
     };
-    return runRender({
+    const rendered = await runRender({
       page: { width, height, frames, alpha: plan.alpha, background, send: plan.format === 'gif' ? 'rgba' : 'png' },
       state,
       plan,
       fps,
+      chromeFlags: options.chromeFlags,
       ...(options.onProgress ? { onProgress: options.onProgress } : {}),
     });
+    if (typeof options.audio === 'string' && options.audio !== 'mute' && options.audio !== 'copy') {
+      await muxAudio(rendered, options.audio, plan.format, duration, true);
+    }
+    return rendered;
   }
 
   // A shader.
   const videoEntries = Object.entries(fromSubject.video);
   let duration = options.duration;
-  if (duration === undefined && videoEntries.length) {
-    const seconds = await videoSeconds(videoEntries[0]![1]);
-    duration = seconds ? Math.min(10, seconds) : undefined;
+  let probedVideo: VideoProbe | undefined;
+  if (videoEntries.length) {
+    probedVideo = await probeVideo(videoEntries[0]![1]);
+  }
+  if (duration === undefined && probedVideo?.duration !== undefined) {
+    duration = probedVideo.duration;
   }
   duration ??= def.loop && def.loop <= 12 ? def.loop : 3;
   const frames = Math.max(1, Math.round(duration * fps));
@@ -378,8 +481,10 @@ export async function exportEffect(effect: string | EffectDefinition, options: E
     throw new Error(`"${def.id}" is a shader effect, which draws pixels; write .mp4, .webm, .mov, .gif or .png frames (only vector effects become SVG).`);
   }
   const size = defaultSize(def);
-  const width = Math.max(1, Math.round(options.width ?? size.width));
-  const height = Math.max(1, Math.round(options.height ?? (options.width ? (options.width * size.height) / size.width : size.height)));
+  const defaultWidth = probedVideo?.width ? even(probedVideo.width) : size.width;
+  const defaultHeight = probedVideo?.height ? even(probedVideo.height) : size.height;
+  const width = Math.max(1, Math.round(options.width ?? defaultWidth));
+  const height = Math.max(1, Math.round(options.height ?? (options.width ? (options.width * defaultHeight) / defaultWidth : defaultHeight)));
   const interactive = effectInputs(def).interactions.length > 0;
   const states = frameStates(frames, fps, width, height, options.pointer ?? (interactive ? 'auto' : 'none'));
 
@@ -392,7 +497,7 @@ export async function exportEffect(effect: string | EffectDefinition, options: E
       const video = Object.fromEntries(Object.entries(videoFrames).map(([name, files]) => [name, files[Math.min(i, files.length - 1)]!]));
       return { ...states[i]!, video };
     };
-    return await runRender({
+    const rendered = await runRender({
       page: {
         width,
         height,
@@ -409,8 +514,24 @@ export async function exportEffect(effect: string | EffectDefinition, options: E
       state,
       plan,
       fps,
+      chromeFlags: options.chromeFlags,
       ...(options.onProgress ? { onProgress: options.onProgress } : {}),
     });
+
+    const audioSource =
+      options.audio === false || options.audio === 'mute'
+        ? undefined
+        : typeof options.audio === 'string' && options.audio !== 'copy'
+          ? options.audio
+          : (options.audio === true || options.audio === 'copy' || options.audio === undefined) && probedVideo?.hasAudio && videoEntries.length
+            ? videoEntries[0]![1]
+            : undefined;
+
+    if (audioSource) {
+      await muxAudio(rendered, audioSource, plan.format, duration, Boolean(options.audio));
+    }
+
+    return rendered;
   } finally {
     if (tmp) fs.rmSync(tmp, { recursive: true, force: true });
   }

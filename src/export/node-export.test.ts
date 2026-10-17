@@ -6,14 +6,17 @@ import { describe, expect, it } from 'vitest';
 import { getEffect, type VectorEffect } from '../catalog/index.js';
 import { wrapSource } from '../shader/program.js';
 import {
+  checkEffectValues,
   effectQueryFromFlags,
   nodeSubjectValues,
   parseSets,
   parseSize,
+  probeVideo,
   subjectsFromFlags,
   vectorTimeline,
+  videoSeconds,
 } from './effect.js';
-import { fragmentSource, pageControls, planOutput, renderPageHtml, scriptedPointer, sequencePath } from './recorder.js';
+import { chromeArgs, fragmentSource, pageControls, planOutput, renderPageHtml, scriptedPointer, sequencePath } from './recorder.js';
 
 const fixture = (name: string) => path.resolve(__dirname, '../../tests/fixtures', name);
 const PNG_1X1 = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'base64');
@@ -186,3 +189,77 @@ describe('acting out the pointer', () => {
     expect(t.at(t.steps[1]! + 1).steps).toEqual(t.steps);
   });
 });
+
+describe('chromeArgs', () => {
+  it('includes standard headless Chrome arguments', () => {
+    const args = chromeArgs('/tmp/data', 800, 600, 'http://127.0.0.1');
+    expect(args).toContain('--headless=new');
+    expect(args).toContain('--use-gl=angle');
+    expect(args).toContain('--enable-webgl');
+    expect(args).toContain('--user-data-dir=/tmp/data');
+    expect(args).toContain('--window-size=800,600');
+    expect(args[args.length - 1]).toBe('http://127.0.0.1');
+  });
+
+  it('appends custom chrome flags when provided', () => {
+    const args = chromeArgs('/tmp/data', 800, 600, 'http://127.0.0.1', ['--custom-test-flag', '--max-texture-size=4096']);
+    expect(args).toContain('--custom-test-flag');
+    expect(args).toContain('--max-texture-size=4096');
+  });
+
+  it('reads flags from FLAIR_CHROME_FLAGS env variable', () => {
+    const prev = process.env.FLAIR_CHROME_FLAGS;
+    try {
+      process.env.FLAIR_CHROME_FLAGS = '--env-flag-1 --env-flag-2';
+      const args = chromeArgs('/tmp/data', 800, 600, 'http://127.0.0.1');
+      expect(args).toContain('--env-flag-1');
+      expect(args).toContain('--env-flag-2');
+    } finally {
+      if (prev === undefined) delete process.env.FLAIR_CHROME_FLAGS;
+      else process.env.FLAIR_CHROME_FLAGS = prev;
+    }
+  });
+});
+
+describe('checkEffectValues', () => {
+  it('throws on unknown controls by default', async () => {
+    const duotone = getEffect('image-duotone')!;
+    await expect(checkEffectValues(duotone, { uNonExistent: 123 })).rejects.toThrow(/has no control "uNonExistent"/);
+  });
+
+  it('skips unknown controls when ignoreUnknownControls is true', async () => {
+    const duotone = getEffect('image-duotone')!;
+    const checked = await checkEffectValues(duotone, { uContrast: 1.5, uUnknownControl: 'ignore-me' }, { ignoreUnknownControls: true });
+    expect(checked).toEqual({ uContrast: 1.5 });
+  });
+});
+
+describe('probeVideo', () => {
+  it('probes dimensions, duration, and audio presence using ffmpeg', async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'flair-probe-'));
+    const videoWithAudio = path.join(dir, 'sample-audio.mp4');
+    const { execFileSync } = await import('node:child_process');
+    execFileSync(
+      'ffmpeg',
+      [
+        '-y', '-f', 'lavfi', '-i', 'color=c=blue:s=320x240:d=1',
+        '-f', 'lavfi', '-i', 'anullsrc=r=44100:cl=mono',
+        '-t', '1', '-c:v', 'libx264', '-c:a', 'aac', '-pix_fmt', 'yuv420p',
+        videoWithAudio,
+      ],
+      { stdio: 'ignore' },
+    );
+
+    const probe = await probeVideo(videoWithAudio);
+    expect(probe.width).toBe(320);
+    expect(probe.height).toBe(240);
+    expect(probe.duration).toBeCloseTo(1, 0);
+    expect(probe.hasAudio).toBe(true);
+
+    const seconds = await videoSeconds(videoWithAudio);
+    expect(seconds).toBeCloseTo(1, 0);
+
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+});
+

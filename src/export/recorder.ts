@@ -5,10 +5,13 @@ import { spawn, type ChildProcess } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { createRequire } from 'node:module';
 import { controlValue, parseControls, type ControlValue, type TextureSettings } from '../shader/controls.js';
 import { MAX_CLICKS, MAX_TRAIL, PointerTracker, TRAIL_SECONDS } from '../shader/pointer.js';
 import { VERTEX_SOURCE, wrapSource } from '../shader/program.js';
 import { SVG_EDGE } from '../shader/textures.js';
+
+const require = createRequire(import.meta.url);
 
 // ==========================================
 // Tools: Chrome and ffmpeg
@@ -22,12 +25,19 @@ const CHROME_CANDIDATES = [
   '/usr/bin/google-chrome-stable',
   '/usr/bin/chromium',
   '/usr/bin/chromium-browser',
+  '/usr/local/bin/google-chrome',
+  '/usr/local/bin/chromium',
+  '/usr/local/bin/chromium-browser',
+  '/snap/bin/chromium',
+  '/opt/google/chrome/chrome',
+  '/opt/google/chrome/google-chrome',
 ];
 
 /** Chromium builds Playwright downloaded (`npx playwright install chromium`), newest first. */
 function playwrightChromes(): string[] {
   const roots = [
     process.env.PLAYWRIGHT_BROWSERS_PATH,
+    '/ms-playwright',
     path.join(os.homedir(), 'Library/Caches/ms-playwright'),
     path.join(os.homedir(), '.cache/ms-playwright'),
   ].filter((r): r is string => Boolean(r));
@@ -53,20 +63,56 @@ function playwrightChromes(): string[] {
   return found;
 }
 
+/** Chromium builds Puppeteer downloaded, newest first. */
+function puppeteerChromes(): string[] {
+  const roots = [
+    process.env.PUPPETEER_CACHE_DIR,
+    path.join(os.homedir(), '.cache/puppeteer'),
+  ].filter((r): r is string => Boolean(r));
+  const found: string[] = [];
+  for (const root of roots) {
+    const chromeDir = path.join(root, 'chrome');
+    let dirs: string[] = [];
+    try {
+      dirs = fs.readdirSync(chromeDir);
+    } catch {
+      continue;
+    }
+    for (const dir of dirs) {
+      for (const bin of [
+        'chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing',
+        'chrome-mac-x64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing',
+        'chrome-linux64/chrome',
+        'chrome-linux/chrome',
+      ]) {
+        found.push(path.join(chromeDir, dir, bin));
+      }
+    }
+  }
+  return found;
+}
+
 /**
  * Finds a local Chrome or Chromium executable, or `null`: `CHROME_PATH` (or
  * `CHROME_BIN`), then the usual install places, then a Chromium Playwright
- * downloaded.
+ * or Puppeteer downloaded.
  */
 export function findChrome(): string | null {
   const env = process.env.CHROME_PATH || process.env.CHROME_BIN;
   if (env) return env;
-  return [...CHROME_CANDIDATES, ...playwrightChromes()].find((candidate) => fs.existsSync(candidate)) ?? null;
+  return [...CHROME_CANDIDATES, ...playwrightChromes(), ...puppeteerChromes()].find((candidate) => fs.existsSync(candidate)) ?? null;
 }
 
-/** The ffmpeg to run: `FFMPEG_PATH`, else `ffmpeg` on the `PATH`. */
+/** The ffmpeg to run: `FFMPEG_PATH`, else `@ffmpeg-installer/ffmpeg` if present, else `ffmpeg` on the `PATH`. */
 export function ffmpegPath(): string {
-  return process.env.FFMPEG_PATH || 'ffmpeg';
+  if (process.env.FFMPEG_PATH) return process.env.FFMPEG_PATH;
+  try {
+    const installer = require('@ffmpeg-installer/ffmpeg');
+    if (installer && typeof installer.path === 'string' && fs.existsSync(installer.path)) {
+      return installer.path;
+    }
+  } catch {}
+  return 'ffmpeg';
 }
 
 const NO_FFMPEG =
@@ -492,6 +538,7 @@ export interface RenderJob {
   state: (frame: number) => FrameState;
   plan: OutputPlan;
   fps: number;
+  chromeFlags?: string[];
   onProgress?: (frame: number, total: number) => void;
 }
 
@@ -581,14 +628,28 @@ async function gifSink(plan: OutputPlan, width: number, height: number, fps: num
   };
 }
 
+function parseEnvChromeFlags(): string[] {
+  const env = process.env.FLAIR_CHROME_FLAGS?.trim();
+  if (!env) return [];
+  if (env.startsWith('[')) {
+    try {
+      const parsed = JSON.parse(env);
+      if (Array.isArray(parsed)) return parsed.map(String);
+    } catch {}
+  }
+  return env.split(/[\s,]+/).filter(Boolean);
+}
+
 /** Chrome's flags: GPU WebGL where there is one (Metal on macOS), SwiftShader otherwise. */
-function chromeArgs(userDataDir: string, width: number, height: number, url: string): string[] {
+export function chromeArgs(userDataDir: string, width: number, height: number, url: string, extraArgs: string[] = []): string[] {
+  const isLinux = process.platform === 'linux';
   return [
     '--headless=new',
     `--user-data-dir=${userDataDir}`,
     `--window-size=${Math.max(64, width)},${Math.max(64, height)}`,
     '--use-gl=angle',
     ...(process.platform === 'darwin' ? ['--use-angle=metal'] : []),
+    ...(isLinux ? ['--use-angle=swiftshader', '--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu-sandbox'] : []),
     '--enable-webgl',
     '--enable-unsafe-swiftshader',
     '--ignore-gpu-blocklist',
@@ -600,6 +661,8 @@ function chromeArgs(userDataDir: string, width: number, height: number, url: str
     '--disable-background-timer-throttling',
     '--disable-renderer-backgrounding',
     '--disable-extensions',
+    ...parseEnvChromeFlags(),
+    ...extraArgs,
     url,
   ];
 }
@@ -736,7 +799,7 @@ export async function runRender(job: RenderJob): Promise<string> {
 
     server.listen(0, '127.0.0.1', () => {
       const { port } = server.address() as import('node:net').AddressInfo;
-      chrome = spawn(chromeBin, chromeArgs(userDataDir, page.width, page.height, `http://127.0.0.1:${port}/`), { stdio: 'ignore' });
+      chrome = spawn(chromeBin, chromeArgs(userDataDir, page.width, page.height, `http://127.0.0.1:${port}/`, job.chromeFlags), { stdio: 'ignore' });
       chrome.on('error', (err) => fail(new Error(`Could not launch Chrome at ${chromeBin}: ${err.message}`)));
       chrome.on('exit', (code) => {
         if (!finished && written < total) fail(new Error(`Chrome quit (exit ${code}) after ${written} of ${total} frames.`));
@@ -780,6 +843,8 @@ export interface ExportOptions {
   background?: string;
   /** The pointer: `none` (default) or `auto`, a scripted pointer that hovers, wanders and clicks. */
   pointer?: PointerMode;
+  /** Extra flags to pass to headless Chrome. */
+  chromeFlags?: string[];
   onProgress?: (frame: number, total: number) => void;
 }
 
@@ -876,6 +941,7 @@ export async function exportMotionGraphic(options: ExportOptions): Promise<strin
     state: (i) => states[i]!,
     plan,
     fps,
+    chromeFlags: options.chromeFlags,
     onProgress,
   });
 }
