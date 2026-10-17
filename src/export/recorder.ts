@@ -369,6 +369,12 @@ async function loadImage(url, name) {
 
 const out = document.createElement("canvas");
 out.width = W; out.height = H;
+out.style.position = "fixed";
+out.style.left = "0";
+out.style.top = "0";
+out.style.visibility = "hidden";
+out.style.pointerEvents = "none";
+document.body.appendChild(out);
 const ctx = out.getContext("2d", { willReadFrequently: CONFIG.send === "rgba" });
 let gl = null, glCanvas = null, u = null;
 const textures = {};
@@ -376,6 +382,12 @@ const textures = {};
 function setupShader() {
   glCanvas = document.createElement("canvas");
   glCanvas.width = W; glCanvas.height = H;
+  glCanvas.style.position = "fixed";
+  glCanvas.style.left = "0";
+  glCanvas.style.top = "0";
+  glCanvas.style.visibility = "visible";
+  glCanvas.style.pointerEvents = "none";
+  document.body.appendChild(glCanvas);
   // As createContext: no antialiasing, depth or stencil; unpremultiplied alpha so pixels read back exactly.
   gl = glCanvas.getContext("webgl2", { alpha: true, premultipliedAlpha: false, preserveDrawingBuffer: true, antialias: false, depth: false, stencil: false, powerPreference: "high-performance" });
   if (!gl) throw new Error("WebGL2 is not available in headless Chrome.");
@@ -538,6 +550,8 @@ export interface RenderJob {
   state: (frame: number) => FrameState;
   plan: OutputPlan;
   fps: number;
+  /** Timeout in ms waiting for headless Chrome to render a frame before failing (default 180000). */
+  stallTimeoutMs?: number;
   chromeFlags?: string[];
   onProgress?: (frame: number, total: number) => void;
 }
@@ -660,6 +674,9 @@ export function chromeArgs(userDataDir: string, width: number, height: number, u
     '--disable-background-networking',
     '--disable-background-timer-throttling',
     '--disable-renderer-backgrounding',
+    '--disable-backgrounding-occluded-windows',
+    '--run-all-compositor-stages-before-draw',
+    '--enable-features=SwiftShaderFallback',
     '--disable-extensions',
     ...parseEnvChromeFlags(),
     ...extraArgs,
@@ -667,7 +684,7 @@ export function chromeArgs(userDataDir: string, width: number, height: number, u
   ];
 }
 
-const STALL_MS = 60_000;
+const DEFAULT_STALL_MS = 180_000;
 
 /**
  * Runs a render: serves the page to headless Chrome on 127.0.0.1, hands it
@@ -676,6 +693,9 @@ const STALL_MS = 60_000;
  */
 export async function runRender(job: RenderJob): Promise<string> {
   const { page, plan, fps, onProgress } = job;
+  const stallMs =
+    job.stallTimeoutMs ??
+    (process.env.FLAIR_STALL_TIMEOUT_MS ? Number(process.env.FLAIR_STALL_TIMEOUT_MS) : DEFAULT_STALL_MS);
   const total = page.frames;
   const chromeBin = findChrome();
   if (!chromeBin) {
@@ -717,7 +737,15 @@ export async function runRender(job: RenderJob): Promise<string> {
     };
     const watchdog = () => {
       clearTimeout(stall);
-      stall = setTimeout(() => fail(new Error(`The render stalled: no frame for ${STALL_MS / 1000} s after frame ${written} of ${total}. Is WebGL2 available to headless Chrome?`)), STALL_MS);
+      stall = setTimeout(
+        () =>
+          fail(
+            new Error(
+              `The render stalled: no frame for ${stallMs / 1000} s after frame ${written} of ${total}. Is WebGL2 available to headless Chrome?`
+            )
+          ),
+        stallMs
+      );
     };
 
     const server = http.createServer((req, res) => {
