@@ -591,7 +591,7 @@ function chromeArgs(userDataDir: string, width: number, height: number, url: str
     `--user-data-dir=${userDataDir}`,
     `--window-size=${Math.max(64, width)},${Math.max(64, height)}`,
     '--use-gl=angle',
-    ...(process.platform === 'darwin' ? ['--use-angle=metal'] : []),
+    ...(process.platform === 'darwin' ? ['--use-angle=metal'] : ['--use-angle=swiftshader']),
     '--enable-webgl',
     '--enable-unsafe-swiftshader',
     '--ignore-gpu-blocklist',
@@ -607,7 +607,8 @@ function chromeArgs(userDataDir: string, width: number, height: number, url: str
   ];
 }
 
-const STALL_MS = Number(process.env.FLAIR_STALL_TIMEOUT_MS) || 120_000;
+/** Default stall timeout in milliseconds if not overridden via FLAIR_STALL_TIMEOUT_MS. */
+const DEFAULT_STALL_MS = 120_000;
 
 /**
  * Runs a render: serves the page to headless Chrome on 127.0.0.1, hands it
@@ -633,6 +634,9 @@ export async function runRender(job: RenderJob): Promise<string> {
     let stall: NodeJS.Timeout | undefined;
     const sockets = new Set<import('node:net').Socket>();
 
+    const stallTimeoutMs = Number(process.env.FLAIR_STALL_TIMEOUT_MS) || DEFAULT_STALL_MS;
+    let chromeStderr = '';
+
     const cleanup = () => {
       clearTimeout(stall);
       try {
@@ -657,7 +661,10 @@ export async function runRender(job: RenderJob): Promise<string> {
     };
     const watchdog = () => {
       clearTimeout(stall);
-      stall = setTimeout(() => fail(new Error(`The render stalled: no frame for ${STALL_MS / 1000} s after frame ${written} of ${total}. Is WebGL2 available to headless Chrome?`)), STALL_MS);
+      stall = setTimeout(() => {
+        const diag = chromeStderr.trim() ? `\nChrome stderr:\n${chromeStderr.trim()}` : '';
+        fail(new Error(`The render stalled: no frame for ${stallTimeoutMs / 1000} s after frame ${written} of ${total}. Is WebGL2 available to headless Chrome?${diag}`));
+      }, stallTimeoutMs);
     };
 
     const server = http.createServer((req, res) => {
@@ -739,10 +746,21 @@ export async function runRender(job: RenderJob): Promise<string> {
 
     server.listen(0, '127.0.0.1', () => {
       const { port } = server.address() as import('node:net').AddressInfo;
-      chrome = spawn(chromeBin, chromeArgs(userDataDir, page.width, page.height, `http://127.0.0.1:${port}/`), { stdio: 'ignore' });
-      chrome.on('error', (err) => fail(new Error(`Could not launch Chrome at ${chromeBin}: ${err.message}`)));
+      chrome = spawn(chromeBin, chromeArgs(userDataDir, page.width, page.height, `http://127.0.0.1:${port}/`), {
+        stdio: ['ignore', 'ignore', 'pipe'],
+      });
+      chrome.stderr?.on('data', (chunk) => {
+        chromeStderr = (chromeStderr + chunk.toString()).slice(-4000);
+      });
+      chrome.on('error', (err) => {
+        const diag = chromeStderr.trim() ? `\nChrome stderr:\n${chromeStderr.trim()}` : '';
+        fail(new Error(`Could not launch Chrome at ${chromeBin}: ${err.message}${diag}`));
+      });
       chrome.on('exit', (code) => {
-        if (!finished && written < total) fail(new Error(`Chrome quit (exit ${code}) after ${written} of ${total} frames.`));
+        if (!finished && written < total) {
+          const diag = chromeStderr.trim() ? `\nChrome stderr:\n${chromeStderr.trim()}` : '';
+          fail(new Error(`Chrome quit (exit ${code}) after ${written} of ${total} frames.${diag}`));
+        }
       });
       watchdog();
     });
