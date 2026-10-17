@@ -8,20 +8,26 @@
  */
 
 export {
+  chromeArgs,
   exportMotionGraphic,
   findChrome,
   ffmpegPath,
   planOutput,
+  runRender,
   type ExportOptions,
   type OutputFormat,
   type OutputPlan,
   type PointerMode,
+  type RenderJob,
 } from "./export/recorder.js";
 export {
   exportEffect,
   nodeSubjectValues,
+  probeVideo,
   vectorTimeline,
+  videoSeconds,
   type EffectExportOptions,
   type NodeSubject,
   type NodeSubjectValues,
+  type VideoProbe,
 } from "./export/effect.js";

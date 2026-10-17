@@ -4,8 +4,8 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-      day: "monday"
-    open-pull-requests-limit: 10
+      day: "thursday"
+    open-pull-requests-limit: 3
     groups:
       # @pixerate/editor is an optional peer; its updates land on their own so the peer range is reviewed.
       pixerate:
@@ -22,7 +22,7 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-      day: "monday"
+      day: "thursday"
     open-pull-requests-limit: 5
     groups:
       actions:

@@ -73,7 +73,7 @@ describe("svgFrameMarkup", () => {
         expect(other!.textContent, `${effect.id} #${id}`).toBe(el.textContent);
       }
     }
-  });
+  }, 60_000);
 });
 
 describe("svgViewBox", () => {

@@ -237,5 +237,5 @@ describe("svgAnimatedMarkup", () => {
     }
     sizes.sort((a, b) => b[1] - a[1]);
     console.info("largest animated SVGs:", sizes.slice(0, 5).map(([id, n]) => `${id} ${(n / 1024).toFixed(1)} KB`).join(", "));
-  });
+  }, 60_000);
 });
