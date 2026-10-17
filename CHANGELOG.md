@@ -1,5 +1,11 @@
 # @pixerate/flair
 
+## 0.35.1
+
+### Patch Changes
+
+- ac354c4: fix: add container-friendly flags and configurable stall timeout in recorder
+
 ## 0.35.0
 
 ### Minor Changes
