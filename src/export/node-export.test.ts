@@ -16,7 +16,7 @@ import {
   vectorTimeline,
   videoSeconds,
 } from './effect.js';
-import { chromeArgs, fragmentSource, pageControls, planOutput, renderPageHtml, scriptedPointer, sequencePath } from './recorder.js';
+import { chromeArgs, ffmpegPath, fragmentSource, pageControls, planOutput, renderPageHtml, scriptedPointer, sequencePath } from './recorder.js';
 
 const fixture = (name: string) => path.resolve(__dirname, '../../tests/fixtures', name);
 const PNG_1X1 = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'base64');
