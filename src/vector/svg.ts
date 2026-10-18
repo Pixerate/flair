@@ -5,13 +5,13 @@
 
 import { realClock, type Clock } from "../time/clock.js";
 import {
-  EASES,
+  easeFunction,
   formatCount,
   STEP_MS,
   SVG_PICTURE,
   svgFrame,
   svgOpeningTag,
-  type EaseName,
+  type SvgEase,
   type SvgBox,
   type SvgMotion,
 } from "./motion.js";
@@ -729,8 +729,8 @@ export interface AnimateCountOptions {
   ms?: number;
   /** Delay before starting in ms (default 0). */
   delay?: number;
-  /** Easing curve (default `"out"`). */
-  ease?: EaseName;
+  /** Easing curve (default `"out"`), by name or as a `[x1, y1, x2, y2]` cubic-bezier. */
+  ease?: SvgEase;
   /** Number of decimal places (default 0). */
   decimals?: number;
   /** Format template where `{n}` is replaced by the formatted number (default `"{n}"`). */
@@ -750,7 +750,7 @@ export function animateCount(options: AnimateCountOptions): () => void {
   const clock = options.clock ?? realClock;
   const ms = options.ms ?? STEP_MS;
   const delay = options.delay ?? 0;
-  const ease = EASES[options.ease ?? "out"];
+  const ease = easeFunction(options.ease, "out");
   const start = clock.now();
   let stopped = false;
 

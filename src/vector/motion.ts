@@ -14,6 +14,72 @@ export const EASES = {
 
 export type EaseName = keyof typeof EASES;
 
+/**
+ * A CSS `cubic-bezier(x1, y1, x2, y2)` curve: the two control points of a
+ * curve from (0, 0) to (1, 1). `x1` and `x2` are 0–1; `y1` and `y2` may go
+ * past 0–1 to overshoot (a back ease).
+ */
+export type CubicBezier = readonly [number, number, number, number];
+
+/** An easing: one of {@link EASES} by name, or any {@link CubicBezier} curve. */
+export type SvgEase = EaseName | CubicBezier;
+
+/** Whether `value` is a {@link CubicBezier}: four finite numbers with `x1` and `x2` in 0–1. */
+export function isCubicBezier(value: unknown): value is CubicBezier {
+  return (
+    Array.isArray(value) &&
+    value.length === 4 &&
+    value.every((n) => typeof n === "number" && Number.isFinite(n)) &&
+    value[0] >= 0 && value[0] <= 1 && value[2] >= 0 && value[2] <= 1
+  );
+}
+
+/** Whether `value` is an easing Flair plays: a name in {@link EASES} or a {@link CubicBezier}. */
+export const isSvgEase = (value: unknown): value is SvgEase =>
+  (typeof value === "string" && value in EASES) || isCubicBezier(value);
+
+const bezierCache = new Map<string, (t: number) => number>();
+
+/** The curve as a function of time (0–1), solved for x by Newton's method with a bisection fallback. */
+export function cubicBezierEase([x1, y1, x2, y2]: CubicBezier): (t: number) => number {
+  const key = `${x1},${y1},${x2},${y2}`;
+  const hit = bezierCache.get(key);
+  if (hit) return hit;
+  const at = (a: number, b: number, s: number) => 3 * a * (1 - s) ** 2 * s + 3 * b * (1 - s) * s * s + s ** 3;
+  const slope = (a: number, b: number, s: number) => 3 * a * (1 - s) ** 2 + 6 * (b - a) * (1 - s) * s + 3 * (1 - b) * s * s;
+  const fn = (t: number) => {
+    if (t <= 0) return 0;
+    if (t >= 1) return 1;
+    let s = t;
+    for (let i = 0; i < 8; i++) {
+      const dx = at(x1, x2, s) - t;
+      if (Math.abs(dx) < 1e-7) return at(y1, y2, s);
+      const d = slope(x1, x2, s);
+      if (Math.abs(d) < 1e-6) break;
+      s -= dx / d;
+    }
+    let [lo, hi] = [0, 1];
+    s = t;
+    for (let i = 0; i < 40; i++) {
+      const x = at(x1, x2, s);
+      if (Math.abs(x - t) < 1e-7) break;
+      if (x < t) lo = s;
+      else hi = s;
+      s = (lo + hi) / 2;
+    }
+    return at(y1, y2, s);
+  };
+  if (bezierCache.size > 256) bezierCache.clear();
+  bezierCache.set(key, fn);
+  return fn;
+}
+
+/** An easing as a function of time (0–1); `fallback` when it is not given. */
+export function easeFunction(ease: SvgEase | undefined, fallback: EaseName = "in-out"): (t: number) => number {
+  if (ease === undefined) return EASES[fallback];
+  return typeof ease === "string" ? EASES[ease] : cubicBezierEase(ease);
+}
+
 /** How long a change takes by default, in ms. */
 export const STEP_MS = 800;
 
@@ -36,14 +102,14 @@ export function stepProgress(
   steps: readonly number[],
   timeMs: number,
   step: number,
-  options: { delay?: number; ms?: number; ease?: EaseName } = {},
+  options: { delay?: number; ms?: number; ease?: SvgEase } = {},
 ): number {
   const start = stepStart(steps, step);
   if (start === undefined) return 0;
   const from = start + (options.delay ?? 0);
   const ms = options.ms ?? STEP_MS;
   const t = ms > 0 ? clamp01((timeMs - from) / ms) : timeMs >= from ? 1 : 0;
-  return EASES[options.ease ?? "in-out"](t);
+  return easeFunction(options.ease)(t);
 }
 
 /** The key an item in a list of data keeps from one state to the next. */
@@ -126,7 +192,7 @@ export function stepData<D>(
   states: readonly D[],
   steps: readonly number[],
   timeMs: number,
-  options: { ms?: number; ease?: EaseName; keyOf?: DataKey } = {},
+  options: { ms?: number; ease?: SvgEase; keyOf?: DataKey } = {},
 ): D {
   const last = Math.min(steps.length, states.length - 1);
   const to = states[last]!;
@@ -161,7 +227,8 @@ export interface SvgAnimation {
   delay?: number;
   /** How long it takes, in ms (default {@link STEP_MS}). */
   ms?: number;
-  ease?: EaseName;
+  /** A name in {@link EASES} (default `"in-out"`) or a `[x1, y1, x2, y2]` cubic-bezier curve. */
+  ease?: SvgEase;
   /**
    * Attributes from one value to another: numbers, colours (`#rrggbb`), or
    * strings whose numbers change while the rest stays the same (a path's
@@ -426,8 +493,8 @@ export function svgMotionIssues(motion: unknown): string[] {
     if (a.ms !== undefined && !(a.ms >= 0)) issues.push(`${where}: \`ms\` must be 0 or more`);
     if (a.delay !== undefined && !(a.delay >= 0))
       issues.push(`${where}: \`delay\` must be 0 or more`);
-    if (a.ease !== undefined && !(a.ease in EASES))
-      issues.push(`${where}: \`ease\` is one of ${Object.keys(EASES).join(", ")}`);
+    if (a.ease !== undefined && !isSvgEase(a.ease))
+      issues.push(`${where}: \`ease\` is one of ${Object.keys(EASES).join(", ")}, or a cubic-bezier [x1, y1, x2, y2] with x1 and x2 from 0 to 1`);
     if (!a.attrs && !a.draw && !a.count && a.write === undefined && a.view === undefined && !a.along && a.solo === undefined)
       issues.push(
         `${where} changes nothing: give \`attrs\`, \`draw\`, \`count\`, \`write\`, \`view\`, \`along\` or \`solo\``,
