@@ -12,6 +12,7 @@ import type { CompileError } from "../shader/program.js";
 import { checkControlValue, type ControlDef, type ControlValue } from "../shader/controls.js";
 import { realClock, type Clock } from "../time/clock.js";
 import type { SvgMotion } from "../vector/motion.js";
+import { effectDocumentFromAnimation, type AnimationImportOptions } from "./animation.js";
 import { effectCommands } from "./commands.js";
 import {
   createEffectDocument,
@@ -163,6 +164,19 @@ export class EffectEditor {
     this.compileReport = null;
     this.commit(`Load ${next.name}`, next);
     return ok;
+  }
+
+  /**
+   * Starts over from an animation made with `@pixerate/editor`'s animation
+   * editor (a `MotionScene`, as JSON text or an object), as a vector effect
+   * (one undo step). Refuses a scene with errors; its warnings come back.
+   */
+  loadAnimation(scene: unknown, options: AnimationImportOptions = {}): EditResult & { warnings?: string[] } {
+    const imported = effectDocumentFromAnimation(scene, options);
+    if (!imported.ok) return fail(imported.message);
+    this.compileReport = null;
+    this.commit(`Load ${imported.document.name}`, imported.document);
+    return { ok: true, warnings: imported.warnings };
   }
 
   rename(name: string): EditResult {

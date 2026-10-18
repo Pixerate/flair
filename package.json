@@ -89,7 +89,7 @@
     "gifenc": "^1.0.3"
   },
   "peerDependencies": {
-    "@pixerate/editor": ">=0.29.0 <1",
+    "@pixerate/editor": ">=0.55.0 <1",
     "react": ">=18",
     "svelte": ">=5"
   },
@@ -106,7 +106,7 @@
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.12",
-    "@pixerate/editor": "^0.29.0",
+    "@pixerate/editor": "^0.55.0",
     "@types/node": "^24.19.2",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
