@@ -11,7 +11,9 @@ import type { EffectDefinition } from "../catalog/types.js";
 import type { CompileError } from "../shader/program.js";
 import { checkControlValue, type ControlDef, type ControlValue } from "../shader/controls.js";
 import { realClock, type Clock } from "../time/clock.js";
-import type { SvgMotion } from "../vector/motion.js";
+import type { SvgAnimation, SvgMotion } from "../vector/motion.js";
+import { renderVectorEffect } from "../catalog/types.js";
+import { applyPrimitive, removePrimitive, type PrimitiveUse } from "../motion/index.js";
 import { effectDocumentFromAnimation, type AnimationImportOptions } from "./animation.js";
 import { effectCommands } from "./commands.js";
 import {
@@ -202,6 +204,40 @@ export class EffectEditor {
     if (motion.animate !== undefined && !Array.isArray(motion.animate)) return fail("`animate` must be a list of changes to the picture's elements.");
     this.commit("Edit picture", { ...this.doc, effect: { ...this.doc.effect, motion, controls: controls ?? this.doc.effect.controls } });
     return ok;
+  }
+
+  /**
+   * Applies a motion primitive (see `@pixerate/flair/motion`) to an element
+   * of the vector effect's picture, as one undo step. The element's box is
+   * measured from the picture with its controls filled in at the playhead
+   * (give `use.box` for text). Returns the use's `tag` (for
+   * `removePrimitive`), the animations it added and the elements it added
+   * to the markup; refuses, changing nothing, with a sentence saying what
+   * to fix.
+   */
+  applyPrimitive(use: PrimitiveUse): EditResult & { tag?: string; added?: SvgAnimation[]; elements?: string[] } {
+    const effect = this.doc.effect;
+    if (effect.kind !== "vector") return fail("Motion primitives move the elements of a vector effect's picture; this is a shader effect. Load a vector effect first (catalog.search with kind \"vector\", then effect.load).");
+    let measure: SvgMotion | undefined;
+    try {
+      measure = renderVectorEffect(effect, valuesAt(this.doc, this.time, this.controls));
+    } catch {
+      measure = undefined;
+    }
+    const result = applyPrimitive(effect.motion, use, { measure });
+    if (!result.ok) return result;
+    this.commit(`Apply ${use.primitive} to ${use.target}`, { ...this.doc, effect: { ...effect, motion: result.motion } });
+    return { ok: true, tag: result.tag, added: result.added, elements: result.elements };
+  }
+
+  /** Takes off what one use of a primitive added (by its tag), as one undo step. */
+  removePrimitive(tag: string): EditResult & { removed?: number } {
+    const effect = this.doc.effect;
+    if (effect.kind !== "vector") return fail("This is a shader effect; it has no motion primitives to remove.");
+    const result = removePrimitive(effect.motion, tag);
+    if (!result.ok) return result;
+    this.commit(`Remove ${tag}`, { ...this.doc, effect: { ...effect, motion: result.motion } });
+    return { ok: true, removed: result.removed.length };
   }
 
   /** Called by a renderer binding with the result of compiling the current source. */

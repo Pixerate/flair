@@ -216,7 +216,15 @@ function apply(
         const length = path?.getTotalLength?.();
         if (path && length !== undefined) {
           const p = path.getPointAtLength(frame.along.at * length);
-          el.setAttribute("transform", `translate(${+p.x.toFixed(2)} ${+p.y.toFixed(2)})`);
+          let turn = "";
+          if (frame.along.orient && length > 0) {
+            // The direction a little either side of the point (one side alone at the ends).
+            const d = Math.min(0.5, length / 1000);
+            const a = path.getPointAtLength(Math.max(0, frame.along.at * length - d));
+            const b = path.getPointAtLength(Math.min(length, frame.along.at * length + d));
+            turn = ` rotate(${+((Math.atan2(b.y - a.y, b.x - a.x) * 180) / Math.PI).toFixed(2)})`;
+          }
+          el.setAttribute("transform", `translate(${+p.x.toFixed(2)} ${+p.y.toFixed(2)})${turn}`);
         }
       } catch {
         // Not laid out: leave it where it is.

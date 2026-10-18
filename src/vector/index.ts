@@ -2,7 +2,10 @@
  * Vector motion: animated SVG pictures described as data.
  *
  * - Describing motion: `SvgMotion`, `SvgAnimation` (attribute tweens, draw-on,
- *   along a path, counts, written text, view zooms), checked by `svgMotionIssues`.
+ *   along a path, counts, written text, view zooms, and `behavior`: pulses,
+ *   oscillations, seeded wriggles and overshoots), checked by `svgMotionIssues`.
+ *   Reusable entrances, exits and emphasis built on these are in
+ *   `@pixerate/flair/motion`.
  * - Frames as pure functions: `svgFrame`, `lerpAttr`, `lerpData`, `stepData`.
  * - Shape morphing: `morphPaths`, `morphSequence` (any paths → paths that blend).
  * - Drawing: `parseSvg` (sanitised), `svgView`, `SvgPlayer`.
@@ -14,6 +17,8 @@
 
 export { morphPaths, morphSequence, type MorphOptions } from "./morph.js";
 export {
+  behaviorProgress,
+  changeProgress,
   cubicBezierEase,
   defaultDataKey,
   EASES,
@@ -27,6 +32,7 @@ export {
   stepData,
   stepProgress,
   stepStart,
+  SVG_BEHAVIORS,
   SVG_PICTURE,
   svgFrame,
   svgMotionIssues,
@@ -37,6 +43,7 @@ export {
   type DataKey,
   type EaseName,
   type SvgAnimation,
+  type SvgBehavior,
   type SvgBox,
   type SvgEase,
   type SvgElementFrame,
