@@ -76,6 +76,13 @@ export interface PrimitiveUse {
   /** Its main ease (default: the primitive's). */
   ease?: SvgEase;
   /**
+   * Emphasis only: plays it this many whole times (default 1), so it takes
+   * `ms × repeat` in all (see `SvgAnimation.repeat`).
+   */
+  repeat?: number;
+  /** Emphasis only, with `repeat`: every other cycle runs backwards (see `SvgAnimation.alternate`). */
+  alternate?: boolean;
+  /**
    * The element's box in the `viewBox`'s units, `[x, y, width, height]`,
    * for primitives that need it (`needsBox`) when Flair cannot measure it
    * from the markup (text needs layout; placeholders have no numbers yet).

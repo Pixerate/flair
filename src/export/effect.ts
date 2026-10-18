@@ -26,7 +26,7 @@ import { subjectValues, type EffectSubject } from '../embed/index.js';
 import { checkControlValue, parseColor, type ControlDef, type ControlValue } from '../shader/controls.js';
 import { wrapSource } from '../shader/program.js';
 import { svgAnimatedMarkup } from '../vector/animated.js';
-import type { SvgMotion } from '../vector/motion.js';
+import { changeLength, type SvgMotion } from '../vector/motion.js';
 import { svgFrameMarkup, svgViewBox } from '../vector/static.js';
 import { svgDuration } from '../vector/svg.js';
 import {
@@ -225,7 +225,7 @@ export function vectorTimeline(effect: Pick<VectorEffect, 'hold' | 'trigger'>, m
     let at = REST;
     for (let step = 1; step <= last; step++) {
       clicks.push(at);
-      const ends = anims.filter((a) => (a.step ?? 0) === step).map((a) => (a.delay ?? 0) + (a.ms ?? 800));
+      const ends = anims.filter((a) => (a.step ?? 0) === step).map((a) => (a.delay ?? 0) + changeLength(a));
       at += Math.max(0, ...ends) + hold;
     }
     const length = at;

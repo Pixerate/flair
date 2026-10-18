@@ -40,6 +40,23 @@ describe("motion primitives through the editor's commands", () => {
     expect(editor.history.getState()).toEqual(history);
   });
 
+  it("repeats an emphasis, alternating, and refuses repeat on other kinds", async () => {
+    const { run, editor, motion } = setup();
+    const pulse = await run("primitive.apply", { primitive: "emphasis.pulse", target: "card", ms: 400, repeat: 3, alternate: true });
+    expect(pulse.error).toBe(false);
+    expect(pulse.result!.added).toEqual([expect.objectContaining({ repeat: 3, alternate: true, ms: 400 })]);
+    expect(svgMotionIssues(motion().motion)).toEqual([]);
+    const history = editor.history.getState();
+    const bad = await run("primitive.apply", { primitive: "entrance.pop", target: "card", repeat: 2 });
+    expect(bad).toMatchObject({ error: true, text: expect.stringContaining("`repeat` and `alternate` go with emphasis primitives") });
+    expect(await run("primitive.apply", { primitive: "emphasis.pulse", target: "card", repeat: 0 })).toMatchObject({ error: true, text: expect.stringContaining("repeat") });
+    expect(await run("primitive.apply", { primitive: "emphasis.pulse", target: "card", ease: { spring: { damping: "soft" } } })).toMatchObject({ error: true, text: expect.stringContaining("spring") });
+    expect(editor.history.getState()).toEqual(history);
+    const spring = await run("primitive.apply", { primitive: "emphasis.spin", target: "card", ease: { spring: { damping: 12 } }, ms: 900 });
+    expect(spring.result!.added).toEqual([expect.objectContaining({ ease: { spring: { damping: 12 } } })]);
+    expect(EFFECT_AGENT_INSTRUCTIONS).toContain("strobe");
+  });
+
   it("refuses bad list and describe arguments with what to pass", async () => {
     const { run } = setup();
     // The schema's choices are checked first, and the refusal lists them.

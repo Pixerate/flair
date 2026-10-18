@@ -29,7 +29,8 @@ const valueSchema = {
 } as const;
 
 const easeSchema = {
-  description: 'The main ease: "linear", "out", "in-out", or a cubic-bezier [x1, y1, x2, y2] (x1 and x2 from 0 to 1; y may overshoot). Default: the primitive\'s.',
+  description:
+    'The main ease: "linear", "out", "in-out", a cubic-bezier [x1, y1, x2, y2] (x1 and x2 from 0 to 1; y may overshoot), or a spring {spring: {mass?, stiffness?, damping?, velocity?}} (defaults 1, 170, 26, 0; it runs for `ms`, so give an ms long enough to settle). Default: the primitive\'s.',
 } as const;
 
 /** A refusal for a primitive id that does not exist, with the nearest ids. */
@@ -319,6 +320,8 @@ export function effectCommands(): CommandSpec<EffectEditor>[] {
           delay: { type: "number", minimum: 0, description: "Ms after its step starts (default 0)." },
           ms: { type: "number", exclusiveMinimum: 0, description: "How long it takes, in ms (default: the primitive's)." },
           ease: easeSchema,
+          repeat: { type: "integer", minimum: 1, description: "Emphasis only: plays it this many whole times (default 1); it takes ms × repeat in all." },
+          alternate: { type: "boolean", description: "Emphasis only, with repeat: every other cycle runs backwards." },
           box: {
             type: "array",
             items: { type: "number" },
@@ -330,7 +333,7 @@ export function effectCommands(): CommandSpec<EffectEditor>[] {
         required: ["primitive", "target"],
         additionalProperties: false,
       },
-      run: (editor, p: { primitive: string; target: string; params?: Record<string, unknown>; step?: number; delay?: number; ms?: number; ease?: SvgEase; box?: [number, number, number, number] }) => {
+      run: (editor, p: { primitive: string; target: string; params?: Record<string, unknown>; step?: number; delay?: number; ms?: number; ease?: SvgEase; repeat?: number; alternate?: boolean; box?: [number, number, number, number] }) => {
         const result = editor.applyPrimitive(p);
         done(result);
         return { ok: true, tag: result.tag, added: result.added, elements: result.elements, issues: editor.getState().issues };

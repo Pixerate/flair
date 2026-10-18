@@ -9,8 +9,11 @@ import { pathAngleAt, pathPointAt } from "./morph.js";
 import {
   STEP_MS,
   SVG_PICTURE,
+  changeCycles,
+  changeLength,
   stepStart,
   easeFunction,
+  isCubicBezier,
   svgFrame,
   type CubicBezier,
   type EaseName,
@@ -76,7 +79,7 @@ const SPLINES: Record<Extract<Shape, string>, string> = { linear: "0 0 1 1", in:
 const HALFWAY: Record<EaseName, number> = { linear: 0.5, "in-out": 0.5, out: 1 - 0.5 ** (1 / 3) };
 
 /** When an ease is first halfway, as a share of its time. */
-function halfway(ease: SvgEase): number {
+function halfway(ease: Exclude<SvgEase, { spring: unknown }>): number {
   if (typeof ease === "string") return HALFWAY[ease];
   const f = easeFunction(ease);
   let [lo, hi] = [0, 1];
@@ -87,6 +90,10 @@ function halfway(ease: SvgEase): number {
   }
   return hi;
 }
+
+/** A shape run backwards in time (a cycle that alternates): the curve turned round its middle. */
+const reversed = (shape: Shape): Shape =>
+  shape === "in" ? "out" : shape === "out" ? "in" : typeof shape === "string" ? shape : [1 - shape[2], 1 - shape[3], 1 - shape[0], 1 - shape[1]];
 
 /** SMIL key splines: a shape's control points, written as given. */
 const splineOf = (shape: Shape) => (typeof shape === "string" ? SPLINES[shape] : shape.map((n) => String(+n.toFixed(4))).join(" "));
@@ -294,44 +301,92 @@ export function svgAnimatedMarkup(motion: SvgMotion, options: AnimatedSvgOptions
 
   /**
    * A channel's keyframes over the loop: before its first change its start,
-   * then each change from its start to its end (or the next change), eased
-   * exactly or (with `sampled`, or when cut short) sampled at `fps`.
+   * then each change from its start to its end (or the next change), cycle
+   * by cycle, eased exactly or (with `sampled`, a spring or a behavior, or
+   * when cut short) sampled at `fps`. A strobed change jumps exactly from
+   * one held frame to the next.
    */
   const keyframes = (id: string, prop: string, list: readonly Change[], sampled = false): Key[] => {
     const shown = list.filter((c, i) => c.start < loop && !(list[i + 1] && list[i + 1]!.start <= c.start));
-    // A change alone (with the one before it, where a view starts) gives its own value at any time.
-    const value = (k: number, t: number) =>
-      read(svgFrame(shown.slice(Math.max(0, k - 1), k + 1).map((c) => c.anim), steps, t), id, prop) ?? "";
+    // A change alone (with the one before it, where a view starts) gives its own value at any time;
+    // `once` plays it a single time, unstrobed, for where a cycle starts and ends.
+    const value = (k: number, t: number, once = false) =>
+      read(
+        svgFrame(
+          shown.slice(Math.max(0, k - 1), k + 1).map((c, i, all) =>
+            once && i === all.length - 1 ? { ...c.anim, repeat: undefined, alternate: undefined, strobe: undefined } : c.anim,
+          ),
+          steps,
+          t,
+        ),
+        id,
+        prop,
+      ) ?? "";
     const keys: Key[] = [];
     const push = (t: number, v: string, shape: Shape = "linear") => keys.push({ t, v, shape });
+    const last = () => keys[keys.length - 1]!.v;
     if (!shown.length) return [];
     push(0, read(frameAt(0), id, prop) ?? value(0, 0));
     shown.forEach((c, k) => {
       const next = Math.min(shown[k + 1]?.start ?? loop, loop);
       const ms = c.anim.ms ?? STEP_MS;
-      const end = Math.min(c.start + ms, next);
+      const end = Math.min(c.start + changeLength(c.anim), next);
       // Held until it starts, where it may jump.
-      push(c.start, keys[keys.length - 1]!.v);
+      push(c.start, last());
       push(c.start, value(k, c.start));
       if (!(ms > 0)) return;
-      const ease = c.anim.ease ?? (c.anim.behavior ? "linear" : "in-out");
-      const pair = prop.startsWith("@") ? c.anim.attrs![prop.slice(1)]! : undefined;
-      if (pair && !blends(pair[0], pair[1])) {
-        const at = c.start + ms * halfway(ease);
-        if (at < next) {
-          push(at, value(k, c.start));
-          push(at, value(k, end));
+      if (c.anim.strobe && c.anim.strobe > 0) {
+        // Held on each frame of its grid, then a jump to the next (read mid-frame, clear of rounding).
+        const frame = 1000 / c.anim.strobe;
+        for (let i = 1; c.start + i * frame < end; i++) {
+          const t = c.start + i * frame;
+          push(t, last());
+          push(t, value(k, Math.min(t + frame / 2, (t + end) / 2)));
         }
-      } else if (!sampled && !c.anim.behavior && end === c.start + ms && typeof ease !== "string" && ease.every((n) => n >= 0 && n <= 1)) {
-        // SMIL takes any curve whose control points stay within 0–1.
-        push(end, value(k, end), ease);
-      } else if (!sampled && !c.anim.behavior && end === c.start + ms && ease !== "linear" && typeof ease === "string") {
-        if (ease === "in-out") push(c.start + ms / 2, value(k, c.start + ms / 2), "in");
-        push(end, value(k, end), "out");
-      } else if (!sampled && !c.anim.behavior && ease === "linear") push(end, value(k, end));
-      else {
-        for (let t = c.start + 1000 / fps; t < end; t += 1000 / fps) push(t, value(k, t));
+        push(end, last());
         push(end, value(k, end));
+        return;
+      }
+      const ease = c.anim.ease ?? (c.anim.behavior ? "linear" : "in-out");
+      const spring = typeof ease === "object" && !isCubicBezier(ease);
+      const pair = prop.startsWith("@") ? c.anim.attrs![prop.slice(1)]! : undefined;
+      const [from, to] = [value(k, c.start, true), value(k, c.start + ms, true)];
+      for (let i = 0; i < changeCycles(c.anim.repeat); i++) {
+        const start = c.start + i * ms;
+        if (start >= end) break;
+        const stop = start + ms;
+        const back = Boolean(c.anim.alternate) && i % 2 === 1;
+        const [a, b] = back ? [to, from] : [from, to];
+        // Each cycle starts again from its start (where a loop jumps back).
+        if (i > 0) {
+          push(start, last());
+          push(start, a);
+        }
+        const whole = stop <= end;
+        const shape = (s: Shape) => (back ? reversed(s) : s);
+        if (pair && !blends(pair[0], pair[1]) && !spring) {
+          const h = halfway(ease as Exclude<SvgEase, { spring: unknown }>);
+          const at = start + ms * (back ? 1 - h : h);
+          if (at < end) {
+            push(at, a);
+            push(at, whole ? b : value(k, end));
+          }
+          if (whole) push(stop, b);
+        } else if (!sampled && !c.anim.behavior && whole && isCubicBezier(ease) && ease.every((n) => n >= 0 && n <= 1)) {
+          // SMIL takes any curve whose control points stay within 0–1.
+          push(stop, b, shape(ease));
+        } else if (!sampled && !c.anim.behavior && whole && (ease === "in-out" || ease === "out")) {
+          // In-out is the same either way round; out turned round is in.
+          if (ease === "in-out") {
+            push(start + ms / 2, value(k, c.start + ms / 2, true), "in");
+            push(stop, b, "out");
+          } else push(stop, b, shape("out"));
+        } else if (!sampled && !c.anim.behavior && whole && ease === "linear") push(stop, b);
+        else {
+          const until = Math.min(stop, end);
+          for (let t = start + 1000 / fps; t < until; t += 1000 / fps) push(t, value(k, t));
+          push(until, whole ? b : value(k, until));
+        }
       }
     });
     if (keys[keys.length - 1]!.t < loop) push(loop, keys[keys.length - 1]!.v);
@@ -343,7 +398,10 @@ export function svgAnimatedMarkup(motion: SvgMotion, options: AnimatedSvgOptions
     const times = new Set<number>();
     for (let t = 0; t < loop; t += 1000 / fps) times.add(+t.toFixed(3));
     for (const c of list)
-      for (const t of [c.start, c.start + (c.anim.ms ?? STEP_MS)]) if (t < loop) times.add(t);
+      for (let i = 0; i <= changeCycles(c.anim.repeat); i++) {
+        const t = c.start + i * (c.anim.ms ?? STEP_MS);
+        if (t < loop) times.add(t);
+      }
     return [...times].sort((a, b) => a - b);
   };
 
