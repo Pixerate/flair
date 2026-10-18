@@ -10,9 +10,12 @@ import {
   STEP_MS,
   SVG_PICTURE,
   stepStart,
+  easeFunction,
   svgFrame,
+  type CubicBezier,
   type EaseName,
   type SvgAnimation,
+  type SvgEase,
   type SvgBox,
   type SvgElementFrame,
   type SvgMotion,
@@ -43,8 +46,11 @@ export interface AnimatedSvgOptions {
   idSuffix?: string;
 }
 
-/** How a value gets to a keyframe from the one before: the shapes `EASES` are made of. */
-type Shape = "linear" | "in" | "out";
+/**
+ * How a value gets to a keyframe from the one before: the shapes `EASES` are
+ * made of, or a cubic-bezier curve written as it is.
+ */
+type Shape = "linear" | "in" | "out" | CubicBezier;
 
 /** A channel's value at a time, reached from the keyframe before along `shape`. */
 interface Key {
@@ -64,10 +70,26 @@ interface Change {
  * curve (0, 1, 1, 1), and `in-out` is `in` (t³, the curve (0, 0, 0, 1)) to
  * its middle then `out`, so eases are written exactly, not sampled.
  */
-const SPLINES: Record<Shape, string> = { linear: "0 0 1 1", in: "0.3333 0 0.6667 0", out: "0.3333 1 0.6667 1" };
+const SPLINES: Record<Extract<Shape, string>, string> = { linear: "0 0 1 1", in: "0.3333 0 0.6667 0", out: "0.3333 1 0.6667 1" };
 
-/** When an ease is halfway (where a value that cannot blend switches), as a share of its time. */
+/** When a named ease is halfway (where a value that cannot blend switches), as a share of its time. */
 const HALFWAY: Record<EaseName, number> = { linear: 0.5, "in-out": 0.5, out: 1 - 0.5 ** (1 / 3) };
+
+/** When an ease is first halfway, as a share of its time. */
+function halfway(ease: SvgEase): number {
+  if (typeof ease === "string") return HALFWAY[ease];
+  const f = easeFunction(ease);
+  let [lo, hi] = [0, 1];
+  for (let i = 0; i < 40; i++) {
+    const mid = (lo + hi) / 2;
+    if (f(mid) < 0.5) lo = mid;
+    else hi = mid;
+  }
+  return hi;
+}
+
+/** SMIL key splines: a shape's control points, written as given. */
+const splineOf = (shape: Shape) => (typeof shape === "string" ? SPLINES[shape] : shape.map((n) => String(+n.toFixed(4))).join(" "));
 
 const NUMBER = /-?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?/gi;
 const HEX = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
@@ -167,7 +189,7 @@ function timing(keys: readonly Key[], loop: number, repeat: boolean, discrete = 
     ...clock(loop, repeat),
     keyTimes: keys.map((k) => String(+(k.t / loop).toFixed(5))).join(";"),
     calcMode: discrete ? "discrete" : spline ? "spline" : "linear",
-    keySplines: spline ? keys.slice(1).map((k) => SPLINES[k.shape]).join(";") : undefined,
+    keySplines: spline ? keys.slice(1).map((k) => splineOf(k.shape)).join(";") : undefined,
   };
 }
 
@@ -295,12 +317,15 @@ export function svgAnimatedMarkup(motion: SvgMotion, options: AnimatedSvgOptions
       const ease = c.anim.ease ?? "in-out";
       const pair = prop.startsWith("@") ? c.anim.attrs![prop.slice(1)]! : undefined;
       if (pair && !blends(pair[0], pair[1])) {
-        const at = c.start + ms * HALFWAY[ease];
+        const at = c.start + ms * halfway(ease);
         if (at < next) {
           push(at, value(k, c.start));
           push(at, value(k, end));
         }
-      } else if (!sampled && end === c.start + ms && ease !== "linear") {
+      } else if (!sampled && end === c.start + ms && typeof ease !== "string" && ease.every((n) => n >= 0 && n <= 1)) {
+        // SMIL takes any curve whose control points stay within 0–1.
+        push(end, value(k, end), ease);
+      } else if (!sampled && end === c.start + ms && ease !== "linear" && typeof ease === "string") {
         if (ease === "in-out") push(c.start + ms / 2, value(k, c.start + ms / 2), "in");
         push(end, value(k, end), "out");
       } else if (!sampled && ease === "linear") push(end, value(k, end));

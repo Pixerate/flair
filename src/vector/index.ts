@@ -14,9 +14,13 @@
 
 export { morphPaths, morphSequence, type MorphOptions } from "./morph.js";
 export {
+  cubicBezierEase,
   defaultDataKey,
   EASES,
+  easeFunction,
   formatCount,
+  isCubicBezier,
+  isSvgEase,
   lerpAttr,
   lerpData,
   STEP_MS,
@@ -29,10 +33,12 @@ export {
   svgOpeningTag,
   SCRAMBLE_MS,
   writtenText,
+  type CubicBezier,
   type DataKey,
   type EaseName,
   type SvgAnimation,
   type SvgBox,
+  type SvgEase,
   type SvgElementFrame,
   type SvgMotion,
 } from "./motion.js";
