@@ -1,6 +1,6 @@
 {
   "name": "@pixerate/flair",
-  "version": "0.37.0",
+  "version": "0.38.0",
   "description": "Web visual effects and motion graphics: WebGL2 shader effects, animated vector effects, a catalog of ready-made effects, and a UI-agnostic, agent-ready effect editor.",
   "author": "Pixerate",
   "license": "MIT",
