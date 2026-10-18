@@ -171,6 +171,27 @@ export function effectCommands(): CommandSpec<EffectEditor>[] {
         done(p?.source !== undefined ? editor.load({ source: p.source, name: p.name }) : editor.load(p?.id, p?.preset)),
     },
     {
+      id: "effect.loadAnimation",
+      label: "Open animation",
+      group: "Effect",
+      description:
+        "Starts over from an animation made with @pixerate/editor's animation editor: a MotionScene ({version: 1, name, artwork, shots, controls?, presets?, …}) becomes a vector effect, its colour controls become {{name: color}} placeholders and its presets are kept. Refuses a scene with errors (unknown node ids, malformed commands) and lists them; returns the scene's warnings and the document's issues.",
+      params: {
+        type: "object",
+        properties: {
+          scene: { type: "object", description: "The MotionScene, as stored by the animation editor." },
+          fps: { type: "number", minimum: 1, maximum: 120, description: "Sampling rate for motion Flair cannot express exactly (default: the scene's fps, else 30)." },
+        },
+        required: ["scene"],
+        additionalProperties: false,
+      },
+      run: (editor, p: { scene: unknown; fps?: number }) => {
+        const result = editor.loadAnimation(p.scene, p.fps ? { fps: p.fps } : {});
+        done(result);
+        return { ok: true, warnings: result.ok ? (result.warnings ?? []) : [], issues: editor.getState().issues };
+      },
+    },
+    {
       id: "effect.setSource",
       label: "Set shader source",
       group: "Effect",

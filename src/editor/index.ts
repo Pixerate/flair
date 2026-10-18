@@ -7,6 +7,8 @@
  * - Keyframes: `Track`, `Keyframe`, `Easing`, `evaluateTrack`.
  * - Editing: `EffectEditor` / `createEffectEditor` (state, undo, playhead,
  *   commands), bound to a preview with `bindShaderRenderer` or `bindSvgView`.
+ * - Animations: `effectDocumentFromAnimation` and `EffectEditor.loadAnimation`
+ *   open scenes from `@pixerate/editor`'s animation editor as vector effects.
  * - Parameter panels: `parameterSchemaFor` and `bindEffectParameters` drive
  *   `@pixerate/editor/parameters` (and its React and Svelte panels).
  * - Agents: `createEffectToolRegistry`, `createEffectToolProvider`,
@@ -62,6 +64,7 @@ export {
   type EffectToolProviderOptions,
 } from "./agent.js";
 export { bindShaderRenderer, bindSvgView, type ShaderPreview } from "./bind.js";
+export { effectDocumentFromAnimation, type AnimationImport, type AnimationImportOptions, type MotionScene } from "./animation.js";
 export {
   bindEffectParameters,
   parameterFieldFor,

@@ -32,6 +32,7 @@ Flair gives products a library of good-looking, configurable visual effects (her
 - 🎛️ **Effect editor (`@pixerate/flair/editor`)**:
   - A headless editor for an effect's source, values, keyframes, presets and timeline.
   - Built on [`@pixerate/editor`](https://github.com/Pixerate/editor)'s undo history and command registry, with no UI framework assumed.
+  - Opens animations made with `@pixerate/editor`'s vector animation editor (`effect.loadAnimation`, `effectDocumentFromAnimation`): shots over vector artwork become a vector effect, with the scene's colour controls and presets, so new effects can be animated there and finished here.
 - 🤖 **Agent-native, bring your own model**:
   - Every editing action is a command, and the commands are exposed as MCP-shaped tools.
   - Ships instructions for the model. The host supplies the model, keys and agent loop.
@@ -49,7 +50,7 @@ Flair gives products a library of good-looking, configurable visual effects (her
 | `@pixerate/flair/embed` | `mountEffect`, `subjectValues`: any catalog effect on a page, applied to a picture, video, SVG, words or a path; `recordEffect`: MP4, WebM, GIF or PNG frames in the browser | None |
 | `@pixerate/flair/react` | `<FlairEffect>`: any catalog effect applied to a subject; `<VectorEffect>`, `<SvgPlayerView>`: vector effects as React components, server-rendered as a still | `react` ≥ 18 (optional peer) |
 | `@pixerate/flair/svelte` | `flairEffect` action: any catalog effect applied to a subject; `vectorEffect` action, `vectorEffectStill`: vector effects in Svelte, server-rendered as a still | `svelte` ≥ 5 (optional peer; types only) |
-| `@pixerate/flair/editor` | `EffectEditor`, effect documents, keyframe tracks, renderer bindings, parameter-panel binding, agent tools and instructions | `@pixerate/editor` ≥ 0.29 (optional peer; only its dependency-free `/history`, `/commands`, `/tools`, `/animation` and `/parameters` subpaths) |
+| `@pixerate/flair/editor` | `EffectEditor`, effect documents, keyframe tracks, renderer bindings, parameter-panel binding, agent tools and instructions, and `effectDocumentFromAnimation` / `loadAnimation` for scenes from `@pixerate/editor`'s animation editor | `@pixerate/editor` ≥ 0.55 (optional peer; only its dependency-free `/history`, `/commands`, `/tools`, `/animation`, `/animation-editor` and `/parameters` subpaths) |
 | `@pixerate/flair/node` | `exportEffect` and `exportMotionGraphic`: render a catalog effect (on a picture, video, SVG, words or a path) or a shader to MP4, WebM, MOV, GIF, PNG frames or animated SVG, through headless Chrome (and ffmpeg for video) | Node.js |
 
 The `flair` CLI inspects shaders, writes standalone pages and directs scenes (see [CLI](#-cli)).
