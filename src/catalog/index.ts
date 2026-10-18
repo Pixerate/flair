@@ -249,6 +249,22 @@ export interface EffectQuery {
   interaction?: readonly EffectInteraction[];
   /** Overlays (`true`), which draw over other content, or effects that fill their frame (`false`). */
   transparent?: boolean;
+  /** Effects designed to modify a single picture (exactly one image slot wanting a picture). */
+  singlePicture?: boolean;
+}
+
+/**
+ * Whether an effect is designed to modify a single picture (e.g. filters, stylizations, distortions).
+ * Returns true when the effect accepts an image, has exactly one image slot, and that slot wants a 'picture'
+ * (rather than a mask, text, or multiple pictures for transitions).
+ */
+export function isSinglePictureEffect(effect: EffectDefinition): boolean {
+  const inputs = effectInputs(effect);
+  return (
+    inputs.accepts.includes("image") &&
+    inputs.images.length === 1 &&
+    inputs.images[0]?.wants === "picture"
+  );
 }
 
 /** Effects matching a query, in catalog order. */
@@ -260,6 +276,7 @@ export function findEffects(query: EffectQuery = {}): EffectDefinition[] {
     if (query.kind && e.kind !== query.kind) return false;
     if (query.tags && !query.tags.every((t) => e.tags.includes(t))) return false;
     if (query.video && !(e.kind === "shader" && e.video && query.video.includes(e.video))) return false;
+    if (query.singlePicture !== undefined && isSinglePictureEffect(e) !== query.singlePicture) return false;
     if (query.accepts || query.interaction || query.transparent !== undefined) {
       const inputs = effectInputs(e);
       if (query.accepts && !query.accepts.every((i) => inputs.accepts.includes(i))) return false;

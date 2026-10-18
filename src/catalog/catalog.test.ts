@@ -21,6 +21,7 @@ import {
   vectorControls,
   VIDEO_USES,
   effectInputs,
+  isSinglePictureEffect,
 } from "./index.js";
 
 describe("catalog", () => {
@@ -1625,5 +1626,35 @@ describe("category groups", () => {
     expect(lights.length).toBeGreaterThan(0);
     expect(lights.every((e) => categoryGroup(e.category).name === "Light")).toBe(true);
     expect(findEffects({ group: "nope" })).toEqual([]);
+  });
+});
+
+describe("single picture effects", () => {
+  it("recognises effects tailored to a single picture input", () => {
+    expect(isSinglePictureEffect(getEffect("image-duotone")!)).toBe(true);
+    expect(isSinglePictureEffect(getEffect("image-glitch")!)).toBe(true);
+    expect(isSinglePictureEffect(getEffect("crt")!)).toBe(true);
+    expect(isSinglePictureEffect(getEffect("image-pixelate")!)).toBe(true);
+
+    // Procedural/gradient background effects take no image
+    expect(isSinglePictureEffect(getEffect("holographic-gradient")!)).toBe(false);
+    expect(isSinglePictureEffect(getEffect("aurora")!)).toBe(false);
+
+    // Multi-image transitions take more than 1 image
+    const transition = findEffects({ category: "transition" })[0];
+    if (transition) {
+      expect(isSinglePictureEffect(transition)).toBe(false);
+    }
+  });
+
+  it("filters the catalog by singlePicture", () => {
+    const single = findEffects({ singlePicture: true });
+    expect(single.length).toBeGreaterThan(10);
+    expect(single.every(isSinglePictureEffect)).toBe(true);
+
+    const nonSingle = findEffects({ singlePicture: false });
+    expect(nonSingle.length).toBeGreaterThan(10);
+    expect(nonSingle.some(isSinglePictureEffect)).toBe(false);
+    expect(single.length + nonSingle.length).toBe(EFFECTS.length);
   });
 });
