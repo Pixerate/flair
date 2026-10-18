@@ -1,5 +1,11 @@
 # @pixerate/flair
 
+## 0.41.0
+
+### Minor Changes
+
+- fa273b2: Add `isSinglePictureEffect` catalog helper and `singlePicture` option to `EffectQuery` in `@pixerate/flair/catalog` to cleanly filter effects designed to style, filter, or distort a single picture.
+
 ## 0.40.0
 
 ### Minor Changes
