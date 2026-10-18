@@ -5,6 +5,9 @@
  * however it is reached (played, stepped for a recording, or seeked).
  */
 
+import { evaluateBehavior } from "../scene/behavior.js";
+import { fractalWiggle, quinticFade } from "../time/noise.js";
+
 /** Easing curves by name. */
 export const EASES = {
   linear: (t: number) => t,
@@ -13,6 +16,72 @@ export const EASES = {
 } as const;
 
 export type EaseName = keyof typeof EASES;
+
+/**
+ * A CSS `cubic-bezier(x1, y1, x2, y2)` curve: the two control points of a
+ * curve from (0, 0) to (1, 1). `x1` and `x2` are 0–1; `y1` and `y2` may go
+ * past 0–1 to overshoot (a back ease).
+ */
+export type CubicBezier = readonly [number, number, number, number];
+
+/** An easing: one of {@link EASES} by name, or any {@link CubicBezier} curve. */
+export type SvgEase = EaseName | CubicBezier;
+
+/** Whether `value` is a {@link CubicBezier}: four finite numbers with `x1` and `x2` in 0–1. */
+export function isCubicBezier(value: unknown): value is CubicBezier {
+  return (
+    Array.isArray(value) &&
+    value.length === 4 &&
+    value.every((n) => typeof n === "number" && Number.isFinite(n)) &&
+    value[0] >= 0 && value[0] <= 1 && value[2] >= 0 && value[2] <= 1
+  );
+}
+
+/** Whether `value` is an easing Flair plays: a name in {@link EASES} or a {@link CubicBezier}. */
+export const isSvgEase = (value: unknown): value is SvgEase =>
+  (typeof value === "string" && value in EASES) || isCubicBezier(value);
+
+const bezierCache = new Map<string, (t: number) => number>();
+
+/** The curve as a function of time (0–1), solved for x by Newton's method with a bisection fallback. */
+export function cubicBezierEase([x1, y1, x2, y2]: CubicBezier): (t: number) => number {
+  const key = `${x1},${y1},${x2},${y2}`;
+  const hit = bezierCache.get(key);
+  if (hit) return hit;
+  const at = (a: number, b: number, s: number) => 3 * a * (1 - s) ** 2 * s + 3 * b * (1 - s) * s * s + s ** 3;
+  const slope = (a: number, b: number, s: number) => 3 * a * (1 - s) ** 2 + 6 * (b - a) * (1 - s) * s + 3 * (1 - b) * s * s;
+  const fn = (t: number) => {
+    if (t <= 0) return 0;
+    if (t >= 1) return 1;
+    let s = t;
+    for (let i = 0; i < 8; i++) {
+      const dx = at(x1, x2, s) - t;
+      if (Math.abs(dx) < 1e-7) return at(y1, y2, s);
+      const d = slope(x1, x2, s);
+      if (Math.abs(d) < 1e-6) break;
+      s -= dx / d;
+    }
+    let [lo, hi] = [0, 1];
+    s = t;
+    for (let i = 0; i < 40; i++) {
+      const x = at(x1, x2, s);
+      if (Math.abs(x - t) < 1e-7) break;
+      if (x < t) lo = s;
+      else hi = s;
+      s = (lo + hi) / 2;
+    }
+    return at(y1, y2, s);
+  };
+  if (bezierCache.size > 256) bezierCache.clear();
+  bezierCache.set(key, fn);
+  return fn;
+}
+
+/** An easing as a function of time (0–1); `fallback` when it is not given. */
+export function easeFunction(ease: SvgEase | undefined, fallback: EaseName = "in-out"): (t: number) => number {
+  if (ease === undefined) return EASES[fallback];
+  return typeof ease === "string" ? EASES[ease] : cubicBezierEase(ease);
+}
 
 /** How long a change takes by default, in ms. */
 export const STEP_MS = 800;
@@ -36,14 +105,14 @@ export function stepProgress(
   steps: readonly number[],
   timeMs: number,
   step: number,
-  options: { delay?: number; ms?: number; ease?: EaseName } = {},
+  options: { delay?: number; ms?: number; ease?: SvgEase } = {},
 ): number {
   const start = stepStart(steps, step);
   if (start === undefined) return 0;
   const from = start + (options.delay ?? 0);
   const ms = options.ms ?? STEP_MS;
   const t = ms > 0 ? clamp01((timeMs - from) / ms) : timeMs >= from ? 1 : 0;
-  return EASES[options.ease ?? "in-out"](t);
+  return easeFunction(options.ease)(t);
 }
 
 /** The key an item in a list of data keeps from one state to the next. */
@@ -126,7 +195,7 @@ export function stepData<D>(
   states: readonly D[],
   steps: readonly number[],
   timeMs: number,
-  options: { ms?: number; ease?: EaseName; keyOf?: DataKey } = {},
+  options: { ms?: number; ease?: SvgEase; keyOf?: DataKey } = {},
 ): D {
   const last = Math.min(steps.length, states.length - 1);
   const to = states[last]!;
@@ -151,6 +220,97 @@ export interface SvgMotion {
 /** A box in an SVG's `viewBox` units: `[x, y, width, height]`. */
 export type SvgBox = readonly [number, number, number, number];
 
+/**
+ * How a change gets from `from` to `to` when it does not simply go there
+ * (see `SvgAnimation.behavior`): its progress `u` at each moment, where 0 is
+ * `from`, 1 is `to`, and numbers go past either. `t` is the change's time,
+ * 0–1, through its `ease` (linear unless given).
+ *
+ * - `pulse`: there and back `count` times (default 1): u = sin²(π·count·t).
+ * - `oscillate`: swings round `from`, out to `to` and as far the other way,
+ *   `count` times (default 1), dying away by (1 − t)^`decay` (default 0,
+ *   no decay): u = wave(count·t)·(1 − t)^decay, `wave` sine (default),
+ *   triangle, square or sawtooth. Back at `from` at the end when `count` is
+ *   whole or `decay` is above 0.
+ * - `wriggle`: wanders round `from` by up to about `to − from`, as seeded,
+ *   smooth fractal noise (`fractalWiggle`) at `frequency` Hz (default 2)
+ *   with `octaves` layers of detail (default 2); each number in a value
+ *   wanders on its own (a translate's x and y apart). It eases out of and
+ *   back to rest over the first and last 15% of its time, so it starts and
+ *   ends at `from`. The same `seed` (default 42) gives the same wander.
+ * - `overshoot`: goes to `to`, past it and back, settling like a spring:
+ *   u = 1 − e^(−damping·t)·cos(cycles·π·t) (default 3 cycles, damping 4).
+ */
+export type SvgBehavior =
+  | { type: "pulse"; count?: number }
+  | { type: "oscillate"; count?: number; decay?: number; wave?: "sine" | "triangle" | "square" | "sawtooth" }
+  | { type: "wriggle"; frequency?: number; octaves?: number; seed?: number }
+  | { type: "overshoot"; cycles?: number; damping?: number };
+
+/** Every {@link SvgBehavior} type. */
+export const SVG_BEHAVIORS = ["pulse", "oscillate", "wriggle", "overshoot"] as const;
+
+/** Share of a wriggle's time spent easing out of and back to rest, at each end. */
+const WRIGGLE_EDGE = 0.15;
+
+/**
+ * A behavior's progress (see {@link SvgBehavior}) at `t` (0–1, eased) of a
+ * change lasting `ms`, for the `index`-th number in a value.
+ */
+export function behaviorProgress(behavior: SvgBehavior, t: number, index = 0, ms: number = STEP_MS): number {
+  switch (behavior.type) {
+    case "pulse":
+      // sin²(πct) = (1 − cos 2πct) / 2: an oscillation half as high, round ½, started at its lowest.
+      return evaluateBehavior({ type: "oscillate", target: "", property: "", amplitude: 0.5, frequency: behavior.count ?? 1, phase: -Math.PI / 2, center: 0.5 }, t, 1);
+    case "oscillate": {
+      const wave = evaluateBehavior({ type: "oscillate", target: "", property: "", wave: behavior.wave, amplitude: 1, frequency: behavior.count ?? 1, center: 0 }, t, 1);
+      const decay = behavior.decay ?? 0;
+      return decay > 0 ? wave * Math.max(0, 1 - t) ** decay : wave;
+    }
+    case "wriggle": {
+      const edge = quinticFade(Math.min(1, Math.max(0, Math.min(t, 1 - t) / WRIGGLE_EDGE)));
+      if (edge === 0) return 0;
+      return edge * fractalWiggle(behavior.frequency ?? 2, 1, behavior.octaves ?? 2, 0.5, (t * ms) / 1000, behavior.seed ?? 42, index);
+    }
+    case "overshoot":
+      return evaluateBehavior({ type: "overshoot", target: "", property: "", targetValue: 1, startValue: 0, cycles: behavior.cycles, damping: behavior.damping }, t, 1);
+  }
+}
+
+/** Problems with a {@link SvgBehavior}, as sentences. */
+function behaviorIssues(behavior: unknown): string[] {
+  const b = (behavior ?? {}) as Record<string, unknown>;
+  if (typeof behavior !== "object" || !(SVG_BEHAVIORS as readonly string[]).includes(b.type as string))
+    return [`\`behavior\` is {type: ${SVG_BEHAVIORS.join(" | ")}, …}`];
+  const issues: string[] = [];
+  const positive = (name: string) => {
+    if (b[name] !== undefined && !(typeof b[name] === "number" && (b[name] as number) > 0 && Number.isFinite(b[name])))
+      issues.push(`\`behavior.${name}\` is a number above 0`);
+  };
+  const atLeastZero = (name: string) => {
+    if (b[name] !== undefined && !(typeof b[name] === "number" && (b[name] as number) >= 0 && Number.isFinite(b[name])))
+      issues.push(`\`behavior.${name}\` is a number, 0 or more`);
+  };
+  if (b.type === "pulse") positive("count");
+  if (b.type === "oscillate") {
+    positive("count");
+    atLeastZero("decay");
+    if (b.wave !== undefined && !["sine", "triangle", "square", "sawtooth"].includes(b.wave as string))
+      issues.push("`behavior.wave` is sine, triangle, square or sawtooth");
+  }
+  if (b.type === "wriggle") {
+    positive("frequency");
+    if (b.octaves !== undefined && !(Number.isInteger(b.octaves) && (b.octaves as number) >= 1 && (b.octaves as number) <= 8))
+      issues.push("`behavior.octaves` is a whole number from 1 to 8");
+    if (b.seed !== undefined && !Number.isSafeInteger(b.seed)) issues.push("`behavior.seed` is a whole number");
+  }
+  if (b.type === "overshoot") {
+    positive("cycles");
+    atLeastZero("damping");
+  }
+  return issues;
+}
+
 /** A change to one element of an {@link SvgMotion}, or (with `view`) to the whole picture. */
 export interface SvgAnimation {
   /** The element's `id` in the SVG (not needed for `view`). */
@@ -161,7 +321,24 @@ export interface SvgAnimation {
   delay?: number;
   /** How long it takes, in ms (default {@link STEP_MS}). */
   ms?: number;
-  ease?: EaseName;
+  /**
+   * A name in {@link EASES} (default `"in-out"`, or `"linear"` with a
+   * `behavior`) or a `[x1, y1, x2, y2]` cubic-bezier curve.
+   */
+  ease?: SvgEase;
+  /**
+   * Shapes how the change gets from `from` to `to`: a pulse there and back,
+   * an oscillation (a shake, a teeter), a seeded wriggle or a springy
+   * overshoot (see {@link SvgBehavior}), still a pure function of time.
+   * Without it a change goes straight there along its ease.
+   */
+  behavior?: SvgBehavior;
+  /**
+   * Who added this change, so changes added together can be found and
+   * removed together: a motion primitive's use (`"entrance.pop@logo"`, see
+   * `@pixerate/flair/motion`). Playing ignores it.
+   */
+  tag?: string;
   /**
    * Attributes from one value to another: numbers, colours (`#rrggbb`), or
    * strings whose numbers change while the rest stays the same (a path's
@@ -184,6 +361,11 @@ export interface SvgAnimation {
   along?: string;
   /** How far along the path `along` moves the element, from and to (default [0, 1]). */
   at?: readonly [number, number];
+  /**
+   * With `along`: turns the element with the path's direction as it goes,
+   * so something drawn pointing right (along +x) faces the way it moves.
+   */
+  orient?: boolean;
   /**
    * Sets the active child index in a solo container (data-solo group or element with multiple children).
    * Hides all siblings except the one at this index (0-based).
@@ -250,8 +432,8 @@ export interface SvgElementFrame {
   text?: string;
   /** Active child index when targeting a solo container. */
   solo?: number;
-  /** Where it is along a path: the path's id and the fraction of its length. */
-  along?: { path: string; at: number };
+  /** Where it is along a path: the path's id and the fraction of its length, and whether it turns with the path. */
+  along?: { path: string; at: number; orient?: boolean };
   /**
    * The whole picture's framing (on the frame for {@link SVG_PICTURE}): `u`
    * of the way from one view to the next, `null` being the whole `viewBox`.
@@ -273,16 +455,23 @@ function rgb(hex: string): [number, number, number] {
 
 const round = (n: number) => Math.round(n * 1000) / 1000;
 
-/** A value `u` of the way between two attribute values (see `SvgAnimation.attrs`). */
-export function lerpAttr(a: string | number, b: string | number, u: number): string {
-  if (typeof a === "number" && typeof b === "number") return String(round(a + (b - a) * u));
+/**
+ * A value `u` of the way between two attribute values (see
+ * `SvgAnimation.attrs`). `u` may instead give each number in the value its
+ * own progress, by its index (a wriggle moves a translate's x and y apart);
+ * a single number or colour takes index 0.
+ */
+export function lerpAttr(a: string | number, b: string | number, u: number | ((index: number) => number)): string {
+  const at = typeof u === "number" ? () => u : u;
+  if (typeof a === "number" && typeof b === "number") return String(round(a + (b - a) * at(0)));
   const sa = String(a);
   const sb = String(b);
   if (HEX.test(sa) && HEX.test(sb)) {
     const [ca, cb] = [rgb(sa), rgb(sb)];
+    const k = at(0);
     return `#${ca
       .map((c, i) =>
-        Math.round(c + (cb[i]! - c) * u)
+        Math.min(255, Math.max(0, Math.round(c + (cb[i]! - c) * k)))
           .toString(16)
           .padStart(2, "0"),
       )
@@ -293,12 +482,12 @@ export function lerpAttr(a: string | number, b: string | number, u: number): str
   if (na.length && na.length === nb.length && sa.replace(NUMBER, "#") === sb.replace(NUMBER, "#")) {
     let i = 0;
     return sa.replace(NUMBER, () => {
-      const v = Number(na[i]) + (Number(nb[i]) - Number(na[i])) * u;
+      const v = Number(na[i]) + (Number(nb[i]) - Number(na[i])) * at(i);
       i++;
       return String(round(v));
     });
   }
-  return u < 0.5 ? sa : sb;
+  return at(0) < 0.5 ? sa : sb;
 }
 
 /** Formats a number for a count animation (`{n}` stands for the rounded number). */
@@ -308,6 +497,22 @@ export function formatCount(
 ): string {
   const n = value.toFixed(options.decimals ?? 0);
   return (options.format ?? "{n}").replace("{n}", n);
+}
+
+/**
+ * How far a change has got at `timeMs`, for each number in its values (see
+ * {@link lerpAttr}): its ease, or its `behavior` over its eased time. 0
+ * before it starts.
+ */
+export function changeProgress(anim: SvgAnimation, steps: readonly number[], timeMs: number): (index: number) => number {
+  if (!anim.behavior) {
+    const u = stepProgress(steps, timeMs, anim.step ?? 0, { delay: anim.delay, ms: anim.ms, ease: anim.ease });
+    return () => u;
+  }
+  const t = stepProgress(steps, timeMs, anim.step ?? 0, { delay: anim.delay, ms: anim.ms, ease: anim.ease ?? "linear" });
+  const behavior = anim.behavior;
+  const ms = anim.ms ?? STEP_MS;
+  return (index) => behaviorProgress(behavior, t, index, ms);
 }
 
 const startOf = (a: SvgAnimation, steps: readonly number[]) => {
@@ -350,13 +555,8 @@ export function svgFrame(
     const started = list.filter((c) => c.start <= timeMs);
     const current = started[started.length - 1];
     const anim = (current ?? list[0]!).anim;
-    const u = current
-      ? stepProgress(steps, timeMs, anim.step ?? 0, {
-          delay: anim.delay,
-          ms: anim.ms,
-          ease: anim.ease,
-        })
-      : 0;
+    const progress = current ? changeProgress(anim, steps, timeMs) : () => 0;
+    const u = progress(0);
     const frame = frames.get(id) ?? { attrs: {} };
     if (prop === "view") {
       // From where the change before it left the picture.
@@ -364,12 +564,12 @@ export function svgFrame(
       frame.view = { from: before?.anim.view ?? null, to: anim.view!, u };
     } else if (prop === "along") {
       const [a, b] = anim.at ?? [0, 1];
-      frame.along = { path: anim.along!, at: a + (b - a) * u };
+      frame.along = { path: anim.along!, at: a + (b - a) * u, ...(anim.orient && { orient: true }) };
     } else if (prop === "solo") {
       frame.solo = anim.solo;
     } else if (prop.startsWith("@")) {
       const [a, b] = anim.attrs![prop.slice(1)]!;
-      frame.attrs[prop.slice(1)] = lerpAttr(a, b, u);
+      frame.attrs[prop.slice(1)] = lerpAttr(a, b, progress);
     } else if (prop === "draw") {
       const [a, b] = anim.draw === true ? [0, 1] : (anim.draw as readonly [number, number]);
       frame.draw = a + (b - a) * u;
@@ -426,8 +626,8 @@ export function svgMotionIssues(motion: unknown): string[] {
     if (a.ms !== undefined && !(a.ms >= 0)) issues.push(`${where}: \`ms\` must be 0 or more`);
     if (a.delay !== undefined && !(a.delay >= 0))
       issues.push(`${where}: \`delay\` must be 0 or more`);
-    if (a.ease !== undefined && !(a.ease in EASES))
-      issues.push(`${where}: \`ease\` is one of ${Object.keys(EASES).join(", ")}`);
+    if (a.ease !== undefined && !isSvgEase(a.ease))
+      issues.push(`${where}: \`ease\` is one of ${Object.keys(EASES).join(", ")}, or a cubic-bezier [x1, y1, x2, y2] with x1 and x2 from 0 to 1`);
     if (!a.attrs && !a.draw && !a.count && a.write === undefined && a.view === undefined && !a.along && a.solo === undefined)
       issues.push(
         `${where} changes nothing: give \`attrs\`, \`draw\`, \`count\`, \`write\`, \`view\`, \`along\` or \`solo\``,
@@ -455,6 +655,10 @@ export function svgMotionIssues(motion: unknown): string[] {
       if (typeof a.id !== "string")
         issues.push(`${where}: \`along\` moves an element: give its \`id\``);
     }
+    if (a.orient !== undefined && (typeof a.orient !== "boolean" || a.along === undefined))
+      issues.push(`${where}: \`orient\` is true or false, and goes with \`along\``);
+    if (a.behavior !== undefined) for (const issue of behaviorIssues(a.behavior)) issues.push(`${where}: ${issue}`);
+    if (a.tag !== undefined && typeof a.tag !== "string") issues.push(`${where}: \`tag\` is a string`);
     if (
       a.at !== undefined &&
       !(Array.isArray(a.at) && a.at.length === 2 && a.at.every((v) => v >= 0 && v <= 1))

@@ -6,6 +6,7 @@ export default defineConfig({
     "catalog/index": "src/catalog/index.ts",
     "editor/index": "src/editor/index.ts",
     "vector/index": "src/vector/index.ts",
+    "motion/index": "src/motion/index.ts",
     "embed/index": "src/embed/index.ts",
     "react/index": "src/react/index.tsx",
     "svelte/index": "src/svelte/index.ts",

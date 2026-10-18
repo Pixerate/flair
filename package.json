@@ -1,6 +1,6 @@
 {
   "name": "@pixerate/flair",
-  "version": "0.35.1",
+  "version": "0.38.0",
   "description": "Web visual effects and motion graphics: WebGL2 shader effects, animated vector effects, a catalog of ready-made effects, and a UI-agnostic, agent-ready effect editor.",
   "author": "Pixerate",
   "license": "MIT",
@@ -38,6 +38,10 @@
     "./vector": {
       "types": "./dist/vector/index.d.ts",
       "import": "./dist/vector/index.js"
+    },
+    "./motion": {
+      "types": "./dist/motion/index.d.ts",
+      "import": "./dist/motion/index.js"
     },
     "./embed": {
       "types": "./dist/embed/index.d.ts",
@@ -89,7 +93,7 @@
     "gifenc": "^1.0.3"
   },
   "peerDependencies": {
-    "@pixerate/editor": ">=0.29.0 <1",
+    "@pixerate/editor": ">=0.55.0 <1",
     "react": ">=18",
     "svelte": ">=5"
   },
@@ -106,7 +110,7 @@
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.12",
-    "@pixerate/editor": "^0.29.0",
+    "@pixerate/editor": "^0.55.0",
     "@types/node": "^24.19.2",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",

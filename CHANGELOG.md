@@ -1,5 +1,31 @@
 # @pixerate/flair
 
+## 0.38.0
+
+### Minor Changes
+
+- 02f96f9: Motion primitives: a new `@pixerate/flair/motion` entry point with 23 reusable entrances, exits, emphasis and path motions (fade, pop, grow, slide, wipe, iris, split, zoom, rise, draw; fade, shrink, slide, wipe and undraw out; pulse, shake, teeter, wave, colour pulse, spin and a seeded wiggle; follow a path) that work on any element of an `SvgMotion`. Each is a JSON descriptor (`PRIMITIVES`) with labelled params, defaults and ranges; `applyPrimitive` expands one into plain `SvgAnimation`s (adding a wrapper group or clip path where needed), all or nothing, and `removePrimitive` takes it off. Defaults match `@pixerate/editor`'s animation editor.
+
+  `SvgAnimation` gains `behavior` (pulse, oscillate, wriggle and overshoot, still pure functions of time), `orient` (turn with the path `along` follows) and `tag` (which primitive use added a change). The effect editor adds the `primitive.list`, `primitive.describe`, `primitive.apply`, `primitive.applied` and `primitive.remove` commands, each one undo step, and the agent instructions say when to use them.
+
+## 0.37.0
+
+### Minor Changes
+
+- 2718199: The effect editor opens animations made with `@pixerate/editor`'s vector animation editor. `effectDocumentFromAnimation(scene)` and `EffectEditor.loadAnimation(scene)` (the `effect.loadAnimation` command, so agents can call it too) turn a `MotionScene` into a vector effect with the scene's colour controls as `{{name: color}}` placeholders and its presets kept. A scene with errors is refused, listing them. The optional `@pixerate/editor` peer now needs 0.55 or later, the first release with `/animation-editor`.
+
+## 0.36.0
+
+### Minor Changes
+
+- ba87bdf: Vector motion takes any cubic-bezier easing: `SvgAnimation.ease` (and `stepProgress`, `stepData`, `animateCount`) accept `[x1, y1, x2, y2]` besides `linear`, `out` and `in-out`, with overshoot for back eases. `svgMotionIssues` checks the curve, and `svgAnimatedMarkup` writes it as an exact SMIL `keySplines` curve (sampled when it overshoots, which SMIL cannot spline). New exports: `SvgEase`, `CubicBezier`, `cubicBezierEase`, `easeFunction`, `isCubicBezier`, `isSvgEase`. Animations exported from `@pixerate/editor`'s animation editor can use their own curves instead of being sampled into linear steps.
+
+## 0.35.2
+
+### Patch Changes
+
+- 66e52bd: Add swiftshader ANGLE flag for headless Linux Chrome, evaluate render stall timeout dynamically, and capture Chrome stderr for diagnostic logs on exit or timeout
+
 ## 0.35.1
 
 ### Patch Changes

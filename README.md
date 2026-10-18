@@ -28,10 +28,12 @@ Flair gives products a library of good-looking, configurable visual effects (her
   - Scrolling: `iScroll` (the canvas's progress through the viewport, page scroll, velocity, and whether it is scrolling), fed by `ShaderRenderer` and scriptable in `ShaderFrames`; vector effects scrub with the page under `trigger: "scroll"`.
   - Live previews (`ShaderRenderer`, with optional `{ alpha: true }` for transparent overlays) and many animated or hover-activated thumbnails on one context (`ThumbnailPool`).
   - Frames at exact times (`ShaderFrames`), looping GIFs, and standalone HTML pages.
-- ✒️ **Vector motion (`@pixerate/flair/vector`)**: animated SVG described as data. Catalog vector effects declare their controls in the picture (`{{name: type …}}`), text included. It covers attribute tweens, draw-on strokes, motion along paths, counters (`animateCount` / `formatCount` for DOM elements too), text written letter by letter (`write`, with `scramble` and `caret`), shape morphs between any paths (`morphPaths`, `morphSequence`) and view zooms. Every frame is a pure function of time (`svgFrame`), and `SvgPlayer` plays it (with `scrollTrigger`, `hideWhenPaused`, `reset()`, and `trigger: "hover" | "press" | "click" | "scroll"` to play in answer to the pointer or scrub with the page).
+- ✒️ **Vector motion (`@pixerate/flair/vector`)**: animated SVG described as data. Catalog vector effects declare their controls in the picture (`{{name: type …}}`), text included. A change's `ease` is `linear`, `out`, `in-out` or any CSS cubic-bezier as `[x1, y1, x2, y2]` (overshoot allowed). It covers attribute tweens, draw-on strokes, motion along paths, counters (`animateCount` / `formatCount` for DOM elements too), text written letter by letter (`write`, with `scramble` and `caret`), shape morphs between any paths (`morphPaths`, `morphSequence`) and view zooms. A change can also take a `behavior` (a pulse, a decaying oscillation, a seeded wriggle, a springy overshoot), and `orient` turns an element with the path it follows. Every frame is a pure function of time (`svgFrame`), and `SvgPlayer` plays it (with `scrollTrigger`, `hideWhenPaused`, `reset()`, and `trigger: "hover" | "press" | "click" | "scroll"` to play in answer to the pointer or scrub with the page).
+- 🎞️ **Motion primitives (`@pixerate/flair/motion`)**: 23 reusable entrances, exits, emphasis and path motions for any element of a vector picture (see [Motion primitives](#motion-primitives)), described as data and expanded into plain vector motion.
 - 🎛️ **Effect editor (`@pixerate/flair/editor`)**:
   - A headless editor for an effect's source, values, keyframes, presets and timeline.
   - Built on [`@pixerate/editor`](https://github.com/Pixerate/editor)'s undo history and command registry, with no UI framework assumed.
+  - Opens animations made with `@pixerate/editor`'s vector animation editor (`effect.loadAnimation`, `effectDocumentFromAnimation`): shots over vector artwork become a vector effect, with the scene's colour controls and presets, so new effects can be animated there and finished here.
 - 🤖 **Agent-native, bring your own model**:
   - Every editing action is a command, and the commands are exposed as MCP-shaped tools.
   - Ships instructions for the model. The host supplies the model, keys and agent loop.
@@ -46,10 +48,11 @@ Flair gives products a library of good-looking, configurable visual effects (her
 | `@pixerate/flair` | Shader engine, vector motion, time and easing, colour, blending, transitions, scenes, interchange exporters | None (browser-safe) |
 | `@pixerate/flair/catalog` | `EFFECTS`, `getEffect`, `findEffects` (also by `video` use), `effectDefaults`, `renderVectorEffect`, `vectorControls`, GLSL helpers, sample images, `textImage` | None |
 | `@pixerate/flair/vector` | `SvgMotion`, `svgFrame`, `svgView`, `SvgPlayer`, `svgFrameMarkup`, `svgViewBox`, `animateCount`, `formatCount`, `morphPaths`, `morphSequence`, `svgAnimatedMarkup` (an animated `.svg` file), `svgMotionIssues` | None |
+| `@pixerate/flair/motion` | Motion primitives: `PRIMITIVES` (entrances, exits, emphasis and path motions as JSON descriptors), `applyPrimitive`, `removePrimitive`, `primitiveTags` | None |
 | `@pixerate/flair/embed` | `mountEffect`, `subjectValues`: any catalog effect on a page, applied to a picture, video, SVG, words or a path; `recordEffect`: MP4, WebM, GIF or PNG frames in the browser | None |
 | `@pixerate/flair/react` | `<FlairEffect>`: any catalog effect applied to a subject; `<VectorEffect>`, `<SvgPlayerView>`: vector effects as React components, server-rendered as a still | `react` ≥ 18 (optional peer) |
 | `@pixerate/flair/svelte` | `flairEffect` action: any catalog effect applied to a subject; `vectorEffect` action, `vectorEffectStill`: vector effects in Svelte, server-rendered as a still | `svelte` ≥ 5 (optional peer; types only) |
-| `@pixerate/flair/editor` | `EffectEditor`, effect documents, keyframe tracks, renderer bindings, parameter-panel binding, agent tools and instructions | `@pixerate/editor` ≥ 0.29 (optional peer; only its dependency-free `/history`, `/commands`, `/tools`, `/animation` and `/parameters` subpaths) |
+| `@pixerate/flair/editor` | `EffectEditor`, effect documents, keyframe tracks, renderer bindings, parameter-panel binding, agent tools and instructions, and `effectDocumentFromAnimation` / `loadAnimation` for scenes from `@pixerate/editor`'s animation editor | `@pixerate/editor` ≥ 0.55 (optional peer; only its dependency-free `/history`, `/commands`, `/tools`, `/animation`, `/animation-editor` and `/parameters` subpaths) |
 | `@pixerate/flair/node` | `exportEffect` and `exportMotionGraphic`: render a catalog effect (on a picture, video, SVG, words or a path) or a shader to MP4, WebM, MOV, GIF, PNG frames or animated SVG, through headless Chrome (and ffmpeg for video) | Node.js |
 
 The `flair` CLI inspects shaders, writes standalone pages and directs scenes (see [CLI](#-cli)).
@@ -271,6 +274,29 @@ Overlay shaders (`category: "overlay"`) have `transparent: true`: they write cov
 
 To morph between any two SVG shapes, `morphPaths(from, to)` (from `@pixerate/flair/vector`) returns two paths with one structure, so `attrs: { d: [a, b] }` blends them point by point: curves and arcs are read, pieces are paired by position and size, and a piece with no partner grows from or shrinks to a point (draw them with `fill-rule="evenodd"`). `morphSequence` does the same for three or more shapes. `feature-morph` morphs two photos from five matching points, and `silhouette-morph` morphs any two silhouettes or logos (or words, through `textImage`).
 
+#### Motion primitives
+
+`@pixerate/flair/motion` holds the motion vocabulary as data: reusable entrances, exits, emphasis and path motions that work on any element of an `SvgMotion`. Each primitive is a JSON descriptor (`id`, `kind`, `description`, `params` with labels, defaults, units and ranges, and a default `ms` and `ease`), so people and agents can list and describe them without running anything; the expansion behind each id is a pure function.
+
+| Kind | Primitives |
+| :--- | :--- |
+| Entrance (600 ms, ease out) | `entrance.fade`, `.pop`, `.grow`, `.slide` (direction, distance), `.wipe` (direction), `.iris` (circle or box), `.split` (horizontal or vertical), `.zoom`, `.rise`, `.draw` (outline on, then the fill) |
+| Exit (450 ms, ease in) | `exit.fade`, `.shrink`, `.slide`, `.wipe` (a wipe in reversed), `.undraw` |
+| Emphasis | `emphasis.pulse`, `.shake` (settles), `.teeter`, `.wave`, `.color-pulse`, `.spin`, `.wiggle` (seeded noise) |
+| Path | `path.follow` (along a path id, `orient`, from/to fractions) |
+
+```ts
+import { applyPrimitive, removePrimitive, PRIMITIVES } from "@pixerate/flair/motion";
+
+let motion = { svg: '<svg viewBox="0 0 200 100"><rect id="card" x="10" y="10" width="80" height="40"/></svg>' };
+const pop = applyPrimitive(motion, { primitive: "entrance.pop", target: "card" });
+if (pop.ok) motion = pop.motion; // else pop.message says what to fix ("Did you mean …?")
+const pulse = applyPrimitive(motion, { primitive: "emphasis.pulse", target: "card", delay: 800, params: { count: 2 } });
+// pulse.tag ("emphasis.pulse@card") takes it off again: removePrimitive(motion, pulse.tag)
+```
+
+A use is checked whole (primitive, target id, params, timing) before anything changes, and applies all or nothing. The result is plain `SvgAnimation`s (tagged with the use) and, where needed, a wrapper group round the element (so uses stack: an entrance, emphasis and an exit each move their own group) or a clip path in the element's own box (wipes, irises and splits, so text needs no measuring). Primitives that scale or turn round the centre measure the element's box from the markup; give `box` (viewBox units) for text. Defaults match `@pixerate/editor`'s animation editor.
+
 #### An animated SVG file
 
 `svgAnimatedMarkup(motion, options)` (from `@pixerate/flair/vector`) writes any `SvgMotion` as one self-contained `.svg` that plays and loops on its own, with no script and no player: put it in an `<img src>`, open it as a file, or inline it. The changes are written as SMIL, so it needs no DOM to make:
@@ -285,7 +311,7 @@ img.src = `data:image/svg+xml,${encodeURIComponent(svg)}`; // or save it as stat
 ```
 
 - **Options**: `hold` (ms on the last frame, default 600), `duration` (the loop, default the picture's length plus `hold`), `loop: false` to play once and stay on the last frame, `steps` (ms) for click-triggered effects, `fps` (default 30) for what is sampled, and `idSuffix`.
-- **How it is written**: each attribute change is one `<animate>` (a `transform` is one `<animateTransform>` per function), and eases are exact `keySplines`. `draw` animates `stroke-dashoffset`, `along` becomes `<animateMotion>` on the path, `view` animates the `viewBox` (keeping `data-fixed` and `data-nonscaling` elements as the player does), and `solo` toggles `display`. Counts and written text are one `<tspan>` per text, shown in turn, sampled at `fps`. Every element starts on the first frame, so it still shows that where SMIL does not run.
+- **How it is written**: each attribute change is one `<animate>` (a `transform` is one `<animateTransform>` per function), and eases are exact `keySplines` (a cubic-bezier `ease` is written as given, unless it overshoots 0–1, which SMIL cannot spline, so it is sampled). `draw` animates `stroke-dashoffset`, `along` becomes `<animateMotion>` on the path, `view` animates the `viewBox` (keeping `data-fixed` and `data-nonscaling` elements as the player does), and `solo` toggles `display`. Counts and written text are one `<tspan>` per text, shown in turn, sampled at `fps`. Every element starts on the first frame, so it still shows that where SMIL does not run.
 - **Limits**: a count that changes faster than `fps` can be up to half a sample out. A change cut short by the next one, or a `matrix` transform, is sampled. A `view` that frames an element by id (it needs layout) is left out, as in `svgFrameMarkup`. Attributes SMIL cannot blend change in steps. Ids the picture refers to (gradients, filters, paths followed) get a suffix, a hash of the motion by default, so two files inlined in one page don't clash. `#id` selectors in a `<style>` are not renamed. Interaction triggers (hover, press, click) cannot be written as SMIL, so a click-triggered effect plays its `steps` on a timer.
 - **Size**: catalog effects come out at 1 to 105 KB (`drip-text` is the largest).
 
@@ -421,6 +447,7 @@ The tools are `list_commands`, `run_command` and `run_commands`, plus `view_effe
 
 - **Inspect and start:** `effect.describe`, `catalog.search` (`{ total, effects }`, 20 at a time unless you pass `limit`; `offset` pages on), `effect.load`.
 - **Edit the effect:** `effect.setSource` for shaders (it returns the compile report when a preview is bound, or says the source has not been compiled yet), `effect.setMotion` for vector pictures.
+- **Motion primitives** (vector pictures): `primitive.list` (by `kind`), `primitive.describe`, `primitive.apply` (returns the use's `tag` and the animations it added), `primitive.applied` and `primitive.remove`.
 - **Values and presets:** `values.set`, `values.reset`, `values.randomize`, `preset.apply` and `preset.save`.
 - **Keyframes:** `keyframe.set`, `keyframe.setTrack`, `keyframe.remove`, `keyframe.setEasing` and `keyframe.clear`.
 - **Timeline:** `timeline.setTiming`, `timeline.play`, `timeline.pause` and `timeline.seek`.

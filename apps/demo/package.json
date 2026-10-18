@@ -10,8 +10,8 @@
     "typecheck": "tsc --noEmit -p ."
   },
   "dependencies": {
-    "@pixerate/editor": "^0.29.0",
-    "@pixerate/editor-react": "^0.20.0",
+    "@pixerate/editor": "^0.55.0",
+    "@pixerate/editor-react": "^0.42.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

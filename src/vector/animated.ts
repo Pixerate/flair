@@ -5,14 +5,17 @@
  * an SVG image does (an `<img src>`, a file opened directly, inline markup).
  */
 
-import { pathPointAt } from "./morph.js";
+import { pathAngleAt, pathPointAt } from "./morph.js";
 import {
   STEP_MS,
   SVG_PICTURE,
   stepStart,
+  easeFunction,
   svgFrame,
+  type CubicBezier,
   type EaseName,
   type SvgAnimation,
+  type SvgEase,
   type SvgBox,
   type SvgElementFrame,
   type SvgMotion,
@@ -43,8 +46,11 @@ export interface AnimatedSvgOptions {
   idSuffix?: string;
 }
 
-/** How a value gets to a keyframe from the one before: the shapes `EASES` are made of. */
-type Shape = "linear" | "in" | "out";
+/**
+ * How a value gets to a keyframe from the one before: the shapes `EASES` are
+ * made of, or a cubic-bezier curve written as it is.
+ */
+type Shape = "linear" | "in" | "out" | CubicBezier;
 
 /** A channel's value at a time, reached from the keyframe before along `shape`. */
 interface Key {
@@ -64,10 +70,26 @@ interface Change {
  * curve (0, 1, 1, 1), and `in-out` is `in` (t³, the curve (0, 0, 0, 1)) to
  * its middle then `out`, so eases are written exactly, not sampled.
  */
-const SPLINES: Record<Shape, string> = { linear: "0 0 1 1", in: "0.3333 0 0.6667 0", out: "0.3333 1 0.6667 1" };
+const SPLINES: Record<Extract<Shape, string>, string> = { linear: "0 0 1 1", in: "0.3333 0 0.6667 0", out: "0.3333 1 0.6667 1" };
 
-/** When an ease is halfway (where a value that cannot blend switches), as a share of its time. */
+/** When a named ease is halfway (where a value that cannot blend switches), as a share of its time. */
 const HALFWAY: Record<EaseName, number> = { linear: 0.5, "in-out": 0.5, out: 1 - 0.5 ** (1 / 3) };
+
+/** When an ease is first halfway, as a share of its time. */
+function halfway(ease: SvgEase): number {
+  if (typeof ease === "string") return HALFWAY[ease];
+  const f = easeFunction(ease);
+  let [lo, hi] = [0, 1];
+  for (let i = 0; i < 40; i++) {
+    const mid = (lo + hi) / 2;
+    if (f(mid) < 0.5) lo = mid;
+    else hi = mid;
+  }
+  return hi;
+}
+
+/** SMIL key splines: a shape's control points, written as given. */
+const splineOf = (shape: Shape) => (typeof shape === "string" ? SPLINES[shape] : shape.map((n) => String(+n.toFixed(4))).join(" "));
 
 const NUMBER = /-?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?/gi;
 const HEX = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
@@ -107,8 +129,8 @@ function transformList(value: string): [string, number[]][] {
   return [...value.matchAll(/([a-z]+)\s*\(([^)]*)\)/gi)].map((m) => [m[1]!, (m[2]!.match(NUMBER) ?? []).map(Number)]);
 }
 
-/** A transform list as one matrix [a b c d e f]. */
-function transformMatrix(value: string): number[] {
+/** @internal A transform list as one matrix [a b c d e f]. */
+export function transformMatrix(value: string): number[] {
   let m = [1, 0, 0, 1, 0, 0];
   const times = (n: number[]) => {
     const [a, b, c, d, e, f] = m as [number, number, number, number, number, number];
@@ -167,7 +189,7 @@ function timing(keys: readonly Key[], loop: number, repeat: boolean, discrete = 
     ...clock(loop, repeat),
     keyTimes: keys.map((k) => String(+(k.t / loop).toFixed(5))).join(";"),
     calcMode: discrete ? "discrete" : spline ? "spline" : "linear",
-    keySplines: spline ? keys.slice(1).map((k) => SPLINES[k.shape]).join(";") : undefined,
+    keySplines: spline ? keys.slice(1).map((k) => splineOf(k.shape)).join(";") : undefined,
   };
 }
 
@@ -292,18 +314,21 @@ export function svgAnimatedMarkup(motion: SvgMotion, options: AnimatedSvgOptions
       push(c.start, keys[keys.length - 1]!.v);
       push(c.start, value(k, c.start));
       if (!(ms > 0)) return;
-      const ease = c.anim.ease ?? "in-out";
+      const ease = c.anim.ease ?? (c.anim.behavior ? "linear" : "in-out");
       const pair = prop.startsWith("@") ? c.anim.attrs![prop.slice(1)]! : undefined;
       if (pair && !blends(pair[0], pair[1])) {
-        const at = c.start + ms * HALFWAY[ease];
+        const at = c.start + ms * halfway(ease);
         if (at < next) {
           push(at, value(k, c.start));
           push(at, value(k, end));
         }
-      } else if (!sampled && end === c.start + ms && ease !== "linear") {
+      } else if (!sampled && !c.anim.behavior && end === c.start + ms && typeof ease !== "string" && ease.every((n) => n >= 0 && n <= 1)) {
+        // SMIL takes any curve whose control points stay within 0–1.
+        push(end, value(k, end), ease);
+      } else if (!sampled && !c.anim.behavior && end === c.start + ms && ease !== "linear" && typeof ease === "string") {
         if (ease === "in-out") push(c.start + ms / 2, value(k, c.start + ms / 2), "in");
         push(end, value(k, end), "out");
-      } else if (!sampled && ease === "linear") push(end, value(k, end));
+      } else if (!sampled && !c.anim.behavior && ease === "linear") push(end, value(k, end));
       else {
         for (let t = c.start + 1000 / fps; t < end; t += 1000 / fps) push(t, value(k, t));
         push(end, value(k, end));
@@ -414,28 +439,40 @@ export function svgAnimatedMarkup(motion: SvgMotion, options: AnimatedSvgOptions
       const d = pathEl && outline(pathEl);
       if (!d) continue;
       const point = (at: string) => pathPointAt(d, Number(at));
-      const first = point(read(frameAt(0), id, prop) ?? "0");
-      if (first) setAttr(el, "transform", `translate(${num(first[0])} ${num(first[1])})`);
-      if (paths.size === 1 && pathEl.tag.toLowerCase() === "path") {
+      const orient = list.some((c) => c.anim.orient);
+      const firstAt = read(frameAt(0), id, prop) ?? "0";
+      const first = point(firstAt);
+      const firstTurn = orient ? ` rotate(${num(pathAngleAt(d, Number(firstAt)))})` : "";
+      if (first) setAttr(el, "transform", `translate(${num(first[0])} ${num(first[1])})${firstTurn}`);
+      if (paths.size === 1 && pathEl.tag.toLowerCase() === "path" && list.every((c) => Boolean(c.anim.orient) === orient)) {
         // The browser follows the path itself: the markup's place (for no SMIL) set aside while it does.
         const keys = keyframes(id, prop, list);
         add(
           el,
           node("animateTransform", { attributeName: "transform", type: "translate", values: "0 0", ...clock(loop, repeat) }),
-          node("animateMotion", { keyPoints: keys.map((k) => k.v).join(";"), ...timing(keys, loop, repeat) }, [
+          node("animateMotion", { keyPoints: keys.map((k) => k.v).join(";"), rotate: orient ? "auto" : undefined, ...timing(keys, loop, repeat) }, [
             node("mpath", { href: `#${[...paths][0]}` }),
           ]),
         );
       } else {
-        // Along several paths, or a shape SMIL cannot follow: its points, sampled.
-        const keys = sampleTimes(list).map((t): Key => {
+        // Along several paths, or a shape SMIL cannot follow: its points (and turns), sampled.
+        const samples = sampleTimes(list).map((t) => {
           const f = frameAt(t).get(id)?.along;
-          const p = f && byId.get(f.path) && pathPointAt(outline(byId.get(f.path)!) ?? "", f.at);
-          return { t, v: p ? `${num(p[0])} ${num(p[1])}` : "0 0", shape: "linear" };
+          const outlineOf = f && byId.get(f.path) && outline(byId.get(f.path)!);
+          const p = outlineOf ? pathPointAt(outlineOf, f.at) : undefined;
+          return { t, v: p ? `${num(p[0])} ${num(p[1])}` : "0 0", turn: outlineOf && f.orient ? num(pathAngleAt(outlineOf, f.at)) : "0" };
         });
-        keys.push({ t: loop, v: keys[keys.length - 1]!.v, shape: "linear" });
-        const ks = collapse(keys);
+        const keysOf = (pick: (s: (typeof samples)[number]) => string) => {
+          const keys = samples.map((s): Key => ({ t: s.t, v: pick(s), shape: "linear" }));
+          keys.push({ t: loop, v: keys[keys.length - 1]!.v, shape: "linear" });
+          return collapse(keys);
+        };
+        const ks = keysOf((s) => s.v);
         add(el, node("animateTransform", { attributeName: "transform", type: "translate", values: ks.map((k) => k.v).join(";"), ...timing(ks, loop, repeat) }));
+        if (orient) {
+          const turns = keysOf((s) => s.turn);
+          add(el, node("animateTransform", { attributeName: "transform", type: "rotate", additive: "sum", values: turns.map((k) => k.v).join(";"), ...timing(turns, loop, repeat) }));
+        }
       }
       continue;
     }

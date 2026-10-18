@@ -5,13 +5,13 @@
 
 import { realClock, type Clock } from "../time/clock.js";
 import {
-  EASES,
+  easeFunction,
   formatCount,
   STEP_MS,
   SVG_PICTURE,
   svgFrame,
   svgOpeningTag,
-  type EaseName,
+  type SvgEase,
   type SvgBox,
   type SvgMotion,
 } from "./motion.js";
@@ -216,7 +216,15 @@ function apply(
         const length = path?.getTotalLength?.();
         if (path && length !== undefined) {
           const p = path.getPointAtLength(frame.along.at * length);
-          el.setAttribute("transform", `translate(${+p.x.toFixed(2)} ${+p.y.toFixed(2)})`);
+          let turn = "";
+          if (frame.along.orient && length > 0) {
+            // The direction a little either side of the point (one side alone at the ends).
+            const d = Math.min(0.5, length / 1000);
+            const a = path.getPointAtLength(Math.max(0, frame.along.at * length - d));
+            const b = path.getPointAtLength(Math.min(length, frame.along.at * length + d));
+            turn = ` rotate(${+((Math.atan2(b.y - a.y, b.x - a.x) * 180) / Math.PI).toFixed(2)})`;
+          }
+          el.setAttribute("transform", `translate(${+p.x.toFixed(2)} ${+p.y.toFixed(2)})${turn}`);
         }
       } catch {
         // Not laid out: leave it where it is.
@@ -729,8 +737,8 @@ export interface AnimateCountOptions {
   ms?: number;
   /** Delay before starting in ms (default 0). */
   delay?: number;
-  /** Easing curve (default `"out"`). */
-  ease?: EaseName;
+  /** Easing curve (default `"out"`), by name or as a `[x1, y1, x2, y2]` cubic-bezier. */
+  ease?: SvgEase;
   /** Number of decimal places (default 0). */
   decimals?: number;
   /** Format template where `{n}` is replaced by the formatted number (default `"{n}"`). */
@@ -750,7 +758,7 @@ export function animateCount(options: AnimateCountOptions): () => void {
   const clock = options.clock ?? realClock;
   const ms = options.ms ?? STEP_MS;
   const delay = options.delay ?? 0;
-  const ease = EASES[options.ease ?? "out"];
+  const ease = easeFunction(options.ease, "out");
   const start = clock.now();
   let stopped = false;
 

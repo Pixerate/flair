@@ -449,3 +449,36 @@ export function pathPointAt(d: string, at: number): [number, number] | undefined
   const last = lines[lines.length - 1];
   return last ? [last[1][0], last[1][1]] : [first[0], first[1]];
 }
+
+/**
+ * @internal The direction of a path's `d` at `at` (0–1) of its length, in
+ * degrees from +x (clockwise on screen, as SVG's `rotate`): the way from a
+ * point just before to one just after. 0 when `d` does not parse.
+ */
+export function pathAngleAt(d: string, at: number): number {
+  const e = 0.001;
+  const a = pathPointAt(d, Math.max(0, at - e));
+  const b = pathPointAt(d, Math.min(1, at + e));
+  if (!a || !b || (a[0] === b[0] && a[1] === b[1])) return 0;
+  return (Math.atan2(b[1] - a[1], b[0] - a[0]) * 180) / Math.PI;
+}
+
+/**
+ * @internal The box round a path's `d` (`[x, y, width, height]`), with
+ * curves and arcs split into short lines (so it can sit a hair inside the
+ * true curve). Undefined when `d` does not parse or draws nothing.
+ */
+export function pathBounds(d: string): [number, number, number, number] | undefined {
+  let rings: Ring[];
+  try {
+    rings = flatten(d);
+  } catch {
+    return undefined;
+  }
+  const pts = rings.flatMap((r) => r.points);
+  if (!pts.length) return undefined;
+  const xs = pts.map((p) => p[0]);
+  const ys = pts.map((p) => p[1]);
+  const [x, y] = [Math.min(...xs), Math.min(...ys)];
+  return [x, y, Math.max(...xs) - x, Math.max(...ys) - y];
+}
