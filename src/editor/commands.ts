@@ -6,7 +6,9 @@
 
 import type { CommandSpec } from "@pixerate/editor/commands";
 import { EFFECT_CATEGORIES, EFFECT_CATEGORY_GROUPS, VIDEO_USES, type VectorControl, type VideoUse } from "../catalog/types.js";
-import type { SvgMotion } from "../vector/motion.js";
+import type { SvgEase, SvgMotion } from "../vector/motion.js";
+import { getPrimitive, listPrimitives, PRIMITIVE_KINDS, PRIMITIVES, primitiveTags, type PrimitiveKind } from "../motion/index.js";
+import { didYouMean } from "../motion/params.js";
 import { EFFECT_INPUTS, EFFECT_INTERACTIONS, effectInputs, findEffects, type EffectInput, type EffectInteraction } from "../catalog/index.js";
 import type { EditResult, EffectEditor } from "./editor.js";
 import { EASING_PRESETS, type Easing } from "./timeline.js";
@@ -25,6 +27,23 @@ const valueSchema = {
   description:
     'A control value: a number (float, int), true/false (bool), an array of numbers (vec2–vec4; colours 0–1), a "#RRGGBB" colour, an image URL (sampler2D), or a string (text).',
 } as const;
+
+const easeSchema = {
+  description: 'The main ease: "linear", "out", "in-out", or a cubic-bezier [x1, y1, x2, y2] (x1 and x2 from 0 to 1; y may overshoot). Default: the primitive\'s.',
+} as const;
+
+/** A refusal for a primitive id that does not exist, with the nearest ids. */
+function unknownPrimitive(id: unknown): Error {
+  const ids = PRIMITIVES.map((p) => p.id);
+  return new Error(`There is no primitive ${JSON.stringify(id)}.${typeof id === "string" ? didYouMean(id, ids) : ""} See primitive.list; the ids are ${ids.join(", ")}.`);
+}
+
+/** The vector picture being edited, or a refusal for a shader effect. */
+function vectorMotion(editor: EffectEditor): SvgMotion {
+  const effect = editor.getState().document.effect;
+  if (effect.kind !== "vector") throw new Error("This is a shader effect; motion primitives work on a vector effect's picture. Load one first (catalog.search with kind \"vector\", then effect.load).");
+  return effect.motion;
+}
 
 /** Catalog results `catalog.search` returns when no `limit` is given. */
 export const CATALOG_SEARCH_LIMIT = 20;
@@ -230,6 +249,108 @@ export function effectCommands(): CommandSpec<EffectEditor>[] {
       run: (editor, p: { motion: SvgMotion; controls?: VectorControl[] }) => {
         done(editor.setMotion(p.motion, p.controls));
         return { ok: true, issues: editor.getState().issues };
+      },
+    },
+    {
+      id: "primitive.list",
+      label: "List motion primitives",
+      group: "Primitives",
+      description:
+        "Lists the motion primitives: reusable entrances, exits, emphasis and path motions for any element of a vector picture, each {id, kind, name, description, ms, needsBox}. primitive.describe gives one's parameters; primitive.apply puts one on an element.",
+      readOnly: true,
+      params: {
+        type: "object",
+        properties: { kind: { type: "string", enum: PRIMITIVE_KINDS, description: "Only this kind: entrance, emphasis, path or exit." } },
+        additionalProperties: false,
+      },
+      run: (_, p: { kind?: PrimitiveKind }) => {
+        if (p?.kind !== undefined && !PRIMITIVE_KINDS.includes(p.kind))
+          throw new Error(`\`kind\` is one of ${PRIMITIVE_KINDS.join(", ")}; it was given ${JSON.stringify(p.kind)}.`);
+        const list = listPrimitives(p?.kind);
+        return { total: list.length, primitives: list.map(({ id, kind, name, description, ms, needsBox }) => ({ id, kind, name, description, ms, needsBox })) };
+      },
+    },
+    {
+      id: "primitive.describe",
+      label: "Describe motion primitive",
+      group: "Primitives",
+      description: "One motion primitive in full: what it applies to, its parameters (type, default, unit, range or choices), and its default ms and ease.",
+      readOnly: true,
+      params: {
+        type: "object",
+        properties: { id: { type: "string", enum: PRIMITIVES.map((p) => p.id), description: "A primitive id from primitive.list, e.g. entrance.pop." } },
+        required: ["id"],
+        additionalProperties: false,
+      },
+      run: (_, p: { id: string }) => {
+        const primitive = typeof p?.id === "string" ? getPrimitive(p.id) : undefined;
+        if (!primitive) throw unknownPrimitive(p?.id);
+        return primitive;
+      },
+    },
+    {
+      id: "primitive.applied",
+      label: "List applied primitives",
+      group: "Primitives",
+      description: "The motion primitives applied to the vector picture: each use's tag (for primitive.remove), primitive, target and how many animations it added.",
+      readOnly: true,
+      run: (editor) => {
+        const motion = vectorMotion(editor);
+        const uses = primitiveTags(motion).map((tag) => {
+          const [primitive, rest = ""] = tag.split("@");
+          return { tag, primitive, target: rest.replace(/#\d+$/, ""), animations: (motion.animate ?? []).filter((a) => a.tag === tag).length };
+        });
+        return { total: uses.length, uses };
+      },
+    },
+    {
+      id: "primitive.apply",
+      label: "Apply motion primitive",
+      group: "Primitives",
+      description:
+        "Puts a motion primitive on one element of the vector picture (by id), as one undo step: its animations are added (tagged), with a wrapper group or clip path round the element where it needs one. Refuses, changing nothing, an unknown primitive or element, bad params or timing. Returns {tag, added, elements, issues}; check the result with view_effect when you can.",
+      params: {
+        type: "object",
+        properties: {
+          primitive: { type: "string", enum: PRIMITIVES.map((p) => p.id), description: "A primitive id from primitive.list." },
+          target: { type: "string", description: "The id of the element in the picture to move." },
+          params: { type: "object", description: "Parameter values by name (primitive.describe lists them); left out, they take their defaults." },
+          step: { type: "integer", minimum: 0, description: "The step it plays on: 0 (default) when the picture starts, 1 on the next click or shot, …" },
+          delay: { type: "number", minimum: 0, description: "Ms after its step starts (default 0)." },
+          ms: { type: "number", exclusiveMinimum: 0, description: "How long it takes, in ms (default: the primitive's)." },
+          ease: easeSchema,
+          box: {
+            type: "array",
+            items: { type: "number" },
+            minItems: 4,
+            maxItems: 4,
+            description: "The element's [x, y, width, height] in the viewBox's units, for primitives that need its centre (needsBox) when Flair cannot measure it (text).",
+          },
+        },
+        required: ["primitive", "target"],
+        additionalProperties: false,
+      },
+      run: (editor, p: { primitive: string; target: string; params?: Record<string, unknown>; step?: number; delay?: number; ms?: number; ease?: SvgEase; box?: [number, number, number, number] }) => {
+        const result = editor.applyPrimitive(p);
+        done(result);
+        return { ok: true, tag: result.tag, added: result.added, elements: result.elements, issues: editor.getState().issues };
+      },
+    },
+    {
+      id: "primitive.remove",
+      label: "Remove motion primitive",
+      group: "Primitives",
+      description: "Takes off everything one use of a primitive added (by the tag primitive.apply returned, see primitive.applied), as one undo step; the element is put back as it was.",
+      params: {
+        type: "object",
+        properties: { tag: { type: "string", description: 'The use\'s tag, e.g. "entrance.pop@logo".' } },
+        required: ["tag"],
+        additionalProperties: false,
+      },
+      run: (editor, p: { tag: string }) => {
+        const result = editor.removePrimitive(p?.tag);
+        done(result);
+        return { ok: true, removed: result.removed, issues: editor.getState().issues };
       },
     },
     {

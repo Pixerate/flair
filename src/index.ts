@@ -8,3 +8,4 @@ export * from './scene/index.js';
 export * from './agent/index.js';
 export * from './export/index.js';
 export * from './vector/index.js';
+export * from './motion/index.js';
