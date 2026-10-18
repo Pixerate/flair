@@ -7,6 +7,9 @@ Support headless Chrome container execution, video metadata probing, audio pass-
 - **Headless Chrome Discovery & Linux Container Support**:
   - Discover Playwright and Puppeteer cached browsers (`~/.cache/ms-playwright`, `~/.cache/puppeteer`, and system locations).
   - Add standard Linux container flags (`--no-sandbox`, `--disable-setuid-sandbox`, `--disable-dev-shm-usage`, SwiftShader WebGL fallback flags) and support custom Chrome flags via `chromeFlags` export option and `FLAIR_CHROME_FLAGS` environment variable.
+  - Set ANGLE backend to SwiftShader for non-macOS headless Chrome.
+  - Capture Chrome stderr and attach diagnostic logs to render stall, exit, and launch errors.
+  - Configurable render stall watchdog timeout via `stallTimeoutMs` or `FLAIR_STALL_TIMEOUT_MS`.
   - Optional fallback to `@ffmpeg-installer/ffmpeg` when `ffmpeg` is not in system PATH.
 - **Video Probing & Export Parity**:
   - Add `probeVideo(file: string): Promise<VideoProbe>` (and export from `@pixerate/flair/node`) to probe video duration, native dimensions (`width`, `height`), and audio stream presence.
