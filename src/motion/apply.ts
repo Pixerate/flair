@@ -31,7 +31,10 @@ function timingProblems(use: PrimitiveUse): string[] {
   if (use.step !== undefined && !(Number.isInteger(use.step) && use.step >= 0)) problems.push("`step` is a whole number, 0 or more (0 when the picture starts, 1 with the next shot, …)");
   if (use.delay !== undefined && !(typeof use.delay === "number" && use.delay >= 0 && Number.isFinite(use.delay))) problems.push("`delay` is a number of ms, 0 or more");
   if (use.ms !== undefined && !(typeof use.ms === "number" && use.ms > 0 && Number.isFinite(use.ms))) problems.push("`ms` is a number of ms above 0");
-  if (use.ease !== undefined && !isSvgEase(use.ease)) problems.push('`ease` is "linear", "out", "in-out" or a cubic-bezier [x1, y1, x2, y2] with x1 and x2 from 0 to 1');
+  if (use.ease !== undefined && !isSvgEase(use.ease))
+    problems.push('`ease` is "linear", "out", "in-out", a cubic-bezier [x1, y1, x2, y2] with x1 and x2 from 0 to 1, or {spring: {mass?, stiffness?, damping?, velocity?}}');
+  if (use.repeat !== undefined && !(Number.isInteger(use.repeat) && use.repeat >= 1)) problems.push("`repeat` is a whole number of cycles, 1 or more");
+  if (use.alternate !== undefined && typeof use.alternate !== "boolean") problems.push("`alternate` is true or false");
   if (use.box !== undefined) {
     const b = use.box as unknown;
     if (!Array.isArray(b) || b.length !== 4 || !b.every((n) => typeof n === "number" && Number.isFinite(n)) || !(b[2] >= 0 && b[3] >= 0))
@@ -71,7 +74,7 @@ function unmeasurable(el: MarkupElement): string {
 export function applyPrimitive(motion: SvgMotion, use: PrimitiveUse, options: { measure?: SvgMotion } = {}): PrimitiveResult {
   const fail = (message: string): PrimitiveResult => ({ ok: false, message });
   if (!motion || typeof motion.svg !== "string" || !motion.svg.trim()) return fail("The motion needs `svg`: one <svg>…</svg> element with a viewBox.");
-  if (!use || typeof use !== "object") return fail("A use is {primitive, target, params?, step?, delay?, ms?, ease?, box?}.");
+  if (!use || typeof use !== "object") return fail("A use is {primitive, target, params?, step?, delay?, ms?, ease?, repeat?, alternate?, box?}.");
   if (typeof use.primitive !== "string" || !use.primitive) return fail(`\`primitive\` is a primitive's id: ${PRIMITIVES.map((p) => p.id).join(", ")}.`);
   const primitive = primitiveById(use.primitive);
   if (!primitive)
@@ -95,6 +98,8 @@ export function applyPrimitive(motion: SvgMotion, use: PrimitiveUse, options: { 
     return fail(`${descriptor.id} moves a drawn element (a shape, text, image, group or use); "${use.target}" is a <${target.tag}>${tagName === "tspan" || tagName === "textpath" ? ": apply it to its <text>" : ""}.`);
 
   const problems = timingProblems(use);
+  if ((use.repeat !== undefined || use.alternate !== undefined) && descriptor.kind !== "emphasis")
+    problems.push(`\`repeat\` and \`alternate\` go with emphasis primitives (${PRIMITIVES.filter((p) => p.kind === "emphasis").map((p) => p.id).join(", ")}); ${descriptor.id} is ${descriptor.kind === "entrance" ? "an" : "a"} ${descriptor.kind} primitive`);
   const params = resolveParams(descriptor, use.params);
   if (!params.ok) problems.push(...params.problems);
   if (problems.length) return fail(`Cannot apply ${descriptor.id} to "${use.target}": ${problems.map(sentence).join(" ")}`);
@@ -176,7 +181,8 @@ export function applyPrimitive(motion: SvgMotion, use: PrimitiveUse, options: { 
       return [Math.min(1, s / box[2] + 0.02), Math.min(1, s / box[3] + 0.02)];
     },
     add(anim) {
-      added.push({ ...anim, tag });
+      // Emphasis parts each span the whole use, so they repeat in step.
+      added.push({ ...anim, ...(use.repeat && use.repeat > 1 ? { repeat: use.repeat } : {}), ...(use.alternate ? { alternate: true } : {}), tag });
     },
     element(id) {
       const el = byId.get(id);

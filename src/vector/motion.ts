@@ -24,8 +24,97 @@ export type EaseName = keyof typeof EASES;
  */
 export type CubicBezier = readonly [number, number, number, number];
 
-/** An easing: one of {@link EASES} by name, or any {@link CubicBezier} curve. */
-export type SvgEase = EaseName | CubicBezier;
+/**
+ * A damped spring released from 0 towards 1 (all optional): `mass` (default
+ * 1), `stiffness` (170), `damping` (26) and starting `velocity` (0). Mass and
+ * stiffness are kept to 1e-6 or more and damping to 0 or more.
+ */
+export interface SvgSpring {
+  mass?: number;
+  stiffness?: number;
+  damping?: number;
+  velocity?: number;
+}
+
+/** A spring ease: progress follows a damped spring (see {@link springProgress}). */
+export interface SpringEase {
+  spring: SvgSpring;
+}
+
+/**
+ * An easing: one of {@link EASES} by name, any {@link CubicBezier} curve, or
+ * a {@link SpringEase}.
+ */
+export type SvgEase = EaseName | CubicBezier | SpringEase;
+
+/** A spring's defaults, as `@pixerate/editor` has them. */
+export const SPRING_DEFAULTS: Required<SvgSpring> = { mass: 1, stiffness: 170, damping: 26, velocity: 0 };
+
+const finite = (n: unknown, fallback: number) => (typeof n === "number" && Number.isFinite(n) ? n : fallback);
+
+/** A spring's natural frequency `w0` and damping ratio `zeta`, with its values clamped, and `v0`. */
+function springSetup(spring: SvgSpring) {
+  const stiffness = Math.max(1e-6, finite(spring.stiffness, SPRING_DEFAULTS.stiffness));
+  const damping = Math.max(0, finite(spring.damping, SPRING_DEFAULTS.damping));
+  const mass = Math.max(1e-6, finite(spring.mass, SPRING_DEFAULTS.mass));
+  return {
+    w0: Math.sqrt(stiffness / mass),
+    zeta: damping / (2 * Math.sqrt(stiffness * mass)),
+    v0: -finite(spring.velocity, SPRING_DEFAULTS.velocity),
+  };
+}
+
+/**
+ * A spring's progress `seconds` after it is released: 1 − x(t), x being a
+ * damped oscillator's closed form (under-, critically or over-damped). The
+ * same numbers as `@pixerate/editor`'s `springAt`.
+ */
+export function springProgress(spring: SvgSpring, seconds: number): number {
+  const { w0, zeta, v0 } = springSetup(spring);
+  const t = Math.max(0, seconds);
+  let x: number;
+  if (zeta < 1 - 1e-6) {
+    const wd = w0 * Math.sqrt(1 - zeta * zeta);
+    x = Math.exp(-zeta * w0 * t) * (Math.cos(wd * t) + ((zeta * w0 + v0) / wd) * Math.sin(wd * t));
+  } else if (zeta <= 1 + 1e-6) {
+    x = Math.exp(-w0 * t) * (1 + (w0 + v0) * t);
+  } else {
+    const r = Math.sqrt(zeta * zeta - 1);
+    const s1 = -w0 * (zeta - r);
+    const s2 = -w0 * (zeta + r);
+    const c2 = (v0 - s1) / (s2 - s1);
+    const c1 = 1 - c2;
+    x = c1 * Math.exp(s1 * t) + c2 * Math.exp(s2 * t);
+  }
+  return 1 - x;
+}
+
+/**
+ * How long a spring takes to stay within 0.1% of its end, in ms (50–10000):
+ * a good `ms` for a change with this spring as its ease.
+ */
+export function springSettleMs(spring: SvgSpring): number {
+  const { w0, zeta } = springSetup(spring);
+  let seconds: number;
+  if (zeta < 1 - 1e-6) seconds = 6.9 / (zeta * w0);
+  else {
+    const rate = zeta <= 1 + 1e-6 ? w0 : w0 * (zeta - Math.sqrt(zeta * zeta - 1));
+    seconds = 9.2 / rate;
+  }
+  const ms = seconds * 1000;
+  return Number.isFinite(ms) ? Math.min(10000, Math.max(50, ms)) : 10000;
+}
+
+/** Whether `value` is a {@link SpringEase}: `{spring: {…}}` with finite numbers (or nothing) for its fields. */
+export function isSpringEase(value: unknown): value is SpringEase {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const keys = Object.keys(value);
+  const spring = (value as { spring?: unknown }).spring;
+  if (keys.length !== 1 || keys[0] !== "spring" || !spring || typeof spring !== "object" || Array.isArray(spring)) return false;
+  return Object.entries(spring).every(
+    ([k, v]) => k in SPRING_DEFAULTS && (v === undefined || (typeof v === "number" && Number.isFinite(v))),
+  );
+}
 
 /** Whether `value` is a {@link CubicBezier}: four finite numbers with `x1` and `x2` in 0–1. */
 export function isCubicBezier(value: unknown): value is CubicBezier {
@@ -37,9 +126,9 @@ export function isCubicBezier(value: unknown): value is CubicBezier {
   );
 }
 
-/** Whether `value` is an easing Flair plays: a name in {@link EASES} or a {@link CubicBezier}. */
+/** Whether `value` is an easing Flair plays: a name in {@link EASES}, a {@link CubicBezier} or a {@link SpringEase}. */
 export const isSvgEase = (value: unknown): value is SvgEase =>
-  (typeof value === "string" && value in EASES) || isCubicBezier(value);
+  (typeof value === "string" && value in EASES) || isCubicBezier(value) || isSpringEase(value);
 
 const bezierCache = new Map<string, (t: number) => number>();
 
@@ -77,10 +166,17 @@ export function cubicBezierEase([x1, y1, x2, y2]: CubicBezier): (t: number) => n
   return fn;
 }
 
-/** An easing as a function of time (0–1); `fallback` when it is not given. */
-export function easeFunction(ease: SvgEase | undefined, fallback: EaseName = "in-out"): (t: number) => number {
+/**
+ * An easing as a function of time (0–1); `fallback` when it is not given. A
+ * spring runs in real time, so it needs the change's length (`ms`, default
+ * {@link STEP_MS}); it is 0 at 0 and snaps to 1 at the end.
+ */
+export function easeFunction(ease: SvgEase | undefined, fallback: EaseName = "in-out", ms: number = STEP_MS): (t: number) => number {
   if (ease === undefined) return EASES[fallback];
-  return typeof ease === "string" ? EASES[ease] : cubicBezierEase(ease);
+  if (typeof ease === "string") return EASES[ease];
+  if (isCubicBezier(ease)) return cubicBezierEase(ease);
+  const spring = (ease as SpringEase).spring;
+  return (t) => (!(t > 0) ? 0 : t >= 1 ? 1 : springProgress(spring, (t * Math.max(0, ms)) / 1000));
 }
 
 /** How long a change takes by default, in ms. */
@@ -97,22 +193,64 @@ export function stepStart(steps: readonly number[], step: number): number | unde
   return steps[step - 1];
 }
 
+/** When and how a change plays (see `SvgAnimation`). */
+export interface ChangeTiming {
+  delay?: number;
+  ms?: number;
+  ease?: SvgEase;
+  repeat?: number;
+  alternate?: boolean;
+  strobe?: number;
+}
+
+/** A change's whole cycles: `repeat` when it is a whole number above 0, else 1. */
+export const changeCycles = (repeat: number | undefined): number =>
+  typeof repeat === "number" && Number.isInteger(repeat) && repeat >= 1 ? repeat : 1;
+
+/** How long a change takes in all, in ms: `ms` (default {@link STEP_MS}) times `repeat`. */
+export function changeLength(timing: Pick<ChangeTiming, "ms" | "repeat">): number {
+  return (timing.ms ?? STEP_MS) * changeCycles(timing.repeat);
+}
+
 /**
- * How far a change that plays on `step` (after `delay` ms, over `ms`) has
- * got at `timeMs`, eased: 0 before it starts, 1 once it is over.
+ * Where a change is in its cycles `elapsed` ms after it starts, before its
+ * ease: the cycle's time `u` (0–1), turned round (1 − u) on odd cycles when
+ * it alternates. With `strobe`, time is held on a grid of that many frames
+ * a second from the change's start, `floor(elapsed · strobe / 1000) /
+ * strobe · 1000`; once the change is over it is at its end.
+ */
+export function changeTime(timing: ChangeTiming, elapsed: number): number {
+  const ms = timing.ms ?? STEP_MS;
+  const cycles = changeCycles(timing.repeat);
+  const total = ms * cycles;
+  let at = elapsed >= total ? total : Math.max(0, elapsed);
+  if (timing.strobe && timing.strobe > 0 && at < total) at = (Math.floor((at * timing.strobe) / 1000) / timing.strobe) * 1000;
+  let cycle = cycles - 1;
+  let u = 1;
+  if (ms > 0 && at < total) {
+    cycle = Math.floor(at / ms);
+    u = (at - cycle * ms) / ms;
+  } else if (!(ms > 0) && elapsed < 0) u = 0;
+  return timing.alternate && cycle % 2 === 1 ? 1 - u : u;
+}
+
+/**
+ * How far a change that plays on `step` (after `delay` ms, over `ms`, `repeat`
+ * times) has got at `timeMs`, eased: 0 before it starts, and where its last
+ * cycle ends once it is over (1, or 0 when an even number of cycles
+ * alternate).
  */
 export function stepProgress(
   steps: readonly number[],
   timeMs: number,
   step: number,
-  options: { delay?: number; ms?: number; ease?: SvgEase } = {},
+  options: ChangeTiming = {},
 ): number {
   const start = stepStart(steps, step);
   if (start === undefined) return 0;
-  const from = start + (options.delay ?? 0);
-  const ms = options.ms ?? STEP_MS;
-  const t = ms > 0 ? clamp01((timeMs - from) / ms) : timeMs >= from ? 1 : 0;
-  return easeFunction(options.ease)(t);
+  const elapsed = timeMs - (start + (options.delay ?? 0));
+  if (elapsed < 0) return 0;
+  return easeFunction(options.ease, "in-out", options.ms ?? STEP_MS)(changeTime(options, elapsed));
 }
 
 /** The key an item in a list of data keeps from one state to the next. */
@@ -319,13 +457,34 @@ export interface SvgAnimation {
   step?: number;
   /** Ms after the step starts. */
   delay?: number;
-  /** How long it takes, in ms (default {@link STEP_MS}). */
+  /** How long it takes, in ms (default {@link STEP_MS}); each cycle's length with `repeat`. */
   ms?: number;
   /**
    * A name in {@link EASES} (default `"in-out"`, or `"linear"` with a
-   * `behavior`) or a `[x1, y1, x2, y2]` cubic-bezier curve.
+   * `behavior`), a `[x1, y1, x2, y2]` cubic-bezier curve, or a spring,
+   * `{spring: {mass?, stiffness?, damping?, velocity?}}` (defaults 1, 170,
+   * 26, 0): progress follows a damped spring for `ms` (see
+   * `springProgress`), then snaps to the end; `springSettleMs` gives an `ms`
+   * long enough for it to settle.
    */
   ease?: SvgEase;
+  /**
+   * Plays the change this many whole times (default 1), each cycle from
+   * `from` to `to` through the ease (and the behavior, if any), so it takes
+   * `ms × repeat` in all.
+   */
+  repeat?: number;
+  /**
+   * With `repeat`: odd cycles (the 2nd, the 4th…) run back from `to` to
+   * `from`, the cycle's time turned round (1 − u) before the ease.
+   */
+  alternate?: boolean;
+  /**
+   * Holds the change's time on a grid of this many frames a second from its
+   * start (12 for animation "on twos"): `floor(elapsed · strobe / 1000) /
+   * strobe · 1000`. It is at its end once the change is over.
+   */
+  strobe?: number;
   /**
    * Shapes how the change gets from `from` to `to`: a pulse there and back,
    * an oscillation (a shake, a teeter), a seeded wriggle or a springy
@@ -506,10 +665,10 @@ export function formatCount(
  */
 export function changeProgress(anim: SvgAnimation, steps: readonly number[], timeMs: number): (index: number) => number {
   if (!anim.behavior) {
-    const u = stepProgress(steps, timeMs, anim.step ?? 0, { delay: anim.delay, ms: anim.ms, ease: anim.ease });
+    const u = stepProgress(steps, timeMs, anim.step ?? 0, anim);
     return () => u;
   }
-  const t = stepProgress(steps, timeMs, anim.step ?? 0, { delay: anim.delay, ms: anim.ms, ease: anim.ease ?? "linear" });
+  const t = stepProgress(steps, timeMs, anim.step ?? 0, { ...anim, ease: anim.ease ?? "linear" });
   const behavior = anim.behavior;
   const ms = anim.ms ?? STEP_MS;
   return (index) => behaviorProgress(behavior, t, index, ms);
@@ -626,8 +785,20 @@ export function svgMotionIssues(motion: unknown): string[] {
     if (a.ms !== undefined && !(a.ms >= 0)) issues.push(`${where}: \`ms\` must be 0 or more`);
     if (a.delay !== undefined && !(a.delay >= 0))
       issues.push(`${where}: \`delay\` must be 0 or more`);
-    if (a.ease !== undefined && !isSvgEase(a.ease))
-      issues.push(`${where}: \`ease\` is one of ${Object.keys(EASES).join(", ")}, or a cubic-bezier [x1, y1, x2, y2] with x1 and x2 from 0 to 1`);
+    if (a.ease !== undefined && !isSvgEase(a.ease)) {
+      const spring = (a.ease as { spring?: unknown }).spring;
+      issues.push(
+        spring !== undefined
+          ? `${where}: \`ease.spring\` is {mass?, stiffness?, damping?, velocity?}, each a number (defaults 1, 170, 26, 0)`
+          : `${where}: \`ease\` is one of ${Object.keys(EASES).join(", ")}, a cubic-bezier [x1, y1, x2, y2] with x1 and x2 from 0 to 1, or {spring: {mass?, stiffness?, damping?, velocity?}}`,
+      );
+    }
+    if (a.repeat !== undefined && !(Number.isInteger(a.repeat) && a.repeat >= 1))
+      issues.push(`${where}: \`repeat\` is a whole number of cycles, 1 or more (it was ${JSON.stringify(a.repeat)})`);
+    if (a.alternate !== undefined && typeof a.alternate !== "boolean")
+      issues.push(`${where}: \`alternate\` is true or false`);
+    if (a.strobe !== undefined && !(typeof a.strobe === "number" && a.strobe > 0 && Number.isFinite(a.strobe)))
+      issues.push(`${where}: \`strobe\` is frames a second, above 0 (12 holds each frame for two at 24 fps)`);
     if (!a.attrs && !a.draw && !a.count && a.write === undefined && a.view === undefined && !a.along && a.solo === undefined)
       issues.push(
         `${where} changes nothing: give \`attrs\`, \`draw\`, \`count\`, \`write\`, \`view\`, \`along\` or \`solo\``,

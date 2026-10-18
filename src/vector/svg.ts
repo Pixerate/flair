@@ -5,6 +5,7 @@
 
 import { realClock, type Clock } from "../time/clock.js";
 import {
+  changeLength,
   easeFunction,
   formatCount,
   STEP_MS,
@@ -383,14 +384,14 @@ export function svgView(motion: SvgMotion, options: SvgViewOptions = {}): SvgVie
   };
 }
 
-/** How long an {@link SvgMotion} runs: its last change's end, in ms (at least 1). */
+/** How long an {@link SvgMotion} runs: its last change's end (`ms × repeat` after it starts), in ms (at least 1). */
 export function svgDuration(motion: SvgMotion, steps: readonly number[] = []): number {
   let end = 0;
   for (const a of motion.animate ?? []) {
     const step = a.step ?? 0;
     const start = step <= 0 ? 0 : steps[step - 1];
     if (start === undefined) continue;
-    end = Math.max(end, start + (a.delay ?? 0) + (a.ms ?? 800));
+    end = Math.max(end, start + (a.delay ?? 0) + changeLength(a));
   }
   return Math.max(1, end);
 }
@@ -758,7 +759,7 @@ export function animateCount(options: AnimateCountOptions): () => void {
   const clock = options.clock ?? realClock;
   const ms = options.ms ?? STEP_MS;
   const delay = options.delay ?? 0;
-  const ease = easeFunction(options.ease, "out");
+  const ease = easeFunction(options.ease, "out", ms);
   const start = clock.now();
   let stopped = false;
 
