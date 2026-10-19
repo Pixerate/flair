@@ -1,5 +1,11 @@
 # @pixerate/flair
 
+## 0.43.0
+
+### Minor Changes
+
+- 8ec6139: Add `isMotionEffect`, `nonImageEffectControls`, and `sanitizeEffectValues` catalog helpers, and `exportEffectBuffer` in `@pixerate/flair/node` for in-memory server effect rendering.
+
 ## 0.42.0
 
 ### Minor Changes
