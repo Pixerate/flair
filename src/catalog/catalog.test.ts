@@ -1700,7 +1700,7 @@ describe("capabilities and prompt helpers", () => {
   });
 
   it("extracts prompt variables with options or defaults", () => {
-    const effect = EFFECTS.find((e) => effectControls(e).some((c) => c.options && c.options.length > 0)) || EFFECTS[0];
+    const effect = EFFECTS.find((e) => effectControls(e).some((c: any) => c.options && c.options.length > 0)) || EFFECTS[0];
     const vars = getPromptVariables(effect);
     expect(Array.isArray(vars)).toBe(true);
     for (const v of vars) {
