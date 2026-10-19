@@ -290,6 +290,58 @@ export function canOutputVideo(effect: EffectDefinition): boolean {
   return false;
 }
 
+/**
+ * Returns whether an effect is animated over time (`iTime` uniform in shader source, or a vector effect).
+ * Static image filters/treatments that do not reference `iTime` return `false`.
+ */
+export function isMotionEffect(effect: EffectDefinition | undefined): boolean {
+  if (!effect) return false;
+  if (effect.kind === "vector") return true;
+  if (effect.kind === "shader") {
+    return /\biTime\b/.test(effect.source);
+  }
+  return false;
+}
+
+/**
+ * Returns the user-configurable controls for an effect, excluding image input slots and `sampler2D` uniforms.
+ */
+export function nonImageEffectControls(effect: EffectDefinition | undefined): ControlDef[] {
+  if (!effect) return [];
+  const all = effectControls(effect);
+  const imageInputNames = new Set(effectInputs(effect).images.map((img) => img.name));
+  return all.filter(
+    (c) => !imageInputNames.has(c.name) && c.type !== "sampler2D" && !/^uImage\d*$/i.test(c.name),
+  );
+}
+
+/**
+ * Sanitizes a control value map for an effect by stripping image input slots (`uImage*`, `sampler2D`),
+ * sample SVG data URLs, null/undefined entries, and (when `effect` is provided) unknown control keys.
+ */
+export function sanitizeEffectValues(
+  effect: EffectDefinition | undefined,
+  values: Record<string, unknown> | undefined | null,
+): Record<string, ControlValue> {
+  if (!values || typeof values !== "object") return {};
+  const validControls = effect ? new Map(effectControls(effect).map((c) => [c.name, c])) : null;
+  const imageKeys = effect ? new Set(effectInputs(effect).images.map((i) => i.name)) : null;
+  const cleaned: Record<string, ControlValue> = {};
+
+  for (const [key, val] of Object.entries(values)) {
+    if (val === undefined || val === null) continue;
+    if (imageKeys?.has(key) || /^uImage\d*$/i.test(key)) continue;
+    if (typeof val === "string" && val.startsWith("data:image/svg+xml")) continue;
+    if (validControls) {
+      const ctrl = validControls.get(key);
+      if (!ctrl || ctrl.type === "sampler2D") continue;
+    }
+    cleaned[key] = val as ControlValue;
+  }
+
+  return cleaned;
+}
+
 /** Effects matching a query, in catalog order. */
 export function findEffects(query: EffectQuery = {}): EffectDefinition[] {
   const words = (query.text ?? "").toLowerCase().split(/\s+/).filter(Boolean);

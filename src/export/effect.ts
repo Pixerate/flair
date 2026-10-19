@@ -16,6 +16,7 @@ import {
   effectInputs,
   getEffect,
   renderVectorEffect,
+  sanitizeEffectValues,
   type EffectCategory,
   type EffectDefinition,
   type EffectInput,
@@ -31,12 +32,14 @@ import { svgFrameMarkup, svgViewBox } from '../vector/static.js';
 import { svgDuration } from '../vector/svg.js';
 import {
   ffmpegPath,
+  findChrome,
   frameStates,
   imageDataUrl,
   pageControls,
   planOutput,
   runRender,
   type FrameState,
+  type OutputFormat,
   type PointerMode,
 } from './recorder.js';
 
@@ -537,6 +540,115 @@ export async function exportEffect(effect: string | EffectDefinition, options: E
     return rendered;
   } finally {
     if (tmp) fs.rmSync(tmp, { recursive: true, force: true });
+  }
+}
+
+export type EffectBufferSubject =
+  | NodeSubject
+  | { imageBuffer: Buffer | Uint8Array; ext?: string };
+
+export interface EffectBufferExportOptions extends Omit<EffectExportOptions, 'outputPath' | 'subject'> {
+  /** Output format (`'mp4'`, `'webm'`, `'mov'`, `'gif'`, `'png'`, `'svg'`). Defaults to `'mp4'`. */
+  format?: OutputFormat;
+  /** Subject(s) to apply the effect to; supports in-memory `{ imageBuffer, ext }` in addition to `NodeSubject`. */
+  subject?: EffectBufferSubject | readonly EffectBufferSubject[];
+}
+
+export interface EffectBufferExportResult {
+  buffer: Buffer;
+  format: OutputFormat;
+  mimeType: string;
+  width: number;
+  height: number;
+}
+
+const FORMAT_MIME_TYPES: Record<OutputFormat, string> = {
+  mp4: 'video/mp4',
+  webm: 'video/webm',
+  mov: 'video/quicktime',
+  gif: 'image/gif',
+  png: 'image/png',
+  svg: 'image/svg+xml',
+};
+
+/**
+ * Renders a catalog effect to an in-memory `Buffer`, automatically managing temporary files,
+ * headless Chrome discovery, control value sanitization, and single-frame PNG sequence resolution.
+ */
+export async function exportEffectBuffer(
+  effect: string | EffectDefinition,
+  options: EffectBufferExportOptions = {},
+): Promise<EffectBufferExportResult> {
+  const def = resolveEffect(effect);
+  const { format = 'mp4', subject: rawSubject, values: rawValues, ...restOptions } = options;
+
+  if (!process.env.CHROME_PATH) {
+    const detectedChrome = findChrome();
+    if (detectedChrome) {
+      process.env.CHROME_PATH = detectedChrome;
+    }
+  }
+
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'flair-export-'));
+  try {
+    let resolvedSubject: NodeSubject | readonly NodeSubject[] | undefined;
+    if (rawSubject) {
+      const list = (Array.isArray(rawSubject) ? rawSubject : [rawSubject]) as readonly EffectBufferSubject[];
+      const mapped: NodeSubject[] = [];
+      for (let i = 0; i < list.length; i++) {
+        const item = list[i]!;
+        if ('imageBuffer' in item) {
+          const ext = item.ext && /^[a-z0-9]+$/i.test(item.ext) ? item.ext.toLowerCase() : 'png';
+          const inputPath = path.join(tmpDir, `input_${i}.${ext}`);
+          fs.writeFileSync(inputPath, item.imageBuffer);
+          mapped.push({ image: inputPath });
+        } else {
+          mapped.push(item);
+        }
+      }
+      resolvedSubject = Array.isArray(rawSubject) ? mapped : mapped[0];
+    }
+
+    const baseSize = defaultSize(def);
+    const width = restOptions.width && Number.isFinite(restOptions.width) && restOptions.width > 0 ? even(restOptions.width) : baseSize.width;
+    const height = restOptions.height && Number.isFinite(restOptions.height) && restOptions.height > 0 ? even(restOptions.height) : baseSize.height;
+    const duration = format === 'png' ? (restOptions.duration ?? 1) : restOptions.duration;
+    const fps = format === 'png' ? (restOptions.fps ?? 1) : restOptions.fps;
+    const outputPath = path.join(tmpDir, `output.${format}`);
+    const sanitized = rawValues ? sanitizeEffectValues(def, rawValues) : undefined;
+
+    const writtenPath = await exportEffect(def, {
+      ...restOptions,
+      outputPath,
+      width,
+      height,
+      ...(duration !== undefined ? { duration } : {}),
+      ...(fps !== undefined ? { fps } : {}),
+      ...(sanitized ? { values: sanitized } : {}),
+      ...(resolvedSubject ? { subject: resolvedSubject } : {}),
+      ignoreUnknownControls: restOptions.ignoreUnknownControls ?? true,
+    });
+
+    let finalFilePath = writtenPath || outputPath;
+    if (!fs.existsSync(finalFilePath)) {
+      const sequenceCandidate = outputPath.replace(/\.png$/i, '_0000.png');
+      if (fs.existsSync(sequenceCandidate)) {
+        finalFilePath = sequenceCandidate;
+      } else {
+        finalFilePath = outputPath;
+      }
+    }
+
+    const buffer = fs.readFileSync(finalFilePath);
+    return {
+      buffer,
+      format,
+      mimeType: FORMAT_MIME_TYPES[format] ?? 'application/octet-stream',
+      width,
+      height,
+    };
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
   }
 }
 
