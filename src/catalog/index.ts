@@ -13,7 +13,7 @@
  * @packageDocumentation
  */
 
-import { controlValue, parseControls, type ControlDef, type ControlValue } from "../shader/controls.js";
+import { controlValue, parseControls, type ControlDef, type ControlType, type ControlValue } from "../shader/controls.js";
 import { inputsOf, type EffectInput, type EffectInputs, type EffectInteraction } from "./inputs.js";
 import { aurora, conicSweep, duotoneFlow, meshGradient, silk } from "./shaders/gradients.js";
 import { moreGradientShaders } from "./shaders/gradients-more.js";
@@ -84,7 +84,7 @@ import { waterShaders } from "./shaders/water.js";
 import { textEffects } from "./text.js";
 import { broadcastEffects } from "./broadcast.js";
 import { annotationEffects } from "./annotation.js";
-import { CURRENT_COLOR, EFFECT_CATEGORIES, EFFECT_CATEGORY_GROUPS, isCurrentColor, vectorEffectControls, type EffectCategory, type EffectDefinition, type ShaderEffect, type VideoUse } from "./types.js";
+import { CURRENT_COLOR, EFFECT_CATEGORIES, EFFECT_CATEGORY_GROUPS, isCurrentColor, renderVectorEffect, vectorEffectControls, type EffectCategory, type EffectDefinition, type ShaderEffect, type VideoUse } from "./types.js";
 import { vectorEffects } from "./vector.js";
 import { dataEffects } from "./data.js";
 import { iconEffects } from "./icons.js";
@@ -251,6 +251,8 @@ export interface EffectQuery {
   transparent?: boolean;
   /** Effects designed to modify a single picture (exactly one image slot wanting a picture). */
   singlePicture?: boolean;
+  /** Target output format: "animation" for animated SVGs, "video" for video shaders. */
+  output?: "animation" | "video";
 }
 
 /**
@@ -267,6 +269,27 @@ export function isSinglePictureEffect(effect: EffectDefinition): boolean {
   );
 }
 
+/**
+ * Returns whether an effect outputs animated SVG flair.
+ * All vector effects in Flair have motion definitions with SVG animations.
+ */
+export function canOutputAnimatedSvg(effect: EffectDefinition): boolean {
+  if (!effect) return false;
+  return effect.kind === "vector";
+}
+
+/**
+ * Returns whether an effect outputs video (WebGL shader rendering).
+ * Shader effects in Flair with video output capability can be rendered to video.
+ */
+export function canOutputVideo(effect: EffectDefinition): boolean {
+  if (!effect) return false;
+  if (effect.kind === "shader") {
+    return effect.video !== "none";
+  }
+  return false;
+}
+
 /** Effects matching a query, in catalog order. */
 export function findEffects(query: EffectQuery = {}): EffectDefinition[] {
   const words = (query.text ?? "").toLowerCase().split(/\s+/).filter(Boolean);
@@ -276,6 +299,8 @@ export function findEffects(query: EffectQuery = {}): EffectDefinition[] {
     if (query.kind && e.kind !== query.kind) return false;
     if (query.tags && !query.tags.every((t) => e.tags.includes(t))) return false;
     if (query.video && !(e.kind === "shader" && e.video && query.video.includes(e.video))) return false;
+    if (query.output === "animation" && !canOutputAnimatedSvg(e)) return false;
+    if (query.output === "video" && !canOutputVideo(e)) return false;
     if (query.singlePicture !== undefined && isSinglePictureEffect(e) !== query.singlePicture) return false;
     if (query.accepts || query.interaction || query.transparent !== undefined) {
       const inputs = effectInputs(e);
@@ -307,3 +332,90 @@ export function effectDefaults(
   const keep = (c: ControlDef) => effect.kind === "vector" && c.color && isCurrentColor(merged[c.name]);
   return Object.fromEntries(effectControls(effect).map((c) => [c.name, keep(c) ? CURRENT_COLOR : controlValue(c, merged)]));
 }
+
+/**
+ * A simplified, human-facing variable descriptor suitable for prompting or user configuration.
+ */
+export interface PromptVariableDef {
+  name: string;
+  label: string;
+  type: ControlType;
+  options?: string[];
+  defaultValue?: ControlValue;
+  min?: number;
+  max?: number;
+  step?: number;
+}
+
+/**
+ * Determines whether a control is human-readable and suitable for inclusion
+ * as a prompt/template variable. Omits internal uniforms, samplers, textures,
+ * coordinate vectors, and frame/resolution metadata.
+ */
+export function isHumanReadableControl(c: Pick<ControlDef, "name" | "type"> & Partial<ControlDef>): boolean {
+  if (!c || !c.name) return false;
+  if (c.name.startsWith("_")) return false;
+  if (c.type === "sampler2D") return false;
+
+  // Samplers and textures
+  const textureRegex =
+    /^(uImage|uTexture|uFrom|uTo|uNormals|uNoise|uBuffer|uChannel\d*)$/i;
+  if (textureRegex.test(c.name)) return false;
+
+  // Engine uniforms & system coordinates
+  const engineUniformRegex =
+    /^(uResolution|iResolution|resolution|uTime|iTime|time|uMouse|iMouse|mouse|uProgress|iProgress|progress|phase|transitionProgress|uAspect|aspect|uFrame|iFrame|frame)$/i;
+  if (engineUniformRegex.test(c.name)) return false;
+
+  // Coordinate vectors (vec2 is coordinates/offsets, vec3 without color is coordinates/directions)
+  if (c.type === "vec2") return false;
+  if (c.type === "vec3" && !c.color) return false;
+
+  // Raw index/coordinate floats (e.g. x1, y1, x2, y2)
+  if (/^[xyzw]\d+$/i.test(c.name)) return false;
+
+  return true;
+}
+
+/**
+ * Extracts prompt-friendly template variables from an effect's controls.
+ * Automatically filters out internal shader/engine controls.
+ */
+export function getPromptVariables(effect: EffectDefinition): PromptVariableDef[] {
+  const controls = effectControls(effect).filter(isHumanReadableControl);
+  return controls.map((c) => {
+    const rawOptions = (c as any).options;
+    const options = Array.isArray(rawOptions) && rawOptions.length > 0
+      ? rawOptions.map(String)
+      : c.type === "bool"
+        ? ["true", "false"]
+        : undefined;
+    return {
+      name: c.name,
+      label: c.label || c.name,
+      type: c.type,
+      options,
+      defaultValue: c.default,
+      min: c.min,
+      max: c.max,
+      step: c.step,
+    };
+  });
+}
+
+/**
+ * Extracts the reference template SVG string from a vector effect.
+ * If given an effect ID, looks it up in the catalog.
+ * Returns undefined if the effect is not found or is not a vector effect.
+ */
+export function getEffectReferenceSvg(
+  effectOrId: EffectDefinition | string,
+  values?: Record<string, ControlValue>,
+): string | undefined {
+  const effect = typeof effectOrId === "string" ? getEffect(effectOrId) : effectOrId;
+  if (!effect || effect.kind !== "vector") return undefined;
+
+  const rendered = renderVectorEffect(effect, values);
+  return rendered?.svg || effect.motion?.svg;
+}
+
