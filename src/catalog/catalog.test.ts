@@ -22,6 +22,9 @@ import {
   VIDEO_USES,
   effectInputs,
   isSinglePictureEffect,
+  isMotionEffect,
+  nonImageEffectControls,
+  sanitizeEffectValues,
   canOutputAnimatedSvg,
   canOutputVideo,
   isHumanReadableControl,
@@ -1720,6 +1723,41 @@ describe("capabilities and prompt helpers", () => {
     const shaderEffect = EFFECTS.find((e) => e.kind === "shader")!;
     expect(getEffectReferenceSvg(shaderEffect.id)).toBeUndefined();
     expect(getEffectReferenceSvg("non-existent-effect")).toBeUndefined();
+  });
+
+  it("identifies motion vs static effects with isMotionEffect", () => {
+    expect(isMotionEffect(undefined)).toBe(false);
+    const vectorEffect = EFFECTS.find((e) => e.kind === "vector")!;
+    expect(isMotionEffect(vectorEffect)).toBe(true);
+    expect(isMotionEffect(getEffect("image-ripple"))).toBe(true);
+    expect(isMotionEffect(getEffect("image-duotone"))).toBe(false);
+  });
+
+  it("filters out image slots and sampler2D controls with nonImageEffectControls", () => {
+    expect(nonImageEffectControls(undefined)).toEqual([]);
+    const duotone = getEffect("image-duotone")!;
+    const controls = nonImageEffectControls(duotone);
+    expect(controls.length).toBeGreaterThan(0);
+    expect(controls.some((c) => c.name === "uImage" || c.type === "sampler2D")).toBe(false);
+    expect(controls.some((c) => c.name === "uContrast")).toBe(true);
+  });
+
+  it("strips image inputs, sample SVGs, and unknown controls with sanitizeEffectValues", () => {
+    const duotone = getEffect("image-duotone")!;
+    const defaults = effectDefaults(duotone);
+    const sanitized = sanitizeEffectValues(duotone, {
+      ...defaults,
+      uContrast: 1.4,
+      uImage: "https://example.com/photo.png",
+      uImage2: "https://example.com/photo2.png",
+      unknownControl: 42,
+      nullVal: null,
+    });
+    expect(sanitized.uContrast).toBe(1.4);
+    expect(sanitized.uImage).toBeUndefined();
+    expect(sanitized.uImage2).toBeUndefined();
+    expect(sanitized.unknownControl).toBeUndefined();
+    expect(sanitized.nullVal).toBeUndefined();
   });
 });
 

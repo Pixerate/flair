@@ -8,6 +8,7 @@ import { wrapSource } from '../shader/program.js';
 import {
   checkEffectValues,
   effectQueryFromFlags,
+  exportEffectBuffer,
   nodeSubjectValues,
   parseSets,
   parseSize,
@@ -271,6 +272,23 @@ describe('probeVideo', () => {
     expect(seconds).toBeCloseTo(1, 0);
 
     fs.rmSync(dir, { recursive: true, force: true });
+  });
+});
+
+describe('exportEffectBuffer', () => {
+  it('exports a vector effect to an in-memory SVG buffer and cleans up temp files', async () => {
+    const result = await exportEffectBuffer('toggle-switch', {
+      format: 'svg',
+      width: 400,
+      height: 200,
+      values: { unknownExtraControl: 99 } as any,
+    });
+    expect(result.format).toBe('svg');
+    expect(result.mimeType).toBe('image/svg+xml');
+    expect(result.width).toBe(400);
+    expect(result.height).toBe(200);
+    expect(Buffer.isBuffer(result.buffer)).toBe(true);
+    expect(result.buffer.toString('utf8')).toContain('<svg');
   });
 });
 

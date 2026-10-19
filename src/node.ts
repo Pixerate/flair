@@ -22,10 +22,14 @@ export {
 } from "./export/recorder.js";
 export {
   exportEffect,
+  exportEffectBuffer,
   nodeSubjectValues,
   probeVideo,
   vectorTimeline,
   videoSeconds,
+  type EffectBufferExportOptions,
+  type EffectBufferExportResult,
+  type EffectBufferSubject,
   type EffectExportOptions,
   type NodeSubject,
   type NodeSubjectValues,
