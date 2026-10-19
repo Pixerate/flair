@@ -22,6 +22,11 @@ import {
   VIDEO_USES,
   effectInputs,
   isSinglePictureEffect,
+  canOutputAnimatedSvg,
+  canOutputVideo,
+  isHumanReadableControl,
+  getPromptVariables,
+  getEffectReferenceSvg,
 } from "./index.js";
 
 describe("catalog", () => {
@@ -1658,3 +1663,63 @@ describe("single picture effects", () => {
     expect(single.length + nonSingle.length).toBe(EFFECTS.length);
   });
 });
+
+describe("capabilities and prompt helpers", () => {
+  it("determines output capability for animated SVG vs video", () => {
+    const vectorEffect = EFFECTS.find((e) => e.kind === "vector")!;
+    const shaderEffect = EFFECTS.find((e) => e.kind === "shader" && e.video !== "none")!;
+
+    expect(canOutputAnimatedSvg(vectorEffect)).toBe(true);
+    expect(canOutputAnimatedSvg(shaderEffect)).toBe(false);
+
+    expect(canOutputVideo(vectorEffect)).toBe(false);
+    expect(canOutputVideo(shaderEffect)).toBe(true);
+  });
+
+  it("filters catalog effects by output query", () => {
+    const animations = findEffects({ output: "animation" });
+    expect(animations.length).toBeGreaterThan(0);
+    expect(animations.every((e) => canOutputAnimatedSvg(e))).toBe(true);
+
+    const videos = findEffects({ output: "video" });
+    expect(videos.length).toBeGreaterThan(0);
+    expect(videos.every((e) => canOutputVideo(e))).toBe(true);
+  });
+
+  it("identifies human-readable controls and filters internal engine uniforms", () => {
+    expect(isHumanReadableControl({ name: "speed", type: "float", default: 1, min: 0, max: 2, step: 0.1, line: 0 })).toBe(true);
+    expect(isHumanReadableControl({ name: "color", type: "vec3", color: true, default: [1, 0, 0], min: 0, max: 1, step: 0.01, line: 0 })).toBe(true);
+
+    // Filtered internal uniforms & samplers
+    expect(isHumanReadableControl({ name: "_internal", type: "float", default: 0, min: 0, max: 1, step: 0.1, line: 0 })).toBe(false);
+    expect(isHumanReadableControl({ name: "uImage", type: "sampler2D", default: 0, min: 0, max: 1, step: 0.1, line: 0 })).toBe(false);
+    expect(isHumanReadableControl({ name: "uResolution", type: "vec2", default: [0, 0], min: 0, max: 1, step: 0.1, line: 0 })).toBe(false);
+    expect(isHumanReadableControl({ name: "iTime", type: "float", default: 0, min: 0, max: 1, step: 0.1, line: 0 })).toBe(false);
+    expect(isHumanReadableControl({ name: "uAspect", type: "float", default: 1, min: 0, max: 1, step: 0.1, line: 0 })).toBe(false);
+    expect(isHumanReadableControl({ name: "x1", type: "float", default: 0, min: 0, max: 1, step: 0.1, line: 0 })).toBe(false);
+  });
+
+  it("extracts prompt variables with options or defaults", () => {
+    const effect = EFFECTS.find((e) => effectControls(e).some((c: any) => c.options && c.options.length > 0)) || EFFECTS[0];
+    const vars = getPromptVariables(effect);
+    expect(Array.isArray(vars)).toBe(true);
+    for (const v of vars) {
+      expect(v.name).toBeDefined();
+      expect(v.label).toBeDefined();
+      expect(v.type).toBeDefined();
+    }
+  });
+
+  it("extracts reference SVG from vector effects", () => {
+    const vectorEffect = EFFECTS.find((e) => e.kind === "vector")!;
+    const svg = getEffectReferenceSvg(vectorEffect.id);
+    expect(svg).toBeDefined();
+    expect(typeof svg).toBe("string");
+    expect(svg!.includes("<svg") || svg!.includes("<path") || svg!.includes("<g")).toBe(true);
+
+    const shaderEffect = EFFECTS.find((e) => e.kind === "shader")!;
+    expect(getEffectReferenceSvg(shaderEffect.id)).toBeUndefined();
+    expect(getEffectReferenceSvg("non-existent-effect")).toBeUndefined();
+  });
+});
+
