@@ -179,6 +179,39 @@ function pipelineChecks(): OrientationCheck[] {
       checks.push({ input: `${format}: float`, ok: false, detail: e instanceof Error ? e.message : String(e) });
     }
   }
+  const RED = "void mainImage(out vec4 c, in vec2 f) { c = vec4(1.0, 0.0, 0.0, 1.0); }";
+  const solid = (w: number, h: number, rgba: number[], right?: number[]) => {
+    const data = new Uint8ClampedArray(w * h * 4);
+    for (let i = 0; i < w * h; i++) data.set(right && i % w >= w / 2 ? right : rgba, i * 4);
+    return new ImageData(data, w, h);
+  };
+  const masked = (input: string, mask: Parameters<ShaderPipeline["setMask"]>[0], test: (d: Uint8ClampedArray) => [boolean, string]) => {
+    let pipeline: ShaderPipeline<FramesCanvas> | undefined;
+    try {
+      pipeline = new ShaderPipeline({ passes: [{ source: RED }], width: 4, height: 4, canvas: canvas(4, 4), alpha: true, mask: mask ?? undefined });
+      pipeline.render(0);
+      const [ok, detail] = test(pipeline.readImageData().data);
+      checks.push({ input, ok, detail });
+    } catch (e) {
+      checks.push({ input, ok: false, detail: e instanceof Error ? e.message : String(e) });
+    } finally {
+      pipeline?.dispose();
+    }
+  };
+  masked("mask: left half over blue", { picture: solid(2, 1, [0, 0, 0, 255], [0, 0, 0, 0]), under: solid(1, 1, [0, 0, 255, 255]) }, (d) => {
+    const left = at(d, 4, 0, 1);
+    const right = at(d, 4, 3, 1);
+    return [left === "255,0,0" && right === "0,0,255", `left ${left}, right ${right}`];
+  });
+  masked("mask: top-left region, no under", { region: [0, 0, 2, 2] }, (d) => {
+    const inside = d[(1 * 4 + 0) * 4 + 3];
+    const outside = d[(3 * 4 + 3) * 4 + 3];
+    return [inside === 255 && outside === 0, `alpha inside ${inside}, outside ${outside}`];
+  });
+  masked("mask: luminance, inverted", { picture: solid(1, 1, [255, 255, 255, 255]), channel: "luminance", invert: true, under: solid(1, 1, [0, 255, 0, 255]) }, (d) => {
+    const got = at(d, 4, 1, 1);
+    return [got === "0,255,0", `${got} (white inverted: all under)`];
+  });
   run("stack: aurora then crt", effectStack(["aurora", "crt"]), 2, (d) => {
     const lit = d.some((v, i) => i % 4 !== 3 && v > 8);
     return [lit, lit ? "drawn" : "all black"];

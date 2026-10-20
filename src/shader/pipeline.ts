@@ -5,6 +5,20 @@ import { SPECTRUM_BINS } from "./audio.js";
 import { clicksUniform, trailUniform } from "./pointer.js";
 import { TextureCache, type LiveSource, type TextureSource } from "./textures.js";
 import { srgbToLinear } from "./color.js";
+import { restoreGlState, saveGlState } from "./glstate.js";
+
+/**
+ * A texture in the host's own WebGL2 context (see the `gl` option), shown in
+ * an image control without a trip through the CPU: rows bottom up, as GL
+ * draws them, in sRGB-encoded colour, straight alpha. Its pixels are copied
+ * at each `render`, so draw into it whenever you like; its own settings
+ * (filtering, mipmaps) are left as they were.
+ */
+export interface HostTexture {
+  texture: WebGLTexture;
+  width: number;
+  height: number;
+}
 
 /**
  * A float picture: RGBA, rows top down, in **linear light** (sRGB
@@ -31,7 +45,7 @@ export interface FloatPicture {
  *
  * Image controls not given an input show their URL, as in `ShaderFrames`.
  */
-export type PassInput = "previous" | "feedback" | { pass: number } | LiveSource | FloatPicture;
+export type PassInput = "previous" | "feedback" | { pass: number } | LiveSource | FloatPicture | HostTexture;
 
 /**
  * What a pipeline's passes draw into, and so its precision: `rgba8` (8 bits
@@ -58,12 +72,42 @@ export interface PipelinePass {
   name?: string;
 }
 
+/**
+ * Where a pipeline's effect applies. Coverage comes from a `picture`
+ * (its alpha, or its luminance with `channel: "luminance"`; stretched to the
+ * output), a `region` (a rectangle in output pixels from the top left, with
+ * a soft edge `feather` pixels wide), or both multiplied together; `invert`
+ * turns it round. Where coverage is 0 `under` shows (a picture, or a pass's
+ * output: usually the picture the effect changes); without `under`,
+ * coverage multiplies the output's alpha instead, as for a generator laid
+ * over something else. 0 is untouched and 1 the full effect, as
+ * `EffectRenderRequest.mask` in `@pixerate/editor/effects`.
+ */
+export interface PipelineMask {
+  picture?: LiveSource | FloatPicture | HostTexture;
+  channel?: "alpha" | "luminance";
+  region?: readonly [number, number, number, number];
+  feather?: number;
+  invert?: boolean;
+  under?: LiveSource | FloatPicture | HostTexture | { pass: number };
+}
+
 export interface ShaderPipelineOptions<C extends FramesCanvas = HTMLCanvasElement> {
   passes: readonly PipelinePass[];
   width: number;
   height: number;
   /** Draw on this canvas instead of a new one (an `OffscreenCanvas` in a Worker); resized to `width` × `height`. */
   canvas?: C;
+  /**
+   * Render in this WebGL2 context, the host's own, rather than one of the
+   * pipeline's: its output stays on the GPU as {@link ShaderPipeline.outputTexture},
+   * or is drawn into a framebuffer of the host's (`render(t, { target })`),
+   * with no read back. Pictures can be the host's textures ({@link HostTexture}).
+   * The pipeline leaves the context's state as it found it after each call,
+   * and `dispose` frees only what the pipeline made. Its canvas is not
+   * resized, and float formats need the context to allow float rendering.
+   */
+  gl?: WebGL2RenderingContext;
   /** Keep the last pass's alpha in the output (default false: opaque). */
   alpha?: boolean;
   /**
@@ -73,6 +117,8 @@ export interface ShaderPipelineOptions<C extends FramesCanvas = HTMLCanvasElemen
    * above 1, and `readFloatPixels` gives them out in linear light.
    */
   format?: PipelineFormat;
+  /** Where the effect applies (see {@link ShaderPipeline.setMask}). */
+  mask?: PipelineMask;
 }
 
 /** Thrown when a pass of a pipeline does not compile: `pass` says which (0-based). */
@@ -109,8 +155,6 @@ interface PassState {
   shader: CompiledShader;
   values: Record<string, ControlValue> | undefined;
   inputs: Map<string, PassInput>;
-  /** Float pictures, converted to what shaders expect, by control name. */
-  converted: Map<string, Target>;
   /** This frame's output. */
   current: Target;
   /** The frame before's output, for passes something reads as feedback. */
@@ -172,6 +216,43 @@ void main() {
 }
 `;
 
+const COMPOSITE_SOURCE = `#version 300 es
+precision highp float;
+uniform sampler2D flair_source;
+uniform sampler2D flair_mask;
+uniform sampler2D flair_under;
+uniform int flair_hasMask;
+uniform int flair_hasUnder;
+uniform int flair_luminance;
+uniform int flair_invert;
+uniform int flair_hasRegion;
+uniform vec4 flair_region;
+uniform float flair_feather;
+uniform vec2 flair_size;
+out vec4 flair_out;
+void main() {
+  vec4 effect = texelFetch(flair_source, ivec2(gl_FragCoord.xy), 0);
+  vec2 uv = gl_FragCoord.xy / flair_size;
+  float k = 1.0;
+  if (flair_hasMask == 1) {
+    vec4 m = texture(flair_mask, uv);
+    k *= flair_luminance == 1 ? dot(m.rgb, vec3(0.2126, 0.7152, 0.0722)) * m.a : m.a;
+  }
+  if (flair_hasRegion == 1) {
+    vec2 lo = flair_region.xy;
+    vec2 hi = flair_region.xy + flair_region.zw;
+    float f = max(flair_feather, 0.001) * 0.5;
+    vec2 inside = smoothstep(lo - f, lo + f, gl_FragCoord.xy) * (1.0 - smoothstep(hi - f, hi + f, gl_FragCoord.xy));
+    k *= inside.x * inside.y;
+  }
+  k = clamp(flair_invert == 1 ? 1.0 - k : k, 0.0, 1.0);
+  flair_out = flair_hasUnder == 1 ? mix(texture(flair_under, uv), effect, k) : vec4(effect.rgb, effect.a * k);
+}
+`;
+
+const isHostTexture = (input: unknown): input is HostTexture =>
+  typeof input === "object" && input !== null && "texture" in input && typeof (input as HostTexture).width === "number" && !(input instanceof Float32Array);
+
 const isFloatPicture = (input: unknown): input is FloatPicture =>
   typeof input === "object" && input !== null && (input as FloatPicture).data instanceof Float32Array && typeof (input as FloatPicture).width === "number";
 
@@ -205,23 +286,43 @@ export class ShaderPipeline<C extends FramesCanvas = HTMLCanvasElement> {
   private encode: WebGLProgram | null = null;
   private decode: WebGLProgram | null = null;
   private decoded: Target | null = null;
+  /** Float pictures converted to what shaders expect, by `pass:control` (or `mask`, `under`). */
+  private readonly converted = new Map<string, Target>();
+  private mask: PipelineMask | null = null;
+  private compositor: WebGLProgram | null = null;
+  private composed: Target | null = null;
+  /** What the last frame's output is in: the last pass's target, or the masked composite. */
+  private result: Target | null = null;
   private readonly format: PipelineFormat;
   private rendered = 0;
   private lastTime: number | null = null;
   private pixels: Uint8Array;
+  /** Whether the context is the host's: then every call puts its state back. */
+  private readonly hosted: boolean;
+  /** Host textures in image controls or the mask, copied at each render, by `pass:control` (or `mask`, `under`). */
+  private readonly hostInputs = new Map<string, HostTexture>();
 
   constructor(options: ShaderPipelineOptions<C>) {
     const { passes, width, height } = options;
     if (!passes?.length) throw new Error("A pipeline needs at least one pass.");
     this.width = Math.max(1, Math.round(width));
     this.height = Math.max(1, Math.round(height));
-    this.canvas = options.canvas ?? (newCanvas(this.width, this.height) as C);
-    this.canvas.width = this.width;
-    this.canvas.height = this.height;
-    const gl = createContext(this.canvas, true, Boolean(options.alpha));
+    if (options.gl && options.canvas) throw new Error("Give a pipeline a canvas or a host's gl context, not both.");
+    this.hosted = Boolean(options.gl);
+    let gl: WebGL2RenderingContext | null;
+    if (options.gl) {
+      gl = options.gl;
+      this.canvas = gl.canvas as C;
+    } else {
+      this.canvas = options.canvas ?? (newCanvas(this.width, this.height) as C);
+      this.canvas.width = this.width;
+      this.canvas.height = this.height;
+      gl = createContext(this.canvas, true, Boolean(options.alpha));
+    }
     if (!gl) throw new Error("WebGL2 is not available in this browser.");
     this.gl = gl;
-    this.textures = new TextureCache(gl);
+    const saved = this.hosted ? saveGlState(gl) : null;
+    this.textures = new TextureCache(gl, () => {}, undefined, (upload: () => void) => this.guard(upload));
     this.pixels = new Uint8Array(this.width * this.height * 4);
     this.format = options.format ?? "rgba8";
     try {
@@ -238,16 +339,43 @@ export class ShaderPipeline<C extends FramesCanvas = HTMLCanvasElement> {
         const controls = parseControls(spec.source);
         const compiled = compileShader(gl, spec.source, controls);
         if (!compiled.ok) throw new PassCompileError(i, label, compiled.errors);
-        this.passes.push({ label, spec, controls, shader: compiled.shader, values: spec.values, inputs: new Map(), converted: new Map(), current: this.target(), previous: null });
+        this.passes.push({ label, spec, controls, shader: compiled.shader, values: spec.values, inputs: new Map(), current: this.target(), previous: null });
       });
       passes.forEach((spec, i) => {
         for (const [name, input] of Object.entries(spec.inputs ?? {})) this.setInput(i, name, input);
       });
+      this.syncTextures();
+      if (options.mask) this.setMask(options.mask);
     } catch (e) {
       this.dispose();
       throw e;
+    } finally {
+      if (saved) restoreGlState(gl, saved);
     }
-    this.syncTextures();
+  }
+
+  /**
+   * The last frame's output as a texture in the pipeline's context: rows
+   * bottom up, sRGB-encoded (in the pipeline's format), straight alpha, with
+   * mipmaps. It is the pipeline's: sample it, do not change it. It holds the
+   * frame until the next `render`. With a host `gl`, this is how the output
+   * reaches the host without a read back.
+   */
+  get outputTexture(): WebGLTexture {
+    this.context();
+    return this.resultTarget().texture;
+  }
+
+  /** Runs `work` with the host's state saved and put back (with a context of the pipeline's own, just runs it). */
+  private guard<T>(work: () => T): T {
+    const gl = this.gl;
+    if (!this.hosted || !gl) return work();
+    const saved = saveGlState(gl);
+    try {
+      return work();
+    } finally {
+      restoreGlState(gl, saved);
+    }
   }
 
   /** Each pass's controls, in pass order. */
@@ -257,8 +385,10 @@ export class ShaderPipeline<C extends FramesCanvas = HTMLCanvasElement> {
 
   /** Changes a pass's control values for the frames that follow. */
   setValues(pass: number, values: Record<string, ControlValue> | undefined) {
-    this.pass(pass).values = values;
-    this.syncTextures();
+    return this.guard(() => {
+      this.pass(pass).values = values;
+      this.syncTextures();
+    });
   }
 
   /**
@@ -268,37 +398,82 @@ export class ShaderPipeline<C extends FramesCanvas = HTMLCanvasElement> {
    * pass, or a pass that does not exist.
    */
   setInput(pass: number, name: string, input: PassInput | null) {
-    const state = this.pass(pass);
-    const control = state.controls.find((c) => c.name === name);
-    if (!control || control.type !== "sampler2D") {
-      const images = state.controls.filter((c) => c.type === "sampler2D").map((c) => c.name);
-      throw new Error(`${state.label} has no image control "${name}"; ${images.length ? `its image controls are ${images.join(", ")}` : "it has none"}.`);
-    }
-    const key = `${pass}:${name}`;
-    state.inputs.delete(name);
-    this.textures.setLive(key, null);
-    const converted = state.converted.get(name);
-    if (converted && !isFloatPicture(input)) {
-      this.deleteTarget(converted);
-      state.converted.delete(name);
-    }
-    if (input === null) return void this.syncTextures();
-    if (input === "previous") {
-      if (pass === 0) throw new Error(`${state.label} is the first pass: it has no previous pass to read. Give "${name}" a picture instead.`);
-    } else if (input === "feedback") {
-      this.history(pass);
-    } else if (isPassRef(input)) {
-      if (!Number.isInteger(input.pass) || input.pass < 0 || input.pass >= this.passes.length) {
-        throw new Error(`${state.label} reads pass ${input.pass}, and there are ${this.passes.length} passes (0 to ${this.passes.length - 1}).`);
+    return this.guard(() => {
+      const state = this.pass(pass);
+      const control = state.controls.find((c) => c.name === name);
+      if (!control || control.type !== "sampler2D") {
+        const images = state.controls.filter((c) => c.type === "sampler2D").map((c) => c.name);
+        throw new Error(`${state.label} has no image control "${name}"; ${images.length ? `its image controls are ${images.join(", ")}` : "it has none"}.`);
       }
-      if (input.pass >= pass) this.history(input.pass);
-    } else if (isFloatPicture(input)) {
-      this.convert(state, name, input);
-    } else {
-      this.textures.setLive(key, input);
-    }
-    state.inputs.set(name, input);
-    this.syncTextures();
+      const key = `${pass}:${name}`;
+      state.inputs.delete(name);
+      this.textures.setLive(key, null);
+      if (!isFloatPicture(input) && !isHostTexture(input)) this.forget(key);
+      if (!isHostTexture(input)) this.hostInputs.delete(key);
+      if (input === null) return void this.syncTextures();
+      if (input === "previous") {
+        if (pass === 0) throw new Error(`${state.label} is the first pass: it has no previous pass to read. Give "${name}" a picture instead.`);
+      } else if (input === "feedback") {
+        this.history(pass);
+      } else if (isPassRef(input)) {
+        if (!Number.isInteger(input.pass) || input.pass < 0 || input.pass >= this.passes.length) {
+          throw new Error(`${state.label} reads pass ${input.pass}, and there are ${this.passes.length} passes (0 to ${this.passes.length - 1}).`);
+        }
+        if (input.pass >= pass) this.history(input.pass);
+      } else if (isFloatPicture(input)) {
+        this.convert(key, `${state.label}: a float picture for "${name}"`, input);
+      } else if (isHostTexture(input)) {
+        this.hostInput(key, `${state.label}: the texture for "${name}"`, input);
+      } else {
+        this.textures.setLive(key, input);
+      }
+      state.inputs.set(name, input);
+      this.syncTextures();
+    });
+  }
+
+  /**
+   * Limits where the pipeline's effect applies (see {@link PipelineMask}):
+   * by a coverage picture, a rectangle, or both. Where coverage is 0 the
+   * picture `under` shows (or, without one, the output is transparent);
+   * where it is 1, the effect. `null` removes it. Pictures are read when
+   * set: set the mask again for the next frame's.
+   */
+  setMask(mask: PipelineMask | null) {
+    return this.guard(() => {
+      for (const key of ["mask", "under"]) {
+        this.textures.setLive(key, null);
+        this.forget(key);
+        this.hostInputs.delete(key);
+      }
+      this.mask = null;
+      if (!mask) return;
+      if (mask.picture === undefined && mask.region === undefined) throw new Error("A mask needs a picture (its coverage), a region, or both.");
+      if (mask.region !== undefined) {
+        const r = mask.region;
+        if (!Array.isArray(r) || r.length !== 4 || !r.every((v) => typeof v === "number" && Number.isFinite(v)) || !(r[2]! > 0 && r[3]! > 0)) {
+          throw new Error(`A mask's region is [x, y, width, height] in output pixels from the top left, with a width and height above 0; got ${JSON.stringify(r)}.`);
+        }
+      }
+      if (mask.channel !== undefined && mask.channel !== "alpha" && mask.channel !== "luminance") {
+        throw new Error(`A mask's channel is "alpha" or "luminance"; got ${JSON.stringify(mask.channel)}.`);
+      }
+      const under = mask.under;
+      if (under !== undefined && isPassRef(under as PassInput) && !this.passes[(under as { pass: number }).pass]) {
+        throw new Error(`A mask's under reads pass ${(under as { pass: number }).pass}, and there are ${this.passes.length} passes (0 to ${this.passes.length - 1}).`);
+      }
+      for (const [key, picture] of [
+        ["mask", mask.picture],
+        ["under", under],
+      ] as const) {
+        if (picture === undefined || isPassRef(picture as PassInput)) continue;
+        const what = `A mask's ${key === "mask" ? "picture" : "under"}`;
+        if (isFloatPicture(picture)) this.convert(key, what, picture);
+        else if (isHostTexture(picture)) this.hostInput(key, what, picture);
+        else this.textures.setLive(key, picture as LiveSource);
+      }
+      this.mask = mask;
+    });
   }
 
   /** Settles once every image the passes show has loaded, and every live video has a frame (see `ShaderFrames.ready`). */
@@ -306,9 +481,19 @@ export class ShaderPipeline<C extends FramesCanvas = HTMLCanvasElement> {
     await Promise.all([this.textures.ready(this.urls()), this.textures.liveReady()]);
   }
 
-  /** Draws the frame at `time` seconds: every pass in order, the last on `canvas`. */
-  render(time: number, options: RenderOptions = {}) {
+  /**
+   * Draws the frame at `time` seconds: every pass in order, the output on
+   * `canvas`. With a host `gl` the output stays in {@link outputTexture}
+   * unless `target` says where to draw it: a framebuffer of the host's, or
+   * `null` for the context's canvas.
+   */
+  render(time: number, options: RenderOptions & { target?: WebGLFramebuffer | null } = {}) {
+    this.guard(() => this.draw(time, options));
+  }
+
+  private draw(time: number, options: RenderOptions & { target?: WebGLFramebuffer | null }) {
     const gl = this.context();
+    for (const [key, host] of this.hostInputs) this.copyHost(key, host);
     const delta = options.delta ?? (this.lastTime === null ? 0 : time - this.lastTime);
     const state = {
       width: this.width,
@@ -337,9 +522,15 @@ export class ShaderPipeline<C extends FramesCanvas = HTMLCanvasElement> {
       gl.bindTexture(gl.TEXTURE_2D, pass.current.texture);
       gl.generateMipmap(gl.TEXTURE_2D);
     });
+    const result = this.mask ? this.composite(this.output.current) : this.output.current;
+    const present = this.hosted ? options.target : (options.target ?? null);
+    if (present !== undefined) {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, present);
+      gl.viewport(0, 0, this.width, this.height);
+      this.drawCopy(result.texture);
+    }
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    gl.viewport(0, 0, this.width, this.height);
-    this.drawCopy(this.output.current.texture);
+    this.result = result;
     for (const pass of this.passes) {
       if (pass.previous) [pass.current, pass.previous] = [pass.previous, pass.current];
     }
@@ -349,36 +540,39 @@ export class ShaderPipeline<C extends FramesCanvas = HTMLCanvasElement> {
 
   /** Clears every pass's last frame, so feedback starts again as on the first frame. */
   resetFeedback() {
-    const gl = this.context();
-    for (const pass of this.passes) {
-      if (pass.previous) this.clear(pass.previous);
-      if (pass.previous) this.clear(pass.current);
-    }
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    this.rendered = 0;
-    this.lastTime = null;
+    return this.guard(() => {
+      const gl = this.context();
+      for (const pass of this.passes) {
+        if (pass.previous) this.clear(pass.previous);
+        if (pass.previous) this.clear(pass.current);
+      }
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      this.rendered = 0;
+      this.lastTime = null;
+    });
   }
 
   /** The last frame's output as RGBA bytes, rows top down (as `ShaderFrames.readPixels`). */
   readPixels(out?: Uint8Array | Uint8ClampedArray): Uint8Array | Uint8ClampedArray {
-    const gl = this.context();
-    const { width, height } = this;
-    const target = out ?? new Uint8Array(width * height * 4);
-    if (target.length !== width * height * 4) throw new RangeError(`readPixels needs a buffer of ${width * height * 4} bytes.`);
-    // After `render`, the output is the pass's `previous` when it keeps one (they were swapped).
-    const output = this.output;
-    gl.bindFramebuffer(gl.FRAMEBUFFER, (output.previous ?? output.current).framebuffer);
-    if (this.format === "rgba8") gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, this.pixels);
-    else {
-      // A float framebuffer reads as floats; its colour is sRGB-encoded already, so it only needs quantising.
-      const floats = new Float32Array(width * height * 4);
-      gl.readPixels(0, 0, width, height, gl.RGBA, gl.FLOAT, floats);
-      for (let i = 0; i < floats.length; i++) this.pixels[i] = Math.round(Math.min(1, Math.max(0, floats[i]!)) * 255);
-    }
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    const row = width * 4;
-    for (let y = 0; y < height; y++) target.set(this.pixels.subarray((height - 1 - y) * row, (height - y) * row), y * row);
-    return target;
+    return this.guard(() => {
+      const gl = this.context();
+      const { width, height } = this;
+      const target = out ?? new Uint8Array(width * height * 4);
+      if (target.length !== width * height * 4) throw new RangeError(`readPixels needs a buffer of ${width * height * 4} bytes.`);
+      // After `render`, the output is the pass's `previous` when it keeps one (they were swapped).
+      gl.bindFramebuffer(gl.FRAMEBUFFER, this.resultTarget().framebuffer);
+      if (this.format === "rgba8") gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, this.pixels);
+      else {
+        // A float framebuffer reads as floats; its colour is sRGB-encoded already, so it only needs quantising.
+        const floats = new Float32Array(width * height * 4);
+        gl.readPixels(0, 0, width, height, gl.RGBA, gl.FLOAT, floats);
+        for (let i = 0; i < floats.length; i++) this.pixels[i] = Math.round(Math.min(1, Math.max(0, floats[i]!)) * 255);
+      }
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      const row = width * 4;
+      for (let y = 0; y < height; y++) target.set(this.pixels.subarray((height - 1 - y) * row, (height - y) * row), y * row);
+      return target;
+    });
   }
 
   /**
@@ -388,33 +582,34 @@ export class ShaderPipeline<C extends FramesCanvas = HTMLCanvasElement> {
    * the 8-bit output, decoded. Pass `out` to reuse a buffer.
    */
   readFloatPixels(out?: Float32Array): Float32Array {
-    const gl = this.context();
-    const { width, height } = this;
-    const n = width * height * 4;
-    const target = out ?? new Float32Array(n);
-    if (target.length !== n) throw new RangeError(`readFloatPixels needs a buffer of ${n} floats.`);
-    if (this.format === "rgba8") {
-      const bytes = this.readPixels();
-      for (let i = 0; i < n; i += 4) {
-        target[i] = srgbToLinear(bytes[i]! / 255);
-        target[i + 1] = srgbToLinear(bytes[i + 1]! / 255);
-        target[i + 2] = srgbToLinear(bytes[i + 2]! / 255);
-        target[i + 3] = bytes[i + 3]! / 255;
+    return this.guard(() => {
+      const gl = this.context();
+      const { width, height } = this;
+      const n = width * height * 4;
+      const target = out ?? new Float32Array(n);
+      if (target.length !== n) throw new RangeError(`readFloatPixels needs a buffer of ${n} floats.`);
+      if (this.format === "rgba8") {
+        const bytes = this.readPixels();
+        for (let i = 0; i < n; i += 4) {
+          target[i] = srgbToLinear(bytes[i]! / 255);
+          target[i + 1] = srgbToLinear(bytes[i + 1]! / 255);
+          target[i + 2] = srgbToLinear(bytes[i + 2]! / 255);
+          target[i + 3] = bytes[i + 3]! / 255;
+        }
+        return target;
       }
+      this.decode ??= linkUtilityProgram(gl, DECODE_SOURCE);
+      this.decoded ??= this.target();
+      gl.bindFramebuffer(gl.FRAMEBUFFER, this.decoded.framebuffer);
+      gl.viewport(0, 0, width, height);
+      this.drawWith(this.decode, this.resultTarget().texture);
+      const rows = new Float32Array(n);
+      gl.readPixels(0, 0, width, height, gl.RGBA, gl.FLOAT, rows);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      const row = width * 4;
+      for (let y = 0; y < height; y++) target.set(rows.subarray((height - 1 - y) * row, (height - y) * row), y * row);
       return target;
-    }
-    const output = this.output;
-    this.decode ??= linkUtilityProgram(gl, DECODE_SOURCE);
-    this.decoded ??= this.target();
-    gl.bindFramebuffer(gl.FRAMEBUFFER, this.decoded.framebuffer);
-    gl.viewport(0, 0, width, height);
-    this.drawWith(this.decode, (output.previous ?? output.current).texture);
-    const rows = new Float32Array(n);
-    gl.readPixels(0, 0, width, height, gl.RGBA, gl.FLOAT, rows);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    const row = width * 4;
-    for (let y = 0; y < height; y++) target.set(rows.subarray((height - 1 - y) * row, (height - y) * row), y * row);
-    return target;
+    });
   }
 
   /** The last frame's output as an `ImageData` (see `ShaderFrames.readImageData`). */
@@ -428,11 +623,16 @@ export class ShaderPipeline<C extends FramesCanvas = HTMLCanvasElement> {
   /** The last frame's output as an `ImageBitmap` (see `ShaderFrames.toImageBitmap`). */
   async toImageBitmap(): Promise<ImageBitmap> {
     this.context();
+    if (this.hosted) throw new Error("A pipeline in a host's context does not own its canvas: use outputTexture, render(t, { target }) or readImageData.");
     return createImageBitmap(this.canvas);
   }
 
   /** Releases the GL context now rather than at garbage collection. */
   dispose() {
+    if (this.gl) this.guard(() => this.free());
+  }
+
+  private free() {
     const gl = this.gl;
     if (!gl) return;
     for (const pass of this.passes) {
@@ -443,12 +643,19 @@ export class ShaderPipeline<C extends FramesCanvas = HTMLCanvasElement> {
         gl.deleteTexture(t.texture);
       }
     }
-    for (const pass of this.passes) for (const t of pass.converted.values()) this.deleteTarget(t);
-    if (this.decoded) this.deleteTarget(this.decoded);
+    for (const t of this.converted.values()) this.deleteTarget(t);
+    for (const t of [this.decoded, this.composed]) if (t) this.deleteTarget(t);
     for (const program of [this.copy, this.encode, this.decode]) if (program) gl.deleteProgram(program);
-    this.textures.dispose();
-    gl.getExtension("WEBGL_lose_context")?.loseContext();
+    if (this.compositor) gl.deleteProgram(this.compositor);
+    this.textures?.dispose();
+    // The host's context is the host's to keep.
+    if (!this.hosted) gl.getExtension("WEBGL_lose_context")?.loseContext();
     this.gl = null;
+  }
+
+  /** The last frame's output (before any frame: the last pass's empty target). */
+  private resultTarget(): Target {
+    return this.result ?? this.output.current;
   }
 
   private get output(): PassState {
@@ -481,7 +688,7 @@ export class ShaderPipeline<C extends FramesCanvas = HTMLCanvasElement> {
           const source = this.passes[input.pass]!;
           return input.pass < index ? source.current.texture : source.previous!.texture;
         }
-        if (isFloatPicture(input)) return state.converted.get(name)!.texture;
+        if (isFloatPicture(input) || isHostTexture(input)) return this.converted.get(`${index}:${name}`)!.texture;
         return this.textures.liveTexture(`${index}:${name}`);
       },
     };
@@ -511,6 +718,55 @@ export class ShaderPipeline<C extends FramesCanvas = HTMLCanvasElement> {
     return target;
   }
 
+  /** Blends the effect's output with what is under it by the mask's coverage, into the composite target. */
+  private composite(effect: Target): Target {
+    const gl = this.context();
+    const mask = this.mask!;
+    this.compositor ??= linkUtilityProgram(gl, COMPOSITE_SOURCE);
+    this.composed ??= this.target();
+    const program = this.compositor;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.composed.framebuffer);
+    gl.viewport(0, 0, this.width, this.height);
+    gl.useProgram(program);
+    const at = (name: string) => gl.getUniformLocation(program, name);
+    const bind = (unit: number, name: string, texture: WebGLTexture | null | undefined) => {
+      gl.activeTexture(gl.TEXTURE0 + unit);
+      gl.bindTexture(gl.TEXTURE_2D, texture ?? null);
+      if (texture && unit > 0) {
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      }
+      gl.uniform1i(at(name), unit);
+    };
+    const picture = (key: "mask" | "under", value: PipelineMask["picture"] | PipelineMask["under"]) => {
+      if (value === undefined) return undefined;
+      if (isPassRef(value as PassInput)) return this.passes[(value as { pass: number }).pass]!.current.texture;
+      if (isFloatPicture(value) || isHostTexture(value)) return this.converted.get(key)!.texture;
+      return this.textures.liveTexture(key);
+    };
+    const maskTexture = picture("mask", mask.picture);
+    const underTexture = picture("under", mask.under);
+    bind(0, "flair_source", effect.texture);
+    bind(1, "flair_mask", maskTexture);
+    bind(2, "flair_under", underTexture);
+    gl.uniform1i(at("flair_hasMask"), maskTexture ? 1 : 0);
+    gl.uniform1i(at("flair_hasUnder"), underTexture ? 1 : 0);
+    gl.uniform1i(at("flair_luminance"), mask.channel === "luminance" ? 1 : 0);
+    gl.uniform1i(at("flair_invert"), mask.invert ? 1 : 0);
+    gl.uniform2f(at("flair_size"), this.width, this.height);
+    const [x, y, w, h] = mask.region ?? [0, 0, this.width, this.height];
+    // From the top left, as given, to GL's bottom left.
+    gl.uniform4f(at("flair_region"), x, this.height - y - h, w, h);
+    gl.uniform1i(at("flair_hasRegion"), mask.region ? 1 : 0);
+    gl.uniform1f(at("flair_feather"), Math.max(0, mask.feather ?? 0));
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    gl.bindTexture(gl.TEXTURE_2D, this.composed.texture);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    return this.composed;
+  }
+
   /** Draws `texture` as it is into the bound framebuffer. */
   private drawCopy(texture: WebGLTexture) {
     this.drawWith(this.copy, texture);
@@ -532,11 +788,11 @@ export class ShaderPipeline<C extends FramesCanvas = HTMLCanvasElement> {
    * pipeline's format, with mipmaps. Done when the input is set: set it
    * again for the next frame's picture.
    */
-  private convert(state: PassState, name: string, picture: FloatPicture) {
+  private convert(key: string, what: string, picture: FloatPicture) {
     const gl = this.context();
     const { width, height, data } = picture;
     if (!(width >= 1 && height >= 1) || data.length !== width * height * 4) {
-      throw new RangeError(`${state.label}: a float picture for "${name}" needs width × height × 4 floats (${width} × ${height} × 4 = ${width * height * 4}); it has ${data.length}.`);
+      throw new RangeError(`${what} needs width × height × 4 floats (${width} × ${height} × 4 = ${width * height * 4}); it has ${data.length}.`);
     }
     const raw = gl.createTexture()!;
     gl.bindTexture(gl.TEXTURE_2D, raw);
@@ -544,11 +800,11 @@ export class ShaderPipeline<C extends FramesCanvas = HTMLCanvasElement> {
     // No mipmaps: without this filter the texture is incomplete, and reads as nothing.
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    let target = state.converted.get(name);
+    let target = this.converted.get(key);
     if (!target || target.width !== width || target.height !== height) {
       if (target) this.deleteTarget(target);
       target = { ...this.target(width, height), width, height };
-      state.converted.set(name, target);
+      this.converted.set(key, target);
     }
     this.encode ??= linkUtilityProgram(gl, ENCODE_SOURCE);
     gl.bindFramebuffer(gl.FRAMEBUFFER, target.framebuffer);
@@ -558,6 +814,47 @@ export class ShaderPipeline<C extends FramesCanvas = HTMLCanvasElement> {
     gl.deleteTexture(raw);
     gl.bindTexture(gl.TEXTURE_2D, target.texture);
     gl.generateMipmap(gl.TEXTURE_2D);
+  }
+
+  /** Takes a host texture for `key`, copied into a texture of the pipeline's at each render. */
+  private hostInput(key: string, what: string, host: HostTexture) {
+    const gl = this.context();
+    if (!this.hosted) throw new Error(`${what} is a texture, which only a pipeline in the host's own context can read (the gl option).`);
+    if (!gl.isTexture(host.texture) || !(host.width >= 1 && host.height >= 1)) {
+      throw new Error(`${what} needs { texture, width, height }: a texture of this context, and its size in pixels (at least 1 × 1).`);
+    }
+    this.hostInputs.set(key, host);
+    this.copyHost(key, host);
+  }
+
+  /** Copies a host texture as it is (its own filtering left alone) into the pipeline's texture for `key`, with mipmaps. */
+  private copyHost(key: string, host: HostTexture) {
+    const gl = this.context();
+    const { width, height } = host;
+    let target = this.converted.get(key);
+    if (!target || target.width !== width || target.height !== height) {
+      if (target) this.deleteTarget(target);
+      target = { ...this.target(width, height), width, height };
+      this.converted.set(key, target);
+    }
+    gl.bindTexture(gl.TEXTURE_2D, host.texture);
+    // texelFetch still needs a complete texture: read level 0 alone, then put the host's filter back.
+    const minFilter = gl.getTexParameter(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER) as number;
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, target.framebuffer);
+    gl.viewport(0, 0, width, height);
+    this.drawCopy(host.texture);
+    gl.bindTexture(gl.TEXTURE_2D, host.texture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, minFilter);
+    gl.bindTexture(gl.TEXTURE_2D, target.texture);
+    gl.generateMipmap(gl.TEXTURE_2D);
+  }
+
+  /** Frees a converted float picture. */
+  private forget(key: string) {
+    const target = this.converted.get(key);
+    if (target) this.deleteTarget(target);
+    this.converted.delete(key);
   }
 
   private deleteTarget(target: Target) {

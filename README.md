@@ -322,6 +322,41 @@ void mainImage(out vec4 c, in vec2 f) {
 
 With feedback, a frame depends on the frames before it, so render them in order from the start (or from `resetFeedback()`) to get the same frames every time. Each pass costs about one draw plus a mipmap; at 1080p, a three-effect stack measured within a millisecond of a single `ShaderFrames`.
 
+##### Masks and regions
+
+`setMask(mask)` (or the `mask` option) limits where a pipeline's effect applies, on the GPU.
+
+- **Coverage** comes from a picture's alpha (or its luminance, with `channel: "luminance"`), stretched to the output.
+- **A region** is a rectangle in output pixels from the top left, with a soft edge `feather` pixels wide. Given both, coverage is the picture's times the region's.
+- **`invert`** turns coverage round.
+- **Where coverage is 0, `under` shows.** That's usually the picture the effect changes, either given directly or as `{ pass: n }` for a pass's output. Without `under`, coverage multiplies the output's alpha instead, as for a generator laid over something else.
+
+0 means untouched and 1 means the full effect, as with `@pixerate/editor/effects`' render `mask`.
+
+```ts
+const filtered = new ShaderPipeline({
+  passes: effectStack(["crt"], { source: photo }),
+  width, height,
+  mask: { picture: selection, under: photo }, // the CRT look only where the selection is
+});
+filtered.setMask({ region: [40, 40, 320, 180], feather: 12, under: photo });
+```
+
+##### In a host's WebGL context
+
+A compositor or editor that draws with WebGL2 can give the pipeline its own context (`gl`) and keep frames on the GPU, with no read back:
+
+- The host's textures go into image controls as `{ texture, width, height }` (rows bottom up). They are copied at each render, and their own filtering is left alone.
+- The output is `outputTexture`, ready to sample, or it can be drawn into a framebuffer of the host's with `render(t, { target })`.
+
+After every call the pipeline leaves the host's state as it found it: framebuffers, viewport, program, texture units, vertex array, scissor, depth, stencil, culling, blending, colour mask, clear colour and unpack flags. `dispose()` frees only what the pipeline made. At 1080p, drawing a two-effect stack into a host framebuffer measured 0.5 ms a frame, against 6.7 ms to read it back and upload it again.
+
+```ts
+const pipeline = new ShaderPipeline({ passes: effectStack(["crt"]), width, height, gl: hostGl });
+pipeline.setInput(0, "uImage", { texture: layerTexture, width, height });
+pipeline.render(t, { target: hostFramebuffer }); // or sample pipeline.outputTexture
+```
+
 ##### Float layers, colour and alpha
 
 `format: "rgba16f"` or `"rgba32f"` makes every pass draw into float textures, for 16- and 32-bit layers and HDR. The default is `"rgba8"`. Float formats need `EXT_color_buffer_float`, and `"rgba32f"` also needs `OES_texture_float_linear`; without them the constructor says which to use instead. The contract:

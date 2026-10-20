@@ -80,6 +80,24 @@ export class FakeGl {
   readonly SRC_ALPHA = 0x0302;
   readonly ONE_MINUS_SRC_ALPHA = 0x0303;
   readonly ONE = 1;
+  readonly ACTIVE_TEXTURE = 0x84e0;
+  readonly TEXTURE_BINDING_2D = 0x8069;
+  readonly DRAW_FRAMEBUFFER_BINDING = 0x8ca6;
+  readonly READ_FRAMEBUFFER_BINDING = 0x8caa;
+  readonly VIEWPORT = 0x0ba2;
+  readonly CURRENT_PROGRAM = 0x8b8d;
+  readonly VERTEX_ARRAY_BINDING = 0x85b5;
+  readonly BLEND_SRC_RGB = 0x80c9;
+  readonly BLEND_DST_RGB = 0x80c8;
+  readonly BLEND_SRC_ALPHA = 0x80cb;
+  readonly BLEND_DST_ALPHA = 0x80ca;
+  readonly SCISSOR_TEST = 0x0c11;
+  readonly DEPTH_TEST = 0x0b71;
+  readonly STENCIL_TEST = 0x0b90;
+  readonly CULL_FACE = 0x0b44;
+  readonly COLOR_WRITEMASK = 0x0c23;
+  readonly COLOR_CLEAR_VALUE = 0x0c22;
+  readonly UNPACK_PREMULTIPLY_ALPHA_WEBGL = 0x9241;
   readonly RGBA8 = 0x8058;
   readonly RGBA16F = 0x881a;
   readonly RGBA32F = 0x8814;
@@ -212,6 +230,7 @@ export class FakeGl {
 
   viewport(...args: number[]) {
     this.record("viewport", args);
+    this.viewportBox = new Int32Array(args);
   }
 
   uniform1f(loc: FakeLocation, x: number) {
@@ -220,6 +239,9 @@ export class FakeGl {
   }
   uniform1i(loc: FakeLocation, x: number) {
     this.record("uniform1i", [loc, x]);
+  }
+  uniform2f(loc: FakeLocation, ...v: number[]) {
+    this.record("uniform2f", [loc, ...v]);
   }
   uniform3f(loc: FakeLocation, ...v: number[]) {
     this.record("uniform3f", [loc, ...v]);
@@ -254,7 +276,7 @@ export class FakeGl {
     texture.deleted = true;
   }
   /** Every draw: the program, the texture on each unit, the texture drawn into (null for the canvas), and whether blending was on. */
-  readonly draws: { program: FakeProgram | null; textures: Record<number, FakeTexture | null>; target: FakeTexture | null; blend: boolean }[] = [];
+  readonly draws: { program: FakeProgram | null; textures: Record<number, FakeTexture | null>; target: FakeTexture | null; blend: boolean; caps: number[]; vertexArray: unknown }[] = [];
   private unit = 0;
   private units: Record<number, FakeTexture | null> = {};
   private program: FakeProgram | null = null;
@@ -262,6 +284,71 @@ export class FakeGl {
   activeTexture(unit: number) {
     this.record("activeTexture", [unit]);
     this.unit = unit - this.TEXTURE0;
+  }
+
+  // State a host's context has, for checking that a pipeline puts it back.
+  private enabledCaps = new Set<number>();
+  private viewportBox = new Int32Array([0, 0, 300, 150]);
+  private vertexArray: unknown = null;
+  private blendFunc = [1, 0, 1, 0];
+  private writeMask = [true, true, true, true];
+  private clearValue = new Float32Array([0, 0, 0, 0]);
+  private premultiply = false;
+  private texParams = new Map<FakeTexture, Map<number, number>>();
+  getParameter(pname: number): unknown {
+    switch (pname) {
+      case this.ACTIVE_TEXTURE: return this.TEXTURE0 + this.unit;
+      case this.TEXTURE_BINDING_2D: return this.units[this.unit] ?? null;
+      case this.DRAW_FRAMEBUFFER_BINDING: return this.framebuffers.get(this.DRAW_FRAMEBUFFER) ?? null;
+      case this.READ_FRAMEBUFFER_BINDING: return this.framebuffers.get(this.READ_FRAMEBUFFER) ?? null;
+      case this.VIEWPORT: return new Int32Array(this.viewportBox);
+      case this.CURRENT_PROGRAM: return this.program;
+      case this.VERTEX_ARRAY_BINDING: return this.vertexArray;
+      case this.BLEND_SRC_RGB: return this.blendFunc[0];
+      case this.BLEND_DST_RGB: return this.blendFunc[1];
+      case this.BLEND_SRC_ALPHA: return this.blendFunc[2];
+      case this.BLEND_DST_ALPHA: return this.blendFunc[3];
+      case this.COLOR_WRITEMASK: return [...this.writeMask];
+      case this.COLOR_CLEAR_VALUE: return new Float32Array(this.clearValue);
+      case this.UNPACK_FLIP_Y_WEBGL: return this.flipY;
+      case this.UNPACK_PREMULTIPLY_ALPHA_WEBGL: return this.premultiply;
+      default: return null;
+    }
+  }
+  isEnabled(cap: number) {
+    return cap === this.BLEND ? this.blending : this.enabledCaps.has(cap);
+  }
+  bindVertexArray(vao: unknown) {
+    this.record("bindVertexArray", [vao]);
+    this.vertexArray = vao;
+  }
+  colorMask(...mask: boolean[]) {
+    this.writeMask = mask;
+  }
+  isTexture(texture: unknown) {
+    return this.textures.includes(texture as FakeTexture) && !(texture as FakeTexture).deleted;
+  }
+  getTexParameter(_target: number, pname: number) {
+    return (this.bound && this.texParams.get(this.bound)?.get(pname)) ?? 0x2702;
+  }
+  /** A snapshot of the state a pipeline in a host's context must put back. */
+  hostState() {
+    return {
+      draw: this.framebuffers.get(this.DRAW_FRAMEBUFFER) ?? null,
+      read: this.framebuffers.get(this.READ_FRAMEBUFFER) ?? null,
+      viewport: [...this.viewportBox],
+      program: this.program,
+      unit: this.unit,
+      units: Object.fromEntries(Object.entries(this.units).filter(([u, t]) => Number(u) < 16 && t != null)),
+      vertexArray: this.vertexArray,
+      enabled: [...this.enabledCaps].sort(),
+      blending: this.blending,
+      blendFunc: [...this.blendFunc],
+      writeMask: [...this.writeMask],
+      clear: [...this.clearValue],
+      flipY: this.flipY,
+      premultiply: this.premultiply,
+    };
   }
   bindTexture(target: number, texture: FakeTexture | null) {
     this.record("bindTexture", [target, texture]);
@@ -271,16 +358,20 @@ export class FakeGl {
   enable(cap: number) {
     this.record("enable", [cap]);
     if (cap === this.BLEND) this.blending = true;
+    else this.enabledCaps.add(cap);
   }
   disable(cap: number) {
     this.record("disable", [cap]);
     if (cap === this.BLEND) this.blending = false;
+    else this.enabledCaps.delete(cap);
   }
   blendFuncSeparate(...args: number[]) {
     this.record("blendFuncSeparate", args);
+    this.blendFunc = args;
   }
   clearColor(...args: number[]) {
     this.record("clearColor", args);
+    this.clearValue = new Float32Array(args);
   }
   clear(mask: number) {
     this.record("clear", [mask, this.framebuffers.get(this.DRAW_FRAMEBUFFER)?.texture ?? null]);
@@ -288,6 +379,7 @@ export class FakeGl {
   pixelStorei(pname: number, value: unknown) {
     this.record("pixelStorei", [pname, value]);
     if (pname === this.UNPACK_FLIP_Y_WEBGL) this.flipY = Boolean(value);
+    if (pname === this.UNPACK_PREMULTIPLY_ALPHA_WEBGL) this.premultiply = Boolean(value);
   }
   texImage2D(...args: unknown[]) {
     this.record("texImage2D", args);
@@ -331,11 +423,16 @@ export class FakeGl {
   }
   texParameteri(target: number, pname: number, value: number) {
     this.record("texParameteri", [target, pname, value]);
+    if (this.bound) {
+      const params = this.texParams.get(this.bound) ?? new Map<number, number>();
+      params.set(pname, value);
+      this.texParams.set(this.bound, params);
+    }
   }
 
   drawArrays(mode: number, first: number, count: number) {
     this.record("drawArrays", [mode, first, count]);
-    this.draws.push({ program: this.program, textures: { ...this.units }, target: this.framebuffers.get(this.DRAW_FRAMEBUFFER)?.texture ?? null, blend: this.blending });
+    this.draws.push({ program: this.program, textures: { ...this.units }, target: this.framebuffers.get(this.DRAW_FRAMEBUFFER)?.texture ?? null, blend: this.blending, caps: [...this.enabledCaps], vertexArray: this.vertexArray });
   }
 
   readPixels(
