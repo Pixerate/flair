@@ -19,8 +19,11 @@ const SVG =
 
 const MOTION: SvgMotion = { svg: SVG };
 
-/** A use of each primitive on the card that works with its defaults (and what follow needs). */
-const useOf = (id: string): PrimitiveUse => ({ primitive: id, target: "card", ...(id === "path.follow" ? { params: { path: "route" } } : {}) });
+/** What each primitive is tried on: the card, or for text along a path, the title. */
+const targetOf = (id: string) => (id === "path.text" ? "title" : "card");
+
+/** A use of each primitive that works with its defaults (and the path that follow and path.text need). */
+const useOf = (id: string): PrimitiveUse => ({ primitive: id, target: targetOf(id), ...(id.startsWith("path.") ? { params: { path: "route" } } : {}) });
 
 const apply = (motion: SvgMotion, use: PrimitiveUse) => {
   const result = applyPrimitive(motion, use);
@@ -55,8 +58,8 @@ describe("the primitives as data", () => {
         if (param.type === "float" || param.type === "int") expect([param.min, param.max].every((n) => typeof n === "number"), `${p.id}.${param.name}`).toBe(true);
         if (param.type === "enum") expect(param.options).toContain(param.default);
       }
-      // path.follow's path has no sensible default: it must be given.
-      if (p.id !== "path.follow") expect(resolveParams(p, {}).ok, p.id).toBe(true);
+      // A path primitive's path has no sensible default: it must be given.
+      if (p.kind !== "path") expect(resolveParams(p, {}).ok, p.id).toBe(true);
     }
   });
 
@@ -82,7 +85,7 @@ describe("applyPrimitive", () => {
     expect(svgMotionIssues(result.motion)).toEqual([]);
     expect(result.added.length).toBeGreaterThan(0);
     for (const a of result.added) expect(a.tag).toBe(result.tag);
-    expect(result.tag).toBe(`${id}@card`);
+    expect(result.tag).toBe(`${id}@${targetOf(id)}`);
     const end = svgDuration(result.motion);
     for (const t of [0, end * 0.25, end * 0.5, end * 0.8, end]) {
       // Same time, same frame: from the same motion, and from a fresh expansion.
@@ -90,8 +93,38 @@ describe("applyPrimitive", () => {
       expect(frameAt(apply(MOTION, useOf(id)).motion, t)).toEqual(frameAt(result.motion, t));
     }
     // And a still and an animated file come out of it.
-    expect(svgFrameMarkup(result.motion, { at: end / 2 })).toContain('id="card"');
+    expect(svgFrameMarkup(result.motion, { at: end / 2 })).toContain(`id="${targetOf(id)}"`);
     expect(svgAnimatedMarkup(result.motion)).toContain("<animate");
+  });
+
+  it("sets a text's words along a path and moves them by startOffset, and comes off cleanly", () => {
+    const used = apply(MOTION, { primitive: "path.text", target: "title", params: { path: "route", from: 0.1, to: 0.6, lift: 4 } });
+    expect(used.motion.svg).toContain(
+      '<text id="title" x="10" y="110"><textPath id="title--along" data-flair-tag="path.text@title" href="#route" startOffset="10%"><tspan id="title--on-path" data-flair-tag="path.text@title" x="0" y="0" dy="-4">Hello</tspan></textPath></text>',
+    );
+    expect(used.added).toEqual([expect.objectContaining({ id: "title--along", attrs: { startOffset: ["10%", "60%"] }, ms: 1600 })]);
+    expect(used.elements).toEqual(["title--along", "title--on-path"]);
+    expect(frameAt(used.motion, 1600)["title--along"].attrs.startOffset).toBe("60%");
+    expect(svgAnimatedMarkup(used.motion)).toMatch(/attributeName="startOffset"/);
+    const removed = removePrimitive(used.motion, used.tag);
+    expect(removed.ok && removed.motion.svg).toBe(SVG);
+  });
+
+  it.each([
+    ["a shape", { primitive: "path.text", target: "card", params: { path: "route" } }, /"card" is a <rect>.*path.follow/],
+    ["no path", { primitive: "path.text", target: "title" }, /needs `path`/],
+    ["a path that is not there", { primitive: "path.text", target: "title", params: { path: "nope" } }, /no element "nope"/],
+    ["a circle for a path", { primitive: "path.text", target: "title", params: { path: "dot" } }, /follows a <path>.*"dot" is a <circle>/],
+  ])("path.text refuses %s, saying why", (_, use, message) => {
+    const result = applyPrimitive(MOTION, use as PrimitiveUse);
+    expect(result.ok).toBe(false);
+    expect(!result.ok && result.message).toMatch(message);
+  });
+
+  it("path.text refuses a text with no words", () => {
+    const empty = { svg: '<svg viewBox="0 0 10 10"><path id="p" d="M0 0 L10 10"/><text id="t" x="0" y="5"/></svg>' };
+    const result = applyPrimitive(empty, { primitive: "path.text", target: "t", params: { path: "p" } });
+    expect(!result.ok && result.message).toMatch(/nothing inside it/);
   });
 
   it("hides an entrance until it plays and leaves the element at rest", () => {

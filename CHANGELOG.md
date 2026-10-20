@@ -1,5 +1,17 @@
 # @pixerate/flair
 
+## 0.46.0
+
+### Minor Changes
+
+- 2dcab84: A lazy catalog: `@pixerate/flair/catalog/lazy` loads every effect's metadata up front (`EFFECT_META`, `getEffectMeta`, `findEffectMeta`: ids, names, categories, descriptions, tags, controls, preset names, inputs and video use; about 91 KB gzipped, against 425 KB for the full catalog), and loads each effect's shader or picture on demand with `loadEffect(id)` (a median of 12 KB). The full catalog gains `loadEffect` and `effectMeta` with the same shapes, and is unchanged otherwise.
+
+## 0.45.0
+
+### Minor Changes
+
+- 9de18d4: Pixels in and out, and rendering in Web Workers. Image controls take an `ImageBitmap`, `VideoFrame`, `ImageData` or `OffscreenCanvas` through `setLiveSource` (stills upload once, and upright, `ImageBitmap` included). `ShaderFrames` accepts an `OffscreenCanvas`, makes one itself where there is no `document`, and gives frames out with `readImageData()` and `toImageBitmap()`. Image URLs load in a Worker through `loadImageSource` (`fetch` and `createImageBitmap`).
+
 ## 0.44.0
 
 ### Minor Changes
