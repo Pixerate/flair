@@ -10,13 +10,34 @@ import { SPECTRUM_BINS, type AudioFrame } from "./audio.js";
 import { clicksUniform, trailUniform, type ShaderClick } from "./pointer.js";
 import { TextureCache, type LiveSource } from "./textures.js";
 
-export interface ShaderFramesOptions {
+/** A canvas `ShaderFrames` can draw on: a `<canvas>` on a page, or an `OffscreenCanvas` anywhere, a Web Worker included. */
+export type FramesCanvas = HTMLCanvasElement | OffscreenCanvas;
+
+/**
+ * RGBA pixels, 8 bits a channel, rows top down, not premultiplied, in sRGB:
+ * an `ImageData` where the environment has one, else an object of the same
+ * shape.
+ */
+export interface FramePixels {
+  readonly data: Uint8ClampedArray;
+  readonly width: number;
+  readonly height: number;
+  readonly colorSpace: "srgb";
+}
+
+export interface ShaderFramesOptions<C extends FramesCanvas = HTMLCanvasElement> {
   source: string;
   values?: Record<string, ControlValue>;
   width: number;
   height: number;
-  /** Draw on this canvas instead of a new, detached one. It is resized to `width` × `height`. */
-  canvas?: HTMLCanvasElement;
+  /**
+   * Draw on this canvas instead of a new, detached one. It is resized to
+   * `width` × `height`. Pass an `OffscreenCanvas` to render in a Web
+   * Worker (or one transferred from the page with `transferControlToOffscreen`).
+   * Without one, frames draw on a new `<canvas>` on a page, and on a new
+   * `OffscreenCanvas` where there is no `document`.
+   */
+  canvas?: C;
   /** Keep the shader's alpha (`fragColor.a`) in the frames, for transparent recordings (default false: opaque). */
   alpha?: boolean;
 }
@@ -61,10 +82,17 @@ const SILENT = new Float32Array(SPECTRUM_BINS);
  *
  * A video in an image control (see `setLiveSource`) is drawn at whatever
  * frame it is on. To step it with the shader, seek it first: `await
- * seekVideo(video, t); frames.render(t)`.
+ * seekVideo(video, t); frames.render(t)`. Pictures from elsewhere (an
+ * `ImageBitmap`, a WebCodecs `VideoFrame`, an `ImageData`) are shown as they
+ * are: pass the next one before each `render`.
+ *
+ * It runs in a Web Worker as it does on a page: give it an `OffscreenCanvas`,
+ * feed image controls with those pictures, and take the frames out with
+ * {@link ShaderFrames.readImageData} or {@link ShaderFrames.toImageBitmap}
+ * (transferable back to the page). Image URLs load there too, except SVGs.
  */
-export class ShaderFrames {
-  readonly canvas: HTMLCanvasElement;
+export class ShaderFrames<C extends FramesCanvas = HTMLCanvasElement> {
+  readonly canvas: C;
   readonly width: number;
   readonly height: number;
   readonly controls: ControlDef[];
@@ -76,11 +104,11 @@ export class ShaderFrames {
   private lastTime: number | null = null;
   private pixels: Uint8Array;
 
-  constructor(options: ShaderFramesOptions) {
+  constructor(options: ShaderFramesOptions<C>) {
     const { source, values, width, height } = options;
     this.width = Math.max(1, Math.round(width));
     this.height = Math.max(1, Math.round(height));
-    this.canvas = options.canvas ?? document.createElement("canvas");
+    this.canvas = options.canvas ?? (newCanvas(this.width, this.height) as C);
     this.canvas.width = this.width;
     this.canvas.height = this.height;
     this.values = values;
@@ -106,9 +134,12 @@ export class ShaderFrames {
   }
 
   /**
-   * Draws a `<video>` (or a canvas) in the image control `name` instead of
-   * its URL, at the frame it is on when `render` runs; `null` goes back to
-   * the URL. See `ShaderRenderer.setLiveSource`.
+   * Draws a `<video>`, a canvas or a still picture (an `ImageBitmap`,
+   * `VideoFrame` or `ImageData`) in the image control `name` instead of its
+   * URL, as it is when `render` runs; `null` goes back to the URL. A still
+   * uploads once: pass the next picture (or the same one again, after
+   * changing its pixels) before the frame that should show it. See
+   * {@link LiveSource}.
    */
   setLiveSource(name: string, source: LiveSource | null) {
     this.textures.setLive(name, source);
@@ -173,6 +204,28 @@ export class ShaderFrames {
     return target;
   }
 
+  /**
+   * The last rendered frame as an `ImageData` (see {@link FramePixels}):
+   * RGBA, rows top down, ready for `putImageData`, a `VideoFrame` or an
+   * encoder.
+   */
+  readImageData(): FramePixels {
+    const data = new Uint8ClampedArray(this.width * this.height * 4);
+    this.readPixels(data);
+    if (typeof ImageData !== "undefined") return new ImageData(data, this.width, this.height) as FramePixels;
+    return { data, width: this.width, height: this.height, colorSpace: "srgb" };
+  }
+
+  /**
+   * The last rendered frame as an `ImageBitmap`, which a Worker can transfer
+   * to the page (`postMessage(bitmap, [bitmap])`) without copying, to draw
+   * with `drawImage` or a `bitmaprenderer` context. Close it when done.
+   */
+  async toImageBitmap(): Promise<ImageBitmap> {
+    this.context();
+    return createImageBitmap(this.canvas);
+  }
+
   /** Releases the GL context now rather than at garbage collection (browsers cap live contexts). */
   dispose() {
     if (!this.gl) return;
@@ -193,4 +246,11 @@ export class ShaderFrames {
     if (this.gl.isContextLost()) throw new Error("The graphics context was lost.");
     return this.gl;
   }
+}
+
+/** A detached canvas: a `<canvas>` on a page, an `OffscreenCanvas` in a Worker. */
+function newCanvas(width: number, height: number): FramesCanvas {
+  if (typeof document !== "undefined") return document.createElement("canvas");
+  if (typeof OffscreenCanvas !== "undefined") return new OffscreenCanvas(width, height);
+  throw new Error("There is no canvas here: ShaderFrames needs a page or a Worker with OffscreenCanvas.");
 }

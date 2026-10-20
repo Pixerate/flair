@@ -69,6 +69,10 @@ export class FakeGl {
   readonly CLAMP_TO_EDGE = 0x812f;
   readonly MIRRORED_REPEAT = 0x8370;
   readonly UNPACK_FLIP_Y_WEBGL = 0x9240;
+  readonly READ_FRAMEBUFFER = 0x8ca8;
+  readonly DRAW_FRAMEBUFFER = 0x8ca9;
+  readonly COLOR_ATTACHMENT0 = 0x8ce0;
+  readonly COLOR_BUFFER_BIT = 0x4000;
 
   readonly calls: Call[] = [];
   readonly shaders: FakeShader[] = [];
@@ -255,6 +259,33 @@ export class FakeGl {
   generateMipmap(target: number) {
     this.record("generateMipmap", [target]);
     if (this.bound) this.bound.mipmapped = true;
+  }
+  private framebuffers = new Map<number, { texture: FakeTexture | null } | null>();
+  createFramebuffer() {
+    const fb = { texture: null as FakeTexture | null };
+    this.record("createFramebuffer", [fb]);
+    return fb;
+  }
+  deleteFramebuffer(fb: unknown) {
+    this.record("deleteFramebuffer", [fb]);
+  }
+  bindFramebuffer(target: number, fb: { texture: FakeTexture | null } | null) {
+    this.record("bindFramebuffer", [target, fb]);
+    this.framebuffers.set(target, fb);
+  }
+  framebufferTexture2D(target: number, _attachment: number, _textarget: number, texture: FakeTexture | null) {
+    this.record("framebufferTexture2D", [target, texture]);
+    const fb = this.framebuffers.get(target);
+    if (fb) fb.texture = texture;
+  }
+  /** Copies the read framebuffer's texture into the draw one's, flipping it when the destination rows run downwards. */
+  blitFramebuffer(...args: number[]) {
+    this.record("blitFramebuffer", args);
+    const from = this.framebuffers.get(this.READ_FRAMEBUFFER)?.texture;
+    const to = this.framebuffers.get(this.DRAW_FRAMEBUFFER)?.texture;
+    if (!from || !to) return;
+    to.image = from.image;
+    to.flipped = from.flipped !== args[5]! > args[7]!;
   }
   texParameteri(target: number, pname: number, value: number) {
     this.record("texParameteri", [target, pname, value]);
