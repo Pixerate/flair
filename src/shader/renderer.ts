@@ -213,7 +213,8 @@ export class ShaderRenderer {
   }
 
   /**
-   * Shows a `<video>` (or a canvas) in the image control `name` (the
+   * Shows a `<video>`, a canvas or a still (an `ImageBitmap`, `VideoFrame`
+   * or `ImageData`; see {@link LiveSource}) in the image control `name` (the
    * uniform's name, such as `uImage`) in place of its URL, frame by frame;
    * `null` goes back to the URL. The preview follows the video even while
    * the shader's own clock is paused, and the video plays, seeks and loops
