@@ -14,6 +14,7 @@
  */
 
 import { controlValue, parseControls, type ControlDef, type ControlType, type ControlValue } from "../shader/controls.js";
+import { controlsSchema, type JsonSchema } from "../shader/schema.js";
 import { matchesQuery, queryWords, type EffectQuery } from "./query.js";
 import { metaOf, type EffectMeta } from "./meta.js";
 import { didYouMean } from "../motion/params.js";
@@ -120,6 +121,7 @@ export {
   type VideoUse,
 } from "./types.js";
 export { SAMPLE_IMAGES, svgDataUrl, textImage } from "./images.js";
+export { controlSchema, controlsSchema, controlUnit, type JsonSchema, type SchemaOptions } from "../shader/schema.js";
 export { FBM, glsl, HASH, NOISE, OKLAB_MIX, PALETTE, ROTATE, SPECTRUM } from "./glsl.js";
 
 /** The catalog's shader effects. */
@@ -365,6 +367,26 @@ export function findEffects(query: EffectQuery = {}): EffectDefinition[] {
 /** An effect's controls: a shader's `@control` uniforms, or a vector effect's declared controls. */
 export function effectControls(effect: EffectDefinition): ControlDef[] {
   return effect.kind === "shader" ? parseControls(effect.source) : vectorEffectControls(effect);
+}
+
+/**
+ * The JSON Schema (draft 2020-12) of an effect's control values, by id or
+ * definition; undefined for an id the catalog does not have. Strict: an
+ * object of the effect's controls and nothing else (`additionalProperties:
+ * false`), each with its label as the title, a description giving its unit,
+ * range and default, and its default (see `controlSchema`). Colours take
+ * sRGB channels 0–1 or a CSS colour string (and, in vector effects,
+ * `"currentColor"`); images take a URL. Every control has a default, so none
+ * is required. Presets and defaults always validate against it.
+ */
+export function effectControlSchema(effect: string | EffectDefinition): JsonSchema | undefined {
+  const def = typeof effect === "string" ? getEffect(effect) : effect;
+  if (!def) return undefined;
+  return controlsSchema(effectControls(def), {
+    title: `${def.name} controls`,
+    description: def.description,
+    currentColor: def.kind === "vector",
+  });
 }
 
 /** An effect's values: each control's default, overridden by `values` (and a preset by name, when given). */

@@ -12,6 +12,7 @@ import { didYouMean } from "../motion/params.js";
 import { EFFECT_INPUTS, EFFECT_INTERACTIONS, effectInputs, findEffects, type EffectInput, type EffectInteraction } from "../catalog/index.js";
 import type { EditResult, EffectEditor } from "./editor.js";
 import { EASING_PRESETS, type Easing } from "./timeline.js";
+import { controlsSchema } from "../shader/schema.js";
 
 /** Throws the refusal, so the command registry reports it as a failed command with its message. */
 function done(result: EditResult): { ok: true } {
@@ -93,6 +94,18 @@ export function effectCommands(): CommandSpec<EffectEditor>[] {
       description: "The effect being edited: its source (or picture), controls, values at the playhead, keyframes, presets, timeline, issues and compile errors.",
       readOnly: true,
       run: (editor) => describeEditor(editor),
+    },
+    {
+      id: "values.schema",
+      label: "Values schema",
+      group: "Values",
+      description:
+        "The JSON Schema of the effect's control values, for checking values before values.set or preset.save: each control with its type, range, unit, default and what it takes (colours as sRGB 0–1 or a CSS colour, images as URLs). Unknown names are refused.",
+      readOnly: true,
+      run: (editor) => {
+        const { document: doc, controls } = editor.getState();
+        return controlsSchema(controls, { title: `${doc.name} controls`, currentColor: doc.effect.kind === "vector" });
+      },
     },
     {
       id: "catalog.search",
