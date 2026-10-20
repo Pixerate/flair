@@ -337,7 +337,7 @@ export const magnifier: ShaderEffect = {
   description: "A round magnifying glass over an image at the pointer, with a bright rim and a fringe of colour at its edge.",
   category: "interaction",
   video: "interactive",
-  tags: ["interactive", "hover", "image", "lens", "zoom"],
+  tags: ["interactive", "hover", "image", "lens", "zoom", "glass"],
   source: glsl(
     `// Magnifier: a round lens over an image at the pointer, showing while hovered.
 uniform sampler2D uImage;    // @control filter=linear wrap=mirror default=${SAMPLE_IMAGES.city} label="Image"

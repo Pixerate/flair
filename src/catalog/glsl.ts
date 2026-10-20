@@ -69,6 +69,20 @@ vec3 oklabMix(vec3 a, vec3 b, float t) {
   return fromOklab(mix(toOklab(a), toOklab(b), t));
 }`.trim();
 
+/**
+ * The rainbow: `spectrum(x)` runs red (0) through green to violet (1), for
+ * light split by glass. Weighting samples taken along a shift by their
+ * colour and dividing by the summed weights gives back white where nothing
+ * changes and colour fringes at edges.
+ */
+export const SPECTRUM = `
+vec3 spectrum(float x) {
+  vec3 d = (vec3(x) - vec3(0.2, 0.5, 0.8)) / 0.3;
+  vec3 c = clamp(1.0 - d * d, 0.0, 1.0);
+  c.r += 0.35 * clamp(1.0 - (x - 0.95) * (x - 0.95) / 0.0225, 0.0, 1.0);
+  return c;
+}`.trim();
+
 /** 2D rotation matrix: `rot(angle)`. */
 export const ROTATE = `
 mat2 rot(float a) {

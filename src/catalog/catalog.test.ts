@@ -16,6 +16,7 @@ import {
   renderVectorEffect,
   SAMPLE_IMAGES,
   SHADER_EFFECTS,
+  SPECTRUM,
   textImage,
   vectorControlIssues,
   vectorControls,
@@ -1470,7 +1471,7 @@ describe("scroll effects", () => {
 
 describe("ui effects", () => {
   const ui = findEffects({ category: "ui" });
-  const shaders = ["border-beam", "gradient-border", "meteors", "background-beams", "grid-spotlight", "dot-grid", "glass-card", "liquid-glass", "noise-grain-bg"];
+  const shaders = ["border-beam", "gradient-border", "meteors", "background-beams", "grid-spotlight", "dot-grid", "glass-card", "liquid-glass", "noise-grain-bg", "dichroic-glass"];
   const vectors = ["marquee", "number-ticker", "animated-badge"];
   const render = (id: string, values: Record<string, unknown> = {}) => {
     const effect = getEffect(id)!;
@@ -1598,9 +1599,9 @@ describe("3d, space, weather and water effects", () => {
   const ids = (category: EffectCategory) => findEffects({ category }).map((e) => e.id);
 
   it("fill the new categories and add to space", () => {
-    expect(ids("3d")).toEqual(["globe", "rotating-shapes", "isometric-city", "wireframe-terrain", "metaballs-3d", "torus-knot"]);
+    expect(ids("3d")).toEqual(["globe", "rotating-shapes", "isometric-city", "wireframe-terrain", "metaballs-3d", "torus-knot", "gemstone"]);
     expect(ids("weather")).toEqual(["rain-streaks", "thunderstorm", "rainbow", "wind-gust", "hail"]);
-    expect(ids("water")).toEqual(["ocean-waves", "underwater-scene", "pond-ripples", "waterfall"]);
+    expect(ids("water")).toEqual(["ocean-waves", "underwater-scene", "pond-ripples", "waterfall", "water-reflection"]);
     for (const id of ["planet", "spiral-galaxy", "solar-system"]) expect(ids("space")).toContain(id);
   });
 
@@ -1761,3 +1762,71 @@ describe("capabilities and prompt helpers", () => {
   });
 });
 
+
+describe("glass and mirror effects", () => {
+  const GLASS = ["glass-text", "glass-orb", "glass-blocks", "cracked-glass", "condensation-wipe", "stained-glass", "image-stained-glass", "gemstone", "prism-light", "dichroic-glass"];
+  const MIRROR = ["chrome-text", "floor-reflection", "water-reflection", "infinity-mirror", "funhouse-mirror", "transition-mirror-fold"];
+
+  it("gathers glass under one tag, with the glass looks in other categories, and mirrors under another", () => {
+    const glass = findEffects({ tags: ["glass"] }).map((e) => e.id);
+    for (const id of [...GLASS, "ribbed-glass", "shower-glass", "glass-card", "liquid-glass", "rain-on-glass", "glass-shatter", "magnifier"]) expect(glass, id).toContain(id);
+    const mirrors = findEffects({ tags: ["reflection"] }).map((e) => e.id);
+    for (const id of MIRROR) {
+      expect(mirrors, id).toContain(id);
+      expect(getEffect(id)!.tags, id).toContain("mirror");
+    }
+  });
+
+  it("glass text takes a word and a picture behind it, and sweeps a beam of light that splits at the bevels", () => {
+    const effect = getEffect("glass-text")!;
+    expect(effect).toMatchObject({ category: "text", video: "filter", loop: 4 });
+    const inputs = effectInputs(effect);
+    expect(inputs.images.map((s) => s.wants)).toEqual(["text", "picture"]);
+    expect(inputs.accepts).toEqual(expect.arrayContaining(["text", "image", "video"]));
+    const defaults = effectDefaults(effect);
+    expect(defaults.uText).toBe(textImage("GLASS"));
+    expect(defaults).toMatchObject({ uBeam: 1, uPrism: 0.6, uSweepTime: 4 });
+    expect(effect.kind === "shader" && effect.source).toContain("vec3 spectrum(float x)");
+    expect(effectDefaults(effect, { preset: "Still" }).uBeam).toBe(0);
+  });
+
+  it("chrome text is made from a word alone, on a background that can be cleared", () => {
+    const effect = getEffect("chrome-text")!;
+    expect(effect).toMatchObject({ category: "text", video: "none" });
+    expect(effectInputs(effect).images.map((s) => s.wants)).toEqual(["text"]);
+    expect(effectDefaults(effect, { preset: "Gold" }).uTint).toEqual([1, 0.78, 0.38]);
+    expect(effectControls(effect).find((c) => c.name === "uBackgroundAlpha")).toMatchObject({ default: 1 });
+  });
+
+  it("answer the pointer the way their tags say", () => {
+    const answers = (id: string) => effectInputs(getEffect(id)!).interactions;
+    expect(answers("cracked-glass")).toContain("click");
+    expect(answers("condensation-wipe")).toEqual(expect.arrayContaining(["trail", "hover"]));
+    expect(answers("glass-orb")).toEqual(expect.arrayContaining(["hover", "pointer"]));
+    expect(answers("dichroic-glass")).toEqual(expect.arrayContaining(["hover", "pointer"]));
+    for (const id of ["cracked-glass", "condensation-wipe", "glass-orb", "dichroic-glass"]) {
+      expect(getEffect(id), id).toMatchObject({ video: "interactive" });
+      expect(effectControls(getEffect(id)!).find((c) => c.name === "uDemo"), id).toMatchObject({ type: "bool", default: true });
+    }
+    for (const id of ["stained-glass", "prism-light", "gemstone", "infinity-mirror", "funhouse-mirror", "water-reflection", "floor-reflection"])
+      expect(effectInputs(getEffect(id)!).interactions, id).toEqual([]);
+  });
+
+  it("the mirror fold is a transition between two pictures", () => {
+    const effect = getEffect("transition-mirror-fold")!;
+    expect(effect).toMatchObject({ category: "transition", video: "transition", loop: 4 });
+    expect(effectControls(effect).filter((c) => c.type === "sampler2D").map((c) => c.name)).toEqual(["uFrom", "uTo"]);
+  });
+
+  it("ribbed and shower glass can split light, off by default so their look is unchanged", () => {
+    for (const id of ["ribbed-glass", "shower-glass"]) {
+      const effect = getEffect(id)!;
+      expect(effectDefaults(effect).uDispersion, id).toBe(0);
+      expect(effectDefaults(effect, { preset: "Prismatic" }).uDispersion, id).toBeGreaterThan(0.5);
+    }
+  });
+
+  it("shares the spectrum helper with consumers", () => {
+    expect(SPECTRUM).toMatch(/^vec3 spectrum\(float x\)/);
+  });
+});
