@@ -27,7 +27,7 @@ Flair gives products a library of good-looking, configurable visual effects (her
   - Sound: `iAudio` (level, bass, mid, treble), `iSpectrum[16]` (64 log-spaced bins) and `iBeat` (seconds since the last beat). `ShaderRenderer.setAudioSource` listens to an `<audio>`/`<video>`, a microphone or any Web Audio node; `analyseAudioBuffer` analyses a decoded track offline, so recordings follow it frame for frame (see [Sound and scrolling](#sound-and-scrolling)).
   - Scrolling: `iScroll` (the canvas's progress through the viewport, page scroll, velocity, and whether it is scrolling), fed by `ShaderRenderer` and scriptable in `ShaderFrames`; vector effects scrub with the page under `trigger: "scroll"`.
   - Live previews (`ShaderRenderer`, with optional `{ alpha: true }` for transparent overlays) and many animated or hover-activated thumbnails on one context (`ThumbnailPool`).
-  - Frames at exact times (`ShaderFrames`), looping GIFs, and standalone HTML pages.
+  - Frames at exact times (`ShaderFrames`, on a page or in a Web Worker, out as `ImageData` or `ImageBitmap`), looping GIFs, and standalone HTML pages.
 - ✒️ **Vector motion (`@pixerate/flair/vector`)**: animated SVG described as data. Catalog vector effects declare their controls in the picture (`{{name: type …}}`), text included. A change's `ease` is `linear`, `out`, `in-out`, any CSS cubic-bezier as `[x1, y1, x2, y2]` (overshoot allowed), or a spring `{spring: {mass?, stiffness?, damping?, velocity?}}` (defaults 1, 170, 26, 0; it runs for the change's `ms`, then snaps to its end; `springSettleMs` gives a length that settles). A change can play `repeat` whole times (taking `ms × repeat`), with `alternate` running every other cycle backwards, and `strobe` holds its time on a grid of that many frames a second (12 for animation "on twos"). It covers attribute tweens, draw-on strokes, motion along paths, counters (`animateCount` / `formatCount` for DOM elements too), text written letter by letter (`write`, with `scramble` and `caret`), shape morphs between any paths (`morphPaths`, `morphSequence`) and view zooms. A change can also take a `behavior` (a pulse, a decaying oscillation, a seeded wriggle, a springy overshoot), and `orient` turns an element with the path it follows. Every frame is a pure function of time (`svgFrame`), and `SvgPlayer` plays it (with `scrollTrigger`, `hideWhenPaused`, `reset()`, and `trigger: "hover" | "press" | "click" | "scroll"` to play in answer to the pointer or scrub with the page).
 - 🎞️ **Motion primitives (`@pixerate/flair/motion`)**: 23 reusable entrances, exits, emphasis and path motions for any element of a vector picture (see [Motion primitives](#motion-primitives)), described as data and expanded into plain vector motion.
 - 🎛️ **Effect editor (`@pixerate/flair/editor`)**:
@@ -270,6 +270,27 @@ Each shader with an image control has a `video` field that says how it suits vid
 
 A video from another site needs `crossOrigin = "anonymous"` and that site's CORS consent. Without it, the control shows black and `onImageError` explains why. For frame-exact output, step the video with `ShaderFrames`: pause the video, then for each frame `await seekVideo(video, t); frames.render(t)`. Both `ShaderRenderer.ready()` and `ShaderFrames.ready()` wait for each live video's first frame.
 
+#### Pixels in and out, and Web Workers
+
+Image controls also take pictures that are not on the page: an `ImageBitmap`, a WebCodecs `VideoFrame`, an `ImageData` or an `OffscreenCanvas`. A canvas is uploaded on every frame; a still is uploaded once, so pass the next picture to `setLiveSource` before each frame that should show it (the same object again uploads its changed pixels). A `VideoFrame` stays yours to `close()` once the frame that shows it has been rendered.
+
+`ShaderFrames` runs in a Web Worker as it does on a page. Give it an `OffscreenCanvas` (or let it make one where there is no `document`), and take each frame out with `readImageData()` (RGBA, 8 bits a channel, rows top down, sRGB, not premultiplied: an `ImageData`) or `await toImageBitmap()`, which a Worker can transfer to the page without copying. In a Worker, image URLs load with `fetch` and `createImageBitmap`. SVG URLs cannot be decoded there: rasterise them on the page and pass the bitmap.
+
+```ts
+// worker.ts
+import { ShaderFrames } from "@pixerate/flair";
+const frames = new ShaderFrames({ source, width: 1920, height: 1080, canvas: new OffscreenCanvas(1920, 1080) });
+self.onmessage = async ({ data: { time, frame } }: MessageEvent<{ time: number; frame: VideoFrame }>) => {
+  frames.setLiveSource("uImage", frame);
+  frames.render(time);
+  frame.close();
+  const bitmap = await frames.toImageBitmap();
+  self.postMessage(bitmap, [bitmap]);
+};
+```
+
+The demo's `#pixels` page checks that each kind of picture arrives the right way up, on the page and in a Worker, and times a 1080p frame rendered and read out each way.
+
 Overlay shaders (`category: "overlay"`) have `transparent: true`: they write coverage to `fragColor.a` and draw nothing elsewhere, so render them with `new ShaderRenderer(host, { alpha: true })` (or `new ThumbnailPool({ alpha: true })`) and lay the canvas over a picture, video or page. Some overlays are added light: give `glare-sweep`'s canvas `mix-blend-mode: plus-lighter` and it adds exactly (over `image-duotone`, that is the duotone with the gliding glare it used to have built in). Interaction effects answer the pointer. Interactive shaders read `iPointer` and `iClicks`, so they work in any `ShaderRenderer` with no wiring, and play an idle demo when nobody is pointing (turn off "Demo when idle" to stop it). Vector micro-interactions carry a `trigger`: pass it to the player, `new SvgPlayer(host, renderVectorEffect(effect), { trigger: effect.trigger })`. A hover or press trigger plays to the end while hovered or held and back again after; a click trigger plays the next step on each click, so toggles turn on and off. Hosts can drive them too, with `player.setActive(on)` and `player.advance()` (from a keyboard handler, say).
 
 To morph between any two SVG shapes, `morphPaths(from, to)` (from `@pixerate/flair/vector`) returns two paths with one structure, so `attrs: { d: [a, b] }` blends them point by point: curves and arcs are read, pieces are paired by position and size, and a piece with no partner grows from or shrinks to a point (draw them with `fill-rule="evenodd"`). `morphSequence` does the same for three or more shapes. `feature-morph` morphs two photos from five matching points, and `silhouette-morph` morphs any two silhouettes or logos (or words, through `textImage`).
@@ -388,6 +409,8 @@ const status = renderer.setSource(source); // { ok, errors: [{ line, message }] 
 parseControls(source); // [{ name: "uTint", type: "vec3", color: true, default: [...] }, ...]
 const gif = await recordGif({ source, width: 480, height: 270, fps: 30, duration: 3 });
 const frames = new ShaderFrames({ source, width: 480, height: 270, alpha: true }); // alpha: keep fragColor.a
+frames.render(1.5);
+frames.readImageData(); // or await frames.toImageBitmap()
 const page = standaloneHtml("My effect", source, { uSpeed: 2 }); // { audio: "song.mp3" } or { audio: "mic" } for sound
 ```
 

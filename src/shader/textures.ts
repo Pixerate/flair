@@ -81,6 +81,34 @@ export async function loadImage(url: string): Promise<HTMLImageElement> {
   return decode(url, url, !/^(data|blob):/i.test(url));
 }
 
+/** Whether this is a page with `Image` (false in a Web Worker). */
+const canDecodeImages = () => typeof Image !== "undefined";
+
+/**
+ * Loads an image for WebGL wherever this runs: {@link loadImage} on a page,
+ * and in a Web Worker, which has no `Image`, a CORS `fetch` decoded with
+ * `createImageBitmap`. A Worker cannot decode SVG (it has no DOM): it
+ * rejects with an {@link ImageLoadError} saying so; rasterise the SVG on the
+ * page and pass the `ImageBitmap` to `setLiveSource` instead.
+ */
+export async function loadImageSource(url: string): Promise<HTMLImageElement | ImageBitmap> {
+  if (canDecodeImages()) return loadImage(url);
+  if (isSvgUrl(url)) {
+    throw new ImageLoadError(
+      url,
+      undefined,
+      `Could not load the SVG at ${shortUrl(url)}: a Worker cannot decode SVG. Draw it on the page and pass the ImageBitmap with setLiveSource instead.`,
+    );
+  }
+  try {
+    const response = await fetch(url, { mode: /^(data|blob):/i.test(url) ? undefined : "cors" });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await createImageBitmap(await response.blob());
+  } catch (e) {
+    throw new ImageLoadError(url, e);
+  }
+}
+
 async function loadSvg(url: string): Promise<HTMLImageElement> {
   let markup: string;
   try {
@@ -111,8 +139,8 @@ async function decode(src: string, url: string, cors: boolean): Promise<HTMLImag
 }
 
 /** Images decoded by {@link preloadImages}, by URL, for every context on the page. */
-const preloaded = new Map<string, Promise<HTMLImageElement>>();
-const decoded = new Map<string, HTMLImageElement>();
+const preloaded = new Map<string, Promise<HTMLImageElement | ImageBitmap>>();
+const decoded = new Map<string, HTMLImageElement | ImageBitmap>();
 
 /**
  * Loads and decodes images ahead of time, for every WebGL context on the
@@ -131,7 +159,7 @@ export async function preloadImages(urls: Iterable<string>): Promise<void> {
   const loads = [...new Set(urls)].filter(Boolean).map((url) => {
     let load = preloaded.get(url);
     if (!load) {
-      load = loadImage(url).then(
+      load = loadImageSource(url).then(
         (image) => {
           if (preloaded.get(url) === load) decoded.set(url, image);
           return image;
@@ -171,16 +199,28 @@ export interface TextureSource {
 }
 
 /**
- * A picture that changes while it is shown, for an image control: a playing
- * `<video>`, or a canvas something else draws on. Videos re-upload when
- * their frame changes; canvases on every frame drawn.
+ * Pixels for an image control, in place of its URL, from wherever they come
+ * from: a playing `<video>`, a canvas (or `OffscreenCanvas`) something else
+ * draws on, or a still picture: an `ImageBitmap`, a WebCodecs `VideoFrame`
+ * or an `ImageData`. Videos re-upload when their frame changes and canvases
+ * on every frame drawn. A still uploads once; pass the next one (or the same
+ * one again, after changing its pixels) to `setLiveSource` to show it.
+ * Every one works in a Web Worker except `<video>` and `<canvas>`, which
+ * only exist on the page. A `VideoFrame` stays the caller's to `close()`,
+ * after the frame that shows it has been rendered.
  */
-export type LiveSource = HTMLVideoElement | HTMLCanvasElement | OffscreenCanvas;
+export type LiveSource =
+  | HTMLVideoElement
+  | HTMLCanvasElement
+  | OffscreenCanvas
+  | ImageBitmap
+  | VideoFrame
+  | ImageData;
 
 interface Live {
   source: LiveSource;
   texture: WebGLTexture | null;
-  /** The video time last uploaded (NaN before the first upload). */
+  /** The video time last uploaded (NaN before the first upload, or when a still has changed). */
   uploaded: number;
   /** Set once the source could not be uploaded: it shows black, and is not tried again. */
   error: ImageLoadError | null;
@@ -189,6 +229,20 @@ interface Live {
 /** Whether `source` is a video element (without touching `HTMLVideoElement`, which tests and workers lack). */
 function isVideo(source: LiveSource): source is HTMLVideoElement {
   return "readyState" in source && "currentTime" in source;
+}
+
+/** Whether `source` is redrawn by something else: a canvas or an `OffscreenCanvas`. */
+function isCanvas(source: LiveSource): source is HTMLCanvasElement | OffscreenCanvas {
+  return "getContext" in source;
+}
+
+/**
+ * Whether `source` is an `ImageBitmap` (by shape, as tests have no
+ * `ImageBitmap`): it can be closed but, unlike a `VideoFrame`, has no format.
+ * WebGL ignores `UNPACK_FLIP_Y_WEBGL` for these, so they are flipped on the GPU.
+ */
+function isBitmap(source: unknown): source is ImageBitmap {
+  return typeof source === "object" && source !== null && "close" in source && !("codedWidth" in source) && "width" in source;
 }
 
 /** `HAVE_CURRENT_DATA`: a video has a frame to show. */
@@ -244,10 +298,12 @@ export class TextureCache implements TextureSource {
   private placeholder: WebGLTexture | null = null;
   private disposed = false;
 
+  private flipper: { scratch: WebGLTexture | null; read: WebGLFramebuffer | null; draw: WebGLFramebuffer | null } | null = null;
+
   constructor(
     gl: WebGL2RenderingContext,
     onLoad: (url: string, error: ImageLoadError | null) => void = () => {},
-    load: (url: string) => Promise<TexImageSource> = loadImage,
+    load: (url: string) => Promise<TexImageSource> = loadImageSource,
   ) {
     this.gl = gl;
     this.onLoad = onLoad;
@@ -300,7 +356,11 @@ export class TextureCache implements TextureSource {
    */
   setLive(name: string, source: LiveSource | null) {
     const existing = this.live.get(name);
-    if (existing?.source === source) return;
+    if (existing && existing.source === source) {
+      // The same still again: its pixels may have changed, so upload it on the next frame.
+      if (!isVideo(existing.source)) existing.uploaded = NaN;
+      return;
+    }
     if (existing?.texture) this.gl.deleteTexture(existing.texture);
     this.live.delete(name);
     if (source) this.live.set(name, { source, texture: null, uploaded: NaN, error: null });
@@ -315,24 +375,25 @@ export class TextureCache implements TextureSource {
       if (source.readyState < HAVE_CURRENT_DATA) return live.texture ?? this.blank();
       if (live.texture && live.uploaded === source.currentTime) return live.texture;
       live.uploaded = source.currentTime;
+    } else if (!isCanvas(source)) {
+      if (live.texture && live.uploaded === 0) return live.texture;
+      live.uploaded = 0;
     }
     const gl = this.gl;
     live.texture ??= gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, live.texture);
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
     try {
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
+      this.uploadUpright(live.texture, source);
     } catch (e) {
       const url = liveName(name, source);
       live.error = new ImageLoadError(
         url,
         e,
-        `Could not draw the video at ${shortUrl(url)}. If it is on another site, set crossOrigin = "anonymous" on the <video> and make sure that site allows cross-origin use (CORS).`,
+        isVideo(source)
+          ? `Could not draw the video at ${shortUrl(url)}. If it is on another site, set crossOrigin = "anonymous" on the <video> and make sure that site allows cross-origin use (CORS).`
+          : `Could not draw the picture in ${name}: a VideoFrame or ImageBitmap that has been closed cannot be drawn, nor pixels from another site without CORS. Pass a new picture with setLiveSource.`,
       );
       this.onLoad(url, live.error);
       return this.blank();
-    } finally {
-      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
     }
     gl.generateMipmap(gl.TEXTURE_2D);
     return live.texture;
@@ -403,6 +464,12 @@ export class TextureCache implements TextureSource {
     for (const name of [...this.live.keys()]) this.setLive(name, null);
     if (this.placeholder) this.gl.deleteTexture(this.placeholder);
     this.placeholder = null;
+    if (this.flipper) {
+      this.gl.deleteTexture(this.flipper.scratch);
+      this.gl.deleteFramebuffer(this.flipper.read);
+      this.gl.deleteFramebuffer(this.flipper.draw);
+      this.flipper = null;
+    }
     this.disposed = true;
   }
 
@@ -419,12 +486,42 @@ export class TextureCache implements TextureSource {
   private upload(image: TexImageSource): WebGLTexture | null {
     const gl = this.gl;
     const texture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+    this.uploadUpright(texture, image);
     gl.generateMipmap(gl.TEXTURE_2D);
     return texture;
+  }
+
+  /**
+   * Uploads `source` into `texture` upright (row 0 at the bottom, as
+   * `fragCoord` counts), leaving `texture` bound. Most sources are flipped by
+   * `UNPACK_FLIP_Y_WEBGL`; WebGL ignores it for an `ImageBitmap`, so that is
+   * uploaded as it is and copied upside down on the GPU.
+   */
+  private uploadUpright(texture: WebGLTexture | null, source: TexImageSource) {
+    const gl = this.gl;
+    if (!isBitmap(source)) {
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+      try {
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
+      } finally {
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+      }
+      return;
+    }
+    const { width, height } = source;
+    const f = (this.flipper ??= { scratch: gl.createTexture(), read: gl.createFramebuffer(), draw: gl.createFramebuffer() });
+    gl.bindTexture(gl.TEXTURE_2D, f.scratch);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, f.read);
+    gl.framebufferTexture2D(gl.READ_FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, f.scratch, 0);
+    gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, f.draw);
+    gl.framebufferTexture2D(gl.DRAW_FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+    gl.blitFramebuffer(0, 0, width, height, 0, height, width, 0, gl.COLOR_BUFFER_BIT, gl.NEAREST);
+    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
+    gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
   }
 }
 

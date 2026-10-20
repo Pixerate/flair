@@ -38,6 +38,7 @@ export {
   ImageLoadError,
   isSvgUrl,
   loadImage,
+  loadImageSource,
   preloadImages,
   releaseImages,
   seekVideo,
@@ -86,7 +87,13 @@ export {
   type JsonSchema,
   type SchemaOptions,
 } from "./schema.js";
-export { ShaderFrames, type RenderOptions, type ShaderFramesOptions } from "./frames.js";
+export {
+  ShaderFrames,
+  type FramePixels,
+  type FramesCanvas,
+  type RenderOptions,
+  type ShaderFramesOptions,
+} from "./frames.js";
 export {
   clicksUniform,
   HOVER_SECONDS,
