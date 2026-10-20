@@ -32,9 +32,9 @@ Before declaring any change complete:
 
 ---
 
-## 2. Git Commit & Push Workflow
+## 2. Git Commit & Pull Request Workflow
 
-Upon successful completion and full test verification of any feature, fix, or update:
+Work on a branch, never directly on `main`. Upon successful completion and full test verification of any feature, fix, or update:
 
 1. **Check Workspace Status**:
    ```bash
@@ -50,10 +50,12 @@ Upon successful completion and full test verification of any feature, fix, or up
    ```bash
    git commit -m "feat: <description of feature or fix>"
    ```
-5. **Push to Remote Repository**:
+5. **Push the Branch and Open a Pull Request** against `main`, summarising the change and how it was verified:
    ```bash
-   git push origin main
+   git push -u origin <branch>
+   gh pr create --base main
    ```
+   Never push to `main` directly: merging the PR is what versions and publishes the package.
 
 ---
 
