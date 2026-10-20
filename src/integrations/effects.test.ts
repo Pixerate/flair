@@ -28,10 +28,7 @@ function setup(options: Parameters<typeof flairEffects>[0] = {}) {
 describe("flairEffects conforms to @pixerate/editor/effects", () => {
   it("passes checkEffectProvider over the whole catalog and every primitive", async () => {
     const { provider } = setup();
-    const issues = await checkEffectProvider(provider);
-    // These primitives rightly refuse the checker's bare <rect>: one tints a fill it does not have, one follows a path it does not name.
-    const needMore = new Set(["emphasis.color-pulse", "path.follow"]);
-    expect(issues.filter((i) => !(needMore.has(i.effectId!) && i.message === "applyVectorEffect failed: unsupported"))).toEqual([]);
+    expect(await checkEffectProvider(provider)).toEqual([]);
   }, 120_000);
 
   it("lists every effect and primitive once, with search('') the same as list()", async () => {
@@ -207,11 +204,11 @@ describe("applyVectorEffect", () => {
     const { provider } = setup();
     const all = await provider.applyVectorEffect!("entrance.fade", SVG);
     // Each use is tagged with what it moved (primitives may wrap the element).
-    expect(new Set(all.animate!.map((a) => (a as { tag?: string }).tag))).toEqual(new Set(["entrance.fade@logo", "entrance.fade@bar"]));
+    expect(new Set(all.animate!.map((a) => a.tag))).toEqual(new Set(["entrance.fade@logo", "entrance.fade@bar"]));
     expect(all).toMatchObject({ loop: false });
     expect(all.duration).toBeGreaterThan(0);
     const one = await provider.applyVectorEffect!("entrance.fade", { svg: SVG, nodeIds: ["dot"] });
-    expect(new Set(one.animate!.map((a) => (a as { tag?: string }).tag))).toEqual(new Set(["entrance.fade@dot"]));
+    expect(new Set(one.animate!.map((a) => a.tag))).toEqual(new Set(["entrance.fade@dot"]));
   });
 
   it("applies primitives that need more once given it: a fill to tint, a path to follow", async () => {
