@@ -45,11 +45,37 @@ vec3 testCard(vec2 uv) {
   col += 0.04 * step(0.48, max(grid.x, grid.y));
   return col;
 }
+vec2 fitCoverUV(sampler2D tex, vec2 uv) {
+  ivec2 ts = textureSize(tex, 0);
+  if (ts.x <= 1 || ts.y <= 1 || iResolution.x <= 0.0 || iResolution.y <= 0.0) return uv;
+  float boxAspect = iResolution.x / iResolution.y;
+  float texAspect = float(ts.x) / float(ts.y);
+  vec2 scale = boxAspect > texAspect
+    ? vec2(1.0, texAspect / boxAspect)
+    : vec2(boxAspect / texAspect, 1.0);
+  return (uv - 0.5) * scale + 0.5;
+}
+vec2 fitContainUV(sampler2D tex, vec2 uv) {
+  ivec2 ts = textureSize(tex, 0);
+  if (ts.x <= 1 || ts.y <= 1 || iResolution.x <= 0.0 || iResolution.y <= 0.0) return uv;
+  float boxAspect = iResolution.x / iResolution.y;
+  float texAspect = float(ts.x) / float(ts.y);
+  vec2 scale = boxAspect > texAspect
+    ? vec2(texAspect / boxAspect, 1.0)
+    : vec2(1.0, boxAspect / texAspect);
+  return (uv - 0.5) * scale + 0.5;
+}
 vec4 pictureRGBA(sampler2D tex, vec2 uv) {
   return textureSize(tex, 0).x > 1 ? overBackdrop(texture(tex, uv)) : vec4(testCard(fract(uv)), 1.0);
 }
 vec3 picture(sampler2D tex, vec2 uv) {
   return pictureRGBA(tex, uv).rgb;
+}
+vec4 pictureCoverRGBA(sampler2D tex, vec2 uv) {
+  return pictureRGBA(tex, fitCoverUV(tex, uv));
+}
+vec3 pictureCover(sampler2D tex, vec2 uv) {
+  return pictureCoverRGBA(tex, uv).rgb;
 }`.trim();
 
 export const imageRipple: ShaderEffect = {

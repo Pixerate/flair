@@ -260,7 +260,7 @@ export function sampleTransition(
 
       const uvA: [number, number] = [clamp01(u + disp * ny), clamp01(v - disp * nx)];
       const uvB: [number, number] = [clamp01(u - disp * ny), clamp01(v + disp * nx)];
-      const weight = smoothstep(-0.1, 0.1, waveDist);
+      const weight = 1 - smoothstep(-0.1, 0.1, waveDist);
 
       return { weight, uvA, uvB, additive: [0, 0, 0] };
     }
@@ -441,7 +441,7 @@ vec4 flair_transition(sampler2D texA, sampler2D texB, vec2 uv, float progress) {
   float disp = sin(waveDist * 12.0) * 0.08 * envelope;
   vec2 uvA = clamp(uv + vec2(disp * 0.7071, -disp * 0.7071), 0.0, 1.0);
   vec2 uvB = clamp(uv - vec2(disp * 0.7071, -disp * 0.7071), 0.0, 1.0);
-  float w = smoothstep(-0.1, 0.1, waveDist);
+  float w = 1.0 - smoothstep(-0.1, 0.1, waveDist);
   vec4 a = texture(texA, uvA);
   vec4 b = texture(texB, uvB);
   return mix(a, b, w);

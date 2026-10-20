@@ -296,6 +296,10 @@ export const strokeDrawText: VectorEffect = {
     { name: "Gold", values: { background: [0.07, 0.06, 0.05], outline: [1, 0.8, 0.35], fill: [0.85, 0.6, 0.15] } },
   ],
   // <text> takes no pathLength, so `draw` cannot measure it: the dash grows instead, longer than any letter's outline.
+  // Note on variable and system fonts: Some variable fonts (such as system-ui/SF Pro on macOS) draw certain glyphs
+  // (e.g. 'e') using multiple overlapping contour segments. An SVG stroke traces every internal segment boundary,
+  // which can appear as an unexpected stroke through glyph counters. Use standard web fonts (Inter, Roboto, Arial Black)
+  // or outline-flattened paths when clean single-boundary outlines are required.
   derived: (v) => {
     const { size, length, left } = fit(String(v.text), room(v, 360), 100);
     const edge = Number(v.width) / 2 / size;
