@@ -59,6 +59,10 @@
       "types": "./dist/svelte/index.d.ts",
       "import": "./dist/svelte/index.js"
     },
+    "./integrations": {
+      "types": "./dist/integrations/index.d.ts",
+      "import": "./dist/integrations/index.js"
+    },
     "./node": {
       "types": "./dist/node.d.ts",
       "import": "./dist/node.js"

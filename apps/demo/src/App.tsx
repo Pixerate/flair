@@ -6,6 +6,7 @@ import { CheckPage } from "./components/CheckPage";
 import { EditorTab } from "./components/EditorTab";
 import { GalleryTab } from "./components/GalleryTab";
 import { PixelsPage } from "./components/PixelsPage";
+import { ProviderPage } from "./components/ProviderPage";
 
 type Tab = "gallery" | "editor" | "agent";
 
@@ -34,6 +35,7 @@ export function App() {
   if (location.hash === "#check") return <CheckPage />;
   if (location.hash.split("?")[0] === "#bench") return <BenchPage />;
   if (location.hash.split("?")[0] === "#pixels") return <PixelsPage />;
+  if (location.hash.split("?")[0] === "#provider") return <ProviderPage />;
 
   const go = (next: Tab) => {
     location.hash = `/${next}`;
