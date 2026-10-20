@@ -16,8 +16,8 @@
 import { controlValue, parseControls, type ControlDef, type ControlType, type ControlValue } from "../shader/controls.js";
 import { controlsSchema, type JsonSchema } from "../shader/schema.js";
 import { matchesQuery, queryWords, type EffectQuery } from "./query.js";
-import { metaOf, type EffectMeta } from "./meta.js";
 import { didYouMean } from "../motion/params.js";
+import { metaOf, type EffectMeta } from "./meta.js";
 import { svgDuration } from "../vector/svg.js";
 import type { PipelinePass } from "../shader/pipeline.js";
 import type { LiveSource } from "../shader/textures.js";
