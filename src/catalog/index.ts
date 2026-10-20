@@ -14,6 +14,10 @@
  */
 
 import { controlValue, parseControls, type ControlDef, type ControlType, type ControlValue } from "../shader/controls.js";
+import { matchesQuery, queryWords, type EffectQuery } from "./query.js";
+import { metaOf, type EffectMeta } from "./meta.js";
+import { didYouMean } from "../motion/params.js";
+import { svgDuration } from "../vector/svg.js";
 import { inputsOf, type EffectInput, type EffectInputs, type EffectInteraction } from "./inputs.js";
 import { aurora, conicSweep, duotoneFlow, meshGradient, silk } from "./shaders/gradients.js";
 import { moreGradientShaders } from "./shaders/gradients-more.js";
@@ -209,6 +213,32 @@ export function getEffect(id: string): EffectDefinition | undefined {
   return byId.get(id);
 }
 
+/**
+ * The effect with this id, as `@pixerate/flair/catalog/lazy`'s `loadEffect`
+ * gives it, so code can be written once for either catalog. Here every
+ * effect is loaded already. Rejects for an id the catalog does not have.
+ */
+export async function loadEffect(id: string): Promise<EffectDefinition> {
+  const effect = byId.get(id);
+  if (!effect) throw new Error(`There is no effect ${JSON.stringify(id)} in the catalog.${didYouMean(id, [...byId.keys()])} findEffects lists them.`);
+  return effect;
+}
+
+/** An effect's metadata, as the lazy catalog has it up front (see `EffectMeta`). */
+export function effectMeta(effect: EffectDefinition): EffectMeta {
+  return metaOf(effect, effectControls(effect), effectInputs(effect), effectDuration(effect));
+}
+
+/**
+ * Ms of one play of an effect: a shader's `loop`, or a vector effect's
+ * picture at its default values plus its `hold` (default 600). Undefined for
+ * a shader with no loop.
+ */
+export function effectDuration(effect: EffectDefinition): number | undefined {
+  if (effect.kind === "shader") return effect.loop === undefined ? undefined : Math.round(effect.loop * 1000);
+  return Math.round(svgDuration(renderVectorEffect(effect, effectDefaults(effect))) + (effect.hold ?? 600));
+}
+
 export {
   EFFECT_INPUTS,
   EFFECT_INTERACTIONS,
@@ -236,28 +266,8 @@ export function effectInputs(effect: EffectDefinition): EffectInputs {
   return inputs;
 }
 
-export interface EffectQuery {
-  /** Words to look for in the name, description, tags and id (all must match). */
-  text?: string;
-  category?: EffectCategory;
-  /** Effects in any category of the group with this name (`EFFECT_CATEGORY_GROUPS`, any case). */
-  group?: string;
-  kind?: EffectDefinition["kind"];
-  /** Effects with every one of these tags. */
-  tags?: readonly string[];
-  /** Effects that suit video in one of these ways (shader effects with image controls only). */
-  video?: readonly VideoUse[];
-  /** Effects that can be given every one of these (see {@link effectInputs}): `["image"]`, `["text"]`, `["svg"]`… */
-  accepts?: readonly EffectInput[];
-  /** Effects that answer the pointer in at least one of these ways; `[]` for effects that don't answer it at all. */
-  interaction?: readonly EffectInteraction[];
-  /** Overlays (`true`), which draw over other content, or effects that fill their frame (`false`). */
-  transparent?: boolean;
-  /** Effects designed to modify a single picture (exactly one image slot wanting a picture). */
-  singlePicture?: boolean;
-  /** Target output format: "animation" for animated SVGs, "video" for video shaders. */
-  output?: "animation" | "video";
-}
+export type { EffectQuery } from "./query.js";
+export type { EffectMeta } from "./meta.js";
 
 /**
  * Whether an effect is designed to modify a single picture (e.g. filters, stylizations, distortions).
@@ -348,28 +358,8 @@ export function sanitizeEffectValues(
 
 /** Effects matching a query, in catalog order. */
 export function findEffects(query: EffectQuery = {}): EffectDefinition[] {
-  const words = (query.text ?? "").toLowerCase().split(/\s+/).filter(Boolean);
-  return EFFECTS.filter((e) => {
-    if (query.category && e.category !== query.category) return false;
-    if (query.group && !EFFECT_CATEGORY_GROUPS.find((g) => g.name.toLowerCase() === query.group!.toLowerCase())?.categories.includes(e.category)) return false;
-    if (query.kind && e.kind !== query.kind) return false;
-    if (query.tags && !query.tags.every((t) => e.tags.includes(t))) return false;
-    if (query.video && !(e.kind === "shader" && e.video && query.video.includes(e.video))) return false;
-    if (query.output === "animation" && !canOutputAnimatedSvg(e)) return false;
-    if (query.output === "video" && !canOutputVideo(e)) return false;
-    if (query.singlePicture !== undefined && isSinglePictureEffect(e) !== query.singlePicture) return false;
-    if (query.accepts || query.interaction || query.transparent !== undefined) {
-      const inputs = effectInputs(e);
-      if (query.accepts && !query.accepts.every((i) => inputs.accepts.includes(i))) return false;
-      if (query.interaction) {
-        const answers = query.interaction.length === 0 ? inputs.interactions.length === 0 : query.interaction.some((i) => inputs.interactions.includes(i));
-        if (!answers) return false;
-      }
-      if (query.transparent !== undefined && inputs.transparent !== query.transparent) return false;
-    }
-    const haystack = [e.id, e.name, e.description, e.category, ...e.tags].join(" ").toLowerCase();
-    return words.every((w) => haystack.includes(w));
-  });
+  const words = queryWords(query);
+  return EFFECTS.filter((e) => matchesQuery({ ...e, video: e.kind === "shader" ? e.video : undefined }, () => effectInputs(e), query, words));
 }
 
 /** An effect's controls: a shader's `@control` uniforms, or a vector effect's declared controls. */

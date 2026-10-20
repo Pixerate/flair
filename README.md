@@ -47,6 +47,7 @@ Flair gives products a library of good-looking, configurable visual effects (her
 | :--- | :--- | :--- |
 | `@pixerate/flair` | Shader engine, vector motion, time and easing, colour, blending, transitions, scenes, interchange exporters | None (browser-safe) |
 | `@pixerate/flair/catalog` | `EFFECTS`, `getEffect`, `findEffects` (also by `video` use), `effectDefaults`, `renderVectorEffect`, `vectorControls`, GLSL helpers, sample images, `textImage` | None |
+| `@pixerate/flair/catalog/lazy` | The catalog loaded on demand: `EFFECT_META` (every effect's id, name, category, description, tags, controls, presets' names, inputs and video use), `findEffectMeta`, `getEffectMeta`, and `loadEffect(id)` for an effect's shader or picture | None |
 | `@pixerate/flair/vector` | `SvgMotion`, `svgFrame`, `svgView`, `SvgPlayer`, `svgFrameMarkup`, `svgViewBox`, `animateCount`, `formatCount`, `morphPaths`, `morphSequence`, `svgAnimatedMarkup` (an animated `.svg` file), `svgMotionIssues` | None |
 | `@pixerate/flair/motion` | Motion primitives: `PRIMITIVES` (entrances, exits, emphasis and path motions as JSON descriptors), `applyPrimitive`, `removePrimitive`, `primitiveTags` | None |
 | `@pixerate/flair/embed` | `mountEffect`, `subjectValues`: any catalog effect on a page, applied to a picture, video, SVG, words or a path; `recordEffect`: MP4, WebM, GIF or PNG frames in the browser | None |
@@ -605,6 +606,19 @@ frames.render(t, { audio: track.at(t), scroll: [0.5, 0.5, 0, 0] });
 #### Broadcast graphics and annotations
 
 The `broadcast` and `annotation` effects are animated SVGs in a 1920 × 1080 (16:9) frame, with their text inside the title-safe area. Each animates in, holds for its `hold` control (seconds) and animates out, ending as it started, so it loops; the news ticker is a seamless crawl instead. Lower thirds, the ticker, the score bug, the chapter marker, the subscribe button and every annotation draw on a transparent frame, to lay over video or a screenshot (`flair render lower-third --text "Ada Lovelace" --alpha -o lt.webm`); annotations are placed with position controls in percent of the frame. Every label is a text control, fitted to its length. Logos (`lower-third-stacked`, `logo-reveal`, `logo-sting`) take SVG path data in their `logo` control (`--path "M…"`), scaled to fit their slot and recoloured by the effect, so they draw on, shine and export as animated SVG like the rest; anything that is not path data draws a stand-in mark.
+
+#### Loading the catalog on demand
+
+The full catalog is about 425 KB gzipped, because it holds every effect's shader and picture. Where effects are listed, searched or offered to an agent, and only a few are drawn, import `@pixerate/flair/catalog/lazy` instead. It loads every effect's metadata up front (about 91 KB gzipped): ids, names, categories, descriptions, tags, controls, preset names, inputs and video use. `loadEffect(id)` then fetches the effect's shader or picture from a small module of related effects (a median of 12 KB, at most 26 KB).
+
+```ts
+import { findEffectMeta, loadEffect } from "@pixerate/flair/catalog/lazy";
+
+const filters = findEffectMeta({ video: ["filter"] }); // same queries as findEffects
+const crt = await loadEffect("crt"); // a ShaderEffect, with its source and presets
+```
+
+The full catalog has `loadEffect` and `effectMeta` too, so code can be written once for either catalog. The lazy catalog's effects are equal to the full catalog's, but they are not the same objects. After changing the catalog, `pnpm catalog:meta` regenerates the lazy catalog's metadata; a test fails until it is up to date.
 
 Every shader is self-contained and compiles on WebGL2. Open [`#check`](https://pixerate.github.io/flair/#check) on the demo to compile the catalog on your own GPU. [`#bench`](https://pixerate.github.io/flair/#bench) times every shader per frame on your GPU (`#bench?size=720&only=aurora,fur` for a size or a few effects; keep the tab in front, since a hidden tab or other drawing inflates every number).
 
