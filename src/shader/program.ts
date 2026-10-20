@@ -171,6 +171,31 @@ function vertexShader(gl: WebGL2RenderingContext): WebGLShader {
   return vs;
 }
 
+/**
+ * Links a complete GLSL ES 3.00 fragment shader (not a `mainImage` source)
+ * with the full-screen triangle, for Flair's own passes (copies,
+ * composites). Throws with the driver's log when it does not compile:
+ * these sources are Flair's, so that is a bug, not a user error.
+ */
+export function linkUtilityProgram(gl: WebGL2RenderingContext, fragment: string): WebGLProgram {
+  const fs = gl.createShader(gl.FRAGMENT_SHADER);
+  if (!fs) throw new Error("WebGL could not create a shader (the context may be lost).");
+  gl.shaderSource(fs, fragment);
+  gl.compileShader(fs);
+  if (!gl.getShaderParameter(fs, gl.COMPILE_STATUS)) {
+    const log = gl.getShaderInfoLog(fs);
+    gl.deleteShader(fs);
+    throw new Error(`Flair's own shader did not compile: ${log}`);
+  }
+  const program = gl.createProgram()!;
+  gl.attachShader(program, vertexShader(gl));
+  gl.attachShader(program, fs);
+  gl.linkProgram(program);
+  gl.deleteShader(fs);
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw new Error(`Flair's own shader did not link: ${gl.getProgramInfoLog(program)}`);
+  return program;
+}
+
 /** Forgets cached GL objects. Call it after a context loss, before compiling on the restored context. */
 export function resetGlCaches() {
   vertexCache = new WeakMap();

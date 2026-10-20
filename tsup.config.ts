@@ -24,6 +24,7 @@ export default defineConfig([
       "embed/index": "src/embed/index.ts",
       "react/index": "src/react/index.tsx",
       "svelte/index": "src/svelte/index.ts",
+      "testing/index": "src/testing/index.ts",
       node: "src/node.ts",
       cli: "src/cli.ts",
     },

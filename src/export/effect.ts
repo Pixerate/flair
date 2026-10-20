@@ -96,6 +96,8 @@ export interface EffectExportOptions {
   audio?: boolean | 'copy' | 'mute' | string;
   /** Extra flags to pass to headless Chrome. */
   chromeFlags?: string[];
+  /** Draw with SwiftShader, Chrome's software GL, everywhere: the same frames on every machine (see `ExportOptions.software`). */
+  software?: boolean;
   /** Timeout in ms waiting for headless Chrome to render a frame before failing (default 180000). */
   stallTimeoutMs?: number;
   /** When true, ignores control values not present on the effect definition instead of throwing. */
@@ -461,6 +463,7 @@ export async function exportEffect(effect: string | EffectDefinition, options: E
       plan,
       fps,
       chromeFlags: options.chromeFlags,
+      software: options.software,
       ...(options.onProgress ? { onProgress: options.onProgress } : {}),
     });
     if (typeof options.audio === 'string' && options.audio !== 'mute' && options.audio !== 'copy') {
@@ -520,6 +523,7 @@ export async function exportEffect(effect: string | EffectDefinition, options: E
       plan,
       fps,
       chromeFlags: options.chromeFlags,
+      software: options.software,
       stallTimeoutMs: options.stallTimeoutMs,
       ...(options.onProgress ? { onProgress: options.onProgress } : {}),
     });

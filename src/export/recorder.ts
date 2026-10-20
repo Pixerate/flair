@@ -553,6 +553,8 @@ export interface RenderJob {
   /** Timeout in ms waiting for headless Chrome to render a frame before failing (default 180000). */
   stallTimeoutMs?: number;
   chromeFlags?: string[];
+  /** Draw with SwiftShader, Chrome's software GL, on every platform (see `ExportOptions.software`). */
+  software?: boolean;
   onProgress?: (frame: number, total: number) => void;
 }
 
@@ -654,9 +656,14 @@ function parseEnvChromeFlags(): string[] {
   return env.split(/[\s,]+/).filter(Boolean);
 }
 
-/** Chrome's flags: GPU WebGL where there is one (Metal on macOS), SwiftShader otherwise. */
-export function chromeArgs(userDataDir: string, width: number, height: number, url: string, extraArgs: string[] = []): string[] {
-  const isDarwin = process.platform === 'darwin';
+/**
+ * Chrome's flags: GPU WebGL where there is one (Metal on macOS), SwiftShader
+ * otherwise; with `software` (or `FLAIR_SOFTWARE_GL=1`), SwiftShader
+ * everywhere, so frames come out the same on every machine.
+ */
+export function chromeArgs(userDataDir: string, width: number, height: number, url: string, extraArgs: string[] = [], options: { software?: boolean } = {}): string[] {
+  const software = options.software ?? /^(1|true|yes)$/i.test(process.env.FLAIR_SOFTWARE_GL ?? '');
+  const isDarwin = process.platform === 'darwin' && !software;
   return [
     '--headless=new',
     '--no-sandbox',
@@ -833,7 +840,7 @@ export async function runRender(job: RenderJob): Promise<string> {
 
     server.listen(0, '127.0.0.1', () => {
       const { port } = server.address() as import('node:net').AddressInfo;
-      chrome = spawn(chromeBin, chromeArgs(userDataDir, page.width, page.height, `http://127.0.0.1:${port}/`, job.chromeFlags), {
+      chrome = spawn(chromeBin, chromeArgs(userDataDir, page.width, page.height, `http://127.0.0.1:${port}/`, job.chromeFlags, { software: job.software }), {
         stdio: ['ignore', 'ignore', 'pipe'],
       });
       chrome.stderr?.on('data', (chunk) => {
@@ -890,6 +897,13 @@ export interface ExportOptions {
   pointer?: PointerMode;
   /** Extra flags to pass to headless Chrome. */
   chromeFlags?: string[];
+  /**
+   * Draw with SwiftShader, Chrome's software GL, on every platform rather
+   * than the GPU (Metal on macOS): slower, but the same frames on every
+   * machine with the same Chrome, for golden-image tests and CI. Also
+   * `FLAIR_SOFTWARE_GL=1`.
+   */
+  software?: boolean;
   onProgress?: (frame: number, total: number) => void;
 }
 
@@ -987,6 +1001,7 @@ export async function exportMotionGraphic(options: ExportOptions): Promise<strin
     plan,
     fps,
     chromeFlags: options.chromeFlags,
+    software: options.software,
     onProgress,
   });
 }
