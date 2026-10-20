@@ -1,5 +1,6 @@
 import { rgbToHex } from "../shader/controls.js";
 import type { SvgAnimation, SvgMotion } from "../vector/motion.js";
+import { pathBounds } from "../vector/morph.js";
 import { textWidthEm } from "./images.js";
 import { CURRENT_COLOR, isCurrentColor, type VectorEffect } from "./types.js";
 
@@ -631,6 +632,79 @@ export const extrudedText: VectorEffect = {
 };
 
 /** Animated titles and type, as vector effects. */
+
+/*
+ * Text on a path: the words go in a <textPath> through a <tspan> at x="0"
+ * y="0", so the text's own position does not push them along the path and
+ * `startOffset` (a percentage of the path's length) places them.
+ */
+
+/** The frame of a picture whose letters follow a shape inside `box`: the whole stage, or inline, the shape's box with room for its letters. */
+function pathFrame(v: Record<string, unknown>, box: readonly [number, number, number, number], reach: number) {
+  return v.inline
+    ? { viewBox: `${r1(box[0] - reach)} ${r1(box[1] - reach)} ${r1(box[2] + 2 * reach)} ${r1(box[3] + 2 * reach)}`, overflow: "visible", backdrop: 0, overhang: "0 0 0 0" }
+    : { viewBox: "0 0 400 200", overflow: "hidden", backdrop: 1, overhang: "0 0 0 0" };
+}
+
+export const textOnPath: VectorEffect = {
+  kind: "vector",
+  id: "text-on-path",
+  name: "Text on a path",
+  description: "Words gliding along a curve, in at its start and out at its end; give it any SVG path to follow.",
+  category: "text",
+  tags: ["text", "path", "curve", "type", "title", "motion", "marquee"],
+  hold: 0,
+  presets: [
+    { name: "Wave", values: { path: "M 10 110 C 80 40 130 40 200 110 S 320 180 390 110", background: [0.02, 0.09, 0.16], color: [0.6, 0.95, 1], line: [0.2, 0.6, 0.9] } },
+    { name: "Ink", values: { background: [0.99, 0.97, 0.93], color: [0.1, 0.1, 0.12], line: [0.1, 0.1, 0.12], lineOpacity: 0.15 } },
+  ],
+  derived: (v) => {
+    const box = pathBounds(String(v.path)) ?? [20, 50, 360, 100];
+    return { travel: Math.round(Number(v.seconds) * 1000), ...pathFrame(v, box, Number(v.size) + Math.abs(Number(v.lift))) };
+  },
+  motion: {
+    svg: `<svg viewBox="{{viewBox}}" overflow="{{overflow}}" data-overhang="{{overhang}}"><!-- {{text: text default='Along the curve' label='Text'}} {{path: text default='M 20 150 C 120 20 280 20 380 150' label='Path'}} {{size: float min=10 max=60 default=28 label='Size'}} {{seconds: float min=1 max=12 default=5 label='Travel (s)'}} {{lift: float min=-30 max=30 default=-8 label='Lift off the path'}} {{background: color default=#0F172A label='Background'}} {{color: color default=#F8FAFC label='Text'}} {{line: color default=#38BDF8 label='Path'}} {{lineOpacity: float min=0 max=1 default=0.5 label='Path opacity'}} ${typeface(SANS, 700)} --><rect width="400" height="200" fill="{{background}}" opacity="{{backdrop}}"/><path id="track" d="{{path}}" fill="none" stroke="{{line}}" stroke-opacity="{{lineOpacity}}" stroke-width="2" stroke-linecap="round"/><text font-family="{{font}}" font-size="{{size}}" font-weight="{{weight}}" fill="{{color}}" text-anchor="middle"><textPath id="ride" href="#track" startOffset="-30%"><tspan x="0" y="0" dy="{{lift}}">{{text}}</tspan></textPath></text></svg>`,
+    animate: [{ id: "ride", attrs: { startOffset: ["-30%", "130%"] }, ms: n("travel"), ease: "linear" }],
+  },
+};
+
+export const circleText: VectorEffect = {
+  kind: "vector",
+  id: "circle-text",
+  name: "Circle text",
+  description: "Words set round a circle, repeated to close the ring, turning slowly round a mark: a badge or a seal.",
+  category: "text",
+  tags: ["text", "path", "circle", "badge", "seal", "rotate", "type"],
+  hold: 0,
+  presets: [
+    { name: "Stamp", values: { background: [0.99, 0.96, 0.9], color: [0.75, 0.15, 0.12], text: "Handmade with care", mark: "✶" } },
+    { name: "Night", values: { background: [0.04, 0.04, 0.08], color: [0.98, 0.85, 0.4], text: "Open late", mark: "☾" } },
+  ],
+  derived: (v) => {
+    const r = Number(v.radius);
+    const size = Number(v.size);
+    const words = String(v.text).trim() || " ";
+    const circumference = 2 * Math.PI * r;
+    // Repeated, with a dot between, as often as fits the ring at this size; the spacing stretches to close it.
+    const once = textWidthEm(`${words} • `) * size;
+    const times = Math.max(1, Math.round(circumference / Math.max(once, 1)));
+    return {
+      ring: Array.from({ length: times }, () => `${words} • `).join(""),
+      circle: `M 200 ${r1(100 - r)} a ${r1(r)} ${r1(r)} 0 1 1 0 ${r1(2 * r)} a ${r1(r)} ${r1(r)} 0 1 1 0 ${r1(-2 * r)}`,
+      length: r1(circumference - size * 0.2),
+      turn: Math.round(Number(v.seconds) * 1000),
+      end: v.clockwise ? 360 : -360,
+      markSize: r1(r * 0.6),
+      markBase: r1(100 + r * 0.21),
+      ...pathFrame(v, [200 - r, 100 - r, 2 * r, 2 * r], size),
+    };
+  },
+  motion: {
+    svg: `<svg viewBox="{{viewBox}}" overflow="{{overflow}}" data-overhang="{{overhang}}"><!-- {{text: text default='Flair motion graphics' label='Text'}} {{mark: text default='★' label='Centre mark'}} {{radius: float min=30 max=88 default=70 label='Radius'}} {{size: float min=8 max=28 default=15 label='Size'}} {{seconds: float min=2 max=40 default=12 label='One turn (s)'}} {{clockwise: bool default=true label='Clockwise'}} {{background: color default=#111827 label='Background'}} {{color: color default=#F9FAFB label='Text'}} ${typeface(SANS, 700)} --><rect width="400" height="200" fill="{{background}}" opacity="{{backdrop}}"/><defs><path id="ring-path" d="{{circle}}"/></defs><g id="ring" transform="rotate(0 200 100)"><text font-family="{{font}}" font-size="{{size}}" font-weight="{{weight}}" fill="{{color}}" letter-spacing="0.08em" textLength="{{length}}" lengthAdjust="spacing"><textPath href="#ring-path" startOffset="0"><tspan x="0" y="0">{{ring}}</tspan></textPath></text></g><text x="200" y="{{markBase}}" text-anchor="middle" font-family="{{font}}" font-size="{{markSize}}" fill="{{color}}">{{mark}}</text></svg>`,
+    animate: [{ id: "ring", attrs: { transform: ["rotate(0 200 100)", "rotate({{end}} 200 100)"] }, ms: n("turn"), ease: "linear" }],
+  },
+};
+
 export const textEffects: VectorEffect[] = [
   typewriter,
   scrambleText,
@@ -643,4 +717,6 @@ export const textEffects: VectorEffect[] = [
   liquidFill,
   glitchText,
   extrudedText,
+  textOnPath,
+  circleText,
 ];

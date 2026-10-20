@@ -135,6 +135,7 @@ export function applyPrimitive(motion: SvgMotion, use: PrimitiveUse, options: { 
   const ms = use.ms ?? descriptor.ms;
   const mainEase = use.ease ?? descriptor.ease;
   const wraps: { id: string; attrs: Record<string, string>; defs?: string }[] = [];
+  const contentWraps: { id: string; element: string; attrs: Record<string, string> }[] = [];
   const added: SvgAnimation[] = [];
   const ctx: ExpandContext = {
     id: use.target,
@@ -150,6 +151,12 @@ export function applyPrimitive(motion: SvgMotion, use: PrimitiveUse, options: { 
     wrap(name, attrs = {}) {
       const id = freshId(name);
       wraps.push({ id, attrs });
+      return id;
+    },
+    wrapContent(name, element, attrs = {}) {
+      if (target.closeStart <= target.openEnd) throw new PrimitiveError(`"${use.target}" has nothing inside it for ${descriptor.id} to wrap.`);
+      const id = freshId(name);
+      contentWraps.push({ id, element, attrs });
       return id;
     },
     clip(shape, attrs) {
@@ -204,19 +211,25 @@ export function applyPrimitive(motion: SvgMotion, use: PrimitiveUse, options: { 
     throw e;
   }
 
-  // The markup: the target inside its wrappers (outermost first), each tagged.
-  let svg = motion.svg;
-  if (wraps.length) {
-    const open = wraps
-      .map((w) => `<g id="${escapeAttr(w.id)}" data-flair-tag="${escapeAttr(tag)}"${Object.entries(w.attrs).map(([k, v]) => ` ${k}="${escapeAttr(v)}"`).join("")}>${w.defs ?? ""}`)
-      .join("");
-    svg = svg.slice(0, target.start) + open + svg.slice(target.start, target.end) + "</g>".repeat(wraps.length) + svg.slice(target.end);
+  // The markup: the target's contents in their wrappers, and the target inside its own (outermost first), each tagged.
+  const attrsOf = (attrs: Record<string, string>) => Object.entries(attrs).map(([k, v]) => ` ${k}="${escapeAttr(v)}"`).join("");
+  let element = motion.svg.slice(target.start, target.end);
+  if (contentWraps.length) {
+    const [from, to] = [target.openEnd - target.start, target.closeStart - target.start];
+    const open = contentWraps.map((w) => `<${w.element} id="${escapeAttr(w.id)}" data-flair-tag="${escapeAttr(tag)}"${attrsOf(w.attrs)}>`).join("");
+    const close = [...contentWraps].reverse().map((w) => `</${w.element}>`).join("");
+    element = element.slice(0, from) + open + element.slice(from, to) + close + element.slice(to);
   }
+  if (wraps.length) {
+    const open = wraps.map((w) => `<g id="${escapeAttr(w.id)}" data-flair-tag="${escapeAttr(tag)}"${attrsOf(w.attrs)}>${w.defs ?? ""}`).join("");
+    element = open + element + "</g>".repeat(wraps.length);
+  }
+  const svg = motion.svg.slice(0, target.start) + element + motion.svg.slice(target.end);
   const next: SvgMotion = { ...motion, svg, animate: [...(motion.animate ?? []), ...added] };
   const before = new Set(svgMotionIssues(motion));
   const issues = svgMotionIssues(next).filter((i) => !before.has(i));
   if (issues.length) return fail(`Applying ${descriptor.id} to "${use.target}" would break the picture: ${issues.join("; ")}.`);
-  const elements = wraps.flatMap((w) => (w.defs ? [w.id, `${w.id}-clip`] : [w.id]));
+  const elements = [...wraps.flatMap((w) => (w.defs ? [w.id, `${w.id}-clip`] : [w.id])), ...contentWraps.map((w) => w.id)];
   return { ok: true, motion: next, tag, added, elements };
 }
 

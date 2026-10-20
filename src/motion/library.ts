@@ -42,6 +42,11 @@ export interface ExpandContext {
   /** Wraps the target in a new group (inside any added before); returns its id, for animations to change. */
   wrap(name: string, attrs?: Record<string, string>): string;
   /**
+   * Wraps what is inside the target (a `<text>`'s words) in a new element
+   * (inside any added before); returns its id. Refuses a target with nothing inside.
+   */
+  wrapContent(name: string, element: string, attrs?: Record<string, string>): string;
+  /**
    * Clips the latest wrapper to a shape in its own box's units (0–1 across
    * it, so text and groups need no measuring); returns the shape's id.
    */
@@ -606,6 +611,39 @@ const PRIMITIVE_LIST: Primitive[] = [
       const w = ctx.wrap("follow");
       ctx.wrap("follow-centre", { transform: translate(-c[0], -c[1]) });
       ctx.add({ id: w, ...ctx.timing(), along: path, at: [ctx.values.from as number, ctx.values.to as number], ...(ctx.values.orient ? { orient: true } : {}) });
+    },
+  },
+  {
+    descriptor: {
+      id: "path.text",
+      name: "Text along a path",
+      kind: "path",
+      description:
+        "Sets a <text>'s words along a path in the picture (by id) and moves them from `from` to `to` of its length, where the text's anchor sits (its middle with text-anchor=\"middle\"); with `from` equal to `to` the words just sit on the path. `lift` raises them off it.",
+      appliesTo: "a <text> with words in it; `path` is the id of a <path> in the picture",
+      params: [
+        { name: "path", type: "text", label: "Path id", default: "", description: "The id of the path the words follow." },
+        { name: "from", type: "float", label: "From", default: 0, min: 0, max: 1, step: 0.01, unit: "fraction" },
+        { name: "to", type: "float", label: "To", default: 0.5, min: 0, max: 1, step: 0.01, unit: "fraction" },
+        { name: "lift", type: "float", label: "Lift", default: 0, min: -100, max: 100, step: 1, unit: "viewBox units", description: "How far above the path the words sit (below when negative)." },
+      ],
+      ms: 1600,
+      ease: MOVE_EASE,
+      needsBox: false,
+    },
+    expand(ctx) {
+      if (ctx.tagName !== "text") throw new PrimitiveError(`path.text sets a <text>'s words along a path; "${ctx.id}" is a <${ctx.tagName}>. Apply it to a <text>, or use path.follow to move a shape along the path.`);
+      const path = (ctx.values.path as string).trim();
+      if (!path) throw new PrimitiveError('path.text needs `path`: the id of a <path> in the picture for the words to follow (params: {path: "curve"}).');
+      const el = ctx.element(path);
+      if (!el) throw new PrimitiveError(`There is no element "${path}" for the words to follow; give the id of a <path> in the picture.`);
+      if (el.tagName !== "path") throw new PrimitiveError(`path.text follows a <path> (browsers set text along paths only); "${path}" is a <${el.tagName}>.`);
+      const pct = (v: number) => `${+(v * 100).toFixed(2)}%`;
+      const from = pct(ctx.values.from as number);
+      const along = ctx.wrapContent("along", "textPath", { href: `#${path}`, startOffset: from });
+      // At x 0 and y 0 the text's own position does not push the words along the path: startOffset alone places them.
+      ctx.wrapContent("on-path", "tspan", { x: "0", y: "0", dy: String(-(ctx.values.lift as number)) });
+      ctx.add({ id: along, ...ctx.timing(), attrs: { startOffset: [from, pct(ctx.values.to as number)] } });
     },
   },
 ];
