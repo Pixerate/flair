@@ -7,6 +7,7 @@
  */
 
 import {
+  applyEffectMask,
   EffectDisposedError,
   EffectUnsupportedError,
   isEffectPixels,
@@ -37,7 +38,8 @@ import { applyPrimitive } from "../motion/apply.js";
 import { getPrimitive, PRIMITIVES } from "../motion/library.js";
 import type { PrimitiveDescriptor, PrimitiveParam } from "../motion/types.js";
 import { checkControlValue, rgbToHex, type ControlDef, type ControlValue } from "../shader/controls.js";
-import { ShaderFrames } from "../shader/frames.js";
+import { ShaderPipeline, type FloatPicture, type PassInput, type PipelineFormat } from "../shader/pipeline.js";
+import { srgbToLinear } from "../shader/color.js";
 import { controlsSchema, JSON_SCHEMA_DIALECT, type JsonSchema } from "../shader/schema.js";
 import type { LiveSource } from "../shader/textures.js";
 import type { SvgMotion } from "../vector/motion.js";
@@ -246,13 +248,46 @@ function describePrimitive(p: PrimitiveDescriptor): EffectDescription {
 // Pictures in
 // ---------------------------------------------------------------------------
 
-/** An input picture as a source an image control can show. */
-function liveSource(source: EffectImageSource): LiveSource {
+/**
+ * An input picture as what a pipeline's image control (or mask) takes: a
+ * float picture when it has floats (linear light), an `ImageData` for 8-bit
+ * pixels, and the host's own image objects as they are.
+ */
+function passInput(source: EffectImageSource): Exclude<PassInput, "previous" | "feedback" | { pass: number }> {
   if (isEffectPixels(source)) {
+    if (source.float) return { width: source.width, height: source.height, data: source.float } satisfies FloatPicture;
     if (typeof ImageData !== "undefined") return new ImageData(source.data as Uint8ClampedArray<ArrayBuffer>, source.width, source.height);
     return source as unknown as ImageData;
   }
-  return source;
+  return source as LiveSource;
+}
+
+/** Whether this GPU can render to float textures, asked once of a small context. */
+let floatSupport: boolean | undefined;
+function canRenderFloat(): boolean {
+  if (floatSupport !== undefined) return floatSupport;
+  try {
+    const canvas: HTMLCanvasElement | OffscreenCanvas | undefined =
+      typeof OffscreenCanvas !== "undefined" ? new OffscreenCanvas(1, 1) : typeof document !== "undefined" ? document.createElement("canvas") : undefined;
+    const gl = canvas?.getContext("webgl2") as WebGL2RenderingContext | null | undefined;
+    floatSupport = Boolean(gl?.getExtension("EXT_color_buffer_float"));
+    gl?.getExtension("WEBGL_lose_context")?.loseContext();
+  } catch {
+    floatSupport = false;
+  }
+  return floatSupport;
+}
+
+/** 8-bit pixels decoded to linear light, for a float-depth renderer whose effect is drawn at 8 bits (vector effects). */
+function decodedFloat(data: Uint8ClampedArray): Float32Array {
+  const out = new Float32Array(data.length);
+  for (let i = 0; i < data.length; i += 4) {
+    out[i] = srgbToLinear(data[i]! / 255);
+    out[i + 1] = srgbToLinear(data[i + 1]! / 255);
+    out[i + 2] = srgbToLinear(data[i + 2]! / 255);
+    out[i + 3] = data[i + 3]! / 255;
+  }
+  return out;
 }
 
 /** Elements that hold definitions rather than drawing: nothing inside them is animated. */
@@ -307,7 +342,7 @@ const pageRasterizer: SvgRasterizer = async (motion, timeMs, { width, height }) 
 };
 
 abstract class BaseRenderer implements EffectRenderer {
-  readonly depth: 8 | 16 | 32 = 8;
+  abstract readonly depth: 8 | 16 | 32;
   protected disposed = false;
 
   constructor(
@@ -340,9 +375,6 @@ abstract class BaseRenderer implements EffectRenderer {
     for (const input of this.plan.inputs) {
       if (input.required && !given[input.name]) throw new EffectUnsupportedError(`"${this.effectId}" needs the input "${input.name}": ${input.description}`, this.effectId);
     }
-    if (request.mask !== undefined) {
-      throw new EffectUnsupportedError("Flair does not take a mask yet (capabilities.supportsMask is false): apply it to the result with applyEffectMask.", this.effectId);
-    }
     return this.draw(request, flairValues(this.plan.controls, values));
   }
 
@@ -353,16 +385,31 @@ abstract class BaseRenderer implements EffectRenderer {
   }
 }
 
-class ShaderRenderer extends BaseRenderer {
-  private frames: ShaderFrames<HTMLCanvasElement | OffscreenCanvas>;
+const FORMATS: Record<8 | 16 | 32, PipelineFormat> = { 8: "rgba8", 16: "rgba16f", 32: "rgba32f" };
 
-  constructor(plan: Plan, description: EffectDescription, private readonly effect: ShaderEffect, width: number, height: number) {
+class ShaderRenderer extends BaseRenderer {
+  readonly depth: 8 | 16 | 32;
+  private pipeline: ShaderPipeline<HTMLCanvasElement | OffscreenCanvas>;
+
+  constructor(plan: Plan, description: EffectDescription, effect: ShaderEffect, width: number, height: number, depth: 8 | 16 | 32) {
     super(plan, description, width, height);
+    const make = (format: PipelineFormat) => new ShaderPipeline<HTMLCanvasElement | OffscreenCanvas>({ passes: [{ source: effect.source, name: effect.id }], width, height, alpha: true, format });
+    let pipeline: ShaderPipeline<HTMLCanvasElement | OffscreenCanvas> | undefined;
+    let made: 8 | 16 | 32 = depth;
     try {
-      this.frames = new ShaderFrames<HTMLCanvasElement | OffscreenCanvas>({ source: effect.source, width, height, alpha: Boolean(effect.transparent) });
+      try {
+        pipeline = make(FORMATS[depth]);
+      } catch (e) {
+        // A GPU that cannot render to floats gives 8-bit frames, as the contract allows (depth says so).
+        if (depth === 8 || !/float/i.test(e instanceof Error ? e.message : "")) throw e;
+        pipeline = make("rgba8");
+        made = 8;
+      }
     } catch (e) {
       throw new EffectUnsupportedError(`"${effect.id}" cannot render here: ${e instanceof Error ? e.message : String(e)}`, effect.id);
     }
+    this.pipeline = pipeline;
+    this.depth = made;
   }
 
   protected async draw(request: EffectRenderRequest, values: Record<string, ControlValue>): Promise<EffectPixels> {
@@ -370,7 +417,7 @@ class ShaderRenderer extends BaseRenderer {
     const flair = { ...values };
     for (const input of this.plan.inputs) {
       const source = given[input.name];
-      this.frames.setLiveSource(input.uniform, source ? liveSource(source) : null);
+      this.pipeline.setInput(0, input.uniform, source ? passInput(source) : null);
       // A picture given needs no URL loaded behind it.
       if (source) flair[input.uniform] = "";
     }
@@ -379,22 +426,36 @@ class ShaderRenderer extends BaseRenderer {
       flair.uAnimate = false;
       flair.uProgress = Math.min(1, Math.max(0, request.progress ?? request.time / duration));
     }
-    this.frames.setValues(flair);
+    if (request.mask) {
+      // Untouched where the mask is 0: the picture the effect changes (a filter's source, a transition's from).
+      const untouched = given.source ?? given.from;
+      this.pipeline.setMask({ picture: passInput(request.mask), ...(untouched ? { under: passInput(untouched) } : {}) });
+    } else this.pipeline.setMask(null);
+    this.pipeline.setValues(0, flair);
     // The effect's own sample pictures: a failure shows black where they go rather than failing the frame.
-    await this.frames.ready().catch(() => undefined);
+    await this.pipeline.ready().catch(() => undefined);
     if (this.disposed) throw new EffectDisposedError(this.effectId);
-    this.frames.render(request.time / 1000);
-    return { width: this.width, height: this.height, data: this.frames.readImageData().data };
+    this.pipeline.render(request.time / 1000);
+    const data = this.pipeline.readImageData().data;
+    return { width: this.width, height: this.height, data, ...(this.depth > 8 ? { float: this.pipeline.readFloatPixels() } : {}) };
   }
 
   dispose(): void {
-    if (!this.disposed) this.frames.dispose();
+    if (!this.disposed) this.pipeline.dispose();
     super.dispose();
   }
 }
 
 class VectorRenderer extends BaseRenderer {
-  constructor(plan: Plan, description: EffectDescription, private readonly effect: VectorEffect, width: number, height: number, private readonly rasterize: SvgRasterizer) {
+  constructor(
+    plan: Plan,
+    description: EffectDescription,
+    private readonly effect: VectorEffect,
+    width: number,
+    height: number,
+    private readonly rasterize: SvgRasterizer,
+    readonly depth: 8 | 16 | 32,
+  ) {
     super(plan, description, width, height);
   }
 
@@ -402,7 +463,14 @@ class VectorRenderer extends BaseRenderer {
     const motion = renderVectorEffect(this.effect, values);
     const pixels = await this.rasterize(motion, request.time, { width: this.width, height: this.height });
     if (this.disposed) throw new EffectDisposedError(this.effectId);
-    return pixels;
+    if (request.mask) {
+      // A vector picture has nothing under it: coverage multiplies its alpha, as for any generator.
+      if (!isEffectPixels(request.mask) || request.mask.width !== this.width || request.mask.height !== this.height) {
+        throw new EffectUnsupportedError(`A vector effect's mask is EffectPixels the renderer's size (${this.width} × ${this.height}).`, this.effectId);
+      }
+      applyEffectMask(pixels, request.mask);
+    }
+    return this.depth > 8 ? { ...pixels, float: decodedFloat(pixels.data) } : pixels;
   }
 }
 
@@ -426,10 +494,14 @@ class VectorRenderer extends BaseRenderer {
  *   (`uMask`, `uText`).
  * - **Values:** controls as a strict JSON Schema (see `effectControlSchema`),
  *   colours as `#rrggbb`. Invalid values reject with `invalid_values`.
- * - **Rendering:** shaders render with `ShaderFrames`, on a page or in a
- *   Worker, and take `ImageBitmap`, `VideoFrame`, `OffscreenCanvas` or
- *   `EffectPixels` inputs. Vector effects render on a page (or with
- *   `rasterizeSvg`). 8-bit output; no mask yet (the editor masks).
+ * - **Rendering:** shaders render with a `ShaderPipeline`, on a page or in
+ *   a Worker, and take `ImageBitmap`, `VideoFrame`, `OffscreenCanvas` or
+ *   `EffectPixels` inputs (float ones too). Depth 16 or 32 renders in half
+ *   or full floats and returns `float` in linear light (8 bits where the GPU
+ *   cannot render to floats; `depth` says which). A mask is composited on
+ *   the GPU over the untouched input (`source`, or a transition's `from`),
+ *   or multiplies alpha where there is none. Vector effects render on a
+ *   page (or with `rasterizeSvg`).
  * - **Vector:** `applyVectorEffect` gives a vector effect's animated SVG
  *   (its own picture, so the target is not used), or applies a motion
  *   primitive to the target's elements (`nodeIds`, or each top-level
@@ -446,8 +518,8 @@ export function flairEffects(options: FlairEffectsOptions = {}): EffectProvider 
 
   const capabilities: EffectProviderCapabilities = {
     supportsWorker: inWorker,
-    supportsFloat: false,
-    supportsMask: false,
+    supportsFloat: kinds.has("shader") && canRenderFloat(),
+    supportsMask: true,
     supportsHostImages: true,
     supportsVector: kinds.has("vector") || kinds.has("motion"),
   };
@@ -520,15 +592,17 @@ export function flairEffects(options: FlairEffectsOptions = {}): EffectProvider 
       if (!(width >= 1 && height >= 1)) {
         throw new EffectUnsupportedError(`createRenderer needs a width and height of at least 1 pixel; got ${rendererOptions?.width} × ${rendererOptions?.height}.`, id);
       }
+      const depth = rendererOptions.depth ?? 8;
+      if (depth !== 8 && depth !== 16 && depth !== 32) throw new EffectUnsupportedError(`depth is 8, 16 or 32 bits a channel; got ${JSON.stringify(rendererOptions.depth)}.`, id);
       const { plan, effect, description } = await catalogEffect(id);
-      if (effect.kind === "shader") return new ShaderRenderer(plan, description, effect, width, height);
+      if (effect.kind === "shader") return new ShaderRenderer(plan, description, effect, width, height, depth);
       if (!rasterize) {
         throw new EffectUnsupportedError(
           `"${id}" is a vector effect, and a Worker has no DOM to draw SVG in: render it on the page, pass rasterizeSvg to flairEffects, or use applyVectorEffect for the animated SVG.`,
           id,
         );
       }
-      return new VectorRenderer(plan, description, effect, width, height, rasterize);
+      return new VectorRenderer(plan, description, effect, width, height, rasterize, depth);
     },
 
     async applyVectorEffect(id: string, target: EffectVectorTarget, values?: EffectValues): Promise<EffectVectorMotion> {

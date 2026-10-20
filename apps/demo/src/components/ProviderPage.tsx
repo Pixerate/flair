@@ -76,7 +76,16 @@ export function ProviderPage() {
       await draw("transition-wipe", "transition at progress 0.5", { time: 0, inputs: { from, to }, progress: 0.5 });
       await draw("aurora", "generator at 2 s", { time: 2000 });
       await draw("lower-third", "vector effect at 1.5 s", { time: 1500 });
-      (window as unknown as { flairProvider: unknown }).flairProvider = { issues: found, seconds: Number(seconds), samples: drawn.map((s) => s.id) };
+      const half = { ...size, data: new Uint8ClampedArray(size.width * size.height * 4) };
+      for (let i = 0; i < size.width * size.height; i++) half.data[i * 4 + 3] = i % size.width < size.width / 2 ? 255 : 0;
+      await draw("crt", "filter masked to the left half", { time: 1000, inputs: { source: from }, mask: half });
+      const deep = await provider.createRenderer("aurora", { ...size, depth: 16 });
+      const hdr = await deep.render({ time: 2000 });
+      deep.dispose();
+      const linear = hdr.float ? [...hdr.float.slice(0, 4)].map((v) => Math.round(v * 1000) / 1000) : null;
+      drawn.push({ id: "aurora", note: `depth ${deep.depth}: float ${linear ? `linear ${linear.join(", ")}` : "none"}`, pixels: hdr });
+      setSamples([...drawn]);
+      (window as unknown as { flairProvider: unknown }).flairProvider = { issues: found, seconds: Number(seconds), samples: drawn.map((s) => `${s.id}: ${s.note}`), capabilities: provider.capabilities };
     })().catch((e: unknown) => setStatus(`Failed: ${e instanceof Error ? e.message : String(e)}`));
   }, []);
 
@@ -99,7 +108,7 @@ export function ProviderPage() {
       )}
       <section className="flex flex-wrap gap-4">
         {samples.map((s) => (
-          <Swatch key={s.id} sample={s} />
+          <Swatch key={`${s.id} ${s.note}`} sample={s} />
         ))}
       </section>
     </div>

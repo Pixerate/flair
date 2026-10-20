@@ -14,13 +14,13 @@
  */
 
 import { controlValue, parseControls, type ControlDef, type ControlType, type ControlValue } from "../shader/controls.js";
-import type { PipelinePass } from "../shader/pipeline.js";
-import type { LiveSource } from "../shader/textures.js";
-import { didYouMean } from "../motion/params.js";
 import { controlsSchema, type JsonSchema } from "../shader/schema.js";
 import { matchesQuery, queryWords, type EffectQuery } from "./query.js";
+import { didYouMean } from "../motion/params.js";
 import { metaOf, type EffectMeta } from "./meta.js";
 import { svgDuration } from "../vector/svg.js";
+import type { PipelinePass } from "../shader/pipeline.js";
+import type { LiveSource } from "../shader/textures.js";
 import { inputsOf, type EffectInput, type EffectInputs, type EffectInteraction } from "./inputs.js";
 import { aurora, conicSweep, duotoneFlow, meshGradient, silk } from "./shaders/gradients.js";
 import { moreGradientShaders } from "./shaders/gradients-more.js";

@@ -579,9 +579,10 @@ const frame = await renderer.render({ time: 0, progress: 0.5, inputs: { from: cl
   - Other image controls are optional inputs named after their uniform (`uMask`, `uText`); without one, the effect shows its own sample.
 - **Values.** Controls come as a strict JSON Schema, with colours as `#rrggbb`. A bad value is refused with `invalid_values`.
 - **Rendering.**
-  - Shaders render through `ShaderFrames`, on a page or in a Worker, and take `ImageBitmap`, `VideoFrame`, `OffscreenCanvas` or `{ width, height, data }` inputs.
-  - Vector effects render on a page. In a Worker, pass `rasterizeSvg` or use `applyVectorEffect`.
-  - Output is 8-bit for now, with no mask; the editor applies the mask itself.
+  - Shaders render through a `ShaderPipeline`, on a page or in a Worker, and take `ImageBitmap`, `VideoFrame`, `OffscreenCanvas` or `{ width, height, data, float? }` inputs.
+  - At `depth` 16 or 32 they render in half or full floats and also return `float` (linear light, straight alpha, as the contract defines it). Where the GPU cannot render to floats, frames are 8-bit and `depth` says so.
+  - A `mask` is composited on the GPU over the untouched input (`source`, or a transition's `from`). With no input, coverage multiplies alpha.
+  - Vector effects render on a page. In a Worker, pass `rasterizeSvg` or use `applyVectorEffect`. Their masks multiply alpha.
 - **Vector.** `applyVectorEffect(id, target, values)` returns a vector effect's own animated SVG with its values filled in, or applies a motion primitive to the target's elements: `nodeIds`, or each top-level element with an id.
 
 The demo's `#provider` page runs the editor's own conformance check (`checkEffectProvider`) over every effect on your GPU, and draws a few through the contract.
