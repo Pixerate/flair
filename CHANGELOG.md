@@ -1,5 +1,31 @@
 # @pixerate/flair
 
+## 0.49.0
+
+### Minor Changes
+
+- ff6e1e0: Float layers: `ShaderPipeline` takes `format: "rgba16f" | "rgba32f"` for half- or full-float passes (HDR, 16- and 32-bit layers), `readFloatPixels()` for output in linear light with straight alpha (values may exceed 1), and float pictures (`{ width, height, data: Float32Array }`, linear) as inputs. Shaders see sRGB-encoded colour in every format, so effects look the same at any depth; conversions run on the GPU with extended sRGB curves. The README documents the colour-space and premultiplied-alpha contract.
+- b962059: Render in a host's WebGL context: `ShaderPipeline`'s `gl` option renders in a context the host owns, takes the host's textures as inputs (`{ texture, width, height }`), and keeps the output on the GPU (`outputTexture`, or `render(t, { target })` into a host framebuffer), with no read back per frame. Every call leaves the host's GL state as it found it, and `dispose` frees only what the pipeline made. `TextureCache` takes an optional `around` wrapper for uploads that arrive later.
+- 2595f67: Masks and regions: `ShaderPipeline`'s `setMask` (or `mask` option) limits where the effect applies, on the GPU, by a coverage picture (alpha or luminance, 8-bit or float), a rectangle with a feathered edge, or both, optionally inverted. Where coverage is 0 a picture or a pass's output shows through (`under`); without one, coverage multiplies the output's alpha.
+- 3126878: Multi-pass rendering: `ShaderPipeline` renders several shaders as one picture on one WebGL2 context, each pass reading the one before (`"previous"`), another pass (`{ pass: n }`), its own last frame (`"feedback"`, for trails and echoes) or a picture, with `blend: "over"` for overlays. `effectStack` (catalog) turns catalog shaders into passes, each filter reading the layer below. A pass that does not compile throws a `PassCompileError` naming it.
+- e13e413: Testing without a GPU, and deterministic renders. `@pixerate/flair/testing` publishes the fake WebGL2 context Flair tests itself with: `installFakeWebGl()` makes canvases and `OffscreenCanvas` hand out fakes (any test runner, `restore()` to undo), so `ShaderFrames`, pipelines and `flairEffects()` render in jsdom with the same pixels every time, and record the calls made. For real pixels that match across machines, `software: true` on `exportEffect` / `exportMotionGraphic` (`--software` on `flair render` and `flair export`, or `FLAIR_SOFTWARE_GL=1`) draws with SwiftShader on every platform.
+
+## 0.48.0
+
+### Minor Changes
+
+- 35b5b7a: JSON Schemas. `effectControlSchema(id)` (catalog) gives a strict JSON Schema (draft 2020-12) of an effect's control values: each control with its type, range, unit and default, colours as sRGB 0–1 or CSS colours, images as URLs. `controlsSchema` and `controlSchema` do the same for any controls, and an optional `unit=` attribute on `@control` declares a control's unit. `EFFECT_DOCUMENT_SCHEMA` (editor) describes an effect document, and is published as `@pixerate/flair/schemas/effect-document.json`. Agents get the current effect's schema with the `values.schema` command. Fixes `createEffectDocument` giving 45 vector effects a `NaN` duration when their timing is set by controls.
+
+## 0.47.0
+
+### Minor Changes
+
+- 6b20188: Text on a path. Two new type effects: `text-on-path` (words gliding along any SVG path you give it) and `circle-text` (words repeated round a turning ring, a badge or seal), both with the text effects' font, weight and inline controls. A new motion primitive, `path.text`, sets any `<text>`'s words along a `<path>` in a picture and moves them from one fraction of its length to another (with `lift` off it), and comes off cleanly with `removePrimitive`. Agents reach it through `primitive.apply`.
+
+### Patch Changes
+
+- 28f203a: The lazy catalog (`@pixerate/flair/catalog/lazy`) lists `text-on-path` and `circle-text`, which were added to the catalog alongside it.
+
 ## 0.46.0
 
 ### Minor Changes

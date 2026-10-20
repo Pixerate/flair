@@ -78,13 +78,6 @@ export {
   type ThumbnailPoolOptions,
 } from "./thumbnails.js";
 export {
-  ShaderFrames,
-  type FramePixels,
-  type FramesCanvas,
-  type RenderOptions,
-  type ShaderFramesOptions,
-} from "./frames.js";
-export {
   controlSchema,
   controlsSchema,
   controlUnit,
@@ -94,6 +87,13 @@ export {
   type JsonSchema,
   type SchemaOptions,
 } from "./schema.js";
+export {
+  ShaderFrames,
+  type FramePixels,
+  type FramesCanvas,
+  type RenderOptions,
+  type ShaderFramesOptions,
+} from "./frames.js";
 export {
   PassCompileError,
   ShaderPipeline,
