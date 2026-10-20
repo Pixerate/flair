@@ -85,12 +85,16 @@ function tagged(svg: string, tag: string): MarkupElement | undefined {
  * anything else it added inside a `<defs>`) go, and its wrapper groups are
  * replaced by what they hold. Returns how many elements went.
  */
+/** Tagged elements that wrap what was there before, so removing them keeps their contents. */
+const UNWRAPPED = new Set(["g", "textpath", "tspan"]);
+
 export function removeTagged(svg: string, tag: string): { svg: string; removed: number } {
   let removed = 0;
   for (let el = tagged(svg, tag); el; el = tagged(svg, tag)) {
     removed++;
     const tagName = el.tag.toLowerCase();
-    svg = tagName === "g" ? svg.slice(0, el.start) + svg.slice(el.openEnd, el.closeStart) + svg.slice(el.end) : svg.slice(0, el.start) + svg.slice(el.end);
+    // Wrappers (groups round an element, a text path round its words) give back what they hold; anything else (defs) goes.
+    svg = UNWRAPPED.has(tagName) ? svg.slice(0, el.start) + svg.slice(el.openEnd, el.closeStart) + svg.slice(el.end) : svg.slice(0, el.start) + svg.slice(el.end);
   }
   return { svg, removed };
 }
