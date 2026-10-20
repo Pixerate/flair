@@ -626,6 +626,38 @@ describe("melt effects", () => {
   });
 });
 
+describe("artist's media effects", () => {
+  const MEDIA = ["image-pencil-sketch", "image-watercolor", "image-crosshatch", "image-charcoal", "sketch-reveal"];
+
+  it("are video filters found by the medium's name", () => {
+    for (const id of MEDIA) expect(getEffect(id), id).toMatchObject({ kind: "shader", category: "image", video: "filter" });
+    for (const [words, id] of [
+      ["pencil", "image-pencil-sketch"],
+      ["watercolour", "image-watercolor"],
+      ["watercolor", "image-watercolor"],
+      ["stipple", "image-crosshatch"],
+      ["woodcut", "image-crosshatch"],
+      ["chalk", "image-charcoal"],
+      ["sketch reveal", "sketch-reveal"],
+    ] as const) {
+      expect(findEffects({ text: words }).map((e) => e.id), words).toContain(id);
+    }
+  });
+
+  it("pen and ink draws hatching, stippling or engraving, with a preset for each", () => {
+    const pen = getEffect("image-crosshatch")!;
+    expect(effectControls(pen).find((c) => c.name === "uStyle")).toMatchObject({ min: 0, max: 2, default: 0 });
+    const styles = (pen.presets ?? []).map((p) => p.values.uStyle ?? 0);
+    expect(new Set(styles)).toEqual(new Set([0, 1, 2]));
+  });
+
+  it("sketch reveal loops, with a still progress control", () => {
+    const reveal = getEffect("sketch-reveal")!;
+    expect(reveal.kind === "shader" && reveal.loop).toBe(6);
+    expect(effectControls(reveal).map((c) => c.name)).toEqual(expect.arrayContaining(["uAnimate", "uProgress"]));
+  });
+});
+
 describe("electric effects", () => {
   const electric = findEffects({ category: "electric" });
 

@@ -14,7 +14,7 @@ import { BACKDROP_CONTROLS, PICTURE } from "./image.js";
  * `inkEdge(tex, uv, d)`: Sobel edge strength of an image's brightness and
  * alpha, sampling `d` apart (in uv). Needs {@link PICTURE}.
  */
-const INK_EDGE = `
+export const INK_EDGE = `
 vec2 lumaAlpha(sampler2D tex, vec2 uv) {
   vec4 c = pictureRGBA(tex, uv);
   return vec2(dot(c.rgb, vec3(0.2126, 0.7152, 0.0722)), c.a);
