@@ -17,6 +17,7 @@ import { controlValue, parseControls, type ControlDef, type ControlType, type Co
 import { matchesQuery, queryWords, type EffectQuery } from "./query.js";
 import { metaOf, type EffectMeta } from "./meta.js";
 import { didYouMean } from "../motion/params.js";
+import { svgDuration } from "../vector/svg.js";
 import { inputsOf, type EffectInput, type EffectInputs, type EffectInteraction } from "./inputs.js";
 import { aurora, conicSweep, duotoneFlow, meshGradient, silk } from "./shaders/gradients.js";
 import { moreGradientShaders } from "./shaders/gradients-more.js";
@@ -225,7 +226,17 @@ export async function loadEffect(id: string): Promise<EffectDefinition> {
 
 /** An effect's metadata, as the lazy catalog has it up front (see `EffectMeta`). */
 export function effectMeta(effect: EffectDefinition): EffectMeta {
-  return metaOf(effect, effectControls(effect), effectInputs(effect));
+  return metaOf(effect, effectControls(effect), effectInputs(effect), effectDuration(effect));
+}
+
+/**
+ * Ms of one play of an effect: a shader's `loop`, or a vector effect's
+ * picture at its default values plus its `hold` (default 600). Undefined for
+ * a shader with no loop.
+ */
+export function effectDuration(effect: EffectDefinition): number | undefined {
+  if (effect.kind === "shader") return effect.loop === undefined ? undefined : Math.round(effect.loop * 1000);
+  return Math.round(svgDuration(renderVectorEffect(effect, effectDefaults(effect))) + (effect.hold ?? 600));
 }
 
 export {

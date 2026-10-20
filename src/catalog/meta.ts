@@ -38,10 +38,15 @@ export interface EffectMeta {
   trigger?: SvgTrigger;
   /** Whether it moves over time (a shader reading `iTime`, or any vector effect), rather than a still treatment. */
   animated: boolean;
+  /**
+   * Ms of one play: a shader's `loop`, or a vector effect's picture (at its
+   * default values) plus its `hold`. Undefined for a shader with no loop.
+   */
+  duration?: number;
 }
 
 /** An effect's metadata, from its definition (given its controls and inputs, which the catalog works out). */
-export function metaOf(effect: EffectDefinition, controls: readonly ControlDef[], inputs: EffectInputs): EffectMeta {
+export function metaOf(effect: EffectDefinition, controls: readonly ControlDef[], inputs: EffectInputs, duration?: number): EffectMeta {
   return {
     id: effect.id,
     name: effect.name,
@@ -56,6 +61,7 @@ export function metaOf(effect: EffectDefinition, controls: readonly ControlDef[]
       ? { ...(effect.video && { video: effect.video }), ...(effect.transparent && { transparent: true }), ...(effect.loop !== undefined && { loop: effect.loop }) }
       : { ...(effect.hold !== undefined && { hold: effect.hold }), ...(effect.trigger && { trigger: effect.trigger }) }),
     animated: effect.kind === "vector" || /\biTime\b/.test(effect.source),
+    ...(duration !== undefined && { duration }),
   };
 }
 
