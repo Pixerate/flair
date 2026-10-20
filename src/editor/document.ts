@@ -5,7 +5,7 @@
  * diffed, and written by an agent.
  */
 
-import { getEffect, renderVectorEffect, vectorControlIssues, vectorEffectControls } from "../catalog/index.js";
+import { effectDefaults, getEffect, renderVectorEffect, vectorControlIssues, vectorEffectControls } from "../catalog/index.js";
 import type { EffectDefinition, EffectPreset, VectorControl } from "../catalog/types.js";
 import { checkControlValue, controlValue, parseControls, type ControlDef, type ControlValue } from "../shader/controls.js";
 import { svgMotionIssues, type SvgMotion } from "../vector/motion.js";
@@ -79,7 +79,8 @@ export function createEffectDocument(from?: string | EffectDefinition | { source
     tracks: {},
     duration:
       effect.kind === "vector"
-        ? Math.round(svgDuration(effect.motion) + (effect.hold ?? 600))
+        ? // Timed with the defaults filled in: a placeholder `ms` or `delay` has no length of its own.
+          Math.round(svgDuration(renderVectorEffect(effect, effectDefaults(effect))) + (effect.hold ?? 600))
         : effect.loop
           ? Math.round(effect.loop * 1000)
           : DEFAULT_DURATION,

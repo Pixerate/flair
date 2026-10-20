@@ -46,7 +46,7 @@ Flair gives products a library of good-looking, configurable visual effects (her
 | Import | What it provides | Runtime dependencies |
 | :--- | :--- | :--- |
 | `@pixerate/flair` | Shader engine, vector motion, time and easing, colour, blending, transitions, scenes, interchange exporters | None (browser-safe) |
-| `@pixerate/flair/catalog` | `EFFECTS`, `getEffect`, `findEffects` (also by `video` use), `effectDefaults`, `renderVectorEffect`, `vectorControls`, GLSL helpers, sample images, `textImage` | None |
+| `@pixerate/flair/catalog` | `EFFECTS`, `getEffect`, `findEffects` (also by `video` use), `effectDefaults`, `effectControlSchema`, `renderVectorEffect`, `vectorControls`, GLSL helpers, sample images, `textImage` | None |
 | `@pixerate/flair/vector` | `SvgMotion`, `svgFrame`, `svgView`, `SvgPlayer`, `svgFrameMarkup`, `svgViewBox`, `animateCount`, `formatCount`, `morphPaths`, `morphSequence`, `svgAnimatedMarkup` (an animated `.svg` file), `svgMotionIssues` | None |
 | `@pixerate/flair/motion` | Motion primitives: `PRIMITIVES` (entrances, exits, emphasis and path motions as JSON descriptors), `applyPrimitive`, `removePrimitive`, `primitiveTags` | None |
 | `@pixerate/flair/embed` | `mountEffect`, `subjectValues`: any catalog effect on a page, applied to a picture, video, SVG, words or a path; `recordEffect`: MP4, WebM, GIF or PNG frames in the browser | None |
@@ -448,7 +448,7 @@ The tools are `list_commands`, `run_command` and `run_commands`, plus `view_effe
 - **Inspect and start:** `effect.describe`, `catalog.search` (`{ total, effects }`, 20 at a time unless you pass `limit`; `offset` pages on), `effect.load`.
 - **Edit the effect:** `effect.setSource` for shaders (it returns the compile report when a preview is bound, or says the source has not been compiled yet), `effect.setMotion` for vector pictures.
 - **Motion primitives** (vector pictures): `primitive.list` (by `kind`), `primitive.describe`, `primitive.apply` (returns the use's `tag` and the animations it added), `primitive.applied` and `primitive.remove`.
-- **Values and presets:** `values.set`, `values.reset`, `values.randomize`, `preset.apply` and `preset.save`.
+- **Values and presets:** `values.schema` (the JSON Schema of the effect's values), `values.set`, `values.reset`, `values.randomize`, `preset.apply` and `preset.save`.
 - **Keyframes:** `keyframe.set`, `keyframe.setTrack`, `keyframe.remove`, `keyframe.setEasing` and `keyframe.clear`.
 - **Timeline:** `timeline.setTiming`, `timeline.play`, `timeline.pause` and `timeline.seek`.
 - **History:** `history.undo` and `history.redo`.
@@ -582,6 +582,12 @@ frames.render(t, { audio: track.at(t), scroll: [0.5, 0.5, 0, 0] });
 #### Broadcast graphics and annotations
 
 The `broadcast` and `annotation` effects are animated SVGs in a 1920 × 1080 (16:9) frame, with their text inside the title-safe area. Each animates in, holds for its `hold` control (seconds) and animates out, ending as it started, so it loops; the news ticker is a seamless crawl instead. Lower thirds, the ticker, the score bug, the chapter marker, the subscribe button and every annotation draw on a transparent frame, to lay over video or a screenshot (`flair render lower-third --text "Ada Lovelace" --alpha -o lt.webm`); annotations are placed with position controls in percent of the frame. Every label is a text control, fitted to its length. Logos (`lower-third-stacked`, `logo-reveal`, `logo-sting`) take SVG path data in their `logo` control (`--path "M…"`), scaled to fit their slot and recoloured by the effect, so they draw on, shine and export as animated SVG like the rest; anything that is not path data draws a stand-in mark.
+
+#### JSON Schemas
+
+`effectControlSchema(id)` gives the JSON Schema (draft 2020-12) of an effect's control values, for forms, validators and agent tool layers. It is strict: an object of the effect's controls and nothing else (`additionalProperties: false`). Each control's label is its title, and its description gives its unit, range and default. `float` maps to a number and `int` to an integer, each between its `min` and `max`. `bool` maps to a boolean. A vector maps to an array of 2 to 4 numbers in range. A colour takes sRGB channels from 0 to 1, or a CSS colour string such as hex, `rgb()` or `hsl()`; in vector effects it also takes `"currentColor"`. An image takes a URL, or `""` for none. Every control has a default, so none is required. Units come from a `unit=` attribute on the `@control` comment, or from the label ("Size (px)" is in pixels). `controlsSchema(parseControls(source))` does the same for any shader.
+
+`EFFECT_DOCUMENT_SCHEMA` (from `@pixerate/flair/editor`, and as a file at `@pixerate/flair/schemas/effect-document.json`) is the schema of an effect document. It checks shape only: which controls exist depends on the effect, so check values with `effectControlSchema` or `documentIssues`.
 
 Every shader is self-contained and compiles on WebGL2. Open [`#check`](https://pixerate.github.io/flair/#check) on the demo to compile the catalog on your own GPU. [`#bench`](https://pixerate.github.io/flair/#bench) times every shader per frame on your GPU (`#bench?size=720&only=aurora,fur` for a size or a few effects; keep the tab in front, since a hidden tab or other drawing inflates every number).
 
