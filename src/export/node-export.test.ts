@@ -208,6 +208,20 @@ describe('chromeArgs', () => {
     expect(args).toContain('--max-texture-size=4096');
   });
 
+  it('draws with SwiftShader everywhere when asked, for the same frames on every machine', () => {
+    const args = chromeArgs('/tmp/data', 800, 600, 'http://127.0.0.1', [], { software: true });
+    expect(args).toContain('--use-angle=swiftshader');
+    expect(args).not.toContain('--use-angle=metal');
+    const prev = process.env.FLAIR_SOFTWARE_GL;
+    try {
+      process.env.FLAIR_SOFTWARE_GL = '1';
+      expect(chromeArgs('/tmp/data', 800, 600, 'http://127.0.0.1')).toContain('--use-angle=swiftshader');
+    } finally {
+      if (prev === undefined) delete process.env.FLAIR_SOFTWARE_GL;
+      else process.env.FLAIR_SOFTWARE_GL = prev;
+    }
+  });
+
   it('reads flags from FLAIR_CHROME_FLAGS env variable', () => {
     const prev = process.env.FLAIR_CHROME_FLAGS;
     try {

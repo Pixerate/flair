@@ -53,6 +53,7 @@ Flair gives products a library of good-looking, configurable visual effects (her
 | `@pixerate/flair/react` | `<FlairEffect>`: any catalog effect applied to a subject; `<VectorEffect>`, `<SvgPlayerView>`: vector effects as React components, server-rendered as a still | `react` ≥ 18 (optional peer) |
 | `@pixerate/flair/svelte` | `flairEffect` action: any catalog effect applied to a subject; `vectorEffect` action, `vectorEffectStill`: vector effects in Svelte, server-rendered as a still | `svelte` ≥ 5 (optional peer; types only) |
 | `@pixerate/flair/editor` | `EffectEditor`, effect documents, keyframe tracks, renderer bindings, parameter-panel binding, agent tools and instructions, and `effectDocumentFromAnimation` / `loadAnimation` for scenes from `@pixerate/editor`'s animation editor | `@pixerate/editor` ≥ 0.55 (optional peer; only its dependency-free `/history`, `/commands`, `/tools`, `/animation`, `/animation-editor` and `/parameters` subpaths) |
+| `@pixerate/flair/testing` | `installFakeWebGl`, `FakeGl`: a fake WebGL2 context, so code that renders with Flair runs in jsdom, Node or CI with the same pixels every time (any test runner) | None |
 | `@pixerate/flair/node` | `exportEffect` and `exportMotionGraphic`: render a catalog effect (on a picture, video, SVG, words or a path) or a shader to MP4, WebM, MOV, GIF, PNG frames or animated SVG, through headless Chrome (and ffmpeg for video) | Node.js |
 
 The `flair` CLI inspects shaders, writes standalone pages and directs scenes (see [CLI](#-cli)).
@@ -756,6 +757,27 @@ pnpm dev   # http://localhost:3100
 ```
 
 ---
+
+## 🧪 Testing code that uses Flair
+
+There are two ways to test, depending on whether you need real pixels:
+
+- **No GPU** (jsdom, Node, CI): `installFakeWebGl()` from `@pixerate/flair/testing` makes canvases, and `OffscreenCanvas`, hand out a fake WebGL2 context. `ShaderFrames`, `ShaderPipeline`, `ShaderRenderer` and `flairEffects()` then construct, compile and render as they would on a page.
+  - No shader runs. Pixels come from `pixel(x, y, time)`, so the same calls always give the same frame.
+  - Each fake records the calls made on it, including the uniforms set and the textures bound to each draw.
+  - A source containing `COMPILE_ERROR` fails to compile with `compileLog`, to test error paths.
+- **Real pixels that match across machines** (golden images): render with `software: true` (`exportEffect`, `exportMotionGraphic`), `--software` on `flair render` / `flair export`, or `FLAIR_SOFTWARE_GL=1`. Headless Chrome then draws with SwiftShader, its software GL, on every platform rather than the machine's GPU, so frames match wherever the same Chrome runs.
+
+```ts
+import { installFakeWebGl } from "@pixerate/flair/testing";
+import { flairEffects } from "@pixerate/flair/integrations";
+
+const webgl = installFakeWebGl({ pixel: (x, y, t) => [x, y, Math.round(t * 60), 255] });
+const renderer = await flairEffects().createRenderer("crt", { width: 4, height: 4 });
+const frame = await renderer.render({ time: 500, inputs: { source: { width: 4, height: 4, data: new Uint8ClampedArray(64) } } });
+expect(webgl.last().uniform("iTime")).toEqual([0.5]);
+webgl.restore();
+```
 
 ## 🛠️ Development
 
