@@ -91,6 +91,7 @@ export {
   type PassInput,
   type PipelineFormat,
   type PipelinePass,
+  type PipelineMask,
   type ShaderPipelineOptions,
 } from "./pipeline.js";
 export {

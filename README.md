@@ -322,6 +322,26 @@ void mainImage(out vec4 c, in vec2 f) {
 
 With feedback, a frame depends on the frames before it, so render them in order from the start (or from `resetFeedback()`) to get the same frames every time. Each pass costs about one draw plus a mipmap; at 1080p, a three-effect stack measured within a millisecond of a single `ShaderFrames`.
 
+##### Masks and regions
+
+`setMask(mask)` (or the `mask` option) limits where a pipeline's effect applies, on the GPU.
+
+- **Coverage** comes from a picture's alpha (or its luminance, with `channel: "luminance"`), stretched to the output.
+- **A region** is a rectangle in output pixels from the top left, with a soft edge `feather` pixels wide. Given both, coverage is the picture's times the region's.
+- **`invert`** turns coverage round.
+- **Where coverage is 0, `under` shows.** That's usually the picture the effect changes, either given directly or as `{ pass: n }` for a pass's output. Without `under`, coverage multiplies the output's alpha instead, as for a generator laid over something else.
+
+0 means untouched and 1 means the full effect, as with `@pixerate/editor/effects`' render `mask`.
+
+```ts
+const filtered = new ShaderPipeline({
+  passes: effectStack(["crt"], { source: photo }),
+  width, height,
+  mask: { picture: selection, under: photo }, // the CRT look only where the selection is
+});
+filtered.setMask({ region: [40, 40, 320, 180], feather: 12, under: photo });
+```
+
 ##### Float layers, colour and alpha
 
 `format: "rgba16f"` or `"rgba32f"` makes every pass draw into float textures, for 16- and 32-bit layers and HDR. The default is `"rgba8"`. Float formats need `EXT_color_buffer_float`, and `"rgba32f"` also needs `OES_texture_float_linear`; without them the constructor says which to use instead. The contract:

@@ -221,6 +221,9 @@ export class FakeGl {
   uniform1i(loc: FakeLocation, x: number) {
     this.record("uniform1i", [loc, x]);
   }
+  uniform2f(loc: FakeLocation, ...v: number[]) {
+    this.record("uniform2f", [loc, ...v]);
+  }
   uniform3f(loc: FakeLocation, ...v: number[]) {
     this.record("uniform3f", [loc, ...v]);
   }
