@@ -381,6 +381,12 @@ export interface FlairEffectParams {
   autoplay?: boolean;
   /** Pause while scrolled out of view (default `true`). */
   pauseWhenHidden?: boolean;
+  /** Start again at the end (default `true`). For shaders with `uProgress`, false plays 0 → 1 once. */
+  loop?: boolean;
+  /** Wait to start playing until the element enters the viewport (default `false`). */
+  playOnEnter?: boolean;
+  /** Duration in ms for one-shot playback. */
+  duration?: number;
 }
 
 /**
@@ -395,7 +401,11 @@ export interface FlairEffectParams {
  */
 export function flairEffect(node: HTMLElement, initial: FlairEffectParams): ActionReturn<FlairEffectParams> {
   let params = initial;
-  if (!node.style.position) node.style.position = "relative";
+  const win = node.ownerDocument?.defaultView ?? (typeof window !== "undefined" ? window : null);
+  const computedPos = win && typeof win.getComputedStyle === "function" ? win.getComputedStyle(node).position : "";
+  const setPosition = !node.style.position && (!computedPos || computedPos === "static");
+  if (setPosition) node.style.position = "relative";
+
   const start = () => {
     const m = mountEffect(node, params.effect, {
       ...(params.subject ? { subject: params.subject } : {}),
@@ -403,6 +413,9 @@ export function flairEffect(node: HTMLElement, initial: FlairEffectParams): Acti
       ...(params.values ? { values: params.values } : {}),
       autoplay: params.autoplay ?? true,
       pauseWhenHidden: params.pauseWhenHidden ?? true,
+      ...(params.loop !== undefined ? { loop: params.loop } : {}),
+      ...(params.playOnEnter !== undefined ? { playOnEnter: params.playOnEnter } : {}),
+      ...(params.duration !== undefined ? { duration: params.duration } : {}),
     });
     m.element.style.display = "block";
     m.element.style.width = "100%";
@@ -413,7 +426,13 @@ export function flairEffect(node: HTMLElement, initial: FlairEffectParams): Acti
   return {
     update(next) {
       const restart =
-        next.effect !== params.effect || next.preset !== params.preset || next.autoplay !== params.autoplay || next.pauseWhenHidden !== params.pauseWhenHidden;
+        next.effect !== params.effect ||
+        next.preset !== params.preset ||
+        next.autoplay !== params.autoplay ||
+        next.pauseWhenHidden !== params.pauseWhenHidden ||
+        next.loop !== params.loop ||
+        next.playOnEnter !== params.playOnEnter ||
+        next.duration !== params.duration;
       const subjectChanged = next.subject !== params.subject;
       const valuesChanged = JSON.stringify(next.values ?? {}) !== JSON.stringify(params.values ?? {});
       params = next;
@@ -426,6 +445,7 @@ export function flairEffect(node: HTMLElement, initial: FlairEffectParams): Acti
       if (valuesChanged && next.values) mounted.setValues(next.values);
     },
     destroy() {
+      if (setPosition) node.style.position = "";
       mounted.dispose();
     },
   };

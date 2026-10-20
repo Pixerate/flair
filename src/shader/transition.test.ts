@@ -66,15 +66,19 @@ describe('Procedural Shader Transitions', () => {
     expect(ltrEarly.weight).toBeGreaterThan(ltrLate.weight);
   });
 
-  it('glassWipe produces refractive displacement during mid-transition', () => {
+  it('glassWipe produces refractive displacement during mid-transition and progresses from A to B', () => {
+    const atStart = sampleTransition('glassWipe', [0.5, 0.5], 0.0);
+    expect(atStart.weight).toBeCloseTo(0, 2);
+
     const atMid = sampleTransition('glassWipe', [0.5, 0.5], 0.5, { amplitude: 0.1 });
     // Coordinate displacement occurs
     expect(atMid.uvA[0] !== 0.5 || atMid.uvA[1] !== 0.5).toBe(true);
 
-    // Near ends, displacement dies down
+    // Near ends, displacement dies down and transitions fully to B
     const atEnd = sampleTransition('glassWipe', [0.5, 0.5], 1.0);
     expect(atEnd.uvA[0]).toBeCloseTo(0.5, 2);
     expect(atEnd.uvA[1]).toBeCloseTo(0.5, 2);
+    expect(atEnd.weight).toBeCloseTo(1, 2);
   });
 
   it('twister twists coordinates around center', () => {

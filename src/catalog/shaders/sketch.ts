@@ -61,7 +61,7 @@ ${BACKDROP_CONTROLS}`,
     MARKS,
     BOIL,
     `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  vec2 uv = fragCoord / iResolution.xy;
+  vec2 uv = fitCoverUV(uImage, fragCoord / iResolution.xy);
   vec2 px = 1.0 / iResolution.xy;
   vec2 seed = boilSeed();
   // Each redraw wobbles the lines a little, like a new drawing of the same picture.
@@ -140,7 +140,7 @@ vec3 wash(vec2 uv, vec2 r) {
 }
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  vec2 uv = fragCoord / iResolution.xy;
+  vec2 uv = fitCoverUV(uImage, fragCoord / iResolution.xy);
   vec2 px = 1.0 / iResolution.xy;
   vec2 q = fragCoord / iResolution.y;
   float t = iTime * uFlow * 0.2;
@@ -215,7 +215,7 @@ float lines(vec2 p, float a, float spacing, float halfWidth) {
 }
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  vec2 uv = fragCoord / iResolution.xy;
+  vec2 uv = fitCoverUV(uImage, fragCoord / iResolution.xy);
   vec2 px = 1.0 / iResolution.xy;
   vec4 pic = pictureRGBA(uImage, uv);
   vec2 seed = boilSeed();
@@ -305,7 +305,7 @@ ${BACKDROP_CONTROLS}`,
     MARKS,
     BOIL,
     `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  vec2 uv = fragCoord / iResolution.xy;
+  vec2 uv = fitCoverUV(uImage, fragCoord / iResolution.xy);
   vec2 px = 1.0 / iResolution.xy;
   vec4 pic = pictureRGBA(uImage, uv);
   vec2 seed = boilSeed();
@@ -384,7 +384,7 @@ float drawn(float stage, float order) {
 }
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  vec2 uv = fragCoord / iResolution.xy;
+  vec2 uv = fitCoverUV(uImage, fragCoord / iResolution.xy);
   vec2 px = 1.0 / iResolution.xy;
   vec2 q = fragCoord / iResolution.y;
   // Over a 6 s loop: drawn and coloured in the first 80%, held, then faded back to paper.

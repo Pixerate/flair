@@ -239,5 +239,15 @@ describe("flairEffect", () => {
     expect(node.querySelector("canvas")).not.toBeNull();
     action.destroy!();
     expect(node.querySelector("canvas")).toBeNull();
+    expect(node.style.position).toBe("");
+  });
+
+  it("does not overwrite non-static position", () => {
+    const node = document.createElement("div");
+    node.style.position = "absolute";
+    const action = flairEffect(node, { effect: "aurora", autoplay: false });
+    expect(node.style.position).toBe("absolute");
+    action.destroy!();
+    expect(node.style.position).toBe("absolute");
   });
 });

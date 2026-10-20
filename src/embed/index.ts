@@ -15,9 +15,10 @@ import { renderVectorEffect } from "../catalog/types.js";
 import type { AudioSource } from "../shader/audio.js";
 import type { ControlValue } from "../shader/controls.js";
 import { ShaderRenderer } from "../shader/renderer.js";
-import type { LiveSource } from "../shader/textures.js";
+import { preloadImages, releaseImages, type LiveSource } from "../shader/textures.js";
 import { SvgPlayer } from "../vector/svg.js";
 
+export { preloadImages, releaseImages };
 export { recordEffect, recordingPlan, type RecordFormat, type RecordOptions, type RecordPointer, type RecordingPlan } from "./record.js";
 
 /**
@@ -129,6 +130,12 @@ export interface MountOptions {
   className?: string;
   /** Pause while scrolled out of view (default true). */
   pauseWhenHidden?: boolean;
+  /** Start again at the end (default true). For shaders with `uProgress`, false plays 0 → 1 once. */
+  loop?: boolean;
+  /** Wait to start playing until the element enters the viewport (default false). */
+  playOnEnter?: boolean;
+  /** Duration in ms for one-shot playback. */
+  duration?: number;
 }
 
 /** A running effect, from {@link mountEffect}. */
@@ -148,6 +155,13 @@ export interface MountedEffect {
   pause(): void;
   /** Stops it and removes what it drew. */
   dispose(): void;
+  /** Settles once all textures/images and live sources are decoded and uploaded to the GPU. */
+  ready(): Promise<void>;
+  /**
+   * For slideshows and transitions: smoothly transitions to the next subject,
+   * preloading its images first to prevent black flickers.
+   */
+  transitionTo?(nextSubject: EffectSubject, options?: { duration?: number; easing?: (t: number) => number }): Promise<void>;
 }
 
 /**
@@ -182,10 +196,17 @@ export function mountEffect(host: HTMLElement, effect: EffectDefinition | string
   apply(options.subject);
 
   if (def.kind === "shader") {
+    const isOneShot = options.loop === false && ("uProgress" in values || "uAnimate" in values);
+    if (isOneShot) {
+      if ("uAnimate" in values) values.uAnimate = false;
+      if ("uProgress" in values) values.uProgress = 0.0;
+    }
+
     const renderer = new ShaderRenderer(host, {
       alpha: Boolean(def.transparent),
-      autoplay: options.autoplay ?? true,
+      autoplay: isOneShot ? false : (options.autoplay ?? true),
       pauseWhenHidden: options.pauseWhenHidden ?? true,
+      ...(options.playOnEnter !== undefined ? { playOnEnter: options.playOnEnter } : {}),
       ...(options.className ? { className: options.className } : {}),
     });
     renderer.setSource(def.source);
@@ -196,6 +217,97 @@ export function mountEffect(host: HTMLElement, effect: EffectDefinition | string
     };
     setLive({});
     if (audio) renderer.setAudioSource(audio);
+
+    let tweenRaf = 0;
+    const cancelTween = () => {
+      if (tweenRaf) {
+        cancelAnimationFrame(tweenRaf);
+        tweenRaf = 0;
+      }
+    };
+
+    let observer: IntersectionObserver | undefined;
+
+    const playOneShot = () => {
+      cancelTween();
+      const defDuration = "duration" in def && typeof (def as { duration?: number }).duration === "number"
+        ? (def as { duration?: number }).duration
+        : undefined;
+      const dur = options.duration ?? (defDuration ?? 2500);
+      const startTime = performance.now();
+      renderer.play();
+      const frame = (now: number) => {
+        const elapsed = now - startTime;
+        const t = Math.min(1, elapsed / dur);
+        values = { ...values, uProgress: t };
+        renderer.setValues(values);
+        if (t < 1) {
+          tweenRaf = requestAnimationFrame(frame);
+        } else {
+          tweenRaf = 0;
+          renderer.pause();
+        }
+      };
+      tweenRaf = requestAnimationFrame(frame);
+    };
+
+    if (isOneShot && (options.autoplay ?? true)) {
+      if (options.playOnEnter && typeof IntersectionObserver !== "undefined") {
+        observer = new IntersectionObserver(([entry]) => {
+          if (entry?.isIntersecting) {
+            observer?.disconnect();
+            observer = undefined;
+            playOneShot();
+          }
+        });
+        observer.observe(renderer.canvas);
+      } else {
+        playOneShot();
+      }
+    }
+
+    const transitionTo = async (
+      nextSubject: EffectSubject,
+      transitionOptions?: { duration?: number; easing?: (t: number) => number }
+    ): Promise<void> => {
+      cancelTween();
+      const currentTo = values.uTo;
+      const nextUrl = "image" in nextSubject ? nextSubject.image : "";
+      if (nextUrl) {
+        await preloadImages([nextUrl]);
+      }
+      values = {
+        ...values,
+        ...(currentTo ? { uFrom: currentTo } : {}),
+        ...(nextUrl ? { uTo: nextUrl } : {}),
+        uAnimate: false,
+        uProgress: 0,
+      };
+      renderer.setValues(values);
+      await renderer.ready();
+
+      const dur = transitionOptions?.duration ?? options.duration ?? 1000;
+      const easing = transitionOptions?.easing ?? ((t: number) => t);
+      const startTime = performance.now();
+      renderer.play();
+
+      return new Promise<void>((resolve) => {
+        const step = (now: number) => {
+          const elapsed = now - startTime;
+          const p = Math.min(1, elapsed / dur);
+          values = { ...values, uProgress: easing(p) };
+          renderer.setValues(values);
+          if (p < 1) {
+            tweenRaf = requestAnimationFrame(step);
+          } else {
+            tweenRaf = 0;
+            resolve();
+          }
+        };
+        tweenRaf = requestAnimationFrame(step);
+      });
+    };
+
     return {
       effect: def,
       element: renderer.canvas,
@@ -212,9 +324,21 @@ export function mountEffect(host: HTMLElement, effect: EffectDefinition | string
         values = { ...values, ...next };
         renderer.setValues(values);
       },
-      play: () => renderer.play(),
-      pause: () => renderer.pause(),
-      dispose: () => renderer.dispose(),
+      play() {
+        if (isOneShot) playOneShot();
+        else renderer.play();
+      },
+      pause() {
+        cancelTween();
+        renderer.pause();
+      },
+      dispose() {
+        cancelTween();
+        observer?.disconnect();
+        renderer.dispose();
+      },
+      ready: () => renderer.ready(),
+      transitionTo,
     };
   }
 
@@ -223,6 +347,9 @@ export function mountEffect(host: HTMLElement, effect: EffectDefinition | string
     player?.dispose();
     player = new SvgPlayer(host, renderVectorEffect(def, values), {
       hold: def.hold,
+      ...(options.loop !== undefined ? { loop: options.loop } : {}),
+      ...(options.playOnEnter !== undefined ? { playOnEnter: options.playOnEnter } : {}),
+      ...(options.duration !== undefined ? { duration: options.duration } : {}),
       ...(def.trigger ? { trigger: def.trigger } : {}),
       autoplay: options.autoplay ?? true,
       pauseWhenHidden: options.pauseWhenHidden ?? true,
@@ -249,5 +376,6 @@ export function mountEffect(host: HTMLElement, effect: EffectDefinition | string
     play: () => player.play(),
     pause: () => player.pause(),
     dispose: () => player.dispose(),
+    ready: async () => {},
   };
 }
