@@ -85,6 +85,13 @@ export {
   type ShaderFramesOptions,
 } from "./frames.js";
 export {
+  PassCompileError,
+  ShaderPipeline,
+  type PassInput,
+  type PipelinePass,
+  type ShaderPipelineOptions,
+} from "./pipeline.js";
+export {
   clicksUniform,
   HOVER_SECONDS,
   MAX_CLICKS,

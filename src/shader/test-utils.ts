@@ -73,6 +73,11 @@ export class FakeGl {
   readonly DRAW_FRAMEBUFFER = 0x8ca9;
   readonly COLOR_ATTACHMENT0 = 0x8ce0;
   readonly COLOR_BUFFER_BIT = 0x4000;
+  readonly FRAMEBUFFER = 0x8d40;
+  readonly BLEND = 0x0be2;
+  readonly SRC_ALPHA = 0x0302;
+  readonly ONE_MINUS_SRC_ALPHA = 0x0303;
+  readonly ONE = 1;
 
   readonly calls: Call[] = [];
   readonly shaders: FakeShader[] = [];
@@ -194,6 +199,7 @@ export class FakeGl {
 
   useProgram(program: FakeProgram) {
     this.record("useProgram", [program]);
+    this.program = program;
   }
 
   viewport(...args: number[]) {
@@ -239,12 +245,37 @@ export class FakeGl {
     this.record("deleteTexture", [texture]);
     texture.deleted = true;
   }
+  /** Every draw: the program, the texture on each unit, the texture drawn into (null for the canvas), and whether blending was on. */
+  readonly draws: { program: FakeProgram | null; textures: Record<number, FakeTexture | null>; target: FakeTexture | null; blend: boolean }[] = [];
+  private unit = 0;
+  private units: Record<number, FakeTexture | null> = {};
+  private program: FakeProgram | null = null;
+  private blending = false;
   activeTexture(unit: number) {
     this.record("activeTexture", [unit]);
+    this.unit = unit - this.TEXTURE0;
   }
   bindTexture(target: number, texture: FakeTexture | null) {
     this.record("bindTexture", [target, texture]);
     this.bound = texture;
+    this.units[this.unit] = texture;
+  }
+  enable(cap: number) {
+    this.record("enable", [cap]);
+    if (cap === this.BLEND) this.blending = true;
+  }
+  disable(cap: number) {
+    this.record("disable", [cap]);
+    if (cap === this.BLEND) this.blending = false;
+  }
+  blendFuncSeparate(...args: number[]) {
+    this.record("blendFuncSeparate", args);
+  }
+  clearColor(...args: number[]) {
+    this.record("clearColor", args);
+  }
+  clear(mask: number) {
+    this.record("clear", [mask, this.framebuffers.get(this.DRAW_FRAMEBUFFER)?.texture ?? null]);
   }
   pixelStorei(pname: number, value: unknown) {
     this.record("pixelStorei", [pname, value]);
@@ -271,11 +302,14 @@ export class FakeGl {
   }
   bindFramebuffer(target: number, fb: { texture: FakeTexture | null } | null) {
     this.record("bindFramebuffer", [target, fb]);
-    this.framebuffers.set(target, fb);
+    if (target === this.FRAMEBUFFER) {
+      this.framebuffers.set(this.READ_FRAMEBUFFER, fb);
+      this.framebuffers.set(this.DRAW_FRAMEBUFFER, fb);
+    } else this.framebuffers.set(target, fb);
   }
   framebufferTexture2D(target: number, _attachment: number, _textarget: number, texture: FakeTexture | null) {
     this.record("framebufferTexture2D", [target, texture]);
-    const fb = this.framebuffers.get(target);
+    const fb = this.framebuffers.get(target === this.FRAMEBUFFER ? this.DRAW_FRAMEBUFFER : target);
     if (fb) fb.texture = texture;
   }
   /** Copies the read framebuffer's texture into the draw one's, flipping it when the destination rows run downwards. */
@@ -293,6 +327,7 @@ export class FakeGl {
 
   drawArrays(mode: number, first: number, count: number) {
     this.record("drawArrays", [mode, first, count]);
+    this.draws.push({ program: this.program, textures: { ...this.units }, target: this.framebuffers.get(this.DRAW_FRAMEBUFFER)?.texture ?? null, blend: this.blending });
   }
 
   readPixels(

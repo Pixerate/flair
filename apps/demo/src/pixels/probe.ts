@@ -1,5 +1,5 @@
-import { ShaderFrames, type FramesCanvas, type LiveSource } from "@pixerate/flair";
-import { effectDefaults, SHADER_EFFECTS } from "@pixerate/flair/catalog";
+import { ShaderFrames, ShaderPipeline, type FramesCanvas, type LiveSource, type PipelinePass } from "@pixerate/flair";
+import { effectDefaults, effectStack, SHADER_EFFECTS } from "@pixerate/flair/catalog";
 
 /**
  * The same checks on the page and in a Worker: that each kind of picture
@@ -26,6 +26,8 @@ export interface Timing {
 export interface ProbeResult {
   where: "page" | "worker";
   checks: OrientationCheck[];
+  /** Multi-pass checks: chaining, feedback, overlays, a catalog stack. */
+  pipeline: OrientationCheck[];
   effect: string;
   size: string;
   timings: Timing[];
@@ -116,10 +118,53 @@ async function timings(effectId: string, width: number, height: number, count: n
   }
 }
 
+/** The pixel at (x, y), rows top down, as "r,g,b". */
+const at = (data: Uint8ClampedArray, width: number, x: number, y: number) => [...data.slice((y * width + x) * 4, (y * width + x) * 4 + 3)].join(",");
+
+const near = (got: string, want: number[], slack = 3) => got.split(",").every((v, i) => Math.abs(Number(v) - want[i]!) <= slack);
+
+function pipelineChecks(): OrientationCheck[] {
+  const checks: OrientationCheck[] = [];
+  const run = (input: string, passes: PipelinePass[], frames: number, test: (data: Uint8ClampedArray) => [boolean, string]) => {
+    let pipeline: ShaderPipeline<FramesCanvas> | undefined;
+    try {
+      pipeline = new ShaderPipeline({ passes, width: 4, height: 4, canvas: canvas(4, 4), alpha: true });
+      for (let i = 0; i < frames; i++) pipeline.render(i / 30);
+      const [ok, detail] = test(pipeline.readImageData().data);
+      checks.push({ input, ok, detail });
+    } catch (e) {
+      checks.push({ input, ok: false, detail: e instanceof Error ? e.message : String(e) });
+    } finally {
+      pipeline?.dispose();
+    }
+  };
+  const SAMPLER = "uniform sampler2D uImage; // @control filter=nearest wrap=clamp\n";
+  const TOP_RED = "void mainImage(out vec4 c, in vec2 f) { c = f.y > iResolution.y * 0.5 ? vec4(1.0, 0.0, 0.0, 1.0) : vec4(0.0, 0.0, 1.0, 1.0); }";
+  run("chain: swap red and blue", [{ source: TOP_RED }, { source: `${SAMPLER}void mainImage(out vec4 c, in vec2 f) { c = texture(uImage, f / iResolution.xy).bgra; }`, inputs: { uImage: "previous" } }], 1, (d) => {
+    const top = at(d, 4, 1, 0);
+    const bottom = at(d, 4, 1, 3);
+    return [top === "0,0,255" && bottom === "255,0,0", `top ${top}, bottom ${bottom}`];
+  });
+  run("feedback: halves toward red, 3 frames", [{ source: `${SAMPLER}void mainImage(out vec4 c, in vec2 f) { c = vec4(texture(uImage, f / iResolution.xy).rgb * 0.5 + vec3(0.5, 0.0, 0.0), 1.0); }`, inputs: { uImage: "feedback" } }], 3, (d) => {
+    const got = at(d, 4, 1, 1);
+    return [near(got, [223, 0, 0]), `${got} (want about 223,0,0)`];
+  });
+  run("overlay: half-red over blue", [{ source: "void mainImage(out vec4 c, in vec2 f) { c = vec4(0.0, 0.0, 1.0, 1.0); }" }, { source: "void mainImage(out vec4 c, in vec2 f) { c = vec4(1.0, 0.0, 0.0, 0.5); }", blend: "over" }], 1, (d) => {
+    const got = at(d, 4, 1, 1);
+    return [near(got, [128, 0, 127]), `${got} (want about 128,0,127)`];
+  });
+  run("stack: aurora then crt", effectStack(["aurora", "crt"]), 2, (d) => {
+    const lit = d.some((v, i) => i % 4 !== 3 && v > 8);
+    return [lit, lit ? "drawn" : "all black"];
+  });
+  return checks;
+}
+
 export async function probe(options: { effect: string; width: number; height: number; frames: number }): Promise<ProbeResult> {
   return {
     where: typeof document !== "undefined" ? "page" : "worker",
     checks: await orientation(),
+    pipeline: pipelineChecks(),
     effect: options.effect,
     size: `${options.width} × ${options.height}`,
     timings: await timings(options.effect, options.width, options.height, options.frames),
