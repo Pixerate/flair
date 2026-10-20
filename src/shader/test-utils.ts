@@ -44,6 +44,8 @@ export interface FakeGlOptions {
   linkLog?: string;
   /** Uniforms the "driver" optimised away: their location is null. */
   missingUniforms?: string[];
+  /** Extensions the "GPU" has besides `WEBGL_lose_context` (default `EXT_color_buffer_float` and `OES_texture_float_linear`). */
+  extensions?: string[];
   /** Pixel colour for `readPixels`; y counts from the bottom, as in WebGL. */
   pixel?: (x: number, y: number, time: number) => [number, number, number, number];
 }
@@ -78,6 +80,11 @@ export class FakeGl {
   readonly SRC_ALPHA = 0x0302;
   readonly ONE_MINUS_SRC_ALPHA = 0x0303;
   readonly ONE = 1;
+  readonly RGBA8 = 0x8058;
+  readonly RGBA16F = 0x881a;
+  readonly RGBA32F = 0x8814;
+  readonly HALF_FLOAT = 0x140b;
+  readonly FLOAT = 0x1406;
 
   readonly calls: Call[] = [];
   readonly shaders: FakeShader[] = [];
@@ -121,6 +128,7 @@ export class FakeGl {
   }
 
   getExtension(name: string) {
+    if ((this.options.extensions ?? ["EXT_color_buffer_float", "OES_texture_float_linear"]).includes(name)) return {};
     if (name !== "WEBGL_lose_context") return null;
     return {
       loseContext: () => {
@@ -336,14 +344,16 @@ export class FakeGl {
     width: number,
     height: number,
     _format: number,
-    _type: number,
-    out: Uint8Array,
+    type: number,
+    out: Uint8Array | Float32Array,
   ) {
-    this.record("readPixels", [x, y, width, height]);
+    this.record("readPixels", [x, y, width, height, type]);
     const pixel = this.options.pixel ?? ((_x, py) => [py, 0, 0, 255]);
+    // Floats read as the byte colour over 255.
+    const scale = out instanceof Float32Array ? 1 / 255 : 1;
     for (let py = 0; py < height; py++) {
       for (let px = 0; px < width; px++) {
-        out.set(pixel(px, py, this.time), (py * width + px) * 4);
+        out.set(pixel(px, py, this.time).map((v) => v * scale), (py * width + px) * 4);
       }
     }
   }

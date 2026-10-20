@@ -153,6 +153,32 @@ function pipelineChecks(): OrientationCheck[] {
     const got = at(d, 4, 1, 1);
     return [near(got, [128, 0, 127]), `${got} (want about 128,0,127)`];
   });
+  const hasFloat = (() => {
+    const gl = canvas(1, 1).getContext("webgl2") as WebGL2RenderingContext | null;
+    return Boolean(gl?.getExtension("EXT_color_buffer_float"));
+  })();
+  for (const format of hasFloat ? (["rgba16f", "rgba32f"] as const) : []) {
+    const read = (passes: PipelinePass[]) => {
+      const pipeline = new ShaderPipeline({ passes, width: 2, height: 2, canvas: canvas(2, 2), alpha: true, format });
+      try {
+        pipeline.render(0);
+        return [...pipeline.readFloatPixels()].map((v) => Math.round(v * 1000) / 1000);
+      } finally {
+        pipeline.dispose();
+      }
+    };
+    try {
+      const hdr = read([{ source: "void mainImage(out vec4 c, in vec2 f) { c = vec4(2.0, 0.5, -0.1, 1.0); }" }]).slice(0, 3);
+      checks.push({ input: `${format}: HDR out, linear`, ok: Math.abs(hdr[0]! - 4.953) < 0.02 && Math.abs(hdr[1]! - 0.214) < 0.002 && Math.abs(hdr[2]! + 0.01) < 0.002, detail: `${hdr.join(",")} (want 4.953,0.214,-0.01)` });
+      const data = new Float32Array([4.953, 0.214, 0, 1, 4.953, 0.214, 0, 1, 0, 0, 1, 1, 0, 0, 1, 1]);
+      const trip = read([{ source: `${SAMPLER}void mainImage(out vec4 c, in vec2 f) { c = texture(uImage, f / iResolution.xy); }`, inputs: { uImage: { width: 2, height: 2, data } } }]);
+      const top = trip.slice(0, 3).join(",");
+      const bottom = trip.slice(8, 11).join(",");
+      checks.push({ input: `${format}: float picture in, upright`, ok: Math.abs(trip[0]! - 4.953) < 0.02 && Math.abs(trip[10]! - 1) < 0.005 && Math.abs(trip[8]!) < 0.005, detail: `top ${top}, bottom ${bottom}` });
+    } catch (e) {
+      checks.push({ input: `${format}: float`, ok: false, detail: e instanceof Error ? e.message : String(e) });
+    }
+  }
   run("stack: aurora then crt", effectStack(["aurora", "crt"]), 2, (d) => {
     const lit = d.some((v, i) => i % 4 !== 3 && v > 8);
     return [lit, lit ? "drawn" : "all black"];
