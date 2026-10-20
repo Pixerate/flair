@@ -63,7 +63,7 @@ describe("ShaderPipeline in a host's context", () => {
     const into = gl.createTexture();
     const target = gl.createFramebuffer();
     gl.bindFramebuffer(gl.FRAMEBUFFER, target);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, 0, gl.TEXTURE_2D, into, 0);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, 0, gl.TEXTURE_2D, into);
     gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
     pipeline.render(1, { target: target as unknown as WebGLFramebuffer });
     const present = gl.draws.at(-1)!;
