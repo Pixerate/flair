@@ -85,6 +85,16 @@ export {
   type ShaderFramesOptions,
 } from "./frames.js";
 export {
+  controlSchema,
+  controlsSchema,
+  controlUnit,
+  CSS_COLOR_PATTERN,
+  IMAGE_URL_PATTERN,
+  JSON_SCHEMA_DIALECT,
+  type JsonSchema,
+  type SchemaOptions,
+} from "./schema.js";
+export {
   clicksUniform,
   HOVER_SECONDS,
   MAX_CLICKS,

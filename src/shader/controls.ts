@@ -8,6 +8,7 @@
  *   uniform vec2 uCenter;  // @control min=-1 max=1 default=0,0
  *   uniform vec3 uTint;    // @control color default=#77C16A label="Tint"
  *   uniform sampler2D uPhoto; // @control filter=linear wrap=clamp label="Photo"
+ *   uniform float uAngle;  // @control min=0 max=360 default=45 unit=degrees
  *
  * The source is the single source of truth for which controls exist and
  * their defaults; values someone picks are stored next to it.
@@ -49,6 +50,8 @@ export interface ControlDef {
   line: number;
   /** Sampling settings, for `sampler2D` controls only. */
   texture?: TextureSettings;
+  /** `unit="…"`: what the number is measured in ("pixels", "degrees"), when the label does not say. */
+  unit?: string;
 }
 
 const DECLARATION =
@@ -207,6 +210,7 @@ export function controlFromDeclaration(name: string, type: ControlType, attribut
     default: parseDefault(attrs.default, type, color),
     line,
   };
+  if (attrs.unit) control.unit = attrs.unit;
   if (type === "sampler2D") {
     const pick = <T extends string>(v: string | undefined, options: readonly T[]): T =>
       options.find((o) => o === v?.toLowerCase()) ?? options[0]!;
