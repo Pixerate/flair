@@ -87,7 +87,9 @@ export {
 export {
   PassCompileError,
   ShaderPipeline,
+  type FloatPicture,
   type PassInput,
+  type PipelineFormat,
   type PipelinePass,
   type ShaderPipelineOptions,
 } from "./pipeline.js";
