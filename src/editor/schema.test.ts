@@ -1,5 +1,6 @@
 import { Ajv2020 } from "ajv/dist/2020.js";
 import { readFileSync, existsSync } from "node:fs";
+import { resolve } from "node:path";
 import { EFFECTS } from "../catalog/index.js";
 import { createEffectDocument, parseEffectDocument } from "./document.js";
 import { EFFECT_DOCUMENT_SCHEMA } from "./schema.js";
@@ -56,7 +57,8 @@ describe("EFFECT_DOCUMENT_SCHEMA", () => {
   });
 
   it("is published with the build, unchanged", () => {
-    const file = new URL("../../dist/schemas/effect-document.json", import.meta.url);
+    // Only after a build (CI tests before it).
+    const file = resolve("dist/schemas/effect-document.json");
     if (!existsSync(file)) return;
     expect(JSON.parse(readFileSync(file, "utf8"))).toEqual(JSON.parse(JSON.stringify(EFFECT_DOCUMENT_SCHEMA)));
   });
