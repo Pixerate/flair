@@ -277,12 +277,12 @@ export const imageCharcoal: ShaderEffect = {
   kind: "shader",
   id: "image-charcoal",
   name: "Charcoal",
-  description: "A picture drawn in smudgy, high-contrast charcoal: broad streaky strokes that catch on the paper's tooth and heavy dark edges, or in chalk on a blackboard.",
+  description: "A picture drawn in smudgy, high-contrast charcoal: broad streaky strokes that catch on the paper's tooth and heavy dark edges, or in chalk on a blackboard, or in colour as waxy crayon or soft pastel.",
   category: "image",
   video: "filter",
-  tags: ["image", "charcoal", "chalk", "chalkboard", "conte", "sketch", "drawing", "artistic"],
+  tags: ["image", "charcoal", "chalk", "chalkboard", "conte", "crayon", "pastel", "sketch", "drawing", "artistic"],
   source: glsl(
-    `// Charcoal: a smudged, contrasty darkness (or lightness) drawn in broad streaks that fill the paper's hollows before its peaks.
+    `// Charcoal: a smudged, contrasty darkness (or lightness, or colour) drawn in broad streaks that fill the paper's hollows before its peaks.
 uniform sampler2D uImage;  // @control filter=linear wrap=clamp default=${SAMPLE_IMAGES.portrait} label="Image"
 uniform float uSmudge;     // @control min=0 max=10 default=3 label="Smudge (px)"
 uniform float uContrast;   // @control min=0.5 max=3 default=1.6 label="Contrast"
@@ -291,6 +291,7 @@ uniform float uAngle;      // @control min=0 max=180 default=60 label="Stroke an
 uniform float uTooth;      // @control min=0 max=1 default=0.6 label="Paper tooth"
 uniform float uLine;       // @control min=0 max=5 default=2 label="Edge weight (px)"
 uniform bool uInvert;      // @control default=false label="Draw the lights, not the darks"
+uniform float uColour;     // @control min=0 max=1 default=0 label="Colour (crayon, pastel)"
 uniform vec3 uInk;         // @control color default=#1A1817 label="Charcoal"
 uniform vec3 uPaper;       // @control color default=#EDE8DD label="Paper"
 ${BOIL_CONTROL}
@@ -314,8 +315,11 @@ ${BACKDROP_CONTROLS}`,
     float b = float(i) * 0.785398;
     sm += picture(uImage, uv + vec2(cos(b), sin(b)) * uSmudge * px);
   }
-  float l = luma(sm / 10.0);
-  float d = clamp(((uInvert ? l : 1.0 - l) - 0.5) * uContrast + 0.5, 0.0, 1.0);
+  sm /= 10.0;
+  float l = luma(sm);
+  // In colour the stick covers nearly everywhere (where it matches the paper that does not show), pressing harder where the picture differs.
+  float tone = mix(uInvert ? l : 1.0 - l, clamp(0.55 + length(sm - uPaper), 0.0, 1.0), uColour);
+  float d = clamp((tone - 0.5) * uContrast + 0.5, 0.0, 1.0);
   // Broad strokes: two streak layers a little apart in angle, a few pixels across.
   vec2 p = fragCoord + seed;
   float a = radians(uAngle);
@@ -327,15 +331,22 @@ ${BACKDROP_CONTROLS}`,
   float ink = smoothstep(0.0, 1.0, deposit + (0.5 - tooth) * uTooth * 0.7);
   // Heavy edges, pressed hard and dragged along the stroke.
   float edge = uLine > 0.0 ? inkEdge(uImage, uv, uLine * px) : 0.0;
-  ink = clamp(max(ink, smoothstep(0.15, 0.6, edge) * (0.6 + 0.4 * s1)), 0.0, 1.0);
+  float line = smoothstep(0.15, 0.6, edge) * (0.6 + 0.4 * s1);
+  // Coloured sticks are a little brighter in hue than the picture they copy.
+  vec3 stick = mix(uInk, clamp(mix(vec3(l), sm, 1.25), 0.0, 1.0), uColour);
   vec3 paper = uPaper * (1.0 - 0.06 * tooth);
-  fragColor = vec4(mix(paper, uInk, ink), pic.a);
+  vec3 col = mix(paper, stick, clamp(ink, 0.0, 1.0));
+  // Edges in the stick's colour pressed darker, or charcoal when there is no colour.
+  col = mix(col, mix(uInk, sm * 0.55, uColour), clamp(line, 0.0, 1.0));
+  fragColor = vec4(col, pic.a);
 }`,
   ),
   presets: [
     { name: "Chalkboard", values: { uInk: [0.95, 0.94, 0.9], uPaper: [0.17, 0.23, 0.2], uTooth: 0.8, uContrast: 1.3 } },
     { name: "Sanguine", values: { uInk: [0.6, 0.22, 0.14], uPaper: [0.95, 0.9, 0.8], uContrast: 1.3, uLine: 1.2 } },
     { name: "Heavy", values: { uContrast: 2.4, uSmudge: 6, uLine: 3, uTooth: 0.4 } },
+    { name: "Crayon", values: { uColour: 1, uSmudge: 0, uTooth: 1, uStroke: 10, uContrast: 1.4, uLine: 1.5, uPaper: [0.98, 0.97, 0.94] } },
+    { name: "Soft pastel", values: { uColour: 1, uSmudge: 5, uTooth: 0.7, uStroke: 30, uContrast: 1.3, uLine: 0.6, uPaper: [0.47, 0.45, 0.42] } },
     { name: "White on black", values: { uInvert: true, uInk: [0.96, 0.95, 0.92], uPaper: [0.08, 0.08, 0.09], uLine: 0 } },
   ],
 };
