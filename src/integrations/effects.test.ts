@@ -36,7 +36,7 @@ describe("flairEffects conforms to @pixerate/editor/effects", () => {
     const list = await provider.list();
     expect(list).toHaveLength(EFFECTS.length + PRIMITIVES.length);
     expect(await provider.search("")).toEqual(list);
-    expect(provider).toMatchObject({ id: "flair", name: "Flair", capabilities: { supportsHostImages: true, supportsVector: true, supportsMask: false, supportsFloat: false } });
+    expect(provider).toMatchObject({ id: "flair", name: "Flair", capabilities: { supportsHostImages: true, supportsVector: true, supportsMask: true, supportsFloat: true } });
   });
 });
 
@@ -168,12 +168,55 @@ describe("rendering", () => {
     expect(await failure(() => renderer.render({ time: 0 }))).toMatchObject({ code: "disposed" });
   });
 
-  it("refuses sizes below a pixel, a mask (not supported yet), and pixels from a primitive", async () => {
+  it("refuses sizes below a pixel, a depth that is not 8, 16 or 32, and pixels from a primitive", async () => {
     const { provider } = setup();
     expect(await failure(() => provider.createRenderer("aurora", { width: 0, height: 4 }))).toMatchObject({ code: "unsupported", message: expect.stringContaining("width and height") });
-    const renderer = await provider.createRenderer("aurora", { width: 2, height: 2 });
-    expect(await failure(() => renderer.render({ time: 0, mask: pixels(2, 2) }))).toMatchObject({ code: "unsupported", message: expect.stringContaining("applyEffectMask") });
+    expect(await failure(() => provider.createRenderer("aurora", { width: 2, height: 2, depth: 12 as never }))).toMatchObject({ code: "unsupported", message: expect.stringContaining("8, 16 or 32") });
     expect(await failure(() => provider.createRenderer("entrance.pop", { width: 2, height: 2 }))).toMatchObject({ code: "unsupported", message: expect.stringContaining("applyVectorEffect") });
+  });
+
+  it("renders deep layers in floats, giving float pixels in linear light with their 8-bit encoding", async () => {
+    const { webgl, provider } = setup();
+    const renderer = await provider.createRenderer("aurora", { width: 2, height: 2, depth: 16 });
+    expect(renderer.depth).toBe(16);
+    const out = await renderer.render({ time: 0 });
+    expect(out.float).toBeInstanceOf(Float32Array);
+    expect([out.float!.length, out.data.length]).toEqual([16, 16]);
+    expect(lastGl(webgl).named("texImage2D").some((c) => c.args[2] === lastGl(webgl).RGBA16F)).toBe(true);
+    const full = await provider.createRenderer("aurora", { width: 2, height: 2, depth: 32 });
+    expect(full.depth).toBe(32);
+  });
+
+  it("gives 8-bit frames where the GPU cannot render to floats, and says so", async () => {
+    installFakeWebGl({ extensions: [] });
+    installFakeImages();
+    const renderer = await flairEffects().createRenderer("aurora", { width: 2, height: 2, depth: 32 });
+    expect(renderer.depth).toBe(8);
+    expect((await renderer.render({ time: 0 })).float).toBeUndefined();
+  });
+
+  it("takes float pictures in, uploaded as floats", async () => {
+    const { webgl, provider } = setup();
+    const renderer = await provider.createRenderer("crt", { width: 2, height: 2, depth: 16 });
+    const source: EffectPixels = { ...pixels(2, 2), float: new Float32Array(16).fill(2) };
+    await renderer.render({ time: 0, inputs: { source } });
+    expect(lastGl(webgl).named("texImage2D").some((c) => c.args[8] === source.float)).toBe(true);
+  });
+
+  it("masks a filter on the GPU, over its source", async () => {
+    const { webgl, provider } = setup();
+    const renderer = await provider.createRenderer("crt", { width: 2, height: 2 });
+    const source = pixels(2, 2, 9);
+    const mask = pixels(2, 2, 255);
+    await renderer.render({ time: 0, inputs: { source }, mask });
+    const gl = lastGl(webgl);
+    const composite = gl.draws.find((d) => d.program?.shaders.some((sh) => sh.source.includes("flair_mask")))!;
+    expect(composite).toBeDefined();
+    expect((composite.textures[1] as { image?: { data?: Uint8ClampedArray } }).image?.data?.[0]).toBe(255);
+    expect((composite.textures[2] as { image?: { data?: Uint8ClampedArray } }).image?.data?.[0]).toBe(9);
+    // Without a mask the next frame is the effect alone.
+    await renderer.render({ time: 0, inputs: { source } });
+    expect(gl.draws.filter((d) => d.program?.shaders.some((sh) => sh.source.includes("flair_mask")))).toHaveLength(1);
   });
 
   it("renders vector effects with the rasteriser, at the time and values asked for", async () => {
@@ -186,6 +229,16 @@ describe("rendering", () => {
     const [motion, time, size] = rasterize.mock.calls[0]!;
     expect([time, size]).toEqual([250, { width: 4, height: 2 }]);
     expect(motion.svg).toContain("Ada Lovelace");
+  });
+
+  it("masks a vector effect by multiplying its alpha, and gives floats at depth 16", async () => {
+    const { provider } = setup();
+    const renderer = await provider.createRenderer("lower-third", { width: 2, height: 1, depth: 16 });
+    const mask = { width: 2, height: 1, data: new Uint8ClampedArray([0, 0, 0, 255, 0, 0, 0, 0]) };
+    const out = await renderer.render({ time: 0, mask });
+    expect([out.data[3], out.data[7]]).toEqual([200, 0]);
+    expect(out.float![3]).toBeCloseTo(200 / 255);
+    expect(await failure(() => renderer.render({ time: 0, mask: pixels(4, 4) }))).toMatchObject({ code: "unsupported", message: expect.stringContaining("2 × 1") });
   });
 
   it("in a Worker, refuses vector pixels without a rasteriser, saying what to do", async () => {
