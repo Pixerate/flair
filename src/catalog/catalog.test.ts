@@ -638,6 +638,8 @@ describe("artist's media effects", () => {
       ["stipple", "image-crosshatch"],
       ["woodcut", "image-crosshatch"],
       ["chalk", "image-charcoal"],
+      ["crayon", "image-charcoal"],
+      ["pastel", "image-charcoal"],
       ["sketch reveal", "sketch-reveal"],
     ] as const) {
       expect(findEffects({ text: words }).map((e) => e.id), words).toContain(id);
@@ -649,6 +651,12 @@ describe("artist's media effects", () => {
     expect(effectControls(pen).find((c) => c.name === "uStyle")).toMatchObject({ min: 0, max: 2, default: 0 });
     const styles = (pen.presets ?? []).map((p) => p.values.uStyle ?? 0);
     expect(new Set(styles)).toEqual(new Set([0, 1, 2]));
+  });
+
+  it("charcoal draws in colour for its crayon and pastel presets", () => {
+    const charcoal = getEffect("image-charcoal")!;
+    expect(effectDefaults(charcoal).uColour).toBe(0);
+    for (const preset of ["Crayon", "Soft pastel"]) expect(effectDefaults(charcoal, { preset }).uColour, preset).toBe(1);
   });
 
   it("sketch reveal loops, with a still progress control", () => {
