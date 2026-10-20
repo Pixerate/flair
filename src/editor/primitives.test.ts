@@ -1,3 +1,4 @@
+import { PRIMITIVES } from "../motion/library.js";
 import { describe, expect, it } from "vitest";
 import { renderVectorEffect } from "../catalog/types.js";
 import { svgFrame, svgMotionIssues, type SvgMotion } from "../vector/motion.js";
@@ -31,7 +32,7 @@ describe("motion primitives through the editor's commands", () => {
     const { run, editor } = setup();
     const history = editor.history.getState();
     const all = await run("primitive.list");
-    expect(all.result).toMatchObject({ total: 23 });
+    expect(all.result).toMatchObject({ total: PRIMITIVES.length });
     const exits = await run("primitive.list", { kind: "exit" });
     expect((exits.result!.primitives as { id: string }[]).map((p) => p.id)).toEqual(["exit.fade", "exit.shrink", "exit.slide", "exit.wipe", "exit.undraw"]);
     expect(Object.keys((exits.result!.primitives as object[])[0]!)).toEqual(["id", "kind", "name", "description", "ms", "needsBox"]);
