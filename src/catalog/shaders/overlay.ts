@@ -30,7 +30,7 @@ export const rainOnGlass: ShaderEffect = {
   name: "Rain on glass",
   description: "Raindrops sliding down a window in fits and starts, leaving beaded trails behind them.",
   category: "overlay",
-  tags: ["overlay", "rain", "weather", "moody", "window"],
+  tags: ["overlay", "rain", "weather", "moody", "window", "glass"],
   transparent: true,
   source: glsl(
     `// Rain on glass: drops sliding down a pane, leaving trails of beads.
@@ -418,7 +418,7 @@ export const frostCreep: ShaderEffect = {
   name: "Frost creep",
   description: "Ice crystals creeping in from the edges of the frame and melting back.",
   category: "overlay",
-  tags: ["overlay", "ice", "winter", "frozen", "reveal"],
+  tags: ["overlay", "ice", "winter", "frozen", "reveal", "glass"],
   transparent: true,
   loop: 8,
   source: glsl(

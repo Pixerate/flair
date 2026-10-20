@@ -81,6 +81,8 @@ import { threeDShaders } from "./shaders/three-d.js";
 import { spaceShaders } from "./shaders/space-more.js";
 import { weatherShaders } from "./shaders/weather.js";
 import { waterShaders } from "./shaders/water.js";
+import { glassShaders } from "./shaders/glass.js";
+import { mirrorShaders } from "./shaders/mirror.js";
 import { textEffects } from "./text.js";
 import { broadcastEffects } from "./broadcast.js";
 import { annotationEffects } from "./annotation.js";
@@ -114,7 +116,7 @@ export {
   type VideoUse,
 } from "./types.js";
 export { SAMPLE_IMAGES, svgDataUrl, textImage } from "./images.js";
-export { FBM, glsl, HASH, NOISE, OKLAB_MIX, PALETTE, ROTATE } from "./glsl.js";
+export { FBM, glsl, HASH, NOISE, OKLAB_MIX, PALETTE, ROTATE, SPECTRUM } from "./glsl.js";
 
 /** The catalog's shader effects. */
 export const SHADER_EFFECTS: readonly ShaderEffect[] = [
@@ -190,6 +192,8 @@ export const SHADER_EFFECTS: readonly ShaderEffect[] = [
   ...threeDShaders,
   ...weatherShaders,
   ...waterShaders,
+  ...glassShaders,
+  ...mirrorShaders,
   ...transitions,
 ];
 

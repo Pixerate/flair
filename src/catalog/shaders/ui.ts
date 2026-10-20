@@ -413,7 +413,7 @@ export const glassCard: ShaderEffect = {
   description: "A frosted glass card floating over a picture: the picture blurred behind it, a bright edge, a soft shadow and fine grain.",
   category: "ui",
   video: "filter",
-  tags: ["ui", "glassmorphism", "card", "frosted", "blur", "image"],
+  tags: ["ui", "glass", "glassmorphism", "card", "frosted", "blur", "image"],
   source: glsl(
     `// Glass card: a frosted rounded card over the picture, blurring what is behind it.
 uniform sampler2D uImage;  // @control filter=linear wrap=mirror default=${SAMPLE_IMAGES.landscape} label="Image"

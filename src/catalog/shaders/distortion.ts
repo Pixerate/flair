@@ -1,4 +1,4 @@
-import { glsl, HASH, NOISE, ROTATE } from "../glsl.js";
+import { glsl, HASH, NOISE, ROTATE, SPECTRUM } from "../glsl.js";
 import { SAMPLE_IMAGES } from "../images.js";
 import type { ShaderEffect } from "../types.js";
 import { BACKDROP_CONTROLS, PICTURE } from "./image.js";
@@ -250,9 +250,11 @@ uniform float uAngle;      // @control min=-90 max=90 default=0 label="Rib angle
 uniform float uRefraction; // @control min=0 max=1 default=0.5 label="Refraction"
 uniform float uFrost;      // @control min=0 max=1 default=0.15 label="Frost"
 uniform float uHighlight;  // @control min=0 max=1 default=0.4 label="Edge highlights"
+uniform float uDispersion; // @control min=0 max=1 default=0 label="Dispersion (rainbow edges)"
 uniform vec3 uTint;        // @control color default=#F2F7FA label="Glass tint"
 ${BACKDROP_CONTROLS}`,
     HASH,
+    SPECTRUM,
     PICTURE,
     `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   float a = radians(uAngle);
@@ -260,17 +262,25 @@ ${BACKDROP_CONTROLS}`,
   float s = dot(fragCoord - 0.5 * iResolution.xy, across) / uWidth;
   float f = fract(s) - 0.5;
   vec2 bend = -across * f * uWidth * 3.0 * uRefraction;
-  // Frost: a small disc of samples, jittered per pixel.
+  // Frost: a small disc of samples, jittered per pixel. With dispersion each sample also takes
+  // its colour of the spectrum and bends by its own amount, so edges split into a rainbow.
   float blur = uFrost * 14.0;
   float spin = hash12(fragCoord) * 6.28318;
-  vec4 acc = vec4(0.0);
+  vec3 sum = vec3(0.0);
+  vec3 weight = vec3(0.0);
+  float alpha = 0.0;
   for (int i = 0; i < 9; i++) {
     float fi = float(i);
     float ang = fi * 2.39996 + spin;
     vec2 o = blur * sqrt((fi + 0.5) / 9.0) * vec2(cos(ang), sin(ang));
-    acc += pictureRGBA(uImage, (fragCoord + bend + o) / iResolution.xy);
+    float x = (fi + 0.5) / 9.0;
+    vec3 w = uDispersion > 0.0 ? spectrum(x) : vec3(1.0);
+    vec4 c = pictureRGBA(uImage, (fragCoord + bend * (1.0 + uDispersion * (x - 0.5)) + o) / iResolution.xy);
+    sum += c.rgb * w;
+    weight += w;
+    alpha += c.a;
   }
-  vec4 pic = acc / 9.0;
+  vec4 pic = vec4(sum / weight, alpha / 9.0);
   vec3 col = pic.rgb * uTint;
   col = mix(col, vec3(dot(col, vec3(0.299, 0.587, 0.114))) + 0.08, uFrost * 0.2);
   float hi = exp(-pow((f - 0.3) * 12.0, 2.0));
@@ -283,6 +293,7 @@ ${BACKDROP_CONTROLS}`,
     { name: "Reeded", values: { uWidth: 14, uRefraction: 0.7, uFrost: 0 } },
     { name: "Wide flutes", values: { uWidth: 70, uRefraction: 0.4, uHighlight: 0.6 } },
     { name: "Frosted diagonal", values: { uAngle: 30, uFrost: 0.8, uWidth: 36 } },
+    { name: "Prismatic", values: { uWidth: 40, uRefraction: 0.6, uDispersion: 0.8, uFrost: 0 } },
   ],
 };
 
@@ -304,9 +315,11 @@ uniform float uBlur;       // @control min=0 max=1 default=0.35 label="Blur"
 uniform float uDim;        // @control min=0 max=1 default=0.15 label="Dim"
 uniform float uHighlight;  // @control min=0 max=1 default=0.5 label="Highlights"
 uniform float uFlow;       // @control min=0 max=1 default=0.1 label="Flow"
+uniform float uDispersion; // @control min=0 max=1 default=0 label="Dispersion (rainbow edges)"
 ${BACKDROP_CONTROLS}`,
     HASH,
     NOISE,
+    SPECTRUM,
     PICTURE,
     `// Round domes on a jittered grid: 1 at a pebble's top, 0 between.
 float pebbles(vec2 p) {
@@ -337,13 +350,21 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 uv = fragCoord / iResolution.xy - grad * uRefraction * 0.02;
   float blur = uBlur * 0.012;
   float spin = hash12(fragCoord) * 6.28318;
-  vec4 acc = vec4(0.0);
+  vec2 split = -grad * uRefraction * 0.01 * uDispersion;
+  vec3 sum = vec3(0.0);
+  vec3 weight = vec3(0.0);
+  float alpha = 0.0;
   for (int i = 0; i < 8; i++) {
     float fi = float(i);
     float ang = fi * 2.39996 + spin;
-    acc += pictureRGBA(uImage, uv + blur * sqrt((fi + 0.5) / 8.0) * vec2(cos(ang) * iResolution.y / iResolution.x, sin(ang)));
+    float x = (fi + 0.5) / 8.0;
+    vec3 w = uDispersion > 0.0 ? spectrum(x) : vec3(1.0);
+    vec4 c = pictureRGBA(uImage, uv + split * (x - 0.5) + blur * sqrt((fi + 0.5) / 8.0) * vec2(cos(ang) * iResolution.y / iResolution.x, sin(ang)));
+    sum += c.rgb * w;
+    weight += w;
+    alpha += c.a;
   }
-  vec4 pic = acc / 8.0;
+  vec4 pic = vec4(sum / weight, alpha / 8.0);
   vec3 n = normalize(vec3(-grad * 0.12, 1.0));
   vec3 h = normalize(normalize(vec3(-0.5, 0.6, 0.6)) + vec3(0.0, 0.0, 1.0));
   float spec = pow(max(dot(n, h), 0.0), 60.0);
@@ -355,6 +376,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   presets: [
     { name: "Rain door", values: { uRain: true, uScale: 10, uFlow: 0.3, uBlur: 0.3 } },
     { name: "Privacy", values: { uScale: 28, uRefraction: 0.8, uBlur: 0.9, uDim: 0.25 } },
+    { name: "Prismatic", values: { uScale: 14, uRefraction: 0.6, uBlur: 0.25, uDispersion: 0.8 } },
   ],
 };
 
