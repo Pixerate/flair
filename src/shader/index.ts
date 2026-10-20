@@ -95,6 +95,16 @@ export {
   type SchemaOptions,
 } from "./schema.js";
 export {
+  PassCompileError,
+  ShaderPipeline,
+  type FloatPicture,
+  type PassInput,
+  type PipelineFormat,
+  type PipelinePass,
+  type PipelineMask,
+  type ShaderPipelineOptions,
+} from "./pipeline.js";
+export {
   clicksUniform,
   HOVER_SECONDS,
   MAX_CLICKS,

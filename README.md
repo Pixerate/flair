@@ -27,7 +27,7 @@ Flair gives products a library of good-looking, configurable visual effects (her
   - Sound: `iAudio` (level, bass, mid, treble), `iSpectrum[16]` (64 log-spaced bins) and `iBeat` (seconds since the last beat). `ShaderRenderer.setAudioSource` listens to an `<audio>`/`<video>`, a microphone or any Web Audio node; `analyseAudioBuffer` analyses a decoded track offline, so recordings follow it frame for frame (see [Sound and scrolling](#sound-and-scrolling)).
   - Scrolling: `iScroll` (the canvas's progress through the viewport, page scroll, velocity, and whether it is scrolling), fed by `ShaderRenderer` and scriptable in `ShaderFrames`; vector effects scrub with the page under `trigger: "scroll"`.
   - Live previews (`ShaderRenderer`, with optional `{ alpha: true }` for transparent overlays) and many animated or hover-activated thumbnails on one context (`ThumbnailPool`).
-  - Frames at exact times (`ShaderFrames`, on a page or in a Web Worker, out as `ImageData` or `ImageBitmap`), looping GIFs, and standalone HTML pages.
+  - Frames at exact times (`ShaderFrames`, on a page or in a Web Worker, out as `ImageData` or `ImageBitmap`), multi-pass effect stacks and feedback (`ShaderPipeline`, `effectStack`), looping GIFs, and standalone HTML pages.
 - ✒️ **Vector motion (`@pixerate/flair/vector`)**: animated SVG described as data. Catalog vector effects declare their controls in the picture (`{{name: type …}}`), text included. A change's `ease` is `linear`, `out`, `in-out`, any CSS cubic-bezier as `[x1, y1, x2, y2]` (overshoot allowed), or a spring `{spring: {mass?, stiffness?, damping?, velocity?}}` (defaults 1, 170, 26, 0; it runs for the change's `ms`, then snaps to its end; `springSettleMs` gives a length that settles). A change can play `repeat` whole times (taking `ms × repeat`), with `alternate` running every other cycle backwards, and `strobe` holds its time on a grid of that many frames a second (12 for animation "on twos"). It covers attribute tweens, draw-on strokes, motion along paths, counters (`animateCount` / `formatCount` for DOM elements too), text written letter by letter (`write`, with `scramble` and `caret`), shape morphs between any paths (`morphPaths`, `morphSequence`) and view zooms. A change can also take a `behavior` (a pulse, a decaying oscillation, a seeded wriggle, a springy overshoot), and `orient` turns an element with the path it follows. Every frame is a pure function of time (`svgFrame`), and `SvgPlayer` plays it (with `scrollTrigger`, `hideWhenPaused`, `reset()`, and `trigger: "hover" | "press" | "click" | "scroll"` to play in answer to the pointer or scrub with the page).
 - 🎞️ **Motion primitives (`@pixerate/flair/motion`)**: 23 reusable entrances, exits, emphasis and path motions for any element of a vector picture (see [Motion primitives](#motion-primitives)), described as data and expanded into plain vector motion.
 - 🎛️ **Effect editor (`@pixerate/flair/editor`)**:
@@ -55,6 +55,7 @@ Flair gives products a library of good-looking, configurable visual effects (her
 | `@pixerate/flair/svelte` | `flairEffect` action: any catalog effect applied to a subject; `vectorEffect` action, `vectorEffectStill`: vector effects in Svelte, server-rendered as a still | `svelte` ≥ 5 (optional peer; types only) |
 | `@pixerate/flair/editor` | `EffectEditor`, effect documents, keyframe tracks, renderer bindings, parameter-panel binding, agent tools and instructions, and `effectDocumentFromAnimation` / `loadAnimation` for scenes from `@pixerate/editor`'s animation editor | `@pixerate/editor` ≥ 0.55 (optional peer; only its dependency-free `/history`, `/commands`, `/tools`, `/animation`, `/animation-editor` and `/parameters` subpaths) |
 | `@pixerate/flair/integrations` | `flairEffects()`: Flair's catalog and motion primitives as an effects provider for `@pixerate/editor`'s editors (its `@pixerate/editor/effects` contract) | `@pixerate/editor` with `/effects` (optional peer; only that dependency-free subpath) |
+| `@pixerate/flair/testing` | `installFakeWebGl`, `FakeGl`: a fake WebGL2 context, so code that renders with Flair runs in jsdom, Node or CI with the same pixels every time (any test runner) | None |
 | `@pixerate/flair/node` | `exportEffect` and `exportMotionGraphic`: render a catalog effect (on a picture, video, SVG, words or a path) or a shader to MP4, WebM, MOV, GIF, PNG frames or animated SVG, through headless Chrome (and ffmpeg for video) | Node.js |
 
 The `flair` CLI inspects shaders, writes standalone pages and directs scenes (see [CLI](#-cli)).
@@ -292,6 +293,81 @@ self.onmessage = async ({ data: { time, frame } }: MessageEvent<{ time: number; 
 ```
 
 The demo's `#pixels` page checks that each kind of picture arrives the right way up, on the page and in a Worker, and times a 1080p frame rendered and read out each way.
+
+#### Effect stacks and feedback
+
+`ShaderPipeline` renders several shaders as one picture on one WebGL2 context. Each pass draws into a texture of its own, and the last pass is the output (on `canvas`, or from `readImageData()` / `toImageBitmap()`). A pass's image controls take their pictures from:
+
+- `"previous"`: the pass before.
+- `{ pass: n }`: another pass's output (the frame before's, for a later pass).
+- `"feedback"`: the pass's own last frame, for trails, echoes and anything that builds on itself.
+- A picture, as with `setLiveSource`.
+
+`blend: "over"` draws a pass over the one before by its alpha, for overlays. `effectStack` (from the catalog) turns catalog shaders into passes: each filter reads the layer below, and overlays are drawn over it.
+
+```ts
+import { ShaderPipeline } from "@pixerate/flair";
+import { effectStack } from "@pixerate/flair/catalog";
+
+const stack = new ShaderPipeline({ passes: effectStack(["aurora", "crt", "vignette-grain"]), width: 1280, height: 720 });
+stack.render(2.5);
+
+// A trail: each frame mixes the pointer's glow into the frame before.
+const trail = new ShaderPipeline({
+  passes: [{ source: `uniform sampler2D uLast; // @control filter=linear wrap=clamp
+void mainImage(out vec4 c, in vec2 f) {
+  vec4 last = texture(uLast, f / iResolution.xy) * 0.94;
+  c = max(last, vec4(smoothstep(24.0, 0.0, distance(f, iPointer.xy))));
+}`, inputs: { uLast: "feedback" } }],
+  width: 640, height: 360,
+});
+```
+
+With feedback, a frame depends on the frames before it, so render them in order from the start (or from `resetFeedback()`) to get the same frames every time. Each pass costs about one draw plus a mipmap; at 1080p, a three-effect stack measured within a millisecond of a single `ShaderFrames`.
+
+##### Masks and regions
+
+`setMask(mask)` (or the `mask` option) limits where a pipeline's effect applies, on the GPU.
+
+- **Coverage** comes from a picture's alpha (or its luminance, with `channel: "luminance"`), stretched to the output.
+- **A region** is a rectangle in output pixels from the top left, with a soft edge `feather` pixels wide. Given both, coverage is the picture's times the region's.
+- **`invert`** turns coverage round.
+- **Where coverage is 0, `under` shows.** That's usually the picture the effect changes, either given directly or as `{ pass: n }` for a pass's output. Without `under`, coverage multiplies the output's alpha instead, as for a generator laid over something else.
+
+0 means untouched and 1 means the full effect, as with `@pixerate/editor/effects`' render `mask`.
+
+```ts
+const filtered = new ShaderPipeline({
+  passes: effectStack(["crt"], { source: photo }),
+  width, height,
+  mask: { picture: selection, under: photo }, // the CRT look only where the selection is
+});
+filtered.setMask({ region: [40, 40, 320, 180], feather: 12, under: photo });
+```
+
+##### In a host's WebGL context
+
+A compositor or editor that draws with WebGL2 can give the pipeline its own context (`gl`) and keep frames on the GPU, with no read back:
+
+- The host's textures go into image controls as `{ texture, width, height }` (rows bottom up). They are copied at each render, and their own filtering is left alone.
+- The output is `outputTexture`, ready to sample, or it can be drawn into a framebuffer of the host's with `render(t, { target })`.
+
+After every call the pipeline leaves the host's state as it found it: framebuffers, viewport, program, texture units, vertex array, scissor, depth, stencil, culling, blending, colour mask, clear colour and unpack flags. `dispose()` frees only what the pipeline made. At 1080p, drawing a two-effect stack into a host framebuffer measured 0.5 ms a frame, against 6.7 ms to read it back and upload it again.
+
+```ts
+const pipeline = new ShaderPipeline({ passes: effectStack(["crt"]), width, height, gl: hostGl });
+pipeline.setInput(0, "uImage", { texture: layerTexture, width, height });
+pipeline.render(t, { target: hostFramebuffer }); // or sample pipeline.outputTexture
+```
+
+##### Float layers, colour and alpha
+
+`format: "rgba16f"` or `"rgba32f"` makes every pass draw into float textures, for 16- and 32-bit layers and HDR. The default is `"rgba8"`. Float formats need `EXT_color_buffer_float`, and `"rgba32f"` also needs `OES_texture_float_linear`; without them the constructor says which to use instead. The contract:
+
+- **Shaders see sRGB-encoded colour in every format**, as they are written, so an effect looks the same at any depth. In a float format, values keep their precision between passes and may go above 1 or below 0.
+- **8-bit in and out** (`readPixels`, `readImageData`, pictures in image controls) are sRGB-encoded, with straight (not premultiplied) alpha, as `ImageData` is.
+- **Float in and out** are in **linear light** (sRGB primaries), with straight alpha. Colour may exceed 1, the same as `@pixerate/editor/effects`' `EffectPixels.float`. A float picture `{ width, height, data: Float32Array }` (rows top down) goes into an image control like any other input. `readFloatPixels()` gives the output.
+- **Conversion runs on the GPU**, with the sRGB curves extended past 0–1 (sign-preserving), so HDR survives: an output of 2.0 reads back as 4.95 in linear light.
 
 Overlay shaders (`category: "overlay"`) have `transparent: true`: they write coverage to `fragColor.a` and draw nothing elsewhere, so render them with `new ShaderRenderer(host, { alpha: true })` (or `new ThumbnailPool({ alpha: true })`) and lay the canvas over a picture, video or page. Some overlays are added light: give `glare-sweep`'s canvas `mix-blend-mode: plus-lighter` and it adds exactly (over `image-duotone`, that is the duotone with the gliding glare it used to have built in). Interaction effects answer the pointer. Interactive shaders read `iPointer` and `iClicks`, so they work in any `ShaderRenderer` with no wiring, and play an idle demo when nobody is pointing (turn off "Demo when idle" to stop it). Vector micro-interactions carry a `trigger`: pass it to the player, `new SvgPlayer(host, renderVectorEffect(effect), { trigger: effect.trigger })`. A hover or press trigger plays to the end while hovered or held and back again after; a click trigger plays the next step on each click, so toggles turn on and off. Hosts can drive them too, with `player.setActive(on)` and `player.advance()` (from a keyboard handler, say).
 
@@ -732,6 +808,27 @@ pnpm dev   # http://localhost:3100
 ```
 
 ---
+
+## 🧪 Testing code that uses Flair
+
+There are two ways to test, depending on whether you need real pixels:
+
+- **No GPU** (jsdom, Node, CI): `installFakeWebGl()` from `@pixerate/flair/testing` makes canvases, and `OffscreenCanvas`, hand out a fake WebGL2 context. `ShaderFrames`, `ShaderPipeline`, `ShaderRenderer` and `flairEffects()` then construct, compile and render as they would on a page.
+  - No shader runs. Pixels come from `pixel(x, y, time)`, so the same calls always give the same frame.
+  - Each fake records the calls made on it, including the uniforms set and the textures bound to each draw.
+  - A source containing `COMPILE_ERROR` fails to compile with `compileLog`, to test error paths.
+- **Real pixels that match across machines** (golden images): render with `software: true` (`exportEffect`, `exportMotionGraphic`), `--software` on `flair render` / `flair export`, or `FLAIR_SOFTWARE_GL=1`. Headless Chrome then draws with SwiftShader, its software GL, on every platform rather than the machine's GPU, so frames match wherever the same Chrome runs.
+
+```ts
+import { installFakeWebGl } from "@pixerate/flair/testing";
+import { flairEffects } from "@pixerate/flair/integrations";
+
+const webgl = installFakeWebGl({ pixel: (x, y, t) => [x, y, Math.round(t * 60), 255] });
+const renderer = await flairEffects().createRenderer("crt", { width: 4, height: 4 });
+const frame = await renderer.render({ time: 500, inputs: { source: { width: 4, height: 4, data: new Uint8ClampedArray(64) } } });
+expect(webgl.last().uniform("iTime")).toEqual([0.5]);
+webgl.restore();
+```
 
 ## 🛠️ Development
 

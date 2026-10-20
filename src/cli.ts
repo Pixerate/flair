@@ -108,6 +108,7 @@ program
   .option('--transparent', 'The shader is an overlay: composite its alpha over --background', false)
   .option('--background <css>', 'Colour under transparent pixels without --alpha', '#000000')
   .option('--pointer', 'Act out a pointer that hovers, wanders and clicks', false)
+  .option('--software', 'Draw with software GL (SwiftShader) everywhere: the same frames on every machine', false)
   .action(async (targetOrShader, extraPath, outputPath, options) => {
     if (targetOrShader === 'motn' || targetOrShader === 'lottie' || targetOrShader === 'fcp7' || targetOrShader === 'edl') {
       const sceneFile = extraPath;
@@ -201,6 +202,7 @@ program
         fps,
         duration,
         alpha: options.alpha,
+        ...(options.software ? { software: true } : {}),
         transparent: options.transparent,
         background: options.background,
         pointer: options.pointer ? 'auto' : 'none',
@@ -268,6 +270,7 @@ program
   .option('--alpha', 'Keep transparency (webm, mov, gif, png, svg)', false)
   .option('--background <css>', 'Colour under transparent pixels without --alpha')
   .option('--no-pointer', 'Leave the pointer still (interactive effects otherwise get a scripted pointer)')
+  .option('--software', 'Draw with software GL (SwiftShader) everywhere: the same frames on every machine, for golden-image tests', false)
   .option('-o, --out <outputPath>', 'Output: .mp4, .webm, .mov, .gif, .svg, a .png pattern (out_%04d.png) or a folder')
   .action(async (effectId, options) => {
     try {
@@ -290,6 +293,7 @@ program
         fps,
         ...(duration !== undefined ? { duration } : {}),
         alpha: options.alpha,
+        ...(options.software ? { software: true } : {}),
         ...(options.background ? { background: options.background } : {}),
         ...(options.pointer === false ? { pointer: 'none' as const } : {}),
         onProgress: (frame, total) => {

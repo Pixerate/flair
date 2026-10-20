@@ -19,6 +19,8 @@ import { matchesQuery, queryWords, type EffectQuery } from "./query.js";
 import { metaOf, type EffectMeta } from "./meta.js";
 import { didYouMean } from "../motion/params.js";
 import { svgDuration } from "../vector/svg.js";
+import type { PipelinePass } from "../shader/pipeline.js";
+import type { LiveSource } from "../shader/textures.js";
 import { inputsOf, type EffectInput, type EffectInputs, type EffectInteraction } from "./inputs.js";
 import { aurora, conicSweep, duotoneFlow, meshGradient, silk } from "./shaders/gradients.js";
 import { moreGradientShaders } from "./shaders/gradients-more.js";
@@ -362,6 +364,37 @@ export function sanitizeEffectValues(
 export function findEffects(query: EffectQuery = {}): EffectDefinition[] {
   const words = queryWords(query);
   return EFFECTS.filter((e) => matchesQuery({ ...e, video: e.kind === "shader" ? e.video : undefined }, () => effectInputs(e), query, words));
+}
+
+/** One layer of an {@link effectStack}: a shader effect by id (or definition), with values or a preset. */
+export type StackLayer = string | ShaderEffect | { effect: string | ShaderEffect; values?: Record<string, ControlValue>; preset?: string };
+
+/**
+ * Catalog shaders as the passes of a `ShaderPipeline`, each applied to the
+ * one before: a layer with a picture control (a filter, a distortion, a
+ * transition's `from`) reads the layer below there; an overlay is drawn over
+ * it by its alpha; anything else (a generator) replaces it. The first
+ * layer's picture is `source` when given, else its own sample image.
+ *
+ *     new ShaderPipeline({ passes: effectStack(["aurora", "crt", "vignette-grain"]), width, height })
+ *
+ * Throws for an id the catalog does not have, or a vector effect (stacks
+ * are of shaders).
+ */
+export function effectStack(layers: readonly StackLayer[], options: { source?: LiveSource } = {}): PipelinePass[] {
+  return layers.map((layer, i) => {
+    const spec = typeof layer === "object" && "effect" in layer ? layer : { effect: layer };
+    const effect = typeof spec.effect === "string" ? getEffect(spec.effect) : spec.effect;
+    if (!effect) throw new Error(`There is no effect ${JSON.stringify(spec.effect)} in the catalog.${didYouMean(String(spec.effect), [...byId.keys()])}`);
+    if (effect.kind !== "shader") throw new Error(`"${effect.id}" is a vector effect; a stack is of shader effects (layer ${i}).`);
+    const picture = effectInputs(effect).images.find((slot) => slot.wants === "picture");
+    const values = effectDefaults(effect, { preset: "preset" in spec ? spec.preset : undefined, values: "values" in spec ? spec.values : undefined });
+    const pass: PipelinePass = { source: effect.source, values, name: effect.id };
+    if (picture && i > 0) pass.inputs = { [picture.name]: "previous" };
+    else if (picture && options.source) pass.inputs = { [picture.name]: options.source };
+    else if (i > 0 && effect.transparent) pass.blend = "over";
+    return pass;
+  });
 }
 
 /** An effect's controls: a shader's `@control` uniforms, or a vector effect's declared controls. */
