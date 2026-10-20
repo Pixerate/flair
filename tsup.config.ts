@@ -1,24 +1,37 @@
 import { defineConfig } from "tsup";
 
-export default defineConfig({
-  entry: {
-    index: "src/index.ts",
-    "catalog/index": "src/catalog/index.ts",
-    "editor/index": "src/editor/index.ts",
-    "vector/index": "src/vector/index.ts",
-    "motion/index": "src/motion/index.ts",
-    "embed/index": "src/embed/index.ts",
-    "react/index": "src/react/index.tsx",
-    "svelte/index": "src/svelte/index.ts",
-    "testing/index": "src/testing/index.ts",
-    node: "src/node.ts",
-    cli: "src/cli.ts",
-  },
-  format: ["esm"],
+const shared = {
+  format: ["esm"] as const,
   dts: true,
   sourcemap: true,
-  clean: true,
   // Shared modules go in chunks, so classes are one copy across entries (instanceof keeps working).
   splitting: true,
   external: ["@pixerate/editor", "react", "react-dom", "svelte"],
-});
+};
+
+export default defineConfig([
+  {
+    ...shared,
+    entry: {
+      index: "src/index.ts",
+      "catalog/index": "src/catalog/index.ts",
+      "editor/index": "src/editor/index.ts",
+      "vector/index": "src/vector/index.ts",
+      "motion/index": "src/motion/index.ts",
+      "embed/index": "src/embed/index.ts",
+      "react/index": "src/react/index.tsx",
+      "svelte/index": "src/svelte/index.ts",
+      "testing/index": "src/testing/index.ts",
+      node: "src/node.ts",
+      cli: "src/cli.ts",
+    },
+  },
+  // The lazy catalog is built on its own, with a chunk per catalog module: built with the rest, its
+  // on-demand modules would split the full catalog into dozens of chunks too, making it larger to load.
+  // Its effects are separate copies of the full catalog's (equal, not the same objects).
+  {
+    ...shared,
+    entry: { lazy: "src/catalog/lazy.ts" },
+    outDir: "dist/catalog",
+  },
+]);

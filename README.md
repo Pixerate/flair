@@ -19,7 +19,7 @@ Flair gives products a library of good-looking, configurable visual effects (her
 
 ### Core Capabilities
 
-- 🎨 **Effect catalog (`@pixerate/flair/catalog`)**: 417 effects, each with controls and presets, in 40 categories browsed in 8 groups. There are 280 WebGL2 shaders (gradients, organic textures and growth, patterns, light, lighting that relights pictures, space, 3D objects and globes, weather, water, atmosphere, retro and pixel art, image treatments, transparent overlays, text fills, image morphs, pointer interactions, sound- and scroll-driven effects, pyrotechnics, time warps, melting, electricity, splatters, bubbles, stickers, pointer trails, particles, debris, impacts, comic looks, glows, shadows, distortions, web UI flourishes and backgrounds, glass (glass and chrome text with a sweeping prism beam, a crystal ball, glass blocks, cracked glass, condensation, stained glass, a cut gem, a prism, dichroic panes) and mirrors (floor and water reflections, an infinity mirror, a funhouse mirror), transitions) and 137 animated SVG effects (loaders and progress bars, status and animated icons, a logo marquee, a number ticker, animated titles, broadcast graphics and lower thirds, scroll-driven drawing, counters and steps, annotations and product-demo callouts, shape morphs, UI micro-interactions, pixel sprites, stickers, cartoon effects, glowing and lifting UI, a lamp switch, charts, counters, node graphs and other data viz). [Browse them live](https://pixerate.github.io/flair/).
+- 🎨 **Effect catalog (`@pixerate/flair/catalog`)**: 419 effects, each with controls and presets, in 40 categories browsed in 8 groups. There are 280 WebGL2 shaders (gradients, organic textures and growth, patterns, light, lighting that relights pictures, space, 3D objects and globes, weather, water, atmosphere, retro and pixel art, image treatments, transparent overlays, text fills, image morphs, pointer interactions, sound- and scroll-driven effects, pyrotechnics, time warps, melting, electricity, splatters, bubbles, stickers, pointer trails, particles, debris, impacts, comic looks, glows, shadows, distortions, web UI flourishes and backgrounds, glass (glass and chrome text with a sweeping prism beam, a crystal ball, glass blocks, cracked glass, condensation, stained glass, a cut gem, a prism, dichroic panes) and mirrors (floor and water reflections, an infinity mirror, a funhouse mirror), transitions) and 139 animated SVG effects (text on a path and circle text, loaders and progress bars, status and animated icons, a logo marquee, a number ticker, animated titles, broadcast graphics and lower thirds, scroll-driven drawing, counters and steps, annotations and product-demo callouts, shape morphs, UI micro-interactions, pixel sprites, stickers, cartoon effects, glowing and lifting UI, a lamp switch, charts, counters, node graphs and other data viz). [Browse them live](https://pixerate.github.io/flair/).
 - ⚡ **Shader engine**:
   - Shadertoy-style GLSL ES 3.00 fragment shaders, with controls declared in the source (`// @control`), including image inputs.
   - Compile errors come back with line numbers that match the source.
@@ -47,6 +47,7 @@ Flair gives products a library of good-looking, configurable visual effects (her
 | :--- | :--- | :--- |
 | `@pixerate/flair` | Shader engine, vector motion, time and easing, colour, blending, transitions, scenes, interchange exporters | None (browser-safe) |
 | `@pixerate/flair/catalog` | `EFFECTS`, `getEffect`, `findEffects` (also by `video` use), `effectDefaults`, `renderVectorEffect`, `vectorControls`, GLSL helpers, sample images, `textImage` | None |
+| `@pixerate/flair/catalog/lazy` | The catalog loaded on demand: `EFFECT_META` (every effect's id, name, category, description, tags, controls, presets' names, inputs and video use), `findEffectMeta`, `getEffectMeta`, and `loadEffect(id)` for an effect's shader or picture | None |
 | `@pixerate/flair/vector` | `SvgMotion`, `svgFrame`, `svgView`, `SvgPlayer`, `svgFrameMarkup`, `svgViewBox`, `animateCount`, `formatCount`, `morphPaths`, `morphSequence`, `svgAnimatedMarkup` (an animated `.svg` file), `svgMotionIssues` | None |
 | `@pixerate/flair/motion` | Motion primitives: `PRIMITIVES` (entrances, exits, emphasis and path motions as JSON descriptors), `applyPrimitive`, `removePrimitive`, `primitiveTags` | None |
 | `@pixerate/flair/embed` | `mountEffect`, `subjectValues`: any catalog effect on a page, applied to a picture, video, SVG, words or a path; `recordEffect`: MP4, WebM, GIF or PNG frames in the browser | None |
@@ -65,7 +66,7 @@ The `flair` CLI inspects shaders, writes standalone pages and directs scenes (se
 ```mermaid
 graph TD
   subgraph Effects["Effects (no dependencies)"]
-    Catalog["catalog: 417 effects + presets"]
+    Catalog["catalog: 419 effects + presets"]
     Shader["shader engine: controls, compile, render, GIF, HTML"]
     Vector["vector motion: SvgMotion, SvgPlayer"]
     Time["time: clocks, easing, keyframes, noise"]
@@ -380,7 +381,7 @@ To morph between any two SVG shapes, `morphPaths(from, to)` (from `@pixerate/fla
 | Entrance (600 ms, ease out) | `entrance.fade`, `.pop`, `.grow`, `.slide` (direction, distance), `.wipe` (direction), `.iris` (circle or box), `.split` (horizontal or vertical), `.zoom`, `.rise`, `.draw` (outline on, then the fill) |
 | Exit (450 ms, ease in) | `exit.fade`, `.shrink`, `.slide`, `.wipe` (a wipe in reversed), `.undraw` |
 | Emphasis | `emphasis.pulse`, `.shake` (settles), `.teeter`, `.wave`, `.color-pulse`, `.spin`, `.wiggle` (seeded noise) |
-| Path | `path.follow` (along a path id, `orient`, from/to fractions) |
+| Path | `path.follow` (along a path id, `orient`, from/to fractions), `path.text` (a `<text>`'s words set along a `<path>` by id, moving from/to fractions of its length, `lift` off it) |
 
 ```ts
 import { applyPrimitive, removePrimitive, PRIMITIVES } from "@pixerate/flair/motion";
@@ -647,7 +648,7 @@ frames.render(t, { audio: track.at(t), scroll: [0.5, 0.5, 0, 0] });
 | retro | synthwave, digital rain, dithered gradient, TV static, 8-bit, Game Boy screen, pixel fire, pixel landscape, OutRun road, palette cycle, raster bars, tape loading, pixel water, pixel text, coin spin, space invader, heart health bar, chomp loader |
 | image | ripple, glitch, duotone, halftone, pixel reveal, Ken Burns, ASCII art, shatter, melt, risograph, thermal, edge glow, tilt-shift, slit-scan, mosaic flip, chromatic lens, oil paint, CRT screen, film look |
 | overlay | rain on glass, snowfall, lens flare, vignette & grain, scanline sweep, spotlight, embers, shine sweep, glare sweep, frost creep, viewfinder |
-| text | shader text, drip text, typewriter, scramble text, kinetic stagger, neon sign, stroke draw text, split reveal, highlighter, word cycle, liquid fill, glitch text, extruded text |
+| text | shader text, drip text, typewriter, scramble text, kinetic stagger, neon sign, stroke draw text, split reveal, highlighter, word cycle, liquid fill, glitch text, extruded text, text on a path, circle text |
 | morph | feature morph, silhouette morph, shape morph, icon toggle, morph sequence, gooey morph, particle morph, digit morph |
 | interaction | click ripple, click burst, cursor glow, hover liquid, X-ray reveal, magnifier, holo card, press charge, hover swap, like button, toggle switch, checkbox, menu toggle, bookmark, copy button, send button, download button, link hover, button hover fill, tooltip pop, press button, toast notification, slider scrub |
 | pyrotechnics | fireworks, sparkler, explosion, spark fountain, roman candle, fuse burn, smoke bomb, light show, firework burst |
@@ -681,6 +682,19 @@ frames.render(t, { audio: track.at(t), scroll: [0.5, 0.5, 0, 0] });
 #### Broadcast graphics and annotations
 
 The `broadcast` and `annotation` effects are animated SVGs in a 1920 × 1080 (16:9) frame, with their text inside the title-safe area. Each animates in, holds for its `hold` control (seconds) and animates out, ending as it started, so it loops; the news ticker is a seamless crawl instead. Lower thirds, the ticker, the score bug, the chapter marker, the subscribe button and every annotation draw on a transparent frame, to lay over video or a screenshot (`flair render lower-third --text "Ada Lovelace" --alpha -o lt.webm`); annotations are placed with position controls in percent of the frame. Every label is a text control, fitted to its length. Logos (`lower-third-stacked`, `logo-reveal`, `logo-sting`) take SVG path data in their `logo` control (`--path "M…"`), scaled to fit their slot and recoloured by the effect, so they draw on, shine and export as animated SVG like the rest; anything that is not path data draws a stand-in mark.
+
+#### Loading the catalog on demand
+
+The full catalog is about 425 KB gzipped, because it holds every effect's shader and picture. Where effects are listed, searched or offered to an agent, and only a few are drawn, import `@pixerate/flair/catalog/lazy` instead. It loads every effect's metadata up front (about 91 KB gzipped): ids, names, categories, descriptions, tags, controls, preset names, inputs and video use. `loadEffect(id)` then fetches the effect's shader or picture from a small module of related effects (a median of 12 KB, at most 26 KB).
+
+```ts
+import { findEffectMeta, loadEffect } from "@pixerate/flair/catalog/lazy";
+
+const filters = findEffectMeta({ video: ["filter"] }); // same queries as findEffects
+const crt = await loadEffect("crt"); // a ShaderEffect, with its source and presets
+```
+
+The full catalog has `loadEffect` and `effectMeta` too, so code can be written once for either catalog. The lazy catalog's effects are equal to the full catalog's, but they are not the same objects. After changing the catalog, `pnpm catalog:meta` regenerates the lazy catalog's metadata; a test fails until it is up to date.
 
 Every shader is self-contained and compiles on WebGL2. Open [`#check`](https://pixerate.github.io/flair/#check) on the demo to compile the catalog on your own GPU. [`#bench`](https://pixerate.github.io/flair/#bench) times every shader per frame on your GPU (`#bench?size=720&only=aurora,fur` for a size or a few effects; keep the tab in front, since a hidden tab or other drawing inflates every number).
 
