@@ -300,14 +300,23 @@ export class TextureCache implements TextureSource {
 
   private flipper: { scratch: WebGLTexture | null; read: WebGLFramebuffer | null; draw: WebGLFramebuffer | null } | null = null;
 
+  private readonly around: (upload: () => void) => void;
+
+  /**
+   * `around` wraps each upload that happens on its own, when an image
+   * arrives: a context shared with someone else saves and restores its
+   * state there.
+   */
   constructor(
     gl: WebGL2RenderingContext,
     onLoad: (url: string, error: ImageLoadError | null) => void = () => {},
     load: (url: string) => Promise<TexImageSource> = loadImageSource,
+    around: (upload: () => void) => void = (upload) => upload(),
   ) {
     this.gl = gl;
     this.onLoad = onLoad;
     this.load = load;
+    this.around = around;
   }
 
   texture(url: string): WebGLTexture | null {
@@ -332,7 +341,9 @@ export class TextureCache implements TextureSource {
     created.loaded = this.load(url).then(
       (image) => {
         if (this.entries.get(url) !== created || this.disposed || this.gl.isContextLost()) return;
-        created.texture = this.upload(image);
+        this.around(() => {
+          created.texture = this.upload(image);
+        });
         this.onLoad(url, null);
       },
       (e: unknown) => {

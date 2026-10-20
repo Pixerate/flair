@@ -52,7 +52,7 @@ export function PixelsPage() {
           <h2 className="text-slate-300">On the {r.where}</h2>
           <table>
             <tbody>
-              {r.checks.map((c) => (
+              {[...r.checks, ...r.pipeline].map((c) => (
                 <tr key={c.input} className={c.ok ? "text-emerald-400" : "text-rose-400"}>
                   <td className="pr-6">{c.ok ? "upright" : "WRONG"}</td>
                   <td className="pr-6">{c.input}</td>
