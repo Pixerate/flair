@@ -54,6 +54,7 @@ Flair gives products a library of good-looking, configurable visual effects (her
 | `@pixerate/flair/react` | `<FlairEffect>`: any catalog effect applied to a subject; `<VectorEffect>`, `<SvgPlayerView>`: vector effects as React components, server-rendered as a still | `react` ≥ 18 (optional peer) |
 | `@pixerate/flair/svelte` | `flairEffect` action: any catalog effect applied to a subject; `vectorEffect` action, `vectorEffectStill`: vector effects in Svelte, server-rendered as a still | `svelte` ≥ 5 (optional peer; types only) |
 | `@pixerate/flair/editor` | `EffectEditor`, effect documents, keyframe tracks, renderer bindings, parameter-panel binding, agent tools and instructions, and `effectDocumentFromAnimation` / `loadAnimation` for scenes from `@pixerate/editor`'s animation editor | `@pixerate/editor` ≥ 0.55 (optional peer; only its dependency-free `/history`, `/commands`, `/tools`, `/animation`, `/animation-editor` and `/parameters` subpaths) |
+| `@pixerate/flair/integrations` | `flairEffects()`: Flair's catalog and motion primitives as an effects provider for `@pixerate/editor`'s editors (its `@pixerate/editor/effects` contract) | `@pixerate/editor` ≥ 0.124 (optional peer, the first version with `/effects`; only that dependency-free subpath) |
 | `@pixerate/flair/testing` | `installFakeWebGl`, `FakeGl`: a fake WebGL2 context, so code that renders with Flair runs in jsdom, Node or CI with the same pixels every time (any test runner) | None |
 | `@pixerate/flair/node` | `exportEffect` and `exportMotionGraphic`: render a catalog effect (on a picture, video, SVG, words or a path) or a shader to MP4, WebM, MOV, GIF, PNG frames or animated SVG, through headless Chrome (and ffmpeg for video) | Node.js |
 
@@ -554,6 +555,36 @@ The tools are `list_commands`, `run_command` and `run_commands`, plus `view_effe
 - **History:** `history.undo` and `history.redo`.
 
 Every change is one undo step, and refusals come back as messages the model can act on.
+
+### 4b. Effects in `@pixerate/editor`'s editors
+
+`@pixerate/editor`'s editors take an effects provider, and `flairEffects()` is Flair's. The editor never imports Flair; the host passes the provider in.
+
+```ts
+import { flairEffects } from "@pixerate/flair/integrations";
+
+editor.setEffectsProvider(flairEffects());
+
+const provider = flairEffects();
+const [wipe] = await provider.search("wipe", { use: "transition" });
+const renderer = await provider.createRenderer(wipe.id, { width: 1920, height: 1080 });
+const frame = await renderer.render({ time: 0, progress: 0.5, inputs: { from: clipA, to: clipB } }); // { width, height, data }
+```
+
+- **Catalog.** Every shader and vector effect, plus the motion primitives as `motion` effects. Metadata comes from the lazy catalog; an effect's source loads when it is described or rendered.
+- **Uses and inputs.**
+  - Video filters (and stills and interactive effects over a picture) are `filter`, and read the input `source`.
+  - Transitions read `from` and `to`. `progress` (0–1, default `time / duration`) drives them in place of their own clock.
+  - Overlays, titles, generators and interactive effects follow from the catalog's categories and inputs.
+  - Other image controls are optional inputs named after their uniform (`uMask`, `uText`); without one, the effect shows its own sample.
+- **Values.** Controls come as a strict JSON Schema, with colours as `#rrggbb`. A bad value is refused with `invalid_values`.
+- **Rendering.**
+  - Shaders render through `ShaderFrames`, on a page or in a Worker, and take `ImageBitmap`, `VideoFrame`, `OffscreenCanvas` or `{ width, height, data }` inputs.
+  - Vector effects render on a page. In a Worker, pass `rasterizeSvg` or use `applyVectorEffect`.
+  - Output is 8-bit for now, with no mask; the editor applies the mask itself.
+- **Vector.** `applyVectorEffect(id, target, values)` returns a vector effect's own animated SVG with its values filled in, or applies a motion primitive to the target's elements: `nodeIds`, or each top-level element with an id.
+
+The demo's `#provider` page runs the editor's own conformance check (`checkEffectProvider`) over every effect on your GPU, and draws a few through the contract.
 
 ### 5. Let an agent direct a scene
 

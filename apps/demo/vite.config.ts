@@ -16,6 +16,8 @@ export default defineConfig({
     // The demo runs on the library's sources, so it always shows the code in this checkout.
     alias: [
       { find: /^@pixerate\/flair\/catalog$/, replacement: src("catalog/index.ts") },
+      { find: /^@pixerate\/flair\/catalog\/lazy$/, replacement: src("catalog/lazy.ts") },
+      { find: /^@pixerate\/flair\/integrations$/, replacement: src("integrations/index.ts") },
       { find: /^@pixerate\/flair\/editor$/, replacement: src("editor/index.ts") },
       { find: /^@pixerate\/flair\/vector$/, replacement: src("vector/index.ts") },
       { find: /^@pixerate\/flair\/embed$/, replacement: src("embed/index.ts") },
