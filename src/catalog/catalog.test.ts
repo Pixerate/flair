@@ -309,6 +309,8 @@ describe("catalog", () => {
   it("text effects keep long text full size inline, and say how far they spill", () => {
     const long = "The quick brown fox jumps over";
     for (const effect of findEffects({ kind: "vector", category: "text" }) as VectorEffect[]) {
+      // Text on a path is framed by its path, not its words: long text runs along it instead.
+      if (effect.motion.svg.includes("<textPath")) continue;
       const values = { text: long, word: long, prefix: long, inline: true };
       const block = svgInlineLayout(renderVectorEffect(effect, { ...values, inline: false }).svg)!;
       const inline = svgInlineLayout(renderVectorEffect(effect, values).svg)!;
