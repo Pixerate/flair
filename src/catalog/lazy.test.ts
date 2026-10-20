@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { EFFECTS, effectControls, effectInputs, findEffects, getEffect, type EffectQuery } from "./index.js";
+import { EFFECTS, effectControls, effectDuration, effectInputs, findEffects, getEffect, type EffectQuery } from "./index.js";
 import { metaOf, packMeta } from "./meta.js";
 import type { EffectDefinition } from "./types.js";
 
@@ -41,7 +41,7 @@ function moduleOf(): Map<string, string> {
 
 function generate() {
   const modules = moduleOf();
-  const packed = EFFECTS.map((e) => packMeta(metaOf(e, effectControls(e), effectInputs(e)), modules.get(e.id)!));
+  const packed = EFFECTS.map((e) => packMeta(metaOf(e, effectControls(e), effectInputs(e), effectDuration(e)), modules.get(e.id)!));
   const json = `[\n${packed.map((p) => JSON.stringify(p)).join(",\n")}\n]\n`;
   const keys = [...new Set(modules.values())].sort();
   const ts = [
@@ -80,7 +80,7 @@ describe("@pixerate/flair/catalog/lazy", async () => {
     expect(lazy.EFFECT_META.map((m) => m.id)).toEqual(EFFECTS.map((e) => e.id));
     for (const effect of EFFECTS) {
       const meta = lazy.getEffectMeta(effect.id)!;
-      expect(meta).toEqual(metaOf(effect, effectControls(effect), effectInputs(effect)));
+      expect(meta).toEqual(metaOf(effect, effectControls(effect), effectInputs(effect), effectDuration(effect)));
       expect(meta.controls).toEqual(effectControls(effect));
     }
     expect(lazy.getEffectMeta("nope")).toBeUndefined();
