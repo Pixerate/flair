@@ -48,6 +48,7 @@ export const EFFECT_MODULES: Record<string, () => Promise<Record<string, unknown
   "shaders/retro": () => import("./shaders/retro.js"),
   "shaders/scroll": () => import("./shaders/scroll.js"),
   "shaders/shadow": () => import("./shaders/shadow.js"),
+  "shaders/sketch": () => import("./shaders/sketch.js"),
   "shaders/space-more": () => import("./shaders/space-more.js"),
   "shaders/splatter": () => import("./shaders/splatter.js"),
   "shaders/sticker": () => import("./shaders/sticker.js"),

@@ -19,7 +19,7 @@ Flair gives products a library of good-looking, configurable visual effects (her
 
 ### Core Capabilities
 
-- 🎨 **Effect catalog (`@pixerate/flair/catalog`)**: 419 effects, each with controls and presets, in 40 categories browsed in 8 groups. There are 280 WebGL2 shaders (gradients, organic textures and growth, patterns, light, lighting that relights pictures, space, 3D objects and globes, weather, water, atmosphere, retro and pixel art, image treatments, transparent overlays, text fills, image morphs, pointer interactions, sound- and scroll-driven effects, pyrotechnics, time warps, melting, electricity, splatters, bubbles, stickers, pointer trails, particles, debris, impacts, comic looks, glows, shadows, distortions, web UI flourishes and backgrounds, glass (glass and chrome text with a sweeping prism beam, a crystal ball, glass blocks, cracked glass, condensation, stained glass, a cut gem, a prism, dichroic panes) and mirrors (floor and water reflections, an infinity mirror, a funhouse mirror), transitions) and 139 animated SVG effects (text on a path and circle text, loaders and progress bars, status and animated icons, a logo marquee, a number ticker, animated titles, broadcast graphics and lower thirds, scroll-driven drawing, counters and steps, annotations and product-demo callouts, shape morphs, UI micro-interactions, pixel sprites, stickers, cartoon effects, glowing and lifting UI, a lamp switch, charts, counters, node graphs and other data viz). [Browse them live](https://pixerate.github.io/flair/).
+- 🎨 **Effect catalog (`@pixerate/flair/catalog`)**: 424 effects, each with controls and presets, in 40 categories browsed in 8 groups. There are 285 WebGL2 shaders (gradients, organic textures and growth, patterns, light, lighting that relights pictures, space, 3D objects and globes, weather, water, atmosphere, retro and pixel art, image treatments, artist's media (pencil, watercolour, pen and ink, charcoal, a sketch-to-colour reveal), transparent overlays, text fills, image morphs, pointer interactions, sound- and scroll-driven effects, pyrotechnics, time warps, melting, electricity, splatters, bubbles, stickers, pointer trails, particles, debris, impacts, comic looks, glows, shadows, distortions, web UI flourishes and backgrounds, glass (glass and chrome text with a sweeping prism beam, a crystal ball, glass blocks, cracked glass, condensation, stained glass, a cut gem, a prism, dichroic panes) and mirrors (floor and water reflections, an infinity mirror, a funhouse mirror), transitions) and 139 animated SVG effects (text on a path and circle text, loaders and progress bars, status and animated icons, a logo marquee, a number ticker, animated titles, broadcast graphics and lower thirds, scroll-driven drawing, counters and steps, annotations and product-demo callouts, shape morphs, UI micro-interactions, pixel sprites, stickers, cartoon effects, glowing and lifting UI, a lamp switch, charts, counters, node graphs and other data viz). [Browse them live](https://pixerate.github.io/flair/).
 - ⚡ **Shader engine**:
   - Shadertoy-style GLSL ES 3.00 fragment shaders, with controls declared in the source (`// @control`), including image inputs.
   - Compile errors come back with line numbers that match the source.
@@ -67,7 +67,7 @@ The `flair` CLI inspects shaders, writes standalone pages and directs scenes (se
 ```mermaid
 graph TD
   subgraph Effects["Effects (no dependencies)"]
-    Catalog["catalog: 419 effects + presets"]
+    Catalog["catalog: 424 effects + presets"]
     Shader["shader engine: controls, compile, render, GIF, HTML"]
     Vector["vector motion: SvgMotion, SvgPlayer"]
     Time["time: clocks, easing, keyframes, noise"]
@@ -678,7 +678,7 @@ frames.render(t, { audio: track.at(t), scroll: [0.5, 0.5, 0, 0] });
 | light / space | bokeh, god rays, sparkles, neon ripple, light ribbons, warp starfield, nebula, event horizon, planet, spiral galaxy, solar system |
 | lighting | relight, point light, studio lighting, time of day, gobo projection, neon spill, candlelight, pool caustics, party lights, lamp switch |
 | retro | synthwave, digital rain, dithered gradient, TV static, 8-bit, Game Boy screen, pixel fire, pixel landscape, OutRun road, palette cycle, raster bars, tape loading, pixel water, pixel text, coin spin, space invader, heart health bar, chomp loader |
-| image | ripple, glitch, duotone, halftone, pixel reveal, Ken Burns, ASCII art, shatter, melt, risograph, thermal, edge glow, tilt-shift, slit-scan, mosaic flip, chromatic lens, oil paint, CRT screen, film look |
+| image | ripple, glitch, duotone, halftone, pixel reveal, Ken Burns, ASCII art, shatter, melt, risograph, thermal, edge glow, tilt-shift, slit-scan, mosaic flip, chromatic lens, oil paint, pencil sketch, watercolour, pen and ink, charcoal, sketch reveal, CRT screen, film look |
 | overlay | rain on glass, snowfall, lens flare, vignette & grain, scanline sweep, spotlight, embers, shine sweep, glare sweep, frost creep, viewfinder |
 | text | shader text, drip text, typewriter, scramble text, kinetic stagger, neon sign, stroke draw text, split reveal, highlighter, word cycle, liquid fill, glitch text, extruded text, text on a path, circle text |
 | morph | feature morph, silhouette morph, shape morph, icon toggle, morph sequence, gooey morph, particle morph, digit morph |
