@@ -30,6 +30,7 @@ export {
   type EffectDocument,
   type EffectSource,
 } from "./document.js";
+export { EFFECT_DOCUMENT_SCHEMA } from "./schema.js";
 export {
   cubicBezierAt,
   EASING_PRESETS,
