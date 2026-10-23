@@ -83,6 +83,7 @@ export const sparkles: ShaderEffect = {
   description: "Four-pointed glints twinkling on and off across the frame.",
   category: "light",
   tags: ["overlay", "magic", "celebration", "premium"],
+  transparent: true,
   source: glsl(
     `// Sparkles: four-pointed glints twinkling across the frame.
 uniform vec3 uBackground;       // @control color default=#1E1B4B label="Background"
