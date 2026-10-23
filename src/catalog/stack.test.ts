@@ -1,6 +1,20 @@
-import { effectDefaults, effectStack, getEffect, SHADER_EFFECTS } from "./index.js";
+import { drawsAlpha, effectDefaults, effectStack, getEffect, SHADER_EFFECTS } from "./index.js";
 import { ShaderPipeline } from "../shader/pipeline.js";
 import { installFakeWebGl } from "../shader/test-utils.js";
+
+describe("drawsAlpha", () => {
+  it("is true for overlays, and for a background or backdrop opacity below 1", () => {
+    const sparkles = getEffect("sparkles")!;
+    expect(drawsAlpha(getEffect("click-ripple")!, {})).toBe(true);
+    expect(drawsAlpha(getEffect("aurora")!)).toBe(false);
+    expect(drawsAlpha(sparkles, effectDefaults(sparkles))).toBe(false);
+    expect(drawsAlpha(sparkles, { uBackgroundAlpha: 0.5 })).toBe(true);
+    expect(drawsAlpha(getEffect("rainbow")!, { uBackdropAlpha: 0 })).toBe(true);
+    // Without values: whether it could, for a canvas whose values change later.
+    expect(drawsAlpha(sparkles)).toBe(true);
+    expect(drawsAlpha(getEffect("lower-third")!)).toBe(false);
+  });
+});
 
 describe("effectStack", () => {
   it("feeds each filter the layer below, through its picture control", () => {
@@ -19,6 +33,11 @@ describe("effectStack", () => {
     const passes = effectStack(["crt", overlay.id], { source });
     expect(passes[0]!.inputs).toEqual({ uImage: source });
     expect(passes[1]).toMatchObject({ blend: "over", name: overlay.id });
+  });
+
+  it("draws a layer over the one below once its background is faded", () => {
+    expect(effectStack(["aurora", "sparkles"])[1]!.blend).toBeUndefined();
+    expect(effectStack(["aurora", { effect: "sparkles", values: { uBackgroundAlpha: 0 } }])[1]).toMatchObject({ blend: "over", name: "sparkles" });
   });
 
   it("refuses unknown ids and vector effects, saying which", () => {

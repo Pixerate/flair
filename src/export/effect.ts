@@ -15,6 +15,7 @@ import {
   effectDefaults,
   effectInputs,
   getEffect,
+  drawsAlpha,
   renderVectorEffect,
   sanitizeEffectValues,
   type EffectCategory,
@@ -516,7 +517,7 @@ export async function exportEffect(effect: string | EffectDefinition, options: E
         shader: {
           fragment: wrapSource(def.source),
           controls: await pageControls(def.source, values),
-          opaque: !plan.alpha && !def.transparent,
+          opaque: !plan.alpha && !drawsAlpha(def, values),
         },
       },
       state,

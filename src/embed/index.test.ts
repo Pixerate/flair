@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { getEffect, textImage } from "../catalog/index.js";
 import { mountEffect, subjectValues } from "./index.js";
+import { installFakeWebGl } from "../shader/test-utils.js";
 
 const effect = (id: string) => getEffect(id)!;
 
@@ -69,5 +70,14 @@ describe("mountEffect", () => {
     expect(host.querySelector("canvas")).toBe(mounted.element);
     mounted.dispose();
     expect(() => mountEffect(host, "no-such-effect")).toThrow(/no effect "no-such-effect"/);
+  });
+
+  it("draws on a transparent canvas when the effect can fade its background, and an opaque one otherwise", () => {
+    const webgl = installFakeWebGl();
+    const host = document.createElement("div");
+    mountEffect(host, "sparkles", { autoplay: false, values: { uBackgroundAlpha: 0 } }).dispose();
+    expect(webgl.last().attributes).toMatchObject({ alpha: true });
+    mountEffect(host, "aurora", { autoplay: false }).dispose();
+    expect(webgl.last().attributes).toMatchObject({ alpha: false });
   });
 });

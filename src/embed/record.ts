@@ -2,7 +2,7 @@
 // type-checks these sources through the `workspace` condition.
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="../shader/gifenc.d.ts" />
-import { effectDefaults, effectInputs, getEffect, type EffectDefinition } from "../catalog/index.js";
+import { drawsAlpha, effectDefaults, effectInputs, getEffect, type EffectDefinition } from "../catalog/index.js";
 import { renderVectorEffect } from "../catalog/types.js";
 import { muxMp4 } from "../export/mp4mux.js";
 import { muxWebm, type WebmFrame } from "../export/webmmux.js";
@@ -46,7 +46,8 @@ export interface RecordOptions {
   /** Bits per second for `mp4` and `webm` (default `width × height × fps × 0.15`). */
   bitrate?: number;
   /**
-   * Keep transparency (default: the effect's `transparent`): `webm` (VP9
+   * Keep transparency (default: whether the effect draws alpha, see
+   * `drawsAlpha`: an overlay, or a background opacity below 1): `webm` (VP9
    * or VP8 with an alpha channel, which Chrome, Edge and Firefox play),
    * `png`, and `gif` (one see-through colour). `mp4` cannot, so it lays the
    * picture over `background` unless `alpha: true` was asked for. Without
@@ -214,7 +215,7 @@ export async function recordingPlan(effect: EffectDefinition | string, options: 
   let width = Math.round(positive("width", options.width, 1280));
   let height = Math.round(positive("height", options.height, 720));
   const explicitAlpha = options.alpha === true;
-  let alpha = options.alpha ?? (def.kind === "shader" && Boolean(def.transparent));
+  let alpha = options.alpha ?? drawsAlpha(def, effectDefaults(def, { ...(options.preset ? { preset: options.preset } : {}), ...(options.values ? { values: options.values } : {}) }));
   let format = options.format;
   if (format && !["mp4", "webm", "gif", "png"].includes(format)) throw new Error(`format is one of "mp4", "webm", "gif" or "png" (it was "${format}").`);
   if (format === "mp4" && alpha) {
@@ -308,8 +309,8 @@ interface FrameSource {
 
 function shaderSource(plan: RecordingPlan, values: Record<string, ControlValue>, live: Record<string, LiveSource>, options: RecordOptions, sound?: AudioBufferAnalysis): FrameSource {
   const def = plan.effect as Extract<EffectDefinition, { kind: "shader" }>;
-  // A transparent effect is drawn with its alpha even when it is not kept, to be laid over the background.
-  const frames = new ShaderFrames({ source: def.source, values, width: plan.width, height: plan.height, alpha: plan.alpha || Boolean(def.transparent) });
+  // An effect that draws alpha is drawn with it even when it is not kept, to be laid over the background.
+  const frames = new ShaderFrames({ source: def.source, values, width: plan.width, height: plan.height, alpha: plan.alpha || drawsAlpha(def, values) });
   const videos: { video: HTMLVideoElement; time: number; paused: boolean }[] = [];
   for (const [name, source] of Object.entries(live)) {
     frames.setLiveSource(name, source);
