@@ -5,13 +5,17 @@ import { installFakeWebGl } from "../shader/test-utils.js";
 describe("drawsAlpha", () => {
   it("is true for overlays, and for a background or backdrop opacity below 1", () => {
     const sparkles = getEffect("sparkles")!;
+    const rainbow = getEffect("rainbow")!;
     expect(drawsAlpha(getEffect("click-ripple")!, {})).toBe(true);
     expect(drawsAlpha(getEffect("aurora")!)).toBe(false);
-    expect(drawsAlpha(sparkles, effectDefaults(sparkles))).toBe(false);
+    expect(drawsAlpha(sparkles, effectDefaults(sparkles))).toBe(true);
+    // An overlay with its background turned up covers the frame.
+    expect(drawsAlpha(sparkles, effectDefaults(sparkles, { preset: "With background" }))).toBe(false);
     expect(drawsAlpha(sparkles, { uBackgroundAlpha: 0.5 })).toBe(true);
-    expect(drawsAlpha(getEffect("rainbow")!, { uBackdropAlpha: 0 })).toBe(true);
+    expect(drawsAlpha(rainbow, effectDefaults(rainbow))).toBe(false);
+    expect(drawsAlpha(rainbow, { uBackdropAlpha: 0 })).toBe(true);
     // Without values: whether it could, for a canvas whose values change later.
-    expect(drawsAlpha(sparkles)).toBe(true);
+    expect(drawsAlpha(rainbow)).toBe(true);
     expect(drawsAlpha(getEffect("lower-third")!)).toBe(false);
   });
 });
@@ -35,9 +39,9 @@ describe("effectStack", () => {
     expect(passes[1]).toMatchObject({ blend: "over", name: overlay.id });
   });
 
-  it("draws a layer over the one below once its background is faded", () => {
-    expect(effectStack(["aurora", "sparkles"])[1]!.blend).toBeUndefined();
-    expect(effectStack(["aurora", { effect: "sparkles", values: { uBackgroundAlpha: 0 } }])[1]).toMatchObject({ blend: "over", name: "sparkles" });
+  it("draws an overlay over the one below, unless its background is turned up", () => {
+    expect(effectStack(["aurora", "sparkles"])[1]).toMatchObject({ blend: "over", name: "sparkles" });
+    expect(effectStack(["aurora", { effect: "sparkles", preset: "With background" }])[1]!.blend).toBeUndefined();
   });
 
   it("refuses unknown ids and vector effects, saying which", () => {

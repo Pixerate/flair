@@ -111,10 +111,11 @@ describe("recordingPlan", () => {
     await expect(recordingPlan("click-ripple", { format: "mp4", alpha: true })).rejects.toThrow(/mp4 \(H.264\) cannot keep transparency; record "webm", "png" or "gif"/);
   });
 
-  it("keeps the alpha of an effect whose background is faded out", async () => {
+  it("keeps the alpha of an effect whose background or backdrop is faded out", async () => {
     stubWebCodecs(["avc1", "vp09"]);
-    expect(await recordingPlan("sparkles")).toMatchObject({ format: "mp4", alpha: false });
-    expect(await recordingPlan("sparkles", { values: { uBackgroundAlpha: 0 } })).toMatchObject({ format: "webm", alpha: true });
+    expect(await recordingPlan("sparkles")).toMatchObject({ format: "webm", alpha: true });
+    expect(await recordingPlan("sparkles", { preset: "With background" })).toMatchObject({ format: "mp4", alpha: false });
+    expect(await recordingPlan("rainbow")).toMatchObject({ format: "mp4", alpha: false });
     expect(await recordingPlan("rainbow", { values: { uBackdropAlpha: 0 }, format: "gif" })).toMatchObject({ format: "gif", alpha: true });
   });
 

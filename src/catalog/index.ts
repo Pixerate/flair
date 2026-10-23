@@ -272,26 +272,27 @@ export function effectInputs(effect: EffectDefinition): EffectInputs {
   return inputs;
 }
 
-/** Controls that fade a shader's own background (or the backdrop behind its picture) to let the page show through. */
-const OPACITY_CONTROLS = ["uBackgroundAlpha", "uBackdropAlpha"];
-
 /**
  * Whether a shader effect draws alpha to keep, so it needs a transparent
- * canvas (`alpha: true`): an overlay (`transparent`), or an effect whose
- * background or backdrop opacity control (`uBackgroundAlpha`,
- * `uBackdropAlpha`) is below 1 in `values`. Without `values`, whether it has
- * such a control at all, for a live canvas whose values change later; an
- * opaque frame looks the same on a transparent canvas. False for vector effects.
+ * canvas (`alpha: true`). With `values`: an effect with a background opacity
+ * control (`uBackgroundAlpha`, which covers the whole frame) when it is below
+ * 1, else an overlay (`transparent`), or a picture effect whose backdrop
+ * (`uBackdropAlpha`) is below 1. Without `values`, whether it could, for a
+ * live canvas whose values change later: an overlay, or an effect with
+ * either control (an opaque frame looks the same on a transparent canvas).
+ * False for vector effects.
  */
 export function drawsAlpha(effect: EffectDefinition, values?: Readonly<Record<string, ControlValue>>): boolean {
   if (effect.kind !== "shader") return false;
-  if (effect.transparent) return true;
-  const controls = effectControls(effect).filter((c) => OPACITY_CONTROLS.includes(c.name));
-  if (!values) return controls.length > 0;
-  return controls.some((c) => {
-    const value = values[c.name] ?? c.default;
+  const controls = effectControls(effect);
+  const below1 = (name: string) => {
+    const control = controls.find((c) => c.name === name);
+    if (!control) return undefined;
+    const value = values?.[name] ?? control.default;
     return typeof value === "number" && value < 1;
-  });
+  };
+  if (!values) return Boolean(effect.transparent) || below1("uBackgroundAlpha") !== undefined || below1("uBackdropAlpha") !== undefined;
+  return below1("uBackgroundAlpha") ?? (Boolean(effect.transparent) || below1("uBackdropAlpha") === true);
 }
 
 export type { EffectQuery } from "./query.js";

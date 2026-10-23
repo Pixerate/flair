@@ -253,11 +253,21 @@ describe("catalog", () => {
     expect(icon).toContain('fill="none"');
   });
 
+  it("draws the generators with a background opacity as overlays, with their background a preset away", () => {
+    for (const id of ["sparkles", "bokeh", "circular-spectrum", "bass-pulse", "vinyl", "gemstone", "chrome-text", "floor-reflection"]) {
+      const effect = getEffect(id)!;
+      expect(effect, id).toMatchObject({ transparent: true });
+      expect(effect.tags, id).toContain("overlay");
+      expect(effectDefaults(effect).uBackgroundAlpha, id).toBe(0);
+      expect(effect.presets?.some((p) => p.values.uBackgroundAlpha === 1), id).toBe(true);
+    }
+  });
+
   it("exposes background alpha and sparsity controls on sparkles and bokeh", () => {
     const sparkles = getEffect("sparkles")!;
     const bokeh = getEffect("bokeh")!;
-    expect(effectDefaults(sparkles)).toMatchObject({ uBackgroundAlpha: 1, uChance: 1 });
-    expect(effectDefaults(bokeh)).toMatchObject({ uBackgroundAlpha: 1 });
+    expect(effectDefaults(sparkles)).toMatchObject({ uBackgroundAlpha: 0, uChance: 1 });
+    expect(effectDefaults(bokeh)).toMatchObject({ uBackgroundAlpha: 0 });
   });
 
   it("draws any text as a white-on-clear SVG image", () => {
@@ -1837,7 +1847,7 @@ describe("glass and mirror effects", () => {
     expect(effect).toMatchObject({ category: "text", video: "none" });
     expect(effectInputs(effect).images.map((s) => s.wants)).toEqual(["text"]);
     expect(effectDefaults(effect, { preset: "Gold" }).uTint).toEqual([1, 0.78, 0.38]);
-    expect(effectControls(effect).find((c) => c.name === "uBackgroundAlpha")).toMatchObject({ default: 1 });
+    expect(effectControls(effect).find((c) => c.name === "uBackgroundAlpha")).toMatchObject({ default: 0 });
   });
 
   it("answer the pointer the way their tags say", () => {

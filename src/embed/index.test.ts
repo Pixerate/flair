@@ -72,10 +72,10 @@ describe("mountEffect", () => {
     expect(() => mountEffect(host, "no-such-effect")).toThrow(/no effect "no-such-effect"/);
   });
 
-  it("draws on a transparent canvas when the effect can fade its background, and an opaque one otherwise", () => {
+  it("draws on a transparent canvas when the effect can fade its backdrop, and an opaque one otherwise", () => {
     const webgl = installFakeWebGl();
     const host = document.createElement("div");
-    mountEffect(host, "sparkles", { autoplay: false, values: { uBackgroundAlpha: 0 } }).dispose();
+    mountEffect(host, "rainbow", { autoplay: false }).dispose();
     expect(webgl.last().attributes).toMatchObject({ alpha: true });
     mountEffect(host, "aurora", { autoplay: false }).dispose();
     expect(webgl.last().attributes).toMatchObject({ alpha: false });

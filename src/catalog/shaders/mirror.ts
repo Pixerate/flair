@@ -19,13 +19,14 @@ export const chromeText: ShaderEffect = {
     "A title in polished or brushed metal: its bevels reflect a studio sky and dark ground split by a bright horizon, and a glint sweeps across the letters.",
   category: "text",
   video: "none",
-  tags: ["text", "title", "chrome", "metal", "mirror", "reflection", "gold", "80s"],
+  tags: ["text", "title", "chrome", "metal", "mirror", "reflection", "gold", "80s", "overlay"],
+  transparent: true,
   loop: 4,
   source: glsl(
     `// Chrome text: bevelled letters reflecting a sky-and-ground studio; a softbox glint sweeps through.
 uniform sampler2D uText;        // @control wrap=clamp default=${textImage("CHROME")} label="Text"
 uniform vec3 uBackground;       // @control color default=#0B0C10 label="Background"
-uniform float uBackgroundAlpha; // @control min=0 max=1 default=1 label="Background opacity"
+uniform float uBackgroundAlpha; // @control min=0 max=1 default=0 label="Background opacity"
 uniform float uSize;            // @control min=0.3 max=1 default=0.85 label="Text size"
 uniform float uBevel;           // @control min=0.005 max=0.06 default=0.02 label="Bevel"
 uniform vec3 uTint;             // @control color default=#FFFFFF label="Metal tint"
@@ -73,8 +74,9 @@ uniform float uShadow;          // @control min=0 max=1 default=0.5 label="Shado
   presets: [
     { name: "Gold", values: { uTint: [1, 0.78, 0.38], uSky: [1, 0.95, 0.85], uGround: [0.35, 0.22, 0.1] } },
     { name: "Brushed steel", values: { uBrushed: 1, uSweep: 0.5 } },
-    { name: "Synthwave", values: { uSky: [0.6, 0.85, 1], uGround: [0.55, 0.1, 0.5], uBackground: [0.06, 0.02, 0.1], uHorizon: -0.1 } },
+    { name: "Synthwave", values: { uSky: [0.6, 0.85, 1], uGround: [0.55, 0.1, 0.5], uBackground: [0.06, 0.02, 0.1], uBackgroundAlpha: 1, uHorizon: -0.1 } },
     { name: "Rose gold", values: { uTint: [1, 0.72, 0.65], uSky: [1, 0.93, 0.9] } },
+    { name: "With background", values: { uBackgroundAlpha: 1 } },
   ],
 };
 
@@ -86,7 +88,8 @@ export const floorReflection: ShaderEffect = {
     "A picture or logo standing on a glossy floor, its mirror image beneath fading and softening with distance, under a soft spotlight; wet floors ripple it.",
   category: "shadow",
   video: "filter",
-  tags: ["shadow", "mirror", "reflection", "floor", "product", "logo", "showcase", "image"],
+  tags: ["shadow", "mirror", "reflection", "floor", "product", "logo", "showcase", "image", "overlay"],
+  transparent: true,
   source: glsl(
     `// Floor reflection: the picture placed upright on a floor line, mirrored below it, blurring and fading with distance.
 uniform sampler2D uImage;       // @control wrap=clamp default=${SAMPLE_IMAGES.landscape} label="Image"
@@ -101,7 +104,7 @@ uniform float uBob;             // @control min=0 max=1 default=0 label="Bob"
 uniform float uSpot;            // @control min=0 max=1 default=0.5 label="Spotlight"
 uniform vec3 uBackgroundColor;  // @control color default=#101116 label="Background"
 uniform vec3 uFloorColor;       // @control color default=#08090B label="Floor"
-uniform float uBackgroundAlpha; // @control min=0 max=1 default=1 label="Background opacity"
+uniform float uBackgroundAlpha; // @control min=0 max=1 default=0 label="Background opacity"
 ${BACKDROP_CONTROLS}`,
     HASH,
     NOISE,
@@ -157,9 +160,10 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   ),
   presets: [
     { name: "Logo", values: { uImage: SAMPLE_IMAGES.logo, uBackdropAlpha: 0, uSize: 0.42, uStrength: 0.5 } },
-    { name: "Wet street", values: { uRipple: 0.8, uStrength: 0.6, uBlur: 0.15, uFloorColor: [0.04, 0.05, 0.07] } },
-    { name: "Studio white", values: { uBackgroundColor: [0.95, 0.95, 0.96], uFloorColor: [0.9, 0.9, 0.92], uStrength: 0.25, uSpot: 0.2 } },
+    { name: "Wet street", values: { uRipple: 0.8, uStrength: 0.6, uBlur: 0.15, uFloorColor: [0.04, 0.05, 0.07], uBackgroundAlpha: 1 } },
+    { name: "Studio white", values: { uBackgroundColor: [0.95, 0.95, 0.96], uFloorColor: [0.9, 0.9, 0.92], uStrength: 0.25, uSpot: 0.2, uBackgroundAlpha: 1 } },
     { name: "Floating", values: { uFloat: 0.04, uBob: 1, uStrength: 0.35 } },
+    { name: "With background", values: { uBackgroundAlpha: 1 } },
   ],
 };
 
