@@ -671,12 +671,13 @@ export const gemstone: ShaderEffect = {
   name: "Gemstone",
   description: "A brilliant-cut gem seen from above, turning slowly so its facets flash white and throw sparks of rainbow fire, with star glints.",
   category: "3d",
-  tags: ["3d", "glass", "gem", "diamond", "crystal", "sparkle", "fire", "luxury"],
+  tags: ["3d", "glass", "gem", "diamond", "crystal", "sparkle", "fire", "luxury", "overlay"],
+  transparent: true,
   source: glsl(
     `// Gemstone: a brilliant cut in plan, its crown and pavilion facets each a mirror flashing as two lights circle.
 uniform vec3 uColor;           // @control color default=#F4F8FF label="Stone colour"
 uniform vec3 uBackground;      // @control color default=#07080C label="Background"
-uniform float uBackgroundAlpha; // @control min=0 max=1 default=1 label="Background opacity"
+uniform float uBackgroundAlpha; // @control min=0 max=1 default=0 label="Background opacity"
 uniform float uSize;           // @control min=0.2 max=0.95 default=0.62 label="Size"
 uniform int uFacets;           // @control min=6 max=16 default=8 label="Facets round"
 uniform float uFire;           // @control min=0 max=1 default=0.6 label="Fire (rainbow)"
@@ -768,7 +769,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     { name: "Ruby", values: { uColor: [0.95, 0.15, 0.25], uFire: 0.3 } },
     { name: "Sapphire", values: { uColor: [0.2, 0.4, 1], uFire: 0.3 } },
     { name: "Emerald", values: { uColor: [0.2, 0.85, 0.45], uFacets: 12, uFire: 0.2 } },
-    { name: "Overlay", values: { uBackgroundAlpha: 0 } },
+    { name: "With background", values: { uBackgroundAlpha: 1 } },
   ],
 };
 

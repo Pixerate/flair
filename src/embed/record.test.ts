@@ -111,6 +111,14 @@ describe("recordingPlan", () => {
     await expect(recordingPlan("click-ripple", { format: "mp4", alpha: true })).rejects.toThrow(/mp4 \(H.264\) cannot keep transparency; record "webm", "png" or "gif"/);
   });
 
+  it("keeps the alpha of an effect whose background or backdrop is faded out", async () => {
+    stubWebCodecs(["avc1", "vp09"]);
+    expect(await recordingPlan("sparkles")).toMatchObject({ format: "webm", alpha: true });
+    expect(await recordingPlan("sparkles", { preset: "With background" })).toMatchObject({ format: "mp4", alpha: false });
+    expect(await recordingPlan("rainbow")).toMatchObject({ format: "mp4", alpha: false });
+    expect(await recordingPlan("rainbow", { values: { uBackdropAlpha: 0 }, format: "gif" })).toMatchObject({ format: "gif", alpha: true });
+  });
+
   it("names the formats that work when the browser cannot encode the one asked for", async () => {
     vi.stubGlobal("VideoEncoder", undefined);
     await expect(recordingPlan("aurora")).rejects.toThrow(/no WebCodecs VideoEncoder.*record "gif" or "png" instead/);

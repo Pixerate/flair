@@ -7,11 +7,12 @@ export const bokeh: ShaderEffect = {
   name: "Bokeh",
   description: "Out-of-focus city lights drifting softly.",
   category: "light",
-  tags: ["background", "festive", "dreamy", "night"],
+  tags: ["background", "festive", "dreamy", "night", "overlay"],
+  transparent: true,
   source: glsl(
     `// Bokeh: soft out-of-focus lights drifting.
 uniform vec3 uBackground;       // @control color default=#0B1026 label="Background"
-uniform float uBackgroundAlpha; // @control min=0 max=1 default=1 label="Background opacity"
+uniform float uBackgroundAlpha; // @control min=0 max=1 default=0 label="Background opacity"
 uniform vec3 uWarm;             // @control color default=#FFC56E label="Warm light"
 uniform vec3 uCool;             // @control color default=#6EC8FF label="Cool light"
 uniform int uCount;             // @control min=4 max=60 default=30 label="Lights"
@@ -42,6 +43,9 @@ uniform float uSpeed;           // @control min=0 max=1 default=0.15 label="Drif
   fragColor = vec4(col, a);
 }`,
   ),
+  presets: [
+    { name: "With background", values: { uBackgroundAlpha: 1 } },
+  ],
 };
 
 export const godRays: ShaderEffect = {
@@ -83,10 +87,11 @@ export const sparkles: ShaderEffect = {
   description: "Four-pointed glints twinkling on and off across the frame.",
   category: "light",
   tags: ["overlay", "magic", "celebration", "premium"],
+  transparent: true,
   source: glsl(
     `// Sparkles: four-pointed glints twinkling across the frame.
 uniform vec3 uBackground;       // @control color default=#1E1B4B label="Background"
-uniform float uBackgroundAlpha; // @control min=0 max=1 default=1 label="Background opacity"
+uniform float uBackgroundAlpha; // @control min=0 max=1 default=0 label="Background opacity"
 uniform vec3 uSparkle;          // @control color default=#FFFFFF label="Sparkle"
 uniform float uDensity;         // @control min=2 max=30 default=10 label="Density"
 uniform float uChance;          // @control min=0.02 max=1 default=1 label="Sparsity"
@@ -116,6 +121,9 @@ uniform float uSpeed;           // @control min=0 max=4 default=1 label="Twinkle
   fragColor = vec4(col, a);
 }`,
   ),
+  presets: [
+    { name: "With background", values: { uBackgroundAlpha: 1 } },
+  ],
 };
 
 export const neonRipple: ShaderEffect = {

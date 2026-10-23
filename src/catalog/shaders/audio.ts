@@ -138,7 +138,8 @@ export const circularSpectrum: ShaderEffect = {
   description: "A ring of spectrum bars radiating round a centre picture or colour, which swells on the bass.",
   category: "audio",
   video: "filter",
-  tags: ["audio", "music", "spectrum", "radial", "ring", "visualizer", "album art"],
+  tags: ["audio", "music", "spectrum", "radial", "ring", "visualizer", "album art", "overlay"],
+  transparent: true,
   source: glsl(
     `// Circular spectrum: bars radiating from a ring, the spectrum mirrored round it, a picture in the middle.
 uniform sampler2D uImage;    // @control filter=mipmap wrap=clamp default=${SAMPLE_IMAGES.portrait} label="Centre picture"
@@ -150,7 +151,7 @@ uniform float uLength;       // @control min=0.05 max=0.4 default=0.2 label="Bar
 uniform vec3 uColorA;        // @control color default=#38BDF8 label="Colour 1"
 uniform vec3 uColorB;        // @control color default=#E879F9 label="Colour 2"
 uniform vec3 uBackground;    // @control color default=#05060F label="Background"
-uniform float uBackgroundAlpha; // @control min=0 max=1 default=1 label="Background opacity"
+uniform float uBackgroundAlpha; // @control min=0 max=1 default=0 label="Background opacity"
 uniform float uSpin;         // @control min=-1 max=1 default=0.1 label="Spin"
 ${BACKDROP_CONTROLS}
 ${DEMO}`,
@@ -198,8 +199,9 @@ ${DEMO}`,
   ),
   presets: [
     { name: "Colour disc", values: { uShowImage: false, uCenter: [0.95, 0.3, 0.45], uColorA: [1, 0.8, 0.3], uColorB: [1, 0.3, 0.5] } },
-    { name: "Overlay", values: { uBackgroundAlpha: 0, uShowImage: false, uCenter: [0, 0, 0], uBars: 140, uLength: 0.3 } },
+    { name: "Bare ring", values: { uShowImage: false, uCenter: [0, 0, 0], uBars: 140, uLength: 0.3 } },
     { name: "Dense", values: { uBars: 180, uLength: 0.32, uRadius: 0.18, uColorA: [0.3, 1, 0.7], uColorB: [0.2, 0.5, 1] } },
+    { name: "With background", values: { uBackgroundAlpha: 1 } },
   ],
 };
 
@@ -280,7 +282,8 @@ export const bassPulse: ShaderEffect = {
   description: "A picture or logo thumping to the bass: it swells and glows on every kick, with a colour split on the beat.",
   category: "audio",
   video: "filter",
-  tags: ["audio", "music", "bass", "pulse", "logo", "beat", "glow"],
+  tags: ["audio", "music", "bass", "pulse", "logo", "beat", "glow", "overlay"],
+  transparent: true,
   source: glsl(
     `// Bass pulse: the picture scaled by the bass, a glow from its edges, a quick colour split on each beat.
 uniform sampler2D uImage;    // @control filter=mipmap wrap=clamp default=${SAMPLE_IMAGES.portrait} label="Picture or logo"
@@ -291,7 +294,7 @@ uniform float uGlow;         // @control min=0 max=2 default=1 label="Glow stren
 uniform float uSplit;        // @control min=0 max=0.03 default=0.012 label="Colour split on the beat"
 uniform float uCorner;       // @control min=0 max=0.5 default=0.08 label="Corner rounding"
 uniform vec3 uBackground;    // @control color default=#0B0614 label="Background"
-uniform float uBackgroundAlpha; // @control min=0 max=1 default=1 label="Background opacity"
+uniform float uBackgroundAlpha; // @control min=0 max=1 default=0 label="Background opacity"
 ${BACKDROP_CONTROLS}
 ${DEMO}`,
     PICTURE,
@@ -354,7 +357,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   presets: [
     { name: "Logo", values: { uImage: SAMPLE_IMAGES.logo, uBackdropAlpha: 0, uCorner: 0, uSize: 0.6, uGlowColor: [0.5, 0.5, 1] } },
     { name: "Heart beat", values: { uImage: SAMPLE_IMAGES.heart, uBackdropAlpha: 0, uCorner: 0, uPulse: 0.3, uGlowColor: [1, 0.3, 0.4] } },
-    { name: "Overlay", values: { uBackgroundAlpha: 0, uSplit: 0.02 } },
+    { name: "With background", values: { uBackgroundAlpha: 1 } },
   ],
 };
 
@@ -483,7 +486,8 @@ export const vinyl: ShaderEffect = {
   description: "A record spinning on a turntable, its label a picture, its grooves catching the light with the music, the tonearm riding the beat.",
   category: "audio",
   video: "stills",
-  tags: ["audio", "music", "vinyl", "record", "turntable", "retro", "album art"],
+  tags: ["audio", "music", "vinyl", "record", "turntable", "retro", "album art", "overlay"],
+  transparent: true,
   source: glsl(
     `// Vinyl: a spinning record; each groove's sheen follows the spectrum at its radius, the label is a picture.
 uniform sampler2D uLabel;    // @control filter=mipmap wrap=clamp default=${SAMPLE_IMAGES.portrait} label="Label picture"
@@ -492,7 +496,7 @@ uniform vec3 uRecord;        // @control color default=#101014 label="Record"
 uniform vec3 uSheen;         // @control color default=#C4B5FD label="Sheen"
 uniform float uShimmer;      // @control min=0 max=2 default=1 label="Shimmer"
 uniform vec3 uBackground;    // @control color default=#2A211C label="Platter"
-uniform float uBackgroundAlpha; // @control min=0 max=1 default=1 label="Platter opacity"
+uniform float uBackgroundAlpha; // @control min=0 max=1 default=0 label="Platter opacity"
 uniform bool uArm;           // @control default=true label="Tonearm"
 ${BACKDROP_CONTROLS}
 ${DEMO}`,
@@ -567,6 +571,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   presets: [
     { name: "Red vinyl", values: { uRecord: [0.45, 0.04, 0.06], uSheen: [1, 0.6, 0.6] } },
     { name: "45 rpm", values: { uRpm: 45, uLabel: SAMPLE_IMAGES.logo, uBackdrop: [0.95, 0.9, 0.8] } },
+    { name: "On the platter", values: { uBackgroundAlpha: 1 } },
   ],
 };
 

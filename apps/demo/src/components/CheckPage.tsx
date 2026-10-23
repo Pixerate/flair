@@ -12,10 +12,9 @@ interface Result {
 const PICTURE_EFFECTS = SHADER_EFFECTS.filter((e) => /uniform float uBackdropAlpha;/.test(e.source));
 /**
  * These draw a whole opaque device or scene around the picture, so they stay opaque with a clear
- * backdrop (the audio ones and the floor reflection clear it with their own background opacity
- * control instead; the funhouse mirror hangs on a wall unless its frame is turned off).
+ * backdrop (the funhouse mirror hangs on a wall unless its frame is turned off).
  */
-const OPAQUE = new Set(["gameboy-screen", "circular-spectrum", "bass-pulse", "vinyl", "floor-reflection", "funhouse-mirror"]);
+const OPAQUE = new Set(["gameboy-screen", "funhouse-mirror"]);
 
 /**
  * Renders `effect` with the sample icon (black strokes on clear, like a Lucide

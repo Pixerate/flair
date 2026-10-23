@@ -10,7 +10,7 @@
  * @packageDocumentation
  */
 
-import { effectDefaults, effectInputs, getEffect, textImage, type EffectDefinition, type ImageSlot, type TextSlot } from "../catalog/index.js";
+import { drawsAlpha, effectDefaults, effectInputs, getEffect, textImage, type EffectDefinition, type ImageSlot, type TextSlot } from "../catalog/index.js";
 import { renderVectorEffect } from "../catalog/types.js";
 import type { AudioSource } from "../shader/audio.js";
 import type { ControlValue } from "../shader/controls.js";
@@ -203,7 +203,7 @@ export function mountEffect(host: HTMLElement, effect: EffectDefinition | string
     }
 
     const renderer = new ShaderRenderer(host, {
-      alpha: Boolean(def.transparent),
+      alpha: drawsAlpha(def),
       autoplay: isOneShot ? false : (options.autoplay ?? true),
       pauseWhenHidden: options.pauseWhenHidden ?? true,
       ...(options.playOnEnter !== undefined ? { playOnEnter: options.playOnEnter } : {}),
