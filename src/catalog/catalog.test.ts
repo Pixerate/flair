@@ -1665,6 +1665,17 @@ describe("3d, space, weather and water effects", () => {
     }
   });
 
+  it("streak shooting stars, a meteor shower and a comet across the sky", () => {
+    for (const id of ["shooting-star", "meteor-shower", "comet"]) expect(ids("space")).toContain(id);
+    // The shooting star lays over a page by default and keeps a preset for the old opaque sky.
+    expect(getEffect("shooting-star")).toMatchObject({ transparent: true });
+    expect(effectControls(getEffect("shooting-star")!).find((c) => c.name === "uBackgroundAlpha")).toMatchObject({ default: 0 });
+    expect(getEffect("shooting-star")!.presets!.map((p) => p.name)).toContain("Night sky");
+    // Clicking launches one from the pointer.
+    expect(effectInputs(getEffect("shooting-star")!).interactions).toContain("click");
+    for (const id of ["meteor-shower", "comet"]) expect(getEffect(id), id).not.toMatchObject({ transparent: true });
+  });
+
   it("let the globe be dragged and the pond take stones, with idle demos", () => {
     expect(effectInputs(getEffect("globe")!).interactions).toEqual(expect.arrayContaining(["press", "pointer"]));
     expect(effectInputs(getEffect("pond-ripples")!).interactions).toContain("click");

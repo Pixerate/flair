@@ -3,9 +3,12 @@ import type { ShaderEffect } from "../types.js";
 import { NOISE_3D } from "./atmosphere.js";
 
 /**
- * More space: a ringed planet, a spiral galaxy and a solar system. The
- * planets are analytic spheres (and ring planes), the galaxy a 2D picture
- * of log-spiral arms seen at a tilt.
+ * More space: a ringed planet, a spiral galaxy and a solar system, then
+ * things that streak across the night sky: a shooting star, a meteor shower
+ * and a comet. The planets are analytic spheres (and ring planes), the
+ * galaxy a 2D picture of log-spiral arms seen at a tilt; meteors are bright
+ * heads moving along straight paths, lighting each point they pass for a
+ * moment after.
  */
 
 /** `stars(fragCoord, density)`: a sparse, twinkling star field in pixel space. */
@@ -378,4 +381,328 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   ],
 };
 
-export const spaceShaders: readonly ShaderEffect[] = [planet, spiralGalaxy, solarSystem];
+/**
+ * `meteor(p, a, dir, dist, dur, t, len, w, train, flare, head, tail)`: the
+ * light a meteor adds at `p` (all in frame heights), `t` seconds after it set
+ * off from `a` along unit `dir`, crossing `dist` in `dur` seconds and burning
+ * out there. Each point of the path glows as the head passes and fades over
+ * the tail's `len`, with a faint `train` lingering after; the head brightens
+ * and flares by `flare` near the end. `w` is the head's width.
+ * `meteorSparks(p, a, dir, dist, dur, t, w, flare, sparks, seed, colour)`
+ * adds the sparks it sheds (`sparks` 0 to 1; needs {@link HASH}).
+ */
+const METEOR = `
+// How bright a meteor's head is at u (0 to 1) along its path: kindling, a flare before the end, burning out.
+float meteorBrightness(float u, float flare) {
+  float f = (u - 0.82) / 0.05;
+  return smoothstep(0.0, 0.12, u) * (1.0 - smoothstep(0.72, 1.0, u)) + flare * exp(-f * f);
+}
+vec3 meteor(vec2 p, vec2 a, vec2 dir, float dist, float dur, float t, float len, float w, float train, float flare, vec3 head, vec3 tail) {
+  if (t < 0.0) return vec3(0.0);
+  float speed = dist / dur;
+  vec2 q = p - a;
+  float x = dot(q, dir);
+  float hx = min(t, dur) * speed;
+  // Nothing reaches further than the head's halo from the path travelled so far.
+  float reach = w * 14.0;
+  if (abs(dot(q, vec2(-dir.y, dir.x))) > reach || x < -reach || x > hx + reach) return vec3(0.0);
+  float xc = clamp(x, 0.0, hx);
+  float b = meteorBrightness(xc / dist, flare);
+  float age = t - xc / speed;
+  float behind = age * speed / len;
+  float wd = w * (0.35 + 0.65 * exp(-behind * 2.0));
+  float e = length(q - dir * xc);
+  float line = exp(-(e * e) / (wd * wd)) * b;
+  vec3 col = mix(head, tail, clamp(behind * 3.0, 0.0, 1.0)) * line * exp(-behind * 3.0);
+  col += tail * line * train * 0.3 * exp(-age * 1.4);
+  // The head: a hot core inside a soft halo, gone quickly after it burns out.
+  float hb = meteorBrightness(hx / dist, flare) * exp(-max(t - dur, 0.0) * 14.0);
+  float r = length(q - dir * hx);
+  return col + mix(head, vec3(1.0), 0.5) * hb * (1.6 * exp(-(r * r) / (w * w)) + 0.35 * exp(-r / (w * 4.0)));
+}
+// Sparks shed along the path in cells, drifting off, falling and dimming.
+vec3 meteorSparks(vec2 p, vec2 a, vec2 dir, float dist, float dur, float t, float w, float flare, float sparks, float seed, vec3 colour) {
+  if (t < 0.0) return vec3(0.0);
+  float speed = dist / dur;
+  vec2 n = vec2(-dir.y, dir.x);
+  vec2 q = p - a;
+  float x = dot(q, dir);
+  float hx = min(t, dur) * speed;
+  if (abs(dot(q, n)) > w * 3.0 + 0.04 || x < -0.03 || x > hx + 0.03) return vec3(0.0);
+  vec3 col = vec3(0.0);
+  float cell = 0.025;
+  float k0 = floor(x / cell);
+  for (int k = -1; k <= 1; k++) {
+    float c = k0 + float(k);
+    vec2 h = hash22(vec2(c, seed));
+    float xs = (c + h.x) * cell;
+    if (xs < 0.0 || xs > hx || h.y > sparks) continue;
+    float age = t - xs / speed;
+    float life = 0.35 + 0.6 * hash12(vec2(seed, c * 1.7));
+    if (age > life) continue;
+    vec2 at = a + dir * (xs + 0.01 * (1.0 - exp(-age * 3.0))) + n * (h.y / sparks - 0.5) * (w * 2.0 + 0.03 * age) - vec2(0.0, 0.02) * age * age;
+    float r = length(p - at);
+    float twinkle = 0.6 + 0.4 * sin(age * 40.0 + c);
+    col += colour * exp(-(r * r) / (w * w * 0.3)) * (1.0 - age / life) * twinkle * meteorBrightness(xs / dist, flare);
+  }
+  return col;
+}`.trim();
+
+export const shootingStar: ShaderEffect = {
+  kind: "shader",
+  id: "shooting-star",
+  name: "Shooting star",
+  description: "A shooting star streaks across every few seconds, its tail cooling from white to blue, flaring as it burns out and shedding sparks; clicking launches one from the pointer.",
+  category: "space",
+  tags: ["space", "night", "stars", "meteor", "wish", "magic", "overlay", "interactive", "click"],
+  transparent: true,
+  source: glsl(
+    `// Shooting star: launches at even beats with seeded jitter, each from a random spot on a seeded heading;
+// every point of the path glows as the head passes and fades behind it, so the tail is the path's afterglow.
+uniform vec3 uBackground;       // @control color default=#060A1C label="Background"
+uniform float uBackgroundAlpha; // @control min=0 max=1 default=0 label="Background opacity"
+uniform vec3 uHead;             // @control color default=#FFF6DE label="Head"
+uniform vec3 uTail;             // @control color default=#8EC5FF label="Tail"
+uniform float uInterval;        // @control min=0.3 max=8 default=2.4 label="Seconds between stars"
+uniform float uAngle;           // @control min=0 max=360 default=205 label="Direction (°)"
+uniform float uSpread;          // @control min=0 max=90 default=12 label="Direction spread (°)"
+uniform float uSpeed;           // @control min=0.2 max=4 default=1.4 label="Speed"
+uniform float uDistance;        // @control min=0.2 max=1.6 default=0.8 label="Distance"
+uniform float uLength;          // @control min=0.05 max=1 default=0.35 label="Tail length"
+uniform float uWidth;           // @control min=0.5 max=6 default=2 label="Width (px)"
+uniform float uFlare;           // @control min=0 max=3 default=0.8 label="Burn-out flare"
+uniform float uSparks;          // @control min=0 max=1 default=0.5 label="Sparks"
+uniform float uTrain;           // @control min=0 max=1 default=0.3 label="Lingering trail"
+uniform float uStars;           // @control min=0 max=1 default=0.5 label="Background stars"
+uniform bool uClicks;           // @control default=true label="Launch on click"`,
+    HASH,
+    STARS,
+    METEOR,
+    `vec3 launch(vec2 p, vec2 from, float t, float seed) {
+  vec3 h = vec3(hash22(vec2(seed, 1.7)), hash12(vec2(seed, 5.3)));
+  float ang = radians(uAngle + uSpread * (2.0 * h.x - 1.0));
+  vec2 dir = vec2(cos(ang), sin(ang));
+  float dist = uDistance * (0.7 + 0.6 * h.y);
+  float dur = dist / (uSpeed * (0.8 + 0.4 * h.z));
+  float w = uWidth / iResolution.y;
+  vec3 c = meteor(p, from, dir, dist, dur, t, uLength, w, uTrain, uFlare, uHead, uTail);
+  if (uSparks > 0.0) c += meteorSparks(p, from, dir, dist, dur, t, w, uFlare, uSparks, seed, mix(uHead, uTail, 0.5));
+  return c;
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  float px = 1.0 / iResolution.y;
+  vec2 p = fragCoord * px;
+  float aspect = iResolution.x * px;
+  vec3 light = vec3(stars(fragCoord, 1.0) * uStars);
+  float beat = floor(iTime / uInterval);
+  for (int i = 0; i < 5; i++) {
+    float k = beat - float(i);
+    vec2 h = hash22(vec2(k, 9.1));
+    float t = iTime - (k + 0.6 * h.x) * uInterval;
+    // The longest flight plus the lingering trail's fade.
+    if (t > 1.3 * uDistance / (0.8 * uSpeed) + 3.0) continue;
+    // Centre the path on a random spot in the upper part of the frame.
+    vec3 g = vec3(hash22(vec2(k, 1.7)), hash12(vec2(k, 5.3)));
+    float ang = radians(uAngle + uSpread * (2.0 * g.x - 1.0));
+    float dist = uDistance * (0.7 + 0.6 * g.y);
+    vec2 mid = vec2((0.15 + 0.7 * h.y) * aspect, 0.4 + 0.4 * hash12(vec2(k, 3.3)));
+    light += launch(p, mid - vec2(cos(ang), sin(ang)) * dist * 0.5, t, k);
+  }
+  if (uClicks) {
+    for (int i = 0; i < 3; i++) {
+      vec4 c = iClicks[i];
+      float t = iTime - c.z;
+      if (c.w < 0.5 || t > 1.3 * uDistance / (0.8 * uSpeed) + 3.0) continue;
+      light += launch(p, c.xy * px, t, c.z * 7.13 + float(i));
+    }
+  }
+  // Light as colour over the background (alpha is its brightest channel).
+  light = 1.0 - exp(-max(light, 0.0));
+  float a = max(light.r, max(light.g, light.b));
+  vec3 col = uBackground * uBackgroundAlpha * (1.0 - a) + light;
+  float alpha = uBackgroundAlpha + a * (1.0 - uBackgroundAlpha);
+  fragColor = vec4(min(col / max(alpha, 1e-4), 1.0), alpha);
+}`,
+  ),
+  presets: [
+    { name: "Night sky", values: { uBackgroundAlpha: 1 } },
+    { name: "Wish", values: { uHead: [1, 0.95, 0.75], uTail: [1, 0.62, 0.86], uSparks: 1, uTrain: 0.6, uWidth: 2.6, uBackgroundAlpha: 1, uBackground: [0.09, 0.05, 0.2] } },
+    { name: "Fireball", values: { uHead: [1, 0.9, 0.6], uTail: [1, 0.45, 0.15], uWidth: 4.5, uFlare: 2.2, uSpeed: 0.8, uLength: 0.55, uSparks: 1, uInterval: 4 } },
+    { name: "Green bolide", values: { uHead: [0.85, 1, 0.9], uTail: [0.35, 1, 0.55], uWidth: 3.2, uFlare: 1.6, uTrain: 0.8 } },
+  ],
+};
+
+export const meteorShower: ShaderEffect = {
+  kind: "shader",
+  id: "meteor-shower",
+  name: "Meteor shower",
+  description: "A night sky over a hilly, wooded horizon with the Milky Way, as meteors streak outward from one radiant point, the far ones short, the odd one a bright fireball.",
+  category: "space",
+  tags: ["space", "night", "stars", "meteors", "perseids", "landscape", "background", "hero"],
+  source: glsl(
+    `// Meteor shower: meteors at a steady rate, each on a ray out of the radiant, starting further out the longer it
+// runs (as perspective foreshortens the ones heading toward us); brightness is seeded with a long tail of fireballs.
+uniform vec3 uSkyTop;      // @control color default=#03061A label="Sky top"
+uniform vec3 uSkyHorizon;  // @control color default=#1C2A5C label="Sky at the horizon"
+uniform vec3 uGround;      // @control color default=#010207 label="Ground"
+uniform vec3 uColor;       // @control color default=#F2F6FF label="Meteors"
+uniform vec3 uTint;        // @control color default=#8CFFB4 label="Tail tint"
+uniform float uRate;       // @control min=0.2 max=10 default=3 label="Meteors per second"
+uniform float uRadiantX;   // @control min=0 max=1 default=0.72 label="Radiant across"
+uniform float uRadiantY;   // @control min=0 max=1 default=0.88 label="Radiant height"
+uniform float uSpeed;      // @control min=0.2 max=3 default=1 label="Speed"
+uniform float uLength;     // @control min=0.05 max=0.6 default=0.18 label="Tail length"
+uniform float uWidth;      // @control min=0.5 max=4 default=1.4 label="Width (px)"
+uniform float uHorizon;    // @control min=0 max=0.5 default=0.16 label="Horizon height"
+uniform float uMilkyWay;   // @control min=0 max=1 default=0.6 label="Milky Way"
+uniform float uStars;      // @control min=0 max=1 default=1 label="Stars"`,
+    HASH,
+    NOISE,
+    FBM,
+    STARS,
+    METEOR,
+    `// The skyline: rolling hills with a scattering of pines.
+float skyline(float x) {
+  float hill = uHorizon * (0.75 + 0.5 * fbm(vec2(x * 2.2, 3.1), 4));
+  float y = hill;
+  float cell = 0.028;
+  float c = floor(x / cell);
+  for (int k = -1; k <= 1; k++) {
+    float id = c + float(k);
+    vec2 h = hash22(vec2(id, 4.4));
+    if (h.x < 0.45) continue;
+    float cx = (id + 0.5) * cell + (h.y - 0.5) * cell * 0.6;
+    float height = uHorizon * (0.18 + 0.3 * h.y) + 0.01;
+    // A pine: a steep triangle standing on the hill.
+    y = max(y, hill + height - abs(x - cx) / 0.24);
+  }
+  return y;
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  float px = 1.0 / iResolution.y;
+  vec2 p = fragCoord * px;
+  float aspect = iResolution.x * px;
+  vec2 uv = fragCoord / iResolution.xy;
+  vec3 col = mix(uSkyHorizon, uSkyTop, smoothstep(uHorizon, 1.0, p.y) * 0.8 + 0.2 * uv.y);
+  // The Milky Way: a dusty band of light, darker lanes down its middle.
+  vec2 axis = normalize(vec2(1.0, 0.55));
+  float across = dot(p - vec2(aspect * 0.5, 0.45), vec2(-axis.y, axis.x));
+  float along = dot(p, axis);
+  float band = exp(-(across * across) / 0.0256) * (0.55 + 0.6 * fbm(vec2(along * 3.0, across * 6.0), 5));
+  float lanes = smoothstep(0.45, 0.75, fbm(vec2(along * 5.0 + 3.0, across * 14.0), 4)) * exp(-(across * across) / 0.0025);
+  col += mix(uSkyHorizon * 1.6, vec3(0.85, 0.82, 0.95), 0.35) * band * (1.0 - 0.8 * lanes) * 0.35 * uMilkyWay;
+  col += vec3(stars(fragCoord, 1.0 + 3.0 * band * uMilkyWay) * uStars);
+
+  vec2 radiant = vec2(uRadiantX * aspect, uRadiantY);
+  float w = uWidth * px;
+  float beat = floor(iTime * uRate);
+  for (int i = 0; i < 12; i++) {
+    float k = beat - float(i);
+    vec3 h = vec3(hash22(vec2(k, 2.9)), hash12(vec2(k, 8.1)));
+    vec2 g = hash22(vec2(k, 6.6));
+    float t = iTime - (k + h.x) / uRate;
+    float dur = (0.35 + 0.5 * g.y) / uSpeed;
+    if (t > dur + 1.5) continue;
+    float ang = h.y * 6.28318;
+    vec2 dir = vec2(cos(ang), sin(ang));
+    float r0 = 0.06 + 1.1 * h.z;
+    float dist = r0 * (0.25 + 0.35 * g.x);
+    float bright = 0.45 + 2.2 * pow(g.x * g.y, 2.0);
+    vec3 tail = mix(uColor, uTint, smoothstep(0.4, 0.9, h.x) * 0.8);
+    col += bright * meteor(p, radiant + dir * r0, dir, dist, dur, t, uLength * (0.6 + 0.8 * g.x), w * (0.7 + 0.5 * bright), 0.4, 0.4 * bright, uColor, tail);
+  }
+
+  // The ground in silhouette, its edge catching a little skyglow.
+  // Nothing on the skyline stands higher than 1.75 horizons.
+  if (uHorizon > 0.0 && p.y < uHorizon * 1.75 + 0.02) {
+    float ground = skyline(p.x);
+    float edge = smoothstep(-px, px, ground - p.y);
+    col = mix(col, uGround + uSkyHorizon * 0.06 * exp(-(ground - p.y) / 0.01), edge);
+  }
+  fragColor = vec4(col, 1.0);
+}`,
+  ),
+  presets: [
+    { name: "Storm", values: { uRate: 10, uLength: 0.12, uSpeed: 1.6 } },
+    { name: "Open sky", values: { uHorizon: 0, uRadiantX: 0.5, uRadiantY: 0.55 } },
+    { name: "Dusk", values: { uSkyTop: [0.07, 0.07, 0.24], uSkyHorizon: [0.62, 0.33, 0.42], uGround: [0.04, 0.02, 0.06], uTint: [1, 0.75, 0.45], uMilkyWay: 0.2, uStars: 0.6 } },
+  ],
+};
+
+export const comet: ShaderEffect = {
+  kind: "shader",
+  id: "comet",
+  name: "Comet",
+  description: "A comet hanging in the night sky: a bright head in a glowing coma, a broad curving dust tail and a straight blue ion tail whose streamers stream away from the sun.",
+  category: "space",
+  tags: ["space", "comet", "night", "astronomy", "sky", "background", "hero"],
+  source: glsl(
+    `// Comet: in the head's frame (x along the tail, away from the sun), a coma of nested glows, an ion tail
+// that widens slowly with noise streamers flowing outward, and a dust tail that bends back along a parabola.
+uniform vec3 uBackground;  // @control color default=#02040C label="Background"
+uniform vec3 uComa;        // @control color default=#D4FBFF label="Coma"
+uniform vec3 uDust;        // @control color default=#FFE0AA label="Dust tail"
+uniform vec3 uIon;         // @control color default=#5FA8FF label="Ion tail"
+uniform float uX;          // @control min=0 max=1 default=0.28 label="Head across"
+uniform float uY;          // @control min=0 max=1 default=0.32 label="Head height"
+uniform float uAngle;      // @control min=0 max=360 default=32 label="Tail direction (°)"
+uniform float uSize;       // @control min=0.3 max=2 default=1 label="Size"
+uniform float uDustLength; // @control min=0 max=1.5 default=0.8 label="Dust tail"
+uniform float uIonLength;  // @control min=0 max=2 default=1.2 label="Ion tail"
+uniform float uCurve;      // @control min=-2 max=2 default=0.8 label="Dust tail curve"
+uniform float uFlow;       // @control min=0 max=2 default=0.5 label="Streamer flow"
+uniform float uStars;      // @control min=0 max=1 default=1 label="Stars"`,
+    HASH,
+    NOISE,
+    FBM,
+    STARS,
+    `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  float px = 1.0 / iResolution.y;
+  vec2 p = fragCoord * px;
+  float aspect = iResolution.x * px;
+  vec3 col = uBackground + vec3(stars(fragCoord, 1.0) * uStars);
+  float ang = radians(uAngle);
+  vec2 axis = vec2(cos(ang), sin(ang));
+  vec2 q = (p - vec2(uX * aspect, uY)) / uSize;
+  float x = dot(q, axis);
+  float y = dot(q, vec2(-axis.y, axis.x));
+  float r = length(q);
+  float ahead = smoothstep(-0.03, 0.04, x);
+
+  // Ion tail: narrow and straight, rays streaming outward.
+  if (uIonLength > 0.0) {
+    float wi = 0.012 + x * 0.05;
+    float rays = fbm(vec2(y / max(wi, 1e-3) * 1.5, x * 3.0 - iTime * uFlow * 1.2), 4);
+    float kink = 0.012 * sin(x * 7.0 - iTime * uFlow * 2.0) * x * x;
+    float yi = (y - kink) / max(wi, 1e-3);
+    float ion = exp(-yi * yi) * exp(-x / (uIonLength * 0.45)) * ahead;
+    col += uIon * ion * (0.35 + 1.1 * rays * rays) * 0.9;
+  }
+  // Dust tail: broad, bending back off the line to the sun, with fine striations.
+  if (uDustLength > 0.0) {
+    float bend = uCurve * 0.35 * x * x;
+    float wd = 0.02 + x * 0.22;
+    float off = (y + bend) / max(wd, 1e-3);
+    float stria = 0.75 + 0.35 * fbm(vec2(off * 2.5 + x * 1.5, x * 1.2 - iTime * uFlow * 0.15), 3);
+    float dust = exp(-off * off * 1.4) * exp(-x / (uDustLength * 0.4)) * ahead * stria;
+    // Brighter along the leading edge, where the freshest dust is.
+    dust *= 0.75 + 0.5 * smoothstep(0.6, -0.6, off * sign(uCurve + 1e-4));
+    col += uDust * dust * 0.75;
+  }
+  // The coma and the nucleus at its heart.
+  col += uComa * (exp(-r / 0.035) * 0.9 + exp(-r / 0.12) * 0.25 + exp(-r / 0.4) * 0.06);
+  col += vec3(1.0) * exp(-(r * r) / (0.006 * 0.006)) * 1.5;
+  col = 1.0 - exp(-col * 1.2);
+  fragColor = vec4(col, 1.0);
+}`,
+  ),
+  presets: [
+    { name: "Great comet", values: { uSize: 1.4, uX: 0.2, uY: 0.22, uAngle: 40, uDustLength: 1.3, uIonLength: 1.8 } },
+    { name: "Green coma", values: { uComa: [0.6, 1, 0.65], uIon: [0.4, 0.75, 1], uDustLength: 0.35, uCurve: 0.3 } },
+    { name: "Dusty", values: { uIonLength: 0.3, uDustLength: 1.2, uCurve: 1.6, uDust: [1, 0.85, 0.65] } },
+  ],
+};
+
+export const spaceShaders: readonly ShaderEffect[] = [planet, spiralGalaxy, solarSystem, shootingStar, meteorShower, comet];
