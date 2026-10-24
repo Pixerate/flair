@@ -28,6 +28,7 @@ export type EffectCategory =
   | "timewarp"
   | "melt"
   | "electric"
+  | "hologram"
   | "splatter"
   | "bubble"
   | "sticker"
@@ -71,6 +72,7 @@ export const EFFECT_CATEGORIES: readonly EffectCategory[] = [
   "timewarp",
   "melt",
   "electric",
+  "hologram",
   "splatter",
   "bubble",
   "sticker",
@@ -106,7 +108,7 @@ export interface EffectCategoryGroup {
 /** Every category in exactly one group, the groups in browsing order. */
 export const EFFECT_CATEGORY_GROUPS: readonly EffectCategoryGroup[] = [
   { name: "Backgrounds", categories: ["gradient", "organic", "pattern", "space", "3d", "weather", "water", "atmosphere"] },
-  { name: "Light", categories: ["light", "lighting", "glow", "shadow", "electric"] },
+  { name: "Light", categories: ["light", "lighting", "glow", "shadow", "electric", "hologram"] },
   { name: "Pictures", categories: ["image", "distortion", "retro", "comic", "timewarp", "melt"] },
   { name: "Particles & FX", categories: ["overlay", "splatter", "bubble", "particles", "trail", "debris", "impact", "pyrotechnics"] },
   { name: "Type & titles", categories: ["text", "morph", "broadcast", "annotation", "sticker"] },
