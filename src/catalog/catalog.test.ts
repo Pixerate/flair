@@ -1699,6 +1699,61 @@ describe("3d, space, weather and water effects", () => {
   });
 });
 
+describe("fire effects", () => {
+  const ids = findEffects({ category: "fire" }).map((e) => e.id);
+  const skeleton = (d: unknown) => String(d).replace(/-?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?/gi, "#");
+
+  it("fill the fire category, browsed under Light", () => {
+    expect(ids).toEqual(["fire-border", "flaming-text", "burn-away", "fire-ring", "fireball", "campfire", "flame-icon", "match-strike"]);
+    expect(categoryGroup("fire").name).toBe("Light");
+  });
+
+  it("draw the burning overlays on clear, with their background a preset away", () => {
+    for (const id of ["fire-border", "flaming-text", "fire-ring", "fireball"]) {
+      const effect = getEffect(id)!;
+      expect(effect, id).toMatchObject({ transparent: true });
+      expect(effect.tags, id).toContain("overlay");
+      expect(effectDefaults(effect).uBackgroundAlpha, id).toBe(0);
+      expect(effect.presets?.some((p) => p.values.uBackgroundAlpha === 1), id).toBe(true);
+    }
+    expect(getEffect("campfire")).not.toMatchObject({ transparent: true });
+  });
+
+  it("set words and pictures alight, burning pictures away on a loop with a still progress control", () => {
+    expect(effectInputs(getEffect("flaming-text")!).accepts).toContain("text");
+    expect(effectDefaults(getEffect("flaming-text")!).uText).toBe(textImage("FIRE"));
+    const burn = getEffect("burn-away")!;
+    expect(burn).toMatchObject({ video: "filter", loop: 8 });
+    expect(effectInputs(burn).accepts).toEqual(expect.arrayContaining(["image", "video"]));
+    expect(effectControls(burn).map((c) => c.name)).toEqual(expect.arrayContaining(["uAnimate", "uProgress"]));
+  });
+
+  it("flare the ring on hover and send the fireball after the pointer", () => {
+    expect(effectInputs(getEffect("fire-ring")!).interactions).toContain("hover");
+    const fireball = getEffect("fireball")!;
+    expect(fireball.kind === "shader" && fireball.source).toMatch(/\biTrail\b/);
+    expect(effectInputs(fireball).interactions).toEqual(expect.arrayContaining(["pointer"]));
+  });
+
+  it.each([["flame-icon"], ["match-strike"]])("%s tweens like with like and ends where it starts", (id) => {
+    const effect = getEffect(id)!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    const motion = renderVectorEffect(effect, effectDefaults(effect));
+    for (const a of motion.animate ?? []) for (const [name, [from, to]] of Object.entries(a.attrs ?? {}))
+        if (!String(from).startsWith("#")) expect(skeleton(from), `${id} ${a.id} ${name}`).toBe(skeleton(to));
+    const first = new Map<string, unknown>();
+    const last = new Map<string, unknown>();
+    const timed = [...(motion.animate ?? [])].map((a, i) => ({ a, i })).sort((x, y) => (x.a.delay ?? 0) - (y.a.delay ?? 0) || x.i - y.i);
+    for (const { a } of timed)
+      for (const [name, [from, to]] of Object.entries(a.attrs ?? {})) {
+        const key = `${a.id}.${name}`;
+        if (!first.has(key)) first.set(key, from);
+        last.set(key, to);
+      }
+    for (const [key, value] of first) expect(last.get(key), key).toEqual(value);
+  });
+});
+
 describe("hologram effects", () => {
   const ids = findEffects({ category: "hologram" }).map((e) => e.id);
 
