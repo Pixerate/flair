@@ -13,18 +13,18 @@ import { BACKDROP_CONTROLS, PICTURE } from "./image.js";
  */
 
 /** The flame's three colours, cool tips to hot core. */
-const FIRE_COLOURS = `
+export const FIRE_COLOURS = `
 uniform vec3 uHot;              // @control color default=#FFF2BF label="Core"
 uniform vec3 uMid;              // @control color default=#FF8A1C label="Flame"
 uniform vec3 uCool;             // @control color default=#C0230C label="Tips"`.trim();
 
 /** A background for the fires drawn on clear, off by default. */
-const FIRE_BACKGROUND = `
+export const FIRE_BACKGROUND = `
 uniform vec3 uBackground;       // @control color default=#0B0503 label="Background"
 uniform float uBackgroundAlpha; // @control min=0 max=1 default=0 label="Background opacity"`.trim();
 
 /** `fireBase()`: the background of {@link FIRE_BACKGROUND} at its opacity, premultiplied, to draw fire over. */
-const FIRE_BASE = `
+export const FIRE_BASE = `
 vec4 fireBase() {
   return vec4(uBackground * uBackgroundAlpha, uBackgroundAlpha);
 }`.trim();
@@ -38,7 +38,7 @@ vec4 fireBase() {
  * Needs {@link HASH}, {@link NOISE}, {@link FBM} and the uniforms of
  * {@link FIRE_COLOURS}.
  */
-const FIRE = `
+export const FIRE = `
 vec3 fireLight(float h) {
   h = clamp(h, 0.0, 1.0);
   vec3 c = uCool * smoothstep(0.0, 0.2, h);

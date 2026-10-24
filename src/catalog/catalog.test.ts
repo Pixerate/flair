@@ -1594,7 +1594,7 @@ describe("ui effects", () => {
 });
 
 describe("more loaders", () => {
-  const ids = ["skeleton-shimmer", "progress-bar", "indeterminate-bar", "step-progress", "circle-dots-loader", "wave-bars"];
+  const ids = ["skeleton-shimmer", "progress-bar", "indeterminate-bar", "step-progress", "circle-dots-loader", "wave-bars", "hourglass", "infinity-loader", "orbit-loader", "shape-morph-loader"];
   const render = (id: string, values: Record<string, unknown> = {}) => {
     const effect = getEffect(id)!;
     if (effect.kind !== "vector") throw new Error("vector expected");
@@ -1793,10 +1793,41 @@ describe("hologram effects", () => {
 });
 
 describe("loaders", () => {
+  const SHADERS = ["liquid-loader", "glow-ring-spinner", "metaball-loader", "flame-loader"];
+
+  it("include shader loaders drawn on clear, with their background a preset away", () => {
+    for (const id of SHADERS) {
+      const effect = getEffect(id)!;
+      expect(effect, id).toMatchObject({ kind: "shader", category: "loader", transparent: true });
+      expect(effect.tags, id).toEqual(expect.arrayContaining(["loader", "overlay"]));
+      expect(effectDefaults(effect).uBackgroundAlpha, id).toBe(0);
+      expect(effect.presets?.some((p) => p.values.uBackgroundAlpha === 1), id).toBe(true);
+      expect(effectInputs(effect), id).toMatchObject({ accepts: [], interactions: [] });
+    }
+  });
+
+  it("loop the filling loaders, with a still progress control", () => {
+    for (const id of ["liquid-loader", "flame-loader"]) {
+      const effect = getEffect(id)!;
+      expect(effect.kind === "shader" && effect.loop, id).toBe(6);
+      expect(effectControls(effect).map((c) => c.name), id).toEqual(expect.arrayContaining(["uAnimate", "uProgress"]));
+    }
+  });
+
+  it("morph the shape through square, circle and triangle and back, turning a whole turn", () => {
+    const effect = getEffect("shape-morph-loader")!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    const motion = renderVectorEffect(effect, effectDefaults(effect));
+    const shapes = (motion.animate ?? []).filter((a) => a.id === "shapeMorphLoaderShape").map((a) => a.attrs!.d!);
+    expect(shapes).toHaveLength(3);
+    expect(shapes[2]![1]).toBe(shapes[0]![0]);
+    expect(svgFrame(motion.animate!, [], svgDuration(motion)).get("shapeMorphLoaderTurn")!.attrs.transform).toBe("rotate(360 60 60)");
+  });
+
   it("are browsed in their own group, gathered from the themed effects too", () => {
     expect(categoryGroup("loader").name).toBe("Loaders");
     const ids = findEffects({ group: "loaders" }).map((e) => e.id);
-    for (const id of ["spinner", "progress-bar", "chomp-loader", "bubble-pop-loader", "progress-ring", "battery-charge"]) expect(ids, id).toContain(id);
+    for (const id of ["spinner", "progress-bar", "chomp-loader", "bubble-pop-loader", "progress-ring", "battery-charge", ...SHADERS, "hourglass", "infinity-loader", "orbit-loader", "shape-morph-loader"]) expect(ids, id).toContain(id);
     for (const id of ids) expect(getEffect(id)!.category, id).toBe("loader");
   });
 });

@@ -40,6 +40,7 @@ export const EFFECT_MODULES: Record<string, () => Promise<Record<string, unknown
   "shaders/interaction": () => import("./shaders/interaction.js"),
   "shaders/light": () => import("./shaders/light.js"),
   "shaders/lighting": () => import("./shaders/lighting.js"),
+  "shaders/loaders": () => import("./shaders/loaders.js"),
   "shaders/melt": () => import("./shaders/melt.js"),
   "shaders/mirror": () => import("./shaders/mirror.js"),
   "shaders/morph": () => import("./shaders/morph.js"),

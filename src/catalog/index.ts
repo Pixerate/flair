@@ -65,6 +65,7 @@ import { growthShaders } from "./shaders/growth.js";
 import { stickerShaders } from "./shaders/sticker.js";
 import { electricShaders } from "./shaders/electric.js";
 import { fireShaders } from "./shaders/fire.js";
+import { loaderShaders } from "./shaders/loaders.js";
 import { hologramShaders } from "./shaders/hologram.js";
 import { meltShaders } from "./shaders/melt.js";
 import { pixelShaders } from "./shaders/pixel.js";
@@ -187,6 +188,7 @@ export const SHADER_EFFECTS: readonly ShaderEffect[] = [
   ...meltShaders,
   ...electricShaders,
   ...fireShaders,
+  ...loaderShaders,
   ...hologramShaders,
   ...pixelShaders,
   ...splatterShaders,
