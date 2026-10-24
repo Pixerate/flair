@@ -19,7 +19,7 @@ Flair gives products a library of good-looking, configurable visual effects (her
 
 ### Core Capabilities
 
-- 🎨 **Effect catalog (`@pixerate/flair/catalog`)**: 431 effects, each with controls and presets, in 40 categories browsed in 8 groups. There are 291 WebGL2 shaders (gradients, organic textures and growth, patterns, light, lighting that relights pictures, space and the night sky (planets, galaxies, shooting stars, a meteor shower, a comet, the northern lights over a lake, satellite passes, star trails), 3D objects and globes, weather, water, atmosphere, retro and pixel art, image treatments, artist's media (pencil, watercolour, pen and ink, charcoal, crayon and pastel, a sketch-to-colour reveal), transparent overlays, text fills, image morphs, pointer interactions, sound- and scroll-driven effects, pyrotechnics, time warps, melting, electricity, splatters, bubbles, stickers, pointer trails, particles, debris, impacts, comic looks, glows, shadows, distortions, web UI flourishes and backgrounds, glass (glass and chrome text with a sweeping prism beam, a crystal ball, glass blocks, cracked glass, condensation, stained glass, a cut gem, a prism, dichroic panes) and mirrors (floor and water reflections, an infinity mirror, a funhouse mirror), transitions) and 140 animated SVG effects (text on a path and circle text, loaders and progress bars, status and animated icons, a logo marquee, a number ticker, animated titles, broadcast graphics and lower thirds, scroll-driven drawing, counters and steps, annotations and product-demo callouts, shape morphs, UI micro-interactions, pixel sprites, stickers, cartoon effects, glowing and lifting UI, a lamp switch, charts, counters, node graphs and other data viz). [Browse them live](https://pixerate.github.io/flair/).
+- 🎨 **Effect catalog (`@pixerate/flair/catalog`)**: 436 effects, each with controls and presets, in 41 categories browsed in 8 groups. There are 294 WebGL2 shaders (gradients, organic textures and growth, patterns, light, lighting that relights pictures, space and the night sky (planets, galaxies, shooting stars, a meteor shower, a comet, the northern lights over a lake, satellite passes, star trails), 3D objects and globes, weather, water, atmosphere, retro and pixel art, image treatments, artist's media (pencil, watercolour, pen and ink, charcoal, crayon and pastel, a sketch-to-colour reveal), transparent overlays, text fills, image morphs, pointer interactions, sound- and scroll-driven effects, pyrotechnics, time warps, melting, electricity, holograms (a picture or video projected with its background keyed out, hologram text, a wireframe projector), splatters, bubbles, stickers, pointer trails, particles, debris, impacts, comic looks, glows, shadows, distortions, web UI flourishes and backgrounds, glass (glass and chrome text with a sweeping prism beam, a crystal ball, glass blocks, cracked glass, condensation, stained glass, a cut gem, a prism, dichroic panes) and mirrors (floor and water reflections, an infinity mirror, a funhouse mirror), transitions) and 142 animated SVG effects (text on a path and circle text, loaders and progress bars, status and animated icons, a logo marquee, a number ticker, animated titles, broadcast graphics and lower thirds, scroll-driven drawing, counters and steps, annotations and product-demo callouts, shape morphs, UI micro-interactions, pixel sprites, stickers, cartoon effects, glowing and lifting UI, a lamp switch, a holographic HUD and info panel, charts, counters, node graphs and other data viz). [Browse them live](https://pixerate.github.io/flair/).
 - ⚡ **Shader engine**:
   - Shadertoy-style GLSL ES 3.00 fragment shaders, with controls declared in the source (`// @control`), including image inputs.
   - Compile errors come back with line numbers that match the source.
@@ -67,7 +67,7 @@ The `flair` CLI inspects shaders, writes standalone pages and directs scenes (se
 ```mermaid
 graph TD
   subgraph Effects["Effects (no dependencies)"]
-    Catalog["catalog: 431 effects + presets"]
+    Catalog["catalog: 436 effects + presets"]
     Shader["shader engine: controls, compile, render, GIF, HTML"]
     Vector["vector motion: SvgMotion, SvgPlayer"]
     Time["time: clocks, easing, keyframes, noise"]
@@ -675,7 +675,7 @@ frames.render(t, { audio: track.at(t), scroll: [0.5, 0.5, 0, 0] });
 | gradient | mesh gradient, aurora, gradient flow, conic sweep, silk, grainy gradient, Stripe gradient, holographic gradient, radial glow |
 | organic | liquid marble, smoke, lava lamp, plasma, caustics, flames, reaction diffusion, cell division, coral growth, veins, ferrofluid, jellyfish, fur, blob morph |
 | pattern | dot wave, Truchet flow, hex pulse, living cells, moiré rings, kaleidoscope, stripes, Memphis pattern, chevron tunnel, neon circuit |
-| light / space | bokeh, god rays, sparkles, neon ripple, light ribbons, warp starfield, nebula, event horizon, planet, spiral galaxy, solar system |
+| light / space | bokeh, god rays, sparkles, neon ripple, light ribbons, warp starfield, nebula, event horizon, planet, spiral galaxy, solar system, shooting star, meteor shower, comet, northern lights, satellite pass, star trails |
 | lighting | relight, point light, studio lighting, time of day, gobo projection, neon spill, candlelight, pool caustics, party lights, lamp switch |
 | retro | synthwave, digital rain, dithered gradient, TV static, 8-bit, Game Boy screen, pixel fire, pixel landscape, OutRun road, palette cycle, raster bars, tape loading, pixel water, pixel text, coin spin, space invader, heart health bar, chomp loader |
 | image | ripple, glitch, duotone, halftone, pixel reveal, Ken Burns, ASCII art, shatter, melt, risograph, thermal, edge glow, tilt-shift, slit-scan, mosaic flip, chromatic lens, oil paint, pencil sketch, watercolour, pen and ink, charcoal and pastel, sketch reveal, CRT screen, film look |
@@ -687,6 +687,7 @@ frames.render(t, { audio: track.at(t), scroll: [0.5, 0.5, 0, 0] });
 | timewarp | time echo, chrono split, time slice, VHS rewind, bullet time, time tunnel, speed ramp, stutter freeze, time-lapse clock |
 | melt | drip melt, heat haze, wax melt, melting text, liquify, melting clock, lava flow, ice cube melt, candle |
 | electric | lightning, Tesla arc, plasma ball, electric border, electric text, Jacob's ladder, short circuit, power surge, electric field, zap icon, power button, battery charge |
+| hologram | hologram, hologram text, hologram projector, holo HUD, holo panel |
 | splatter | paint splatter, ink splash, splash crown, goo splat, paint roller, water splash, slime curtain wipe, gooey frame, goo vortex, splat stamp |
 | bubble | soap bubbles, underwater bubbles, fizz, foam, bubble wrap, lava bubbles, chat bubble, bubble pop loader |
 | sticker | holo foil sticker, sticker peel reveal, sticker slap, sticker peel, holo sticker, sticker sheet, stamp badge, washi tape, seal badge |
@@ -709,7 +710,7 @@ frames.render(t, { audio: track.at(t), scroll: [0.5, 0.5, 0, 0] });
 | water | ocean waves, underwater scene, pond ripples, waterfall |
 | transition | liquid morph, displacement, luma fade, particle swap, ink bleed, pixel dissolve, comic panels, wipe, iris, block dissolve, grid wipe, glass wipe, twister, light leak, cross zoom, whip pan |
 | loader / icon / data | spinner, bouncing dots, pulse ping, equalizer, skeleton shimmer, progress bar, indeterminate bar, step progress, circle dots loader, wave bars, progress ring, bar chart, line chart, stat counter, route, timeline track, success check, error cross, heartbeat, signature, confetti, flow network, upload card |
-| loader / icon / data | spinner, bouncing dots, pulse ping, equalizer, progress ring, bar chart, line chart, stat counter, route, timeline track, success check, error cross, heartbeat, signature, confetti, flow network, upload card, donut chart, pie chart, gauge, bar race, sparkline, leaderboard, area chart, KPI tile, weather icons, notification bell, animated arrows, emoji reactions, star rating, trash delete, lock and unlock, Wi-Fi signal |
+| loader / icon / data | spinner, bouncing dots, pulse ping, equalizer, progress ring, bar chart, line chart, stat counter, route, timeline track, success check, error cross, heartbeat, signature, confetti, flow network, upload card, donut chart, pie chart, gauge, bar race, sparkline, leaderboard, area chart, KPI tile, weather icons, notification bell, animated arrows, emoji reactions, star rating, trash delete, lock and unlock, Wi-Fi signal, wish star |
 
 #### Broadcast graphics and annotations
 

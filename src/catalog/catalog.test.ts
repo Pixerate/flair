@@ -1699,6 +1699,44 @@ describe("3d, space, weather and water effects", () => {
   });
 });
 
+describe("hologram effects", () => {
+  const ids = findEffects({ category: "hologram" }).map((e) => e.id);
+
+  it("fill the hologram category, browsed under Light", () => {
+    expect(ids).toEqual(["hologram", "hologram-text", "hologram-projector", "holo-hud", "holo-panel"]);
+    expect(categoryGroup("hologram").name).toBe("Light");
+  });
+
+  it("draw the shader holograms as overlays, with their background a preset away", () => {
+    for (const id of ["hologram", "hologram-text", "hologram-projector"]) {
+      const effect = getEffect(id)!;
+      expect(effect, id).toMatchObject({ transparent: true });
+      expect(effectDefaults(effect).uBackgroundAlpha, id).toBe(0);
+      expect(effect.presets?.some((p) => p.values.uBackgroundAlpha === 1), id).toBe(true);
+    }
+  });
+
+  it("project pictures and video, keying out a plain background, and words", () => {
+    expect(getEffect("hologram")).toMatchObject({ video: "filter" });
+    expect(effectInputs(getEffect("hologram")!).accepts).toEqual(expect.arrayContaining(["image", "video"]));
+    expect(effectControls(getEffect("hologram")!).find((c) => c.name === "uKey")).toMatchObject({ default: 0.6 });
+    expect(effectInputs(getEffect("hologram-text")!).accepts).toContain("text");
+  });
+
+  it("loop the HUD and panel, with their words as text controls", () => {
+    for (const id of ["holo-hud", "holo-panel"]) {
+      const effect = getEffect(id)!;
+      if (effect.kind !== "vector") throw new Error("vector expected");
+      const motion = renderVectorEffect(effect, {});
+      expect(motion.svg, id).toContain("feGaussianBlur");
+    }
+    const panel = getEffect("holo-panel")!;
+    if (panel.kind !== "vector") throw new Error("vector expected");
+    const motion = renderVectorEffect(panel, { title: "HELLO" });
+    expect((motion.animate ?? []).find((a) => a.id === "holoPanelTitle" && a.write)).toMatchObject({ write: "HELLO" });
+  });
+});
+
 describe("category groups", () => {
   it("hold every category exactly once", () => {
     const grouped = EFFECT_CATEGORY_GROUPS.flatMap((g) => g.categories);
