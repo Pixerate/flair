@@ -185,7 +185,7 @@ describe("catalog", () => {
   });
 
   it("finds effects by words, kind and tags", () => {
-    expect(findEffects({ text: "aurora" }).map((e) => e.id)).toEqual(["aurora"]);
+    expect(findEffects({ text: "aurora" }).map((e) => e.id)).toEqual(["aurora", "northern-lights"]);
     expect(findEffects({ kind: "vector" }).every((e) => e.kind === "vector")).toBe(true);
     expect(findEffects({ tags: ["loader"] }).length).toBeGreaterThan(2);
     expect(findEffects({ text: "no such thing anywhere" })).toEqual([]);
@@ -1674,6 +1674,20 @@ describe("3d, space, weather and water effects", () => {
     // Clicking launches one from the pointer.
     expect(effectInputs(getEffect("shooting-star")!).interactions).toContain("click");
     for (const id of ["meteor-shower", "comet"]) expect(getEffect(id), id).not.toMatchObject({ transparent: true });
+  });
+
+  it("show the northern lights, satellites and star trails over a skyline, and a wish star icon", () => {
+    for (const id of ["northern-lights", "satellite-pass", "star-trails"]) {
+      expect(ids("space")).toContain(id);
+      expect(effectControls(getEffect(id)!).find((c) => c.name === "uHorizon"), id).toBeDefined();
+    }
+    expect(getEffect("satellite-pass")!.presets!.map((p) => p.name)).toEqual(["Starlink train", "Iridium flare", "Long exposure"]);
+    expect(findEffects({ category: "icon" }).map((e) => e.id)).toContain("wish-star");
+    const effect = getEffect("wish-star")!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    const wish = renderVectorEffect(effect, {});
+    expect(wish.svg).toContain('id="wishStarRoute"');
+    expect((wish.animate ?? []).some((a) => a.along === "wishStarRoute")).toBe(true);
   });
 
   it("let the globe be dragged and the pond take stones, with idle demos", () => {
