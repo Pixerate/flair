@@ -4,6 +4,7 @@
  * places a live player is not wanted.
  */
 
+import { pathAngleAt, pathPointAt } from "./morph.js";
 import { SVG_PICTURE, svgFrame, type SvgBox, type SvgMotion } from "./motion.js";
 import { svgDuration } from "./svg.js";
 
@@ -165,9 +166,10 @@ export interface SvgFrameMarkupOptions {
  * `prefers-reduced-motion`, or anywhere a still will do. It is sized to fill
  * its container, as `SvgPlayer` draws it.
  *
- * It matches the player's frame except where that needs layout: a change
- * `along` a path, and a `view` that frames an element by id, stay where the
- * markup puts them. Undefined when `motion.svg` is not an `<svg>`.
+ * It matches the player's frame except where that needs layout: a `view`
+ * that frames an element by id stays where the markup puts it. (A change
+ * `along` a path is followed: the path is measured from its `d`, as the
+ * browser would.) Undefined when `motion.svg` is not an `<svg>`.
  */
 export function svgFrameMarkup(motion: SvgMotion, options: SvgFrameMarkupOptions = {}): string | undefined {
   const steps = options.steps ?? [];
@@ -225,6 +227,32 @@ export function svgFrameTree(
       for (const child of el.children)
         if (typeof child !== "string") setAttr(child, "display", i++ === frame.solo ? undefined : "none");
     }
+    if (frame.along) {
+      // Placed as the player places it: moved to the point (and turned with the path), measured from the outline.
+      const path = byId.get(frame.along.path);
+      const d = path && outline(path);
+      const p = d ? pathPointAt(d, frame.along.at) : undefined;
+      if (d && p) {
+        const turn = frame.along.orient ? ` rotate(${+pathAngleAt(d, frame.along.at).toFixed(2)})` : "";
+        setAttr(el, "transform", `translate(${+p[0].toFixed(2)} ${+p[1].toFixed(2)})${turn}`);
+      }
+    }
   }
   return { svg, byId, whole };
+}
+
+/** @internal A shape's outline as a path `d`, for following it with `along`. */
+export function outline(el: Node): string | undefined {
+  const at = (name: string) => Number(getAttr(el, name) ?? 0);
+  switch (el.tag.toLowerCase()) {
+    case "path":
+      return getAttr(el, "d");
+    case "line":
+      return `M${at("x1")} ${at("y1")}L${at("x2")} ${at("y2")}`;
+    case "polyline":
+    case "polygon":
+      return `M${getAttr(el, "points") ?? ""}${el.tag.toLowerCase() === "polygon" ? "Z" : ""}`;
+    default:
+      return undefined;
+  }
 }

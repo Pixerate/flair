@@ -41,6 +41,31 @@ describe("svgFrameMarkup", () => {
     expect(parseSvg(svgFrameMarkup(media, { at: 500 })!)!.querySelector("#bar")!.getAttribute("height")).toBe("40");
   });
 
+  it("follows a path with along, turning with it when asked", () => {
+    const motion: SvgMotion = {
+      svg: `<svg viewBox="0 0 100 100"><path id="track" d="M10 10 L90 10 L90 90"/><circle id="dot" r="3"/><g id="arrow"><path d="M0 0 L5 0"/></g></svg>`,
+      animate: [
+        { id: "dot", along: "track", ms: 1000, ease: "linear" },
+        { id: "arrow", along: "track", at: [0, 1], orient: true, ms: 1000, ease: "linear" },
+      ],
+    };
+    const at = (ms: number, id: string) => parseSvg(svgFrameMarkup(motion, { at: ms })!)!.querySelector(`#${id}`)!.getAttribute("transform");
+    expect(at(0, "dot")).toBe("translate(10 10)");
+    expect(at(250, "dot")).toBe("translate(50 10)");
+    expect(at(1000, "dot")).toBe("translate(90 90)");
+    expect(at(250, "arrow")).toBe("translate(50 10) rotate(0)");
+    expect(at(750, "arrow")).toBe("translate(90 50) rotate(90)");
+  });
+
+  it("moves the catalog's followers off the corner (sparkline, wish star)", () => {
+    for (const [id, follower] of [["sparkline", "sparklineDot"], ["wish-star", "wishStarStar"]] as const) {
+      const effect = findEffects({ kind: "vector" }).find((e) => e.id === id) as VectorEffect;
+      const motion = renderVectorEffect(effect, effectDefaults(effect));
+      const transform = parseSvg(svgFrameMarkup(motion)!)!.querySelector(`#${follower}`)!.getAttribute("transform");
+      expect(transform, id).toMatch(/^translate\((?!0 0\))/);
+    }
+  });
+
   it("is undefined for markup that is not an svg", () => {
     expect(svgFrameMarkup({ svg: "<div>no</div>" })).toBeUndefined();
   });

@@ -489,6 +489,8 @@ export const wishStar: VectorEffect = {
       { id: "wishStarStar", attrs: { opacity: [0, 1] }, ms: 150 },
       { id: "wishStarStar", along: "wishStarRoute", ms: WISH_FLY, ease: WISH_EASE },
       { id: "wishStarTrail", draw: true, ms: WISH_FLY, ease: WISH_EASE },
+      // Hidden until it starts (an undrawn line with round caps still shows a dot).
+      { id: "wishStarTrail", attrs: { opacity: [0, 1] }, ms: 60 },
       // One turn and a half of the star's 72° symmetry, so it lands upright.
       { id: "wishStarSpin", attrs: { transform: [wishSpin(0, 0.6), wishSpin(-216, 1)] }, ms: WISH_FLY, ease: WISH_EASE },
       { id: "wishStarSpin", attrs: { transform: [wishSpin(-216, 1), wishSpin(-216, 1.4)] }, delay: WISH_FLY, ms: 140, ease: "out" },
@@ -502,9 +504,8 @@ export const wishStar: VectorEffect = {
         { id: `wishStarSpark${k}`, attrs: { transform: [wishSpark(k, 1), wishSpark(k, 0)] }, delay: WISH_FLY + 340 + k * 80, ms: 320, ease: "in-out" },
       ]),
       ...swing("wishStarStar", "opacity", 1, 0.55, 500, 1500),
-      // Gone before the loop starts over, and the trail back for the next swoop.
+      // Gone before the loop starts over.
       { id: "wishStarStar", attrs: { opacity: [1, 0] }, delay: 2100, ms: 250 },
-      { id: "wishStarTrail", attrs: { opacity: [0, 1] }, delay: 2400, ms: 0 },
     ],
   },
 };

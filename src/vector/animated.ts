@@ -23,7 +23,7 @@ import {
   type SvgElementFrame,
   type SvgMotion,
 } from "./motion.js";
-import { getAttr, serialize, setAttr, svgFrameTree, type SvgNode } from "./static.js";
+import { getAttr, outline, serialize, setAttr, svgFrameTree, type SvgNode } from "./static.js";
 import { svgDuration } from "./svg.js";
 
 export interface AnimatedSvgOptions {
@@ -168,22 +168,6 @@ function decompose([a, b, c, d, e, f]: number[]): [number, number, number, numbe
   const sy = -sin * c! + cos * d!;
   const skew = sy ? Math.atan((cos * c! + sin * d!) / sy) : 0;
   return [e!, f!, (angle * 180) / Math.PI, (skew * 180) / Math.PI, sx, sy];
-}
-
-/** A shape's outline as a path `d`, for following it with `along`. */
-function outline(el: SvgNode): string | undefined {
-  const at = (name: string) => Number(getAttr(el, name) ?? 0);
-  switch (el.tag.toLowerCase()) {
-    case "path":
-      return getAttr(el, "d");
-    case "line":
-      return `M${at("x1")} ${at("y1")}L${at("x2")} ${at("y2")}`;
-    case "polyline":
-    case "polygon":
-      return `M${getAttr(el, "points") ?? ""}${el.tag.toLowerCase() === "polygon" ? "Z" : ""}`;
-    default:
-      return undefined;
-  }
 }
 
 /**
