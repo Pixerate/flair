@@ -302,7 +302,7 @@ export const chompLoader: VectorEffect = {
   id: "chomp-loader",
   name: "Chomp loader",
   description: "A chomping pixel mouth munching along a row of dots between maze walls, as a looping loader.",
-  category: "retro",
+  category: "loader",
   tags: ["pixel", "retro", "loader", "arcade", "game", "8-bit", "loop"],
   hold: 0,
   presets: [

@@ -115,7 +115,8 @@ export const EFFECT_CATEGORY_GROUPS: readonly EffectCategoryGroup[] = [
   { name: "Particles & FX", categories: ["overlay", "splatter", "bubble", "particles", "trail", "debris", "impact", "pyrotechnics"] },
   { name: "Type & titles", categories: ["text", "morph", "broadcast", "annotation", "sticker"] },
   { name: "Inputs", categories: ["interaction", "audio", "scroll"] },
-  { name: "Interface", categories: ["ui", "loader", "icon", "data"] },
+  { name: "Interface", categories: ["ui", "icon", "data"] },
+  { name: "Loaders", categories: ["loader"] },
   { name: "Transitions", categories: ["transition"] },
 ];
 

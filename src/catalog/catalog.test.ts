@@ -681,7 +681,7 @@ describe("electric effects", () => {
 
   it("has the lightning, arcs, plasma, sparks and icons", () => {
     const ids = electric.map((e) => e.id);
-    for (const id of ["lightning", "tesla-arc", "plasma-ball", "electric-border", "electric-text", "jacobs-ladder", "short-circuit", "power-surge", "electric-field", "zap-icon", "power-button", "battery-charge"])
+    for (const id of ["lightning", "tesla-arc", "plasma-ball", "electric-border", "electric-text", "jacobs-ladder", "short-circuit", "power-surge", "electric-field", "zap-icon", "power-button"])
       expect(ids).toContain(id);
     for (const effect of electric) expect(effect.tags).toContain("electric");
   });
@@ -727,11 +727,11 @@ describe("pixel effects", () => {
   const SHADERS = ["image-8bit", "gameboy-screen", "pixel-fire", "pixel-landscape", "outrun-road", "palette-cycle", "raster-bars", "loading-stripes", "pixel-water"];
   const VECTORS = ["pixel-text", "coin-spin", "space-invader", "pixel-heart-health", "chomp-loader"];
 
-  it("are retro and tagged pixel or retro", () => {
+  it("are retro (the chomp loader is a loader) and tagged pixel or retro", () => {
     for (const id of [...SHADERS, ...VECTORS]) {
       const effect = getEffect(id)!;
       expect(effect, id).toBeDefined();
-      expect(effect.category, id).toBe("retro");
+      expect(effect.category, id).toBe(id === "chomp-loader" ? "loader" : "retro");
       expect(effect.tags.some((t) => t === "pixel" || t === "retro"), id).toBe(true);
     }
     for (const id of VECTORS) {
@@ -839,9 +839,9 @@ describe("splatter effects", () => {
 describe("bubble effects", () => {
   const bubbles = findEffects({ category: "bubble" });
 
-  it("has the soap, underwater, fizz, foam, wrap, lava, chat and loader bubbles", () => {
+  it("has the soap, underwater, fizz, foam, wrap, lava and chat bubbles", () => {
     const ids = bubbles.map((e) => e.id);
-    for (const id of ["soap-bubbles", "underwater-bubbles", "fizz", "foam", "bubble-wrap", "lava-bubbles", "chat-bubble", "bubble-pop-loader"])
+    for (const id of ["soap-bubbles", "underwater-bubbles", "fizz", "foam", "bubble-wrap", "lava-bubbles", "chat-bubble"])
       expect(ids).toContain(id);
     for (const effect of bubbles) expect(effect.tags).toContain("bubble");
   });
@@ -1789,6 +1789,15 @@ describe("hologram effects", () => {
     if (panel.kind !== "vector") throw new Error("vector expected");
     const motion = renderVectorEffect(panel, { title: "HELLO" });
     expect((motion.animate ?? []).find((a) => a.id === "holoPanelTitle" && a.write)).toMatchObject({ write: "HELLO" });
+  });
+});
+
+describe("loaders", () => {
+  it("are browsed in their own group, gathered from the themed effects too", () => {
+    expect(categoryGroup("loader").name).toBe("Loaders");
+    const ids = findEffects({ group: "loaders" }).map((e) => e.id);
+    for (const id of ["spinner", "progress-bar", "chomp-loader", "bubble-pop-loader", "progress-ring", "battery-charge"]) expect(ids, id).toContain(id);
+    for (const id of ids) expect(getEffect(id)!.category, id).toBe("loader");
   });
 });
 

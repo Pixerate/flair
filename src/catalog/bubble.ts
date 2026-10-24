@@ -129,7 +129,7 @@ export const bubblePopLoader: VectorEffect = {
   id: "bubble-pop-loader",
   name: "Bubble pop loader",
   description: "A loader of four bubbles inflating in turn and popping into droplets, over and over.",
-  category: "bubble",
+  category: "loader",
   tags: ["bubble", "loader", "loading", "spinner", "ui", "playful"],
   hold: 120,
   presets: [
