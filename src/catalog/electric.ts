@@ -122,7 +122,7 @@ export const batteryCharge: VectorEffect = {
   id: "battery-charge",
   name: "Battery charge",
   description: "A battery filling cell by cell as its percentage counts up and the bolt pulses, flashing when it is full.",
-  category: "electric",
+  category: "loader",
   tags: ["electric", "battery", "charging", "loader", "progress", "ui", "icon"],
   hold: 900,
   presets: [

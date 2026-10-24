@@ -28,6 +28,7 @@ export type EffectCategory =
   | "timewarp"
   | "melt"
   | "electric"
+  | "fire"
   | "hologram"
   | "splatter"
   | "bubble"
@@ -72,6 +73,7 @@ export const EFFECT_CATEGORIES: readonly EffectCategory[] = [
   "timewarp",
   "melt",
   "electric",
+  "fire",
   "hologram",
   "splatter",
   "bubble",
@@ -108,12 +110,13 @@ export interface EffectCategoryGroup {
 /** Every category in exactly one group, the groups in browsing order. */
 export const EFFECT_CATEGORY_GROUPS: readonly EffectCategoryGroup[] = [
   { name: "Backgrounds", categories: ["gradient", "organic", "pattern", "space", "3d", "weather", "water", "atmosphere"] },
-  { name: "Light", categories: ["light", "lighting", "glow", "shadow", "electric", "hologram"] },
+  { name: "Light", categories: ["light", "lighting", "glow", "shadow", "electric", "fire", "hologram"] },
   { name: "Pictures", categories: ["image", "distortion", "retro", "comic", "timewarp", "melt"] },
   { name: "Particles & FX", categories: ["overlay", "splatter", "bubble", "particles", "trail", "debris", "impact", "pyrotechnics"] },
   { name: "Type & titles", categories: ["text", "morph", "broadcast", "annotation", "sticker"] },
   { name: "Inputs", categories: ["interaction", "audio", "scroll"] },
-  { name: "Interface", categories: ["ui", "loader", "icon", "data"] },
+  { name: "Interface", categories: ["ui", "icon", "data"] },
+  { name: "Loaders", categories: ["loader"] },
   { name: "Transitions", categories: ["transition"] },
 ];
 

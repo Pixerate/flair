@@ -44,7 +44,7 @@ export const progressRing: VectorEffect = {
   id: "progress-ring",
   name: "Progress ring",
   description: "A ring filling up to a percentage while the number counts with it.",
-  category: "data",
+  category: "loader",
   tags: ["progress", "kpi", "dashboard", "loader"],
   derived: (v) => ({ fraction: Math.min(1, Math.max(0, Number(v.value) / 100)) }),
   motion: {

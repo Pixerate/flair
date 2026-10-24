@@ -4,7 +4,8 @@ import { CURRENT_COLOR, isCurrentColor, type VectorEffect } from "./types.js";
 
 /*
  * More loaders, as animated SVG: skeleton placeholders, determinate and
- * indeterminate bars, a stepper, chasing dots and wave bars. Ids are
+ * indeterminate bars, a stepper, chasing dots, wave bars, an hourglass, an
+ * infinity dash, orbiting dots and a morphing shape. Ids are
  * prefixed with the effect's name.
  */
 
@@ -253,4 +254,179 @@ export const waveBars: VectorEffect = {
   })(),
 };
 
-export const loaderEffects: VectorEffect[] = [skeletonShimmer, progressBar, indeterminateBar, stepProgress, circleDotsLoader, waveBars];
+/** Hourglass: its glass, the neck at (60, 60), and when the sand has run and the glass has turned. */
+const HOURGLASS_GLASS = "M36 20 H84 V26 C84 44 66 52 63 60 C66 68 84 76 84 94 V100 H36 V94 C36 76 54 68 57 60 C54 52 36 44 36 26 Z";
+const HOURGLASS_RUN = 1800;
+const HOURGLASS_TURN = 500;
+
+export const hourglass: VectorEffect = {
+  kind: "vector",
+  id: "hourglass",
+  name: "Hourglass",
+  description: "An hourglass whose sand runs from the top bulb into the bottom in a thin stream, then the glass turns over to run again.",
+  category: "loader",
+  tags: ["loader", "hourglass", "waiting", "time", "ui", "icon"],
+  hold: 0,
+  presets: [
+    { name: "Dark", values: { frame: [0.89, 0.91, 0.94], glass: [0.2, 0.23, 0.3], sand: [0.98, 0.75, 0.14] } },
+    { name: "Blue sand", values: { sand: [0.23, 0.51, 0.96] } },
+  ],
+  motion: {
+    svg: `<svg viewBox="0 0 120 120"><!-- {{frame: color default=#334155 label='Frame'}} {{glass: color default=#E2E8F0 label='Glass'}} {{sand: color default=#F59E0B label='Sand'}} --><defs><clipPath id="hourglassClip"><path d="${HOURGLASS_GLASS}"/></clipPath></defs><g id="hourglassTurn" transform="rotate(0 60 60)"><path d="${HOURGLASS_GLASS}" fill="{{glass}}"/><g clip-path="url(#hourglassClip)" fill="{{sand}}"><rect id="hourglassTop" x="30" y="30" width="60" height="30"/><rect id="hourglassBottom" x="30" y="100" width="60" height="0"/><rect id="hourglassStream" x="59" y="60" width="2" height="40" opacity="0"/></g><path d="${HOURGLASS_GLASS}" fill="none" stroke="{{frame}}" stroke-width="3" stroke-linejoin="round"/><rect x="28" y="12" width="64" height="8" rx="3" fill="{{frame}}"/><rect x="28" y="100" width="64" height="8" rx="3" fill="{{frame}}"/></g></svg>`,
+    animate: [
+      // The sand runs: the top bulb empties from its surface down, the bottom fills up, a stream between.
+      { id: "hourglassTop", attrs: { y: [30, 60], height: [30, 0] }, ms: HOURGLASS_RUN, ease: "linear" },
+      { id: "hourglassBottom", attrs: { y: [100, 72], height: [0, 28] }, ms: HOURGLASS_RUN, ease: "linear" },
+      { id: "hourglassStream", attrs: { opacity: [0, 1] }, ms: 100 },
+      { id: "hourglassStream", attrs: { height: [40, 12] }, ms: HOURGLASS_RUN, ease: "linear" },
+      { id: "hourglassStream", attrs: { opacity: [1, 0] }, delay: HOURGLASS_RUN - 120, ms: 120 },
+      // Then the glass turns over; turned, it looks as it started, so everything snaps back.
+      { id: "hourglassTurn", attrs: { transform: ["rotate(0 60 60)", "rotate(180 60 60)"] }, delay: HOURGLASS_RUN, ms: HOURGLASS_TURN, ease: "in-out" },
+      ...(
+        [
+          ["hourglassTurn", "transform", "rotate(0 60 60)"],
+          ["hourglassTop", "y", 30],
+          ["hourglassTop", "height", 30],
+          ["hourglassBottom", "y", 100],
+          ["hourglassBottom", "height", 0],
+          ["hourglassStream", "height", 40],
+        ] as const
+      ).map(([id, attr, value]): SvgAnimation => ({ id, attrs: { [attr]: [value, value] }, delay: HOURGLASS_RUN + HOURGLASS_TURN, ms: 0 })),
+    ],
+  },
+};
+
+/** Infinity loader: a figure of eight round (100, 50), measured as 100 long (`pathLength`). */
+const INFINITY = "M100 50 C125 14 176 14 176 50 C176 86 125 86 100 50 C75 14 24 14 24 50 C24 86 75 86 100 50 Z";
+const INFINITY_MS = 1600;
+
+export const infinityLoader: VectorEffect = {
+  kind: "vector",
+  id: "infinity-loader",
+  name: "Infinity loader",
+  description: "A glowing dash chasing itself round a figure of eight, stretching as it swings through the crossing.",
+  category: "loader",
+  tags: ["loader", "infinity", "spinner", "loop", "ui", "minimal"],
+  hold: 0,
+  presets: [
+    { name: "Dark", values: { track: [0.16, 0.18, 0.25], accent: [0.4, 0.91, 0.98] } },
+    { name: "Thick", values: { thickness: 10 } },
+  ],
+  motion: {
+    svg: `<svg viewBox="0 0 200 100"><!-- {{accent: color default=#8B5CF6 label='Dash'}} {{track: color default=#EDE9FE label='Track'}} {{thickness: float min=2 max=14 default=7 step=1 label='Thickness'}} --><defs><filter id="infinityLoaderBlur" x="-20%" y="-40%" width="140%" height="180%"><feGaussianBlur stdDeviation="3"/></filter></defs><path d="${INFINITY}" pathLength="100" fill="none" stroke="{{track}}" stroke-width="{{thickness}}" stroke-linecap="round"/><path id="infinityLoaderGlow" d="${INFINITY}" pathLength="100" fill="none" stroke="{{accent}}" stroke-width="{{thickness}}" stroke-linecap="round" stroke-dasharray="20 80" stroke-dashoffset="0" filter="url(#infinityLoaderBlur)" opacity="0.6"/><path id="infinityLoaderDash" d="${INFINITY}" pathLength="100" fill="none" stroke="{{accent}}" stroke-width="{{thickness}}" stroke-linecap="round" stroke-dasharray="20 80" stroke-dashoffset="0"/></svg>`,
+    animate: ["infinityLoaderDash", "infinityLoaderGlow"].flatMap((id): SvgAnimation[] => [
+      { id, attrs: { "stroke-dashoffset": [0, -100] }, ms: INFINITY_MS, ease: "linear" },
+      // It stretches through each crossing and shortens on the loops.
+      { id, attrs: { "stroke-dasharray": ["20 80", "34 66"] }, ms: INFINITY_MS / 4, ease: "in-out" },
+      { id, attrs: { "stroke-dasharray": ["34 66", "20 80"] }, delay: INFINITY_MS / 4, ms: INFINITY_MS / 4, ease: "in-out" },
+      { id, attrs: { "stroke-dasharray": ["20 80", "34 66"] }, delay: INFINITY_MS / 2, ms: INFINITY_MS / 4, ease: "in-out" },
+      { id, attrs: { "stroke-dasharray": ["34 66", "20 80"] }, delay: (INFINITY_MS * 3) / 4, ms: INFINITY_MS / 4, ease: "in-out" },
+      // A whole lap ends where it started.
+      { id, attrs: { "stroke-dashoffset": [0, 0] }, delay: INFINITY_MS, ms: 0 },
+    ]),
+  },
+};
+
+/** Orbit loader: an ellipse `rx` by `ry` round (60, 60), tilted `deg`, starting `start` of the way round, as a closed path. */
+function orbitPath(rx: number, ry: number, deg: number, start: number): string {
+  const tilt = (deg * Math.PI) / 180;
+  const points = Array.from({ length: 49 }, (_, i) => {
+    const a = (start + i / 48) * Math.PI * 2;
+    const x = rx * Math.cos(a);
+    const y = ry * Math.sin(a);
+    return `${r1(60 + x * Math.cos(tilt) - y * Math.sin(tilt))} ${r1(60 + x * Math.sin(tilt) + y * Math.cos(tilt))}`;
+  });
+  return `M${points.join(" L")} Z`;
+}
+
+const ORBITS = [
+  { deg: 0, start: 0 },
+  { deg: 60, start: 0.33 },
+  { deg: -60, start: 0.67 },
+];
+const ORBIT_MS = 1500;
+
+export const orbitLoader: VectorEffect = {
+  kind: "vector",
+  id: "orbit-loader",
+  name: "Orbit loader",
+  description: "Three dots circling a pulsing centre on tilted orbits, like an atom, each a third of a turn behind the last.",
+  category: "loader",
+  tags: ["loader", "orbit", "atom", "spinner", "science", "ui"],
+  hold: 0,
+  presets: [
+    { name: "Dark", values: { orbit: [0.2, 0.23, 0.3], dot: [0.4, 0.91, 0.98], core: [0.96, 0.45, 0.71] } },
+    { name: "No orbits", values: { orbit: [1, 1, 1] } },
+  ],
+  motion: {
+    svg: `<svg viewBox="0 0 120 120"><!-- {{dot: color default=#0EA5E9 label='Dots'}} {{core: color default=#6366F1 label='Centre'}} {{orbit: color default=#E2E8F0 label='Orbits'}} -->${ORBITS.map(
+      ({ deg, start }, i) => `<path id="orbitLoaderPath${i}" d="${orbitPath(46, 16, deg, start)}" fill="none" stroke="{{orbit}}" stroke-width="2"/>`,
+    ).join("")}<circle id="orbitLoaderCore" cx="60" cy="60" r="8" fill="{{core}}"/>${ORBITS.map((_, i) => `<circle id="orbitLoaderDot${i}" cx="0" cy="0" r="5.5" fill="{{dot}}"/>`).join("")}</svg>`,
+    animate: [
+      // A lap of a closed orbit ends where it started, so each dot snaps back to its start.
+      ...ORBITS.flatMap((_, i): SvgAnimation[] => [
+        { id: `orbitLoaderDot${i}`, along: `orbitLoaderPath${i}`, ms: ORBIT_MS, ease: "linear" },
+        { id: `orbitLoaderDot${i}`, along: `orbitLoaderPath${i}`, at: [0, 0], delay: ORBIT_MS, ms: 0 },
+      ]),
+      { id: "orbitLoaderCore", attrs: { r: [8, 10.5] }, ms: ORBIT_MS / 2, ease: "in-out" },
+      { id: "orbitLoaderCore", attrs: { r: [10.5, 8] }, delay: ORBIT_MS / 2, ms: ORBIT_MS / 2, ease: "in-out" },
+    ],
+  },
+};
+
+/**
+ * Shape morph loader: a square, a circle and a triangle round (60, 60), each
+ * as four cubic curves from the top clockwise, so any one tweens to another.
+ */
+const MORPH_SHAPES = (() => {
+  type P = readonly [number, number];
+  const line = (a: P, b: P) => [a[0] + (b[0] - a[0]) / 3, a[1] + (b[1] - a[1]) / 3, a[0] + ((b[0] - a[0]) * 2) / 3, a[1] + ((b[1] - a[1]) * 2) / 3, b[0], b[1]];
+  const path = (start: P, curves: number[][]) => `M${start.join(" ")} ${curves.map((c) => `C${c.map(r1).join(" ")}`).join(" ")} Z`;
+  const k = 28 * 0.5523;
+  const circle = path([60, 32], [
+    [60 + k, 32, 88, 60 - k, 88, 60],
+    [88, 60 + k, 60 + k, 88, 60, 88],
+    [60 - k, 88, 32, 60 + k, 32, 60],
+    [32, 60 - k, 60 - k, 32, 60, 32],
+  ]);
+  const square = path([60, 34], [
+    [86, 34, 86, 34, 86, 60],
+    [86, 86, 86, 86, 60, 86],
+    [34, 86, 34, 86, 34, 60],
+    [34, 34, 34, 34, 60, 34],
+  ]);
+  const top: P = [60, 30];
+  const right: P = [90, 82];
+  const left: P = [30, 82];
+  const triangle = path(top, [line(top, right), line(right, [60, 82]), line([60, 82], left), line(left, top)]);
+  return [square, circle, triangle];
+})();
+const MORPH_HOLD = 250;
+const MORPH_MS = 450;
+
+export const shapeMorphLoader: VectorEffect = {
+  kind: "vector",
+  id: "shape-morph-loader",
+  name: "Shape morph loader",
+  description: "A shape that turns as it morphs from a square into a circle, a triangle and back, changing colour with each.",
+  category: "loader",
+  tags: ["loader", "morph", "shapes", "spinner", "playful", "ui"],
+  hold: 0,
+  presets: [
+    { name: "Mono", values: { first: [0.07, 0.09, 0.15], second: [0.07, 0.09, 0.15], third: [0.07, 0.09, 0.15] } },
+    { name: "Pastel", values: { first: [0.99, 0.65, 0.65], second: [0.65, 0.85, 0.99], third: [0.72, 0.95, 0.75] } },
+  ],
+  motion: {
+    svg: `<svg viewBox="0 0 120 120"><!-- {{first: color default=#F43F5E label='Square'}} {{second: color default=#6366F1 label='Circle'}} {{third: color default=#10B981 label='Triangle'}} --><g id="shapeMorphLoaderTurn" transform="rotate(0 60 60)"><path id="shapeMorphLoaderShape" d="${MORPH_SHAPES[0]}" fill="{{first}}"/></g></svg>`,
+    animate: (["first", "second", "third"] as const).flatMap((colour, i): SvgAnimation[] => {
+      const next = (["first", "second", "third"] as const)[(i + 1) % 3]!;
+      const delay = i * (MORPH_HOLD + MORPH_MS) + MORPH_HOLD;
+      return [
+        { id: "shapeMorphLoaderShape", attrs: { d: [MORPH_SHAPES[i]!, MORPH_SHAPES[(i + 1) % 3]!], fill: [`{{${colour}}}`, `{{${next}}}`] }, delay, ms: MORPH_MS, ease: "in-out" },
+        { id: "shapeMorphLoaderTurn", attrs: { transform: [`rotate(${i * 120} 60 60)`, `rotate(${(i + 1) * 120} 60 60)`] }, delay, ms: MORPH_MS, ease: "in-out" },
+      ];
+    }),
+  },
+};
+
+export const loaderEffects: VectorEffect[] = [skeletonShimmer, progressBar, indeterminateBar, stepProgress, circleDotsLoader, waveBars, hourglass, infinityLoader, orbitLoader, shapeMorphLoader];
