@@ -1,5 +1,13 @@
 # @pixerate/flair
 
+## 0.57.0
+
+### Minor Changes
+
+- 7bda389: Add a `fire` category (in the Light group) with eight effects: `fire-border` (flames rising off a rounded frame, tallest along its top, with sparks), `flaming-text` (words smouldering like coals with flames rising off them), `burn-away` (a picture or video catching fire and burning away from a point, looping, with a still progress control), `fire-ring` (a hoop of fire that flares on hover), `fireball` (a roiling ball of fire that swoops about or follows the pointer, streaming a tail), `campfire` (a night scene with logs, coals, sparks and flickering firelight), and the animated SVGs `flame-icon` (a three-layer flickering flame with embers) and `match-strike` (a match struck, flaring, charring and blown out). The overlays draw on clear, with a background a preset away.
+- 7ff8a77: Loaders get their own browsing group: `EFFECT_CATEGORY_GROUPS` gains "Loaders" (the `loader` category, out of "Interface"), and the loaders that lived in themed categories move into `loader`: `chomp-loader` (was `retro`), `bubble-pop-loader` (was `bubble`), `progress-ring` (was `data`) and `battery-charge` (was `electric`). `findEffects({ group: "loaders" })` finds them all; filters by their old categories no longer do.
+- 393256f: Add eight loaders to the `loader` category. Four are shaders drawn on clear, with a background a preset away: `liquid-loader` (a glass circle filling with sloshing liquid and bubbles), `glow-ring-spinner` (a glowing head sweeping round a ring with a breathing gradient tail), `metaball-loader` (gooey blobs chasing round and merging) and `flame-loader` (a progress bar burning along its length). The two that fill up loop over 6 s and have a still progress control. Four are animated SVGs that loop seamlessly: `hourglass`, `infinity-loader`, `orbit-loader` and `shape-morph-loader`.
+
 ## 0.56.0
 
 ### Minor Changes
