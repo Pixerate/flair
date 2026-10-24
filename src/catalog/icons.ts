@@ -446,4 +446,68 @@ export const wifiSignal: VectorEffect = {
   },
 };
 
-export const iconEffects: VectorEffect[] = [weatherIcons, notificationBell, animatedArrows, emojiReactions, bookmarkStar, trashDelete, lockUnlock, wifiSignal];
+// ── Wish star ──────────────────────────────────────────────────────────
+
+/** A five-pointed star round (0, 0). */
+const WISH_STAR = (() => {
+  const pts = Array.from({ length: 10 }, (_, k) => {
+    const a = -Math.PI / 2 + (k * Math.PI) / 5;
+    const r = k % 2 ? 4.2 : 10;
+    return `${r1(r * Math.cos(a))} ${r1(r * Math.sin(a))}`;
+  });
+  return `M${pts.join(" L")}Z`;
+})();
+const WISH_ROUTE = "M90 10 C74 12 48 28 40 62";
+const WISH_LAND = [40, 62] as const;
+const WISH_FLY = 800;
+/** The swoop: slow to start, quickest as it lands. */
+const WISH_EASE: [number, number, number, number] = [0.45, 0, 0.85, 0.5];
+const wishSpin = (deg: number, s: number) => `rotate(${deg}) scale(${r2(s)})`;
+const WISH_SPARKS = [
+  [-15, -12, 0.9],
+  [15, -7, 0.7],
+  [-6, 17, 0.6],
+  [13, 13, 0.5],
+] as const;
+const wishSpark = (k: number, s: number) => `translate(${WISH_LAND[0] + WISH_SPARKS[k]![0]} ${WISH_LAND[1] + WISH_SPARKS[k]![1]}) rotate(${r1(s * 90)}) scale(${r2(s * WISH_SPARKS[k]![2])})`;
+
+export const wishStar: VectorEffect = {
+  kind: "vector",
+  id: "wish-star",
+  name: "Wish star",
+  description: "A shooting star swoops down an arc, spinning, its trail drawing on behind it, then lands with a pop and a burst of twinkling sparkles as the trail fades.",
+  category: "icon",
+  tags: ["star", "shooting-star", "wish", "magic", "favourite", "celebration", "loop"],
+  hold: 300,
+  presets: [
+    { name: "Dark", values: { star: [0.99, 0.88, 0.45], trail: [0.65, 0.55, 1], sparkle: [1, 1, 1] } },
+    { name: "Pink", values: { star: [0.98, 0.45, 0.71], trail: [0.98, 0.66, 0.83], sparkle: [0.99, 0.82, 0.91] } },
+  ],
+  motion: {
+    svg: `<svg viewBox="0 0 100 100"><!-- {{star: color default=#F59E0B label='Star'}} {{trail: color default=#60A5FA label='Trail'}} {{sparkle: color default=#FBBF24 label='Sparkles'}} --><defs><linearGradient id="wishStarFade" gradientUnits="userSpaceOnUse" x1="90" y1="10" x2="40" y2="62"><stop offset="0" stop-color="{{trail}}" stop-opacity="0"/><stop offset="1" stop-color="{{trail}}" stop-opacity="1"/></linearGradient></defs><path id="wishStarRoute" d="${WISH_ROUTE}" fill="none" stroke="none"/><path id="wishStarTrail" d="${WISH_ROUTE}" fill="none" stroke="url(#wishStarFade)" stroke-width="5" stroke-linecap="round"/><circle id="wishStarGlow" cx="${WISH_LAND[0]}" cy="${WISH_LAND[1]}" r="0" fill="{{sparkle}}" opacity="0"/>${WISH_SPARKS.map((_, k) => `<g id="wishStarSpark${k}" transform="${wishSpark(k, 0)}"><path d="M0 -6 Q0.9 -0.9 6 0 Q0.9 0.9 0 6 Q-0.9 0.9 -6 0 Q-0.9 -0.9 0 -6Z" fill="{{sparkle}}"/></g>`).join("")}<g id="wishStarStar" opacity="0"><g id="wishStarSpin" transform="${wishSpin(0, 0.6)}"><path d="${WISH_STAR}" fill="{{star}}" stroke="{{star}}" stroke-width="2" stroke-linejoin="round"/></g></g></svg>`,
+    animate: [
+      { id: "wishStarStar", attrs: { opacity: [0, 1] }, ms: 150 },
+      { id: "wishStarStar", along: "wishStarRoute", ms: WISH_FLY, ease: WISH_EASE },
+      { id: "wishStarTrail", draw: true, ms: WISH_FLY, ease: WISH_EASE },
+      // Hidden until it starts (an undrawn line with round caps still shows a dot).
+      { id: "wishStarTrail", attrs: { opacity: [0, 1] }, ms: 60 },
+      // One turn and a half of the star's 72° symmetry, so it lands upright.
+      { id: "wishStarSpin", attrs: { transform: [wishSpin(0, 0.6), wishSpin(-216, 1)] }, ms: WISH_FLY, ease: WISH_EASE },
+      { id: "wishStarSpin", attrs: { transform: [wishSpin(-216, 1), wishSpin(-216, 1.4)] }, delay: WISH_FLY, ms: 140, ease: "out" },
+      { id: "wishStarSpin", attrs: { transform: [wishSpin(-216, 1.4), wishSpin(-216, 1)] }, delay: WISH_FLY + 140, ms: 260, ease: { spring: { stiffness: 260, damping: 14 } } },
+      { id: "wishStarGlow", attrs: { opacity: [0, 0.55] }, delay: WISH_FLY, ms: 60 },
+      { id: "wishStarGlow", attrs: { r: [4, 22] }, delay: WISH_FLY, ms: 500, ease: "out" },
+      { id: "wishStarGlow", attrs: { opacity: [0.55, 0] }, delay: WISH_FLY + 60, ms: 440, ease: "out" },
+      { id: "wishStarTrail", attrs: { opacity: [1, 0] }, delay: WISH_FLY + 100, ms: 500 },
+      ...WISH_SPARKS.flatMap((_, k): SvgAnimation[] => [
+        { id: `wishStarSpark${k}`, attrs: { transform: [wishSpark(k, 0), wishSpark(k, 1)] }, delay: WISH_FLY + 40 + k * 80, ms: 200, ease: "out" },
+        { id: `wishStarSpark${k}`, attrs: { transform: [wishSpark(k, 1), wishSpark(k, 0)] }, delay: WISH_FLY + 340 + k * 80, ms: 320, ease: "in-out" },
+      ]),
+      ...swing("wishStarStar", "opacity", 1, 0.55, 500, 1500),
+      // Gone before the loop starts over.
+      { id: "wishStarStar", attrs: { opacity: [1, 0] }, delay: 2100, ms: 250 },
+    ],
+  },
+};
+
+export const iconEffects: VectorEffect[] = [weatherIcons, notificationBell, animatedArrows, emojiReactions, bookmarkStar, trashDelete, lockUnlock, wifiSignal, wishStar];
