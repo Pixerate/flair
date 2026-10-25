@@ -176,6 +176,7 @@ describe('command-line arguments', () => {
     expect(effectQueryFromFlags({ accepts: ['image,video'], interaction: ['click'], category: 'image' })).toEqual({ accepts: ['image', 'video'], interaction: ['click'], category: 'image' });
     expect(() => effectQueryFromFlags({ accepts: ['sound'] })).toThrow(/--accepts takes/);
     expect(() => effectQueryFromFlags({ category: 'nope' })).toThrow(/--category takes/);
+    expect(effectQueryFromFlags({ transparent: true })).toEqual({ transparent: true });
   });
 });
 

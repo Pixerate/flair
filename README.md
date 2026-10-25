@@ -750,7 +750,7 @@ npx flair scene review ./scene.json          # fast headless simulation + review
 npx flair scene lottie ./scene.json out.json # also: fcp7, edl, motn
 
 # Catalog effects to files
-npx flair effects --accepts video            # pick an effect: what each takes (--interaction click, --category image, --kind, --search, --json)
+npx flair effects --accepts video            # pick an effect: what each takes (--interaction click, --category image, --kind, --search, --transparent, --json)
 npx flair render image-duotone --image team.jpg --preset Spotify -o team.mp4
 npx flair render crt --video clip.mp4 -o crt.mp4
 npx flair render click-ripple --alpha -o ripple.webm

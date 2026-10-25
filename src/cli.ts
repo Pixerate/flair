@@ -230,6 +230,7 @@ program
   .option('--category <category>', 'Only this category')
   .option('--kind <kind>', 'shader or vector')
   .option('--search <words>', 'Words to look for in the id, name, description and tags')
+  .option('--transparent', 'Only overlays: effects that draw over what is under them (they take a --backdrop in render)')
   .option('--json', 'Output JSON (id, name, kind, category, description, inputs, presets)', false)
   .action(async (options) => {
     try {
