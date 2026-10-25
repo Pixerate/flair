@@ -32,6 +32,7 @@ import { changeLength, type SvgMotion } from '../vector/motion.js';
 import { svgFrameMarkup, svgViewBox } from '../vector/static.js';
 import { svgDuration } from '../vector/svg.js';
 import {
+  BACKDROP_FITS,
   ffmpegPath,
   findChrome,
   frameStates,
@@ -39,8 +40,10 @@ import {
   pageControls,
   planOutput,
   runRender,
+  type BackdropFit,
   type FrameState,
   type OutputFormat,
+  type PageConfig,
   type PointerMode,
 } from './recorder.js';
 
@@ -59,6 +62,12 @@ export type NodeSubject =
   | { path: string }
   | { video: string };
 
+/**
+ * Part of the frame, normalized 0 to 1 from the top left: x, y, width,
+ * height. `[0.5, 0, 0.5, 1]` is the right half.
+ */
+export type EffectRegion = readonly [x: number, y: number, width: number, height: number];
+
 export interface EffectExportOptions {
   /** What to apply it to; several fill several controls in order (a transition's from and to). */
   subject?: NodeSubject | readonly NodeSubject[];
@@ -68,7 +77,11 @@ export interface EffectExportOptions {
   values?: Record<string, ControlValue>;
   /** .mp4, .webm, .mov, .gif, .svg (vector effects), or PNG frames (a folder, or `out_%04d.png`). */
   outputPath: string;
-  /** Pixels (default: input video size if video subject provided, 1280 × 720 for effects that show a picture, 720 × 720 for other shaders, a vector's own shape 720 px on its long edge). */
+  /**
+   * Pixels (default: the backdrop's own size when there is one, else the input video's size if a video
+   * subject is provided, 1280 × 720 for effects that show a picture, 720 × 720 for other shaders, a
+   * vector's own shape 720 px on its long edge). Given only `width`, the height keeps that shape.
+   */
   width?: number;
   height?: number;
   fps?: number;
@@ -81,6 +94,25 @@ export interface EffectExportOptions {
   alpha?: boolean;
   /** CSS colour under transparent pixels without `alpha` (default black for shaders, white for vector effects). */
   background?: string;
+  /**
+   * A picture drawn under the effect in every frame instead of the flat
+   * `background`: a file path, an `http(s):` URL, or a `data:` URL. For
+   * overlays that take no picture of their own (sparkles, bokeh, confetti),
+   * so the render shows them over a photo. The frame defaults to the
+   * backdrop's own size. Refused with `alpha` (the backdrop fills the
+   * frame), with `.svg` output, and for a shader that draws every pixel
+   * itself (give the picture to an image effect as its `subject` instead).
+   */
+  backdrop?: string;
+  /** How the backdrop fills the frame: `cover` (the default) crops to fill, `contain` fits it whole over `background`, `fill` stretches it. */
+  backdropFit?: BackdropFit;
+  /**
+   * Confines the effect to part of the frame, normalized 0 to 1: `[x, y,
+   * width, height]` from the top left. The effect renders at that box's
+   * size (so it is not stretched) and the rest of the frame is the backdrop
+   * or `background` (or transparent, with `alpha`). Default: the whole frame.
+   */
+  region?: EffectRegion;
   /**
    * The pointer, for effects that answer it: `auto` (the default for them),
    * a scripted pointer that hovers, wanders and clicks; `none` leaves it
@@ -394,19 +426,165 @@ export async function extractVideoFrames(file: string, fps: number, frames: numb
   return files;
 }
 
+/** A PNG, JPEG, GIF, WebP, BMP or SVG's own size, in display orientation (JPEG EXIF rotation applied, as Chrome draws it); undefined for others. */
+export function imageNaturalSize(data: Buffer | Uint8Array): { width: number; height: number } | undefined {
+  const b = Buffer.isBuffer(data) ? data : Buffer.from(data.buffer, data.byteOffset, data.byteLength);
+  const ok = (width: number, height: number) => (width > 0 && height > 0 ? { width, height } : undefined);
+  if (b.length >= 24 && b.readUInt32BE(0) === 0x89504e47 && b.toString('ascii', 12, 16) === 'IHDR') return ok(b.readUInt32BE(16), b.readUInt32BE(20));
+  if (b.length >= 10 && b.toString('ascii', 0, 4) === 'GIF8') return ok(b.readUInt16LE(6), b.readUInt16LE(8));
+  if (b.length >= 26 && b.toString('ascii', 0, 2) === 'BM') return ok(b.readInt32LE(18), Math.abs(b.readInt32LE(22)));
+  if (b.length >= 30 && b.toString('ascii', 0, 4) === 'RIFF' && b.toString('ascii', 8, 12) === 'WEBP') {
+    const chunk = b.toString('ascii', 12, 16);
+    if (chunk === 'VP8 ') return ok(b.readUInt16LE(26) & 0x3fff, b.readUInt16LE(28) & 0x3fff);
+    if (chunk === 'VP8L') {
+      const [b0, b1, b2, b3] = [b[21]!, b[22]!, b[23]!, b[24]!];
+      return ok(1 + (((b1 & 0x3f) << 8) | b0), 1 + (((b3 & 0xf) << 10) | (b2 << 2) | ((b1 & 0xc0) >> 6)));
+    }
+    if (chunk === 'VP8X') return ok(1 + b.readUIntLE(24, 3), 1 + b.readUIntLE(27, 3));
+    return undefined;
+  }
+  if (b.length >= 4 && b[0] === 0xff && b[1] === 0xd8) {
+    let orientation = 1;
+    let off = 2;
+    while (off + 9 < b.length) {
+      if (b[off] !== 0xff) return undefined;
+      const marker = b[off + 1]!;
+      if (marker === 0xd8 || marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7)) { off += 2; continue; }
+      const len = b.readUInt16BE(off + 2);
+      if (marker === 0xe1 && b.toString('ascii', off + 4, off + 10) === 'Exif\0\0') orientation = exifOrientation(b, off + 10) ?? orientation;
+      // Start of frame (SOF0–SOF15, but not DHT, JPG or DAC).
+      if (marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc) {
+        const height = b.readUInt16BE(off + 5);
+        const width = b.readUInt16BE(off + 7);
+        return orientation >= 5 && orientation <= 8 ? ok(height, width) : ok(width, height);
+      }
+      off += 2 + len;
+    }
+    return undefined;
+  }
+  const text = b.subarray(0, 4096).toString('utf8');
+  if (/<svg\b/i.test(text)) {
+    const open = /<svg\b[^>]*>/i.exec(b.toString('utf8'))?.[0] ?? '';
+    const len = (name: string) => {
+      const m = new RegExp(`\\s${name}\\s*=\\s*["']\\s*([\\d.]+)(px)?\\s*["']`, 'i').exec(open);
+      return m && Number(m[1]) > 0 ? Number(m[1]) : 0;
+    };
+    const box = svgViewBox(open);
+    const hasBox = box && box[2] > 0 && box[3] > 0;
+    return ok(Math.round(len('width') || (hasBox ? box[2] : 300)), Math.round(len('height') || (hasBox ? box[3] : 150)));
+  }
+  return undefined;
+}
+
+/** The orientation tag (1–8) in a JPEG's EXIF block starting at `tiff`. */
+function exifOrientation(b: Buffer, tiff: number): number | undefined {
+  if (tiff + 8 > b.length) return undefined;
+  const le = b.toString('ascii', tiff, tiff + 2) === 'II';
+  const u16 = (o: number) => (le ? b.readUInt16LE(o) : b.readUInt16BE(o));
+  const u32 = (o: number) => (le ? b.readUInt32LE(o) : b.readUInt32BE(o));
+  const ifd = tiff + u32(tiff + 4);
+  if (ifd + 2 > b.length) return undefined;
+  const count = u16(ifd);
+  for (let i = 0; i < count; i++) {
+    const entry = ifd + 2 + i * 12;
+    if (entry + 12 > b.length) return undefined;
+    if (u16(entry) === 0x0112) return u16(entry + 8);
+  }
+  return undefined;
+}
+
+/** A `data:` URL's bytes (an empty buffer for anything else). */
+function dataUrlBytes(url: string): Buffer {
+  const comma = url.indexOf(',');
+  if (!/^data:/i.test(url) || comma < 0) return Buffer.alloc(0);
+  const meta = url.slice(0, comma);
+  const body = url.slice(comma + 1);
+  return /;base64/i.test(meta) ? Buffer.from(body, 'base64') : Buffer.from(decodeURIComponent(body), 'utf8');
+}
+
+/** A backdrop's size from its `data:` URL (see {@link imageNaturalSize}). */
+export function backdropSize(dataUrl: string): { width: number; height: number } | undefined {
+  return imageNaturalSize(dataUrlBytes(dataUrl));
+}
+
+/** Checks a region: four numbers in 0–1 whose box stays in the frame; a sentence otherwise. */
+export function checkRegion(region: unknown): EffectRegion {
+  const bad = (why: string) =>
+    new Error(`region takes [x, y, width, height], normalized 0 to 1 from the top left (like [0.5, 0, 0.5, 1] for the right half); ${why}.`);
+  if (!Array.isArray(region) || region.length !== 4) throw bad(`not ${JSON.stringify(region)}`);
+  if (!region.every((n) => typeof n === 'number' && Number.isFinite(n))) throw bad(`every entry must be a number, not ${JSON.stringify(region)}`);
+  const [x, y, w, h] = region as number[];
+  if (x! < 0 || y! < 0 || x! > 1 || y! > 1) throw bad(`x and y must be between 0 and 1, not ${x} and ${y}`);
+  if (!(w! > 0) || !(h! > 0)) throw bad(`width and height must be more than 0, not ${w} and ${h}`);
+  const eps = 1e-6;
+  if (x! + w! > 1 + eps || y! + h! > 1 + eps) throw bad(`x + width and y + height must be at most 1 (the box leaves the frame: ${x! + w!}, ${y! + h!})`);
+  return [x!, y!, w!, h!];
+}
+
+/** A normalized region in frame pixels, at least one pixel and inside the frame. */
+export function regionPixels(region: EffectRegion, width: number, height: number): [number, number, number, number] {
+  const x = Math.min(width - 1, Math.round(region[0] * width));
+  const y = Math.min(height - 1, Math.round(region[1] * height));
+  const w = Math.max(1, Math.min(width - x, Math.round(region[2] * width)));
+  const h = Math.max(1, Math.min(height - y, Math.round(region[3] * height)));
+  return [x, y, w, h];
+}
+
+/**
+ * An export's pixel size: the given `width` and `height`, else `natural`
+ * (a backdrop's or video's own size, rounded to even pixels), else the
+ * effect's {@link defaultSize}. Given only a width, the height keeps that shape.
+ */
+export function effectFrameSize(
+  effect: EffectDefinition,
+  options: { width?: number; height?: number },
+  natural?: { width: number; height: number },
+  motion?: SvgMotion,
+): { width: number; height: number } {
+  const fallback = natural && natural.width > 0 && natural.height > 0 ? { width: even(natural.width), height: even(natural.height) } : defaultSize(effect, motion);
+  const width = Math.max(1, Math.round(options.width ?? fallback.width));
+  const height = Math.max(1, Math.round(options.height ?? (options.width ? (options.width * fallback.height) / fallback.width : fallback.height)));
+  return { width, height };
+}
+
+/** The page's backdrop and region, when there are any. */
+function pageExtras(backdrop: { src: string; fit: BackdropFit } | undefined, box: [number, number, number, number] | undefined): Pick<PageConfig, 'backdrop' | 'region'> {
+  return { ...(backdrop ? { backdrop: { src: backdrop.src, fit: backdrop.fit } } : {}), ...(box ? { region: box } : {}) };
+}
+
+/** The backdrop, read and checked against what the render asks for; sentences for what cannot be. */
+async function resolveBackdrop(def: EffectDefinition, options: EffectExportOptions, values: Record<string, ControlValue>, format: OutputFormat) {
+  if (!options.backdrop) return undefined;
+  if (format === 'svg') {
+    throw new Error('An animated SVG cannot carry a backdrop picture; write .mp4, .webm, .mov, .gif or .png frames to render over it, or drop the backdrop.');
+  }
+  if (def.kind === 'shader' && !drawsAlpha(def, values)) {
+    throw new Error(
+      effectInputs(def).images.length
+        ? `"${def.id}" draws every pixel itself, so a backdrop would be hidden under it; pass the picture as its subject instead (subject: { image }, or --image).`
+        : `"${def.id}" draws every pixel itself and takes no picture, so a backdrop would be hidden under it; pick an overlay effect ("flair effects --transparent", or findEffects({ transparent: true })), or drop the backdrop.`,
+    );
+  }
+  const src = await imageDataUrl(options.backdrop);
+  return { src, fit: options.backdropFit ?? 'cover', size: backdropSize(src) };
+}
+
 /**
  * Renders a catalog effect (by id or definition), applied to `subject`, to
  * a file: a shader through WebGL2 in headless Chrome, a vector effect by
  * drawing each frame's SVG there, or (to `.svg`) a vector effect as one
  * animated SVG with no browser at all. MP4, WebM, MOV and video subjects
  * need ffmpeg. Throws a sentence when the effect is unknown, takes no such
- * subject, or cannot be written in that format.
+ * subject, or cannot be written in that format. A `backdrop` draws a
+ * picture under an overlay in every frame (and `region` places the effect
+ * in part of the frame).
  *
  * ```ts
  * await exportEffect("image-duotone", { subject: { image: "team.jpg" }, preset: "Spotify", outputPath: "team.mp4" });
  * await exportEffect("click-ripple", { alpha: true, outputPath: "ripple.webm" });
  * await exportEffect("typewriter", { subject: { text: "Hello" }, outputPath: "hello.gif" });
  * await exportEffect("toggle-switch", { outputPath: "toggle.svg" });
+ * await exportEffect("sparkles", { backdrop: "beach.jpg", region: [0, 0, 1, 0.5], outputPath: "beach.mp4" });
  * ```
  */
 export async function exportEffect(effect: string | EffectDefinition, options: EffectExportOptions): Promise<string> {
@@ -420,6 +598,13 @@ export async function exportEffect(effect: string | EffectDefinition, options: E
   const values = { ...effectDefaults(def, options.preset ? { preset: options.preset } : {}), ...fromSubject.values, ...explicit };
   const fps = options.fps ?? 30;
   const background = options.background ?? (def.kind === 'vector' ? '#ffffff' : '#000000');
+  const region = options.region === undefined ? undefined : checkRegion(options.region);
+  if (options.backdropFit !== undefined && !BACKDROP_FITS.includes(options.backdropFit)) {
+    throw new Error(`backdropFit (--backdrop-fit) takes ${BACKDROP_FITS.join(', ')}; not "${options.backdropFit}".`);
+  }
+  if (options.backdrop && options.alpha) {
+    throw new Error('A backdrop fills the frame, so there is no transparency left to keep; drop alpha (--alpha) to render over the backdrop, or drop the backdrop to render the effect alone with alpha.');
+  }
 
   if (def.kind === 'vector') {
     const motion = renderVectorEffect(def, values);
@@ -427,7 +612,9 @@ export async function exportEffect(effect: string | EffectDefinition, options: E
     const duration = options.duration ?? timeline.length / 1000;
     const frames = Math.max(1, Math.round(duration * fps));
     const plan = planOutput(options.outputPath, { alpha: options.alpha, frames });
+    const backdrop = await resolveBackdrop(def, options, values, plan.format);
     if (plan.format === 'svg') {
+      if (region) throw new Error('An animated SVG cannot be confined to a region; write .mp4, .webm, .mov, .gif or .png frames, or drop the region.');
       const markup = svgAnimatedMarkup(motion, {
         ...(def.hold !== undefined ? { hold: def.hold } : {}),
         ...(timeline.steps.length ? { steps: timeline.steps, duration: timeline.length } : {}),
@@ -448,10 +635,9 @@ export async function exportEffect(effect: string | EffectDefinition, options: E
       options.onProgress?.(1, 1);
       return plan.path;
     }
-    const size = defaultSize(def, motion);
-    const width = Math.max(1, Math.round(options.width ?? size.width));
-    const height = Math.max(1, Math.round(options.height ?? (options.width ? (options.width * size.height) / size.width : size.height)));
-    const base = frameStates(frames, fps, width, height, 'none');
+    const { width, height } = effectFrameSize(def, options, backdrop?.size, motion);
+    const box = region ? regionPixels(region, width, height) : undefined;
+    const base = frameStates(frames, fps, box?.[2] ?? width, box?.[3] ?? height, 'none');
     const pointer = options.pointer ?? 'auto';
     const state = (i: number): FrameState => {
       const ms = (i / fps) * 1000;
@@ -459,7 +645,7 @@ export async function exportEffect(effect: string | EffectDefinition, options: E
       return { ...base[i]!, svg: svgFrameMarkup(motion, { at: time, steps })! };
     };
     const rendered = await runRender({
-      page: { width, height, frames, alpha: plan.alpha, background, send: plan.format === 'gif' ? 'rgba' : 'png' },
+      page: { width, height, frames, alpha: plan.alpha, background, send: plan.format === 'gif' ? 'rgba' : 'png', ...pageExtras(backdrop, box) },
       state,
       plan,
       fps,
@@ -489,13 +675,12 @@ export async function exportEffect(effect: string | EffectDefinition, options: E
   if (plan.format === 'svg') {
     throw new Error(`"${def.id}" is a shader effect, which draws pixels; write .mp4, .webm, .mov, .gif or .png frames (only vector effects become SVG).`);
   }
-  const size = defaultSize(def);
-  const defaultWidth = probedVideo?.width ? even(probedVideo.width) : size.width;
-  const defaultHeight = probedVideo?.height ? even(probedVideo.height) : size.height;
-  const width = Math.max(1, Math.round(options.width ?? defaultWidth));
-  const height = Math.max(1, Math.round(options.height ?? (options.width ? (options.width * defaultHeight) / defaultWidth : defaultHeight)));
+  const backdrop = await resolveBackdrop(def, options, values, plan.format);
+  const video = probedVideo?.width && probedVideo.height ? { width: probedVideo.width, height: probedVideo.height } : undefined;
+  const { width, height } = effectFrameSize(def, options, backdrop?.size ?? video);
+  const box = region ? regionPixels(region, width, height) : undefined;
   const interactive = effectInputs(def).interactions.length > 0;
-  const states = frameStates(frames, fps, width, height, options.pointer ?? (interactive ? 'auto' : 'none'));
+  const states = frameStates(frames, fps, box?.[2] ?? width, box?.[3] ?? height, options.pointer ?? (interactive ? 'auto' : 'none'));
 
   const tmp = videoEntries.length ? fs.mkdtempSync(path.join(os.tmpdir(), 'flair-video-')) : undefined;
   try {
@@ -514,6 +699,7 @@ export async function exportEffect(effect: string | EffectDefinition, options: E
         alpha: plan.alpha,
         background,
         send: plan.format === 'gif' ? 'rgba' : 'png',
+        ...pageExtras(backdrop, box),
         shader: {
           fragment: wrapSource(def.source),
           controls: await pageControls(def.source, values),
@@ -552,11 +738,20 @@ export type EffectBufferSubject =
   | NodeSubject
   | { imageBuffer: Buffer | Uint8Array; ext?: string };
 
-export interface EffectBufferExportOptions extends Omit<EffectExportOptions, 'outputPath' | 'subject'> {
+/** A backdrop for {@link exportEffectBuffer}: a file path, URL or `data:` URL, or the picture's bytes (`ext` names its type, default `png`). */
+export type EffectBufferBackdrop = string | { imageBuffer: Buffer | Uint8Array; ext?: string };
+
+export interface EffectBufferExportOptions extends Omit<EffectExportOptions, 'outputPath' | 'subject' | 'backdrop'> {
   /** Output format (`'mp4'`, `'webm'`, `'mov'`, `'gif'`, `'png'`, `'svg'`). Defaults to `'mp4'`. */
   format?: OutputFormat;
   /** Subject(s) to apply the effect to; supports in-memory `{ imageBuffer, ext }` in addition to `NodeSubject`. */
   subject?: EffectBufferSubject | readonly EffectBufferSubject[];
+  /**
+   * A picture drawn under the effect (see {@link EffectExportOptions.backdrop}): a path, URL or
+   * `data:` URL, or in-memory `{ imageBuffer, ext }`. Without `width` and `height`, the result
+   * takes the backdrop's own size (rounded to even pixels).
+   */
+  backdrop?: EffectBufferBackdrop;
 }
 
 export interface EffectBufferExportResult {
@@ -585,7 +780,7 @@ export async function exportEffectBuffer(
   options: EffectBufferExportOptions = {},
 ): Promise<EffectBufferExportResult> {
   const def = resolveEffect(effect);
-  const { format = 'mp4', subject: rawSubject, values: rawValues, ...restOptions } = options;
+  const { format = 'mp4', subject: rawSubject, values: rawValues, backdrop: rawBackdrop, ...restOptions } = options;
 
   if (!process.env.CHROME_PATH) {
     const detectedChrome = findChrome();
@@ -614,9 +809,25 @@ export async function exportEffectBuffer(
       resolvedSubject = Array.isArray(rawSubject) ? mapped : mapped[0];
     }
 
-    const baseSize = defaultSize(def);
-    const width = restOptions.width && Number.isFinite(restOptions.width) && restOptions.width > 0 ? even(restOptions.width) : baseSize.width;
-    const height = restOptions.height && Number.isFinite(restOptions.height) && restOptions.height > 0 ? even(restOptions.height) : baseSize.height;
+    let backdrop: string | undefined;
+    if (rawBackdrop !== undefined && rawBackdrop !== '') {
+      if (typeof rawBackdrop === 'string') backdrop = rawBackdrop;
+      else {
+        const ext = rawBackdrop.ext && /^[a-z0-9]+$/i.test(rawBackdrop.ext) ? rawBackdrop.ext.toLowerCase() : 'png';
+        backdrop = path.join(tmpDir, `backdrop.${ext}`);
+        fs.writeFileSync(backdrop, rawBackdrop.imageBuffer);
+      }
+      // Read once here, for its size; exportEffect keeps a data: URL as it is.
+      if (!restOptions.alpha && format !== 'svg') backdrop = await imageDataUrl(backdrop);
+    }
+    const natural = backdrop && /^data:/i.test(backdrop) ? backdropSize(backdrop) : undefined;
+    const baseSize = natural ? { width: even(natural.width), height: even(natural.height) } : defaultSize(def);
+    const given = (n: number | undefined) => (n && Number.isFinite(n) && n > 0 ? even(n) : undefined);
+    const givenWidth = given(restOptions.width);
+    const givenHeight = given(restOptions.height);
+    // With a backdrop, one given side keeps the backdrop's shape.
+    const width = givenWidth ?? (givenHeight && natural ? even((givenHeight * natural.width) / natural.height) : baseSize.width);
+    const height = givenHeight ?? (givenWidth && natural ? even((givenWidth * natural.height) / natural.width) : baseSize.height);
     const duration = format === 'png' ? (restOptions.duration ?? 1) : restOptions.duration;
     const fps = format === 'png' ? (restOptions.fps ?? 1) : restOptions.fps;
     const outputPath = path.join(tmpDir, `output.${format}`);
@@ -631,6 +842,7 @@ export async function exportEffectBuffer(
       ...(fps !== undefined ? { fps } : {}),
       ...(sanitized ? { values: sanitized } : {}),
       ...(resolvedSubject ? { subject: resolvedSubject } : {}),
+      ...(backdrop ? { backdrop } : {}),
       ignoreUnknownControls: restOptions.ignoreUnknownControls ?? true,
     });
 
@@ -666,6 +878,15 @@ export function parseSize(size: string): { width: number; height: number } {
   const m = /^\s*(\d+)\s*[x×X]\s*(\d+)\s*$/.exec(size);
   if (!m || Number(m[1]) < 1 || Number(m[2]) < 1) throw new Error(`--size takes width x height in pixels, like 1280x720, not "${size}".`);
   return { width: Number(m[1]), height: Number(m[2]) };
+}
+
+/** `"0.5,0,0.5,1"` → a region (see {@link checkRegion}); a sentence for anything else. */
+export function parseRegion(text: string): EffectRegion {
+  const parts = text.split(/[\s,]+/).filter(Boolean).map(Number);
+  if (parts.length !== 4 || parts.some((n) => !Number.isFinite(n))) {
+    throw new Error(`--region takes x,y,width,height, normalized 0 to 1 from the top left, like 0.5,0,0.5,1 for the right half; not "${text}".`);
+  }
+  return checkRegion(parts);
 }
 
 /**

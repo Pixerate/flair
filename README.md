@@ -778,7 +778,14 @@ npx flair export ./effect.frag -o out.mp4 -w 1280 -h 720 -d 5 --values '{"speed"
 
 Subjects: `--image` (a file or URL), `--svg` (a file, URL or markup), `--text` (with `--font`, `--weight`), `--path` (path data) and `--video` (a file, decoded with ffmpeg to one frame per output frame, looping a short clip; the render lasts as long as the clip, up to 10 s, unless `--duration` says). Repeat a flag for effects that take two pictures, such as transitions. `--set name=value` sets a control (numbers, `true`/`false`, colours like `#ff0080`, or comma-separated vectors), over `--preset`.
 
-Without `--alpha`, overlays are drawn over `--background` (black for shaders, white for vector effects). Effects that answer the pointer get a scripted one that hovers, wanders and clicks (`--no-pointer` leaves it still); click-triggered vector effects are clicked through their steps, and hover or press ones play through and back.
+Without `--alpha`, overlays are drawn over `--background` (black for shaders, white for vector effects).
+
+To see an overlay that takes no picture of its own (sparkles, bokeh, confetti) over a photo, give it a backdrop: `--backdrop photo.jpg` (a file or URL; `backdrop` in code, which also takes a `data:` URL, and `{ imageBuffer, ext }` in `exportEffectBuffer`) is drawn under the effect in every frame, and the frame takes the photo's size unless `--size` says (JPEG rotation included). `--backdrop-fit` is `cover` (the default: fill and crop), `contain` (fit whole, over `--background`) or `fill` (stretch). `--region x,y,w,h` (`region: [x, y, width, height]`, normalized 0 to 1 from the top left) confines the effect to part of the frame; it renders at that box's size, so it is not stretched. A backdrop is refused with `--alpha` (it fills the frame), with `.svg` output, and for a shader that draws every pixel itself (give an image effect the photo as `--image` instead).
+
+```bash
+flair render sparkles --backdrop beach.jpg -o beach.mp4
+flair render sparkles --backdrop beach.jpg --region 0,0,1,0.5 --size 1280x720 -o sky.png
+``` Effects that answer the pointer get a scripted one that hovers, wanders and clicks (`--no-pointer` leaves it still); click-triggered vector effects are clicked through their steps, and hover or press ones play through and back.
 
 Chrome is found in the usual places, in Playwright's downloads, or at `CHROME_PATH`; ffmpeg on the `PATH` or at `FFMPEG_PATH`. The same from code:
 
@@ -788,6 +795,7 @@ import { exportEffect, exportMotionGraphic } from "@pixerate/flair/node";
 await exportEffect("image-duotone", { subject: { image: "team.jpg" }, preset: "Spotify", outputPath: "team.mp4" });
 await exportEffect("click-ripple", { alpha: true, outputPath: "ripple.webm" });
 await exportEffect("toggle-switch", { outputPath: "toggle.svg" });
+await exportEffect("sparkles", { backdrop: "beach.jpg", backdropFit: "cover", region: [0, 0, 1, 0.5], outputPath: "beach.mp4" });
 await exportMotionGraphic({ source, values: { speed: 2 }, outputPath: "out.gif", duration: 2 });
 ```
 

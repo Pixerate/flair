@@ -6,12 +6,19 @@ import { describe, expect, it } from 'vitest';
 import { getEffect, type VectorEffect } from '../catalog/index.js';
 import { wrapSource } from '../shader/program.js';
 import {
+  backdropSize,
   checkEffectValues,
+  checkRegion,
+  effectFrameSize,
   effectQueryFromFlags,
+  exportEffect,
   exportEffectBuffer,
+  imageNaturalSize,
   nodeSubjectValues,
+  parseRegion,
   parseSets,
   parseSize,
+  regionPixels,
   probeVideo,
   subjectsFromFlags,
   vectorTimeline,
@@ -306,3 +313,159 @@ describe('exportEffectBuffer', () => {
   });
 });
 
+
+/** A PNG header that says it is `width` × `height` (enough for sizing; not decodable). */
+function pngHeader(width: number, height: number): Buffer {
+  const b = Buffer.alloc(33);
+  Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(b, 0);
+  b.writeUInt32BE(13, 8);
+  b.write('IHDR', 12, 'ascii');
+  b.writeUInt32BE(width, 16);
+  b.writeUInt32BE(height, 20);
+  return b;
+}
+
+/** A minimal JPEG: SOI, an EXIF block with `orientation`, and a start of frame `width` × `height`. */
+function jpegHeader(width: number, height: number, orientation = 1): Buffer {
+  const tiff = Buffer.alloc(26);
+  tiff.write('MM', 0, 'ascii');
+  tiff.writeUInt16BE(42, 2);
+  tiff.writeUInt32BE(8, 4);
+  tiff.writeUInt16BE(1, 8);
+  tiff.writeUInt16BE(0x0112, 10);
+  tiff.writeUInt16BE(3, 12);
+  tiff.writeUInt32BE(1, 14);
+  tiff.writeUInt16BE(orientation, 18);
+  const exif = Buffer.concat([Buffer.from('Exif\0\0', 'binary'), tiff]);
+  const app1 = Buffer.alloc(4);
+  app1.writeUInt16BE(0xffe1, 0);
+  app1.writeUInt16BE(exif.length + 2, 2);
+  const sof = Buffer.alloc(19);
+  sof.writeUInt16BE(0xffc0, 0);
+  sof.writeUInt16BE(17, 2);
+  sof[4] = 8;
+  sof.writeUInt16BE(height, 5);
+  sof.writeUInt16BE(width, 7);
+  return Buffer.concat([Buffer.from([0xff, 0xd8]), app1, exif, sof]);
+}
+
+const pngFile = (buf: Buffer, name = 'photo.png') => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'flair-test-'));
+  const file = path.join(dir, name);
+  fs.writeFileSync(file, buf);
+  return file;
+};
+
+const page = (extra: Partial<Parameters<typeof renderPageHtml>[0]> = {}) =>
+  renderPageHtml({
+    width: 640,
+    height: 480,
+    frames: 1,
+    alpha: false,
+    background: '#000',
+    send: 'png',
+    shader: { fragment: 'x', controls: [], opaque: false },
+    ...extra,
+  });
+
+describe('backdrops', () => {
+  it('draws the backdrop over the background and before the effect, and skips direct readback', () => {
+    const html = page({ backdrop: { src: 'data:image/png;base64,AAAA', fit: 'cover' } });
+    expect(html).toContain('"backdrop":{"src":"data:image/png;base64,AAAA","fit":"cover"}');
+    expect(html).toContain('backdrop = await loadImage(CONFIG.backdrop.src, "for the backdrop")');
+    const capture = html.slice(html.indexOf('async function capture'));
+    const fill = capture.indexOf('ctx.fillRect(0, 0, W, H)');
+    const drawn = capture.indexOf('if (backdrop) drawBackdrop()');
+    const effect = capture.indexOf('ctx.drawImage(src, R[0], R[1], EW, EH)');
+    expect(fill).toBeGreaterThan(0);
+    expect(drawn).toBeGreaterThan(fill);
+    expect(effect).toBeGreaterThan(drawn);
+    expect(capture).toContain('const direct = CONFIG.shader && !CONFIG.backdrop && !CONFIG.region && (CONFIG.alpha || CONFIG.shader.opaque)');
+  });
+
+  it('fits the backdrop by cover, contain or fill', () => {
+    const html = page({ backdrop: { src: 'data:,', fit: 'contain' } });
+    expect(html).toContain('CONFIG.backdrop.fit === "fill"');
+    expect(html).toContain('CONFIG.backdrop.fit === "contain" ? Math.min(W / iw, H / ih) : Math.max(W / iw, H / ih)');
+  });
+
+  it('places and sizes the effect in its region', () => {
+    const html = page({ region: [320, 0, 320, 240] });
+    expect(html).toContain('"region":[320,0,320,240]');
+    expect(html).toContain('const R = CONFIG.region || [0, 0, W, H]');
+    expect(html).toContain('glCanvas.width = EW; glCanvas.height = EH;');
+    expect(html).toContain('gl.uniform3f(l, EW, EH, 1)');
+    expect(html).toContain('sizeSvg(s.svg, EW, EH)');
+    expect(regionPixels([0.5, 0, 0.5, 0.5], 640, 480)).toEqual([320, 0, 320, 240]);
+    expect(regionPixels([0.999, 0.999, 0.001, 0.001], 100, 100)).toEqual([99, 99, 1, 1]);
+  });
+
+  it('checks regions and reads --region', () => {
+    expect(checkRegion([0, 0, 1, 1])).toEqual([0, 0, 1, 1]);
+    expect(parseRegion('0.5,0,0.5,1')).toEqual([0.5, 0, 0.5, 1]);
+    expect(() => checkRegion([0, 0, 1])).toThrow(/region takes \[x, y, width, height\]/);
+    expect(() => checkRegion([0.5, 0, 0.6, 1])).toThrow(/at most 1/);
+    expect(() => checkRegion([0, 0, 0, 1])).toThrow(/more than 0/);
+    expect(() => checkRegion([-0.1, 0, 0.5, 1])).toThrow(/between 0 and 1/);
+    expect(() => parseRegion('left')).toThrow(/--region takes x,y,width,height/);
+  });
+
+  it('reads picture sizes from their headers, EXIF rotation included', () => {
+    expect(imageNaturalSize(pngHeader(1920, 1080))).toEqual({ width: 1920, height: 1080 });
+    expect(imageNaturalSize(jpegHeader(4032, 3024))).toEqual({ width: 4032, height: 3024 });
+    expect(imageNaturalSize(jpegHeader(4032, 3024, 6))).toEqual({ width: 3024, height: 4032 });
+    const gif = Buffer.alloc(13);
+    gif.write('GIF89a', 0, 'ascii');
+    gif.writeUInt16LE(320, 6);
+    gif.writeUInt16LE(200, 8);
+    expect(imageNaturalSize(gif)).toEqual({ width: 320, height: 200 });
+    const webp = Buffer.alloc(30);
+    webp.write('RIFF', 0, 'ascii');
+    webp.write('WEBP', 8, 'ascii');
+    webp.write('VP8X', 12, 'ascii');
+    webp.writeUIntLE(799, 24, 3);
+    webp.writeUIntLE(599, 27, 3);
+    expect(imageNaturalSize(webp)).toEqual({ width: 800, height: 600 });
+    expect(imageNaturalSize(Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 100"/>'))).toEqual({ width: 400, height: 100 });
+    expect(imageNaturalSize(Buffer.from('nope'))).toBeUndefined();
+    expect(backdropSize(`data:image/png;base64,${pngHeader(640, 360).toString('base64')}`)).toEqual({ width: 640, height: 360 });
+  });
+
+  it("defaults the frame to the backdrop's own size, keeping its shape for one given side", () => {
+    const sparkles = getEffect('sparkles')!;
+    expect(effectFrameSize(sparkles, {}, { width: 1921, height: 1081 })).toEqual({ width: 1922, height: 1082 });
+    expect(effectFrameSize(sparkles, { width: 960 }, { width: 1920, height: 1080 })).toEqual({ width: 960, height: 540 });
+    expect(effectFrameSize(sparkles, { width: 500, height: 500 }, { width: 1920, height: 1080 })).toEqual({ width: 500, height: 500 });
+    expect(effectFrameSize(sparkles, {})).toEqual({ width: 720, height: 720 });
+  });
+
+  it('refuses alpha with a backdrop', async () => {
+    await expect(exportEffect('sparkles', { backdrop: pngFile(PNG_1X1), alpha: true, outputPath: path.join(os.tmpdir(), 'x.webm') })).rejects.toThrow(
+      /A backdrop fills the frame, so there is no transparency left to keep/,
+    );
+  });
+
+  it('refuses .svg output with a backdrop', async () => {
+    await expect(exportEffect('toggle-switch', { backdrop: pngFile(PNG_1X1), outputPath: path.join(os.tmpdir(), 'x.svg') })).rejects.toThrow(
+      /An animated SVG cannot carry a backdrop picture/,
+    );
+  });
+
+  it('refuses a backdrop for a shader that draws every pixel, and says what to do instead', async () => {
+    const out = path.join(os.tmpdir(), 'x.png');
+    await expect(exportEffect('image-duotone', { backdrop: pngFile(PNG_1X1), outputPath: out })).rejects.toThrow(/pass the picture as its subject instead/);
+    await expect(exportEffect('aurora', { backdrop: pngFile(PNG_1X1), outputPath: out })).rejects.toThrow(/pick an overlay effect/);
+  });
+
+  it('refuses an unknown fit', async () => {
+    await expect(exportEffect('sparkles', { backdrop: pngFile(PNG_1X1), backdropFit: 'stretch' as never, outputPath: path.join(os.tmpdir(), 'x.png') })).rejects.toThrow(
+      /--backdrop-fit\) takes cover, contain, fill/,
+    );
+  });
+
+  it('refuses the same things from exportEffectBuffer, with an in-memory backdrop', async () => {
+    await expect(exportEffectBuffer('sparkles', { format: 'webm', alpha: true, backdrop: { imageBuffer: PNG_1X1, ext: 'png' } })).rejects.toThrow(/no transparency left to keep/);
+    await expect(exportEffectBuffer('toggle-switch', { format: 'svg', backdrop: { imageBuffer: PNG_1X1 } })).rejects.toThrow(/cannot carry a backdrop/);
+    await expect(exportEffectBuffer('aurora', { format: 'png', backdrop: { imageBuffer: PNG_1X1 } })).rejects.toThrow(/draws every pixel itself/);
+  });
+});
