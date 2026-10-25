@@ -230,6 +230,7 @@ program
   .option('--category <category>', 'Only this category')
   .option('--kind <kind>', 'shader or vector')
   .option('--search <words>', 'Words to look for in the id, name, description and tags')
+  .option('--transparent', 'Only overlays: effects that draw over what is under them (they take a --backdrop in render)')
   .option('--json', 'Output JSON (id, name, kind, category, description, inputs, presets)', false)
   .action(async (options) => {
     try {
@@ -269,13 +270,16 @@ program
   .option('--duration <seconds>', 'Seconds (default: the effect\'s loop or play-through)')
   .option('--alpha', 'Keep transparency (webm, mov, gif, png, svg)', false)
   .option('--background <css>', 'Colour under transparent pixels without --alpha')
+  .option('--backdrop <path>', 'A picture (file path or URL) drawn under an overlay effect in every frame; the frame takes its size unless --size says')
+  .option('--backdrop-fit <fit>', 'How the backdrop fills the frame: cover (default), contain or fill')
+  .option('--region <x,y,w,h>', 'Confine the effect to part of the frame, normalized 0-1 from the top left, like 0.5,0,0.5,1')
   .option('--no-pointer', 'Leave the pointer still (interactive effects otherwise get a scripted pointer)')
   .option('--software', 'Draw with software GL (SwiftShader) everywhere: the same frames on every machine, for golden-image tests', false)
   .option('-o, --out <outputPath>', 'Output: .mp4, .webm, .mov, .gif, .svg, a .png pattern (out_%04d.png) or a folder')
   .action(async (effectId, options) => {
     try {
       if (!options.out) throw new Error('Say where to write it: -o out.mp4 (or .webm, .mov, .gif, .svg, out_%04d.png, a folder/).');
-      const { exportEffect, parseSets, parseSize, resolveEffect, subjectsFromFlags } = await import('./export/effect.js');
+      const { exportEffect, parseRegion, parseSets, parseSize, resolveEffect, subjectsFromFlags } = await import('./export/effect.js');
       const effect = resolveEffect(effectId);
       const subjects = subjectsFromFlags(options);
       const size = options.size ? parseSize(options.size) : undefined;
@@ -295,6 +299,9 @@ program
         alpha: options.alpha,
         ...(options.software ? { software: true } : {}),
         ...(options.background ? { background: options.background } : {}),
+        ...(options.backdrop ? { backdrop: options.backdrop } : {}),
+        ...(options.backdropFit ? { backdropFit: options.backdropFit } : {}),
+        ...(options.region ? { region: parseRegion(options.region) } : {}),
         ...(options.pointer === false ? { pointer: 'none' as const } : {}),
         onProgress: (frame, total) => {
           if (total > 1) process.stdout.write(`\rFrame ${frame}/${total} (${Math.round((frame / total) * 100)}%)`);

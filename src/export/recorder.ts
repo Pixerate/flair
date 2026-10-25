@@ -286,6 +286,16 @@ export interface PageControl {
   texture?: TextureSettings;
 }
 
+/**
+ * How a backdrop fills the frame: `cover` scales it to fill and crops the
+ * overflow, `contain` fits it whole (over `background`, which shows in the
+ * bars), `fill` stretches it to the frame.
+ */
+export type BackdropFit = 'cover' | 'contain' | 'fill';
+
+/** The fits a backdrop takes. */
+export const BACKDROP_FITS: readonly BackdropFit[] = ['cover', 'contain', 'fill'];
+
 /** What the render page draws. */
 export interface PageConfig {
   width: number;
@@ -297,6 +307,18 @@ export interface PageConfig {
   background: string;
   /** How frames go back: PNG files, or raw RGBA (rows top down). */
   send: 'png' | 'rgba';
+  /**
+   * A picture drawn under the effect in every frame (a `data:` URL, loaded
+   * once), over `background` and fitted by `fit`. The frame is then always
+   * composited on the 2D canvas, never read back from WebGL directly.
+   */
+  backdrop?: { src: string; fit: BackdropFit };
+  /**
+   * Where the effect goes, in frame pixels: x, y, width, height from the top
+   * left (default the whole frame). The shader (its `iResolution`) or SVG
+   * frame is drawn at this size and placed there, so it is not stretched.
+   */
+  region?: [number, number, number, number];
   /** A shader to run, or (when absent) SVG frame markup from `/state`. */
   shader?: {
     /** The full GLSL ES 3.00 fragment shader (see {@link fragmentSource}). */
@@ -320,7 +342,8 @@ const scriptJson = (value: unknown) => JSON.stringify(value).replace(/</g, '\\u0
  * `loadImage` does (SVGs sized to their long edge first) before the first
  * frame, and flips them as the renderer does. Each frame asks `/state` for
  * its time, pointer, video frames or SVG markup, draws, and posts the
- * pixels to `/frame`.
+ * pixels to `/frame`. With a backdrop, each frame is the background, then
+ * the backdrop, then the effect (in its region, when there is one).
  */
 export function renderPageHtml(config: PageConfig): string {
   return `<!doctype html>
@@ -334,6 +357,9 @@ export function renderPageHtml(config: PageConfig): string {
 const CONFIG = ${scriptJson(config)};
 const VERTEX = ${scriptJson(VERTEX_SOURCE)};
 const W = CONFIG.width, H = CONFIG.height;
+// The effect's own box in the frame (the whole frame unless a region is given).
+const R = CONFIG.region || [0, 0, W, H];
+const EW = R[2], EH = R[3];
 const report = (message) => fetch("/error", { method: "POST", body: String(message) });
 addEventListener("error", (e) => report("The render page failed: " + e.message));
 addEventListener("unhandledrejection", (e) => report((e.reason && e.reason.message) || String(e.reason)));
@@ -381,7 +407,7 @@ const textures = {};
 
 function setupShader() {
   glCanvas = document.createElement("canvas");
-  glCanvas.width = W; glCanvas.height = H;
+  glCanvas.width = EW; glCanvas.height = EH;
   glCanvas.style.position = "fixed";
   glCanvas.style.left = "0";
   glCanvas.style.top = "0";
@@ -405,7 +431,7 @@ function setupShader() {
   if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw new Error("The shader does not link: " + gl.getProgramInfoLog(program));
   gl.useProgram(program);
   u = (n) => gl.getUniformLocation(program, n);
-  gl.viewport(0, 0, W, H);
+  gl.viewport(0, 0, EW, EH);
   if (CONFIG.shader.opaque) {
     // An opaque canvas, as ShaderRenderer has without alpha: alpha stays 1 whatever the shader writes.
     gl.clearColor(0, 0, 0, 1);
@@ -464,9 +490,9 @@ async function setControls() {
 }
 
 function drawShader(s) {
-  gl.viewport(0, 0, W, H);
+  gl.viewport(0, 0, EW, EH);
   const set = (n, f) => { const l = u(n); if (l) f(l); };
-  set("iResolution", (l) => gl.uniform3f(l, W, H, 1));
+  set("iResolution", (l) => gl.uniform3f(l, EW, EH, 1));
   set("iTime", (l) => gl.uniform1f(l, s.time));
   set("iTimeDelta", (l) => gl.uniform1f(l, s.delta));
   set("iFrame", (l) => gl.uniform1i(l, s.frame));
@@ -475,7 +501,7 @@ function drawShader(s) {
   set("iClicks", (l) => gl.uniform4fv(l, new Float32Array(s.clicks)));
   set("iTrail", (l) => gl.uniform4fv(l, new Float32Array(s.trail)));
   // glslsandbox-style names, for complete programs.
-  set("u_resolution", (l) => gl.uniform2f(l, W, H));
+  set("u_resolution", (l) => gl.uniform2f(l, EW, EH));
   set("u_time", (l) => gl.uniform1f(l, s.time));
   set("u_mouse", (l) => gl.uniform2f(l, s.pointer[0], s.pointer[1]));
   gl.drawArrays(gl.TRIANGLES, 0, 3);
@@ -487,14 +513,24 @@ async function frameImage(s) {
     drawShader(s);
     return glCanvas;
   }
-  const markup = sizeSvg(s.svg, W, H);
+  const markup = sizeSvg(s.svg, EW, EH);
   const url = URL.createObjectURL(new Blob([markup], { type: "image/svg+xml" }));
   try { return await decode(url, "of the SVG frame"); } finally { URL.revokeObjectURL(url); }
 }
 
+let backdrop = null;
+// The backdrop, fitted to the frame: cover crops, contain letterboxes over the background, fill stretches.
+function drawBackdrop() {
+  const iw = backdrop.naturalWidth || backdrop.width, ih = backdrop.naturalHeight || backdrop.height;
+  if (CONFIG.backdrop.fit === "fill" || !iw || !ih) { ctx.drawImage(backdrop, 0, 0, W, H); return; }
+  const k = CONFIG.backdrop.fit === "contain" ? Math.min(W / iw, H / ih) : Math.max(W / iw, H / ih);
+  const dw = iw * k, dh = ih * k;
+  ctx.drawImage(backdrop, (W - dw) / 2, (H - dh) / 2, dw, dh);
+}
+
 async function capture(src) {
-  // The WebGL canvas reads back exactly when nothing is composited under it.
-  const direct = CONFIG.shader && (CONFIG.alpha || CONFIG.shader.opaque);
+  // The WebGL canvas reads back exactly when nothing is composited under it (no backdrop, and it fills the frame).
+  const direct = CONFIG.shader && !CONFIG.backdrop && !CONFIG.region && (CONFIG.alpha || CONFIG.shader.opaque);
   if (direct) {
     if (CONFIG.send === "png") return new Promise((r) => glCanvas.toBlob(r, "image/png"));
     const px = new Uint8Array(W * H * 4);
@@ -505,13 +541,15 @@ async function capture(src) {
   }
   ctx.clearRect(0, 0, W, H);
   if (!CONFIG.alpha) { ctx.fillStyle = CONFIG.background; ctx.fillRect(0, 0, W, H); }
-  ctx.drawImage(src, 0, 0, W, H);
+  if (backdrop) drawBackdrop();
+  ctx.drawImage(src, R[0], R[1], EW, EH);
   if (CONFIG.send === "png") return new Promise((r) => out.toBlob(r, "image/png"));
   return ctx.getImageData(0, 0, W, H).data;
 }
 
 (async () => {
   if (CONFIG.shader) { setupShader(); await setControls(); }
+  if (CONFIG.backdrop) backdrop = await loadImage(CONFIG.backdrop.src, "for the backdrop");
   for (let i = 0; i < CONFIG.frames; i++) {
     const s = await (await fetch("/state?i=" + i)).json();
     const body = await capture(await frameImage(s));

@@ -8,12 +8,14 @@
  */
 
 export {
+  BACKDROP_FITS,
   chromeArgs,
   exportMotionGraphic,
   findChrome,
   ffmpegPath,
   planOutput,
   runRender,
+  type BackdropFit,
   type ExportOptions,
   type OutputFormat,
   type OutputPlan,
@@ -21,16 +23,22 @@ export {
   type RenderJob,
 } from "./export/recorder.js";
 export {
+  backdropSize,
+  checkRegion,
+  effectFrameSize,
   exportEffect,
   exportEffectBuffer,
+  imageNaturalSize,
   nodeSubjectValues,
   probeVideo,
   vectorTimeline,
   videoSeconds,
+  type EffectBufferBackdrop,
   type EffectBufferExportOptions,
   type EffectBufferExportResult,
   type EffectBufferSubject,
   type EffectExportOptions,
+  type EffectRegion,
   type NodeSubject,
   type NodeSubjectValues,
   type VideoProbe,
