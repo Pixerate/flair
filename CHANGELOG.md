@@ -1,5 +1,11 @@
 # @pixerate/flair
 
+## 0.58.4
+
+### Patch Changes
+
+- f365baf: Add animated live previews to effect tiles and accurately rank recent effects based on catalog introduction commits in developer documentation.
+
 ## 0.58.3
 
 ### Patch Changes
