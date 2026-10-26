@@ -7,6 +7,15 @@ runConfig:
   memoryMiB: 512
 
 env:
+  - variable: HOST
+    value: "0.0.0.0"
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: PORT
+    value: "8080"
+    availability:
+      - RUNTIME
   - variable: PUBLIC_SLOPVIDEO_BUCKET_ID
     value: "eYRCorLl9gVPWohDanED"
     availability:
