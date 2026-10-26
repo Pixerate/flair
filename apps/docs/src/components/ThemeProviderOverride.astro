@@ -1,0 +1,38 @@
+---
+// ThemeProvider override for Flair docs.
+// Always adheres strictly to the operating system / browser preference (prefers-color-scheme).
+// Cleans up any stale starlight-theme localStorage keys and dynamically listens for changes.
+---
+
+{/* Inlined to run synchronously before render and prevent any flash of unstyled content */}
+<script is:inline>
+	(() => {
+		try {
+			if (typeof localStorage !== 'undefined') {
+				localStorage.removeItem('starlight-theme');
+			}
+		} catch (_) {}
+
+		const applyTheme = (isDark) => {
+			const theme = isDark ? 'dark' : 'light';
+			document.documentElement.dataset.theme = theme;
+			document.documentElement.classList.toggle('dark', isDark);
+		};
+
+		const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+		applyTheme(mediaQuery.matches);
+
+		if (mediaQuery.addEventListener) {
+			mediaQuery.addEventListener('change', (e) => applyTheme(e.matches));
+		} else if (mediaQuery.addListener) {
+			// Older Safari / browser fallback
+			mediaQuery.addListener((e) => applyTheme(e.matches));
+		}
+
+		window.StarlightThemeProvider = {
+			updatePickers() {
+				// No manual pickers used
+			},
+		};
+	})();
+</script>
