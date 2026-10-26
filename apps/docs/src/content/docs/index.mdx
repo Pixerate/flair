@@ -1,0 +1,47 @@
+---
+title: Flair — Visual Effects & Motion Graphics
+description: WebGL2 shader effects, animated vector graphics, and agent-ready effect editing.
+template: splash
+editUrl: false
+lastUpdated: false
+prev: false
+next: false
+hero:
+  hidden: true
+---
+
+import Hero from '../../components/Hero.astro';
+import RecentEffects from '../../components/RecentEffects.svelte';
+import VisualInteractiveDemo from '../../components/VisualInteractiveDemo.svelte';
+import EffectCatalogExplorer from '../../components/EffectCatalogExplorer.svelte';
+import FeatureGrid from '../../components/FeatureGrid.astro';
+import CodeSwitcher from '../../components/CodeSwitcher.astro';
+import FooterSection from '../../components/FooterSection.astro';
+
+<div class="not-content">
+  <Hero />
+
+  <div class="scroll-reveal">
+    <RecentEffects client:load />
+  </div>
+
+  <div class="scroll-reveal">
+    <VisualInteractiveDemo client:load />
+  </div>
+
+  <div class="scroll-reveal">
+    <EffectCatalogExplorer client:load />
+  </div>
+
+  <div class="scroll-reveal">
+    <FeatureGrid />
+  </div>
+
+  <div class="scroll-reveal">
+    <CodeSwitcher />
+  </div>
+
+  <div class="scroll-reveal">
+    <FooterSection />
+  </div>
+</div>

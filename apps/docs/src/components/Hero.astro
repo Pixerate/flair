@@ -1,0 +1,88 @@
+---
+// apps/docs/src/components/Hero.astro
+import flairPkg from '../../../../package.json';
+import HeroBackgroundVideo from './HeroBackgroundVideo.svelte';
+
+const version = `v${flairPkg.version}`;
+const bucketId = process.env.PUBLIC_SLOPVIDEO_BUCKET_ID || "eYRCorLl9gVPWohDanED";
+---
+
+<section class="relative pt-6 pb-16 md:pt-12 md:pb-24 text-center">
+  <!-- Dynamic Ambient Background Video (SlopMachine) -->
+  <HeroBackgroundVideo client:load {bucketId} />
+
+  <!-- Glowing Background Gradients with Parallax Shift -->
+  <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none -z-10">
+    <div class="w-[680px] h-[400px] bg-gradient-to-tr from-pink-500/20 via-purple-500/20 to-blue-500/20 rounded-full blur-3xl"></div>
+  </div>
+
+  <!-- Release & Status Badge -->
+  <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-100 dark:bg-slate-900/90 border border-slate-300 dark:border-slate-700/60 shadow-sm dark:shadow-lg text-xs mb-6 backdrop-blur-md">
+    <span class="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+    <span class="font-medium text-slate-700 dark:text-slate-300">{version} Production Release</span>
+    <span class="text-slate-400 dark:text-slate-600">&bull;</span>
+    <span class="text-purple-600 dark:text-purple-400 font-mono font-medium">450+ Effects &bull; Agent-Native</span>
+  </div>
+
+  <!-- Main Headline -->
+  <h1 class="text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-slate-900 dark:text-white max-w-4xl mx-auto leading-tight md:leading-[1.15]">
+    Visual Effects & <span class="gradient-text">Motion Graphics</span> for the Web
+  </h1>
+
+  <!-- Subtitle -->
+  <p class="mt-6 text-lg md:text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto font-normal leading-relaxed">
+    WebGL2 shader effects, animated vector graphics, multi-shot directing, and an agent-ready effect editor with zero heavy runtime dependencies.
+  </p>
+
+  <!-- Install Bar with One-Click Copy -->
+  <div class="mt-8 flex justify-center">
+    <div class="inline-flex items-center gap-3 px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-950/90 border border-slate-300 dark:border-slate-800 shadow-sm dark:shadow-xl backdrop-blur-md font-mono text-sm text-slate-800 dark:text-slate-300 group hover:border-purple-500 transition-colors">
+      <span class="text-purple-600 dark:text-purple-400 select-none font-bold">$</span>
+      <code id="install-command">pnpm add @pixerate/flair</code>
+      <button
+        id="copy-install-btn"
+        class="ml-2 px-2.5 py-1 rounded-md bg-white dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-transparent text-xs transition-colors cursor-pointer flex items-center gap-1.5"
+        title="Copy install command"
+      >
+        <span id="copy-btn-text">Copy</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Primary CTAs -->
+  <div class="mt-8 flex flex-wrap justify-center gap-4">
+    <a
+      href="#catalog-explorer"
+      class="px-6 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium text-sm transition-all shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 flex items-center gap-2"
+    >
+      <span>Explore 450+ Effects</span>
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+    </a>
+    <a
+      href="/getting-started/quick-start/"
+      class="px-6 py-3 rounded-xl bg-slate-200/80 hover:bg-slate-300/80 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 text-slate-900 dark:text-white font-medium text-sm transition-all border border-slate-300 dark:border-slate-700 backdrop-blur-md"
+    >
+      Read Developer Docs
+    </a>
+  </div>
+</section>
+
+<script>
+  const copyBtn = document.getElementById('copy-install-btn');
+  const copyText = document.getElementById('copy-btn-text');
+  const installCmd = document.getElementById('install-command');
+
+  if (copyBtn && copyText && installCmd) {
+    copyBtn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(installCmd.textContent?.trim() || 'pnpm add @pixerate/flair');
+        copyText.textContent = 'Copied!';
+        setTimeout(() => {
+          copyText.textContent = 'Copy';
+        }, 2000);
+      } catch (err) {
+        console.error('Failed to copy text: ', err);
+      }
+    });
+  }
+</script>

@@ -1,0 +1,517 @@
+# Flair — Full Documentation Bundle
+
+> Visual effects and motion graphics for the web.
+> Source: https://flair.pixerate.com
+> Generated on: 2026-10-26T17:40:52.210Z
+
+================================================================================
+
+
+# SECTION: START HERE
+================================================================================
+
+## Introduction
+URL: https://flair.pixerate.com/getting-started/introduction/
+Description: Overview of the Flair visual effects library and design philosophy.
+
+# Introduction to Flair
+
+**Flair** is a modern, lightweight graphics and visual effects library for web applications. It provides:
+
+- **WebGL2 Shader Effects**: 300+ fragment shaders running directly on GPU with declared controls, interactive pointer uniforms, audio reactivity, and scrolling integration.
+- **Animated Vector Effects**: 140+ animated SVG graphics, shape morphing, text path animation, and 23 motion primitives.
+- **Catalog of Ready-Made Looks**: Over 450 effects categorized and indexed for instant use.
+- **UI-Agnostic, Agent-Ready Effect Editor**: Headless editor architecture with Model Context Protocol (MCP) tool bindings so AI coding agents can edit and author visual graphics autonomously.
+- **Directing & Interchange**: Multi-shot scene direction with camera moves and export to Lottie, FCP7 XML, and CMX 3600 EDL.
+
+## Why Flair?
+
+Traditional web visual effects libraries either force bloated dependencies (Three.js, Pixi.js) or require hardcoded CSS animations that lack fine-grained uniform control.
+
+Flair maintains **zero heavy runtime dependencies**, works natively with standard HTML5 canvases and SVGs, and provides an architectural boundary designed for pair programming with autonomous agents.
+
+--------------------------------------------------------------------------------
+
+## Quick Start
+URL: https://flair.pixerate.com/getting-started/quick-start/
+Description: Get up and running with Flair in under two minutes.
+
+# Quick Start
+
+## Installation
+
+Install `@pixerate/flair` using your preferred package manager:
+
+```bash
+# pnpm (recommended)
+pnpm add @pixerate/flair
+
+# npm
+npm install @pixerate/flair
+
+# yarn
+yarn add @pixerate/flair
+```
+
+## Basic Example: Mounting an Effect
+
+Mounting a ready-made effect onto any HTML container:
+
+```ts
+import { mountEffect } from "@pixerate/flair/embed";
+import { loadEffect } from "@pixerate/flair/catalog/lazy";
+
+// 1. Fetch the effect on-demand (lazy-loaded to keep bundles light)
+const effect = await loadEffect("fire-border");
+
+// 2. Mount onto your container element
+const instance = mountEffect(document.getElementById("my-banner"), effect, {
+  controls: {
+    uFlames: [1.0, 0.4, 0.1],
+    uSpeed: 1.2,
+  },
+});
+
+// Update controls dynamically
+instance.setControls({ uSpeed: 2.0 });
+
+// Clean up when unmounting
+// instance.destroy();
+```
+
+## Vector / SVG Effects
+
+Vector effects render cleanly without WebGL:
+
+```ts
+import { loadEffect } from "@pixerate/flair/catalog/lazy";
+import { SvgPlayer } from "@pixerate/flair/vector";
+
+const effect = await loadEffect("hourglass");
+const player = new SvgPlayer(document.getElementById("loader-slot"), effect);
+
+player.play();
+```
+
+--------------------------------------------------------------------------------
+
+## Architecture & Design
+URL: https://flair.pixerate.com/getting-started/architecture/
+Description: Architectural concepts, entry points, and boundaries.
+
+# Architecture & Design
+
+Flair is designed as a modular, browser-safe graphics toolkit split into discrete entry points.
+
+## Monorepo Entry Points
+
+| Entry Point | Role & Dependencies |
+| :--- | :--- |
+| `@pixerate/flair` | Core shader runtime, math, time clock, and transitions. Zero dependencies. |
+| `@pixerate/flair/catalog` | Synchronous effect registry with all 450+ definitions. |
+| `@pixerate/flair/catalog/lazy` | Asynchronous metadata-first registry (`EFFECT_META`) that fetches source on demand. |
+| `@pixerate/flair/vector` | Deterministic SVG frame generation and timeline scrubbing. |
+| `@pixerate/flair/motion` | 23 declarative motion primitives (entrances, exits, emphasis). |
+| `@pixerate/flair/embed` | High-level DOM mounting helpers (`mountEffect`). |
+| `@pixerate/flair/editor` | UI-agnostic effect editor and MCP agent tools. |
+| `@pixerate/flair/react` | Thin React component wrappers (`<FlairEffect>`). |
+| `@pixerate/flair/svelte` | Svelte actions (`use:flairEffect`). |
+
+## Separation of Concerns
+
+Flair is strictly focused on **graphics, rendering, and scene directing**. It contains no LLM vendor logic or model keys, but exports tool definitions (`FLAIR_AGENT_TOOLS`) so orchestration frameworks (like `@pixerate/ai-core`) can direct Flair autonomously.
+
+--------------------------------------------------------------------------------
+
+
+# SECTION: CATALOG & GALLERY
+================================================================================
+
+## Effect Explorer
+URL: https://flair.pixerate.com/catalog/explorer/
+Description: Interactive searchable database of all Flair effects.
+
+import EffectCatalogExplorer from '../../../components/EffectCatalogExplorer.svelte';
+
+# Effect Explorer
+
+Browse, filter, and inspect all 450+ ready-to-use visual effects in the Flair catalog.
+
+<div class="not-content">
+  <EffectCatalogExplorer client:load />
+</div>
+
+--------------------------------------------------------------------------------
+
+## Shader Effects
+URL: https://flair.pixerate.com/catalog/shaders/
+Description: WebGL2 fragment shaders, categories, and presets.
+
+# WebGL2 Shader Effects
+
+Flair includes over 300 GLSL ES 3.00 fragment shaders designed for high performance and visual richness.
+
+## Categories
+
+- **Loaders**: Liquid fill, glowing spinners, flame progress bars, gooey metaballs.
+- **Fire & Pyrotechnics**: Flame borders, burning text, campfire, fireballs, burning edges.
+- **Holograms**: Scanlines, chromatic aberration, holo projection, HUD displays.
+- **Space & Atmosphere**: Star trails, meteor showers, northern lights, clouds, weather.
+- **Distortions & Glitch**: CRT scanlines, pixelation, ripple, chromatic split.
+- **Transitions**: Cross-zooms, light leaks, twister, wipes, dissolve.
+
+## Live Shaders via `@pixerate/flair/catalog/lazy`
+
+To avoid inflating initial web bundle sizes, load shaders dynamically:
+
+```ts
+import { loadEffect } from "@pixerate/flair/catalog/lazy";
+
+const effect = await loadEffect("liquid-loader");
+console.log("Controls:", effect.controls);
+console.log("Presets:", effect.presets);
+```
+
+--------------------------------------------------------------------------------
+
+## Vector Effects
+URL: https://flair.pixerate.com/catalog/vector/
+Description: Declarative animated SVG graphics and motion paths.
+
+# Vector Effects
+
+Flair features 140+ animated vector graphics that run completely in SVG space with zero GPU overhead.
+
+## Key Features
+
+- **Pure SVG Rendering**: Zero WebGL required; crisp at any resolution.
+- **Parametric Values**: Modify colors, line weights, and text directly through controls.
+- **Scroll & Pointer Scrubbing**: Bind playback directly to scroll position or mouse hover.
+
+## Example
+
+```ts
+import { SvgPlayer } from "@pixerate/flair/vector";
+import { loadEffect } from "@pixerate/flair/catalog/lazy";
+
+const effect = await loadEffect("infinity-loader");
+const player = new SvgPlayer(containerElement, effect, {
+  trigger: "hover", // Plays when hovered
+});
+```
+
+--------------------------------------------------------------------------------
+
+
+# SECTION: SHADER ENGINE
+================================================================================
+
+## Declared Controls
+URL: https://flair.pixerate.com/shader-engine/controls/
+Description: How @control annotations define interactive parameter surfaces.
+
+# Shader Controls & Uniforms
+
+In Flair, fragment shader source code is the single source of truth. Every configurable uniform is annotated with a special inline `// @control` comment.
+
+## Control Syntax
+
+```glsl
+#version 300 es
+precision highp float;
+
+out vec4 fragColor;
+
+// @control uFlames color [1.0, 0.4, 0.1] "Flame Tint"
+uniform vec3 uFlames;
+
+// @control uSpeed float 1.0 min 0.1 max 5.0 step 0.1 "Speed"
+uniform float uSpeed;
+
+void main() {
+    // Shader logic...
+}
+```
+
+Flair automatically parses these annotations into structured JSON definitions:
+- Control types (`float`, `vec2`, `vec3`, `color`, `sampler2D`, `bool`)
+- Default values and boundaries (`min`, `max`, `step`)
+- Human-readable display labels
+
+--------------------------------------------------------------------------------
+
+## Interactive Pointer & Trails
+URL: https://flair.pixerate.com/shader-engine/interactions/
+Description: Built-in uniforms for pointer tracking, click history, and motion trails.
+
+# Interactive Pointer & Trails
+
+Beyond Shadertoy's simple `iMouse`, Flair provides comprehensive interactive uniforms for every fragment shader:
+
+## Built-In Interactive Uniforms
+
+- `uniform vec4 iPointer`: XY coordinates normalized to `[0, 1]`, hover progress `[0, 1]`, and duration held.
+- `uniform vec4 iClicks[8]`: Circular buffer of recent clicks (XY coordinates, time elapsed, click type).
+- `uniform vec4 iTrail[32]`: Historical pointer trail sampled over the last second.
+
+## Example: Pointer Ripple Effect
+
+```glsl
+// Distance to active pointer
+float dist = length(vUv - iPointer.xy);
+float ripple = sin(dist * 30.0 - iTime * 4.0) * iPointer.z;
+```
+
+--------------------------------------------------------------------------------
+
+## Audio & Scroll Reactivity
+URL: https://flair.pixerate.com/shader-engine/audio-and-scroll/
+Description: How Flair shaders sync with Web Audio streams and page scroll position.
+
+# Audio & Scroll Reactivity
+
+Flair fragment shaders can respond directly to ambient page scrolling and real-time audio playback.
+
+## Sound Uniforms
+
+- `uniform vec4 iAudio`: Overall amplitude, bass, mid-range, and treble levels.
+- `uniform float iSpectrum[16]`: 64 logarithmically spaced frequency bins.
+- `uniform float iBeat`: Seconds elapsed since the last detected rhythmic beat.
+
+```ts
+import { ShaderRenderer } from "@pixerate/flair";
+
+const renderer = new ShaderRenderer(canvas);
+renderer.setAudioSource(document.querySelector("audio"));
+```
+
+## Scroll Uniforms
+
+- `uniform vec4 iScroll`: Viewport scroll progress, page pixel offset, velocity, and scrolling state.
+
+--------------------------------------------------------------------------------
+
+
+# SECTION: VECTOR & MOTION
+================================================================================
+
+## SVG Motion
+URL: https://flair.pixerate.com/vector-motion/svg-motion/
+Description: Deterministic vector frame evaluation and playback.
+
+# SVG Motion
+
+Flair's vector engine treats animation as a pure mathematical function of time:
+
+```ts
+import { svgFrame } from "@pixerate/flair/vector";
+
+// Evaluate exact SVG markup at t = 1.5 seconds
+const markup = svgFrame(effectDefinition, 1.5, {
+  color: "#8b5cf6",
+});
+```
+
+Because frames are evaluated deterministically:
+- Video/GIF exporters can record seamless loops without dropped frames.
+- SSR hydration matches client output byte-for-byte.
+- Fast scrubbing along page scroll positions is stutter-free.
+
+--------------------------------------------------------------------------------
+
+## Motion Primitives
+URL: https://flair.pixerate.com/vector-motion/motion-primitives/
+Description: 23 reusable animation primitives for SVG elements.
+
+# Motion Primitives
+
+`@pixerate/flair/motion` provides 23 composable motion primitives defined as declarative data structures:
+
+- **Entrances**: Pop, FadeIn, SlideUp, Unfold, Stamp, DrawStroke
+- **Exits**: Shrink, Dissolve, SlideDown
+- **Emphasis**: Pulse, Bounce, Jiggle, Flash, Float
+- **Path Motions**: FollowPath, RotateAround, Orbit
+
+```ts
+import { applyPrimitive, PRIMITIVES } from "@pixerate/flair/motion";
+
+const motion = applyPrimitive(baseSvg, PRIMITIVES.popEntrance, {
+  duration: 600,
+  easing: "spring",
+});
+```
+
+--------------------------------------------------------------------------------
+
+
+# SECTION: DIRECTING & SCENES
+================================================================================
+
+## Multi-Shot Scenes
+URL: https://flair.pixerate.com/directing/scenes/
+Description: Directing multi-camera compositions and sequential cuts.
+
+# Multi-Shot Scenes
+
+Flair includes a declarative directing schema for orchestrating complex visual narratives across multiple shots and cameras.
+
+```ts
+import type { Scene } from "@pixerate/flair";
+
+const promoScene: Scene = {
+  id: "hero-intro",
+  duration: 8.0,
+  shots: [
+    {
+      id: "shot-1",
+      duration: 3.5,
+      camera: { x: 0, y: 0, zoom: 1.0 },
+      effects: [{ id: "star-trails" }],
+    },
+    {
+      id: "shot-2",
+      duration: 4.5,
+      camera: { x: 0, y: 0, zoom: 1.4 },
+      effects: [{ id: "flaming-text" }],
+    },
+  ],
+};
+```
+
+--------------------------------------------------------------------------------
+
+## Interchange & Exporters
+URL: https://flair.pixerate.com/directing/interchange/
+Description: Exporting scenes to Lottie, Final Cut Pro XML, and EDL formats.
+
+# Interchange & Exporters
+
+Flair scenes can be rendered directly to popular NLE video editors and web vector formats:
+
+- **Lottie**: Export vector animations for web and mobile runtimes.
+- **Apple Motion & FCP7 XML**: Import multi-shot camera scenes into Final Cut Pro or DaVinci Resolve.
+- **CMX 3600 EDL**: Timecode accurate edit decision lists.
+- **Headless Node.js Export**: High-res MP4, WebM, and GIF rendering via `@pixerate/flair/node`.
+
+--------------------------------------------------------------------------------
+
+
+# SECTION: EDITOR & AGENTS
+================================================================================
+
+## Effect Editor
+URL: https://flair.pixerate.com/editor-and-agents/effect-editor/
+Description: Headless command-based effect authoring and keyframe editing.
+
+# Effect Editor
+
+`@pixerate/flair/editor` exposes `EffectEditor`, a headless editor designed on `@pixerate/editor`'s command architecture.
+
+- **Non-Destructive**: Full undo/redo stack.
+- **Keyframe Tracks**: Animate any declared `@control` over time with easing curves.
+- **UI-Independent**: Embed into React, Svelte, or run in headless Node scripts.
+
+--------------------------------------------------------------------------------
+
+## MCP & Agent Tools
+URL: https://flair.pixerate.com/editor-and-agents/mcp-tools/
+Description: Declarative tool schemas for autonomous AI coding agents.
+
+# Agent Tools & MCP Integration
+
+Flair treats AI coding agents as first-class users. Every capability usable in the UI or code is exposed via declarative agent tools:
+
+## `FLAIR_AGENT_TOOLS`
+
+- `inspectEffect`: Inspect an effect's controls, inputs, and validation issues.
+- `applySceneTool`: Apply modifications to scenes and shots safely.
+- `simulateScene`: Run fast, headless simulation to verify timing and layout issues without a GPU.
+
+Refusal messages are human- and model-readable sentences that explain exactly what was invalid and how to correct it.
+
+--------------------------------------------------------------------------------
+
+
+# SECTION: FRAMEWORKS
+================================================================================
+
+## React Integration
+URL: https://flair.pixerate.com/frameworks/react/
+Description: Using Flair in React 18 and 19 applications.
+
+# React Integration
+
+Install the optional peer dependency `react` and import `@pixerate/flair/react`:
+
+```tsx
+import { FlairEffect } from "@pixerate/flair/react";
+
+export function HeroBanner() {
+  return (
+    <div className="relative w-full h-96">
+      <FlairEffect
+        id="fire-border"
+        controls={{ uSpeed: 1.5 }}
+        className="absolute inset-0"
+      />
+      <div className="relative z-10 p-8">
+        <h1>Welcome to Flair</h1>
+      </div>
+    </div>
+  );
+}
+```
+
+--------------------------------------------------------------------------------
+
+## Svelte Integration
+URL: https://flair.pixerate.com/frameworks/svelte/
+Description: Using Flair in Svelte 5 with zero runtime compiler baggage.
+
+# Svelte Integration
+
+Use Flair's ultra-thin Svelte actions (`svelte >= 5`):
+
+```svelte
+<script lang="ts">
+  import { flairEffect } from "@pixerate/flair/svelte";
+</script>
+
+<div
+  use:flairEffect={{
+    id: "glow-ring-spinner",
+    controls: { uSpeed: 2.0 },
+  }}
+  class="w-32 h-32"
+></div>
+```
+
+--------------------------------------------------------------------------------
+
+
+# SECTION: REFERENCE
+================================================================================
+
+## API Reference
+URL: https://flair.pixerate.com/reference/api/
+Description: Complete public API reference for @pixerate/flair.
+
+# API Reference
+
+## Core (`@pixerate/flair`)
+
+- `ShaderRenderer(canvas, options)`: GPU WebGL2 fragment shader runner.
+- `ManualClock`: Deterministic frame step clock.
+- `blend(bottom, top, mode)`: Color blend calculations.
+
+## Lazy Catalog (`@pixerate/flair/catalog/lazy`)
+
+- `EFFECT_META`: Array of 450+ effect summaries.
+- `loadEffect(id)`: Asynchronously loads the effect shader or vector markup.
+- `findEffectMeta(query)`: Query effects by text, category, tag, or inputs.
+
+## Embed (`@pixerate/flair/embed`)
+
+- `mountEffect(element, effect, options)`: High-level DOM mount function returning an active `EffectInstance`.
+
+--------------------------------------------------------------------------------

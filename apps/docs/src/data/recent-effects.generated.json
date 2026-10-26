@@ -1,0 +1,1812 @@
+[
+  {
+    "id": "liquid-loader",
+    "name": "Liquid loader",
+    "kind": "shader",
+    "category": "loader",
+    "description": "A glass circle filling with sloshing liquid, two waves rolling across its surface and bubbles rising, then draining to fill again.",
+    "tags": [
+      "loader",
+      "progress",
+      "liquid",
+      "water",
+      "fill",
+      "ui",
+      "overlay",
+      "loop"
+    ],
+    "controls": [
+      {
+        "n": "uLiquid",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            59,
+            130,
+            246
+          ]
+        },
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "uBack",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            147,
+            197,
+            253
+          ]
+        },
+        "l": "Back wave",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uGlass",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            203,
+            213,
+            225
+          ]
+        },
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 0.7,
+        "min": 0.3,
+        "max": 0.95,
+        "line": 5
+      },
+      {
+        "n": "uSlosh",
+        "t": "float",
+        "d": 0.5,
+        "line": 6
+      },
+      {
+        "n": "uAnimate",
+        "t": "bool",
+        "d": true,
+        "line": 7
+      },
+      {
+        "n": "uProgress",
+        "t": "float",
+        "d": 0.6,
+        "l": "Full (when still)",
+        "line": 8
+      },
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            15,
+            23,
+            42
+          ]
+        },
+        "c": 1,
+        "line": 9
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 0,
+        "l": "Background opacity",
+        "line": 10
+      }
+    ],
+    "presets": [
+      "With background",
+      "Potion",
+      "Lime",
+      "Still at half"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": true
+    },
+    "transparent": true,
+    "loop": 6,
+    "animated": true,
+    "duration": 6000,
+    "module": "shaders/loaders",
+    "addedAt": "2026-10-24T23:26:41Z",
+    "commitHash": "393256f29f8d6805da3568962af218f8e673ac1b"
+  },
+  {
+    "id": "glow-ring-spinner",
+    "name": "Glow ring spinner",
+    "kind": "shader",
+    "category": "loader",
+    "description": "A ring of light sweeping round with a soft glowing gradient tail, its tail stretching and shrinking as it turns.",
+    "tags": [
+      "loader",
+      "spinner",
+      "ring",
+      "glow",
+      "neon",
+      "ui",
+      "overlay"
+    ],
+    "controls": [
+      {
+        "n": "uHead",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            34,
+            211,
+            238
+          ]
+        },
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "uTail",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            168,
+            85,
+            247
+          ]
+        },
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uTrack",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            30,
+            41,
+            59
+          ]
+        },
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 0.65,
+        "min": 0.3,
+        "max": 0.95,
+        "line": 5
+      },
+      {
+        "n": "uThickness",
+        "t": "float",
+        "d": 0.045,
+        "min": 0.01,
+        "max": 0.12,
+        "line": 6
+      },
+      {
+        "n": "uSpeed",
+        "t": "float",
+        "d": 1,
+        "l": "Turns per second",
+        "min": 0.2,
+        "max": 3,
+        "line": 7
+      },
+      {
+        "n": "uGlow",
+        "t": "float",
+        "d": 1,
+        "max": 2,
+        "line": 8
+      },
+      {
+        "n": "uTrackAlpha",
+        "t": "float",
+        "d": 0.5,
+        "l": "Track opacity",
+        "line": 9
+      },
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            15,
+            23,
+            42
+          ]
+        },
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 0,
+        "l": "Background opacity",
+        "line": 11
+      }
+    ],
+    "presets": [
+      "With background",
+      "Sunset",
+      "Thin",
+      "Light card"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": true
+    },
+    "transparent": true,
+    "animated": true,
+    "module": "shaders/loaders",
+    "addedAt": "2026-10-24T23:26:41Z",
+    "commitHash": "393256f29f8d6805da3568962af218f8e673ac1b"
+  },
+  {
+    "id": "metaball-loader",
+    "name": "Metaball loader",
+    "kind": "shader",
+    "category": "loader",
+    "description": "Gooey blobs chasing each other round a circle, stretching apart and merging back together as they pass.",
+    "tags": [
+      "loader",
+      "spinner",
+      "metaball",
+      "goo",
+      "blob",
+      "playful",
+      "overlay"
+    ],
+    "controls": [
+      {
+        "n": "uColor",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            236,
+            72,
+            153
+          ]
+        },
+        "l": "Colour",
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "uColor2",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            139,
+            92,
+            246
+          ]
+        },
+        "l": "Second colour",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 0.6,
+        "min": 0.3,
+        "max": 0.95,
+        "line": 4
+      },
+      {
+        "n": "uCount",
+        "t": "int",
+        "d": 5,
+        "l": "Blobs",
+        "min": 2,
+        "max": 7,
+        "line": 5
+      },
+      {
+        "n": "uGoo",
+        "t": "float",
+        "d": 0.9,
+        "l": "Gooeyness",
+        "min": 0.3,
+        "max": 1.5,
+        "line": 6
+      },
+      {
+        "n": "uSpeed",
+        "t": "float",
+        "d": 1,
+        "max": 3,
+        "line": 7
+      },
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            15,
+            23,
+            42
+          ]
+        },
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 0,
+        "l": "Background opacity",
+        "line": 9
+      }
+    ],
+    "presets": [
+      "With background",
+      "Mercury",
+      "Lava",
+      "Few"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": true
+    },
+    "transparent": true,
+    "animated": true,
+    "module": "shaders/loaders",
+    "addedAt": "2026-10-24T23:26:41Z",
+    "commitHash": "393256f29f8d6805da3568962af218f8e673ac1b"
+  },
+  {
+    "id": "flame-loader",
+    "name": "Flame loader",
+    "kind": "shader",
+    "category": "loader",
+    "description": "A progress bar that burns along its length: the filled part glows like embers under flames, tallest at the leading edge, sparks flying off it.",
+    "tags": [
+      "loader",
+      "progress",
+      "bar",
+      "fire",
+      "flames",
+      "overlay",
+      "loop"
+    ],
+    "controls": [
+      {
+        "n": "uTrack",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            42,
+            26,
+            20
+          ]
+        },
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "uWidth",
+        "t": "float",
+        "d": 0.8,
+        "min": 0.3,
+        "max": 0.95,
+        "line": 3
+      },
+      {
+        "n": "uThickness",
+        "t": "float",
+        "d": 0.05,
+        "min": 0.02,
+        "max": 0.12,
+        "line": 4
+      },
+      {
+        "n": "uHeight",
+        "t": "float",
+        "d": 0.16,
+        "l": "Flame height",
+        "max": 0.4,
+        "line": 5
+      },
+      {
+        "n": "uSparks",
+        "t": "float",
+        "d": 0.5,
+        "line": 6
+      },
+      {
+        "n": "uAnimate",
+        "t": "bool",
+        "d": true,
+        "line": 7
+      },
+      {
+        "n": "uProgress",
+        "t": "float",
+        "d": 0.65,
+        "l": "Progress (when still)",
+        "line": 8
+      },
+      {
+        "n": "uHot",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            242,
+            191
+          ]
+        },
+        "l": "Core",
+        "c": 1,
+        "line": 9
+      },
+      {
+        "n": "uMid",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            138,
+            28
+          ]
+        },
+        "l": "Flame",
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "uCool",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            192,
+            35,
+            12
+          ]
+        },
+        "l": "Tips",
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            15,
+            23,
+            42
+          ]
+        },
+        "c": 1,
+        "line": 12
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 0,
+        "l": "Background opacity",
+        "line": 13
+      }
+    ],
+    "presets": [
+      "With background",
+      "Blue flame",
+      "Tall flames",
+      "Still at two thirds"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": true
+    },
+    "transparent": true,
+    "loop": 6,
+    "animated": true,
+    "duration": 6000,
+    "module": "shaders/loaders",
+    "addedAt": "2026-10-24T23:26:41Z",
+    "commitHash": "393256f29f8d6805da3568962af218f8e673ac1b"
+  },
+  {
+    "id": "hourglass",
+    "name": "Hourglass",
+    "kind": "vector",
+    "category": "loader",
+    "description": "An hourglass whose sand runs from the top bulb into the bottom in a thin stream, then the glass turns over to run again.",
+    "tags": [
+      "loader",
+      "hourglass",
+      "waiting",
+      "time",
+      "ui",
+      "icon"
+    ],
+    "controls": [
+      {
+        "n": "frame",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            51,
+            65,
+            85
+          ]
+        },
+        "c": 1,
+        "line": 1
+      },
+      {
+        "n": "glass",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            226,
+            232,
+            240
+          ]
+        },
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "sand",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            245,
+            158,
+            11
+          ]
+        },
+        "c": 1,
+        "line": 3
+      }
+    ],
+    "presets": [
+      "Dark",
+      "Blue sand"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 0,
+    "animated": true,
+    "duration": 2300,
+    "module": "loaders",
+    "addedAt": "2026-10-24T23:26:41Z",
+    "commitHash": "393256f29f8d6805da3568962af218f8e673ac1b"
+  },
+  {
+    "id": "infinity-loader",
+    "name": "Infinity loader",
+    "kind": "vector",
+    "category": "loader",
+    "description": "A glowing dash chasing itself round a figure of eight, stretching as it swings through the crossing.",
+    "tags": [
+      "loader",
+      "infinity",
+      "spinner",
+      "loop",
+      "ui",
+      "minimal"
+    ],
+    "controls": [
+      {
+        "n": "accent",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            139,
+            92,
+            246
+          ]
+        },
+        "l": "Dash",
+        "c": 1,
+        "line": 1
+      },
+      {
+        "n": "track",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            237,
+            233,
+            254
+          ]
+        },
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "thickness",
+        "t": "float",
+        "d": 7,
+        "min": 2,
+        "max": 14,
+        "s": 1,
+        "line": 3
+      }
+    ],
+    "presets": [
+      "Dark",
+      "Thick"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 0,
+    "animated": true,
+    "duration": 1600,
+    "module": "loaders",
+    "addedAt": "2026-10-24T23:26:41Z",
+    "commitHash": "393256f29f8d6805da3568962af218f8e673ac1b"
+  },
+  {
+    "id": "orbit-loader",
+    "name": "Orbit loader",
+    "kind": "vector",
+    "category": "loader",
+    "description": "Three dots circling a pulsing centre on tilted orbits, like an atom, each a third of a turn behind the last.",
+    "tags": [
+      "loader",
+      "orbit",
+      "atom",
+      "spinner",
+      "science",
+      "ui"
+    ],
+    "controls": [
+      {
+        "n": "dot",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            14,
+            165,
+            233
+          ]
+        },
+        "l": "Dots",
+        "c": 1,
+        "line": 1
+      },
+      {
+        "n": "core",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            99,
+            102,
+            241
+          ]
+        },
+        "l": "Centre",
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "orbit",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            226,
+            232,
+            240
+          ]
+        },
+        "l": "Orbits",
+        "c": 1,
+        "line": 3
+      }
+    ],
+    "presets": [
+      "Dark",
+      "No orbits"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 0,
+    "animated": true,
+    "duration": 1500,
+    "module": "loaders",
+    "addedAt": "2026-10-24T23:26:41Z",
+    "commitHash": "393256f29f8d6805da3568962af218f8e673ac1b"
+  },
+  {
+    "id": "shape-morph-loader",
+    "name": "Shape morph loader",
+    "kind": "vector",
+    "category": "loader",
+    "description": "A shape that turns as it morphs from a square into a circle, a triangle and back, changing colour with each.",
+    "tags": [
+      "loader",
+      "morph",
+      "shapes",
+      "spinner",
+      "playful",
+      "ui"
+    ],
+    "controls": [
+      {
+        "n": "first",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            244,
+            63,
+            94
+          ]
+        },
+        "l": "Square",
+        "c": 1,
+        "line": 1
+      },
+      {
+        "n": "second",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            99,
+            102,
+            241
+          ]
+        },
+        "l": "Circle",
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "third",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            16,
+            185,
+            129
+          ]
+        },
+        "l": "Triangle",
+        "c": 1,
+        "line": 3
+      }
+    ],
+    "presets": [
+      "Mono",
+      "Pastel"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 0,
+    "animated": true,
+    "duration": 2100,
+    "module": "loaders",
+    "addedAt": "2026-10-24T23:26:41Z",
+    "commitHash": "393256f29f8d6805da3568962af218f8e673ac1b"
+  },
+  {
+    "id": "progress-ring",
+    "name": "Progress ring",
+    "kind": "vector",
+    "category": "loader",
+    "description": "A ring filling up to a percentage while the number counts with it.",
+    "tags": [
+      "progress",
+      "kpi",
+      "dashboard",
+      "loader"
+    ],
+    "controls": [
+      {
+        "n": "accent",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            34,
+            197,
+            94
+          ]
+        },
+        "l": "Ring",
+        "c": 1,
+        "line": 1
+      },
+      {
+        "n": "track",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            229,
+            231,
+            235
+          ]
+        },
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "text",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            17,
+            24,
+            39
+          ]
+        },
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "value",
+        "t": "float",
+        "d": 72,
+        "l": "Percent",
+        "max": 100,
+        "s": 1,
+        "line": 4
+      }
+    ],
+    "presets": [],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "duration": 2200,
+    "module": "vector",
+    "addedAt": "2026-10-24T17:52:22Z",
+    "commitHash": "7ff8a776b35a8d563820c0c20791e4934a1b176a"
+  },
+  {
+    "id": "battery-charge",
+    "name": "Battery charge",
+    "kind": "vector",
+    "category": "loader",
+    "description": "A battery filling cell by cell as its percentage counts up and the bolt pulses, flashing when it is full.",
+    "tags": [
+      "electric",
+      "battery",
+      "charging",
+      "loader",
+      "progress",
+      "ui",
+      "icon"
+    ],
+    "controls": [
+      {
+        "n": "background",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            15,
+            23,
+            42
+          ]
+        },
+        "c": 1,
+        "line": 1
+      },
+      {
+        "n": "shell",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            203,
+            213,
+            225
+          ]
+        },
+        "l": "Case",
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "charge",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            34,
+            197,
+            94
+          ]
+        },
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "bolt",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            253,
+            224,
+            71
+          ]
+        },
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "ink",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            248,
+            250,
+            252
+          ]
+        },
+        "l": "Percent",
+        "c": 1,
+        "line": 5
+      }
+    ],
+    "presets": [
+      "Light",
+      "Low power"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 900,
+    "animated": true,
+    "duration": 3440,
+    "module": "electric",
+    "addedAt": "2026-10-24T17:52:22Z",
+    "commitHash": "7ff8a776b35a8d563820c0c20791e4934a1b176a"
+  },
+  {
+    "id": "chomp-loader",
+    "name": "Chomp loader",
+    "kind": "vector",
+    "category": "loader",
+    "description": "A chomping pixel mouth munching along a row of dots between maze walls, as a looping loader.",
+    "tags": [
+      "pixel",
+      "retro",
+      "loader",
+      "arcade",
+      "game",
+      "8-bit",
+      "loop"
+    ],
+    "controls": [
+      {
+        "n": "background",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            0,
+            0,
+            0
+          ]
+        },
+        "c": 1,
+        "line": 1
+      },
+      {
+        "n": "mouth",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            230,
+            0
+          ]
+        },
+        "l": "Chomper",
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "dots",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            184,
+            151
+          ]
+        },
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "walls",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            46,
+            59,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 4
+      }
+    ],
+    "presets": [
+      "Ghostly",
+      "Light"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 0,
+    "animated": true,
+    "duration": 2800,
+    "module": "pixel",
+    "addedAt": "2026-10-24T17:52:22Z",
+    "commitHash": "7ff8a776b35a8d563820c0c20791e4934a1b176a"
+  },
+  {
+    "id": "bubble-pop-loader",
+    "name": "Bubble pop loader",
+    "kind": "vector",
+    "category": "loader",
+    "description": "A loader of four bubbles inflating in turn and popping into droplets, over and over.",
+    "tags": [
+      "bubble",
+      "loader",
+      "loading",
+      "spinner",
+      "ui",
+      "playful"
+    ],
+    "controls": [
+      {
+        "n": "color",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            99,
+            102,
+            241
+          ]
+        },
+        "l": "Bubbles",
+        "c": 1,
+        "line": 1
+      },
+      {
+        "n": "accent",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            56,
+            189,
+            248
+          ]
+        },
+        "l": "Droplets",
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "background",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "width",
+        "t": "float",
+        "d": 2,
+        "l": "Outline",
+        "min": 1,
+        "max": 4,
+        "s": 0.5,
+        "line": 4
+      }
+    ],
+    "presets": [
+      "Mint",
+      "Dark",
+      "Candy"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 120,
+    "animated": true,
+    "duration": 2420,
+    "module": "bubble",
+    "addedAt": "2026-10-24T17:52:22Z",
+    "commitHash": "7ff8a776b35a8d563820c0c20791e4934a1b176a"
+  },
+  {
+    "id": "fire-border",
+    "name": "Fire border",
+    "kind": "shader",
+    "category": "fire",
+    "description": "Flames rising off a rounded frame, licking up its sides and tallest along the top, with sparks flying up, for cards, buttons and hot deals.",
+    "tags": [
+      "fire",
+      "flames",
+      "border",
+      "frame",
+      "ui",
+      "card",
+      "overlay",
+      "hot"
+    ],
+    "controls": [
+      {
+        "n": "uInset",
+        "t": "float",
+        "d": 0.16,
+        "max": 0.35,
+        "line": 2
+      },
+      {
+        "n": "uRadius",
+        "t": "float",
+        "d": 0.06,
+        "l": "Corner radius",
+        "max": 0.5,
+        "line": 3
+      },
+      {
+        "n": "uHeight",
+        "t": "float",
+        "d": 0.11,
+        "l": "Flame height",
+        "min": 0.02,
+        "max": 0.3,
+        "line": 4
+      },
+      {
+        "n": "uSpeed",
+        "t": "float",
+        "d": 1,
+        "max": 3,
+        "line": 5
+      },
+      {
+        "n": "uSparks",
+        "t": "float",
+        "d": 0.5,
+        "line": 6
+      },
+      {
+        "n": "uIntensity",
+        "t": "float",
+        "d": 1,
+        "max": 2,
+        "line": 7
+      },
+      {
+        "n": "uHot",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            242,
+            191
+          ]
+        },
+        "l": "Core",
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "uMid",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            138,
+            28
+          ]
+        },
+        "l": "Flame",
+        "c": 1,
+        "line": 9
+      },
+      {
+        "n": "uCool",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            192,
+            35,
+            12
+          ]
+        },
+        "l": "Tips",
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            11,
+            5,
+            3
+          ]
+        },
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 0,
+        "l": "Background opacity",
+        "line": 12
+      }
+    ],
+    "presets": [
+      "With background",
+      "Button",
+      "Blue flame",
+      "Inferno",
+      "Hellfire"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": true
+    },
+    "transparent": true,
+    "animated": true,
+    "module": "shaders/fire",
+    "addedAt": "2026-10-24T17:50:01Z",
+    "commitHash": "7bda3897dd806052d73ec22d44ea81a7c3e7ec6f"
+  },
+  {
+    "id": "flaming-text",
+    "name": "Flaming text",
+    "kind": "shader",
+    "category": "fire",
+    "description": "Words on fire: flames rising off the letters, which smoulder like coals with glowing cracks, and sparks drifting up.",
+    "tags": [
+      "fire",
+      "flames",
+      "text",
+      "title",
+      "hot",
+      "overlay"
+    ],
+    "controls": [
+      {
+        "n": "uText",
+        "t": "sampler2D",
+        "d": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201024%20256%22%20width%3D%221024%22%20height%3D%22256%22%3E%3Ctext%20x%3D%22512%22%20y%3D%22128%22%20dy%3D%220.35em%22%20text-anchor%3D%22middle%22%20textLength%3D%22503.2%22%20lengthAdjust%3D%22spacingAndGlyphs%22%20font-family%3D%22%26%2339%3BArial%20Black%26%2339%3B%2C%20%26%2339%3BHelvetica%20Neue%26%2339%3B%2C%20Helvetica%2C%20Arial%2C%20system-ui%2C%20sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%22199.7%22%20fill%3D%22%23fff%22%3EFIRE%3C%2Ftext%3E%3C%2Fsvg%3E",
+        "line": 2,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uFill",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            30,
+            13,
+            7
+          ]
+        },
+        "l": "Letters",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 0.62,
+        "l": "Text size",
+        "min": 0.3,
+        "line": 4
+      },
+      {
+        "n": "uHeight",
+        "t": "float",
+        "d": 0.26,
+        "l": "Flame height",
+        "max": 0.5,
+        "line": 5
+      },
+      {
+        "n": "uSpeed",
+        "t": "float",
+        "d": 1,
+        "max": 3,
+        "line": 6
+      },
+      {
+        "n": "uSmoulder",
+        "t": "float",
+        "d": 0.7,
+        "l": "Glowing letters",
+        "line": 7
+      },
+      {
+        "n": "uSparks",
+        "t": "float",
+        "d": 0.5,
+        "line": 8
+      },
+      {
+        "n": "uHot",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            242,
+            191
+          ]
+        },
+        "l": "Core",
+        "c": 1,
+        "line": 9
+      },
+      {
+        "n": "uMid",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            138,
+            28
+          ]
+        },
+        "l": "Flame",
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "uCool",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            192,
+            35,
+            12
+          ]
+        },
+        "l": "Tips",
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            11,
+            5,
+            3
+          ]
+        },
+        "c": 1,
+        "line": 12
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 0,
+        "l": "Background opacity",
+        "line": 13
+      }
+    ],
+    "presets": [
+      "With background",
+      "Blue flame",
+      "Raging",
+      "Smouldering"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "svg",
+        "text",
+        "mask"
+      ],
+      "images": [
+        {
+          "name": "uText",
+          "label": "Text",
+          "wants": "text"
+        }
+      ],
+      "texts": [],
+      "video": "none",
+      "interactions": [],
+      "transparent": true
+    },
+    "video": "none",
+    "transparent": true,
+    "animated": true,
+    "module": "shaders/fire",
+    "addedAt": "2026-10-24T17:50:01Z",
+    "commitHash": "7bda3897dd806052d73ec22d44ea81a7c3e7ec6f"
+  },
+  {
+    "id": "burn-away",
+    "name": "Burn away",
+    "kind": "shader",
+    "category": "fire",
+    "description": "A picture catching fire and burning away from a point: the paper browns and chars ahead of a glowing, flaming edge that leaves nothing behind, then it is whole again.",
+    "tags": [
+      "fire",
+      "burn",
+      "image",
+      "paper",
+      "reveal",
+      "transition",
+      "loop"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "landscape"
+        },
+        "line": 3,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uOrigin",
+        "t": "vec2",
+        "d": [
+          -0.3,
+          -0.4
+        ],
+        "l": "Catches at",
+        "min": -1,
+        "line": 4
+      },
+      {
+        "n": "uRagged",
+        "t": "float",
+        "d": 0.6,
+        "l": "Ragged edge",
+        "line": 5
+      },
+      {
+        "n": "uChar",
+        "t": "float",
+        "d": 0.07,
+        "l": "Scorch width",
+        "min": 0.01,
+        "max": 0.2,
+        "line": 6
+      },
+      {
+        "n": "uFlames",
+        "t": "float",
+        "d": 0.7,
+        "line": 7
+      },
+      {
+        "n": "uSparks",
+        "t": "float",
+        "d": 0.5,
+        "line": 8
+      },
+      {
+        "n": "uAnimate",
+        "t": "bool",
+        "d": true,
+        "line": 9
+      },
+      {
+        "n": "uProgress",
+        "t": "float",
+        "d": 0.45,
+        "l": "Burnt (when still)",
+        "line": 10
+      },
+      {
+        "n": "uHot",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            242,
+            191
+          ]
+        },
+        "l": "Core",
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "uMid",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            138,
+            28
+          ]
+        },
+        "l": "Flame",
+        "c": 1,
+        "line": 12
+      },
+      {
+        "n": "uCool",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            192,
+            35,
+            12
+          ]
+        },
+        "l": "Tips",
+        "c": 1,
+        "line": 13
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 14
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "line": 15
+      }
+    ],
+    "presets": [
+      "From the middle",
+      "Clean edge",
+      "Portrait"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": true
+    },
+    "video": "filter",
+    "transparent": true,
+    "loop": 8,
+    "animated": true,
+    "duration": 8000,
+    "module": "shaders/fire",
+    "addedAt": "2026-10-24T17:50:01Z",
+    "commitHash": "7bda3897dd806052d73ec22d44ea81a7c3e7ec6f"
+  },
+  {
+    "id": "fire-ring",
+    "name": "Ring of fire",
+    "kind": "shader",
+    "category": "fire",
+    "description": "A hoop of fire, flames rising off a ring and roaring up its top, for avatars, badges and portals; hover and it flares.",
+    "tags": [
+      "fire",
+      "flames",
+      "ring",
+      "circle",
+      "avatar",
+      "badge",
+      "portal",
+      "overlay",
+      "interactive",
+      "hover"
+    ],
+    "controls": [
+      {
+        "n": "uRadius",
+        "t": "float",
+        "d": 0.3,
+        "min": 0.1,
+        "max": 0.45,
+        "line": 2
+      },
+      {
+        "n": "uHeight",
+        "t": "float",
+        "d": 0.1,
+        "l": "Flame height",
+        "min": 0.02,
+        "max": 0.3,
+        "line": 3
+      },
+      {
+        "n": "uSpeed",
+        "t": "float",
+        "d": 1,
+        "max": 3,
+        "line": 4
+      },
+      {
+        "n": "uSparks",
+        "t": "float",
+        "d": 0.5,
+        "line": 5
+      },
+      {
+        "n": "uFlare",
+        "t": "float",
+        "d": 0.6,
+        "l": "Flare on hover",
+        "line": 6
+      },
+      {
+        "n": "uHot",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            242,
+            191
+          ]
+        },
+        "l": "Core",
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "uMid",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            138,
+            28
+          ]
+        },
+        "l": "Flame",
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "uCool",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            192,
+            35,
+            12
+          ]
+        },
+        "l": "Tips",
+        "c": 1,
+        "line": 9
+      },
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            11,
+            5,
+            3
+          ]
+        },
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 0,
+        "l": "Background opacity",
+        "line": 11
+      }
+    ],
+    "presets": [
+      "With background",
+      "Portal",
+      "Blue flame",
+      "Circus hoop"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [
+        "hover"
+      ],
+      "transparent": true
+    },
+    "transparent": true,
+    "animated": true,
+    "module": "shaders/fire",
+    "addedAt": "2026-10-24T17:50:01Z",
+    "commitHash": "7bda3897dd806052d73ec22d44ea81a7c3e7ec6f"
+  }
+]
