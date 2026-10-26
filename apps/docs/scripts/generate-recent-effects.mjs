@@ -20,9 +20,9 @@ function generateRecentEffects() {
   const meta = JSON.parse(fs.readFileSync(META_PATH, 'utf-8'));
   const effectMap = new Map(meta.map((e) => [e.id, e]));
 
-  let commits = [];
+  let hashes = [];
   try {
-    commits = execSync('git log --format="%H" -- src/catalog/meta.generated.json', { cwd: ROOT_DIR })
+    hashes = execSync('git log --format="%H" -- src/catalog/meta.generated.json', { cwd: ROOT_DIR })
       .toString()
       .trim()
       .split('\n')
@@ -34,42 +34,52 @@ function generateRecentEffects() {
     return;
   }
 
-  const found = new Map();
+  // Iterate oldest-to-newest commits on meta.generated.json to record the exact
+  // commit and timestamp where each effect was first introduced into the catalog.
+  const commitsOldestFirst = [...hashes].reverse();
+  const introduction = new Map();
 
-  for (const hash of commits) {
+  for (const hash of commitsOldestFirst) {
     try {
-      const diff = execSync(`git show ${hash} src/catalog/meta.generated.json`, { cwd: ROOT_DIR }).toString();
       const date = execSync(`git show -s --format="%aI" ${hash}`, { cwd: ROOT_DIR }).toString().trim();
-      const lines = diff.split('\n');
+      const content = execSync(`git show ${hash}:src/catalog/meta.generated.json`, { cwd: ROOT_DIR }).toString();
+      const lines = content.split('\n');
 
       for (const line of lines) {
-        if (line.startsWith('+') && !line.startsWith('+++') && line.includes('"id":')) {
-          const match = line.match(/"id":\s*"([^"]+)"/);
-          if (match && effectMap.has(match[1])) {
-            const id = match[1];
-            if (!found.has(id)) {
-              const effectMeta = effectMap.get(id);
-              found.set(id, {
-                ...effectMeta,
-                addedAt: date,
-                commitHash: hash,
-              });
-            }
+        if (!line.trim()) continue;
+        const match = line.match(/"id":\s*"([^"]+)"/);
+        if (match && effectMap.has(match[1])) {
+          const id = match[1];
+          if (!introduction.has(id)) {
+            introduction.set(id, { hash, date, order: introduction.size });
           }
         }
       }
     } catch (e) {
-      // Continue or break if reach root
+      // Continue if commit read fails
     }
   }
 
-  // Sort by addedAt descending
-  const sorted = Array.from(found.values()).sort(
-    (a, b) => new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime()
-  );
+  // Sort all effects by their introduction date descending.
+  // If dates are identical (same batch commit), maintain catalog reverse order.
+  const enriched = meta.map((e) => {
+    const intro = introduction.get(e.id);
+    return {
+      ...e,
+      addedAt: intro?.date || new Date().toISOString(),
+      commitHash: intro?.hash || '',
+      order: intro?.order ?? 0,
+    };
+  });
 
-  // Take top 16 recent effects
-  const recent = sorted.slice(0, 16);
+  enriched.sort((a, b) => {
+    const diff = new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime();
+    if (diff !== 0) return diff;
+    return b.order - a.order;
+  });
+
+  // Take top 20 genuinely newest effects
+  const recent = enriched.slice(0, 20);
   const outDir = path.dirname(OUTPUT_PATH);
   if (!fs.existsSync(outDir)) {
     fs.mkdirSync(outDir, { recursive: true });

@@ -1,19 +1,16 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import recentEffects from "../data/recent-effects.generated.json";
+  import EffectPreviewCard from "./EffectPreviewCard.svelte";
 
-  let activeEffect = recentEffects[0] || null;
   let activeTab = "all";
+  let hoveredId: string | null = null;
 
   // Filter tabs for recent effects
   $: filteredEffects =
     activeTab === "all"
       ? recentEffects
       : recentEffects.filter((e) => e.category === activeTab || e.kind === activeTab);
-
-  function selectEffect(effect: any) {
-    activeEffect = effect;
-  }
 </script>
 
 <section class="my-16 px-4 max-w-7xl mx-auto">
@@ -61,54 +58,59 @@
   </div>
 
   <!-- Cards Grid -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
     {#each filteredEffects as effect}
       <div
-        class="group p-5 rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 hover:border-purple-500/50 dark:hover:border-purple-500/50 shadow-sm hover:shadow-xl transition-all duration-200 flex flex-col justify-between"
+        on:pointerenter={() => (hoveredId = effect.id)}
+        on:pointerleave={() => (hoveredId = null)}
+        class="group rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 hover:border-purple-500/50 dark:hover:border-purple-500/50 shadow-sm hover:shadow-xl transition-all duration-200 flex flex-col justify-between overflow-hidden"
       >
-        <div>
-          <!-- Header info -->
-          <div class="flex items-center justify-between gap-2 mb-3">
-            <span class="px-2 py-0.5 rounded-md text-[11px] font-mono uppercase font-semibold {effect.kind === 'shader' ? 'bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800' : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'}">
-              {effect.kind}
-            </span>
-            <span class="text-xs font-medium text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/60 px-2 py-0.5 rounded-full border border-purple-200 dark:border-purple-800/50">
-              {effect.category}
-            </span>
+        <!-- Live Preview Thumbnail -->
+        <EffectPreviewCard effectMeta={effect} hovered={hoveredId === effect.id} />
+
+        <div class="p-4 flex flex-col justify-between flex-1">
+          <div>
+            <!-- Header info -->
+            <div class="flex items-center justify-between gap-2 mb-2">
+              <span class="text-xs font-medium text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/60 px-2 py-0.5 rounded-full border border-purple-200 dark:border-purple-800/50">
+                {effect.category}
+              </span>
+              <code class="text-[11px] font-mono text-slate-400 dark:text-slate-500">{effect.id}</code>
+            </div>
+
+            <!-- Effect Name -->
+            <h3 class="font-bold text-slate-900 dark:text-white text-base group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+              {effect.name}
+            </h3>
+
+            <!-- Description -->
+            <p class="text-xs text-slate-600 dark:text-slate-400 mt-1.5 line-clamp-2 leading-relaxed">
+              {effect.description}
+            </p>
           </div>
 
-          <!-- Effect Name -->
-          <h3 class="font-bold text-slate-900 dark:text-white text-base group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
-            {effect.name}
-          </h3>
+          <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs">
+            <!-- Tags / Features -->
+            <div class="flex items-center gap-1">
+              {#if effect.transparent}
+                <span class="text-[10px] text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
+                  Overlay
+                </span>
+              {/if}
+              {#if effect.duration}
+                <span class="text-[10px] text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
+                  {effect.duration / 1000}s
+                </span>
+              {/if}
+            </div>
 
-          <!-- Description -->
-          <p class="text-xs text-slate-600 dark:text-slate-400 mt-2 line-clamp-2 leading-relaxed">
-            {effect.description}
-          </p>
-        </div>
-
-        <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs">
-          <!-- Tags / Features -->
-          <div class="flex items-center gap-1">
-            {#if effect.transparent}
-              <span class="text-[10px] text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
-                Overlay
-              </span>
-            {/if}
-            {#if effect.duration}
-              <span class="text-[10px] text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
-                {effect.duration / 1000}s
-              </span>
-            {/if}
+            <a
+              href={`#explorer-${effect.id}`}
+              class="text-xs font-semibold text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-1"
+            >
+              Explore &rarr;
+            </a>
           </div>
-
-          <a
-            href={`#explorer-${effect.id}`}
-            class="text-xs font-semibold text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-1"
-          >
-            Preview &rarr;
-          </a>
         </div>
       </div>
     {/each}
