@@ -1,5 +1,11 @@
 # @pixerate/flair
 
+## 0.58.3
+
+### Patch Changes
+
+- 0d4c95d: Explicitly bind server to HOST 0.0.0.0 and PORT 8080 for App Hosting container startup probes
+
 ## 0.58.2
 
 ### Patch Changes
