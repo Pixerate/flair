@@ -1,5 +1,11 @@
 # @pixerate/flair
 
+## 0.58.1
+
+### Patch Changes
+
+- 3fd1db8: Add documentation and marketing site in `apps/docs` with Firebase App Hosting deployment configuration for flair.pixerate.com.
+
 ## 0.58.0
 
 ### Minor Changes
