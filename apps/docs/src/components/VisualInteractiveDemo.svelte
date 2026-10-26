@@ -19,6 +19,10 @@
 </script>
 
 <div class="w-full my-12 p-6 md:p-8 rounded-2xl bg-white/90 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 shadow-xl relative overflow-hidden">
+  <!-- Glowing ambient orb in the background with subtle parallax -->
+  <div class="parallax-element absolute -top-24 -right-24 w-80 h-80 bg-purple-500/15 rounded-full blur-3xl pointer-events-none" data-parallax-speed="-0.08"></div>
+  <div class="parallax-element absolute -bottom-24 -left-24 w-80 h-80 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none" data-parallax-speed="0.08"></div>
+
   <div class="flex flex-col md:flex-row items-start md:items-center justify-between pb-6 border-b border-slate-200 dark:border-slate-800 gap-4">
     <div>
       <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-600 dark:text-purple-400 text-xs font-mono uppercase tracking-wider mb-2">

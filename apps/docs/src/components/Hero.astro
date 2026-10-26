@@ -13,8 +13,10 @@ const bucketId = process.env.PUBLIC_SLOPVIDEO_BUCKET_ID || "eYRCorLl9gVPWohDanED
 
   <!-- Glowing Background Gradients with Parallax Shift -->
   <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none -z-10">
-    <div class="w-[680px] h-[400px] bg-gradient-to-tr from-pink-500/20 via-purple-500/20 to-blue-500/20 rounded-full blur-3xl"></div>
+    <div class="parallax-element w-[680px] h-[400px] bg-gradient-to-tr from-pink-500/20 via-purple-500/20 to-blue-500/20 rounded-full blur-3xl" data-parallax-speed="0.2"></div>
   </div>
+  <div class="parallax-element absolute -top-12 -left-12 w-72 h-72 bg-purple-500/10 rounded-full blur-3xl pointer-events-none -z-10" data-parallax-speed="-0.1"></div>
+  <div class="parallax-element absolute -top-12 -right-12 w-72 h-72 bg-pink-500/10 rounded-full blur-3xl pointer-events-none -z-10" data-parallax-speed="0.12"></div>
 
   <!-- Release & Status Badge -->
   <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-100 dark:bg-slate-900/90 border border-slate-300 dark:border-slate-700/60 shadow-sm dark:shadow-lg text-xs mb-6 backdrop-blur-md">
