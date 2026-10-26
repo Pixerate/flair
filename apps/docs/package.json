@@ -10,7 +10,7 @@
     "generate:llms": "node ./scripts/generate-llms.mjs",
     "prebuild": "node ./scripts/generate-recent-effects.mjs && node ./scripts/generate-llms.mjs",
     "build": "astro build",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "astro sync && tsc --noEmit",
     "preview": "astro preview"
   },
   "dependencies": {
