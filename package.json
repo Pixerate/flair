@@ -78,7 +78,8 @@
     "flair": "dist/cli.js"
   },
   "scripts": {
-    "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsup",
+    "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsup && pnpm --filter @pixerate/flair-docs build",
+    "start": "node apps/docs/dist/server/entry.mjs",
     "dev": "pnpm --filter demo dev",
     "docs:dev": "pnpm --filter @pixerate/flair-docs dev",
     "docs:build": "pnpm --filter @pixerate/flair-docs build",
