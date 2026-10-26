@@ -1,5 +1,11 @@
 # @pixerate/flair
 
+## 0.58.2
+
+### Patch Changes
+
+- e59a8f6: Configure root package.json build and start scripts for App Hosting deployment
+
 ## 0.58.1
 
 ### Patch Changes
