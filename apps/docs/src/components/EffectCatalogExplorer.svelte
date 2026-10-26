@@ -2,12 +2,14 @@
   import { onMount } from "svelte";
   // Import metadata array from catalog meta.generated.json
   import metaList from "../../../../src/catalog/meta.generated.json";
+  import EffectPreviewCard from "./EffectPreviewCard.svelte";
 
   let searchQuery = "";
   let selectedCategory = "all";
   let selectedKind = "all";
   let selectedVideo = "all";
   let selectedTransparent = "all";
+  let hoveredId: string | null = null;
 
   // Categories list
   const categories = Array.from(new Set(metaList.map((m: any) => m.category))).sort();
@@ -127,58 +129,65 @@
   </div>
 
   <!-- Effects Grid -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
     {#each filtered.slice(0, 48) as effect}
       <div
         id={`explorer-${effect.id}`}
-        class="p-5 rounded-2xl bg-white/70 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800/80 hover:border-purple-500/50 dark:hover:border-purple-500/50 shadow-sm hover:shadow-lg transition-all flex flex-col justify-between group"
+        on:pointerenter={() => (hoveredId = effect.id)}
+        on:pointerleave={() => (hoveredId = null)}
+        class="rounded-2xl bg-white/70 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800/80 hover:border-purple-500/50 dark:hover:border-purple-500/50 shadow-sm hover:shadow-lg transition-all flex flex-col justify-between group overflow-hidden"
       >
-        <div>
-          <!-- Tags and Kind -->
-          <div class="flex items-center justify-between mb-2">
-            <span class="px-2 py-0.5 rounded text-[10px] font-mono uppercase font-semibold {effect.kind === 'shader' ? 'bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-400' : 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-400'}">
-              {effect.kind}
-            </span>
-            <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">
-              {effect.category}
-            </span>
+        <!-- Animated Live Preview -->
+        <EffectPreviewCard effectMeta={effect} hovered={hoveredId === effect.id} />
+
+        <div class="p-4 flex flex-col justify-between flex-1">
+          <div>
+            <!-- Tags and Category -->
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-xs text-purple-600 dark:text-purple-400 font-medium">
+                {effect.category}
+              </span>
+              <span class="text-[11px] font-mono text-slate-400 dark:text-slate-500">
+                {effect.id}
+              </span>
+            </div>
+
+            <h3 class="font-bold text-slate-900 dark:text-white text-base group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+              {effect.name}
+            </h3>
+
+            <p class="text-xs text-slate-600 dark:text-slate-400 mt-1.5 line-clamp-2 leading-relaxed">
+              {effect.description}
+            </p>
+
+            <!-- Controls pills -->
+            {#if effect.controls?.length > 0}
+              <div class="mt-3 flex flex-wrap gap-1">
+                {#each effect.controls.slice(0, 3) as ctrl}
+                  <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                    {ctrl.n}
+                  </span>
+                {/each}
+                {#if effect.controls.length > 3}
+                  <span class="text-[10px] text-slate-400 dark:text-slate-500">
+                    +{effect.controls.length - 3}
+                  </span>
+                {/if}
+              </div>
+            {/if}
           </div>
 
-          <h3 class="font-bold text-slate-900 dark:text-white text-base group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
-            {effect.name}
-          </h3>
-
-          <p class="text-xs text-slate-600 dark:text-slate-400 mt-2 line-clamp-3 leading-relaxed">
-            {effect.description}
-          </p>
-
-          <!-- Controls pills -->
-          {#if effect.controls?.length > 0}
-            <div class="mt-3 flex flex-wrap gap-1">
-              {#each effect.controls.slice(0, 3) as ctrl}
-                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                  {ctrl.n}
-                </span>
-              {/each}
-              {#if effect.controls.length > 3}
-                <span class="text-[10px] text-slate-400 dark:text-slate-500">
-                  +{effect.controls.length - 3}
-                </span>
-              {/if}
-            </div>
-          {/if}
-        </div>
-
-        <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-          <span class="text-[11px] font-mono text-slate-400 dark:text-slate-500">
-            {effect.id}
-          </span>
-          <button
-            on:click={() => openPreview(effect)}
-            class="text-xs font-semibold text-purple-600 dark:text-purple-400 hover:text-purple-500 flex items-center gap-1 cursor-pointer"
-          >
-            Inspect &rarr;
-          </button>
+          <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            <span class="text-[10px] text-slate-500 dark:text-slate-400">
+              {effect.controls?.length || 0} controls
+            </span>
+            <button
+              on:click={() => openPreview(effect)}
+              class="text-xs font-semibold text-purple-600 dark:text-purple-400 hover:text-purple-500 flex items-center gap-1 cursor-pointer"
+            >
+              Inspect &rarr;
+            </button>
+          </div>
         </div>
       </div>
     {/each}
@@ -220,6 +229,10 @@
           >
             &times;
           </button>
+        </div>
+
+        <div class="mt-4 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800">
+          <EffectPreviewCard effectMeta={selectedEffect} hovered={true} />
         </div>
 
         <p class="mt-4 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
