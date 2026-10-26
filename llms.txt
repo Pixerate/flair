@@ -1,0 +1,56 @@
+# Flair
+
+> Visual effects and motion graphics for the web: WebGL2 shader effects, animated vector effects, a catalog of 450+ ready-made looks, and a UI-agnostic, agent-ready effect editor.
+
+- Website: https://flair.pixerate.com
+- GitHub: https://github.com/Pixerate/flair
+- npm: https://www.npmjs.com/package/@pixerate/flair
+- Full Context: https://flair.pixerate.com/llms-full.txt
+- Sitemap: https://flair.pixerate.com/sitemap.xml
+
+## Start Here
+
+- [Introduction](https://flair.pixerate.com/getting-started/introduction/): Overview of the Flair visual effects library and design philosophy.
+- [Quick Start](https://flair.pixerate.com/getting-started/quick-start/): Get up and running with Flair in under two minutes.
+- [Architecture & Design](https://flair.pixerate.com/getting-started/architecture/): Architectural concepts, entry points, and boundaries.
+
+## Catalog & Gallery
+
+- [Effect Explorer](https://flair.pixerate.com/catalog/explorer/): Interactive searchable database of all Flair effects.
+- [Shader Effects](https://flair.pixerate.com/catalog/shaders/): WebGL2 fragment shaders, categories, and presets.
+- [Vector Effects](https://flair.pixerate.com/catalog/vector/): Declarative animated SVG graphics and motion paths.
+
+## Shader Engine
+
+- [Declared Controls](https://flair.pixerate.com/shader-engine/controls/): How @control annotations define interactive parameter surfaces.
+- [Interactive Pointer & Trails](https://flair.pixerate.com/shader-engine/interactions/): Built-in uniforms for pointer tracking, click history, and motion trails.
+- [Audio & Scroll Reactivity](https://flair.pixerate.com/shader-engine/audio-and-scroll/): How Flair shaders sync with Web Audio streams and page scroll position.
+
+## Vector & Motion
+
+- [SVG Motion](https://flair.pixerate.com/vector-motion/svg-motion/): Deterministic vector frame evaluation and playback.
+- [Motion Primitives](https://flair.pixerate.com/vector-motion/motion-primitives/): 23 reusable animation primitives for SVG elements.
+
+## Directing & Scenes
+
+- [Multi-Shot Scenes](https://flair.pixerate.com/directing/scenes/): Directing multi-camera compositions and sequential cuts.
+- [Interchange & Exporters](https://flair.pixerate.com/directing/interchange/): Exporting scenes to Lottie, Final Cut Pro XML, and EDL formats.
+
+## Editor & Agents
+
+- [Effect Editor](https://flair.pixerate.com/editor-and-agents/effect-editor/): Headless command-based effect authoring and keyframe editing.
+- [MCP & Agent Tools](https://flair.pixerate.com/editor-and-agents/mcp-tools/): Declarative tool schemas for autonomous AI coding agents.
+
+## Frameworks
+
+- [React Integration](https://flair.pixerate.com/frameworks/react/): Using Flair in React 18 and 19 applications.
+- [Svelte Integration](https://flair.pixerate.com/frameworks/svelte/): Using Flair in Svelte 5 with zero runtime compiler baggage.
+
+## Reference
+
+- [API Reference](https://flair.pixerate.com/reference/api/): Complete public API reference for @pixerate/flair.
+
+## Optional & External Resources
+
+- [Full Documentation Bundle](https://flair.pixerate.com/llms-full.txt): Complete combined documentation in plain text markdown format.
+- [GitHub Repository](https://github.com/Pixerate/flair): Source code, issues, and discussions.

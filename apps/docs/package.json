@@ -1,0 +1,33 @@
+{
+  "name": "@pixerate/flair-docs",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "node dist/server/entry.mjs",
+    "generate:recent": "node ./scripts/generate-recent-effects.mjs",
+    "generate:llms": "node ./scripts/generate-llms.mjs",
+    "prebuild": "node ./scripts/generate-recent-effects.mjs && node ./scripts/generate-llms.mjs",
+    "build": "astro build",
+    "typecheck": "tsc --noEmit",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "@apphosting/astro-adapter": "^0.0.2",
+    "@astrojs/node": "^9.0.0",
+    "@astrojs/starlight": "^0.32.0",
+    "@astrojs/svelte": "^7.2.5",
+    "@astrojs/tailwind": "^5.1.0",
+    "@pixerate/flair": "workspace:*",
+    "@slopmachine/svelte": "^0.9.0",
+    "astro": "^5.4.0",
+    "lucide-astro": "^0.556.0",
+    "svelte": "^5.57.2",
+    "tailwindcss": "^3.4.17"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "typescript": "^5.7.0"
+  }
+}
