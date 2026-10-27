@@ -16,7 +16,7 @@
 
 ## Catalog & Gallery
 
-- [Effect Explorer](https://flair.pixerate.com/catalog/explorer/): Interactive searchable database of all Flair effects.
+- [Effect Explorer](https://flair.pixerate.com/catalog/explorer/): Search, preview and copy any effect in the Flair catalog.
 - [Shader Effects](https://flair.pixerate.com/catalog/shaders/): WebGL2 fragment shaders, categories, and presets.
 - [Vector Effects](https://flair.pixerate.com/catalog/vector/): Declarative animated SVG graphics and motion paths.
 

@@ -115,9 +115,6 @@ importers:
       '@pixerate/flair':
         specifier: workspace:*
         version: link:../..
-      '@slopmachine/svelte':
-        specifier: ^0.9.0
-        version: 0.9.0(svelte@5.57.2)
       astro:
         specifier: ^5.4.0
         version: 5.18.2(@types/node@24.19.2)(jiti@1.21.7)(rollup@4.64.7)(typescript@5.9.3)(yaml@2.9.1)
@@ -1243,14 +1240,6 @@ packages:
   '@shikijs/vscode-textmate@10.1.0':
     resolution: {integrity: sha512-cVBuhDQjBZaNMTwBquYfPydrUP+E3hE6oYGasx8h6ZrODIM7/r+gxLDXdd66oszbrggZHEntdE6j+5gYIVyMWQ==}
 
-  '@slopmachine/core@0.9.0':
-    resolution: {integrity: sha512-LGUi50Hkq0vUb3Aq/wWOKtcGe06N+xA8Gn9aK8EQs8EhbtgTUWtNUE/w2e6NgizAvmTgjdUTDjsK4z6uB4GP9Q==}
-
-  '@slopmachine/svelte@0.9.0':
-    resolution: {integrity: sha512-umcchvvQHF1zEPxHXIUlYjzP/kiF4vc3JAV46cB5k0FXERWN63mzA3r2lJxVYR7KZfXjOz339Z47i62WHRVrRQ==}
-    peerDependencies:
-      svelte: ^5.0.0
-
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
 
@@ -1579,9 +1568,6 @@ packages:
 
   '@types/sax@1.2.7':
     resolution: {integrity: sha512-rO73L89PJxeYM3s3pPPjiPgVVcymqU490g0YO5n5By0k2Erzj6tay/4lr1CHAAU4JyOWd1rpQ8bCf6cZfHU96A==}
-
-  '@types/trusted-types@2.0.7':
-    resolution: {integrity: sha512-ScaPdn1dQczgbl0QFTeTOmVHFULt394XJgOQNoyVhZ6r2vLnMLJfBPd53SB52T/3G36VI1/g2MZaX0cwDuXsfw==}
 
   '@types/unist@2.0.11':
     resolution: {integrity: sha512-CmBKiL6NNo/OqgmMn95Fk9Whlp2mtvIv+KNpQKN2F4SjvrEesubTRWGYSg+BnWZOnlCaSTU1sMpsBOzgbYhnsA==}
@@ -2015,9 +2001,6 @@ packages:
   domhandler@5.0.3:
     resolution: {integrity: sha512-cgwlv/1iFQiFnU96XXgROh8xTeetsnJiDsTc7TYCLFd9+/WNkIqPTxiM/8pSd8VIrhXGTf1Ny1q1hquVqDJB5w==}
     engines: {node: '>= 4'}
-
-  dompurify@3.4.17:
-    resolution: {integrity: sha512-B/pSlYVHQ58kqISD/yDjuJ1yfzI34m1gF4lAod2bwSRhiN4K5Cl3H8Af7hqB2PmTL911tdEudnnXn5FnhRoz0w==}
 
   domutils@3.2.2:
     resolution: {integrity: sha512-6kZKyUajlDuqlHKVX1w7gyslj9MPIXzIFiz/rGu35uC1wMi+kMhQwGhl4lt9unC9Vb9INnY9Z3/ZA3+FhASLaw==}
@@ -2587,11 +2570,6 @@ packages:
 
   markdown-table@3.0.4:
     resolution: {integrity: sha512-wiYz4+JrLyb/DqW2hkFJxP7Vd7JuTDm77fvbM8VfEQdmSMqcImWeeRbHwZjBjIFki/VaMK2BhFi7oUUZeM5bqw==}
-
-  marked@17.0.6:
-    resolution: {integrity: sha512-gB0gkNafnonOw0obSTEGZTT86IuhILt2Wfx0mWH/1Au83kybTayroZ/V6nS25mN7u8ASy+5fMhgB3XPNrOZdmA==}
-    engines: {node: '>= 20'}
-    hasBin: true
 
   mdast-util-definitions@6.0.0:
     resolution: {integrity: sha512-scTllyX6pnYNZH/AIp/0ePz6s4cZtARxImwoPJ7kS42n+MnVsI4XbnG6d4ibehRIldYMWM2LD7ImQblVhUejVQ==}
@@ -5011,16 +4989,6 @@ snapshots:
 
   '@shikijs/vscode-textmate@10.1.0': {}
 
-  '@slopmachine/core@0.9.0':
-    dependencies:
-      dompurify: 3.4.17
-      marked: 17.0.6
-
-  '@slopmachine/svelte@0.9.0(svelte@5.57.2)':
-    dependencies:
-      '@slopmachine/core': 0.9.0
-      svelte: 5.57.2
-
   '@standard-schema/spec@1.1.0': {}
 
   '@sveltejs/acorn-typescript@1.0.13(acorn@8.19.0)':
@@ -5371,9 +5339,6 @@ snapshots:
   '@types/sax@1.2.7':
     dependencies:
       '@types/node': 24.19.2
-
-  '@types/trusted-types@2.0.7':
-    optional: true
 
   '@types/unist@2.0.11': {}
 
@@ -5849,10 +5814,6 @@ snapshots:
   domhandler@5.0.3:
     dependencies:
       domelementtype: 2.3.0
-
-  dompurify@3.4.17:
-    optionalDependencies:
-      '@types/trusted-types': 2.0.7
 
   domutils@3.2.2:
     dependencies:
@@ -6572,8 +6533,6 @@ snapshots:
       uc.micro: 3.0.0
 
   markdown-table@3.0.4: {}
-
-  marked@17.0.6: {}
 
   mdast-util-definitions@6.0.0:
     dependencies:

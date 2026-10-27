@@ -96,6 +96,7 @@ import { weatherShaders } from "./shaders/weather.js";
 import { waterShaders } from "./shaders/water.js";
 import { glassShaders } from "./shaders/glass.js";
 import { mirrorShaders } from "./shaders/mirror.js";
+import { iridescentShaders } from "./shaders/iridescent.js";
 import { textEffects } from "./text.js";
 import { broadcastEffects } from "./broadcast.js";
 import { annotationEffects } from "./annotation.js";
@@ -212,6 +213,7 @@ export const SHADER_EFFECTS: readonly ShaderEffect[] = [
   ...waterShaders,
   ...glassShaders,
   ...mirrorShaders,
+  ...iridescentShaders,
   ...transitions,
 ];
 

@@ -2040,3 +2040,28 @@ describe("glass and mirror effects", () => {
     expect(SPECTRUM).toMatch(/^vec3 spectrum\(float x\)/);
   });
 });
+
+describe("iridescent and neon effects", () => {
+  const IDS = ["iridescent-text", "neon-fluid", "neon-worms", "molten-web", "prism-burst", "neon-warp", "iridescent-blobs"];
+
+  it("are found together by their tags", () => {
+    const found = new Set([...findEffects({ tags: ["iridescent"] }), ...findEffects({ tags: ["neon"] })].map((e) => e.id));
+    for (const id of IDS.filter((id) => id !== "molten-web")) expect(found, id).toContain(id);
+    expect(getEffect("molten-web")!.category).toBe("organic");
+  });
+
+  it("iridescent text is a transparent title over clear, with a background preset", () => {
+    const effect = getEffect("iridescent-text")!;
+    expect(effect).toMatchObject({ category: "text", video: "none", transparent: true });
+    expect(effect.tags).toContain("overlay");
+    expect(effectInputs(effect).images.map((s) => s.wants)).toEqual(["text"]);
+    expect(effectDefaults(effect).uBackgroundAlpha).toBe(0);
+    expect(effectDefaults(effect, { preset: "With background" }).uBackgroundAlpha).toBe(1);
+  });
+
+  it("the backgrounds are opaque and size their lines in pixels where they say so", () => {
+    for (const id of IDS.filter((id) => id !== "iridescent-text")) expect(getEffect(id), id).not.toMatchObject({ transparent: true });
+    expect(effectControls(getEffect("neon-worms")!).find((c) => c.name === "uWidth")!.label).toMatch(/px/);
+    expect(effectControls(getEffect("neon-warp")!).find((c) => c.name === "uWidth")!.label).toMatch(/px/);
+  });
+});
