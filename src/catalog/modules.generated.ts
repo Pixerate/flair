@@ -38,6 +38,7 @@ export const EFFECT_MODULES: Record<string, () => Promise<Record<string, unknown
   "shaders/image": () => import("./shaders/image.js"),
   "shaders/impact": () => import("./shaders/impact.js"),
   "shaders/interaction": () => import("./shaders/interaction.js"),
+  "shaders/iridescent": () => import("./shaders/iridescent.js"),
   "shaders/light": () => import("./shaders/light.js"),
   "shaders/lighting": () => import("./shaders/lighting.js"),
   "shaders/loaders": () => import("./shaders/loaders.js"),

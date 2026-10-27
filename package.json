@@ -1,6 +1,6 @@
 {
   "name": "@pixerate/flair",
-  "version": "0.58.0",
+  "version": "0.58.4",
   "description": "Web visual effects and motion graphics: WebGL2 shader effects, animated vector effects, a catalog of ready-made effects, and a UI-agnostic, agent-ready effect editor.",
   "author": "Pixerate",
   "license": "MIT",
@@ -78,11 +78,14 @@
     "flair": "dist/cli.js"
   },
   "scripts": {
-    "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsup",
+    "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsup && pnpm --filter @pixerate/flair-docs build",
+    "start": "HOST=0.0.0.0 node apps/docs/dist/server/entry.mjs",
     "dev": "pnpm --filter demo dev",
+    "docs:dev": "pnpm --filter @pixerate/flair-docs dev",
+    "docs:build": "pnpm --filter @pixerate/flair-docs build",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit && pnpm --filter demo typecheck",
+    "typecheck": "tsc --noEmit && pnpm --filter demo typecheck && pnpm --filter @pixerate/flair-docs typecheck",
     "changeset": "changeset",
     "version-packages": "changeset version",
     "release": "changeset publish",

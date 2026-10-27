@@ -7,3 +7,5 @@ test-bg.svg
 test-spec.json
 .claude/
 apps/demo/dist/
+.astro/
+.apphosting/

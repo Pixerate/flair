@@ -1,5 +1,29 @@
 # @pixerate/flair
 
+## 0.58.4
+
+### Patch Changes
+
+- f365baf: Add animated live previews to effect tiles and accurately rank recent effects based on catalog introduction commits in developer documentation.
+
+## 0.58.3
+
+### Patch Changes
+
+- 0d4c95d: Explicitly bind server to HOST 0.0.0.0 and PORT 8080 for App Hosting container startup probes
+
+## 0.58.2
+
+### Patch Changes
+
+- e59a8f6: Configure root package.json build and start scripts for App Hosting deployment
+
+## 0.58.1
+
+### Patch Changes
+
+- 3fd1db8: Add documentation and marketing site in `apps/docs` with Firebase App Hosting deployment configuration for flair.pixerate.com.
+
 ## 0.58.0
 
 ### Minor Changes
