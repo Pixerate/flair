@@ -1,537 +1,5 @@
 [
   {
-    "id": "molten-web",
-    "name": "Molten web",
-    "kind": "shader",
-    "category": "organic",
-    "description": "A web of white-hot ridges glowing orange through dark cooled rock, slowly drifting and flickering like cracked lava.",
-    "tags": [
-      "background",
-      "lava",
-      "molten",
-      "fire",
-      "glow",
-      "gold",
-      "cracks"
-    ],
-    "controls": [
-      {
-        "n": "uHot",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            231,
-            160
-          ]
-        },
-        "l": "White heat",
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "uGlowColor",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            122,
-            10
-          ]
-        },
-        "l": "Glow",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uRock",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            18,
-            4,
-            2
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uScale",
-        "t": "float",
-        "d": 3.5,
-        "min": 0.5,
-        "max": 8,
-        "line": 5
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 0.12,
-        "line": 6
-      },
-      {
-        "n": "uSharpness",
-        "t": "float",
-        "d": 9,
-        "l": "Ridge sharpness",
-        "min": 1,
-        "max": 16,
-        "line": 7
-      },
-      {
-        "n": "uFlicker",
-        "t": "float",
-        "d": 0.35,
-        "line": 8
-      }
-    ],
-    "presets": [
-      "Plasma",
-      "Gold leaf"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "shaders/iridescent",
-    "addedAt": "2026-10-27T00:29:47.817Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "iridescent-blobs",
-    "name": "Iridescent blobs",
-    "kind": "shader",
-    "category": "organic",
-    "description": "Glossy blobs of liquid chrome with an oil-slick sheen, slowly merging and pulling apart on a dark ground.",
-    "tags": [
-      "background",
-      "iridescent",
-      "holographic",
-      "chrome",
-      "liquid",
-      "blob",
-      "glossy",
-      "y2k"
-    ],
-    "controls": [
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            6,
-            6,
-            8
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "uScale",
-        "t": "float",
-        "d": 3.4,
-        "min": 0.5,
-        "max": 8,
-        "line": 3
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 0.12,
-        "line": 4
-      },
-      {
-        "n": "uAmount",
-        "t": "float",
-        "d": 0.5,
-        "line": 5
-      },
-      {
-        "n": "uFilm",
-        "t": "float",
-        "d": 1.4,
-        "l": "Colour bands",
-        "max": 3,
-        "line": 6
-      },
-      {
-        "n": "uSaturation",
-        "t": "float",
-        "d": 0.8,
-        "line": 7
-      },
-      {
-        "n": "uGloss",
-        "t": "float",
-        "d": 0.8,
-        "line": 8
-      }
-    ],
-    "presets": [
-      "Pearl",
-      "Bubbles",
-      "Flood"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "shaders/iridescent",
-    "addedAt": "2026-10-27T00:29:47.817Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "neon-worms",
-    "name": "Neon worms",
-    "kind": "shader",
-    "category": "pattern",
-    "description": "Glowing neon tubes looping and wriggling across a dark frame, their colour shifting slowly from one end of the screen to the other.",
-    "tags": [
-      "background",
-      "neon",
-      "glow",
-      "lines",
-      "squiggle",
-      "organic",
-      "loop"
-    ],
-    "controls": [
-      {
-        "n": "uColorA",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            192,
-            75,
-            255
-          ]
-        },
-        "l": "Colour 1",
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "uColorB",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            79,
-            184
-          ]
-        },
-        "l": "Colour 2",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            7,
-            4,
-            13
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uScale",
-        "t": "float",
-        "d": 2.4,
-        "min": 0.5,
-        "max": 6,
-        "line": 5
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 0.15,
-        "line": 6
-      },
-      {
-        "n": "uCount",
-        "t": "float",
-        "d": 2,
-        "l": "Tubes",
-        "min": 1,
-        "max": 4,
-        "line": 7
-      },
-      {
-        "n": "uWidth",
-        "t": "float",
-        "d": 2.5,
-        "l": "Tube width (px)",
-        "min": 0.5,
-        "max": 8,
-        "line": 8
-      },
-      {
-        "n": "uGlow",
-        "t": "float",
-        "d": 1,
-        "max": 2,
-        "line": 9
-      }
-    ],
-    "presets": [
-      "Acid",
-      "Thin",
-      "Fat tubes"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "shaders/iridescent",
-    "addedAt": "2026-10-27T00:29:47.817Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "prism-burst",
-    "name": "Prism burst",
-    "kind": "shader",
-    "category": "light",
-    "description": "Rainbow rays fanning out from a white-hot core, slowly turning and shimmering, like light split through a prism.",
-    "tags": [
-      "background",
-      "rays",
-      "starburst",
-      "rainbow",
-      "spectrum",
-      "iridescent",
-      "hero",
-      "glow"
-    ],
-    "controls": [
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            6,
-            5,
-            12
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "uCenter",
-        "t": "vec2",
-        "d": [
-          0,
-          0
-        ],
-        "l": "Centre",
-        "min": -0.5,
-        "max": 0.5,
-        "line": 3
-      },
-      {
-        "n": "uRays",
-        "t": "float",
-        "d": 14,
-        "min": 2,
-        "max": 40,
-        "line": 4
-      },
-      {
-        "n": "uSharpness",
-        "t": "float",
-        "d": 3,
-        "l": "Ray sharpness",
-        "min": 1,
-        "max": 8,
-        "line": 5
-      },
-      {
-        "n": "uSpin",
-        "t": "float",
-        "d": 0.05,
-        "min": -1,
-        "line": 6
-      },
-      {
-        "n": "uSaturation",
-        "t": "float",
-        "d": 0.85,
-        "line": 7
-      },
-      {
-        "n": "uCore",
-        "t": "float",
-        "d": 1,
-        "max": 2,
-        "line": 8
-      },
-      {
-        "n": "uReach",
-        "t": "float",
-        "d": 0.9,
-        "min": 0.2,
-        "max": 2,
-        "line": 9
-      }
-    ],
-    "presets": [
-      "Teal sun",
-      "Corner flare",
-      "Soft"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "shaders/iridescent",
-    "addedAt": "2026-10-27T00:29:47.817Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "neon-warp",
-    "name": "Neon warp",
-    "kind": "shader",
-    "category": "space",
-    "description": "Pink and cyan light streaks rushing out from a dark centre, as if jumping to hyperspace, leaving room in the middle for a title.",
-    "tags": [
-      "background",
-      "neon",
-      "warp",
-      "hyperspace",
-      "speed",
-      "streaks",
-      "retro",
-      "hero"
-    ],
-    "controls": [
-      {
-        "n": "uColorA",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            62,
-            165
-          ]
-        },
-        "l": "Colour 1",
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "uColorB",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            53,
-            214,
-            255
-          ]
-        },
-        "l": "Colour 2",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            7,
-            3,
-            19
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 0.5,
-        "max": 2,
-        "line": 5
-      },
-      {
-        "n": "uDensity",
-        "t": "float",
-        "d": 90,
-        "l": "Streaks",
-        "min": 20,
-        "max": 200,
-        "line": 6
-      },
-      {
-        "n": "uLength",
-        "t": "float",
-        "d": 0.35,
-        "l": "Streak length",
-        "min": 0.05,
-        "line": 7
-      },
-      {
-        "n": "uClear",
-        "t": "float",
-        "d": 0.18,
-        "l": "Clear centre",
-        "max": 0.5,
-        "line": 8
-      },
-      {
-        "n": "uWidth",
-        "t": "float",
-        "d": 1.4,
-        "l": "Streak width (px)",
-        "min": 0.5,
-        "max": 4,
-        "line": 9
-      }
-    ],
-    "presets": [
-      "Classic white",
-      "Cruise",
-      "Full screen"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "shaders/iridescent",
-    "addedAt": "2026-10-27T00:29:47.817Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
     "id": "iridescent-text",
     "name": "Iridescent text",
     "kind": "shader",
@@ -664,9 +132,541 @@
     "transparent": true,
     "animated": true,
     "module": "shaders/iridescent",
-    "addedAt": "2026-10-27T00:29:47.817Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-10-27T08:13:03Z",
+    "commitHash": "406106d3e3d4ad139b67ccfa8e7754cdbfece7d9",
+    "order": 458
+  },
+  {
+    "id": "neon-warp",
+    "name": "Neon warp",
+    "kind": "shader",
+    "category": "space",
+    "description": "Pink and cyan light streaks rushing out from a dark centre, as if jumping to hyperspace, leaving room in the middle for a title.",
+    "tags": [
+      "background",
+      "neon",
+      "warp",
+      "hyperspace",
+      "speed",
+      "streaks",
+      "retro",
+      "hero"
+    ],
+    "controls": [
+      {
+        "n": "uColorA",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            62,
+            165
+          ]
+        },
+        "l": "Colour 1",
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "uColorB",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            53,
+            214,
+            255
+          ]
+        },
+        "l": "Colour 2",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            7,
+            3,
+            19
+          ]
+        },
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uSpeed",
+        "t": "float",
+        "d": 0.5,
+        "max": 2,
+        "line": 5
+      },
+      {
+        "n": "uDensity",
+        "t": "float",
+        "d": 90,
+        "l": "Streaks",
+        "min": 20,
+        "max": 200,
+        "line": 6
+      },
+      {
+        "n": "uLength",
+        "t": "float",
+        "d": 0.35,
+        "l": "Streak length",
+        "min": 0.05,
+        "line": 7
+      },
+      {
+        "n": "uClear",
+        "t": "float",
+        "d": 0.18,
+        "l": "Clear centre",
+        "max": 0.5,
+        "line": 8
+      },
+      {
+        "n": "uWidth",
+        "t": "float",
+        "d": 1.4,
+        "l": "Streak width (px)",
+        "min": 0.5,
+        "max": 4,
+        "line": 9
+      }
+    ],
+    "presets": [
+      "Classic white",
+      "Cruise",
+      "Full screen"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "shaders/iridescent",
+    "addedAt": "2026-10-27T08:13:03Z",
+    "commitHash": "406106d3e3d4ad139b67ccfa8e7754cdbfece7d9",
+    "order": 457
+  },
+  {
+    "id": "prism-burst",
+    "name": "Prism burst",
+    "kind": "shader",
+    "category": "light",
+    "description": "Rainbow rays fanning out from a white-hot core, slowly turning and shimmering, like light split through a prism.",
+    "tags": [
+      "background",
+      "rays",
+      "starburst",
+      "rainbow",
+      "spectrum",
+      "iridescent",
+      "hero",
+      "glow"
+    ],
+    "controls": [
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            6,
+            5,
+            12
+          ]
+        },
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "uCenter",
+        "t": "vec2",
+        "d": [
+          0,
+          0
+        ],
+        "l": "Centre",
+        "min": -0.5,
+        "max": 0.5,
+        "line": 3
+      },
+      {
+        "n": "uRays",
+        "t": "float",
+        "d": 14,
+        "min": 2,
+        "max": 40,
+        "line": 4
+      },
+      {
+        "n": "uSharpness",
+        "t": "float",
+        "d": 3,
+        "l": "Ray sharpness",
+        "min": 1,
+        "max": 8,
+        "line": 5
+      },
+      {
+        "n": "uSpin",
+        "t": "float",
+        "d": 0.05,
+        "min": -1,
+        "line": 6
+      },
+      {
+        "n": "uSaturation",
+        "t": "float",
+        "d": 0.85,
+        "line": 7
+      },
+      {
+        "n": "uCore",
+        "t": "float",
+        "d": 1,
+        "max": 2,
+        "line": 8
+      },
+      {
+        "n": "uReach",
+        "t": "float",
+        "d": 0.9,
+        "min": 0.2,
+        "max": 2,
+        "line": 9
+      }
+    ],
+    "presets": [
+      "Teal sun",
+      "Corner flare",
+      "Soft"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "shaders/iridescent",
+    "addedAt": "2026-10-27T08:13:03Z",
+    "commitHash": "406106d3e3d4ad139b67ccfa8e7754cdbfece7d9",
+    "order": 456
+  },
+  {
+    "id": "neon-worms",
+    "name": "Neon worms",
+    "kind": "shader",
+    "category": "pattern",
+    "description": "Glowing neon tubes looping and wriggling across a dark frame, their colour shifting slowly from one end of the screen to the other.",
+    "tags": [
+      "background",
+      "neon",
+      "glow",
+      "lines",
+      "squiggle",
+      "organic",
+      "loop"
+    ],
+    "controls": [
+      {
+        "n": "uColorA",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            192,
+            75,
+            255
+          ]
+        },
+        "l": "Colour 1",
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "uColorB",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            79,
+            184
+          ]
+        },
+        "l": "Colour 2",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            7,
+            4,
+            13
+          ]
+        },
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uScale",
+        "t": "float",
+        "d": 2.4,
+        "min": 0.5,
+        "max": 6,
+        "line": 5
+      },
+      {
+        "n": "uSpeed",
+        "t": "float",
+        "d": 0.15,
+        "line": 6
+      },
+      {
+        "n": "uCount",
+        "t": "float",
+        "d": 2,
+        "l": "Tubes",
+        "min": 1,
+        "max": 4,
+        "line": 7
+      },
+      {
+        "n": "uWidth",
+        "t": "float",
+        "d": 2.5,
+        "l": "Tube width (px)",
+        "min": 0.5,
+        "max": 8,
+        "line": 8
+      },
+      {
+        "n": "uGlow",
+        "t": "float",
+        "d": 1,
+        "max": 2,
+        "line": 9
+      }
+    ],
+    "presets": [
+      "Acid",
+      "Thin",
+      "Fat tubes"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "shaders/iridescent",
+    "addedAt": "2026-10-27T08:13:03Z",
+    "commitHash": "406106d3e3d4ad139b67ccfa8e7754cdbfece7d9",
+    "order": 455
+  },
+  {
+    "id": "iridescent-blobs",
+    "name": "Iridescent blobs",
+    "kind": "shader",
+    "category": "organic",
+    "description": "Glossy blobs of liquid chrome with an oil-slick sheen, slowly merging and pulling apart on a dark ground.",
+    "tags": [
+      "background",
+      "iridescent",
+      "holographic",
+      "chrome",
+      "liquid",
+      "blob",
+      "glossy",
+      "y2k"
+    ],
+    "controls": [
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            6,
+            6,
+            8
+          ]
+        },
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "uScale",
+        "t": "float",
+        "d": 3.4,
+        "min": 0.5,
+        "max": 8,
+        "line": 3
+      },
+      {
+        "n": "uSpeed",
+        "t": "float",
+        "d": 0.12,
+        "line": 4
+      },
+      {
+        "n": "uAmount",
+        "t": "float",
+        "d": 0.5,
+        "line": 5
+      },
+      {
+        "n": "uFilm",
+        "t": "float",
+        "d": 1.4,
+        "l": "Colour bands",
+        "max": 3,
+        "line": 6
+      },
+      {
+        "n": "uSaturation",
+        "t": "float",
+        "d": 0.8,
+        "line": 7
+      },
+      {
+        "n": "uGloss",
+        "t": "float",
+        "d": 0.8,
+        "line": 8
+      }
+    ],
+    "presets": [
+      "Pearl",
+      "Bubbles",
+      "Flood"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "shaders/iridescent",
+    "addedAt": "2026-10-27T08:13:03Z",
+    "commitHash": "406106d3e3d4ad139b67ccfa8e7754cdbfece7d9",
+    "order": 454
+  },
+  {
+    "id": "molten-web",
+    "name": "Molten web",
+    "kind": "shader",
+    "category": "organic",
+    "description": "A web of white-hot ridges glowing orange through dark cooled rock, slowly drifting and flickering like cracked lava.",
+    "tags": [
+      "background",
+      "lava",
+      "molten",
+      "fire",
+      "glow",
+      "gold",
+      "cracks"
+    ],
+    "controls": [
+      {
+        "n": "uHot",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            231,
+            160
+          ]
+        },
+        "l": "White heat",
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "uGlowColor",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            122,
+            10
+          ]
+        },
+        "l": "Glow",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uRock",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            18,
+            4,
+            2
+          ]
+        },
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uScale",
+        "t": "float",
+        "d": 3.5,
+        "min": 0.5,
+        "max": 8,
+        "line": 5
+      },
+      {
+        "n": "uSpeed",
+        "t": "float",
+        "d": 0.12,
+        "line": 6
+      },
+      {
+        "n": "uSharpness",
+        "t": "float",
+        "d": 9,
+        "l": "Ridge sharpness",
+        "min": 1,
+        "max": 16,
+        "line": 7
+      },
+      {
+        "n": "uFlicker",
+        "t": "float",
+        "d": 0.35,
+        "line": 8
+      }
+    ],
+    "presets": [
+      "Plasma",
+      "Gold leaf"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "shaders/iridescent",
+    "addedAt": "2026-10-27T08:13:03Z",
+    "commitHash": "406106d3e3d4ad139b67ccfa8e7754cdbfece7d9",
+    "order": 453
   },
   {
     "id": "neon-fluid",
@@ -804,9 +804,9 @@
     },
     "animated": true,
     "module": "shaders/iridescent",
-    "addedAt": "2026-10-27T00:29:47.816Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-10-27T08:13:03Z",
+    "commitHash": "406106d3e3d4ad139b67ccfa8e7754cdbfece7d9",
+    "order": 452
   },
   {
     "id": "shape-morph-loader",
