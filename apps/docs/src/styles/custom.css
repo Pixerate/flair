@@ -20,6 +20,9 @@
   --flair-line: rgba(255, 255, 255, 0.09);
   --flair-line-strong: rgba(255, 255, 255, 0.18);
   --flair-tile: #0d0d14;
+  /* How far the hero's backgrounds are quieted towards the page: overall, and behind the title. */
+  --flair-hero-veil: 0.3;
+  --flair-hero-centre: 0.6;
 }
 
 :root[data-theme='light'] {
@@ -37,6 +40,8 @@
   --flair-line: rgba(12, 12, 20, 0.08);
   --flair-line-strong: rgba(12, 12, 20, 0.16);
   --flair-tile: #0d0d14;
+  --flair-hero-veil: 0;
+  --flair-hero-centre: 0.45;
 }
 
 :root[data-theme='dark'] body {
@@ -109,13 +114,6 @@ body {
 }
 .content-panel:has(.flair-home) {
   padding-top: 0;
-}
-/* On a light page the dark hero ends in a rounded edge rather than fading to grey. */
-:root[data-theme='light'] .flair-hero {
-  border-radius: 0 0 2rem 2rem;
-}
-:root[data-theme='light'] .flair-hero-fade {
-  display: none;
 }
 
 /* Quiet scrollbars. */

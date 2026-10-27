@@ -2106,4 +2106,13 @@ describe("iridescent and neon effects", () => {
     expect(effectControls(getEffect("neon-worms")!).find((c) => c.name === "uWidth")!.label).toMatch(/px/);
     expect(effectControls(getEffect("neon-warp")!).find((c) => c.name === "uWidth")!.label).toMatch(/px/);
   });
+
+  it("the hero backgrounds have a Light preset on a light ground, for light pages", () => {
+    for (const [id, ground] of [["neon-fluid", "uBackground"], ["neon-worms", "uBackground"], ["neon-warp", "uBackground"], ["prism-burst", "uBackground"], ["molten-web", "uRock"]] as const) {
+      const dark = effectDefaults(getEffect(id)!)[ground] as number[];
+      const light = effectDefaults(getEffect(id)!, { preset: "Light" })[ground] as number[];
+      expect(Math.min(...light), id).toBeGreaterThan(0.85);
+      expect(Math.max(...dark), id).toBeLessThan(0.1);
+    }
+  });
 });

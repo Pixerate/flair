@@ -1087,7 +1087,8 @@
     "presets": [
       "Classic white",
       "Cruise",
-      "Full screen"
+      "Full screen",
+      "Light"
     ],
     "inputs": {
       "accepts": [],
@@ -1193,7 +1194,8 @@
     "presets": [
       "Teal sun",
       "Corner flare",
-      "Soft"
+      "Soft",
+      "Light"
     ],
     "inputs": {
       "accepts": [],
@@ -1308,7 +1310,8 @@
     "presets": [
       "Acid",
       "Thin",
-      "Fat tubes"
+      "Fat tubes",
+      "Light"
     ],
     "inputs": {
       "accepts": [],
@@ -1501,6 +1504,7 @@
     ],
     "presets": [
       "Plasma",
+      "Light",
       "Gold leaf"
     ],
     "inputs": {
@@ -1641,7 +1645,8 @@
     "presets": [
       "Ice",
       "Ember",
-      "Calm"
+      "Calm",
+      "Light"
     ],
     "inputs": {
       "accepts": [],
