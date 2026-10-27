@@ -12,6 +12,7 @@ hero:
 
 import HeroStage from '../../components/HeroStage.svelte';
 import EffectCatalogExplorer from '../../components/EffectCatalogExplorer.svelte';
+import CameraMoves from '../../components/CameraMoves.svelte';
 import Integration from '../../components/Integration.astro';
 import FooterSection from '../../components/FooterSection.astro';
 import Reveal from '../../components/Reveal.astro';
@@ -20,6 +21,10 @@ import Reveal from '../../components/Reveal.astro';
   <HeroStage client:load />
 
   <EffectCatalogExplorer client:load />
+
+  <div class="reveal">
+    <CameraMoves client:visible />
+  </div>
 
   <div class="reveal">
     <Integration />
