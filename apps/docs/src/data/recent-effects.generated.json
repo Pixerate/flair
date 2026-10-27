@@ -1,92 +1,75 @@
 [
   {
-    "id": "image-lut-grade",
-    "name": "LUT grade",
+    "id": "corner-pin",
+    "name": "Corner pin",
     "kind": "shader",
-    "category": "image",
-    "description": "A colour grade from a 3D LUT image (or a built-in teal & orange, punchy or film noir look) that leaves skin tones alone, so faces keep their colour under a heavy grade.",
+    "category": "distortion",
+    "description": "A picture pinned by its four corners anywhere in the frame, in true perspective, for screen replacements, signs and mock-ups.",
     "tags": [
-      "image",
-      "video",
-      "lut",
-      "colour grading",
-      "color grading",
-      "skin tones",
-      "cinematic",
-      "teal and orange",
-      "film",
-      "filter"
+      "distortion",
+      "corner pin",
+      "perspective",
+      "homography",
+      "mockup",
+      "screen replacement",
+      "image"
     ],
     "controls": [
       {
         "n": "uImage",
         "t": "sampler2D",
         "d": {
-          "sample": "portrait"
+          "sample": "city"
         },
         "line": 3,
         "x": {
-          "filter": "linear",
+          "filter": "mipmap",
           "wrap": "clamp"
         }
       },
       {
-        "n": "uLut",
-        "t": "sampler2D",
-        "d": "",
-        "l": "LUT image (n³ colours: n × n tiles, or Hald)",
-        "line": 4,
-        "x": {
-          "filter": "nearest",
-          "wrap": "clamp"
-        }
+        "n": "uTopLeft",
+        "t": "vec2",
+        "d": [
+          0.12,
+          0.84
+        ],
+        "min": -0.5,
+        "max": 1.5,
+        "line": 4
       },
       {
-        "n": "uLutLayout",
-        "t": "int",
-        "d": 0,
-        "l": "LUT layout (0 tiles, 1 Hald)",
-        "max": 1,
+        "n": "uTopRight",
+        "t": "vec2",
+        "d": [
+          0.86,
+          0.92
+        ],
+        "min": -0.5,
+        "max": 1.5,
         "line": 5
       },
       {
-        "n": "uLook",
-        "t": "int",
-        "d": 1,
-        "l": "Look without a LUT (1 teal & orange, 2 punchy, 3 film noir)",
-        "min": 1,
-        "max": 3,
+        "n": "uBottomLeft",
+        "t": "vec2",
+        "d": [
+          0.18,
+          0.16
+        ],
+        "min": -0.5,
+        "max": 1.5,
         "line": 6
       },
       {
-        "n": "uIntensity",
-        "t": "float",
-        "d": 1,
+        "n": "uBottomRight",
+        "t": "vec2",
+        "d": [
+          0.9,
+          0.24
+        ],
+        "min": -0.5,
+        "max": 1.5,
         "line": 7
-      },
-      {
-        "n": "uPreserveSkinTones",
-        "t": "float",
-        "d": 0.7,
-        "l": "Protect skin tones",
-        "line": 8
-      },
-      {
-        "n": "uSkinHue",
-        "t": "float",
-        "d": 25,
-        "l": "Skin hue (°)",
-        "max": 60,
-        "line": 9
-      },
-      {
-        "n": "uSkinWidth",
-        "t": "float",
-        "d": 20,
-        "l": "Skin hue width (°)",
-        "min": 5,
-        "max": 45,
-        "line": 10
       },
       {
         "n": "uBackdrop",
@@ -99,20 +82,20 @@
           ]
         },
         "c": 1,
-        "line": 11
+        "line": 8
       },
       {
         "n": "uBackdropAlpha",
         "t": "float",
         "d": 1,
         "l": "Backdrop opacity",
-        "line": 12
+        "line": 9
       }
     ],
     "presets": [
-      "Teal & Orange (Protected Face)",
-      "Punchy Contrast",
-      "Faded Film Noir"
+      "Billboard",
+      "Floor",
+      "Flat"
     ],
     "inputs": {
       "accepts": [
@@ -125,11 +108,6 @@
           "name": "uImage",
           "label": "Image",
           "wants": "picture"
-        },
-        {
-          "name": "uLut",
-          "label": "LUT image (n³ colours: n × n tiles, or Hald)",
-          "wants": "picture"
         }
       ],
       "texts": [],
@@ -139,312 +117,10 @@
     },
     "video": "filter",
     "animated": false,
-    "module": "shaders/treatments",
-    "addedAt": "2026-10-27T11:54:34.248Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "caption-word-bounce",
-    "name": "Word bounce",
-    "kind": "vector",
-    "category": "text",
-    "description": "A caption's words spring up one after another, each overshooting in scale with an elastic wobble before it settles.",
-    "tags": [
-      "caption",
-      "subtitle",
-      "text",
-      "kinetic",
-      "typography",
-      "social",
-      "words",
-      "bounce"
-    ],
-    "controls": [
-      {
-        "n": "text",
-        "t": "text",
-        "d": "Words that bounce into place",
-        "line": 1
-      },
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            30,
-            27,
-            75
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "ink",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "l": "Text colour",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "outline",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            0,
-            0,
-            0
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "thickness",
-        "t": "float",
-        "d": 0.08,
-        "l": "Outline width (em)",
-        "max": 0.2,
-        "s": 0.01,
-        "line": 5
-      },
-      {
-        "n": "stagger",
-        "t": "float",
-        "d": 120,
-        "l": "Ms between words",
-        "min": 30,
-        "max": 600,
-        "s": 10,
-        "line": 6
-      },
-      {
-        "n": "overshoot",
-        "t": "float",
-        "d": 1.15,
-        "min": 1,
-        "max": 1.5,
-        "s": 0.05,
-        "line": 7
-      },
-      {
-        "n": "font",
-        "t": "text",
-        "d": "'Arial Black', 'Helvetica Neue', Impact, system-ui, sans-serif",
-        "line": 8
-      },
-      {
-        "n": "weight",
-        "t": "int",
-        "d": 900,
-        "min": 100,
-        "max": 900,
-        "s": 100,
-        "line": 9
-      },
-      {
-        "n": "inline",
-        "t": "bool",
-        "d": false,
-        "line": 10
-      }
-    ],
-    "presets": [
-      "Bubblegum",
-      "Clean",
-      "Lime pop"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "text",
-          "label": "Text",
-          "holds": "copy",
-          "default": "Words that bounce into place"
-        },
-        {
-          "name": "font",
-          "label": "Font",
-          "holds": "font",
-          "default": "'Arial Black', 'Helvetica Neue', Impact, system-ui, sans-serif"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 1200,
-    "animated": true,
-    "duration": 2640,
-    "module": "text",
-    "addedAt": "2026-10-27T11:54:34.248Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "caption-karaoke",
-    "name": "Karaoke sweep",
-    "kind": "vector",
-    "category": "text",
-    "description": "A caption shown whole in an outlined base colour, with a highlight colour wiping left to right across it a word at a time, like karaoke lyrics.",
-    "tags": [
-      "caption",
-      "subtitle",
-      "text",
-      "kinetic",
-      "typography",
-      "karaoke",
-      "lyrics",
-      "highlight",
-      "social"
-    ],
-    "controls": [
-      {
-        "n": "text",
-        "t": "text",
-        "d": "Sing along with every word",
-        "line": 1
-      },
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            11,
-            16,
-            32
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "base",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "l": "Base colour",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "active",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            250,
-            204,
-            21
-          ]
-        },
-        "l": "Highlight",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "outline",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            0,
-            0,
-            0
-          ]
-        },
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "thickness",
-        "t": "float",
-        "d": 0.1,
-        "l": "Outline width (em)",
-        "max": 0.2,
-        "s": 0.01,
-        "line": 6
-      },
-      {
-        "n": "pace",
-        "t": "float",
-        "d": 380,
-        "l": "Ms per word",
-        "min": 80,
-        "max": 1500,
-        "s": 10,
-        "line": 7
-      },
-      {
-        "n": "font",
-        "t": "text",
-        "d": "'Arial Black', 'Helvetica Neue', Impact, system-ui, sans-serif",
-        "line": 8
-      },
-      {
-        "n": "weight",
-        "t": "int",
-        "d": 900,
-        "min": 100,
-        "max": 900,
-        "s": 100,
-        "line": 9
-      },
-      {
-        "n": "inline",
-        "t": "bool",
-        "d": false,
-        "line": 10
-      }
-    ],
-    "presets": [
-      "Gold",
-      "Neon",
-      "Ink on paper"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "text",
-          "label": "Text",
-          "holds": "copy",
-          "default": "Sing along with every word"
-        },
-        {
-          "name": "font",
-          "label": "Font",
-          "holds": "font",
-          "default": "'Arial Black', 'Helvetica Neue', Impact, system-ui, sans-serif"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 1000,
-    "animated": true,
-    "duration": 3300,
-    "module": "text",
-    "addedAt": "2026-10-27T11:54:34.248Z",
-    "commitHash": "",
-    "order": 0
+    "module": "shaders/distortion",
+    "addedAt": "2026-10-27T11:55:16Z",
+    "commitHash": "d8fa6c173ff089c9292d026648aa193b3c9b40bb",
+    "order": 464
   },
   {
     "id": "caption-pop",
@@ -596,81 +272,400 @@
     "animated": true,
     "duration": 3120,
     "module": "text",
-    "addedAt": "2026-10-27T11:54:34.248Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-10-27T11:55:16Z",
+    "commitHash": "d8fa6c173ff089c9292d026648aa193b3c9b40bb",
+    "order": 463
   },
   {
-    "id": "corner-pin",
-    "name": "Corner pin",
-    "kind": "shader",
-    "category": "distortion",
-    "description": "A picture pinned by its four corners anywhere in the frame, in true perspective, for screen replacements, signs and mock-ups.",
+    "id": "caption-karaoke",
+    "name": "Karaoke sweep",
+    "kind": "vector",
+    "category": "text",
+    "description": "A caption shown whole in an outlined base colour, with a highlight colour wiping left to right across it a word at a time, like karaoke lyrics.",
     "tags": [
-      "distortion",
-      "corner pin",
-      "perspective",
-      "homography",
-      "mockup",
-      "screen replacement",
-      "image"
+      "caption",
+      "subtitle",
+      "text",
+      "kinetic",
+      "typography",
+      "karaoke",
+      "lyrics",
+      "highlight",
+      "social"
+    ],
+    "controls": [
+      {
+        "n": "text",
+        "t": "text",
+        "d": "Sing along with every word",
+        "line": 1
+      },
+      {
+        "n": "background",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            11,
+            16,
+            32
+          ]
+        },
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "base",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "l": "Base colour",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "active",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            250,
+            204,
+            21
+          ]
+        },
+        "l": "Highlight",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "outline",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            0,
+            0,
+            0
+          ]
+        },
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "thickness",
+        "t": "float",
+        "d": 0.1,
+        "l": "Outline width (em)",
+        "max": 0.2,
+        "s": 0.01,
+        "line": 6
+      },
+      {
+        "n": "pace",
+        "t": "float",
+        "d": 380,
+        "l": "Ms per word",
+        "min": 80,
+        "max": 1500,
+        "s": 10,
+        "line": 7
+      },
+      {
+        "n": "font",
+        "t": "text",
+        "d": "'Arial Black', 'Helvetica Neue', Impact, system-ui, sans-serif",
+        "line": 8
+      },
+      {
+        "n": "weight",
+        "t": "int",
+        "d": 900,
+        "min": 100,
+        "max": 900,
+        "s": 100,
+        "line": 9
+      },
+      {
+        "n": "inline",
+        "t": "bool",
+        "d": false,
+        "line": 10
+      }
+    ],
+    "presets": [
+      "Gold",
+      "Neon",
+      "Ink on paper"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "text",
+          "label": "Text",
+          "holds": "copy",
+          "default": "Sing along with every word"
+        },
+        {
+          "name": "font",
+          "label": "Font",
+          "holds": "font",
+          "default": "'Arial Black', 'Helvetica Neue', Impact, system-ui, sans-serif"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 1000,
+    "animated": true,
+    "duration": 3300,
+    "module": "text",
+    "addedAt": "2026-10-27T11:55:16Z",
+    "commitHash": "d8fa6c173ff089c9292d026648aa193b3c9b40bb",
+    "order": 462
+  },
+  {
+    "id": "caption-word-bounce",
+    "name": "Word bounce",
+    "kind": "vector",
+    "category": "text",
+    "description": "A caption's words spring up one after another, each overshooting in scale with an elastic wobble before it settles.",
+    "tags": [
+      "caption",
+      "subtitle",
+      "text",
+      "kinetic",
+      "typography",
+      "social",
+      "words",
+      "bounce"
+    ],
+    "controls": [
+      {
+        "n": "text",
+        "t": "text",
+        "d": "Words that bounce into place",
+        "line": 1
+      },
+      {
+        "n": "background",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            30,
+            27,
+            75
+          ]
+        },
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "ink",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "l": "Text colour",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "outline",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            0,
+            0,
+            0
+          ]
+        },
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "thickness",
+        "t": "float",
+        "d": 0.08,
+        "l": "Outline width (em)",
+        "max": 0.2,
+        "s": 0.01,
+        "line": 5
+      },
+      {
+        "n": "stagger",
+        "t": "float",
+        "d": 120,
+        "l": "Ms between words",
+        "min": 30,
+        "max": 600,
+        "s": 10,
+        "line": 6
+      },
+      {
+        "n": "overshoot",
+        "t": "float",
+        "d": 1.15,
+        "min": 1,
+        "max": 1.5,
+        "s": 0.05,
+        "line": 7
+      },
+      {
+        "n": "font",
+        "t": "text",
+        "d": "'Arial Black', 'Helvetica Neue', Impact, system-ui, sans-serif",
+        "line": 8
+      },
+      {
+        "n": "weight",
+        "t": "int",
+        "d": 900,
+        "min": 100,
+        "max": 900,
+        "s": 100,
+        "line": 9
+      },
+      {
+        "n": "inline",
+        "t": "bool",
+        "d": false,
+        "line": 10
+      }
+    ],
+    "presets": [
+      "Bubblegum",
+      "Clean",
+      "Lime pop"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "text",
+          "label": "Text",
+          "holds": "copy",
+          "default": "Words that bounce into place"
+        },
+        {
+          "name": "font",
+          "label": "Font",
+          "holds": "font",
+          "default": "'Arial Black', 'Helvetica Neue', Impact, system-ui, sans-serif"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 1200,
+    "animated": true,
+    "duration": 2640,
+    "module": "text",
+    "addedAt": "2026-10-27T11:55:16Z",
+    "commitHash": "d8fa6c173ff089c9292d026648aa193b3c9b40bb",
+    "order": 461
+  },
+  {
+    "id": "image-lut-grade",
+    "name": "LUT grade",
+    "kind": "shader",
+    "category": "image",
+    "description": "A colour grade from a 3D LUT image (or a built-in teal & orange, punchy or film noir look) that leaves skin tones alone, so faces keep their colour under a heavy grade.",
+    "tags": [
+      "image",
+      "video",
+      "lut",
+      "colour grading",
+      "color grading",
+      "skin tones",
+      "cinematic",
+      "teal and orange",
+      "film",
+      "filter"
     ],
     "controls": [
       {
         "n": "uImage",
         "t": "sampler2D",
         "d": {
-          "sample": "city"
+          "sample": "portrait"
         },
         "line": 3,
         "x": {
-          "filter": "mipmap",
+          "filter": "linear",
           "wrap": "clamp"
         }
       },
       {
-        "n": "uTopLeft",
-        "t": "vec2",
-        "d": [
-          0.12,
-          0.84
-        ],
-        "min": -0.5,
-        "max": 1.5,
-        "line": 4
+        "n": "uLut",
+        "t": "sampler2D",
+        "d": "",
+        "l": "LUT image (n³ colours: n × n tiles, or Hald)",
+        "line": 4,
+        "x": {
+          "filter": "nearest",
+          "wrap": "clamp"
+        }
       },
       {
-        "n": "uTopRight",
-        "t": "vec2",
-        "d": [
-          0.86,
-          0.92
-        ],
-        "min": -0.5,
-        "max": 1.5,
+        "n": "uLutLayout",
+        "t": "int",
+        "d": 0,
+        "l": "LUT layout (0 tiles, 1 Hald)",
+        "max": 1,
         "line": 5
       },
       {
-        "n": "uBottomLeft",
-        "t": "vec2",
-        "d": [
-          0.18,
-          0.16
-        ],
-        "min": -0.5,
-        "max": 1.5,
+        "n": "uLook",
+        "t": "int",
+        "d": 1,
+        "l": "Look without a LUT (1 teal & orange, 2 punchy, 3 film noir)",
+        "min": 1,
+        "max": 3,
         "line": 6
       },
       {
-        "n": "uBottomRight",
-        "t": "vec2",
-        "d": [
-          0.9,
-          0.24
-        ],
-        "min": -0.5,
-        "max": 1.5,
+        "n": "uIntensity",
+        "t": "float",
+        "d": 1,
         "line": 7
+      },
+      {
+        "n": "uPreserveSkinTones",
+        "t": "float",
+        "d": 0.7,
+        "l": "Protect skin tones",
+        "line": 8
+      },
+      {
+        "n": "uSkinHue",
+        "t": "float",
+        "d": 25,
+        "l": "Skin hue (°)",
+        "max": 60,
+        "line": 9
+      },
+      {
+        "n": "uSkinWidth",
+        "t": "float",
+        "d": 20,
+        "l": "Skin hue width (°)",
+        "min": 5,
+        "max": 45,
+        "line": 10
       },
       {
         "n": "uBackdrop",
@@ -683,20 +678,20 @@
           ]
         },
         "c": 1,
-        "line": 8
+        "line": 11
       },
       {
         "n": "uBackdropAlpha",
         "t": "float",
         "d": 1,
         "l": "Backdrop opacity",
-        "line": 9
+        "line": 12
       }
     ],
     "presets": [
-      "Billboard",
-      "Floor",
-      "Flat"
+      "Teal & Orange (Protected Face)",
+      "Punchy Contrast",
+      "Faded Film Noir"
     ],
     "inputs": {
       "accepts": [
@@ -709,6 +704,11 @@
           "name": "uImage",
           "label": "Image",
           "wants": "picture"
+        },
+        {
+          "name": "uLut",
+          "label": "LUT image (n³ colours: n × n tiles, or Hald)",
+          "wants": "picture"
         }
       ],
       "texts": [],
@@ -718,10 +718,10 @@
     },
     "video": "filter",
     "animated": false,
-    "module": "shaders/distortion",
-    "addedAt": "2026-10-27T11:54:34.248Z",
-    "commitHash": "",
-    "order": 0
+    "module": "shaders/treatments",
+    "addedAt": "2026-10-27T11:55:16Z",
+    "commitHash": "d8fa6c173ff089c9292d026648aa193b3c9b40bb",
+    "order": 460
   },
   {
     "id": "image-chroma-key",
@@ -843,9 +843,9 @@
     "video": "filter",
     "animated": false,
     "module": "shaders/treatments",
-    "addedAt": "2026-10-27T11:54:34.247Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-10-27T11:55:16Z",
+    "commitHash": "d8fa6c173ff089c9292d026648aa193b3c9b40bb",
+    "order": 459
   },
   {
     "id": "iridescent-text",
