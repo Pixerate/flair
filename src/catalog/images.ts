@@ -64,6 +64,22 @@ const HEART = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" wid
  */
 const ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20C5 15.5 3 12 3 8.5a4.5 4.5 0 0 1 9 0a4.5 4.5 0 0 1 9 0c0 3.5-2 7-9 11.5Z"/></svg>`;
 
+// The portrait shot on a green screen: a floor shadow and a green rim of spill on the shoulders and hair, for keying.
+const GREEN_SCREEN = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360">
+<defs><radialGradient id="g" cx="0.5" cy="0.4" r="0.8"><stop offset="0" stop-color="#2fd35a"/><stop offset="1" stop-color="#16a03f"/></radialGradient>
+<radialGradient id="sh" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#000" stop-opacity="0.45"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient></defs>
+<rect width="640" height="360" fill="url(#g)"/>
+<ellipse cx="350" cy="352" rx="190" ry="22" fill="url(#sh)"/>
+<path d="M186 360 Q196 236 320 236 Q444 236 454 360Z" fill="#5f9b4a"/>
+<path d="M190 360 Q200 240 320 240 Q440 240 450 360Z" fill="#33415c"/>
+<circle cx="320" cy="150" r="73" fill="#8fbf62"/>
+<circle cx="320" cy="150" r="70" fill="#c98b6b"/>
+<path d="M247 132 Q257 56 320 58 Q388 56 395 137 Q370 100 320 100 Q275 100 247 132Z" fill="#4f7a30"/>
+<path d="M250 130 Q260 60 320 62 Q385 60 392 135 Q370 100 320 100 Q275 100 250 130Z" fill="#2b1d16"/>
+<circle cx="295" cy="150" r="6" fill="#2b1d16"/><circle cx="345" cy="150" r="6" fill="#2b1d16"/>
+<path d="M300 185 Q320 198 340 185" stroke="#7a3e2c" stroke-width="5" fill="none"/>
+</svg>`;
+
 /** Built-in sample pictures, as image control values. */
 export const SAMPLE_IMAGES = {
   landscape: svgDataUrl(LANDSCAPE),
@@ -71,6 +87,8 @@ export const SAMPLE_IMAGES = {
   portrait: svgDataUrl(PORTRAIT),
   /** Another face, larger and to the right: morph it with `portrait`. */
   portrait2: svgDataUrl(PORTRAIT_2),
+  /** The portrait on a green screen, with a floor shadow and green spill, for keying. */
+  greenScreen: svgDataUrl(GREEN_SCREEN),
   /** A ring-and-dot mark, indigo on transparent. */
   logo: svgDataUrl(LOGO),
   /** A heart, rose on transparent. */

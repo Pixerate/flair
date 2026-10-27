@@ -6,6 +6,8 @@ import { recordEffect, recordingPlan } from "./index.js";
 
 // jsdom has no WebGL: frames come from a stand-in that remembers what it was asked to draw.
 const rendered: { time: number; options: Record<string, unknown> }[] = [];
+/** How the stand-in paints a frame drawn at `time` (default: every byte 200). */
+let paint: ((out: Uint8ClampedArray, time: number) => void) | undefined;
 vi.mock("../shader/frames.js", () => ({
   ShaderFrames: class {
     width: number;
@@ -20,7 +22,8 @@ vi.mock("../shader/frames.js", () => ({
       rendered.push({ time, options });
     }
     readPixels(out: Uint8ClampedArray) {
-      out.fill(200);
+      if (paint) paint(out, rendered.at(-1)!.time);
+      else out.fill(200);
       return out;
     }
     dispose() {}
@@ -53,10 +56,14 @@ function stubWebCodecs(codecs: string[]) {
     }
   }
   class FakeFrame {
+    /** A copy of each RGBX frame's pixels, as encoded. */
+    static pixels: Uint8ClampedArray[] = [];
     constructor(
       readonly data: unknown,
       readonly init: { timestamp: number; duration: number; format: string },
-    ) {}
+    ) {
+      if (init.format === "RGBX") FakeFrame.pixels.push(new Uint8ClampedArray(data as Uint8ClampedArray));
+    }
     get timestamp() {
       return this.init.timestamp;
     }
@@ -67,11 +74,12 @@ function stubWebCodecs(codecs: string[]) {
   }
   vi.stubGlobal("VideoEncoder", FakeEncoder);
   vi.stubGlobal("VideoFrame", FakeFrame);
-  return FakeEncoder;
+  return Object.assign(FakeEncoder, { pixels: FakeFrame.pixels });
 }
 
 afterEach(() => {
   rendered.length = 0;
+  paint = undefined;
 });
 
 describe("recordingPlan", () => {
@@ -142,6 +150,17 @@ describe("recordingPlan", () => {
     await expect(recordingPlan("aurora", { duration: -1, format: "gif" })).rejects.toThrow(/duration must be/);
     await expect(recordingPlan("aurora", { start: -1, format: "gif" })).rejects.toThrow(/start must be/);
     await expect(recordingPlan("aurora", { format: "avi" as never })).rejects.toThrow(/format is one of/);
+    await expect(recordingPlan("aurora", { shutterAngle: 400, format: "gif" })).rejects.toThrow(/shutterAngle is 0 to 360 degrees \(180 is a film camera's usual/);
+    await expect(recordingPlan("aurora", { shutterAngle: -1, format: "gif" })).rejects.toThrow(/shutterAngle is 0 to 360/);
+    await expect(recordingPlan("aurora", { shutterAngle: 180, shutterSamples: 1, format: "gif" })).rejects.toThrow(/shutterSamples is a whole number of sub-frames from 2 to 32/);
+    await expect(recordingPlan("aurora", { shutterAngle: 180, shutterSamples: 4.5, format: "gif" })).rejects.toThrow(/shutterSamples is a whole number/);
+  });
+
+  it("plans a shutter only when its angle is above 0", async () => {
+    expect((await recordingPlan("aurora", { format: "gif" })).shutter).toBeUndefined();
+    expect((await recordingPlan("aurora", { format: "gif", shutterAngle: 0 })).shutter).toBeUndefined();
+    expect((await recordingPlan("aurora", { format: "gif", shutterAngle: 180 })).shutter).toEqual({ angle: 180, samples: 8 });
+    expect((await recordingPlan("aurora", { format: "gif", shutterAngle: 90, shutterSamples: 3 })).shutter).toEqual({ angle: 90, samples: 3 });
   });
 });
 
@@ -206,6 +225,31 @@ describe("recordEffect", () => {
     await expect(recordingPlan("spectrum-bars", { audio: buffer, format: "mp4" })).rejects.toThrow(/cannot encode AAC audio.*record "webm" \(Opus\), or pass audioTrack: false/);
     expect((await recordingPlan("spectrum-bars", { audio: buffer, format: "mp4", audioTrack: false })).audioEncoder).toBeUndefined();
     expect((await recordingPlan("spectrum-bars", { audio: buffer, format: "gif" })).audioEncoder).toBeUndefined();
+  });
+
+  it("motion-blurs each frame from sub-frames drawn while the shutter is open", async () => {
+    const Encoder = stubWebCodecs(["avc1"]);
+    Encoder.pixels.length = 0;
+    // Red is the time in ms: the blurred frame's red is the mean of its sub-frames'.
+    paint = (out, time) => {
+      for (let i = 0; i < out.length; i += 4) out.set([time * 1000, 0, 0, 255], i);
+    };
+    const pointer = vi.fn((t: number) => ({ pointer: [t, 0, 1, 0] as [number, number, number, number] }));
+    await recordEffect("aurora", { width: 4, height: 2, fps: 10, duration: 0.2, shutterAngle: 180, shutterSamples: 4, pointer });
+    // Open for half of each 0.1 s frame: sub-frames at the middles of its four slices.
+    const subs = [0.00625, 0.01875, 0.03125, 0.04375];
+    expect(rendered.map((r) => r.time)).toEqual([...subs, ...subs.map((t) => t + 0.1)].map((t) => expect.closeTo(t, 9)));
+    expect(rendered.map((r) => r.options.frame)).toEqual([0, 0, 0, 0, 1, 1, 1, 1]);
+    expect(pointer).toHaveBeenCalledTimes(8);
+    expect(Encoder.pixels).toHaveLength(2);
+    expect([...Encoder.pixels[0]!.subarray(0, 4)]).toEqual([25, 0, 0, 255]);
+    expect([...Encoder.pixels[1]!.subarray(0, 4)]).toEqual([125, 0, 0, 255]);
+  });
+
+  it("draws exactly the frames it did before when the shutter angle is 0", async () => {
+    stubWebCodecs(["avc1"]);
+    await recordEffect("aurora", { width: 4, height: 2, fps: 10, duration: 0.3, shutterAngle: 0 });
+    expect(rendered.map((r) => r.time)).toEqual([0, 0.1, 0.2]);
   });
 
   it("stops when aborted", async () => {

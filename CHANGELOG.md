@@ -1,5 +1,24 @@
 # @pixerate/flair
 
+## 0.60.0
+
+### Minor Changes
+
+- d8fa6c1: Add video finishing and kinetic caption effects, and shutter-angle motion blur for recordings and exports:
+
+  - `image-chroma-key`: green and blue screen keying with spill suppression and kept shadows.
+  - `image-lut-grade`: 3D LUT grading (tiles or Hald), or built-in teal & orange, punchy and film noir looks, with skin tones protected.
+  - `corner-pin`: four-corner perspective pin.
+  - `bloom` gains `uStreakAngle` and `uStreakLength` for angled anamorphic streaks.
+  - `caption-word-bounce`, `caption-karaoke` and `caption-pop`: word-by-word caption effects.
+  - `shutterAngle` and `shutterSamples` on `recordEffect`, `exportEffect` and `exportMotionGraphic`, and `--shutter-angle` / `--shutter-samples` in the CLI. Sub-frames are averaged with premultiplied alpha.
+
+## 0.59.0
+
+### Minor Changes
+
+- 406106d: Add seven iridescent and neon shader effects: `iridescent-text` (a rainbow-chrome title with glints, transparent over the page), `neon-fluid`, `neon-worms`, `molten-web`, `prism-burst`, `neon-warp` and `iridescent-blobs`. Find them together with `findEffects({ tags: ["iridescent"] })` or `["neon"]`.
+
 ## 0.58.4
 
 ### Patch Changes

@@ -20,6 +20,7 @@ import { SvgPlayer } from "../vector/svg.js";
 
 export { preloadImages, releaseImages };
 export { recordEffect, recordingPlan, type RecordFormat, type RecordOptions, type RecordPointer, type RecordingPlan } from "./record.js";
+export { checkShutter, FrameAverager, shutterTimes, DEFAULT_SHUTTER_SAMPLES, type Shutter, type ShutterOptions } from "../export/shutter.js";
 
 /**
  * What an effect is applied to:

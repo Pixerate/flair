@@ -244,6 +244,7 @@ download(mp4); // a Blob
 - **Defaults.** 1280 × 720 at 30 fps. The length is a shader's `loop`, or a vector effect's picture plus its `hold`, else 4 s. The bitrate is `width × height × fps × 0.15`. Video sizes round up to even numbers. `recordingPlan(effect, options)` tells you what a recording will be (format, size, frames, encoder) before any frame is drawn.
 - **Interaction.** Shaders that answer the pointer play their idle demo unless `pointer` scripts it, with the same `pointer`, `clicks` and `trail` that `ShaderFrames.render` takes. Click-triggered vector effects take `steps` (ms). Scroll effects play their idle demos too.
 - **Sound.** `audio` takes a decoded `AudioBuffer` or an audio file's URL (fetched and decoded at 48 kHz). Audio-reactive shaders follow it frame for frame: each frame's `iAudio`, `iSpectrum` and `iBeat` come from `analyseAudioBuffer` at that frame's time, so the same file always makes the same video. The stretch from `start` to `start + duration` becomes the video's sound track: AAC in an `mp4`, Opus in a `webm` (encoded with WebCodecs' `AudioEncoder`, muxed by the same built-in muxers). Where the browser has no AAC encoder, the default format falls back to `webm`, and an explicit `mp4` is refused with a sentence. Pass `audioTrack: false` for the picture alone. `gif` and `png` have no sound, so there the audio only drives the picture.
+- **Motion blur.** `shutterAngle` (degrees, 0 to 360; default 0, off) blurs movement as a film camera does: the shutter is open for `(shutterAngle / 360) / fps` seconds from each frame's time, and the frame is the average of `shutterSamples` pictures (2 to 32, default 8) drawn at the middles of that time's slices. 180 is a film camera's usual. Pictures are averaged in premultiplied alpha, so transparent recordings get no dark fringes. The pointer, the sound, a `<video>` subject and `beforeFrame` are all taken at each sub-frame's time, and recording takes `shutterSamples` times as long. Out-of-range values are refused with a sentence naming the range. `checkShutter`, `shutterTimes` and `FrameAverager` are exported for frames of your own.
 - **Transparency.** `alpha` defaults to `drawsAlpha(effect, values)`: true for an overlay (`transparent`) unless its `uBackgroundAlpha` is turned up to 1 (`sparkles` with its "With background" preset records an opaque mp4), and for a picture effect whose `uBackdropAlpha` is below 1. It is kept in `webm` (VP9/VP8 with an alpha channel, encoded as a second stream and stored as `BlockAdditions`, as Chrome does), in `png`, and in `gif` (one see-through colour, so edges are hard). An `mp4` has no alpha, so asking for both is refused. When alpha is off, transparent pixels are laid over `background` (black for shaders, white for vector effects).
 
 Limits: video needs WebCodecs (Chrome and Edge 94+, Safari 16.4+ for H.264, and Firefox 130+). Safari doesn't play alpha WebM, so use PNG frames there. Everything is held in memory until the end, so record long or 4K clips in parts. Vector effects are rasterised once per frame, which is slower than shaders. A picture from another site needs CORS, as on screen.
@@ -678,9 +679,9 @@ frames.render(t, { audio: track.at(t), scroll: [0.5, 0.5, 0, 0] });
 | light / space | bokeh, god rays, sparkles, neon ripple, light ribbons, warp starfield, nebula, event horizon, planet, spiral galaxy, solar system, shooting star, meteor shower, comet, northern lights, satellite pass, star trails |
 | lighting | relight, point light, studio lighting, time of day, gobo projection, neon spill, candlelight, pool caustics, party lights, lamp switch |
 | retro | synthwave, digital rain, dithered gradient, TV static, 8-bit, Game Boy screen, pixel fire, pixel landscape, OutRun road, palette cycle, raster bars, tape loading, pixel water, pixel text, coin spin, space invader, heart health bar |
-| image | ripple, glitch, duotone, halftone, pixel reveal, Ken Burns, ASCII art, shatter, melt, risograph, thermal, edge glow, tilt-shift, slit-scan, mosaic flip, chromatic lens, oil paint, pencil sketch, watercolour, pen and ink, charcoal and pastel, sketch reveal, CRT screen, film look |
+| image | ripple, glitch, duotone, halftone, pixel reveal, Ken Burns, ASCII art, shatter, melt, risograph, thermal, edge glow, tilt-shift, slit-scan, mosaic flip, chromatic lens, oil paint, chroma key, LUT grade, pencil sketch, watercolour, pen and ink, charcoal and pastel, sketch reveal, CRT screen, film look |
 | overlay | rain on glass, snowfall, lens flare, vignette & grain, scanline sweep, spotlight, embers, shine sweep, glare sweep, frost creep, viewfinder |
-| text | shader text, drip text, typewriter, scramble text, kinetic stagger, neon sign, stroke draw text, split reveal, highlighter, word cycle, liquid fill, glitch text, extruded text, text on a path, circle text |
+| text | shader text, drip text, typewriter, scramble text, kinetic stagger, word bounce, karaoke sweep, word pop, neon sign, stroke draw text, split reveal, highlighter, word cycle, liquid fill, glitch text, extruded text, text on a path, circle text |
 | morph | feature morph, silhouette morph, shape morph, icon toggle, morph sequence, gooey morph, particle morph, digit morph |
 | interaction | click ripple, click burst, cursor glow, hover liquid, X-ray reveal, magnifier, holo card, press charge, hover swap, like button, toggle switch, checkbox, menu toggle, bookmark, copy button, send button, download button, link hover, button hover fill, tooltip pop, press button, toast notification, slider scrub |
 | pyrotechnics | fireworks, sparkler, explosion, spark fountain, roman candle, fuse burn, smoke bomb, light show, firework burst |
@@ -698,9 +699,9 @@ frames.render(t, { audio: track.at(t), scroll: [0.5, 0.5, 0, 0] });
 | impact | shockwave, ground slam, impact frame, meteor strike, screen shake, hit marker |
 | comic | comic book, cel shade, focus lines, action lines, sound effect, speech bubble, fight cloud, dizzy stars, anime emotes, cartoon poof, line boil, doodle burst |
 | atmosphere | volumetric clouds, fog banks, rising steam, mist over image, sky timelapse, smoke curl, dry ice fog |
-| glow | aura, bloom, pulsing halo, neon outline, backlight glow, rim light, glow ring pulse, glow button |
+| glow | aura, bloom (with an angled anamorphic streak), pulsing halo, neon outline, backlight glow, rim light, glow ring pulse, glow button |
 | shadow | long shadow, drop shadow lift, light sweep shadows, contact shadow, window shadows, shadow puppets, lift card, exploded layers |
-| distortion | twirl, pinch & bulge, fisheye, mirror tiles, wave warp, ribbed glass, shower glass, datamosh, polar warp, texture displace |
+| distortion | twirl, pinch & bulge, fisheye, mirror tiles, wave warp, ribbed glass, shower glass, datamosh, polar warp, texture displace, corner pin |
 | audio | spectrum bars, circular spectrum, waveform line, bass pulse, audio particles, audio plasma, vinyl |
 | scroll | scroll reveal, parallax layers, scroll progress glow, scroll velocity blur, scroll zoom, scroll draw, scroll counter, scroll steps |
 | broadcast | lower third, stacked lower third, title card, logo reveal, logo sting, end card, countdown, subscribe button, news ticker, scoreboard, chapter marker |
@@ -758,6 +759,7 @@ npx flair render shader-text --text "FLAIR" --set uSpeed=2 --size 1280x720 -o ti
 npx flair render typewriter --text "Hello" -o hello.gif
 npx flair render toggle-switch -o toggle.svg  # vector effects: an animated SVG, no browser needed
 npx flair render aurora --duration 4 -o frames/   # PNG frames (or -o out_%04d.png)
+npx flair render neon-warp --shutter-angle 180 -o warp.mp4   # motion blur: 8 sub-frames averaged per frame (--shutter-samples)
 
 # A shader file of your own
 npx flair export ./effect.frag -o out.mp4 -w 1280 -h 720 -d 5 --values '{"speed":2}'
@@ -780,6 +782,8 @@ Subjects: `--image` (a file or URL), `--svg` (a file, URL or markup), `--text` (
 
 Without `--alpha`, overlays are drawn over `--background` (black for shaders, white for vector effects).
 
+`--shutter-angle <degrees>` (`shutterAngle`, 0 to 360, default 0) adds motion blur to video, GIF and PNG output, on `flair render` and `flair export` alike: each frame is the average, in premultiplied alpha, of `--shutter-samples` renders (`shutterSamples`, 2 to 32, default 8) spread across the time the shutter is open, `(angle / 360) / fps` seconds from the frame's time. 180 is a film camera's usual. The scripted pointer and a vector effect's timeline are acted out at every sub-frame; a `--video` subject shows the same frame across them. The render draws `shutterSamples` pictures per frame, so it takes about that much longer. `.svg` output has no frames to blur, so a shutter is refused there.
+
 To see an overlay that takes no picture of its own (sparkles, bokeh, confetti) over a photo, give it a backdrop: `--backdrop photo.jpg` (a file or URL; `backdrop` in code, which also takes a `data:` URL, and `{ imageBuffer, ext }` in `exportEffectBuffer`) is drawn under the effect in every frame, and the frame takes the photo's size unless `--size` says (JPEG rotation included). `--backdrop-fit` is `cover` (the default: fill and crop), `contain` (fit whole, over `--background`) or `fill` (stretch). `--region x,y,w,h` (`region: [x, y, width, height]`, normalized 0 to 1 from the top left) confines the effect to part of the frame; it renders at that box's size, so it is not stretched. A backdrop is refused with `--alpha` (it fills the frame), with `.svg` output, and for a shader that draws every pixel itself (give an image effect the photo as `--image` instead).
 
 ```bash
@@ -796,6 +800,7 @@ await exportEffect("image-duotone", { subject: { image: "team.jpg" }, preset: "S
 await exportEffect("click-ripple", { alpha: true, outputPath: "ripple.webm" });
 await exportEffect("toggle-switch", { outputPath: "toggle.svg" });
 await exportEffect("sparkles", { backdrop: "beach.jpg", backdropFit: "cover", region: [0, 0, 1, 0.5], outputPath: "beach.mp4" });
+await exportEffect("neon-warp", { shutterAngle: 180, shutterSamples: 8, outputPath: "warp.mp4" });
 await exportMotionGraphic({ source, values: { speed: 2 }, outputPath: "out.gif", duration: 2 });
 ```
 

@@ -536,6 +536,59 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   ],
 };
 
+export const cornerPin: ShaderEffect = {
+  kind: "shader",
+  id: "corner-pin",
+  name: "Corner pin",
+  description: "A picture pinned by its four corners anywhere in the frame, in true perspective, for screen replacements, signs and mock-ups.",
+  category: "distortion",
+  video: "filter",
+  tags: ["distortion", "corner pin", "perspective", "homography", "mockup", "screen replacement", "image"],
+  source: glsl(
+    `// Corner pin: the projective map (homography) taking the picture's unit square to the four pinned corners,
+// inverted, so each pixel finds where in the picture it shows; outside the quad is the backdrop.
+uniform sampler2D uImage;     // @control filter=mipmap wrap=clamp default=${SAMPLE_IMAGES.city} label="Image"
+uniform vec2 uTopLeft;        // @control min=-0.5 max=1.5 default=0.12,0.84 label="Top left"
+uniform vec2 uTopRight;       // @control min=-0.5 max=1.5 default=0.86,0.92 label="Top right"
+uniform vec2 uBottomLeft;     // @control min=-0.5 max=1.5 default=0.18,0.16 label="Bottom left"
+uniform vec2 uBottomRight;    // @control min=-0.5 max=1.5 default=0.9,0.24 label="Bottom right"
+${BACKDROP_CONTROLS}`,
+    PICTURE,
+    `// The square-to-quad homography (Heckbert): (0,0) to p0, (1,0) to p1, (1,1) to p2, (0,1) to p3.
+mat3 squareToQuad(vec2 p0, vec2 p1, vec2 p2, vec2 p3) {
+  vec2 d1 = p1 - p2;
+  vec2 d2 = p3 - p2;
+  vec2 d3 = p0 - p1 + p2 - p3;
+  float den = d1.x * d2.y - d2.x * d1.y;
+  float g = abs(den) < 1e-8 ? 0.0 : (d3.x * d2.y - d2.x * d3.y) / den;
+  float h = abs(den) < 1e-8 ? 0.0 : (d1.x * d3.y - d3.x * d1.y) / den;
+  // Columns: the u terms, the v terms, the constants.
+  return mat3(p1.x - p0.x + g * p1.x, p1.y - p0.y + g * p1.y, g,
+              p3.x - p0.x + h * p3.x, p3.y - p0.y + h * p3.y, h,
+              p0.x, p0.y, 1.0);
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec2 uv = fragCoord / iResolution.xy;
+  vec3 q = inverse(squareToQuad(uBottomLeft, uBottomRight, uTopRight, uTopLeft)) * vec3(uv, 1.0);
+  vec2 st = q.xy / q.z;
+  // Coverage of the picture's square, a pixel wide at its edges (none behind the eye, where q.z flips).
+  vec2 px = max(fwidth(st), vec2(1e-6));
+  vec2 inside = min(st, 1.0 - st) / px;
+  float cover = q.z > 0.0 ? clamp(min(inside.x, inside.y) + 0.5, 0.0, 1.0) : 0.0;
+  vec4 back = vec4(uBackdrop, uBackdropAlpha);
+  vec4 pic = pictureRGBA(uImage, clamp(st, 0.0, 1.0));
+  float alpha = mix(back.a, pic.a, cover);
+  fragColor = vec4(mix(back.rgb * back.a, pic.rgb * pic.a, cover) / max(alpha, 1e-4), alpha);
+}`,
+  ),
+  presets: [
+    { name: "Billboard", values: { uTopLeft: [0.1, 0.9], uTopRight: [0.7, 0.8], uBottomLeft: [0.1, 0.25], uBottomRight: [0.7, 0.4], uBackdrop: [0.08, 0.09, 0.12] } },
+    { name: "Floor", values: { uTopLeft: [0.3, 0.6], uTopRight: [0.7, 0.6], uBottomLeft: [0.0, 0.05], uBottomRight: [1.0, 0.05] } },
+    { name: "Flat", values: { uTopLeft: [0, 1], uTopRight: [1, 1], uBottomLeft: [0, 0], uBottomRight: [1, 0] } },
+  ],
+};
+
 /** Distortions: swirls, bulges, lenses, mirrors, waves and glass over a picture. */
 export const distortionShaders: ShaderEffect[] = [
   twirl,
@@ -548,4 +601,5 @@ export const distortionShaders: ShaderEffect[] = [
   datamosh,
   polarWarp,
   textureDisplace,
+  cornerPin,
 ];

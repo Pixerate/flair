@@ -101,7 +101,7 @@ importers:
         specifier: ^0.0.2
         version: 0.0.2(@astrojs/node@9.5.5(astro@5.18.2(@types/node@24.19.2)(jiti@1.21.7)(rollup@4.64.7)(typescript@5.9.3)(yaml@2.9.1)))(astro@5.18.2(@types/node@24.19.2)(jiti@1.21.7)(rollup@4.64.7)(typescript@5.9.3)(yaml@2.9.1))
       '@astrojs/node':
-        specifier: ^9.0.0
+        specifier: ^9.5.5
         version: 9.5.5(astro@5.18.2(@types/node@24.19.2)(jiti@1.21.7)(rollup@4.64.7)(typescript@5.9.3)(yaml@2.9.1))
       '@astrojs/starlight':
         specifier: ^0.32.0

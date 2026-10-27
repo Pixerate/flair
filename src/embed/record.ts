@@ -6,6 +6,7 @@ import { drawsAlpha, effectDefaults, effectInputs, getEffect, type EffectDefinit
 import { renderVectorEffect } from "../catalog/types.js";
 import { muxMp4 } from "../export/mp4mux.js";
 import { muxWebm, type WebmFrame } from "../export/webmmux.js";
+import { checkShutter, FrameAverager, shutterTimes, type Shutter, type ShutterOptions } from "../export/shutter.js";
 import { analyseAudioBuffer, type AudioBufferAnalysis } from "../shader/audio.js";
 import { zipStore, type ZipEntry } from "../export/zip.js";
 import { parseColor, type ControlValue } from "../shader/controls.js";
@@ -20,7 +21,14 @@ export type RecordFormat = "mp4" | "webm" | "gif" | "png";
 /** The pointer for one frame of a shader: `iPointer`, `iMouse`, and clicks and trail so far (times in seconds). */
 export type RecordPointer = Pick<RenderOptions, "pointer" | "mouse" | "clicks" | "trail">;
 
-export interface RecordOptions {
+/**
+ * How {@link recordEffect} records. `shutterAngle` and `shutterSamples`
+ * (from {@link ShutterOptions}) add motion blur: each frame averages
+ * `shutterSamples` pictures drawn while the shutter is open, and the
+ * pointer, sound, a `<video>` subject and `beforeFrame` are all taken at
+ * each of those times.
+ */
+export interface RecordOptions extends ShutterOptions {
   /** What to apply the effect to (see {@link EffectSubject}); several fill several controls in order. */
   subject?: EffectSubject | readonly EffectSubject[];
   /** A preset by name, then these values, over the effect's defaults. */
@@ -90,6 +98,7 @@ export interface RecordOptions {
   beforeFrame?: (time: number, index: number) => void | Promise<void>;
   /** Called after each frame with the share done, 0–1. */
   onProgress?: (fraction: number) => void;
+
   /** Aborting rejects with an `AbortError` `DOMException`. */
   signal?: AbortSignal;
 }
@@ -109,6 +118,8 @@ export interface RecordingPlan {
   encoder?: VideoEncoderConfig;
   /** For `mp4` and `webm` with `audio`: the sound's encoder settings (AAC or Opus, 48 kHz stereo). */
   audioEncoder?: AudioEncoderConfig;
+  /** Motion blur, when `shutterAngle` is above 0: the angle and the sub-frames drawn for each frame. */
+  shutter?: Shutter;
 }
 
 /** The rate sound tracks are encoded at (Opus only takes 48 kHz; AAC is happy with it). */
@@ -212,6 +223,7 @@ export async function recordingPlan(effect: EffectDefinition | string, options: 
   const start = options.start ?? 0;
   if (!Number.isFinite(start) || start < 0) throw new Error(`start must be 0 or more seconds (it was ${String(options.start)}).`);
   const duration = positive("duration", options.duration, defaultDuration(def, options));
+  const shutter = checkShutter(options);
   let width = Math.round(positive("width", options.width, 1280));
   let height = Math.round(positive("height", options.height, 720));
   const explicitAlpha = options.alpha === true;
@@ -281,7 +293,7 @@ export async function recordingPlan(effect: EffectDefinition | string, options: 
       throw new Error(`This browser cannot encode ${codec} audio, so it cannot put the sound in ${format === "mp4" ? "an mp4" : "a webm"}; ${format === "mp4" ? 'record "webm" (Opus), or ' : ""}pass audioTrack: false to record the picture alone (the sound still drives it).`);
     }
   }
-  return { effect: def, format: format!, width, height, fps, duration, start, frames: Math.max(1, Math.round(duration * fps)), alpha, ...(encoder ? { encoder } : {}), ...(audioEncoder ? { audioEncoder } : {}) };
+  return { effect: def, format: format!, width, height, fps, duration, start, frames: Math.max(1, Math.round(duration * fps)), alpha, ...(shutter ? { shutter } : {}), ...(encoder ? { encoder } : {}), ...(audioEncoder ? { audioEncoder } : {}) };
 }
 
 /** A shader's loop, or a vector effect's picture plus its hold, else 4 seconds. */
@@ -358,6 +370,25 @@ function vectorSource(plan: RecordingPlan, values: Record<string, ControlValue>,
       out.set(canvas.getContext("2d")!.getImageData(0, 0, plan.width, plan.height).data);
     },
     dispose: () => host.remove(),
+  };
+}
+
+/**
+ * Motion blur: each frame is the average (in premultiplied alpha) of the
+ * shutter's sub-frames, each drawn by `source` at its own time.
+ */
+function shutterSource(source: FrameSource, plan: RecordingPlan, shutter: Shutter): FrameSource {
+  const average = new FrameAverager(plan.width * plan.height);
+  const sub: Pixels = new Uint8ClampedArray(plan.width * plan.height * 4);
+  return {
+    async frame(time, index, out) {
+      for (const t of shutterTimes(time, plan.fps, shutter)) {
+        await source.frame(t, index, sub);
+        average.add(sub);
+      }
+      average.result(out);
+    },
+    dispose: () => source.dispose(),
   };
 }
 
@@ -628,7 +659,8 @@ function videoEncoder(plan: RecordingPlan, sound?: Promise<EncodedSound>): Encod
  * with `svgView` and rasterised. Shaders that answer the pointer play their
  * idle demos unless `pointer` scripts it. With `audio`, audio-reactive
  * shaders follow the sound frame for frame, and videos carry it as their
- * sound track.
+ * sound track. With `shutterAngle`, each frame is motion-blurred: the
+ * average of `shutterSamples` pictures drawn while the shutter is open.
  *
  * `png` resolves to a ZIP of numbered frames (`frame-0001.png`, …), so every
  * format is one `Blob` to save or upload.
@@ -643,6 +675,7 @@ function videoEncoder(plan: RecordingPlan, sound?: Promise<EncodedSound>): Encod
  * const gif = await recordEffect("typewriter", { subject: { text: "Hello" }, format: "gif", width: 640, height: 360, fps: 25 });
  * const webm = await recordEffect("click-ripple", { format: "webm", alpha: true, pointer: { clicks: [{ x: 640, y: 360, time: 0.2 }] } });
  * const music = await recordEffect("spectrum-bars", { audio: "/song.mp3", duration: 10 });
+ * const blurred = await recordEffect("neon-warp", { shutterAngle: 180 });
  * ```
  */
 export async function recordEffect(effect: EffectDefinition | string, options: RecordOptions = {}): Promise<Blob> {
@@ -656,7 +689,8 @@ export async function recordEffect(effect: EffectDefinition | string, options: R
   // The sound track encodes alongside the frames.
   const track = buffer && plan.audioEncoder ? encodeSound(buffer, plan) : undefined;
   track?.catch(() => undefined);
-  const source = plan.effect.kind === "shader" ? shaderSource(plan, values, live, options, sound) : vectorSource(plan, values, options);
+  const drawn = plan.effect.kind === "shader" ? shaderSource(plan, values, live, options, sound) : vectorSource(plan, values, options);
+  const source = plan.shutter ? shutterSource(drawn, plan, plan.shutter) : drawn;
   let encoder: Encoder | undefined;
   try {
     encoder = plan.format === "gif" ? await gifEncoder(plan) : plan.format === "png" ? pngEncoder(plan) : videoEncoder(plan, track);
