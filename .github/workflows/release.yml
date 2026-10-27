@@ -46,6 +46,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # The docs' "New" list comes from git history, which hosted docs builds clone
+      # too shallow to read (they keep the committed list). Refresh it here, with full
+      # history, on every push to main: a release commits it with the version bump,
+      # and otherwise the step after the release commits it on its own.
+      - name: Refresh the docs' New list
+        run: pnpm --filter @pixerate/flair-docs generate:recent
+
       - name: Check for pending changesets
         id: changeset_check
         run: |
@@ -60,7 +67,6 @@ jobs:
           fi
 
       - name: Configure Git
-        if: steps.changeset_check.outputs.should_release == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -112,3 +118,20 @@ jobs:
       - name: Push release tags
         if: steps.changeset_check.outputs.should_release == 'true'
         run: git push origin --tags
+
+      - name: Commit the refreshed New list
+        if: steps.changeset_check.outputs.should_release != 'true'
+        run: |
+          git add apps/docs/src/data/recent-effects.generated.json
+          if git diff --cached --quiet; then
+            echo "The New list is current"
+            exit 0
+          fi
+          git commit -m "chore(docs): refresh the New list [skip ci]"
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then exit 0; fi
+            echo "main moved on; rebasing the refresh (attempt $attempt)"
+            git pull --rebase origin main || { git rebase --abort; exit 1; }
+          done
+          echo "Could not push the refreshed New list; the next push to main refreshes it."
+          exit 1
