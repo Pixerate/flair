@@ -1,5 +1,327 @@
 [
   {
+    "id": "spider-web-loader",
+    "name": "Spider web loader",
+    "kind": "vector",
+    "category": "loader",
+    "description": "A spider web weaving itself spoke by spoke and round its spiral, then a spider dropping in on its thread, bobbing, and climbing back out as the web fades.",
+    "tags": [
+      "loader",
+      "web",
+      "spider",
+      "halloween",
+      "spooky",
+      "icon",
+      "draw"
+    ],
+    "controls": [
+      {
+        "n": "background",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            13,
+            15,
+            20
+          ]
+        },
+        "c": 1,
+        "line": 1
+      },
+      {
+        "n": "silk",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            216,
+            222,
+            230
+          ]
+        },
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "spider",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            241,
+            242,
+            244
+          ]
+        },
+        "c": 1,
+        "line": 3
+      }
+    ],
+    "presets": [
+      "Light",
+      "Halloween"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 400,
+    "animated": true,
+    "duration": 4100,
+    "module": "web",
+    "addedAt": "2026-10-27T18:21:38Z",
+    "commitHash": "28f98bcab0b3a01483401091b11ec126d6ed2347",
+    "order": 469
+  },
+  {
+    "id": "plexus-web",
+    "name": "Plexus web",
+    "kind": "shader",
+    "category": "particles",
+    "description": "A web of glowing points drifting in the dark, each strung to its neighbours by fine lines that brighten as they close in and fade as they part.",
+    "tags": [
+      "background",
+      "particles",
+      "web",
+      "plexus",
+      "network",
+      "constellation",
+      "tech",
+      "data",
+      "hero"
+    ],
+    "controls": [
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            4,
+            6,
+            13
+          ]
+        },
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "uColorA",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            56,
+            189,
+            248
+          ]
+        },
+        "l": "Colour 1",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uColorB",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            167,
+            139,
+            250
+          ]
+        },
+        "l": "Colour 2",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uDensity",
+        "t": "float",
+        "d": 8,
+        "min": 3,
+        "max": 20,
+        "line": 5
+      },
+      {
+        "n": "uSpeed",
+        "t": "float",
+        "d": 0.5,
+        "max": 2,
+        "line": 6
+      },
+      {
+        "n": "uReach",
+        "t": "float",
+        "d": 1.1,
+        "l": "Line reach",
+        "min": 0.5,
+        "max": 1.6,
+        "line": 7
+      },
+      {
+        "n": "uWidth",
+        "t": "float",
+        "d": 1,
+        "l": "Line width (px)",
+        "min": 0.5,
+        "max": 3,
+        "line": 8
+      },
+      {
+        "n": "uPoints",
+        "t": "float",
+        "d": 1,
+        "l": "Point size",
+        "max": 2,
+        "line": 9
+      },
+      {
+        "n": "uGlow",
+        "t": "float",
+        "d": 0.5,
+        "line": 10
+      }
+    ],
+    "presets": [
+      "Gold",
+      "Dense",
+      "Calm",
+      "Light"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "shaders/web",
+    "addedAt": "2026-10-27T18:21:38Z",
+    "commitHash": "28f98bcab0b3a01483401091b11ec126d6ed2347",
+    "order": 468
+  },
+  {
+    "id": "web-shot",
+    "name": "Web shot",
+    "kind": "shader",
+    "category": "interaction",
+    "description": "A line of silk shoots from the bottom of the frame to every click and bursts into a sticky web splat that hangs there, then fades.",
+    "tags": [
+      "interactive",
+      "click",
+      "overlay",
+      "web",
+      "spider",
+      "superhero",
+      "comic",
+      "splat"
+    ],
+    "controls": [
+      {
+        "n": "uColor",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            244,
+            246,
+            248
+          ]
+        },
+        "l": "Silk",
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "uOrigin",
+        "t": "vec2",
+        "d": [
+          0.5,
+          0
+        ],
+        "l": "Shooter (0–1 of the frame)",
+        "line": 3
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 0.2,
+        "l": "Splat size",
+        "min": 0.05,
+        "max": 0.5,
+        "line": 4
+      },
+      {
+        "n": "uSpokes",
+        "t": "float",
+        "d": 10,
+        "min": 5,
+        "max": 16,
+        "s": 1,
+        "line": 5
+      },
+      {
+        "n": "uRings",
+        "t": "float",
+        "d": 4,
+        "min": 1,
+        "max": 6,
+        "s": 1,
+        "line": 6
+      },
+      {
+        "n": "uWidth",
+        "t": "float",
+        "d": 2,
+        "l": "Thread width (px)",
+        "min": 0.5,
+        "max": 5,
+        "line": 7
+      },
+      {
+        "n": "uLife",
+        "t": "float",
+        "d": 1.8,
+        "l": "Lifetime",
+        "min": 0.5,
+        "max": 8,
+        "line": 8
+      },
+      {
+        "n": "uShadow",
+        "t": "bool",
+        "d": true,
+        "line": 9
+      },
+      {
+        "n": "uDemo",
+        "t": "bool",
+        "d": true,
+        "l": "Demo when idle",
+        "line": 10
+      }
+    ],
+    "presets": [
+      "Black silk",
+      "Big splat",
+      "From the corner"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [
+        "click"
+      ],
+      "transparent": true
+    },
+    "transparent": true,
+    "animated": true,
+    "module": "shaders/web",
+    "addedAt": "2026-10-27T18:21:38Z",
+    "commitHash": "28f98bcab0b3a01483401091b11ec126d6ed2347",
+    "order": 467
+  },
+  {
     "id": "cobweb-corners",
     "name": "Cobweb corners",
     "kind": "shader",
@@ -127,331 +449,9 @@
     "transparent": true,
     "animated": true,
     "module": "shaders/web",
-    "addedAt": "2026-10-27T18:14:03.165Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "web-shot",
-    "name": "Web shot",
-    "kind": "shader",
-    "category": "interaction",
-    "description": "A line of silk shoots from the bottom of the frame to every click and bursts into a sticky web splat that hangs there, then fades.",
-    "tags": [
-      "interactive",
-      "click",
-      "overlay",
-      "web",
-      "spider",
-      "superhero",
-      "comic",
-      "splat"
-    ],
-    "controls": [
-      {
-        "n": "uColor",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            244,
-            246,
-            248
-          ]
-        },
-        "l": "Silk",
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "uOrigin",
-        "t": "vec2",
-        "d": [
-          0.5,
-          0
-        ],
-        "l": "Shooter (0–1 of the frame)",
-        "line": 3
-      },
-      {
-        "n": "uSize",
-        "t": "float",
-        "d": 0.2,
-        "l": "Splat size",
-        "min": 0.05,
-        "max": 0.5,
-        "line": 4
-      },
-      {
-        "n": "uSpokes",
-        "t": "float",
-        "d": 10,
-        "min": 5,
-        "max": 16,
-        "s": 1,
-        "line": 5
-      },
-      {
-        "n": "uRings",
-        "t": "float",
-        "d": 4,
-        "min": 1,
-        "max": 6,
-        "s": 1,
-        "line": 6
-      },
-      {
-        "n": "uWidth",
-        "t": "float",
-        "d": 2,
-        "l": "Thread width (px)",
-        "min": 0.5,
-        "max": 5,
-        "line": 7
-      },
-      {
-        "n": "uLife",
-        "t": "float",
-        "d": 1.8,
-        "l": "Lifetime",
-        "min": 0.5,
-        "max": 8,
-        "line": 8
-      },
-      {
-        "n": "uShadow",
-        "t": "bool",
-        "d": true,
-        "line": 9
-      },
-      {
-        "n": "uDemo",
-        "t": "bool",
-        "d": true,
-        "l": "Demo when idle",
-        "line": 10
-      }
-    ],
-    "presets": [
-      "Black silk",
-      "Big splat",
-      "From the corner"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [
-        "click"
-      ],
-      "transparent": true
-    },
-    "transparent": true,
-    "animated": true,
-    "module": "shaders/web",
-    "addedAt": "2026-10-27T18:14:03.165Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "plexus-web",
-    "name": "Plexus web",
-    "kind": "shader",
-    "category": "particles",
-    "description": "A web of glowing points drifting in the dark, each strung to its neighbours by fine lines that brighten as they close in and fade as they part.",
-    "tags": [
-      "background",
-      "particles",
-      "web",
-      "plexus",
-      "network",
-      "constellation",
-      "tech",
-      "data",
-      "hero"
-    ],
-    "controls": [
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            4,
-            6,
-            13
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "uColorA",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            56,
-            189,
-            248
-          ]
-        },
-        "l": "Colour 1",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uColorB",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            167,
-            139,
-            250
-          ]
-        },
-        "l": "Colour 2",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uDensity",
-        "t": "float",
-        "d": 8,
-        "min": 3,
-        "max": 20,
-        "line": 5
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 0.5,
-        "max": 2,
-        "line": 6
-      },
-      {
-        "n": "uReach",
-        "t": "float",
-        "d": 1.1,
-        "l": "Line reach",
-        "min": 0.5,
-        "max": 1.6,
-        "line": 7
-      },
-      {
-        "n": "uWidth",
-        "t": "float",
-        "d": 1,
-        "l": "Line width (px)",
-        "min": 0.5,
-        "max": 3,
-        "line": 8
-      },
-      {
-        "n": "uPoints",
-        "t": "float",
-        "d": 1,
-        "l": "Point size",
-        "max": 2,
-        "line": 9
-      },
-      {
-        "n": "uGlow",
-        "t": "float",
-        "d": 0.5,
-        "line": 10
-      }
-    ],
-    "presets": [
-      "Gold",
-      "Dense",
-      "Calm",
-      "Light"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "shaders/web",
-    "addedAt": "2026-10-27T18:14:03.165Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "spider-web-loader",
-    "name": "Spider web loader",
-    "kind": "vector",
-    "category": "loader",
-    "description": "A spider web weaving itself spoke by spoke and round its spiral, then a spider dropping in on its thread, bobbing, and climbing back out as the web fades.",
-    "tags": [
-      "loader",
-      "web",
-      "spider",
-      "halloween",
-      "spooky",
-      "icon",
-      "draw"
-    ],
-    "controls": [
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            13,
-            15,
-            20
-          ]
-        },
-        "c": 1,
-        "line": 1
-      },
-      {
-        "n": "silk",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            216,
-            222,
-            230
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "spider",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            241,
-            242,
-            244
-          ]
-        },
-        "c": 1,
-        "line": 3
-      }
-    ],
-    "presets": [
-      "Light",
-      "Halloween"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 400,
-    "animated": true,
-    "duration": 4100,
-    "module": "web",
-    "addedAt": "2026-10-27T18:14:03.165Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-10-27T18:21:38Z",
+    "commitHash": "28f98bcab0b3a01483401091b11ec126d6ed2347",
+    "order": 466
   },
   {
     "id": "spider-web",
@@ -569,7 +569,7 @@
       {
         "n": "uSheen",
         "t": "float",
-        "d": 0.45,
+        "d": 0.3,
         "l": "Rainbow sheen",
         "line": 11
       },
@@ -603,9 +603,9 @@
     },
     "animated": true,
     "module": "shaders/web",
-    "addedAt": "2026-10-27T18:14:03.164Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-10-27T18:21:38Z",
+    "commitHash": "28f98bcab0b3a01483401091b11ec126d6ed2347",
+    "order": 465
   },
   {
     "id": "corner-pin",
