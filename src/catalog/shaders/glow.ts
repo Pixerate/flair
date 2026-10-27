@@ -225,7 +225,7 @@ export const bloom: ShaderEffect = {
   kind: "shader",
   id: "bloom",
   name: "Bloom",
-  description: "A picture whose bright areas bleed soft light into their surroundings, with an optional anamorphic lens streak.",
+  description: "A picture whose bright areas bleed soft light into their surroundings, with an optional anamorphic lens streak at any angle.",
   category: "glow",
   video: "filter",
   tags: ["glow", "bloom", "image", "lens", "light", "filter", "anamorphic"],
@@ -239,6 +239,8 @@ uniform float uIntensity;    // @control min=0 max=4 default=2.5 label="Intensit
 uniform vec3 uTint;          // @control color default=#FFFFFF label="Tint"
 uniform float uStreak;       // @control min=0 max=2 default=0 label="Anamorphic streak"
 uniform vec3 uStreakColor;   // @control color default=#7FB2FF label="Streak colour"
+uniform float uStreakAngle;  // @control min=0 max=180 default=0 label="Streak angle (°)"
+uniform float uStreakLength; // @control min=0.05 max=0.6 default=0.3 label="Streak length"
 ${BACKDROP_CONTROLS}`,
     PICTURE,
     `// The light above the threshold at uv, read at a mip level (a soft knee, so light fades in smoothly). A coarse
@@ -273,7 +275,10 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec3 light = blurBright(uv, uRadius * 0.3, texels) * 0.3 + blurBright(uv, uRadius, texels) * 0.4 + blurBright(uv, uRadius * 3.0, texels) * 0.5;
   light *= uTint;
   if (uStreak > 0.0) {
-    // A long horizontal smear of the bright pass, read a little blurred so its taps run together.
+    // A long smear of the bright pass along the streak angle (horizontal at 0°, in frame widths), read a little
+    // blurred so its taps run together.
+    float a = radians(uStreakAngle);
+    vec2 along = vec2(cos(a), sin(a) * iResolution.x / iResolution.y) * uStreakLength;
     vec3 streak = vec3(0.0);
     float w = 0.0;
     float jitter = fract(sin(dot(fragCoord, vec2(12.9898, 78.233))) * 43758.5453) - 0.5;
@@ -282,7 +287,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     for (int i = -24; i <= 24; i++) {
       float f = (float(i) + jitter) / 24.0;
       float k = exp(-abs(f) * 3.5);
-      streak += bright(uv + vec2(f * 0.3, 0.0), lodStreak) * k;
+      streak += bright(uv + along * f, lodStreak) * k;
       w += k;
     }
     light += dot(streak / w, vec3(0.33)) * uStreakColor * uStreak * 4.0;
@@ -300,6 +305,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     { name: "Dreamy", values: { uThreshold: 0.45, uRadius: 0.12, uIntensity: 1.8, uTint: [1, 0.9, 0.95] } },
     { name: "Anamorphic night", values: { uImage: SAMPLE_IMAGES.city, uStreak: 1.2, uThreshold: 0.6, uIntensity: 3 } },
     { name: "Subtle", values: { uThreshold: 0.75, uRadius: 0.04, uIntensity: 1.2 } },
+    { name: "Diagonal streak", values: { uImage: SAMPLE_IMAGES.city, uStreak: 1.4, uStreakAngle: 35, uStreakLength: 0.45, uStreakColor: [0.18, 0.83, 1], uThreshold: 0.6, uIntensity: 1.5 } },
   ],
 };
 

@@ -7,6 +7,22 @@ As `@pixerate/editor`'s upstream provider for shaders, vector graphics, and moti
 
 ---
 
+## Implementation status (review of this plan)
+
+The plan was reviewed against the codebase before it was built. What landed, and where it differs from the proposal below:
+
+| Proposal | Status | Notes |
+| --- | --- | --- |
+| 1.1 `image-chroma-key` | Done (`src/catalog/shaders/treatments.ts`) | Keys on chroma scaled to each pixel's brightness, so lit and shaded parts of the screen both key while black and neutral colours stay. Despill pulls the key colour's chroma out and keeps brightness. It follows the catalog's backdrop convention: the screen shows the backdrop colour, and the backdrop opacity goes to 0 for alpha (`Transparent` preset). New `SAMPLE_IMAGES.greenScreen`. |
+| 1.2 `image-lut-grade` | Done (`treatments.ts`) | Takes a LUT image in either tile layout (n x n tiles, such as 512 x 512 for 64³) or Hald, and reads it trilinearly with `texelFetch`. An image the wrong size for a LUT is skipped. Without a LUT it uses a built-in look (`uLook`: teal & orange, punchy, film noir), which the presets use. Skin protection works on HSV hue and saturation. |
+| 1.3 `bloom-directional` | Folded into `bloom` (`glow.ts`) | `bloom` already drew a horizontal anamorphic streak, so it gained `uStreakAngle` and `uStreakLength` (defaults keep the old look) plus a `Diagonal streak` preset, instead of a near-duplicate effect. |
+| 1.4 `corner-pin` | Done (`distortion.ts`) | Inverts the square-to-quad homography, with anti-aliased edges and the backdrop outside the quad. |
+| 2.x Kinetic captions | Done as vector effects (`src/catalog/text.ts`): `caption-word-bounce`, `caption-karaoke`, `caption-pop` | Motion primitives (`src/motion`) move whole elements, and SVG cannot scale or turn single words inside one `<text>`. So these follow `kinetic-stagger`'s pattern: one slot per word, up to 12 words, wrapping onto two lines when that reads larger. |
+| 3.1 Shutter-angle motion blur | Done in recording and export instead of `ShaderPipeline` | `shutterAngle` (0–360) and `shutterSamples` (2–32) on `recordEffect` (browser) and `exportEffect` (Node, CLI `--shutter-angle`, `--shutter-samples`). Sub-frames are averaged with premultiplied alpha. Scene cameras keep their own `motionBlur`. |
+| 4.1 CapCut template exporter | Deferred | `aigc_text_template` has no public spec, and there is no way to check output against CapCut. Building it from guesses at a reverse-engineered internal format risks files that CapCut silently rejects. Revisit with sample templates and a way to test the import. |
+
+---
+
 ## 1. Background & Empirical Evidence from CapCut
 
 Reverse-engineering `/Applications/CapCut.app/Contents/Frameworks/libvideoeditor.dylib` revealed key architectural patterns in how modern desktop video editors structure visual effects, typography, and motion:

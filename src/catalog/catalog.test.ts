@@ -359,6 +359,48 @@ describe("catalog", () => {
     expect(kinetic).toMatch(/id="l3"[^>]*><\/text>/);
   });
 
+  it("caption effects put one word per slot, leave the rest empty and stagger the words", () => {
+    const at = (svg: string, id: string) => Number(svg.match(new RegExp(`id="${id}"[^>]*?translate\\((-?[\\d.]+)`))![1]);
+    const bounce = renderVectorEffect(getEffect("caption-word-bounce") as never, { text: "  one two   three ", stagger: 100 });
+    expect(bounce.svg).toMatch(/id="bw0"[^>]*>one</);
+    expect(bounce.svg).toMatch(/id="bw2"[^>]*>three</);
+    expect(bounce.svg).toMatch(/id="bw3"[^>]*><\/text>/);
+    expect(at(bounce.svg, "bw0")).toBeLessThan(at(bounce.svg, "bw1"));
+    expect(at(bounce.svg, "bw1")).toBeLessThan(at(bounce.svg, "bw2"));
+    const rises = bounce.animate!.filter((a) => a.ms === 260);
+    expect(rises.slice(0, 4).map((a) => a.delay)).toEqual([0, 100, 200, 0]);
+    expect(bounce.animate!.find((a) => a.id === "bw0" && a.ms === 260)!.attrs!.transform![1]).toContain("scale(1.15)");
+    // Thirteen words: the twelfth is the last that shows.
+    const many = renderVectorEffect(getEffect("caption-pop") as never, { text: Array.from({ length: 13 }, (_, i) => `w${i}`).join(" ") }).svg;
+    expect(many).toMatch(/id="pw11"[^>]*>w11</);
+    expect(many).not.toContain(">w12<");
+
+    const karaoke = renderVectorEffect(getEffect("caption-karaoke") as never, { text: "sing it loud", pace: 300 });
+    const wipes = karaoke.animate!.filter((a) => /^kc\d+$/.test(a.id!));
+    expect(wipes).toHaveLength(12);
+    expect(wipes.slice(0, 3).map((a) => [a.delay, a.ms])).toEqual([[400, 300], [700, 300], [1000, 300]]);
+    expect(wipes[0]!.attrs!.width![1]).toBeGreaterThan(0);
+    expect(wipes[3]!.attrs!.width![1]).toBe(0);
+    expect(karaoke.svg).toContain('clip-path="url(#kclip1)"');
+    expect(karaoke.svg).toContain('fill="#facc15"');
+
+    // Pop: alternating tilts, and each word lit until the next one lands.
+    const pop = renderVectorEffect(getEffect("caption-pop") as never, { text: "a b c", pace: 200 });
+    expect(pop.svg).toMatch(/id="pw0"[^>]*rotate\(-4\)/);
+    expect(pop.svg).toMatch(/id="pw1"[^>]*rotate\(4\)/);
+    const fills = pop.animate!.filter((a) => a.id === "pw1" && a.attrs!.fill);
+    expect(fills.map((a) => a.delay)).toEqual([200, 400]);
+  });
+
+  it("caption effects wrap a long caption onto two lines, but never inline", () => {
+    const text = "this caption is long enough that it wraps";
+    const effect = getEffect("caption-pop") as VectorEffect;
+    const ys = (svg: string) => new Set([...svg.matchAll(/id="pw\d+"[^>]*?translate\([\d.-]+ ([\d.-]+)\)[^>]*>[^<]/g)].map((m) => m[1]));
+    expect(ys(renderVectorEffect(effect, { text }).svg).size).toBe(2);
+    expect(ys(renderVectorEffect(effect, { text, inline: true }).svg).size).toBe(1);
+    expect(ys(renderVectorEffect(effect, { text: "short one" }).svg).size).toBe(1);
+  });
+
   it("gives the image morphs two pictures and a progress control", () => {
     for (const id of ["feature-morph", "silhouette-morph", "transition-liquid-morph", "transition-displacement", "transition-luma", "transition-particle-swap", "transition-ink-bleed", "transition-whip-pan"]) {
       const effect = getEffect(id)!;

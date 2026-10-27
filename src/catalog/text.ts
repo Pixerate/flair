@@ -709,10 +709,213 @@ export const circleText: VectorEffect = {
   },
 };
 
+/** Caption effects' word slots: one element per word, so each can move on its own. */
+const WORDS = 12;
+/** The gap between caption words, in ems. */
+const GAP = 0.3;
+
+/** Up to WORDS words, split on whitespace. */
+const wordsOf = (text: unknown) => String(text).trim().split(/\s+/).filter(Boolean).slice(0, WORDS);
+
+/**
+ * A caption's words laid out centred on one line, shrunk to fit, or on two
+ * when a break lets them stand a good deal larger (never inline, where the
+ * picture widens with the line instead). Per slot `i`: the word `w{i}`, its
+ * centre `x{i}` / `y{i}` (mid cap height, where it scales and turns about),
+ * its left edge `lx{i}` and width `ww{i}`. Unused slots are empty, at the centre.
+ */
+function captionLine(v: Record<string, unknown>, max: number) {
+  const words = wordsOf(v.text);
+  const ems = words.map((w) => Math.max(0.3, textWidthEm(w)));
+  const span = (a: number[]) => a.reduce((s, e) => s + e, 0) + GAP * Math.max(0, a.length - 1);
+  const width = room(v, 360);
+  let size = Math.min(max, width / Math.max(0.6, span(ems)));
+  let lines = [ems];
+  if (!v.inline && words.length > 1) {
+    // The break that leaves the longer line shortest; two lines stand at most 64 high, so both fit.
+    let best = { size: 0, at: 1 };
+    for (let k = 1; k < ems.length; k++) {
+      const s = Math.min(max, 64, width / Math.max(span(ems.slice(0, k)), span(ems.slice(k))));
+      if (s > best.size) best = { size: s, at: k };
+    }
+    if (best.size > size * 1.25) [size, lines] = [best.size, [ems.slice(0, best.at), ems.slice(best.at)]];
+  }
+  const pitch = size * 1.15;
+  const base = 100 + size * 0.35 - ((lines.length - 1) * pitch) / 2;
+  const widest = Math.max(...lines.map(span)) * size;
+  const slots: Record<string, string | number> = { size: r1(size), lift: r1(size * 0.35) };
+  let i = 0;
+  lines.forEach((line, j) => {
+    let x = 200 - (span(line) * size) / 2;
+    for (const e of line) {
+      Object.assign(slots, { [`w${i}`]: words[i]!, [`lx${i}`]: r1(x), [`ww${i}`]: r1(e * size), [`x${i}`]: r1(x + (e * size) / 2), [`y${i}`]: r1(base + j * pitch - size * 0.35) });
+      x += (e + GAP) * size;
+      i++;
+    }
+  });
+  for (; i < WORDS; i++) Object.assign(slots, { [`w${i}`]: "", [`lx${i}`]: 200, [`ww${i}`]: 0, [`x${i}`]: 200, [`y${i}`]: 100 });
+  return { slots, count: words.length, size, base, left: 200 - widest / 2, widest };
+}
+
+/** A caption word's outline, drawn under its fill: `thickness` ems of its size, the outline colour. */
+const OUTLINED = `stroke="{{outline}}" stroke-width="{{strokeW}}" stroke-linejoin="round" paint-order="stroke"`;
+
+/** A caption's frame (see {@link frame}) and outline width, the outline counted in its overhang. */
+const captionFrame = (v: Record<string, unknown>, line: ReturnType<typeof captionLine>, top: number) => ({
+  ...frame(v, line.left, Math.max(1, line.widest), line.base, line.size, glowing([top, 0, DESCENT, 0], Number(v.thickness) / 2)),
+  strokeW: r1(Number(v.thickness) * line.size),
+});
+
+/** A slot's start: `i` steps of `every` ms in, or 0 for an unused slot, so empty slots never lengthen the effect. */
+const startOf = (i: number, count: number, every: number) => (i < count ? Math.round(i * every) : 0);
+
+export const captionWordBounce: VectorEffect = {
+  kind: "vector",
+  id: "caption-word-bounce",
+  name: "Word bounce",
+  description: "A caption's words spring up one after another, each overshooting in scale with an elastic wobble before it settles.",
+  category: "text",
+  tags: ["caption", "subtitle", "text", "kinetic", "typography", "social", "words", "bounce"],
+  hold: 1200,
+  presets: [
+    { name: "Bubblegum", values: { background: [1, 0.42, 0.7], ink: [1, 1, 1], outline: [0.35, 0.05, 0.3], overshoot: 1.3 } },
+    { name: "Clean", values: { background: [0.97, 0.97, 0.96], ink: [0.08, 0.08, 0.1], thickness: 0, stagger: 90, overshoot: 1.08 } },
+    { name: "Lime pop", values: { background: [0.05, 0.05, 0.06], ink: [0.75, 1, 0.2], outline: [0, 0, 0], stagger: 160 } },
+  ],
+  derived: (v) => {
+    const line = captionLine(v, 64);
+    const stagger = Number(v.stagger);
+    const out: Record<string, string | number> = { ...line.slots, ...captionFrame(v, line, 0.15 + (Number(v.overshoot) - 1) * 0.6), drop: r1(line.size * 0.5) };
+    for (let i = 0; i < WORDS; i++) {
+      out[`d${i}`] = startOf(i, line.count, stagger);
+      out[`e${i}`] = Number(out[`d${i}`]) + 260;
+    }
+    return out;
+  },
+  motion: {
+    svg: `<svg viewBox="{{viewBox}}" overflow="{{overflow}}" data-overhang="{{overhang}}"><!-- {{text: text default='Words that bounce into place' label='Text'}} {{background: color default=#1E1B4B label='Background'}} {{ink: color default=#FFFFFF label='Text colour'}} {{outline: color default=#000000 label='Outline'}} {{thickness: float min=0 max=0.2 default=0.08 step=0.01 label='Outline width (em)'}} {{stagger: float min=30 max=600 default=120 step=10 label='Ms between words'}} {{overshoot: float min=1 max=1.5 default=1.15 step=0.05 label='Overshoot'}} ${typeface(HEAVY, 900)} --><rect width="400" height="200" fill="{{background}}" opacity="{{backdrop}}"/>${Array.from(
+      { length: WORDS },
+      (_, i) =>
+        `<text id="bw${i}" x="0" y="{{lift}}" text-anchor="middle" textLength="{{ww${i}}}" lengthAdjust="spacingAndGlyphs" transform="translate({{x${i}}} {{y${i}}}) translate(0 {{drop}}) scale(0.3)" opacity="0" font-family="{{font}}" font-size="{{size}}" font-weight="{{weight}}" fill="{{ink}}" ${OUTLINED}>{{w${i}}}</text>`,
+    ).join("")}</svg>`,
+    animate: Array.from({ length: WORDS }, (_, i): SvgAnimation[] => [
+      {
+        id: `bw${i}`,
+        attrs: { transform: [`translate({{x${i}}} {{y${i}}}) translate(0 {{drop}}) scale(0.3)`, `translate({{x${i}}} {{y${i}}}) translate(0 0) scale({{overshoot}})`], opacity: [0, 1] },
+        delay: n(`d${i}`),
+        ms: 260,
+        ease: "out",
+      },
+      // An underdamped spring back to rest: it dips under full size and wobbles before it settles.
+      { id: `bw${i}`, attrs: { transform: [`translate({{x${i}}} {{y${i}}}) translate(0 0) scale({{overshoot}})`, `translate({{x${i}}} {{y${i}}}) translate(0 0) scale(1)`] }, delay: n(`e${i}`), ms: 700, ease: { spring: { stiffness: 320, damping: 11 } } },
+    ]).flat(),
+  },
+};
+
+/** Karaoke sweep's lead-in: the line shows, then the sweep starts. */
+const KARAOKE_LEAD = 400;
+
+export const captionKaraoke: VectorEffect = {
+  kind: "vector",
+  id: "caption-karaoke",
+  name: "Karaoke sweep",
+  description: "A caption shown whole in an outlined base colour, with a highlight colour wiping left to right across it a word at a time, like karaoke lyrics.",
+  category: "text",
+  tags: ["caption", "subtitle", "text", "kinetic", "typography", "karaoke", "lyrics", "highlight", "social"],
+  hold: 1000,
+  presets: [
+    { name: "Gold", values: { background: [0.04, 0.06, 0.13], active: [0.98, 0.8, 0.08], base: [1, 1, 1], outline: [0, 0, 0] } },
+    { name: "Neon", values: { background: [0.07, 0.02, 0.12], active: [1, 0.25, 0.65], base: [0.85, 0.95, 1], outline: [0.2, 0.05, 0.35], pace: 280 } },
+    { name: "Ink on paper", values: { background: [0.98, 0.96, 0.92], active: [0.85, 0.15, 0.2], base: [0.15, 0.15, 0.17], thickness: 0 } },
+  ],
+  // Each word twice: the base copy, and a highlighted copy over it, clipped to a window that opens across the word in its turn.
+  derived: (v) => {
+    const line = captionLine(v, 60);
+    const pace = Number(v.pace);
+    const pad = line.size * (0.1 + Number(v.thickness));
+    const out: Record<string, string | number> = { ...line.slots, ...captionFrame(v, line, 0.1), pace: Math.round(pace), clipH: r1(line.size * 1.6) };
+    for (let i = 0; i < WORDS; i++) {
+      out[`cx${i}`] = r1(Number(out[`lx${i}`]) - pad);
+      out[`cy${i}`] = r1(Number(out[`y${i}`]) - line.size * 0.8);
+      out[`cw${i}`] = i < line.count ? r1(Number(out[`ww${i}`]) + 2 * pad) : 0;
+      out[`d${i}`] = KARAOKE_LEAD + startOf(i, line.count, pace);
+    }
+    return out;
+  },
+  motion: ((): SvgMotion => {
+    const word = (i: number, fill: string) =>
+      `x="{{lx${i}}}" y="{{y${i}}}" dy="{{lift}}" textLength="{{ww${i}}}" lengthAdjust="spacingAndGlyphs" font-family="{{font}}" font-size="{{size}}" font-weight="{{weight}}" fill="${fill}" ${OUTLINED}`;
+    return {
+      svg: `<svg viewBox="{{viewBox}}" overflow="{{overflow}}" data-overhang="{{overhang}}"><!-- {{text: text default='Sing along with every word' label='Text'}} {{background: color default=#0B1020 label='Background'}} {{base: color default=#FFFFFF label='Base colour'}} {{active: color default=#FACC15 label='Highlight'}} {{outline: color default=#000000 label='Outline'}} {{thickness: float min=0 max=0.2 default=0.1 step=0.01 label='Outline width (em)'}} {{pace: float min=80 max=1500 default=380 step=10 label='Ms per word'}} ${typeface(HEAVY, 900)} --><defs>${Array.from(
+        { length: WORDS },
+        (_, i) => `<clipPath id="kclip${i}"><rect id="kc${i}" x="{{cx${i}}}" y="{{cy${i}}}" width="0" height="{{clipH}}"/></clipPath>`,
+      ).join("")}</defs><rect width="400" height="200" fill="{{background}}" opacity="{{backdrop}}"/><g id="kline" opacity="0">${Array.from({ length: WORDS }, (_, i) => `<text ${word(i, "{{base}}")}>{{w${i}}}</text>`).join("")}${Array.from(
+        { length: WORDS },
+        (_, i) => `<text clip-path="url(#kclip${i})" ${word(i, "{{active}}")}>{{w${i}}}</text>`,
+      ).join("")}</g></svg>`,
+      animate: [
+        { id: "kline", attrs: { opacity: [0, 1] }, ms: 300, ease: "out" },
+        ...Array.from({ length: WORDS }, (_, i): SvgAnimation => ({ id: `kc${i}`, attrs: { width: [0, n(`cw${i}`)] }, delay: n(`d${i}`), ms: n("pace"), ease: "linear" })),
+      ],
+    };
+  })(),
+};
+
+export const captionPop: VectorEffect = {
+  kind: "vector",
+  id: "caption-pop",
+  name: "Word pop",
+  description: "Social-video captions: each word in turn pops on from small with a quick tilt, then snaps to rest, lit in a highlight colour until the next word lands. Earlier words stay.",
+  category: "text",
+  tags: ["caption", "subtitle", "text", "kinetic", "typography", "social", "reels", "tiktok", "pop"],
+  hold: 1200,
+  presets: [
+    { name: "Reels", values: { background: [0.09, 0.09, 0.11], ink: [1, 1, 1], active: [0.13, 0.83, 0.93], outline: [0, 0, 0] } },
+    { name: "Hype", values: { background: [0.45, 0.1, 0.95], ink: [1, 1, 1], active: [1, 0.9, 0.1], outline: [0.1, 0, 0.25], pace: 220 } },
+    { name: "Calm", values: { background: [0.96, 0.94, 0.9], ink: [0.12, 0.12, 0.14], active: [0.12, 0.12, 0.14], thickness: 0, pace: 450 } },
+  ],
+  // Tilts alternate, -4° then +4°, so a run of words does not lean one way.
+  derived: (v) => {
+    const line = captionLine(v, 64);
+    const pace = Number(v.pace);
+    const out: Record<string, string | number> = { ...line.slots, ...captionFrame(v, line, 0.2) };
+    for (let i = 0; i < WORDS; i++) {
+      const d = startOf(i, line.count, pace);
+      Object.assign(out, { [`d${i}`]: d, [`e${i}`]: d + 120, [`f${i}`]: i < line.count ? Math.round((i + 1) * pace) : 0, [`t${i}`]: i % 2 ? 4 : -4 });
+    }
+    return out;
+  },
+  motion: {
+    svg: `<svg viewBox="{{viewBox}}" overflow="{{overflow}}" data-overhang="{{overhang}}"><!-- {{text: text default='Captions that pop on every word' label='Text'}} {{background: color default=#18181B label='Background'}} {{ink: color default=#FFFFFF label='Text colour'}} {{active: color default=#22D3EE label='Current word'}} {{outline: color default=#000000 label='Outline'}} {{thickness: float min=0 max=0.2 default=0.08 step=0.01 label='Outline width (em)'}} {{pace: float min=80 max=1500 default=320 step=10 label='Ms per word'}} ${typeface(HEAVY, 900)} --><rect width="400" height="200" fill="{{background}}" opacity="{{backdrop}}"/>${Array.from(
+      { length: WORDS },
+      (_, i) =>
+        `<text id="pw${i}" x="0" y="{{lift}}" text-anchor="middle" textLength="{{ww${i}}}" lengthAdjust="spacingAndGlyphs" transform="translate({{x${i}}} {{y${i}}}) rotate({{t${i}}}) scale(0.2)" opacity="0" font-family="{{font}}" font-size="{{size}}" font-weight="{{weight}}" fill="{{active}}" ${OUTLINED}>{{w${i}}}</text>`,
+    ).join("")}</svg>`,
+    animate: Array.from({ length: WORDS }, (_, i): SvgAnimation[] => [
+      {
+        id: `pw${i}`,
+        attrs: { transform: [`translate({{x${i}}} {{y${i}}}) rotate({{t${i}}}) scale(0.2)`, `translate({{x${i}}} {{y${i}}}) rotate({{t${i}}}) scale(1.12)`], opacity: [0, 1] },
+        delay: n(`d${i}`),
+        ms: 120,
+        ease: "out",
+      },
+      { id: `pw${i}`, attrs: { transform: [`translate({{x${i}}} {{y${i}}}) rotate({{t${i}}}) scale(1.12)`, `translate({{x${i}}} {{y${i}}}) rotate(0) scale(1)`] }, delay: n(`e${i}`), ms: 140, ease: "out" },
+      // Lit while it is the newest word, then the plain text colour.
+      ...holds(`pw${i}`, "fill", [
+        [n(`d${i}`), "{{active}}"],
+        [n(`f${i}`), "{{ink}}"],
+      ]),
+    ]).flat(),
+  },
+};
+
 export const textEffects: VectorEffect[] = [
   typewriter,
   scrambleText,
   kineticStagger,
+  captionWordBounce,
+  captionKaraoke,
+  captionPop,
   neonSign,
   strokeDrawText,
   splitReveal,

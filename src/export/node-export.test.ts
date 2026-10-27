@@ -24,7 +24,8 @@ import {
   vectorTimeline,
   videoSeconds,
 } from './effect.js';
-import { chromeArgs, ffmpegPath, fragmentSource, pageControls, planOutput, renderPageHtml, scriptedPointer, sequencePath } from './recorder.js';
+import zlib from 'node:zlib';
+import { chromeArgs, encodePng, ffmpegPath, fragmentSource, frameStates, pageControls, planOutput, renderPageHtml, scriptedPointer, sequencePath } from './recorder.js';
 
 const fixture = (name: string) => path.resolve(__dirname, '../../tests/fixtures', name);
 const PNG_1X1 = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'base64');
@@ -468,5 +469,38 @@ describe('backdrops', () => {
     await expect(exportEffectBuffer('sparkles', { format: 'webm', alpha: true, backdrop: { imageBuffer: PNG_1X1, ext: 'png' } })).rejects.toThrow(/no transparency left to keep/);
     await expect(exportEffectBuffer('toggle-switch', { format: 'svg', backdrop: { imageBuffer: PNG_1X1 } })).rejects.toThrow(/cannot carry a backdrop/);
     await expect(exportEffectBuffer('aurora', { format: 'png', backdrop: { imageBuffer: PNG_1X1 } })).rejects.toThrow(/draws every pixel itself/);
+  });
+});
+
+describe('motion blur (shutter)', () => {
+  it('gives each frame its sub-frame states, with the pointer acted out at each', () => {
+    const plain = frameStates(3, 10, 100, 100, 'auto');
+    expect(plain.map((s) => [s.time, s.frame, s.delta])).toEqual([[0, 0, 0], [0.1, 1, 0.1], [0.2, 2, 0.1]]);
+    expect(frameStates(3, 10, 100, 100, 'auto', undefined)).toEqual(plain);
+    const blurred = frameStates(3, 10, 100, 100, 'auto', { angle: 180, samples: 4 });
+    expect(blurred).toHaveLength(12);
+    expect(blurred.map((s) => s.frame)).toEqual([0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2]);
+    expect(blurred[5]!.time).toBeCloseTo(0.1 + 1.5 * 0.0125, 12);
+    expect(blurred[5]!.delta).toBeCloseTo(0.0125, 12);
+    // The pointer moves between sub-frames, so a moving pointer blurs too.
+    expect(blurred[4]!.pointer).not.toEqual(blurred[7]!.pointer);
+  });
+
+  it('refuses a shutter out of range, or on an animated SVG, before rendering', async () => {
+    const out = path.join(os.tmpdir(), 'x.mp4');
+    await expect(exportEffect('aurora', { outputPath: out, shutterAngle: 720 })).rejects.toThrow(/shutterAngle is 0 to 360 degrees \(180 is a film camera's usual/);
+    await expect(exportEffect('aurora', { outputPath: out, shutterAngle: 180, shutterSamples: 64 })).rejects.toThrow(/shutterSamples is a whole number of sub-frames from 2 to 32/);
+    await expect(exportEffect('toggle-switch', { outputPath: path.join(os.tmpdir(), 'x.svg'), shutterAngle: 180 })).rejects.toThrow(/An animated SVG has no frames to motion-blur/);
+  });
+
+  it('encodes an averaged frame as a PNG', () => {
+    const rgba = Uint8Array.from([255, 0, 0, 255, 0, 255, 0, 128, 0, 0, 255, 0, 10, 20, 30, 40]);
+    const png = encodePng(rgba, 2, 2);
+    expect(png.subarray(0, 8)).toEqual(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+    expect(png.toString('ascii', 12, 16)).toBe('IHDR');
+    expect([png.readUInt32BE(16), png.readUInt32BE(20), png[24], png[25]]).toEqual([2, 2, 8, 6]);
+    const idat = png.indexOf('IDAT');
+    const raw = zlib.inflateSync(png.subarray(idat + 4, idat + 4 + png.readUInt32BE(idat - 4)));
+    expect([...raw]).toEqual([0, ...rgba.subarray(0, 8), 0, ...rgba.subarray(8)]);
   });
 });
