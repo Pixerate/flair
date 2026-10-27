@@ -6,10 +6,13 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
+import zlib from 'node:zlib';
 import { controlValue, parseControls, type ControlValue, type TextureSettings } from '../shader/controls.js';
 import { MAX_CLICKS, MAX_TRAIL, PointerTracker, TRAIL_SECONDS } from '../shader/pointer.js';
 import { VERTEX_SOURCE, wrapSource } from '../shader/program.js';
 import { SVG_EDGE } from '../shader/textures.js';
+import { checkShutter, FrameAverager, shutterTimes, type Shutter, type ShutterOptions } from './shutter.js';
+import { crc32 } from './zip.js';
 
 const require = createRequire(import.meta.url);
 
@@ -593,7 +596,40 @@ export interface RenderJob {
   chromeFlags?: string[];
   /** Draw with SwiftShader, Chrome's software GL, on every platform (see `ExportOptions.software`). */
   software?: boolean;
+  /**
+   * Motion blur: each output frame is the average (in premultiplied alpha)
+   * of this many renders, in order (default 1, none). `state` is then asked
+   * for `page.frames × subframes` states, sub-frame k of frame i at
+   * `i × subframes + k` (see {@link frameStates} with a shutter), the page
+   * sends raw RGBA, and the average is encoded here.
+   */
+  subframes?: number;
   onProgress?: (frame: number, total: number) => void;
+}
+
+/** A straight-alpha RGBA frame as a PNG (8-bit RGBA, no filtering), for PNG sequences. */
+export function encodePng(rgba: Uint8Array, width: number, height: number): Buffer {
+  const row = width * 4;
+  const raw = Buffer.alloc((row + 1) * height);
+  for (let y = 0; y < height; y++) raw.set(rgba.subarray(y * row, (y + 1) * row), y * (row + 1) + 1);
+  const chunk = (type: string, data: Buffer) => {
+    const head = Buffer.alloc(8);
+    head.writeUInt32BE(data.length, 0);
+    head.write(type, 4, 'ascii');
+    const crc = Buffer.alloc(4);
+    crc.writeUInt32BE(crc32(Buffer.concat([head.subarray(4), data])) >>> 0, 0);
+    return Buffer.concat([head, data, crc]);
+  };
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(width, 0);
+  ihdr.writeUInt32BE(height, 4);
+  ihdr.set([8, 6, 0, 0, 0], 8);
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    chunk('IHDR', ihdr),
+    chunk('IDAT', zlib.deflateSync(raw, { level: 6 })),
+    chunk('IEND', Buffer.alloc(0)),
+  ]);
 }
 
 /** Frames written somewhere: a sink takes them in order and finishes. */
@@ -603,8 +639,11 @@ interface Sink {
   abort(): void;
 }
 
-function ffmpegSink(plan: OutputPlan, fps: number): Sink {
-  const args = ['-y', '-hide_banner', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', String(fps), '-c:v', 'png', '-i', '-', ...plan.ffmpegArgs!, '-r', String(fps), plan.path];
+function ffmpegSink(plan: OutputPlan, fps: number, raw?: { width: number; height: number }): Sink {
+  const input = raw
+    ? ['-f', 'rawvideo', '-pix_fmt', 'rgba', '-s', `${raw.width}x${raw.height}`, '-framerate', String(fps), '-i', '-']
+    : ['-f', 'image2pipe', '-framerate', String(fps), '-c:v', 'png', '-i', '-'];
+  const args = ['-y', '-hide_banner', '-loglevel', 'error', ...input, ...plan.ffmpegArgs!, '-r', String(fps), plan.path];
   const proc = spawn(ffmpegPath(), args, { stdio: ['pipe', 'ignore', 'pipe'] });
   let stderr = '';
   let failed: Error | null = null;
@@ -748,13 +787,23 @@ export async function runRender(job: RenderJob): Promise<string> {
     job.stallTimeoutMs ??
     (process.env.FLAIR_STALL_TIMEOUT_MS ? Number(process.env.FLAIR_STALL_TIMEOUT_MS) : DEFAULT_STALL_MS);
   const total = page.frames;
+  const subframes = job.subframes ?? 1;
+  if (!Number.isInteger(subframes) || subframes < 1) throw new Error(`subframes is a whole number of renders per frame, 1 or more; it was ${String(job.subframes)}.`);
+  // Motion blur: the page draws every sub-frame and sends raw RGBA, averaged here into each frame.
+  const average = subframes > 1 ? new FrameAverager(page.width * page.height) : undefined;
+  const averaged = average ? new Uint8Array(page.width * page.height * 4) : undefined;
   const chromeBin = findChrome();
   if (!chromeBin) {
     throw new Error('Chrome or Chromium is needed to render, and none was found. Install Google Chrome, run "npx playwright install chromium", or set CHROME_PATH.');
   }
   fs.mkdirSync(path.dirname(plan.path), { recursive: true });
-  const sink = plan.format === 'gif' ? await gifSink(plan, page.width, page.height, fps) : plan.format === 'png' ? pngSink(plan) : ffmpegSink(plan, fps);
-  const html = renderPageHtml(page);
+  const sink =
+    plan.format === 'gif'
+      ? await gifSink(plan, page.width, page.height, fps)
+      : plan.format === 'png'
+        ? pngSink(plan)
+        : ffmpegSink(plan, fps, average ? { width: page.width, height: page.height } : undefined);
+  const html = renderPageHtml(average ? { ...page, frames: total * subframes, send: 'rgba' } : page);
   const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'flair-chrome-'));
 
   return new Promise<string>((resolve, reject) => {
@@ -837,8 +886,30 @@ export async function runRender(job: RenderJob): Promise<string> {
         const chunks: Buffer[] = [];
         req.on('data', (c: Buffer) => chunks.push(c));
         req.on('end', () => {
+          let frame = i;
+          let data: Buffer = Buffer.concat(chunks);
+          if (average && averaged) {
+            try {
+              average.add(new Uint8Array(data.buffer, data.byteOffset, data.byteLength));
+            } catch (e) {
+              res.writeHead(500);
+              res.end();
+              fail(e as Error);
+              return;
+            }
+            if (average.added < subframes) {
+              // A sub-frame: wait for the rest of the shutter.
+              watchdog();
+              res.writeHead(200);
+              res.end('ok');
+              return;
+            }
+            average.result(averaged);
+            frame = Math.floor(i / subframes);
+            data = plan.format === 'png' ? encodePng(averaged, page.width, page.height) : Buffer.from(averaged);
+          }
           sink
-            .write(i, Buffer.concat(chunks))
+            .write(frame, data)
             .then(async () => {
               written++;
               watchdog();
@@ -906,7 +977,7 @@ export async function runRender(job: RenderJob): Promise<string> {
 /** Where the pointer is in a recording: nowhere (`none`), or the scripted pointer of {@link scriptedPointer} (`auto`). */
 export type PointerMode = 'none' | 'auto';
 
-export interface ExportOptions {
+export interface ExportOptions extends ShutterOptions {
   /** GLSL fragment shader source (Shadertoy-style `mainImage`). */
   source: string;
   /**
@@ -998,12 +1069,19 @@ export async function pageControls(source: string, values: Record<string, Contro
   );
 }
 
-/** Frame times and pointer uniforms for `frames` frames at `fps`. */
-export function frameStates(frames: number, fps: number, width: number, height: number, pointer: PointerMode): FrameState[] {
-  const times = Array.from({ length: frames }, (_, i) => i / fps);
+/**
+ * Frame times and pointer uniforms for `frames` frames at `fps`. With a
+ * `shutter`, each frame has `shutter.samples` states instead, at the times
+ * of {@link shutterTimes} (sub-frame k of frame i is state
+ * `i × samples + k`; `frame` stays i), the pointer acted out at each.
+ */
+export function frameStates(frames: number, fps: number, width: number, height: number, pointer: PointerMode, shutter?: Shutter): FrameState[] {
+  const starts = Array.from({ length: frames }, (_, i) => i / fps);
+  const times = shutter ? starts.flatMap((t) => shutterTimes(t, fps, shutter)) : starts;
+  const per = shutter?.samples ?? 1;
   const scripted = pointer === 'auto' ? scriptedPointer(width, height, times) : undefined;
   const none = { mouse: [0, 0, 0, 0] as [number, number, number, number], pointer: [0, 0, 0, 0] as [number, number, number, number], clicks: new Array(MAX_CLICKS * 4).fill(0), trail: new Array(MAX_TRAIL * 4).fill(0) };
-  return times.map((time, i) => ({ time, delta: i === 0 ? 0 : 1 / fps, frame: i, ...(scripted?.[i] ?? none) }));
+  return times.map((time, i) => ({ time, delta: i === 0 ? 0 : shutter ? time - times[i - 1]! : 1 / fps, frame: Math.floor(i / per), ...(scripted?.[i] ?? none) }));
 }
 
 /**
@@ -1011,16 +1089,19 @@ export function frameStates(frames: number, fps: number, width: number, height: 
  * the way `ShaderRenderer` draws it (the same GLSL wrapper and built-ins,
  * images, int and bool controls), and writes MP4 (H.264), WebM (VP9, with
  * alpha when asked), MOV (ProRes 4444), GIF or PNG frames. MP4, WebM and
- * MOV need ffmpeg; GIF and PNG do not.
+ * MOV need ffmpeg; GIF and PNG do not. With `shutterAngle`, each frame is
+ * motion-blurred: the average of `shutterSamples` renders across the time
+ * the shutter is open.
  */
 export async function exportMotionGraphic(options: ExportOptions): Promise<string> {
   const { source, values = {}, outputPath, fps = 30, duration = 3, onProgress } = options;
+  const shutter = checkShutter(options);
   const width = Math.max(1, Math.round(options.width ?? 720));
   const height = Math.max(1, Math.round(options.height ?? 720));
   const frames = Math.max(1, Math.round(duration * fps));
   const plan = planOutput(outputPath, { alpha: options.alpha, frames });
   if (plan.format === 'svg') throw new Error('A shader cannot be written as SVG; write .mp4, .webm, .mov, .gif or .png frames.');
-  const states = frameStates(frames, fps, width, height, options.pointer ?? 'none');
+  const states = frameStates(frames, fps, width, height, options.pointer ?? 'none', shutter);
   return runRender({
     page: {
       width,
@@ -1040,6 +1121,7 @@ export async function exportMotionGraphic(options: ExportOptions): Promise<strin
     fps,
     chromeFlags: options.chromeFlags,
     software: options.software,
+    ...(shutter ? { subframes: shutter.samples } : {}),
     onProgress,
   });
 }

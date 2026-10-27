@@ -46,6 +46,7 @@ import {
   type PageConfig,
   type PointerMode,
 } from './recorder.js';
+import { checkShutter, type ShutterOptions } from './shutter.js';
 
 /**
  * What an effect is applied to, in Node:
@@ -68,7 +69,14 @@ export type NodeSubject =
  */
 export type EffectRegion = readonly [x: number, y: number, width: number, height: number];
 
-export interface EffectExportOptions {
+/**
+ * How {@link exportEffect} renders. `shutterAngle` and `shutterSamples`
+ * (from {@link ShutterOptions}) add motion blur to video, GIF and PNG
+ * output: each frame averages `shutterSamples` renders across the time the
+ * shutter is open, the scripted pointer, a vector's timeline and a video
+ * subject's frame taken at each.
+ */
+export interface EffectExportOptions extends ShutterOptions {
   /** What to apply it to; several fill several controls in order (a transition's from and to). */
   subject?: NodeSubject | readonly NodeSubject[];
   /** A preset by name, under `values`. */
@@ -597,6 +605,7 @@ export async function exportEffect(effect: string | EffectDefinition, options: E
   const explicit = await checkEffectValues(def, options.values ?? {}, { ignoreUnknownControls: options.ignoreUnknownControls });
   const values = { ...effectDefaults(def, options.preset ? { preset: options.preset } : {}), ...fromSubject.values, ...explicit };
   const fps = options.fps ?? 30;
+  const shutter = checkShutter(options);
   const background = options.background ?? (def.kind === 'vector' ? '#ffffff' : '#000000');
   const region = options.region === undefined ? undefined : checkRegion(options.region);
   if (options.backdropFit !== undefined && !BACKDROP_FITS.includes(options.backdropFit)) {
@@ -615,6 +624,7 @@ export async function exportEffect(effect: string | EffectDefinition, options: E
     const backdrop = await resolveBackdrop(def, options, values, plan.format);
     if (plan.format === 'svg') {
       if (region) throw new Error('An animated SVG cannot be confined to a region; write .mp4, .webm, .mov, .gif or .png frames, or drop the region.');
+      if (shutter) throw new Error('An animated SVG has no frames to motion-blur; write .mp4, .webm, .mov, .gif or .png frames for shutterAngle (--shutter-angle), or drop it.');
       const markup = svgAnimatedMarkup(motion, {
         ...(def.hold !== undefined ? { hold: def.hold } : {}),
         ...(timeline.steps.length ? { steps: timeline.steps, duration: timeline.length } : {}),
@@ -637,10 +647,10 @@ export async function exportEffect(effect: string | EffectDefinition, options: E
     }
     const { width, height } = effectFrameSize(def, options, backdrop?.size, motion);
     const box = region ? regionPixels(region, width, height) : undefined;
-    const base = frameStates(frames, fps, box?.[2] ?? width, box?.[3] ?? height, 'none');
+    const base = frameStates(frames, fps, box?.[2] ?? width, box?.[3] ?? height, 'none', shutter);
     const pointer = options.pointer ?? 'auto';
     const state = (i: number): FrameState => {
-      const ms = (i / fps) * 1000;
+      const ms = shutter ? base[i]!.time * 1000 : (i / fps) * 1000;
       const { time, steps } = pointer === 'none' && def.trigger ? { time: 0, steps: [] } : timeline.at(ms);
       return { ...base[i]!, svg: svgFrameMarkup(motion, { at: time, steps })! };
     };
@@ -651,6 +661,7 @@ export async function exportEffect(effect: string | EffectDefinition, options: E
       fps,
       chromeFlags: options.chromeFlags,
       software: options.software,
+      ...(shutter ? { subframes: shutter.samples } : {}),
       ...(options.onProgress ? { onProgress: options.onProgress } : {}),
     });
     if (typeof options.audio === 'string' && options.audio !== 'mute' && options.audio !== 'copy') {
@@ -680,7 +691,7 @@ export async function exportEffect(effect: string | EffectDefinition, options: E
   const { width, height } = effectFrameSize(def, options, backdrop?.size ?? video);
   const box = region ? regionPixels(region, width, height) : undefined;
   const interactive = effectInputs(def).interactions.length > 0;
-  const states = frameStates(frames, fps, box?.[2] ?? width, box?.[3] ?? height, options.pointer ?? (interactive ? 'auto' : 'none'));
+  const states = frameStates(frames, fps, box?.[2] ?? width, box?.[3] ?? height, options.pointer ?? (interactive ? 'auto' : 'none'), shutter);
 
   const tmp = videoEntries.length ? fs.mkdtempSync(path.join(os.tmpdir(), 'flair-video-')) : undefined;
   try {
@@ -688,7 +699,9 @@ export async function exportEffect(effect: string | EffectDefinition, options: E
     for (const [name, file] of videoEntries) videoFrames[name] = await extractVideoFrames(file, fps, frames, path.join(tmp!, name));
     const state = (i: number): FrameState => {
       if (!videoEntries.length) return states[i]!;
-      const video = Object.fromEntries(Object.entries(videoFrames).map(([name, files]) => [name, files[Math.min(i, files.length - 1)]!]));
+      // Every sub-frame of a blurred frame shows that frame's picture (the video has no finer times).
+      const at = states[i]!.frame;
+      const video = Object.fromEntries(Object.entries(videoFrames).map(([name, files]) => [name, files[Math.min(at, files.length - 1)]!]));
       return { ...states[i]!, video };
     };
     const rendered = await runRender({
@@ -712,6 +725,7 @@ export async function exportEffect(effect: string | EffectDefinition, options: E
       chromeFlags: options.chromeFlags,
       software: options.software,
       stallTimeoutMs: options.stallTimeoutMs,
+      ...(shutter ? { subframes: shutter.samples } : {}),
       ...(options.onProgress ? { onProgress: options.onProgress } : {}),
     });
 

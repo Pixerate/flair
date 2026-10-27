@@ -732,6 +732,179 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 };
 
 /** More image treatments: each takes an image control and changes the picture. */
+// BT.709 luma and chroma (Cb, Cr), and back, for keying and skin detection.
+const YCBCR = `vec3 toYCbCr(vec3 c) {
+  float y = dot(c, vec3(0.2126, 0.7152, 0.0722));
+  return vec3(y, (c.b - y) / 1.8556, (c.r - y) / 1.5748);
+}
+vec3 fromYCbCr(vec3 q) {
+  float r = q.x + 1.5748 * q.z;
+  float b = q.x + 1.8556 * q.y;
+  return vec3(r, (q.x - 0.2126 * r - 0.0722 * b) / 0.7152, b);
+}`;
+
+export const imageChromaKey: ShaderEffect = {
+  kind: "shader",
+  id: "image-chroma-key",
+  name: "Chroma key",
+  description: "A green- or blue-screen keyer: the screen turns clear (or the backdrop colour) with a soft edge, the screen colour bounced onto the subject is taken back out, and shadows cast on the screen can stay as see-through shade.",
+  category: "image",
+  video: "filter",
+  tags: ["image", "video", "chroma key", "green screen", "blue screen", "keying", "despill", "compositing", "filter"],
+  source: glsl(
+    `// Chroma key: pixels whose chroma is near the key colour's (scaled to their brightness, so lit and shaded
+// parts of the screen both match) turn clear, the key colour's chroma is pulled out of what is left (despill),
+// and the screen's darkening under the subject can stay as black shade.
+uniform sampler2D uImage;          // @control filter=linear wrap=clamp default=${SAMPLE_IMAGES.greenScreen} label="Image"
+uniform vec3 uKeyColor;            // @control color default=#22C24E label="Key colour"
+uniform float uSimilarity;         // @control min=0 max=1 default=0.35 label="Similarity"
+uniform float uSmoothness;         // @control min=0 max=0.5 default=0.1 label="Edge softness"
+uniform float uDespill;            // @control min=0 max=1 default=0.8 label="Spill suppression"
+uniform float uShadowPreserve;     // @control min=0 max=1 default=0.2 label="Keep shadows"
+${BACKDROP_CONTROLS}`,
+    PICTURE,
+    YCBCR,
+    `// The picture as shot (premultiplied), or the test card: the backdrop goes under what the key leaves, not
+// under the screen, so this reads it before any backdrop.
+vec4 footage(vec2 uv) {
+  return textureSize(uImage, 0).x > 1 ? texture(uImage, uv) : vec4(testCard(uv), 1.0);
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec2 uv = fragCoord / iResolution.xy;
+  vec4 s = footage(uv);
+  vec3 src = s.rgb / max(s.a, 1e-4);
+  vec3 q = toYCbCr(src);
+  vec3 k = toYCbCr(uKeyColor);
+  float keyChroma = max(length(k.yz), 0.02);
+  // How far the pixel's chroma is from the screen's at this brightness, as a share of the screen's chroma.
+  // Brightness is floored, so black and dark neutral colours (hair, clothes), whose chroma is near none, stay.
+  float lit = clamp(q.x / max(k.x, 1e-3), 0.6, 1.6);
+  float d = length(q.yz - k.yz * lit) / keyChroma;
+  float alpha = smoothstep(uSimilarity, uSimilarity + max(uSmoothness, 1e-3), d) * s.a;
+  // Despill: take out the chroma that points the key colour's way, keeping the brightness.
+  vec2 dir = k.yz / keyChroma;
+  float spill = max(dot(q.yz, dir), 0.0);
+  vec3 clean = clamp(fromYCbCr(vec3(q.x, q.yz - dir * spill * uDespill)), 0.0, 1.0);
+  // Shade where the screen is darker than the key colour, kept as black under the subject.
+  float shade = clamp((1.0 - q.x / max(k.x, 1e-3)) * 2.0, 0.0, 1.0) * uShadowPreserve * (1.0 - alpha) * s.a;
+  fragColor = overBackdrop(vec4(clean * alpha, alpha + shade));
+}`,
+  ),
+  presets: [
+    { name: "Green screen studio", values: { uKeyColor: [0.13, 0.76, 0.31], uSimilarity: 0.35, uSmoothness: 0.1, uDespill: 0.8 } },
+    { name: "Blue screen exterior", values: { uKeyColor: [0.1, 0.31, 0.84], uSimilarity: 0.4, uSmoothness: 0.15, uDespill: 0.9 } },
+    { name: "Soft spill reduction", values: { uSimilarity: 0.3, uSmoothness: 0.25, uDespill: 0.5, uShadowPreserve: 0.5 } },
+    { name: "Transparent", values: { uBackdropAlpha: 0 } },
+  ],
+};
+
+export const imageLutGrade: ShaderEffect = {
+  kind: "shader",
+  id: "image-lut-grade",
+  name: "LUT grade",
+  description: "A colour grade from a 3D LUT image (or a built-in teal & orange, punchy or film noir look) that leaves skin tones alone, so faces keep their colour under a heavy grade.",
+  category: "image",
+  video: "filter",
+  tags: ["image", "video", "lut", "colour grading", "color grading", "skin tones", "cinematic", "teal and orange", "film", "filter"],
+  source: glsl(
+    `// LUT grade: each colour looked up in a 3D LUT (trilinear, from 8 lattice texels), or graded by a built-in look,
+// then eased back towards the original where its hue and saturation say skin, and blended by the intensity.
+uniform sampler2D uImage;          // @control filter=linear wrap=clamp default=${SAMPLE_IMAGES.portrait} label="Image"
+uniform sampler2D uLut;            // @control filter=nearest wrap=clamp label="LUT image (n³ colours: n × n tiles, or Hald)"
+uniform int uLutLayout;            // @control min=0 max=1 default=0 label="LUT layout (0 tiles, 1 Hald)"
+uniform int uLook;                 // @control min=1 max=3 default=1 label="Look without a LUT (1 teal & orange, 2 punchy, 3 film noir)"
+uniform float uIntensity;          // @control min=0 max=1 default=1 label="Intensity"
+uniform float uPreserveSkinTones;  // @control min=0 max=1 default=0.7 label="Protect skin tones"
+uniform float uSkinHue;            // @control min=0 max=60 default=25 label="Skin hue (°)"
+uniform float uSkinWidth;          // @control min=5 max=45 default=20 label="Skin hue width (°)"
+${BACKDROP_CONTROLS}`,
+    PICTURE,
+    `// The LUT's lattice point p (0 to n - 1 on each axis). Tiles: blue picks an n × n tile, left to right then down,
+// red runs across it and green down. Hald: red fastest, then green, then blue, row by row. Rows are counted from
+// the top of the picture, which was uploaded bottom up.
+vec3 lutPoint(ivec3 p, int n, ivec2 size) {
+  ivec2 xy;
+  if (uLutLayout == 1) {
+    int i = p.r + p.g * n + p.b * n * n;
+    xy = ivec2(i % size.x, i / size.x);
+  } else {
+    int across = max(size.x / n, 1);
+    xy = ivec2((p.b % across) * n + p.r, (p.b / across) * n + p.g);
+  }
+  return texelFetch(uLut, ivec2(xy.x, size.y - 1 - xy.y), 0).rgb;
+}
+
+// The LUT's lattice size n when the image holds exactly n³ colours in its layout (whole n × n tiles), else 0.
+int lutSize() {
+  ivec2 size = textureSize(uLut, 0);
+  int n = int(floor(pow(float(size.x * size.y), 1.0 / 3.0) + 0.5));
+  if (n < 2 || size.x * size.y != n * n * n) return 0;
+  return uLutLayout == 1 || (size.x % n == 0 && size.y % n == 0) ? n : 0;
+}
+
+vec3 lookUp(vec3 c, int n) {
+  ivec2 size = textureSize(uLut, 0);
+  vec3 f = clamp(c, 0.0, 1.0) * float(n - 1);
+  ivec3 a = ivec3(floor(f));
+  ivec3 b = min(a + 1, n - 1);
+  vec3 t = f - vec3(a);
+  vec3 c00 = mix(lutPoint(a, n, size), lutPoint(ivec3(b.r, a.g, a.b), n, size), t.r);
+  vec3 c10 = mix(lutPoint(ivec3(a.r, b.g, a.b), n, size), lutPoint(ivec3(b.r, b.g, a.b), n, size), t.r);
+  vec3 c01 = mix(lutPoint(ivec3(a.r, a.g, b.b), n, size), lutPoint(ivec3(b.r, a.g, b.b), n, size), t.r);
+  vec3 c11 = mix(lutPoint(ivec3(a.r, b.g, b.b), n, size), lutPoint(b, n, size), t.r);
+  return mix(mix(c00, c10, t.g), mix(c01, c11, t.g), t.b);
+}
+
+vec3 saturate(vec3 c, float amount) {
+  return mix(vec3(dot(c, vec3(0.2126, 0.7152, 0.0722))), c, amount);
+}
+
+// The built-in looks: teal shadows and orange highlights; an S-curve and more colour; faded, cool-shadowed noir.
+vec3 look(vec3 c) {
+  float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
+  if (uLook == 1) {
+    vec3 tone = mix(vec3(-0.07, 0.03, 0.09), vec3(0.09, 0.02, -0.08), smoothstep(0.15, 0.85, l));
+    return clamp(saturate(c + tone, 1.15), 0.0, 1.0);
+  }
+  if (uLook == 2) {
+    vec3 s = c * c * (3.0 - 2.0 * c);
+    return clamp(saturate(mix(c, s, 0.7), 1.35), 0.0, 1.0);
+  }
+  float g = smoothstep(0.05, 0.95, l);
+  vec3 noir = 0.07 + 0.86 * mix(vec3(g) * vec3(0.96, 0.98, 1.04), vec3(g) * vec3(1.04, 1.0, 0.94), g);
+  return clamp(mix(noir, c, 0.06), 0.0, 1.0);
+}
+
+// How much c looks like skin: a hue near uSkinHue, moderately saturated, not too dark.
+float skin(vec3 c) {
+  float hi = max(c.r, max(c.g, c.b));
+  float lo = min(c.r, min(c.g, c.b));
+  float d = hi - lo;
+  if (d < 1e-4) return 0.0;
+  float h = hi == c.r ? mod((c.g - c.b) / d, 6.0) : hi == c.g ? (c.b - c.r) / d + 2.0 : (c.r - c.g) / d + 4.0;
+  float off = abs(mod(h * 60.0 - uSkinHue + 180.0, 360.0) - 180.0);
+  float sat = d / max(hi, 1e-4);
+  return (1.0 - smoothstep(uSkinWidth * 0.5, uSkinWidth, off)) * smoothstep(0.08, 0.2, sat) * (1.0 - smoothstep(0.75, 0.95, sat)) * smoothstep(0.08, 0.25, hi);
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec2 uv = fragCoord / iResolution.xy;
+  vec4 pic = pictureRGBA(uImage, uv);
+  // An image that is not a LUT (the wrong size for one) is passed over for the built-in look.
+  int n = lutSize();
+  vec3 graded = n > 0 ? lookUp(pic.rgb, n) : look(pic.rgb);
+  vec3 kept = mix(graded, pic.rgb, uPreserveSkinTones * skin(pic.rgb));
+  fragColor = vec4(mix(pic.rgb, kept, uIntensity), pic.a);
+}`,
+  ),
+  presets: [
+    { name: "Teal & Orange (Protected Face)", values: { uLook: 1, uPreserveSkinTones: 0.85 } },
+    { name: "Punchy Contrast", values: { uLook: 2, uPreserveSkinTones: 0.5 } },
+    { name: "Faded Film Noir", values: { uLook: 3, uPreserveSkinTones: 0, uImage: SAMPLE_IMAGES.city } },
+  ],
+};
+
 export const imageTreatments: ShaderEffect[] = [
   imageKenBurns,
   imageAscii,
@@ -745,4 +918,6 @@ export const imageTreatments: ShaderEffect[] = [
   imageMosaic,
   imageChromaticLens,
   imageOilPaint,
+  imageChromaKey,
+  imageLutGrade,
 ];

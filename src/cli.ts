@@ -8,6 +8,19 @@ import { validateScene, simulateScene, standaloneSceneHtml, type Scene } from '.
 
 const program = new Command();
 
+/** --shutter-angle and --shutter-samples as numbers (range-checked by the export, which names the valid range). */
+function shutterFlags(options: { shutterAngle?: string; shutterSamples?: string }): { shutterAngle?: number; shutterSamples?: number } {
+  const number = (flag: string, text: string | undefined, what: string) => {
+    if (text === undefined) return undefined;
+    const n = Number(text);
+    if (text.trim() === '' || !Number.isFinite(n)) throw new Error(`${flag} takes ${what}, not "${text}".`);
+    return n;
+  };
+  const shutterAngle = number('--shutter-angle', options.shutterAngle, "degrees from 0 to 360 (180 is a film camera's usual)");
+  const shutterSamples = number('--shutter-samples', options.shutterSamples, 'a whole number of sub-frames from 2 to 32');
+  return { ...(shutterAngle !== undefined ? { shutterAngle } : {}), ...(shutterSamples !== undefined ? { shutterSamples } : {}) };
+}
+
 program
   .name('flair')
   .description('Generative motion graphics, animation directing & bespoke WebGL shader engine')
@@ -109,6 +122,8 @@ program
   .option('--background <css>', 'Colour under transparent pixels without --alpha', '#000000')
   .option('--pointer', 'Act out a pointer that hovers, wanders and clicks', false)
   .option('--software', 'Draw with software GL (SwiftShader) everywhere: the same frames on every machine', false)
+  .option('--shutter-angle <degrees>', "Motion blur: the shutter angle, 0 to 360 (180 is a film camera's usual; default 0, off)")
+  .option('--shutter-samples <n>', 'Sub-frames averaged into each blurred frame, 2 to 32 (default 8)')
   .action(async (targetOrShader, extraPath, outputPath, options) => {
     if (targetOrShader === 'motn' || targetOrShader === 'lottie' || targetOrShader === 'fcp7' || targetOrShader === 'edl') {
       const sceneFile = extraPath;
@@ -206,6 +221,7 @@ program
         transparent: options.transparent,
         background: options.background,
         pointer: options.pointer ? 'auto' : 'none',
+        ...shutterFlags(options),
         onProgress: (frame, total) => {
           process.stdout.write(`\rRendering frame ${frame}/${total} (${Math.round((frame / total) * 100)}%)`);
         },
@@ -275,6 +291,8 @@ program
   .option('--region <x,y,w,h>', 'Confine the effect to part of the frame, normalized 0-1 from the top left, like 0.5,0,0.5,1')
   .option('--no-pointer', 'Leave the pointer still (interactive effects otherwise get a scripted pointer)')
   .option('--software', 'Draw with software GL (SwiftShader) everywhere: the same frames on every machine, for golden-image tests', false)
+  .option('--shutter-angle <degrees>', "Motion blur: the shutter angle, 0 to 360 (180 is a film camera's usual; default 0, off). Not for .svg")
+  .option('--shutter-samples <n>', 'Sub-frames averaged into each blurred frame, 2 to 32 (default 8); the render draws this many per frame')
   .option('-o, --out <outputPath>', 'Output: .mp4, .webm, .mov, .gif, .svg, a .png pattern (out_%04d.png) or a folder')
   .action(async (effectId, options) => {
     try {
@@ -303,6 +321,7 @@ program
         ...(options.backdropFit ? { backdropFit: options.backdropFit } : {}),
         ...(options.region ? { region: parseRegion(options.region) } : {}),
         ...(options.pointer === false ? { pointer: 'none' as const } : {}),
+        ...shutterFlags(options),
         onProgress: (frame, total) => {
           if (total > 1) process.stdout.write(`\rFrame ${frame}/${total} (${Math.round((frame / total) * 100)}%)`);
         },

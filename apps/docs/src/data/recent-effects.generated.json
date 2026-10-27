@@ -1,5 +1,853 @@
 [
   {
+    "id": "corner-pin",
+    "name": "Corner pin",
+    "kind": "shader",
+    "category": "distortion",
+    "description": "A picture pinned by its four corners anywhere in the frame, in true perspective, for screen replacements, signs and mock-ups.",
+    "tags": [
+      "distortion",
+      "corner pin",
+      "perspective",
+      "homography",
+      "mockup",
+      "screen replacement",
+      "image"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "city"
+        },
+        "line": 3,
+        "x": {
+          "filter": "mipmap",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uTopLeft",
+        "t": "vec2",
+        "d": [
+          0.12,
+          0.84
+        ],
+        "min": -0.5,
+        "max": 1.5,
+        "line": 4
+      },
+      {
+        "n": "uTopRight",
+        "t": "vec2",
+        "d": [
+          0.86,
+          0.92
+        ],
+        "min": -0.5,
+        "max": 1.5,
+        "line": 5
+      },
+      {
+        "n": "uBottomLeft",
+        "t": "vec2",
+        "d": [
+          0.18,
+          0.16
+        ],
+        "min": -0.5,
+        "max": 1.5,
+        "line": 6
+      },
+      {
+        "n": "uBottomRight",
+        "t": "vec2",
+        "d": [
+          0.9,
+          0.24
+        ],
+        "min": -0.5,
+        "max": 1.5,
+        "line": 7
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "line": 9
+      }
+    ],
+    "presets": [
+      "Billboard",
+      "Floor",
+      "Flat"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "filter",
+    "animated": false,
+    "module": "shaders/distortion",
+    "addedAt": "2026-10-27T11:55:16Z",
+    "commitHash": "d8fa6c173ff089c9292d026648aa193b3c9b40bb",
+    "order": 464
+  },
+  {
+    "id": "caption-pop",
+    "name": "Word pop",
+    "kind": "vector",
+    "category": "text",
+    "description": "Social-video captions: each word in turn pops on from small with a quick tilt, then snaps to rest, lit in a highlight colour until the next word lands. Earlier words stay.",
+    "tags": [
+      "caption",
+      "subtitle",
+      "text",
+      "kinetic",
+      "typography",
+      "social",
+      "reels",
+      "tiktok",
+      "pop"
+    ],
+    "controls": [
+      {
+        "n": "text",
+        "t": "text",
+        "d": "Captions that pop on every word",
+        "line": 1
+      },
+      {
+        "n": "background",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            24,
+            24,
+            27
+          ]
+        },
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "ink",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "l": "Text colour",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "active",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            34,
+            211,
+            238
+          ]
+        },
+        "l": "Current word",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "outline",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            0,
+            0,
+            0
+          ]
+        },
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "thickness",
+        "t": "float",
+        "d": 0.08,
+        "l": "Outline width (em)",
+        "max": 0.2,
+        "s": 0.01,
+        "line": 6
+      },
+      {
+        "n": "pace",
+        "t": "float",
+        "d": 320,
+        "l": "Ms per word",
+        "min": 80,
+        "max": 1500,
+        "s": 10,
+        "line": 7
+      },
+      {
+        "n": "font",
+        "t": "text",
+        "d": "'Arial Black', 'Helvetica Neue', Impact, system-ui, sans-serif",
+        "line": 8
+      },
+      {
+        "n": "weight",
+        "t": "int",
+        "d": 900,
+        "min": 100,
+        "max": 900,
+        "s": 100,
+        "line": 9
+      },
+      {
+        "n": "inline",
+        "t": "bool",
+        "d": false,
+        "line": 10
+      }
+    ],
+    "presets": [
+      "Reels",
+      "Hype",
+      "Calm"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "text",
+          "label": "Text",
+          "holds": "copy",
+          "default": "Captions that pop on every word"
+        },
+        {
+          "name": "font",
+          "label": "Font",
+          "holds": "font",
+          "default": "'Arial Black', 'Helvetica Neue', Impact, system-ui, sans-serif"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 1200,
+    "animated": true,
+    "duration": 3120,
+    "module": "text",
+    "addedAt": "2026-10-27T11:55:16Z",
+    "commitHash": "d8fa6c173ff089c9292d026648aa193b3c9b40bb",
+    "order": 463
+  },
+  {
+    "id": "caption-karaoke",
+    "name": "Karaoke sweep",
+    "kind": "vector",
+    "category": "text",
+    "description": "A caption shown whole in an outlined base colour, with a highlight colour wiping left to right across it a word at a time, like karaoke lyrics.",
+    "tags": [
+      "caption",
+      "subtitle",
+      "text",
+      "kinetic",
+      "typography",
+      "karaoke",
+      "lyrics",
+      "highlight",
+      "social"
+    ],
+    "controls": [
+      {
+        "n": "text",
+        "t": "text",
+        "d": "Sing along with every word",
+        "line": 1
+      },
+      {
+        "n": "background",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            11,
+            16,
+            32
+          ]
+        },
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "base",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "l": "Base colour",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "active",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            250,
+            204,
+            21
+          ]
+        },
+        "l": "Highlight",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "outline",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            0,
+            0,
+            0
+          ]
+        },
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "thickness",
+        "t": "float",
+        "d": 0.1,
+        "l": "Outline width (em)",
+        "max": 0.2,
+        "s": 0.01,
+        "line": 6
+      },
+      {
+        "n": "pace",
+        "t": "float",
+        "d": 380,
+        "l": "Ms per word",
+        "min": 80,
+        "max": 1500,
+        "s": 10,
+        "line": 7
+      },
+      {
+        "n": "font",
+        "t": "text",
+        "d": "'Arial Black', 'Helvetica Neue', Impact, system-ui, sans-serif",
+        "line": 8
+      },
+      {
+        "n": "weight",
+        "t": "int",
+        "d": 900,
+        "min": 100,
+        "max": 900,
+        "s": 100,
+        "line": 9
+      },
+      {
+        "n": "inline",
+        "t": "bool",
+        "d": false,
+        "line": 10
+      }
+    ],
+    "presets": [
+      "Gold",
+      "Neon",
+      "Ink on paper"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "text",
+          "label": "Text",
+          "holds": "copy",
+          "default": "Sing along with every word"
+        },
+        {
+          "name": "font",
+          "label": "Font",
+          "holds": "font",
+          "default": "'Arial Black', 'Helvetica Neue', Impact, system-ui, sans-serif"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 1000,
+    "animated": true,
+    "duration": 3300,
+    "module": "text",
+    "addedAt": "2026-10-27T11:55:16Z",
+    "commitHash": "d8fa6c173ff089c9292d026648aa193b3c9b40bb",
+    "order": 462
+  },
+  {
+    "id": "caption-word-bounce",
+    "name": "Word bounce",
+    "kind": "vector",
+    "category": "text",
+    "description": "A caption's words spring up one after another, each overshooting in scale with an elastic wobble before it settles.",
+    "tags": [
+      "caption",
+      "subtitle",
+      "text",
+      "kinetic",
+      "typography",
+      "social",
+      "words",
+      "bounce"
+    ],
+    "controls": [
+      {
+        "n": "text",
+        "t": "text",
+        "d": "Words that bounce into place",
+        "line": 1
+      },
+      {
+        "n": "background",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            30,
+            27,
+            75
+          ]
+        },
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "ink",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "l": "Text colour",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "outline",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            0,
+            0,
+            0
+          ]
+        },
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "thickness",
+        "t": "float",
+        "d": 0.08,
+        "l": "Outline width (em)",
+        "max": 0.2,
+        "s": 0.01,
+        "line": 5
+      },
+      {
+        "n": "stagger",
+        "t": "float",
+        "d": 120,
+        "l": "Ms between words",
+        "min": 30,
+        "max": 600,
+        "s": 10,
+        "line": 6
+      },
+      {
+        "n": "overshoot",
+        "t": "float",
+        "d": 1.15,
+        "min": 1,
+        "max": 1.5,
+        "s": 0.05,
+        "line": 7
+      },
+      {
+        "n": "font",
+        "t": "text",
+        "d": "'Arial Black', 'Helvetica Neue', Impact, system-ui, sans-serif",
+        "line": 8
+      },
+      {
+        "n": "weight",
+        "t": "int",
+        "d": 900,
+        "min": 100,
+        "max": 900,
+        "s": 100,
+        "line": 9
+      },
+      {
+        "n": "inline",
+        "t": "bool",
+        "d": false,
+        "line": 10
+      }
+    ],
+    "presets": [
+      "Bubblegum",
+      "Clean",
+      "Lime pop"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "text",
+          "label": "Text",
+          "holds": "copy",
+          "default": "Words that bounce into place"
+        },
+        {
+          "name": "font",
+          "label": "Font",
+          "holds": "font",
+          "default": "'Arial Black', 'Helvetica Neue', Impact, system-ui, sans-serif"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 1200,
+    "animated": true,
+    "duration": 2640,
+    "module": "text",
+    "addedAt": "2026-10-27T11:55:16Z",
+    "commitHash": "d8fa6c173ff089c9292d026648aa193b3c9b40bb",
+    "order": 461
+  },
+  {
+    "id": "image-lut-grade",
+    "name": "LUT grade",
+    "kind": "shader",
+    "category": "image",
+    "description": "A colour grade from a 3D LUT image (or a built-in teal & orange, punchy or film noir look) that leaves skin tones alone, so faces keep their colour under a heavy grade.",
+    "tags": [
+      "image",
+      "video",
+      "lut",
+      "colour grading",
+      "color grading",
+      "skin tones",
+      "cinematic",
+      "teal and orange",
+      "film",
+      "filter"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "line": 3,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uLut",
+        "t": "sampler2D",
+        "d": "",
+        "l": "LUT image (n³ colours: n × n tiles, or Hald)",
+        "line": 4,
+        "x": {
+          "filter": "nearest",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uLutLayout",
+        "t": "int",
+        "d": 0,
+        "l": "LUT layout (0 tiles, 1 Hald)",
+        "max": 1,
+        "line": 5
+      },
+      {
+        "n": "uLook",
+        "t": "int",
+        "d": 1,
+        "l": "Look without a LUT (1 teal & orange, 2 punchy, 3 film noir)",
+        "min": 1,
+        "max": 3,
+        "line": 6
+      },
+      {
+        "n": "uIntensity",
+        "t": "float",
+        "d": 1,
+        "line": 7
+      },
+      {
+        "n": "uPreserveSkinTones",
+        "t": "float",
+        "d": 0.7,
+        "l": "Protect skin tones",
+        "line": 8
+      },
+      {
+        "n": "uSkinHue",
+        "t": "float",
+        "d": 25,
+        "l": "Skin hue (°)",
+        "max": 60,
+        "line": 9
+      },
+      {
+        "n": "uSkinWidth",
+        "t": "float",
+        "d": 20,
+        "l": "Skin hue width (°)",
+        "min": 5,
+        "max": 45,
+        "line": 10
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "line": 12
+      }
+    ],
+    "presets": [
+      "Teal & Orange (Protected Face)",
+      "Punchy Contrast",
+      "Faded Film Noir"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        },
+        {
+          "name": "uLut",
+          "label": "LUT image (n³ colours: n × n tiles, or Hald)",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "filter",
+    "animated": false,
+    "module": "shaders/treatments",
+    "addedAt": "2026-10-27T11:55:16Z",
+    "commitHash": "d8fa6c173ff089c9292d026648aa193b3c9b40bb",
+    "order": 460
+  },
+  {
+    "id": "image-chroma-key",
+    "name": "Chroma key",
+    "kind": "shader",
+    "category": "image",
+    "description": "A green- or blue-screen keyer: the screen turns clear (or the backdrop colour) with a soft edge, the screen colour bounced onto the subject is taken back out, and shadows cast on the screen can stay as see-through shade.",
+    "tags": [
+      "image",
+      "video",
+      "chroma key",
+      "green screen",
+      "blue screen",
+      "keying",
+      "despill",
+      "compositing",
+      "filter"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "greenScreen"
+        },
+        "line": 4,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uKeyColor",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            34,
+            194,
+            78
+          ]
+        },
+        "l": "Key colour",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uSimilarity",
+        "t": "float",
+        "d": 0.35,
+        "line": 6
+      },
+      {
+        "n": "uSmoothness",
+        "t": "float",
+        "d": 0.1,
+        "l": "Edge softness",
+        "max": 0.5,
+        "line": 7
+      },
+      {
+        "n": "uDespill",
+        "t": "float",
+        "d": 0.8,
+        "l": "Spill suppression",
+        "line": 8
+      },
+      {
+        "n": "uShadowPreserve",
+        "t": "float",
+        "d": 0.2,
+        "l": "Keep shadows",
+        "line": 9
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "line": 11
+      }
+    ],
+    "presets": [
+      "Green screen studio",
+      "Blue screen exterior",
+      "Soft spill reduction",
+      "Transparent"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "filter",
+    "animated": false,
+    "module": "shaders/treatments",
+    "addedAt": "2026-10-27T11:55:16Z",
+    "commitHash": "d8fa6c173ff089c9292d026648aa193b3c9b40bb",
+    "order": 459
+  },
+  {
     "id": "iridescent-text",
     "name": "Iridescent text",
     "kind": "shader",
@@ -1516,797 +2364,5 @@
     "addedAt": "2026-10-24T23:26:41Z",
     "commitHash": "393256f29f8d6805da3568962af218f8e673ac1b",
     "order": 445
-  },
-  {
-    "id": "liquid-loader",
-    "name": "Liquid loader",
-    "kind": "shader",
-    "category": "loader",
-    "description": "A glass circle filling with sloshing liquid, two waves rolling across its surface and bubbles rising, then draining to fill again.",
-    "tags": [
-      "loader",
-      "progress",
-      "liquid",
-      "water",
-      "fill",
-      "ui",
-      "overlay",
-      "loop"
-    ],
-    "controls": [
-      {
-        "n": "uLiquid",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            59,
-            130,
-            246
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "uBack",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            147,
-            197,
-            253
-          ]
-        },
-        "l": "Back wave",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uGlass",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            203,
-            213,
-            225
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uSize",
-        "t": "float",
-        "d": 0.7,
-        "min": 0.3,
-        "max": 0.95,
-        "line": 5
-      },
-      {
-        "n": "uSlosh",
-        "t": "float",
-        "d": 0.5,
-        "line": 6
-      },
-      {
-        "n": "uAnimate",
-        "t": "bool",
-        "d": true,
-        "line": 7
-      },
-      {
-        "n": "uProgress",
-        "t": "float",
-        "d": 0.6,
-        "l": "Full (when still)",
-        "line": 8
-      },
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            15,
-            23,
-            42
-          ]
-        },
-        "c": 1,
-        "line": 9
-      },
-      {
-        "n": "uBackgroundAlpha",
-        "t": "float",
-        "d": 0,
-        "l": "Background opacity",
-        "line": 10
-      }
-    ],
-    "presets": [
-      "With background",
-      "Potion",
-      "Lime",
-      "Still at half"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": true
-    },
-    "transparent": true,
-    "loop": 6,
-    "animated": true,
-    "duration": 6000,
-    "module": "shaders/loaders",
-    "addedAt": "2026-10-24T23:26:41Z",
-    "commitHash": "393256f29f8d6805da3568962af218f8e673ac1b",
-    "order": 444
-  },
-  {
-    "id": "match-strike",
-    "name": "Match strike",
-    "kind": "vector",
-    "category": "fire",
-    "description": "A match struck along the side of its box: a spray of sparks, a flame that flares and settles, flickers as the stick chars, then is blown out in a curl of smoke.",
-    "tags": [
-      "fire",
-      "match",
-      "flame",
-      "ignite",
-      "spark",
-      "smoke",
-      "loop"
-    ],
-    "controls": [
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            18,
-            13,
-            11
-          ]
-        },
-        "c": 1,
-        "line": 1
-      },
-      {
-        "n": "box",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            179,
-            38,
-            30
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "striker",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            90,
-            58,
-            40
-          ]
-        },
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "stick",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            232,
-            200,
-            145
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "head",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            200,
-            16,
-            46
-          ]
-        },
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "flame",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            138,
-            31
-          ]
-        },
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "core",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            241,
-            176
-          ]
-        },
-        "l": "Flame core",
-        "c": 1,
-        "line": 7
-      }
-    ],
-    "presets": [
-      "Light",
-      "Green head"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 300,
-    "animated": true,
-    "duration": 4600,
-    "module": "fire",
-    "addedAt": "2026-10-24T17:50:01Z",
-    "commitHash": "7bda3897dd806052d73ec22d44ea81a7c3e7ec6f",
-    "order": 443
-  },
-  {
-    "id": "flame-icon",
-    "name": "Flame icon",
-    "kind": "vector",
-    "category": "fire",
-    "description": "A flame icon flickering in three layers with a pulsing glow and embers rising off its tip, for streaks, trending and hot items.",
-    "tags": [
-      "fire",
-      "flame",
-      "icon",
-      "streak",
-      "trending",
-      "hot",
-      "ui",
-      "loop"
-    ],
-    "controls": [
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            20,
-            11,
-            8
-          ]
-        },
-        "c": 1,
-        "line": 1
-      },
-      {
-        "n": "outer",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            240,
-            68,
-            29
-          ]
-        },
-        "l": "Outer flame",
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "middle",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            154,
-            31
-          ]
-        },
-        "l": "Middle flame",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "core",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            229,
-            138
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "glow",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            106,
-            31
-          ]
-        },
-        "c": 1,
-        "line": 5
-      }
-    ],
-    "presets": [
-      "Light",
-      "Blue flame"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 0,
-    "animated": true,
-    "duration": 1400,
-    "module": "fire",
-    "addedAt": "2026-10-24T17:50:01Z",
-    "commitHash": "7bda3897dd806052d73ec22d44ea81a7c3e7ec6f",
-    "order": 442
-  },
-  {
-    "id": "campfire",
-    "name": "Campfire",
-    "kind": "shader",
-    "category": "fire",
-    "description": "A crackling campfire at night: flames dancing over crossed logs with glowing embers, sparks spiralling up into the dark and firelight flickering on the ground.",
-    "tags": [
-      "fire",
-      "campfire",
-      "flames",
-      "night",
-      "cosy",
-      "outdoors",
-      "scene",
-      "loop"
-    ],
-    "controls": [
-      {
-        "n": "uSize",
-        "t": "float",
-        "d": 1,
-        "min": 0.5,
-        "max": 1.5,
-        "line": 2
-      },
-      {
-        "n": "uHeight",
-        "t": "float",
-        "d": 1,
-        "l": "Flame height",
-        "min": 0.3,
-        "max": 1.5,
-        "line": 3
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 1,
-        "max": 3,
-        "line": 4
-      },
-      {
-        "n": "uSparks",
-        "t": "float",
-        "d": 0.6,
-        "line": 5
-      },
-      {
-        "n": "uSmoke",
-        "t": "float",
-        "d": 0.3,
-        "line": 6
-      },
-      {
-        "n": "uHot",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            242,
-            191
-          ]
-        },
-        "l": "Core",
-        "c": 1,
-        "line": 7
-      },
-      {
-        "n": "uMid",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            138,
-            28
-          ]
-        },
-        "l": "Flame",
-        "c": 1,
-        "line": 8
-      },
-      {
-        "n": "uCool",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            192,
-            35,
-            12
-          ]
-        },
-        "l": "Tips",
-        "c": 1,
-        "line": 9
-      },
-      {
-        "n": "uLogs",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            74,
-            46,
-            28
-          ]
-        },
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "uGround",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            26,
-            20,
-            16
-          ]
-        },
-        "c": 1,
-        "line": 11
-      },
-      {
-        "n": "uSky",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            7,
-            9,
-            18
-          ]
-        },
-        "c": 1,
-        "line": 12
-      }
-    ],
-    "presets": [
-      "Bonfire",
-      "Embers",
-      "Gas fire"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "shaders/fire",
-    "addedAt": "2026-10-24T17:50:01Z",
-    "commitHash": "7bda3897dd806052d73ec22d44ea81a7c3e7ec6f",
-    "order": 441
-  },
-  {
-    "id": "fireball",
-    "name": "Fireball",
-    "kind": "shader",
-    "category": "fire",
-    "description": "A roiling ball of fire streaming flames and sparks behind it as it swoops about; hover and it follows the pointer, its flames rising when it stops.",
-    "tags": [
-      "fire",
-      "fireball",
-      "flames",
-      "magic",
-      "game",
-      "overlay",
-      "interactive",
-      "pointer"
-    ],
-    "controls": [
-      {
-        "n": "uSize",
-        "t": "float",
-        "d": 0.08,
-        "min": 0.03,
-        "max": 0.2,
-        "line": 2
-      },
-      {
-        "n": "uTail",
-        "t": "float",
-        "d": 0.6,
-        "line": 3
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 1,
-        "l": "Swoop speed",
-        "max": 3,
-        "line": 4
-      },
-      {
-        "n": "uSparks",
-        "t": "float",
-        "d": 0.6,
-        "line": 5
-      },
-      {
-        "n": "uFollow",
-        "t": "bool",
-        "d": true,
-        "l": "Follow pointer",
-        "line": 6
-      },
-      {
-        "n": "uHot",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            242,
-            191
-          ]
-        },
-        "l": "Core",
-        "c": 1,
-        "line": 7
-      },
-      {
-        "n": "uMid",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            138,
-            28
-          ]
-        },
-        "l": "Flame",
-        "c": 1,
-        "line": 8
-      },
-      {
-        "n": "uCool",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            192,
-            35,
-            12
-          ]
-        },
-        "l": "Tips",
-        "c": 1,
-        "line": 9
-      },
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            11,
-            5,
-            3
-          ]
-        },
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "uBackgroundAlpha",
-        "t": "float",
-        "d": 0,
-        "l": "Background opacity",
-        "line": 11
-      }
-    ],
-    "presets": [
-      "With background",
-      "Blue flame",
-      "Comet",
-      "Hellfire"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [
-        "hover",
-        "trail",
-        "pointer"
-      ],
-      "transparent": true
-    },
-    "transparent": true,
-    "animated": true,
-    "module": "shaders/fire",
-    "addedAt": "2026-10-24T17:50:01Z",
-    "commitHash": "7bda3897dd806052d73ec22d44ea81a7c3e7ec6f",
-    "order": 440
-  },
-  {
-    "id": "fire-ring",
-    "name": "Ring of fire",
-    "kind": "shader",
-    "category": "fire",
-    "description": "A hoop of fire, flames rising off a ring and roaring up its top, for avatars, badges and portals; hover and it flares.",
-    "tags": [
-      "fire",
-      "flames",
-      "ring",
-      "circle",
-      "avatar",
-      "badge",
-      "portal",
-      "overlay",
-      "interactive",
-      "hover"
-    ],
-    "controls": [
-      {
-        "n": "uRadius",
-        "t": "float",
-        "d": 0.3,
-        "min": 0.1,
-        "max": 0.45,
-        "line": 2
-      },
-      {
-        "n": "uHeight",
-        "t": "float",
-        "d": 0.1,
-        "l": "Flame height",
-        "min": 0.02,
-        "max": 0.3,
-        "line": 3
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 1,
-        "max": 3,
-        "line": 4
-      },
-      {
-        "n": "uSparks",
-        "t": "float",
-        "d": 0.5,
-        "line": 5
-      },
-      {
-        "n": "uFlare",
-        "t": "float",
-        "d": 0.6,
-        "l": "Flare on hover",
-        "line": 6
-      },
-      {
-        "n": "uHot",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            242,
-            191
-          ]
-        },
-        "l": "Core",
-        "c": 1,
-        "line": 7
-      },
-      {
-        "n": "uMid",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            138,
-            28
-          ]
-        },
-        "l": "Flame",
-        "c": 1,
-        "line": 8
-      },
-      {
-        "n": "uCool",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            192,
-            35,
-            12
-          ]
-        },
-        "l": "Tips",
-        "c": 1,
-        "line": 9
-      },
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            11,
-            5,
-            3
-          ]
-        },
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "uBackgroundAlpha",
-        "t": "float",
-        "d": 0,
-        "l": "Background opacity",
-        "line": 11
-      }
-    ],
-    "presets": [
-      "With background",
-      "Portal",
-      "Blue flame",
-      "Circus hoop"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [
-        "hover"
-      ],
-      "transparent": true
-    },
-    "transparent": true,
-    "animated": true,
-    "module": "shaders/fire",
-    "addedAt": "2026-10-24T17:50:01Z",
-    "commitHash": "7bda3897dd806052d73ec22d44ea81a7c3e7ec6f",
-    "order": 439
   }
 ]
