@@ -20,7 +20,6 @@
     "@astrojs/svelte": "^7.2.5",
     "@astrojs/tailwind": "^5.1.0",
     "@pixerate/flair": "workspace:*",
-    "@slopmachine/svelte": "^0.9.0",
     "astro": "^5.4.0",
     "lucide-astro": "^0.556.0",
     "svelte": "^5.57.2",

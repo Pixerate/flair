@@ -10,40 +10,22 @@ hero:
   hidden: true
 ---
 
-import ScrollProgress from '../../components/ScrollProgress.astro';
-import Hero from '../../components/Hero.astro';
-import RecentEffects from '../../components/RecentEffects.svelte';
-import VisualInteractiveDemo from '../../components/VisualInteractiveDemo.svelte';
+import HeroStage from '../../components/HeroStage.svelte';
 import EffectCatalogExplorer from '../../components/EffectCatalogExplorer.svelte';
-import FeatureGrid from '../../components/FeatureGrid.astro';
-import CodeSwitcher from '../../components/CodeSwitcher.astro';
+import Integration from '../../components/Integration.astro';
 import FooterSection from '../../components/FooterSection.astro';
+import Reveal from '../../components/Reveal.astro';
 
-<ScrollProgress />
-<div class="not-content">
-  <Hero />
+<div class="not-content flair-home">
+  <HeroStage client:load />
 
-  <div class="scroll-reveal">
-    <RecentEffects client:load />
+  <EffectCatalogExplorer client:load />
+
+  <div class="reveal">
+    <Integration />
   </div>
 
-  <div class="scroll-reveal">
-    <VisualInteractiveDemo client:load />
-  </div>
-
-  <div class="scroll-reveal">
-    <EffectCatalogExplorer client:load />
-  </div>
-
-  <div class="scroll-reveal">
-    <FeatureGrid />
-  </div>
-
-  <div class="scroll-reveal">
-    <CodeSwitcher />
-  </div>
-
-  <div class="scroll-reveal">
-    <FooterSection />
-  </div>
+  <FooterSection />
 </div>
+
+<Reveal />

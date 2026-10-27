@@ -1,271 +1,200 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-  // Import metadata array from catalog meta.generated.json
-  import metaList from "../../../../src/catalog/meta.generated.json";
+  import { onDestroy, onMount, tick } from "svelte";
+  import { EFFECT_CATEGORY_GROUPS, EFFECT_META, findEffectMeta, type EffectCategory, type EffectMeta } from "@pixerate/flair/catalog/lazy";
+  import recentEffects from "../data/recent-effects.generated.json";
   import EffectPreviewCard from "./EffectPreviewCard.svelte";
+  import EffectDetail from "./EffectDetail.svelte";
 
-  let searchQuery = "";
-  let selectedCategory = "all";
-  let selectedKind = "all";
-  let selectedVideo = "all";
-  let selectedTransparent = "all";
+  /** Show the section heading (off where the page has its own). */
+  export let heading = true;
+
+  const PAGE = 24;
+  const NEW = "New";
+  const recentIds: string[] = recentEffects.map((e: { id: string }) => e.id);
+
+  let text = "";
+  let group = "All";
+  let category: EffectCategory | "all" = "all";
+  let kind: "all" | "shader" | "vector" = "all";
+  let limit = PAGE;
   let hoveredId: string | null = null;
+  let selected: EffectMeta | null = null;
+  let searchEl: HTMLInputElement;
+  let sentinel: HTMLDivElement;
+  let more: IntersectionObserver | null = null;
 
-  // Categories list
-  const categories = Array.from(new Set(metaList.map((m: any) => m.category))).sort();
+  const KINDS: [typeof kind, string][] = [["all", "All"], ["shader", "Shaders"], ["vector", "SVG"]];
+  const groups = ["All", NEW, ...EFFECT_CATEGORY_GROUPS.map((g) => g.name)];
 
-  // Filtered effects
-  $: filtered = metaList.filter((effect: any) => {
-    if (selectedCategory !== "all" && effect.category !== selectedCategory) return false;
-    if (selectedKind !== "all" && effect.kind !== selectedKind) return false;
-    if (selectedTransparent === "overlay" && !effect.transparent) return false;
-    if (selectedTransparent === "solid" && effect.transparent) return false;
-    if (selectedVideo === "video" && !effect.video) return false;
-
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      const matchName = effect.name.toLowerCase().includes(q);
-      const matchId = effect.id.toLowerCase().includes(q);
-      const matchDesc = effect.description?.toLowerCase().includes(q);
-      const matchTags = effect.tags?.some((t: string) => t.toLowerCase().includes(q));
-      if (!matchName && !matchId && !matchDesc && !matchTags) return false;
+  function query(g: string, c: EffectCategory | "all" = "all"): EffectMeta[] {
+    const base = { text, ...(kind === "all" ? {} : { kind }) };
+    if (g === NEW) {
+      const found = new Set(findEffectMeta(base).map((e) => e.id));
+      return recentIds.filter((id) => found.has(id)).map((id) => EFFECT_META.find((e) => e.id === id)!);
     }
-    return true;
+    return findEffectMeta({ ...base, ...(g === "All" ? {} : { group: g }), ...(c === "all" ? {} : { category: c }) });
+  }
+
+  $: results = (text, kind, query(group, category));
+  $: counts = (text, kind, Object.fromEntries(groups.map((g) => [g, query(g).length])));
+  $: categories = EFFECT_CATEGORY_GROUPS.find((g) => g.name === group)?.categories ?? [];
+  $: (text, group, category, kind, (limit = PAGE));
+  $: shown = results.slice(0, limit);
+  $: position = selected ? results.findIndex((e) => e.id === selected!.id) : -1;
+
+  function pickGroup(g: string) {
+    group = g;
+    category = "all";
+  }
+
+  function open(effect: EffectMeta) {
+    selected = effect;
+    history.replaceState(null, "", `#effect/${effect.id}`);
+  }
+
+  function close() {
+    selected = null;
+    history.replaceState(null, "", location.pathname + location.search);
+  }
+
+  function step(by: number) {
+    const list = position >= 0 ? results : EFFECT_META;
+    const at = list.findIndex((e) => e.id === selected?.id);
+    const next = list[(at + by + list.length) % list.length];
+    if (next) open(next);
+  }
+
+  /** `#effect/<id>` opens that effect (the hero links here); `#effects?q=fire` searches. */
+  async function fromHash() {
+    const effectId = location.hash.match(/^#effect\/([a-z0-9-]+)/)?.[1];
+    const found = effectId && EFFECT_META.find((e) => e.id === effectId);
+    if (found) {
+      selected = found;
+      await tick();
+      document.getElementById("effects")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }
+
+  function onKey(e: KeyboardEvent) {
+    const typing = e.target instanceof HTMLElement && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName);
+    if (e.key === "/" && !typing && !selected) {
+      e.preventDefault();
+      searchEl.focus();
+    }
+  }
+
+  onMount(() => {
+    fromHash();
+    window.addEventListener("hashchange", fromHash);
+    more = new IntersectionObserver(([entry]) => {
+      if (entry?.isIntersecting && limit < results.length) limit += PAGE;
+    }, { rootMargin: "600px 0px" });
+    more.observe(sentinel);
   });
 
-  let selectedEffect: any = null;
+  onDestroy(() => {
+    if (typeof window !== "undefined") window.removeEventListener("hashchange", fromHash);
+    more?.disconnect();
+  });
 
-  function openPreview(effect: any) {
-    selectedEffect = effect;
-  }
-
-  function closePreview() {
-    selectedEffect = null;
-  }
+  const chip = (on: boolean) =>
+    `shrink-0 rounded-full border px-3.5 py-1.5 text-[13px] transition ${
+      on ? "border-transparent bg-[var(--flair-ink)] text-[var(--flair-page)]" : "border-[var(--flair-line)] text-muted hover:border-[var(--flair-line-strong)] hover:text-ink"
+    }`;
 </script>
 
-<section id="catalog-explorer" class="my-20 px-4 max-w-7xl mx-auto scroll-mt-20">
-  <div class="text-center max-w-3xl mx-auto mb-10">
-    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-600 dark:text-purple-400 text-xs font-mono uppercase tracking-wider mb-3">
-      450+ Hand-Crafted Looks
-    </div>
-    <h2 class="text-3xl md:text-5xl font-extrabold text-slate-900 dark:text-white">
-      Searchable Effects Library
-    </h2>
-    <p class="mt-4 text-base md:text-lg text-slate-600 dark:text-slate-400">
-      Browse all WebGL2 shaders and animated vector effects. Search by keyword, category, tag, or interaction capability.
-    </p>
-  </div>
+<svelte:window on:keydown={onKey} />
 
-  <!-- Search & Filter Controls -->
-  <div class="p-4 md:p-6 rounded-2xl bg-slate-100/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 shadow-sm backdrop-blur-md mb-8">
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <!-- Search Input -->
-      <div class="md:col-span-2 relative">
-        <input
-          type="text"
-          bind:value={searchQuery}
-          placeholder="Search by name, tags, description... (e.g. fire, loader, liquid)"
-          class="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
-        />
-        {#if searchQuery}
-          <button
-            on:click={() => (searchQuery = "")}
-            class="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-sm"
-          >
-            &times;
-          </button>
-        {/if}
-      </div>
-
-      <!-- Category Filter -->
-      <div>
-        <select
-          bind:value={selectedCategory}
-          class="w-full px-3 py-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-        >
-          <option value="all">All Categories ({categories.length})</option>
-          {#each categories as cat}
-            <option value={cat}>{cat}</option>
-          {/each}
-        </select>
-      </div>
-
-      <!-- Kind Filter -->
-      <div class="flex gap-2">
-        <select
-          bind:value={selectedKind}
-          class="w-full px-3 py-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-        >
-          <option value="all">All Kinds</option>
-          <option value="shader">WebGL Shaders</option>
-          <option value="vector">Vector / SVG</option>
-        </select>
-      </div>
-    </div>
-
-    <!-- Secondary Quick Filters -->
-    <div class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-4 text-xs">
-      <div class="flex items-center gap-2">
-        <span class="text-slate-500 dark:text-slate-400 font-medium">Quick filters:</span>
-        <button
-          on:click={() => (selectedTransparent = selectedTransparent === "overlay" ? "all" : "overlay")}
-          class="px-2.5 py-1 rounded-md transition-colors {selectedTransparent === 'overlay' ? 'bg-purple-600 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'}"
-        >
-          Transparent Overlays
-        </button>
-        <button
-          on:click={() => (selectedVideo = selectedVideo === "video" ? "all" : "video")}
-          class="px-2.5 py-1 rounded-md transition-colors {selectedVideo === 'video' ? 'bg-purple-600 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'}"
-        >
-          Video Compatible
-        </button>
-      </div>
-
-      <div class="text-slate-500 dark:text-slate-400 font-mono">
-        Showing <strong class="text-purple-600 dark:text-purple-400">{filtered.length}</strong> of {metaList.length} effects
-      </div>
-    </div>
-  </div>
-
-  <!-- Effects Grid -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-    {#each filtered.slice(0, 48) as effect}
-      <div
-        id={`explorer-${effect.id}`}
-        on:pointerenter={() => (hoveredId = effect.id)}
-        on:pointerleave={() => (hoveredId = null)}
-        class="rounded-2xl bg-white/70 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800/80 hover:border-purple-500/50 dark:hover:border-purple-500/50 shadow-sm hover:shadow-lg transition-all flex flex-col justify-between group overflow-hidden"
-      >
-        <!-- Animated Live Preview -->
-        <EffectPreviewCard effectMeta={effect} hovered={hoveredId === effect.id} />
-
-        <div class="p-4 flex flex-col justify-between flex-1">
-          <div>
-            <!-- Tags and Category -->
-            <div class="flex items-center justify-between mb-1.5">
-              <span class="text-xs text-purple-600 dark:text-purple-400 font-medium">
-                {effect.category}
-              </span>
-              <span class="text-[11px] font-mono text-slate-400 dark:text-slate-500">
-                {effect.id}
-              </span>
-            </div>
-
-            <h3 class="font-bold text-slate-900 dark:text-white text-base group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
-              {effect.name}
-            </h3>
-
-            <p class="text-xs text-slate-600 dark:text-slate-400 mt-1.5 line-clamp-2 leading-relaxed">
-              {effect.description}
-            </p>
-
-            <!-- Controls pills -->
-            {#if effect.controls?.length > 0}
-              <div class="mt-3 flex flex-wrap gap-1">
-                {#each effect.controls.slice(0, 3) as ctrl}
-                  <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                    {ctrl.n}
-                  </span>
-                {/each}
-                {#if effect.controls.length > 3}
-                  <span class="text-[10px] text-slate-400 dark:text-slate-500">
-                    +{effect.controls.length - 3}
-                  </span>
-                {/if}
-              </div>
-            {/if}
-          </div>
-
-          <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-            <span class="text-[10px] text-slate-500 dark:text-slate-400">
-              {effect.controls?.length || 0} controls
-            </span>
-            <button
-              on:click={() => openPreview(effect)}
-              class="text-xs font-semibold text-purple-600 dark:text-purple-400 hover:text-purple-500 flex items-center gap-1 cursor-pointer"
-            >
-              Inspect &rarr;
-            </button>
-          </div>
-        </div>
-      </div>
-    {/each}
-  </div>
-
-  {#if filtered.length > 48}
-    <div class="text-center mt-8">
-      <p class="text-sm text-slate-500 dark:text-slate-400">
-        Showing first 48 matches. Use search to find specific effects among all {metaList.length} items.
-      </p>
+<section id="effects" class="mx-auto max-w-7xl scroll-mt-24 px-4 py-16">
+  {#if heading}
+    <div class="mb-8 flex flex-wrap items-end justify-between gap-4">
+      <h2 class="m-0 text-3xl font-semibold tracking-tight text-ink md:text-4xl">Effects</h2>
+      <p class="m-0 text-sm text-muted">{EFFECT_META.length} shaders and animated SVGs, each with controls and presets.</p>
     </div>
   {/if}
 
-  <!-- Detail Modal -->
-  {#if selectedEffect}
-    <div
-      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-      on:click={closePreview}
-    >
-      <div
-        class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-2xl w-full p-6 shadow-2xl overflow-y-auto max-h-[90vh]"
-        on:click|stopPropagation
-      >
-        <div class="flex items-start justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
-          <div>
-            <div class="flex items-center gap-2 mb-1">
-              <span class="px-2 py-0.5 rounded text-xs font-mono uppercase font-semibold {selectedEffect.kind === 'shader' ? 'bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400' : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400'}">
-                {selectedEffect.kind}
-              </span>
-              <span class="text-xs text-slate-500 font-mono">ID: {selectedEffect.id}</span>
-            </div>
-            <h3 class="text-2xl font-bold text-slate-900 dark:text-white">
-              {selectedEffect.name}
-            </h3>
+  <!-- One bar: search, kind. -->
+  <div class="glass sticky top-[calc(var(--sl-nav-height,3.5rem)+0.75rem)] z-20 flex items-center gap-2 rounded-2xl p-1.5 shadow-lg shadow-black/5">
+    <svg class="ml-3 shrink-0 text-faint" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+    <input
+      bind:this={searchEl}
+      bind:value={text}
+      type="search"
+      placeholder="Search effects"
+      aria-label="Search effects"
+      class="min-w-0 flex-1 border-0 bg-transparent px-1 py-2 text-[15px] text-ink placeholder:text-faint focus:outline-none"
+    />
+    <kbd class="hidden rounded-md border border-[var(--flair-line)] px-1.5 py-0.5 font-mono text-[11px] text-faint md:block">/</kbd>
+    <div class="flex shrink-0 rounded-xl bg-[var(--flair-glass)] p-0.5" role="group" aria-label="Kind">
+      {#each KINDS as [value, label]}
+        <button
+          on:click={() => (kind = value)}
+          aria-pressed={kind === value}
+          class="rounded-[10px] px-3 py-1.5 text-xs transition {kind === value ? 'bg-[var(--flair-glass-hover)] text-ink shadow-sm' : 'text-muted hover:text-ink'}"
+        >
+          {label}
+        </button>
+      {/each}
+    </div>
+  </div>
+
+  <!-- Groups, then the categories of the chosen group. -->
+  <div class="-mx-4 mt-4 flex gap-1.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none]" role="group" aria-label="Groups">
+    {#each groups as g}
+      <button class={chip(group === g)} aria-pressed={group === g} on:click={() => pickGroup(g)}>
+        {g} <span class="ml-0.5 opacity-50">{counts[g]}</span>
+      </button>
+    {/each}
+  </div>
+  {#if categories.length > 1}
+    <div class="-mx-4 mt-2 flex gap-1.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none]" role="group" aria-label="{group} categories">
+      {#each ["all" as const, ...categories] as c}
+        <button class="{chip(category === c)} !py-1 !text-xs" aria-pressed={category === c} on:click={() => (category = c)}>
+          {c === "all" ? `All ${group.toLowerCase()}` : c}
+        </button>
+      {/each}
+    </div>
+  {/if}
+
+  {#if results.length === 0}
+    <p class="py-24 text-center text-muted">
+      Nothing matches “{text}”. <button class="text-ink underline" on:click={() => ((text = ""), pickGroup("All"), (kind = "all"))}>Clear filters</button>
+    </p>
+  {:else}
+    <div class="mt-8 grid grid-cols-1 gap-x-5 gap-y-7 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      {#each shown as effect (effect.id)}
+        <button
+          id={`explorer-${effect.id}`}
+          class="group text-left"
+          title={effect.description}
+          on:click={() => open(effect)}
+          on:pointerenter={() => (hoveredId = effect.id)}
+          on:pointerleave={() => (hoveredId = null)}
+        >
+          <div class="relative aspect-video overflow-hidden rounded-2xl ring-1 ring-[var(--flair-line)] transition duration-300 group-hover:-translate-y-0.5 group-hover:shadow-xl group-hover:shadow-black/20 group-hover:ring-[var(--flair-line-strong)] group-focus-visible:ring-2 group-focus-visible:ring-violet-400">
+            <EffectPreviewCard effectMeta={effect} hovered={hoveredId === effect.id} />
+            {#if effect.trigger}
+              <span class="absolute right-2 top-2 rounded-full bg-black/55 px-2 py-0.5 text-[10px] text-white backdrop-blur-md">{effect.trigger}</span>
+            {/if}
           </div>
-          <button
-            on:click={closePreview}
-            class="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg"
-          >
-            &times;
-          </button>
-        </div>
-
-        <div class="mt-4 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800">
-          <EffectPreviewCard effectMeta={selectedEffect} hovered={true} />
-        </div>
-
-        <p class="mt-4 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-          {selectedEffect.description}
-        </p>
-
-        <!-- Controls section -->
-        {#if selectedEffect.controls?.length > 0}
-          <div class="mt-6">
-            <h4 class="text-xs uppercase font-mono tracking-wider text-slate-400 dark:text-slate-500 mb-2">
-              Declared Controls ({selectedEffect.controls.length})
-            </h4>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-              {#each selectedEffect.controls as ctrl}
-                <div class="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 font-mono">
-                  <div class="text-purple-600 dark:text-purple-400 font-bold">{ctrl.n}</div>
-                  <div class="text-slate-500 text-[11px] mt-0.5">type: {ctrl.t}</div>
-                </div>
-              {/each}
-            </div>
+          <div class="mt-2.5 flex items-baseline justify-between gap-3 px-0.5">
+            <h3 class="m-0 truncate text-sm font-medium text-ink">{effect.name}</h3>
+            <span class="shrink-0 text-[11px] text-faint">{effect.category}</span>
           </div>
-        {/if}
-
-        <!-- Usage snippet -->
-        <div class="mt-6">
-          <h4 class="text-xs uppercase font-mono tracking-wider text-slate-400 dark:text-slate-500 mb-2">
-            Usage in Code
-          </h4>
-          <pre class="p-4 rounded-xl bg-slate-950 text-slate-200 text-xs font-mono overflow-x-auto"><code>{`import { loadEffect } from "@pixerate/flair/catalog/lazy";
-
-const effect = await loadEffect("${selectedEffect.id}");`}</code></pre>
-        </div>
-      </div>
+        </button>
+      {/each}
+    </div>
+  {/if}
+  <div bind:this={sentinel} aria-hidden="true" class="h-px"></div>
+  {#if limit < results.length}
+    <div class="mt-10 text-center">
+      <button class="glass rounded-full px-5 py-2 text-sm text-muted hover:text-ink" on:click={() => (limit += PAGE * 2)}>
+        Show more <span class="opacity-50">· {results.length - limit} left</span>
+      </button>
     </div>
   {/if}
 </section>
+
+{#if selected}
+  <EffectDetail meta={selected} position={position} total={position >= 0 ? results.length : 0} on:close={close} on:step={(e) => step(e.detail)} />
+{/if}

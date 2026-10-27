@@ -2,40 +2,123 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Starlight accent: a soft violet that sits with the iridescent effects. */
 :root {
-  --sl-color-accent-low: #2e1065;
-  --sl-color-accent: #8b5cf6;
-  --sl-color-accent-high: #ddd6fe;
+  --sl-color-accent-low: #1e1438;
+  --sl-color-accent: #a78bfa;
+  --sl-color-accent-high: #e4dcff;
+  --sl-color-black: #07070b;
+
+  /* Glass surfaces, dark by default. */
+  --flair-page: #07070b;
+  --flair-ink: #f5f5fa;
+  --flair-muted: #9a9cb0;
+  --flair-faint: #5f6175;
+  --flair-glass: rgba(255, 255, 255, 0.045);
+  --flair-glass-strong: rgba(20, 20, 30, 0.62);
+  --flair-glass-hover: rgba(255, 255, 255, 0.08);
+  --flair-line: rgba(255, 255, 255, 0.09);
+  --flair-line-strong: rgba(255, 255, 255, 0.18);
+  --flair-tile: #0d0d14;
 }
 
 :root[data-theme='light'] {
   --sl-color-accent-low: #ede9fe;
   --sl-color-accent: #7c3aed;
-  --sl-color-accent-high: #4c1d95;
+  --sl-color-accent-high: #3b1d84;
+
+  --flair-page: #f6f6f9;
+  --flair-ink: #0c0c14;
+  --flair-muted: #5d6072;
+  --flair-faint: #9497a8;
+  --flair-glass: rgba(255, 255, 255, 0.6);
+  --flair-glass-strong: rgba(255, 255, 255, 0.78);
+  --flair-glass-hover: rgba(255, 255, 255, 0.85);
+  --flair-line: rgba(12, 12, 20, 0.08);
+  --flair-line-strong: rgba(12, 12, 20, 0.16);
+  --flair-tile: #0d0d14;
 }
 
-html, body {
+:root[data-theme='dark'] body {
+  background: var(--flair-page);
+}
+
+/* Starlight's header as glass over the page. */
+:root {
+  --sl-color-bg-nav: rgba(7, 7, 11, 0.62);
+  --sl-color-hairline-shade: rgba(255, 255, 255, 0.06);
+}
+:root[data-theme='light'] {
+  --sl-color-bg-nav: rgba(246, 246, 249, 0.7);
+  --sl-color-hairline-shade: rgba(12, 12, 20, 0.06);
+}
+header.header {
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  backdrop-filter: blur(20px) saturate(160%);
+}
+
+html,
+body {
   overflow-x: clip;
 }
 
-/* Gradient accents */
-.gradient-text {
-  background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 50%, #3b82f6 100%);
+/* A frosted surface: translucent fill, hairline border, blur of what is behind. */
+.glass {
+  background: var(--flair-glass);
+  border: 1px solid var(--flair-line);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  backdrop-filter: blur(20px) saturate(150%);
+}
+
+.glass-strong {
+  background: var(--flair-glass-strong);
+  border: 1px solid var(--flair-line);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+  backdrop-filter: blur(28px) saturate(160%);
+}
+
+/* Glass that always sits on a dark picture (the hero), whatever the page theme. */
+.glass-on-dark {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  backdrop-filter: blur(18px) saturate(160%);
+  color: #f5f5fa;
+}
+
+.text-ink {
+  color: var(--flair-ink);
+}
+.text-muted {
+  color: var(--flair-muted);
+}
+.text-faint {
+  color: var(--flair-faint);
+}
+
+.iridescent-text {
+  background: linear-gradient(100deg, #8ef0ff 0%, #b28bff 30%, #ff8bd8 55%, #ffd27a 80%, #8ef0ff 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
-/* Hero & Full-width layouts */
+/* The splash page drops Starlight's hero padding: ours runs edge to edge, right under the header. */
 .starlight-hero {
   padding: 0 !important;
 }
-
-.hero-bg-video-container {
-  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 40%, rgba(0, 0, 0, 0) 100%);
-  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 40%, rgba(0, 0, 0, 0) 100%);
+.content-panel:has(.flair-home) {
+  padding-top: 0;
+}
+/* On a light page the dark hero ends in a rounded edge rather than fading to grey. */
+:root[data-theme='light'] .flair-hero {
+  border-radius: 0 0 2rem 2rem;
+}
+:root[data-theme='light'] .flair-hero-fade {
+  display: none;
 }
 
-/* Smooth custom scrollbars */
+/* Quiet scrollbars. */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -44,77 +127,25 @@ html, body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: var(--flair-line-strong);
   border-radius: 4px;
 }
-[data-theme='dark'] ::-webkit-scrollbar-thumb {
-  background: #1e293b;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-}
-[data-theme='dark'] ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
-}
 
-/* ==========================================================================
-   Scroll-Driven Animations & Immersive Effects
-   ========================================================================== */
-
-/* Sections smoothly reveal as they enter viewport */
-.scroll-reveal {
+/* Sections fade up as they come into view (see Reveal.astro). */
+.reveal {
   opacity: 0;
-  transform: translateY(32px);
-  filter: blur(2px);
-  transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.75s cubic-bezier(0.16, 1, 0.3, 1),
-              filter 0.75s cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: opacity, transform, filter;
+  transform: translateY(24px);
+  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
-
-.scroll-reveal.is-visible {
+.reveal.is-visible {
   opacity: 1;
-  transform: translateY(0);
-  filter: blur(0);
-}
-
-/* Individual capability cards stagger into view */
-.scroll-reveal-card {
-  opacity: 0;
-  transform: translateY(28px) scale(0.98);
-  transition: opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: opacity, transform;
-}
-
-.scroll-reveal-card.is-visible {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-}
-
-/* Header elevation styling when scrolled */
-header.header.header-scrolled {
-  box-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.08);
-  border-bottom: 1px solid rgba(139, 92, 246, 0.25) !important;
-}
-:root[data-theme='dark'] header.header.header-scrolled,
-[data-theme='dark'] header.header.header-scrolled {
-  box-shadow: 0 4px 30px -2px rgba(0, 0, 0, 0.6);
-  border-bottom: 1px solid rgba(139, 92, 246, 0.35) !important;
-}
-
-/* Parallax element smoothing */
-.parallax-element {
-  will-change: transform;
-  transition: transform 0.1s cubic-bezier(0, 0, 0.2, 1);
+  transform: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .scroll-reveal,
-  .scroll-reveal-card {
+  .reveal {
     opacity: 1 !important;
     transform: none !important;
-    filter: none !important;
     transition: none !important;
   }
 }

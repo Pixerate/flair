@@ -1,0 +1,37 @@
+---
+// The homepage's "how": one snippet and three facts, nothing more.
+const facts = [
+  { title: "No heavy dependencies", body: "Plain TypeScript and WebGL2. Browser-safe entry points; Node-only code stays in its own." },
+  { title: "Built for agents", body: "Every control and edit is a tool an agent can call, with refusals that say what to do next." },
+  { title: "Any framework", body: "Vanilla, React and Svelte wrappers, plus a CLI that renders scenes, GIFs and standalone pages." },
+];
+---
+
+<section class="mx-auto max-w-5xl px-4 py-20">
+  <div class="glass overflow-hidden rounded-3xl">
+    <div class="flex items-center gap-2 border-b border-[var(--flair-line)] px-5 py-3">
+      <span class="h-2.5 w-2.5 rounded-full bg-[var(--flair-line-strong)]"></span>
+      <span class="h-2.5 w-2.5 rounded-full bg-[var(--flair-line-strong)]"></span>
+      <span class="h-2.5 w-2.5 rounded-full bg-[var(--flair-line-strong)]"></span>
+      <span class="ml-2 font-mono text-xs text-faint">hero.ts</span>
+    </div>
+    <pre class="m-0 overflow-x-auto bg-transparent p-6 text-[13px] leading-relaxed text-ink"><code><span class="text-faint">import</span> &#123; mountEffect &#125; <span class="text-faint">from</span> <span class="text-violet-400">"@pixerate/flair/embed"</span>;
+
+<span class="text-faint">// Any of the catalog's effects, by id, with a preset or your own values.</span>
+mountEffect(document.querySelector(<span class="text-violet-400">"#hero"</span>), <span class="text-violet-400">"neon-fluid"</span>, &#123;
+  preset: <span class="text-violet-400">"Ice"</span>,
+  values: &#123; uSpeed: <span class="text-amber-400">0.2</span> &#125;,
+&#125;);</code></pre>
+  </div>
+
+  <div class="mt-12 grid gap-8 md:grid-cols-3">
+    {
+      facts.map((f) => (
+        <div>
+          <h3 class="m-0 text-[15px] font-medium text-ink">{f.title}</h3>
+          <p class="mt-1.5 text-sm leading-relaxed text-muted">{f.body}</p>
+        </div>
+      ))
+    }
+  </div>
+</section>
