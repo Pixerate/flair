@@ -14,6 +14,8 @@ import {
   resolveEffectValues,
   searchEffectSummaries,
   UnknownEffectError,
+  type EffectAuthoringSession,
+  type EffectAuthoringSource,
   type EffectDescription,
   type EffectImageSource,
   type EffectInputSpec,
@@ -81,7 +83,7 @@ interface InputBinding extends EffectInputSpec {
 }
 
 /** What it takes to describe and render one catalog effect. */
-interface Plan {
+export interface Plan {
   meta: EffectMeta;
   uses: EffectUse[];
   inputs: InputBinding[];
@@ -120,12 +122,20 @@ function planOf(meta: EffectMeta): Plan {
       description: `${slot.label}: ${wantsText(slot.wants)}. Without it the effect shows its own sample.`,
     };
   });
-  const bound = new Set(inputs.map((i) => i.uniform));
-  const controls = meta.controls.filter((c) => !bound.has(c.name) && c.type !== "sampler2D" && !(transition && TRANSITION_DRIVEN.has(c.name)));
-  return { meta, uses: [...uses], inputs, controls, transition };
+  return withControls({ meta, uses: [...uses], inputs, controls: [], transition }, meta.controls);
 }
 
-function summaryOf(plan: Plan): EffectSummary {
+/**
+ * The plan with the effect's controls as they are now (after its source
+ * changed, while authoring): the contract shows them less the image inputs
+ * and what the contract drives.
+ */
+export function withControls(plan: Plan, controls: readonly ControlDef[]): Plan {
+  const bound = new Set(plan.inputs.map((i) => i.uniform));
+  return { ...plan, controls: controls.filter((c) => !bound.has(c.name) && c.type !== "sampler2D" && !(plan.transition && TRANSITION_DRIVEN.has(c.name))) };
+}
+
+export function summaryOf(plan: Plan): EffectSummary {
   const { meta } = plan;
   return {
     id: meta.id,
@@ -170,11 +180,11 @@ function hex(value: ControlValue): ControlValue {
 }
 
 /** A control value as the contract shows it: colours as hex. */
-function contractValue(control: ControlDef, value: ControlValue): ControlValue {
+export function contractValue(control: ControlDef, value: ControlValue): ControlValue {
   return control.color ? hex(value) : value;
 }
 
-function controlSchemaOf(plan: Plan): EffectDescription["controls"] {
+export function controlSchemaOf(plan: Plan): EffectDescription["controls"] {
   const schema = controlsSchema(plan.controls, { title: `${plan.meta.name} controls`, description: plan.meta.description, currentColor: plan.meta.kind === "vector" });
   for (const control of plan.controls) {
     if (control.color) schema.properties![control.name] = { ...schema.properties![control.name], default: hex(control.default) };
@@ -183,7 +193,7 @@ function controlSchemaOf(plan: Plan): EffectDescription["controls"] {
 }
 
 /** Contract values (checked against the schema) as Flair's: CSS colours become channels. */
-function flairValues(controls: readonly ControlDef[], values: Record<string, unknown>): Record<string, ControlValue> {
+export function flairValues(controls: readonly ControlDef[], values: Record<string, unknown>): Record<string, ControlValue> {
   const out: Record<string, ControlValue> = {};
   for (const control of controls) {
     const value = values[control.name];
@@ -244,6 +254,27 @@ function describePrimitive(p: PrimitiveDescriptor): EffectDescription {
   };
 }
 
+/** A catalog effect's description from its plan, with these presets (Flair's values; controls the contract does not show are left out). */
+export function describePlan(plan: Plan, presets: readonly { name: string; values: Record<string, ControlValue> }[]): EffectDescription {
+  const controls = new Map(plan.controls.map((c) => [c.name, c]));
+  return {
+    ...summaryOf(plan),
+    controls: controlSchemaOf(plan),
+    defaults: Object.fromEntries(plan.controls.map((c) => [c.name, contractValue(c, c.default)])) as EffectValues,
+    presets: presets.map(
+      (preset): EffectPreset => ({
+        name: preset.name,
+        values: Object.fromEntries(
+          Object.entries(preset.values)
+            .filter(([name]) => controls.has(name))
+            .map(([name, value]) => [name, contractValue(controls.get(name)!, value)]),
+        ) as EffectValues,
+      }),
+    ),
+    inputs: plan.inputs.map(({ uniform: _, ...spec }) => spec),
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Pictures in
 // ---------------------------------------------------------------------------
@@ -253,7 +284,7 @@ function describePrimitive(p: PrimitiveDescriptor): EffectDescription {
  * float picture when it has floats (linear light), an `ImageData` for 8-bit
  * pixels, and the host's own image objects as they are.
  */
-function passInput(source: EffectImageSource): Exclude<PassInput, "previous" | "feedback" | { pass: number }> {
+export function passInput(source: EffectImageSource): Exclude<PassInput, "previous" | "feedback" | { pass: number }> {
   if (isEffectPixels(source)) {
     if (source.float) return { width: source.width, height: source.height, data: source.float } satisfies FloatPicture;
     if (typeof ImageData !== "undefined") return new ImageData(source.data as Uint8ClampedArray<ArrayBuffer>, source.width, source.height);
@@ -323,7 +354,7 @@ function targetIds(svg: string, nodeIds?: readonly string[]): string[] {
 // ---------------------------------------------------------------------------
 
 /** Draws an animated SVG as pixels on a page: laid out off screen (so fonts and sizes resolve), drawn and captured. */
-const pageRasterizer: SvgRasterizer = async (motion, timeMs, { width, height }) => {
+export const pageRasterizer: SvgRasterizer = async (motion, timeMs, { width, height }) => {
   const view = svgView(motion);
   const host = document.createElement("div");
   host.setAttribute("aria-hidden", "true");
@@ -340,6 +371,106 @@ const pageRasterizer: SvgRasterizer = async (motion, timeMs, { width, height }) 
     host.remove();
   }
 };
+
+/** A renderer's size and bit depth, checked as `createRenderer` and `createPreview` take them. */
+export function rendererSize(id: string, options: EffectRendererOptions, call = "createRenderer"): { width: number; height: number; depth: 8 | 16 | 32 } {
+  const width = Math.round(options?.width);
+  const height = Math.round(options?.height);
+  if (!(width >= 1 && height >= 1)) {
+    throw new EffectUnsupportedError(`${call} needs a width and height of at least 1 pixel; got ${options?.width} × ${options?.height}.`, id);
+  }
+  const depth = options.depth ?? 8;
+  if (depth !== 8 && depth !== 16 && depth !== 32) throw new EffectUnsupportedError(`depth is 8, 16 or 32 bits a channel; got ${JSON.stringify(options.depth)}.`, id);
+  return { width, height, depth };
+}
+
+/** Checks a render request's time and inputs against the plan; throws what the contract throws. */
+export function checkRenderRequest(plan: Plan, id: string, request: EffectRenderRequest): void {
+  if (!request || typeof request.time !== "number" || !Number.isFinite(request.time)) {
+    throw new EffectUnsupportedError(`render needs { time } in ms, a finite number; got ${JSON.stringify(request?.time)}.`, id);
+  }
+  const given = request.inputs ?? {};
+  const names = new Set(plan.inputs.map((i) => i.name));
+  for (const name of Object.keys(given)) {
+    if (!names.has(name)) {
+      throw new EffectUnsupportedError(
+        `"${id}" has no input "${name}"; ${plan.inputs.length ? `its inputs are ${plan.inputs.map((i) => `"${i.name}"`).join(", ")}` : "it takes none"}.`,
+        id,
+      );
+    }
+  }
+  for (const input of plan.inputs) {
+    if (input.required && !given[input.name]) throw new EffectUnsupportedError(`"${id}" needs the input "${input.name}": ${input.description}`, id);
+  }
+}
+
+const FORMATS: Record<8 | 16 | 32, PipelineFormat> = { 8: "rgba8", 16: "rgba16f", 32: "rgba32f" };
+
+/**
+ * A pipeline drawing one shader, in floats at depth 16 or 32 where the GPU
+ * can render them (8 bits where it cannot; `depth` says which). Throws as
+ * `ShaderPipeline` does: a `PassCompileError` when the source does not compile.
+ */
+export function shaderPipeline(source: string, name: string, width: number, height: number, depth: 8 | 16 | 32): { pipeline: ShaderPipeline<HTMLCanvasElement | OffscreenCanvas>; depth: 8 | 16 | 32 } {
+  const make = (format: PipelineFormat) => new ShaderPipeline<HTMLCanvasElement | OffscreenCanvas>({ passes: [{ source, name }], width, height, alpha: true, format });
+  try {
+    return { pipeline: make(FORMATS[depth]), depth };
+  } catch (e) {
+    // A GPU that cannot render to floats gives 8-bit frames, as the contract allows (depth says so).
+    if (depth === 8 || !/float/i.test(e instanceof Error ? e.message : "")) throw e;
+    return { pipeline: make("rgba8"), depth: 8 };
+  }
+}
+
+/**
+ * Draws one frame of a shader effect: the request's pictures in the plan's
+ * image controls, a transition's progress, the mask, and Flair's `values`.
+ * `disposed` is asked after the effect's own pictures load.
+ */
+export async function drawShaderFrame(
+  pipeline: ShaderPipeline<HTMLCanvasElement | OffscreenCanvas>,
+  plan: Plan,
+  request: EffectRenderRequest,
+  values: Record<string, ControlValue>,
+  frame: { width: number; height: number; depth: 8 | 16 | 32; duration: number; disposed: () => boolean },
+): Promise<EffectPixels> {
+  const given = request.inputs ?? {};
+  const flair = { ...values };
+  for (const input of plan.inputs) {
+    const source = given[input.name];
+    pipeline.setInput(0, input.uniform, source ? passInput(source) : null);
+    // A picture given needs no URL loaded behind it.
+    if (source) flair[input.uniform] = "";
+  }
+  if (plan.transition) {
+    flair.uAnimate = false;
+    flair.uProgress = Math.min(1, Math.max(0, request.progress ?? request.time / frame.duration));
+  }
+  if (request.mask) {
+    // Untouched where the mask is 0: the picture the effect changes (a filter's source, a transition's from).
+    const untouched = given.source ?? given.from;
+    pipeline.setMask({ picture: passInput(request.mask), ...(untouched ? { under: passInput(untouched) } : {}) });
+  } else pipeline.setMask(null);
+  pipeline.setValues(0, flair);
+  // The effect's own sample pictures: a failure shows black where they go rather than failing the frame.
+  await pipeline.ready().catch(() => undefined);
+  if (frame.disposed()) throw new EffectDisposedError(plan.meta.id);
+  pipeline.render(request.time / 1000);
+  const data = pipeline.readImageData().data;
+  return { width: frame.width, height: frame.height, data, ...(frame.depth > 8 ? { float: pipeline.readFloatPixels() } : {}) };
+}
+
+/** A rasterised vector frame, masked and at the renderer's depth. */
+export function finishVectorFrame(pixels: EffectPixels, id: string, request: EffectRenderRequest, frame: { width: number; height: number; depth: 8 | 16 | 32 }): EffectPixels {
+  if (request.mask) {
+    // A vector picture has nothing under it: coverage multiplies its alpha, as for any generator.
+    if (!isEffectPixels(request.mask) || request.mask.width !== frame.width || request.mask.height !== frame.height) {
+      throw new EffectUnsupportedError(`A vector effect's mask is EffectPixels the renderer's size (${frame.width} × ${frame.height}).`, id);
+    }
+    applyEffectMask(pixels, request.mask);
+  }
+  return frame.depth > 8 ? { ...pixels, float: decodedFloat(pixels.data) } : pixels;
+}
 
 abstract class BaseRenderer implements EffectRenderer {
   abstract readonly depth: 8 | 16 | 32;
@@ -358,23 +489,8 @@ abstract class BaseRenderer implements EffectRenderer {
 
   async render(request: EffectRenderRequest): Promise<EffectPixels> {
     if (this.disposed) throw new EffectDisposedError(this.effectId);
-    if (!request || typeof request.time !== "number" || !Number.isFinite(request.time)) {
-      throw new EffectUnsupportedError(`render needs { time } in ms, a finite number; got ${JSON.stringify(request?.time)}.`, this.effectId);
-    }
+    checkRenderRequest(this.plan, this.effectId, request);
     const values = resolveEffectValues(this.description, request.values);
-    const given = request.inputs ?? {};
-    const names = new Set(this.plan.inputs.map((i) => i.name));
-    for (const name of Object.keys(given)) {
-      if (!names.has(name)) {
-        throw new EffectUnsupportedError(
-          `"${this.effectId}" has no input "${name}"; ${this.plan.inputs.length ? `its inputs are ${this.plan.inputs.map((i) => `"${i.name}"`).join(", ")}` : "it takes none"}.`,
-          this.effectId,
-        );
-      }
-    }
-    for (const input of this.plan.inputs) {
-      if (input.required && !given[input.name]) throw new EffectUnsupportedError(`"${this.effectId}" needs the input "${input.name}": ${input.description}`, this.effectId);
-    }
     return this.draw(request, flairValues(this.plan.controls, values));
   }
 
@@ -385,59 +501,24 @@ abstract class BaseRenderer implements EffectRenderer {
   }
 }
 
-const FORMATS: Record<8 | 16 | 32, PipelineFormat> = { 8: "rgba8", 16: "rgba16f", 32: "rgba32f" };
-
 class ShaderRenderer extends BaseRenderer {
   readonly depth: 8 | 16 | 32;
   private pipeline: ShaderPipeline<HTMLCanvasElement | OffscreenCanvas>;
 
   constructor(plan: Plan, description: EffectDescription, effect: ShaderEffect, width: number, height: number, depth: 8 | 16 | 32) {
     super(plan, description, width, height);
-    const make = (format: PipelineFormat) => new ShaderPipeline<HTMLCanvasElement | OffscreenCanvas>({ passes: [{ source: effect.source, name: effect.id }], width, height, alpha: true, format });
-    let pipeline: ShaderPipeline<HTMLCanvasElement | OffscreenCanvas> | undefined;
-    let made: 8 | 16 | 32 = depth;
     try {
-      try {
-        pipeline = make(FORMATS[depth]);
-      } catch (e) {
-        // A GPU that cannot render to floats gives 8-bit frames, as the contract allows (depth says so).
-        if (depth === 8 || !/float/i.test(e instanceof Error ? e.message : "")) throw e;
-        pipeline = make("rgba8");
-        made = 8;
-      }
+      const made = shaderPipeline(effect.source, effect.id, width, height, depth);
+      this.pipeline = made.pipeline;
+      this.depth = made.depth;
     } catch (e) {
       throw new EffectUnsupportedError(`"${effect.id}" cannot render here: ${e instanceof Error ? e.message : String(e)}`, effect.id);
     }
-    this.pipeline = pipeline;
-    this.depth = made;
   }
 
-  protected async draw(request: EffectRenderRequest, values: Record<string, ControlValue>): Promise<EffectPixels> {
-    const given = request.inputs ?? {};
-    const flair = { ...values };
-    for (const input of this.plan.inputs) {
-      const source = given[input.name];
-      this.pipeline.setInput(0, input.uniform, source ? passInput(source) : null);
-      // A picture given needs no URL loaded behind it.
-      if (source) flair[input.uniform] = "";
-    }
-    const duration = this.plan.meta.duration ?? 4000;
-    if (this.plan.transition) {
-      flair.uAnimate = false;
-      flair.uProgress = Math.min(1, Math.max(0, request.progress ?? request.time / duration));
-    }
-    if (request.mask) {
-      // Untouched where the mask is 0: the picture the effect changes (a filter's source, a transition's from).
-      const untouched = given.source ?? given.from;
-      this.pipeline.setMask({ picture: passInput(request.mask), ...(untouched ? { under: passInput(untouched) } : {}) });
-    } else this.pipeline.setMask(null);
-    this.pipeline.setValues(0, flair);
-    // The effect's own sample pictures: a failure shows black where they go rather than failing the frame.
-    await this.pipeline.ready().catch(() => undefined);
-    if (this.disposed) throw new EffectDisposedError(this.effectId);
-    this.pipeline.render(request.time / 1000);
-    const data = this.pipeline.readImageData().data;
-    return { width: this.width, height: this.height, data, ...(this.depth > 8 ? { float: this.pipeline.readFloatPixels() } : {}) };
+  protected draw(request: EffectRenderRequest, values: Record<string, ControlValue>): Promise<EffectPixels> {
+    const { width, height, depth } = this;
+    return drawShaderFrame(this.pipeline, this.plan, request, values, { width, height, depth, duration: this.plan.meta.duration ?? 4000, disposed: () => this.disposed });
   }
 
   dispose(): void {
@@ -463,14 +544,7 @@ class VectorRenderer extends BaseRenderer {
     const motion = renderVectorEffect(this.effect, values);
     const pixels = await this.rasterize(motion, request.time, { width: this.width, height: this.height });
     if (this.disposed) throw new EffectDisposedError(this.effectId);
-    if (request.mask) {
-      // A vector picture has nothing under it: coverage multiplies its alpha, as for any generator.
-      if (!isEffectPixels(request.mask) || request.mask.width !== this.width || request.mask.height !== this.height) {
-        throw new EffectUnsupportedError(`A vector effect's mask is EffectPixels the renderer's size (${this.width} × ${this.height}).`, this.effectId);
-      }
-      applyEffectMask(pixels, request.mask);
-    }
-    return this.depth > 8 ? { ...pixels, float: decodedFloat(pixels.data) } : pixels;
+    return finishVectorFrame(pixels, this.effectId, request, this);
   }
 }
 
@@ -506,6 +580,12 @@ class VectorRenderer extends BaseRenderer {
  *   (its own picture, so the target is not used), or applies a motion
  *   primitive to the target's elements (`nodeIds`, or each top-level
  *   element with an id).
+ * - **Authoring:** `openAuthoring` opens a shader or vector effect (or a
+ *   document saved with `exportDocument`) in Flair's `EffectEditor`, for
+ *   the editor's Effect Authoring tab and its agent tools. Shaders edit
+ *   their GLSL, with compile errors on the source's lines; vector effects
+ *   edit their controls (`sourceLanguage` null). Motion primitives cannot
+ *   be authored.
  */
 export function flairEffects(options: FlairEffectsOptions = {}): EffectProvider {
   const kinds = new Set<EffectKind>(options.kinds ?? ["shader", "vector", "motion"]);
@@ -522,6 +602,7 @@ export function flairEffects(options: FlairEffectsOptions = {}): EffectProvider 
     supportsMask: true,
     supportsHostImages: true,
     supportsVector: kinds.has("vector") || kinds.has("motion"),
+    supportsAuthoring: kinds.has("shader") || kinds.has("vector"),
   };
 
   const unknown = (id: string) => new UnknownEffectError(String(id), "Flair");
@@ -535,23 +616,7 @@ export function flairEffects(options: FlairEffectsOptions = {}): EffectProvider 
   }
 
   async function describeCatalog(plan: Plan): Promise<EffectDescription> {
-    const effect = await loadEffect(plan.meta.id);
-    const names = new Set(plan.controls.map((c) => c.name));
-    const presets: EffectPreset[] = (effect.presets ?? []).map((preset) => ({
-      name: preset.name,
-      values: Object.fromEntries(
-        Object.entries(preset.values)
-          .filter(([name]) => names.has(name))
-          .map(([name, value]) => [name, contractValue(plan.controls.find((c) => c.name === name)!, value)]),
-      ) as EffectValues,
-    }));
-    return {
-      ...summaryOf(plan),
-      controls: controlSchemaOf(plan),
-      defaults: Object.fromEntries(plan.controls.map((c) => [c.name, contractValue(c, c.default)])) as EffectValues,
-      presets,
-      inputs: plan.inputs.map(({ uniform: _, ...spec }) => spec),
-    };
+    return describePlan(plan, (await loadEffect(plan.meta.id)).presets ?? []);
   }
 
   function describe(id: string): Promise<EffectDescription> {
@@ -587,13 +652,7 @@ export function flairEffects(options: FlairEffectsOptions = {}): EffectProvider 
       if (kinds.has("motion") && getPrimitive(id)) {
         throw new EffectUnsupportedError(`"${id}" is motion for vector art, not a picture: use applyVectorEffect to apply it to an SVG.`, id);
       }
-      const width = Math.round(rendererOptions?.width);
-      const height = Math.round(rendererOptions?.height);
-      if (!(width >= 1 && height >= 1)) {
-        throw new EffectUnsupportedError(`createRenderer needs a width and height of at least 1 pixel; got ${rendererOptions?.width} × ${rendererOptions?.height}.`, id);
-      }
-      const depth = rendererOptions.depth ?? 8;
-      if (depth !== 8 && depth !== 16 && depth !== 32) throw new EffectUnsupportedError(`depth is 8, 16 or 32 bits a channel; got ${JSON.stringify(rendererOptions.depth)}.`, id);
+      const { width, height, depth } = rendererSize(id, rendererOptions);
       const { plan, effect, description } = await catalogEffect(id);
       if (effect.kind === "shader") return new ShaderRenderer(plan, description, effect, width, height, depth);
       if (!rasterize) {
@@ -603,6 +662,12 @@ export function flairEffects(options: FlairEffectsOptions = {}): EffectProvider 
         );
       }
       return new VectorRenderer(plan, description, effect, width, height, rasterize, depth);
+    },
+
+    async openAuthoring(source: EffectAuthoringSource): Promise<EffectAuthoringSession> {
+      // The editor (and the full catalog it creates documents from) loads with the first session.
+      const { openFlairAuthoring } = await import("./authoring.js");
+      return openFlairAuthoring(source, { plans, isPrimitive: (id) => kinds.has("motion") && getPrimitive(id) !== undefined, rasterize });
     },
 
     async applyVectorEffect(id: string, target: EffectVectorTarget, values?: EffectValues): Promise<EffectVectorMotion> {

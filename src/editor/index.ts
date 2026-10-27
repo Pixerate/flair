@@ -52,6 +52,7 @@ export {
   EffectEditor,
   type CompileReport,
   type EditResult,
+  type ValueEditOptions,
   type EffectEditorOptions,
   type EffectEditorState,
 } from "./editor.js";

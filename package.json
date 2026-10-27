@@ -127,7 +127,7 @@
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.12",
-    "@pixerate/editor": "^0.124.0",
+    "@pixerate/editor": "^0.165.0",
     "@types/node": "^24.19.2",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",

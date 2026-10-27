@@ -19,8 +19,8 @@ async function failure(run: () => unknown): Promise<{ code?: string; message: st
   throw new Error("It did not fail.");
 }
 
-function setup(options: Parameters<typeof flairEffects>[0] = {}) {
-  const webgl = installFakeWebGl();
+function setup(options: Parameters<typeof flairEffects>[0] = {}, gl: Parameters<typeof installFakeWebGl>[0] = {}) {
+  const webgl = installFakeWebGl(gl);
   installFakeImages();
   return { webgl, provider: flairEffects({ rasterizeSvg: fakeRaster, ...options }) };
 }
@@ -293,5 +293,214 @@ describe("applyVectorEffect", () => {
   it("refuses shaders, which are pixels", async () => {
     const { provider } = setup();
     expect(await failure(() => provider.applyVectorEffect!("aurora", SVG))).toMatchObject({ code: "unsupported", message: expect.stringContaining("createRenderer") });
+  });
+});
+
+describe("authoring", () => {
+  /** The fake GPU fails a source containing COMPILE_ERROR, at line 3. */
+  const BROKEN = { compileLog: "ERROR: 0:3: 'oops' : syntax error\n" };
+
+  async function open(source: Parameters<NonNullable<EffectProvider["openAuthoring"]>>[0] = { effectId: "aurora" }, gl: Parameters<typeof installFakeWebGl>[0] = BROKEN) {
+    const { webgl, provider } = setup({}, gl);
+    const session = await provider.openAuthoring!(source);
+    return { webgl, provider, session };
+  }
+
+  it("passes the editor's authoring checks, opening shaders with their GLSL", async () => {
+    const { provider } = setup();
+    expect(provider.capabilities.supportsAuthoring).toBe(true);
+    expect(await checkEffectProvider(provider, { ids: ["aurora", "crt", "transition-wipe"] })).toEqual([]);
+    expect(flairEffects({ kinds: ["motion"] }).capabilities.supportsAuthoring).toBe(false);
+  });
+
+  it("gives compile errors from setSource on the source's lines, and clears them when fixed", async () => {
+    const { session } = await open();
+    expect(session.getState()).toMatchObject({ providerId: "flair", effectId: "aurora", kind: "shader", sourceLanguage: "glsl", compiled: true, issues: [] });
+    const good = session.getState().source!;
+    const lines = good.split("\n");
+    lines.splice(2, 0, "COMPILE_ERROR");
+    const result = await session.setSource!(lines.join("\n"));
+    expect(result).toEqual({ ok: true, issues: [{ message: expect.stringContaining("oops"), line: 3, severity: "error" }] });
+    expect(session.getState()).toMatchObject({ compiled: false, issues: [{ line: 3, severity: "error" }] });
+    expect(await session.setSource!(good)).toEqual({ ok: true, issues: [] });
+    expect(session.getState()).toMatchObject({ compiled: true, issues: [] });
+    expect(await session.setSource!(42 as never)).toMatchObject({ ok: false, message: expect.stringContaining("string") });
+  });
+
+  it("adds a // @control uniform added to the source to the description", async () => {
+    const { session } = await open();
+    const before = session.getState().description;
+    await session.setSource!(`${session.getState().source}\nuniform float uNew; // @control min=0 max=1 default=0.5 label="New"`);
+    const { description, values } = session.getState();
+    expect(description).not.toBe(before);
+    expect(description.controls.properties.uNew).toMatchObject({ type: "number", minimum: 0, maximum: 1 });
+    expect([description.defaults.uNew, values.uNew]).toEqual([0.5, 0.5]);
+    expect(session.setValue("uNew", 0.75)).toEqual({ ok: true });
+  });
+
+  it("refuses bad values naming the control, all or nothing, changing nothing", async () => {
+    const { session } = await open();
+    const before = session.getState();
+    expect(session.setValue("uSpeed", 9)).toEqual({ ok: false, message: expect.stringContaining('control "uSpeed"') });
+    expect(session.setValue("uSped", 1)).toEqual({ ok: false, message: expect.stringMatching(/no control "uSped"; the controls are uSky, uGlowA/) });
+    expect(session.setValues({ uSpeed: 1, uGlowA: 42 } as never)).toEqual({ ok: false, message: expect.stringContaining('control "uGlowA"') });
+    expect(session.resetValues(["uNope"])).toMatchObject({ ok: false, message: expect.stringContaining("the controls are") });
+    expect(session.setKeyframe("uSpeed", -1, 1)).toMatchObject({ ok: false, message: expect.stringContaining("0 or more") });
+    expect(session.removeKeyframe("uSpeed", 10)).toMatchObject({ ok: false, message: expect.stringContaining("has none") });
+    expect(session.applyPreset("Nope")).toMatchObject({ ok: false, message: expect.stringContaining('"Arctic", "Ember", "Ice"') });
+    expect(session.setTiming({ duration: 0 })).toMatchObject({ ok: false });
+    expect(session.getState()).toBe(before);
+    expect(session.setValues({ uSpeed: 1, uGlowA: "#ff0000" })).toEqual({ ok: true });
+    expect(session.getState().values).toMatchObject({ uSpeed: 1, uGlowA: "#ff0000" });
+  });
+
+  it("merges a gesture into one undo step, and undoes and redoes values and source", async () => {
+    const { session } = await open();
+    const { values, source } = session.getState();
+    session.setValue("uSpeed", 0.5, { gesture: "drag" });
+    session.setValue("uHeight", 0.9, { gesture: "drag" });
+    session.setValue("uSpeed", 1.5, { gesture: "drag" });
+    expect(session.getState().values).toMatchObject({ uSpeed: 1.5, uHeight: 0.9 });
+    expect(session.undo()).toBe(true);
+    expect(session.getState()).toMatchObject({ values, canUndo: false, canRedo: true });
+    expect(session.redo()).toBe(true);
+    expect(session.getState().values).toMatchObject({ uSpeed: 1.5, uHeight: 0.9 });
+
+    await session.setSource!(`${source}\n// COMPILE_ERROR`);
+    expect(session.getState().compiled).toBe(false);
+    session.undo();
+    expect(session.getState()).toMatchObject({ source, compiled: true });
+    session.redo();
+    expect(session.getState()).toMatchObject({ source: `${source}\n// COMPILE_ERROR`, compiled: false });
+  });
+
+  it("keeps the state object until something changes, and tells subscribers", async () => {
+    const { session } = await open();
+    const seen: unknown[] = [];
+    const unsubscribe = session.subscribe((state) => seen.push(state));
+    expect(session.getState()).toBe(session.getState());
+    session.seek(99_999);
+    expect(session.getState().time).toBe(session.getState().duration);
+    expect(seen.at(-1)).toBe(session.getState());
+    unsubscribe();
+    session.seek(0);
+    expect(seen).toHaveLength(1);
+  });
+
+  it("previews the keyframed values at each time, unless values are given", async () => {
+    const { webgl, session } = await open();
+    expect(session.setKeyframe("uSpeed", 0, 0)).toEqual({ ok: true });
+    expect(session.setKeyframe("uSpeed", 1000, 2)).toEqual({ ok: true });
+    expect(session.getState().tracks.uSpeed).toEqual([
+      { time: 0, value: 0 },
+      { time: 1000, value: 2 },
+    ]);
+    const preview = await session.createPreview({ width: 4, height: 4 });
+    const out = await preview.render({ time: 500 });
+    expect([out.width, out.height]).toEqual([4, 4]);
+    expect(webgl.last().uniform("uSpeed")).toEqual([1]);
+    expect(webgl.last().uniform("iTime")).toEqual([0.5]);
+    await preview.render({ time: 1000 });
+    expect(webgl.last().uniform("uSpeed")).toEqual([2]);
+    await preview.render({ time: 500, values: { uSpeed: 0.25 } });
+    expect(webgl.last().uniform("uSpeed")).toEqual([0.25]);
+    await expect(preview.render({ time: 0, values: { uSpeed: "fast" } as never })).rejects.toMatchObject({ code: "invalid_values" });
+  });
+
+  it("previews the source as it is now: one that fails draws nothing, a fixed one draws again", async () => {
+    const { webgl, session } = await open(undefined, { ...BROKEN, pixel: () => [9, 9, 9, 255] });
+    const preview = await session.createPreview({ width: 2, height: 2 });
+    expect((await preview.render({ time: 0 })).data[0]).toBe(9);
+    const source = session.getState().source!;
+    await session.setSource!(`${source}\n// COMPILE_ERROR`);
+    const contexts = webgl.contexts.length;
+    const failed = await preview.render({ time: 0 });
+    expect([...failed.data]).toEqual(new Array(16).fill(0));
+    expect(session.getState()).toMatchObject({ compiled: false, issues: [{ line: 3, severity: "error" }] });
+    await session.setSource!(`${source}\n// fixed`);
+    expect((await preview.render({ time: 0 })).data[0]).toBe(9);
+    // Each new source got a pipeline of its own.
+    expect(webgl.contexts.length).toBe(contexts + 2);
+    expect(session.getState().compiled).toBe(true);
+  });
+
+  it("feeds a transition's from and to, and its progress over the timeline", async () => {
+    const { webgl, session } = await open({ effectId: "transition-wipe" });
+    const preview = await session.createPreview({ width: 2, height: 2 });
+    await expect(preview.render({ time: 0 })).rejects.toMatchObject({ code: "unsupported", message: expect.stringContaining('"from"') });
+    await preview.render({ time: session.getState().duration / 4, inputs: { from: pixels(2, 2), to: pixels(2, 2, 10) } });
+    expect(webgl.last().uniform("uProgress")).toEqual([0.25]);
+  });
+
+  it("exports a document that reopens with its source, values, tracks and presets", async () => {
+    const { provider, session } = await open();
+    await session.setSource!(`${session.getState().source}\n// edited`);
+    session.setValue("uGlowA", "#112233");
+    session.setKeyframe("uHeight", 0, 0.1);
+    session.setKeyframe("uHeight", 2000, 0.9, "ease-in");
+    expect(session.savePreset("Mine")).toEqual({ ok: true });
+    session.setTiming({ duration: 6000, loop: false });
+    const saved = JSON.parse(JSON.stringify(session.exportDocument()));
+    expect(saved).toMatchObject({ version: 1, providerId: "flair", effectId: "aurora", duration: 6000, loop: false, values: { uGlowA: "#112233" } });
+
+    const state = session.getState();
+    const reopened = (await provider.openAuthoring!({ document: saved })).getState();
+    expect(reopened).toMatchObject({ source: state.source, values: state.values, tracks: state.tracks, duration: 6000, loop: false });
+    expect(reopened.description.presets.map((p) => p.name)).toEqual(["Arctic", "Ember", "Ice", "Mine"]);
+    expect(reopened.description.presets).toEqual(state.description.presets);
+
+    // Only the contract's fields: the catalog effect with them over it.
+    const { flair: _, ...contract } = saved;
+    const fromContract = (await provider.openAuthoring!({ document: contract })).getState();
+    expect(fromContract).toMatchObject({ values: state.values, tracks: state.tracks, duration: 6000 });
+    expect(fromContract.description.presets.map((p) => p.name)).toEqual(["Arctic", "Ember", "Ice", "Mine"]);
+  });
+
+  it("refuses a corrupted document with invalid_values, naming what is wrong", async () => {
+    const { provider, session } = await open();
+    const saved = JSON.parse(JSON.stringify(session.exportDocument()));
+    const { flair: _, ...contract } = saved;
+    expect(await failure(() => provider.openAuthoring!({ document: { ...saved, values: { uSpeed: "fast" } } }))).toMatchObject({ code: "invalid_values", message: expect.stringContaining("/values/uSpeed") });
+    expect(await failure(() => provider.openAuthoring!({ document: { ...saved, flair: { version: 2 } } }))).toMatchObject({ code: "invalid_values", message: expect.stringContaining("/flair") });
+    expect(await failure(() => provider.openAuthoring!({ document: { ...contract, tracks: { uNope: [] } } }))).toMatchObject({ code: "invalid_values", message: expect.stringContaining("/tracks/uNope") });
+    expect(await failure(() => provider.openAuthoring!({ document: { ...contract, providerId: "other" } }))).toMatchObject({ code: "invalid_values", message: expect.stringContaining("/providerId") });
+    expect(await failure(() => provider.openAuthoring!({ document: "nope" }))).toMatchObject({ code: "invalid_values" });
+  });
+
+  it("opens vector effects without source, with a preset's values, and refuses primitives and unknown ids", async () => {
+    const { provider } = setup();
+    const vector = (await provider.list({ kind: "vector" }))[0]!;
+    const session = await provider.openAuthoring!({ effectId: vector.id });
+    expect(session.getState()).toMatchObject({ kind: "vector", source: null, sourceLanguage: null, compiled: null });
+    expect(await session.setSource!("<svg/>")).toMatchObject({ ok: false, message: expect.stringContaining("sourceLanguage is null") });
+    const out = await (await session.createPreview({ width: 4, height: 2 })).render({ time: 0 });
+    expect([out.width, out.height]).toEqual([4, 2]);
+
+    const ember = (await provider.describe("aurora")).presets.find((p) => p.name === "Ember")!;
+    expect((await provider.openAuthoring!({ effectId: "aurora", preset: "Ember" })).getState().values).toMatchObject(ember.values);
+    expect(await failure(() => provider.openAuthoring!({ effectId: "aurora", preset: "Nope" }))).toMatchObject({ code: "unsupported", message: expect.stringContaining('"Arctic"') });
+    expect(await failure(() => provider.openAuthoring!({ effectId: "entrance.pop" }))).toMatchObject({ code: "unsupported", message: expect.stringContaining("applyVectorEffect") });
+    expect(await failure(() => provider.openAuthoring!({ effectId: "auroa" }))).toMatchObject({ code: "unknown_effect" });
+  });
+
+  it("in a Worker without a rasteriser, refuses a vector preview saying what to do", async () => {
+    const { provider } = setup();
+    const vector = (await provider.list({ kind: "vector" }))[0]!;
+    vi.stubGlobal("document", undefined);
+    const worker = flairEffects();
+    vi.unstubAllGlobals();
+    const session = await worker.openAuthoring!({ effectId: vector.id });
+    expect(await failure(() => session.createPreview({ width: 2, height: 2 }))).toMatchObject({ code: "unsupported", message: expect.stringContaining("rasterizeSvg") });
+  });
+
+  it("disposes its previews, and refuses writes once closed", async () => {
+    const { session } = await open();
+    const preview = await session.createPreview({ width: 2, height: 2 });
+    session.dispose();
+    expect(await failure(() => preview.render({ time: 0 }))).toMatchObject({ code: "disposed" });
+    expect(session.setValue("uSpeed", 1)).toMatchObject({ ok: false, message: expect.stringContaining("closed") });
+    expect(await session.setSource!("void mainImage(out vec4 c, in vec2 p) {}")).toMatchObject({ ok: false });
+    expect(session.undo()).toBe(false);
+    expect(() => session.dispose()).not.toThrow();
   });
 });
