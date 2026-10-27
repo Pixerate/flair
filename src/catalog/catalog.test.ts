@@ -2116,3 +2116,43 @@ describe("iridescent and neon effects", () => {
     }
   });
 });
+
+describe("webbing effects", () => {
+  const IDS = ["spider-web", "cobweb-corners", "web-shot", "plexus-web", "spider-web-loader"];
+
+  it("are found together by their tag", () => {
+    const found = findEffects({ tags: ["web"] }).map((e) => e.id);
+    for (const id of IDS) expect(found, id).toContain(id);
+  });
+
+  it("draws the cobwebs and web shot as transparent overlays, the backgrounds opaque", () => {
+    for (const id of ["cobweb-corners", "web-shot"]) expect(getEffect(id), id).toMatchObject({ transparent: true });
+    for (const id of ["spider-web", "plexus-web"]) expect(getEffect(id), id).not.toMatchObject({ transparent: true });
+  });
+
+  it("shoots a web at every click, with an idle demo", () => {
+    const effect = getEffect("web-shot")!;
+    expect(effect.kind === "shader" && effect.source).toMatch(/\biClicks\[/);
+    expect(effectDefaults(effect).uDemo).toBe(true);
+  });
+
+  it("the backgrounds have a Light preset on a light ground", () => {
+    for (const id of ["spider-web", "plexus-web"]) {
+      expect(Math.max(...(effectDefaults(getEffect(id)!).uBackground as number[])), id).toBeLessThan(0.1);
+      expect(Math.min(...(effectDefaults(getEffect(id)!, { preset: "Light" }).uBackground as number[])), id).toBeGreaterThan(0.85);
+    }
+  });
+
+  it("the loader weaves, drops its spider and leaves the frame as empty as it found it", () => {
+    const effect = getEffect("spider-web-loader")!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    const motion = renderVectorEffect(effect, effectDefaults(effect));
+    expect(svgMotionIssues(motion)).toEqual([]);
+    expect(JSON.stringify(motion)).not.toMatch(/\{\{|NaN|undefined/);
+    const end = svgDuration(motion);
+    const frame = (ms: number) => svgFrame(motion.animate!, [], ms);
+    expect(frame(0).get("spider")!.attrs.transform).toBe(frame(end).get("spider")!.attrs.transform);
+    expect(frame(1800).get("spider")!.attrs.transform).not.toBe(frame(0).get("spider")!.attrs.transform);
+    expect(Number(frame(end).get("web")!.attrs.opacity)).toBe(0);
+  });
+});

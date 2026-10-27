@@ -66,6 +66,7 @@ export const EFFECT_MODULES: Record<string, () => Promise<Record<string, unknown
   "shaders/ui": () => import("./shaders/ui.js"),
   "shaders/water": () => import("./shaders/water.js"),
   "shaders/weather": () => import("./shaders/weather.js"),
+  "shaders/web": () => import("./shaders/web.js"),
   "shadow": () => import("./shadow.js"),
   "splatter": () => import("./splatter.js"),
   "sticker": () => import("./sticker.js"),
@@ -74,4 +75,5 @@ export const EFFECT_MODULES: Record<string, () => Promise<Record<string, unknown
   "trail": () => import("./trail.js"),
   "ui": () => import("./ui.js"),
   "vector": () => import("./vector.js"),
+  "web": () => import("./web.js"),
 };
