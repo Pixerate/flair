@@ -29,6 +29,11 @@ import { evaluateTrack, isEasing, normalizeKeyframes, type Easing, type Keyframe
 /** What an edit did: `ok`, or why it was refused (in a sentence an agent can act on). */
 export type EditResult = { ok: true } | { ok: false; message: string };
 
+/** How a value change is recorded: changes with the same `gesture` (a slider drag) merge into one undo step, however long it takes. */
+export interface ValueEditOptions {
+  gesture?: string | null;
+}
+
 /** The result of compiling the shader, as reported by a renderer (see `reportCompile`). */
 export interface CompileReport {
   ok: boolean;
@@ -251,20 +256,21 @@ export class EffectEditor {
   /**
    * Sets a control's value. With a track on that control (or while
    * recording) it sets a keyframe at the playhead instead. Quick successive
-   * changes to one control merge into one undo step.
+   * changes to one control merge into one undo step, as do changes with the
+   * same `gesture`.
    */
-  setValue(name: string, value: unknown): EditResult {
+  setValue(name: string, value: unknown, options: ValueEditOptions = {}): EditResult {
     const control = this.control(name);
     if (!control) return this.unknownControl(name);
     const check = checkControlValue(control, value);
     if (!check.ok) return fail(check.message);
-    if (this.recording || this.doc.tracks[name]) return this.setKeyframe(name, this.time, check.value, undefined, `value:${name}`);
-    this.commit(`Set ${control.label}`, { ...this.doc, values: { ...this.doc.values, [name]: check.value } }, `value:${name}`);
+    if (this.recording || this.doc.tracks[name]) return this.setKeyframe(name, this.time, check.value, undefined, `value:${name}`, options.gesture);
+    this.commit(`Set ${control.label}`, { ...this.doc, values: { ...this.doc.values, [name]: check.value } }, `value:${name}`, options.gesture);
     return ok;
   }
 
-  /** Sets several values in one undo step; refuses them all if any is wrong. */
-  setValues(values: Record<string, unknown>): EditResult {
+  /** Sets several values in one undo step (merged with others of the same `gesture`); refuses them all if any is wrong. */
+  setValues(values: Record<string, unknown>, options: ValueEditOptions = {}): EditResult {
     const next = { ...this.doc.values };
     const tracks = { ...this.doc.tracks };
     for (const [name, value] of Object.entries(values)) {
@@ -277,7 +283,7 @@ export class EffectEditor {
         tracks[name] = { ...tracks[name], keyframes: normalizeKeyframes(keyframes) };
       } else next[name] = check.value;
     }
-    this.commit("Set values", { ...this.doc, values: next, tracks });
+    this.commit("Set values", { ...this.doc, values: next, tracks }, undefined, options.gesture);
     return ok;
   }
 
@@ -336,7 +342,7 @@ export class EffectEditor {
   // ── Keyframes ───────────────────────────────────────────────────────
 
   /** Sets (or replaces) a keyframe; `value` defaults to the control's value at that time. */
-  setKeyframe(name: string, time: number, value?: unknown, easing?: Easing, mergeKey?: string): EditResult {
+  setKeyframe(name: string, time: number, value?: unknown, easing?: Easing, mergeKey?: string, gesture?: string | null): EditResult {
     const control = this.control(name);
     if (!control) return this.unknownControl(name);
     if (!(time >= 0)) return fail("A keyframe's time is 0 ms or more.");
@@ -352,7 +358,7 @@ export class EffectEditor {
     const existing = track?.keyframes.find((k) => Math.abs(k.time - time) < 1e-3);
     const keyframe: Keyframe = { time, value: v, ...((easing ?? existing?.easing) !== undefined && { easing: easing ?? existing?.easing }) };
     const keyframes = normalizeKeyframes([...(track?.keyframes ?? []), keyframe]);
-    this.commit(`Keyframe ${control.label}`, { ...this.doc, tracks: { ...this.doc.tracks, [name]: { ...track, keyframes } } }, mergeKey);
+    this.commit(`Keyframe ${control.label}`, { ...this.doc, tracks: { ...this.doc.tracks, [name]: { ...track, keyframes } } }, mergeKey, gesture);
     return ok;
   }
 
@@ -518,7 +524,8 @@ export class EffectEditor {
     return fail(`There is no control "${name}"; the controls are ${this.controls.map((c) => c.name).join(", ") || "none"}.`);
   }
 
-  private commit(label: string, next: EffectDocument, mergeKey?: string): void {
+  /** Records a change: steps with the same `mergeKey` merge within the merge window, and with the same `gesture` always. */
+  private commit(label: string, next: EffectDocument, mergeKey?: string, gesture?: string | null): void {
     const before = this.doc;
     const command = HistoryManager.createSnapshotCommand<EffectDocument>({
       name: label,
@@ -531,7 +538,8 @@ export class EffectEditor {
       },
       tag: mergeKey,
     });
-    if (mergeKey) this.history.executeMerged(command, { key: mergeKey, windowMs: this.mergeWindowMs });
+    if (gesture) this.history.executeMerged(command, { key: `gesture:${gesture}` });
+    else if (mergeKey) this.history.executeMerged(command, { windowMs: this.mergeWindowMs });
     else this.history.execute(command);
   }
 

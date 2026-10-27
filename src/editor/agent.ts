@@ -80,7 +80,8 @@ export function createEffectToolRegistry(
   editor: EffectEditor,
   options: EffectToolProviderOptions & { registry?: ToolRegistryOptions } = {},
 ): ToolRegistry {
-  const registry = createToolRegistry({ validateArguments: true, ...options.registry });
+  // Bare names (`run_command`), as EFFECT_AGENT_INSTRUCTIONS calls them, unless another provider's collide.
+  const registry = createToolRegistry({ validateArguments: true, namespaces: "on-collision", ...options.registry });
   registry.register(createEffectToolProvider(editor, options));
   return registry;
 }

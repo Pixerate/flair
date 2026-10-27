@@ -54,7 +54,7 @@ Flair gives products a library of good-looking, configurable visual effects (her
 | `@pixerate/flair/react` | `<FlairEffect>`: any catalog effect applied to a subject; `<VectorEffect>`, `<SvgPlayerView>`: vector effects as React components, server-rendered as a still | `react` ≥ 18 (optional peer) |
 | `@pixerate/flair/svelte` | `flairEffect` action: any catalog effect applied to a subject; `vectorEffect` action, `vectorEffectStill`: vector effects in Svelte, server-rendered as a still | `svelte` ≥ 5 (optional peer; types only) |
 | `@pixerate/flair/editor` | `EffectEditor`, effect documents, keyframe tracks, renderer bindings, parameter-panel binding, agent tools and instructions, and `effectDocumentFromAnimation` / `loadAnimation` for scenes from `@pixerate/editor`'s animation editor | `@pixerate/editor` ≥ 0.55 (optional peer; only its dependency-free `/history`, `/commands`, `/tools`, `/animation`, `/animation-editor` and `/parameters` subpaths) |
-| `@pixerate/flair/integrations` | `flairEffects()`: Flair's catalog and motion primitives as an effects provider for `@pixerate/editor`'s editors (its `@pixerate/editor/effects` contract) | `@pixerate/editor` ≥ 0.124 (optional peer, the first version with `/effects`; only that dependency-free subpath) |
+| `@pixerate/flair/integrations` | `flairEffects()`: Flair's catalog and motion primitives as an effects provider for `@pixerate/editor`'s editors (its `@pixerate/editor/effects` contract) | `@pixerate/editor` ≥ 0.148 (optional peer, the first version with effect authoring): `/effects`, plus the subpaths `/editor` uses once an authoring session opens |
 | `@pixerate/flair/testing` | `installFakeWebGl`, `FakeGl`: a fake WebGL2 context, so code that renders with Flair runs in jsdom, Node or CI with the same pixels every time (any test runner) | None |
 | `@pixerate/flair/node` | `exportEffect` and `exportMotionGraphic`: render a catalog effect (on a picture, video, SVG, words or a path) or a shader to MP4, WebM, MOV, GIF, PNG frames or animated SVG, through headless Chrome (and ffmpeg for video) | Node.js |
 
@@ -585,6 +585,20 @@ const frame = await renderer.render({ time: 0, progress: 0.5, inputs: { from: cl
   - A `mask` is composited on the GPU over the untouched input (`source`, or a transition's `from`). With no input, coverage multiplies alpha.
   - Vector effects render on a page. In a Worker, pass `rasterizeSvg` or use `applyVectorEffect`. Their masks multiply alpha.
 - **Vector.** `applyVectorEffect(id, target, values)` returns a vector effect's own animated SVG with its values filled in, or applies a motion primitive to the target's elements: `nodeIds`, or each top-level element with an id.
+- **Authoring.** `capabilities.supportsAuthoring` is true, so the editor's Effect Authoring tab and its `effect_authoring_*` agent tools edit Flair effects through `openAuthoring`, which wraps Flair's own `EffectEditor` (it loads with the first session).
+  - Shaders open with their GLSL (`sourceLanguage: "glsl"`). `setSource` compiles straight away, so errors come back with their lines in the source even before a preview exists; a `// @control` uniform added to the source becomes a control.
+  - Vector effects open with their controls, keyframes and presets, without source (`sourceLanguage: null`). Their preview needs a page, or `rasterizeSvg` in a Worker. Motion primitives cannot be authored.
+  - `exportDocument()` keeps Flair's own document in `flair`, so the source survives `openAuthoring({ document })`.
+
+```ts
+const session = await provider.openAuthoring({ effectId: "aurora", preset: "Ember" });
+const { issues } = await session.setSource(edited); // [{ message, line, severity: "error" }] when it does not compile
+session.setValue("uSpeed", 1.2, { gesture: "speed-drag" }); // one undo step for the whole drag
+session.setKeyframe("uGlowA", 2000, "#ff6b6b", "ease-in-out");
+const preview = await session.createPreview({ width: 480, height: 270 });
+const frame = await preview.render({ time: 1000 }); // keyframed values at 1 s
+const saved = session.exportDocument(); // JSON; reopen with openAuthoring({ document: saved })
+```
 
 The demo's `#provider` page runs the editor's own conformance check (`checkEffectProvider`) over every effect on your GPU, and draws a few through the contract.
 
