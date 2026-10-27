@@ -1,5 +1,613 @@
 [
   {
+    "id": "cobweb-corners",
+    "name": "Cobweb corners",
+    "kind": "shader",
+    "category": "overlay",
+    "description": "Dusty, tattered cobwebs strung across the corners of the frame, their threads sagging and gently stirring, with loose strands hanging down: a spooky overlay for a page or picture.",
+    "tags": [
+      "overlay",
+      "web",
+      "spider",
+      "cobweb",
+      "halloween",
+      "spooky",
+      "haunted",
+      "dust"
+    ],
+    "controls": [
+      {
+        "n": "uColor",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            227,
+            230,
+            234
+          ]
+        },
+        "l": "Silk",
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "uOpacity",
+        "t": "float",
+        "d": 0.85,
+        "line": 3
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 0.55,
+        "l": "Web size",
+        "min": 0.2,
+        "line": 4
+      },
+      {
+        "n": "uSpokes",
+        "t": "float",
+        "d": 7,
+        "min": 3,
+        "max": 12,
+        "s": 1,
+        "line": 5
+      },
+      {
+        "n": "uThreads",
+        "t": "float",
+        "d": 11,
+        "min": 3,
+        "max": 24,
+        "line": 6
+      },
+      {
+        "n": "uWidth",
+        "t": "float",
+        "d": 1.2,
+        "l": "Thread width (px)",
+        "min": 0.5,
+        "max": 4,
+        "line": 7
+      },
+      {
+        "n": "uSag",
+        "t": "float",
+        "d": 0.5,
+        "line": 8
+      },
+      {
+        "n": "uTatter",
+        "t": "float",
+        "d": 0.25,
+        "l": "Tattered",
+        "max": 0.8,
+        "line": 9
+      },
+      {
+        "n": "uStrands",
+        "t": "float",
+        "d": 0.6,
+        "l": "Hanging strands",
+        "line": 10
+      },
+      {
+        "n": "uSway",
+        "t": "float",
+        "d": 0.4,
+        "line": 11
+      },
+      {
+        "n": "uTop",
+        "t": "bool",
+        "d": true,
+        "l": "Top corners",
+        "line": 12
+      },
+      {
+        "n": "uBottom",
+        "t": "bool",
+        "d": false,
+        "l": "Bottom corners",
+        "line": 13
+      }
+    ],
+    "presets": [
+      "Haunted",
+      "Fresh",
+      "Dark silk"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": true
+    },
+    "transparent": true,
+    "animated": true,
+    "module": "shaders/web",
+    "addedAt": "2026-10-27T18:14:03.165Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "web-shot",
+    "name": "Web shot",
+    "kind": "shader",
+    "category": "interaction",
+    "description": "A line of silk shoots from the bottom of the frame to every click and bursts into a sticky web splat that hangs there, then fades.",
+    "tags": [
+      "interactive",
+      "click",
+      "overlay",
+      "web",
+      "spider",
+      "superhero",
+      "comic",
+      "splat"
+    ],
+    "controls": [
+      {
+        "n": "uColor",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            244,
+            246,
+            248
+          ]
+        },
+        "l": "Silk",
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "uOrigin",
+        "t": "vec2",
+        "d": [
+          0.5,
+          0
+        ],
+        "l": "Shooter (0–1 of the frame)",
+        "line": 3
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 0.2,
+        "l": "Splat size",
+        "min": 0.05,
+        "max": 0.5,
+        "line": 4
+      },
+      {
+        "n": "uSpokes",
+        "t": "float",
+        "d": 10,
+        "min": 5,
+        "max": 16,
+        "s": 1,
+        "line": 5
+      },
+      {
+        "n": "uRings",
+        "t": "float",
+        "d": 4,
+        "min": 1,
+        "max": 6,
+        "s": 1,
+        "line": 6
+      },
+      {
+        "n": "uWidth",
+        "t": "float",
+        "d": 2,
+        "l": "Thread width (px)",
+        "min": 0.5,
+        "max": 5,
+        "line": 7
+      },
+      {
+        "n": "uLife",
+        "t": "float",
+        "d": 1.8,
+        "l": "Lifetime",
+        "min": 0.5,
+        "max": 8,
+        "line": 8
+      },
+      {
+        "n": "uShadow",
+        "t": "bool",
+        "d": true,
+        "line": 9
+      },
+      {
+        "n": "uDemo",
+        "t": "bool",
+        "d": true,
+        "l": "Demo when idle",
+        "line": 10
+      }
+    ],
+    "presets": [
+      "Black silk",
+      "Big splat",
+      "From the corner"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [
+        "click"
+      ],
+      "transparent": true
+    },
+    "transparent": true,
+    "animated": true,
+    "module": "shaders/web",
+    "addedAt": "2026-10-27T18:14:03.165Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "plexus-web",
+    "name": "Plexus web",
+    "kind": "shader",
+    "category": "particles",
+    "description": "A web of glowing points drifting in the dark, each strung to its neighbours by fine lines that brighten as they close in and fade as they part.",
+    "tags": [
+      "background",
+      "particles",
+      "web",
+      "plexus",
+      "network",
+      "constellation",
+      "tech",
+      "data",
+      "hero"
+    ],
+    "controls": [
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            4,
+            6,
+            13
+          ]
+        },
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "uColorA",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            56,
+            189,
+            248
+          ]
+        },
+        "l": "Colour 1",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uColorB",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            167,
+            139,
+            250
+          ]
+        },
+        "l": "Colour 2",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uDensity",
+        "t": "float",
+        "d": 8,
+        "min": 3,
+        "max": 20,
+        "line": 5
+      },
+      {
+        "n": "uSpeed",
+        "t": "float",
+        "d": 0.5,
+        "max": 2,
+        "line": 6
+      },
+      {
+        "n": "uReach",
+        "t": "float",
+        "d": 1.1,
+        "l": "Line reach",
+        "min": 0.5,
+        "max": 1.6,
+        "line": 7
+      },
+      {
+        "n": "uWidth",
+        "t": "float",
+        "d": 1,
+        "l": "Line width (px)",
+        "min": 0.5,
+        "max": 3,
+        "line": 8
+      },
+      {
+        "n": "uPoints",
+        "t": "float",
+        "d": 1,
+        "l": "Point size",
+        "max": 2,
+        "line": 9
+      },
+      {
+        "n": "uGlow",
+        "t": "float",
+        "d": 0.5,
+        "line": 10
+      }
+    ],
+    "presets": [
+      "Gold",
+      "Dense",
+      "Calm",
+      "Light"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "shaders/web",
+    "addedAt": "2026-10-27T18:14:03.165Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "spider-web-loader",
+    "name": "Spider web loader",
+    "kind": "vector",
+    "category": "loader",
+    "description": "A spider web weaving itself spoke by spoke and round its spiral, then a spider dropping in on its thread, bobbing, and climbing back out as the web fades.",
+    "tags": [
+      "loader",
+      "web",
+      "spider",
+      "halloween",
+      "spooky",
+      "icon",
+      "draw"
+    ],
+    "controls": [
+      {
+        "n": "background",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            13,
+            15,
+            20
+          ]
+        },
+        "c": 1,
+        "line": 1
+      },
+      {
+        "n": "silk",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            216,
+            222,
+            230
+          ]
+        },
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "spider",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            241,
+            242,
+            244
+          ]
+        },
+        "c": 1,
+        "line": 3
+      }
+    ],
+    "presets": [
+      "Light",
+      "Halloween"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 400,
+    "animated": true,
+    "duration": 4100,
+    "module": "web",
+    "addedAt": "2026-10-27T18:14:03.165Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "spider-web",
+    "name": "Spider web",
+    "kind": "shader",
+    "category": "organic",
+    "description": "An orb web strung across the frame, spokes and a spiral of straight silk threads swaying in the breeze, beaded with glinting dew over soft out-of-focus leaves.",
+    "tags": [
+      "background",
+      "web",
+      "spider",
+      "dew",
+      "nature",
+      "halloween",
+      "autumn",
+      "macro"
+    ],
+    "controls": [
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            7,
+            11,
+            10
+          ]
+        },
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "uBokeh",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            47,
+            93,
+            68
+          ]
+        },
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uThread",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            230,
+            237,
+            242
+          ]
+        },
+        "l": "Silk",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uDew",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 0.85,
+        "l": "Web size",
+        "min": 0.2,
+        "max": 1.5,
+        "line": 6
+      },
+      {
+        "n": "uSpokes",
+        "t": "float",
+        "d": 22,
+        "min": 6,
+        "max": 36,
+        "s": 1,
+        "line": 7
+      },
+      {
+        "n": "uTurns",
+        "t": "float",
+        "d": 20,
+        "l": "Spiral turns",
+        "min": 4,
+        "max": 40,
+        "line": 8
+      },
+      {
+        "n": "uWidth",
+        "t": "float",
+        "d": 1.1,
+        "l": "Thread width (px)",
+        "min": 0.5,
+        "max": 4,
+        "line": 9
+      },
+      {
+        "n": "uDewAmount",
+        "t": "float",
+        "d": 0.5,
+        "l": "Dew",
+        "line": 10
+      },
+      {
+        "n": "uSheen",
+        "t": "float",
+        "d": 0.45,
+        "l": "Rainbow sheen",
+        "line": 11
+      },
+      {
+        "n": "uSway",
+        "t": "float",
+        "d": 0.4,
+        "line": 12
+      },
+      {
+        "n": "uSpeed",
+        "t": "float",
+        "d": 0.6,
+        "l": "Wind speed",
+        "max": 2,
+        "line": 13
+      }
+    ],
+    "presets": [
+      "Moonlit",
+      "Dry",
+      "Morning dew",
+      "Light"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "shaders/web",
+    "addedAt": "2026-10-27T18:14:03.164Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
     "id": "corner-pin",
     "name": "Corner pin",
     "kind": "shader",
@@ -1814,560 +2422,5 @@
     "addedAt": "2026-10-24T23:26:41Z",
     "commitHash": "393256f29f8d6805da3568962af218f8e673ac1b",
     "order": 450
-  },
-  {
-    "id": "infinity-loader",
-    "name": "Infinity loader",
-    "kind": "vector",
-    "category": "loader",
-    "description": "A glowing dash chasing itself round a figure of eight, stretching as it swings through the crossing.",
-    "tags": [
-      "loader",
-      "infinity",
-      "spinner",
-      "loop",
-      "ui",
-      "minimal"
-    ],
-    "controls": [
-      {
-        "n": "accent",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            139,
-            92,
-            246
-          ]
-        },
-        "l": "Dash",
-        "c": 1,
-        "line": 1
-      },
-      {
-        "n": "track",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            237,
-            233,
-            254
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "thickness",
-        "t": "float",
-        "d": 7,
-        "min": 2,
-        "max": 14,
-        "s": 1,
-        "line": 3
-      }
-    ],
-    "presets": [
-      "Dark",
-      "Thick"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 0,
-    "animated": true,
-    "duration": 1600,
-    "module": "loaders",
-    "addedAt": "2026-10-24T23:26:41Z",
-    "commitHash": "393256f29f8d6805da3568962af218f8e673ac1b",
-    "order": 449
-  },
-  {
-    "id": "hourglass",
-    "name": "Hourglass",
-    "kind": "vector",
-    "category": "loader",
-    "description": "An hourglass whose sand runs from the top bulb into the bottom in a thin stream, then the glass turns over to run again.",
-    "tags": [
-      "loader",
-      "hourglass",
-      "waiting",
-      "time",
-      "ui",
-      "icon"
-    ],
-    "controls": [
-      {
-        "n": "frame",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            51,
-            65,
-            85
-          ]
-        },
-        "c": 1,
-        "line": 1
-      },
-      {
-        "n": "glass",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            226,
-            232,
-            240
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "sand",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            245,
-            158,
-            11
-          ]
-        },
-        "c": 1,
-        "line": 3
-      }
-    ],
-    "presets": [
-      "Dark",
-      "Blue sand"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 0,
-    "animated": true,
-    "duration": 2300,
-    "module": "loaders",
-    "addedAt": "2026-10-24T23:26:41Z",
-    "commitHash": "393256f29f8d6805da3568962af218f8e673ac1b",
-    "order": 448
-  },
-  {
-    "id": "flame-loader",
-    "name": "Flame loader",
-    "kind": "shader",
-    "category": "loader",
-    "description": "A progress bar that burns along its length: the filled part glows like embers under flames, tallest at the leading edge, sparks flying off it.",
-    "tags": [
-      "loader",
-      "progress",
-      "bar",
-      "fire",
-      "flames",
-      "overlay",
-      "loop"
-    ],
-    "controls": [
-      {
-        "n": "uTrack",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            42,
-            26,
-            20
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "uWidth",
-        "t": "float",
-        "d": 0.8,
-        "min": 0.3,
-        "max": 0.95,
-        "line": 3
-      },
-      {
-        "n": "uThickness",
-        "t": "float",
-        "d": 0.05,
-        "min": 0.02,
-        "max": 0.12,
-        "line": 4
-      },
-      {
-        "n": "uHeight",
-        "t": "float",
-        "d": 0.16,
-        "l": "Flame height",
-        "max": 0.4,
-        "line": 5
-      },
-      {
-        "n": "uSparks",
-        "t": "float",
-        "d": 0.5,
-        "line": 6
-      },
-      {
-        "n": "uAnimate",
-        "t": "bool",
-        "d": true,
-        "line": 7
-      },
-      {
-        "n": "uProgress",
-        "t": "float",
-        "d": 0.65,
-        "l": "Progress (when still)",
-        "line": 8
-      },
-      {
-        "n": "uHot",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            242,
-            191
-          ]
-        },
-        "l": "Core",
-        "c": 1,
-        "line": 9
-      },
-      {
-        "n": "uMid",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            138,
-            28
-          ]
-        },
-        "l": "Flame",
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "uCool",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            192,
-            35,
-            12
-          ]
-        },
-        "l": "Tips",
-        "c": 1,
-        "line": 11
-      },
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            15,
-            23,
-            42
-          ]
-        },
-        "c": 1,
-        "line": 12
-      },
-      {
-        "n": "uBackgroundAlpha",
-        "t": "float",
-        "d": 0,
-        "l": "Background opacity",
-        "line": 13
-      }
-    ],
-    "presets": [
-      "With background",
-      "Blue flame",
-      "Tall flames",
-      "Still at two thirds"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": true
-    },
-    "transparent": true,
-    "loop": 6,
-    "animated": true,
-    "duration": 6000,
-    "module": "shaders/loaders",
-    "addedAt": "2026-10-24T23:26:41Z",
-    "commitHash": "393256f29f8d6805da3568962af218f8e673ac1b",
-    "order": 447
-  },
-  {
-    "id": "metaball-loader",
-    "name": "Metaball loader",
-    "kind": "shader",
-    "category": "loader",
-    "description": "Gooey blobs chasing each other round a circle, stretching apart and merging back together as they pass.",
-    "tags": [
-      "loader",
-      "spinner",
-      "metaball",
-      "goo",
-      "blob",
-      "playful",
-      "overlay"
-    ],
-    "controls": [
-      {
-        "n": "uColor",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            236,
-            72,
-            153
-          ]
-        },
-        "l": "Colour",
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "uColor2",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            139,
-            92,
-            246
-          ]
-        },
-        "l": "Second colour",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uSize",
-        "t": "float",
-        "d": 0.6,
-        "min": 0.3,
-        "max": 0.95,
-        "line": 4
-      },
-      {
-        "n": "uCount",
-        "t": "int",
-        "d": 5,
-        "l": "Blobs",
-        "min": 2,
-        "max": 7,
-        "line": 5
-      },
-      {
-        "n": "uGoo",
-        "t": "float",
-        "d": 0.9,
-        "l": "Gooeyness",
-        "min": 0.3,
-        "max": 1.5,
-        "line": 6
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 1,
-        "max": 3,
-        "line": 7
-      },
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            15,
-            23,
-            42
-          ]
-        },
-        "c": 1,
-        "line": 8
-      },
-      {
-        "n": "uBackgroundAlpha",
-        "t": "float",
-        "d": 0,
-        "l": "Background opacity",
-        "line": 9
-      }
-    ],
-    "presets": [
-      "With background",
-      "Mercury",
-      "Lava",
-      "Few"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": true
-    },
-    "transparent": true,
-    "animated": true,
-    "module": "shaders/loaders",
-    "addedAt": "2026-10-24T23:26:41Z",
-    "commitHash": "393256f29f8d6805da3568962af218f8e673ac1b",
-    "order": 446
-  },
-  {
-    "id": "glow-ring-spinner",
-    "name": "Glow ring spinner",
-    "kind": "shader",
-    "category": "loader",
-    "description": "A ring of light sweeping round with a soft glowing gradient tail, its tail stretching and shrinking as it turns.",
-    "tags": [
-      "loader",
-      "spinner",
-      "ring",
-      "glow",
-      "neon",
-      "ui",
-      "overlay"
-    ],
-    "controls": [
-      {
-        "n": "uHead",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            34,
-            211,
-            238
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "uTail",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            168,
-            85,
-            247
-          ]
-        },
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uTrack",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            30,
-            41,
-            59
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uSize",
-        "t": "float",
-        "d": 0.65,
-        "min": 0.3,
-        "max": 0.95,
-        "line": 5
-      },
-      {
-        "n": "uThickness",
-        "t": "float",
-        "d": 0.045,
-        "min": 0.01,
-        "max": 0.12,
-        "line": 6
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 1,
-        "l": "Turns per second",
-        "min": 0.2,
-        "max": 3,
-        "line": 7
-      },
-      {
-        "n": "uGlow",
-        "t": "float",
-        "d": 1,
-        "max": 2,
-        "line": 8
-      },
-      {
-        "n": "uTrackAlpha",
-        "t": "float",
-        "d": 0.5,
-        "l": "Track opacity",
-        "line": 9
-      },
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            15,
-            23,
-            42
-          ]
-        },
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "uBackgroundAlpha",
-        "t": "float",
-        "d": 0,
-        "l": "Background opacity",
-        "line": 11
-      }
-    ],
-    "presets": [
-      "With background",
-      "Sunset",
-      "Thin",
-      "Light card"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": true
-    },
-    "transparent": true,
-    "animated": true,
-    "module": "shaders/loaders",
-    "addedAt": "2026-10-24T23:26:41Z",
-    "commitHash": "393256f29f8d6805da3568962af218f8e673ac1b",
-    "order": 445
   }
 ]
