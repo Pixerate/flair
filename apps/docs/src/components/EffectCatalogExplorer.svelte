@@ -11,6 +11,8 @@
   const PAGE = 24;
   const NEW = "New";
   const recentIds: string[] = recentEffects.map((e: { id: string }) => e.id);
+  /** The latest additions, badged wherever they show, not only under "New". */
+  const isNew = new Set(recentIds);
 
   let text = "";
   let group = "All";
@@ -173,6 +175,9 @@
         >
           <div class="relative aspect-video overflow-hidden rounded-2xl ring-1 ring-[var(--flair-line)] transition duration-300 group-hover:-translate-y-0.5 group-hover:shadow-xl group-hover:shadow-black/20 group-hover:ring-[var(--flair-line-strong)] group-focus-visible:ring-2 group-focus-visible:ring-violet-400">
             <EffectPreviewCard effectMeta={effect} hovered={hoveredId === effect.id} />
+            {#if isNew.has(effect.id)}
+              <span class="absolute left-2 top-2 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#0c0c14] shadow-sm backdrop-blur-md">New</span>
+            {/if}
             {#if effect.trigger}
               <span class="absolute right-2 top-2 rounded-full bg-black/55 px-2 py-0.5 text-[10px] text-white backdrop-blur-md">{effect.trigger}</span>
             {/if}
@@ -196,5 +201,5 @@
 </section>
 
 {#if selected}
-  <EffectDetail meta={selected} position={position} total={position >= 0 ? results.length : 0} on:close={close} on:step={(e) => step(e.detail)} />
+  <EffectDetail meta={selected} isNew={isNew.has(selected.id)} position={position} total={position >= 0 ? results.length : 0} on:close={close} on:step={(e) => step(e.detail)} />
 {/if}

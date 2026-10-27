@@ -20,6 +20,17 @@ function generateRecentEffects() {
   const meta = JSON.parse(fs.readFileSync(META_PATH, 'utf-8'));
   const effectMap = new Map(meta.map((e) => [e.id, e]));
 
+  // A shallow clone (CI and hosted builds often fetch one commit) makes every effect look added at once,
+  // which would list the catalog's last 20 instead of its newest: keep the list committed with the source.
+  try {
+    if (execSync('git rev-parse --is-shallow-repository', { cwd: ROOT_DIR }).toString().trim() === 'true') {
+      console.warn('Shallow git history: keeping the committed recent effects list.');
+      return;
+    }
+  } catch {
+    // Not a git checkout: fall through to the fallback below.
+  }
+
   let hashes = [];
   try {
     hashes = execSync('git log --format="%H" -- src/catalog/meta.generated.json', { cwd: ROOT_DIR })
@@ -28,6 +39,10 @@ function generateRecentEffects() {
       .split('\n')
       .filter(Boolean);
   } catch (err) {
+    if (fs.existsSync(OUTPUT_PATH)) {
+      console.warn('Git log failed: keeping the committed recent effects list.', err);
+      return;
+    }
     console.warn('Git log failed, falling back to end of catalog', err);
     const fallback = meta.slice(-16).reverse();
     fs.writeFileSync(OUTPUT_PATH, JSON.stringify(fallback, null, 2));

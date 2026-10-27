@@ -6,6 +6,8 @@
   import { showsOverPicture } from "../lib/overPicture";
 
   export let meta: EffectMeta;
+  /** One of the catalog's latest additions. */
+  export let isNew = false;
   /** Where it sits in the list being browsed, for "3 of 40". */
   export let position = 0;
   export let total = 0;
@@ -109,7 +111,12 @@
 
     <div class="px-3 pb-3 pt-5 md:px-5">
       <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h3 class="m-0 text-2xl font-semibold tracking-tight text-ink">{meta.name}</h3>
+        <h3 class="m-0 flex items-center gap-2.5 text-2xl font-semibold tracking-tight text-ink">
+          {meta.name}
+          {#if isNew}
+            <span class="rounded-full bg-[var(--flair-ink)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--flair-page)]">New</span>
+          {/if}
+        </h3>
         <span class="text-xs text-faint">{meta.category} · {meta.kind}{total ? ` · ${position + 1} of ${total}` : ""}</span>
       </div>
       <p class="mt-2 text-[15px] leading-relaxed text-muted">{meta.description}</p>

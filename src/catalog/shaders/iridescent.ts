@@ -120,10 +120,13 @@ uniform float uDust;      // @control min=0 max=1 default=0.5 label="Sparks"`,
   float core = exp(-d * d / 5.0);
   float glow = exp(-d / 16.0);
   float grain = mix(1.0, smoothstep(0.35, 0.85, vnoise(fragCoord * 0.45 + r * 40.0)), uGrain);
-  vec3 col = uBackground + on * tint * (1.5 * core * grain + 0.3 * uGlow * glow);
+  vec3 light = on * tint * (1.5 * core * grain + 0.3 * uGlow * glow);
   // Sparks: sparse bright pixels that ride the flow, thickest near the strands.
   float spark = step(0.99 - 0.04 * uDust * glow, hash12(floor(fragCoord / 2.0) + floor(r * 90.0)));
-  col += uDust * spark * tint * (0.2 + 1.6 * glow) * on;
+  light += uDust * spark * tint * (0.2 + 1.6 * glow) * on;
+  vec3 col;
+  // Light over the ground: on dark it adds, on a light ground the lines keep their own colour instead of washing out.
+  col = uBackground * (1.0 - clamp(max(light.r, max(light.g, light.b)), 0.0, 1.0)) + light;
   fragColor = vec4(col, 1.0);
 }`,
   ),
@@ -131,6 +134,7 @@ uniform float uDust;      // @control min=0 max=1 default=0.5 label="Sparks"`,
     { name: "Ice", values: { uColorA: [0.35, 0.55, 1], uColorB: [0.6, 0.95, 1], uColorC: [1, 1, 1] } },
     { name: "Ember", values: { uColorA: [1, 0.25, 0.1], uColorB: [1, 0.6, 0.15], uColorC: [1, 0.9, 0.6] } },
     { name: "Calm", values: { uSpeed: 0.04, uSwirl: 2, uStrands: 4 } },
+    { name: "Light", values: { uBackground: [0.96, 0.95, 0.98], uColorA: [0.42, 0.12, 0.82], uColorB: [0, 0.55, 0.58], uColorC: [0.82, 0.48, 0], uGlow: 0.8 } },
   ],
 };
 
@@ -164,7 +168,10 @@ uniform float uGlow;      // @control min=0 max=2 default=1 label="Glow"`,
   vec3 tint = mix(uColorA, uColorB, 0.5 + 0.5 * sin(6.28318 * (x * 0.6 + n) + t * 2.0));
   float tube = smoothstep(uWidth, uWidth * 0.3, d);
   float glow = uGlow * exp(-d / (uWidth * 3.5));
-  vec3 col = uBackground + tint * (0.55 * glow + tube) + vec3(1.0) * 0.6 * smoothstep(uWidth * 0.45, 0.0, d);
+  vec3 light = tint * (0.55 * glow + tube) + vec3(1.0) * 0.6 * smoothstep(uWidth * 0.45, 0.0, d);
+  vec3 col;
+  // Light over the ground: on dark it adds, on a light ground the lines keep their own colour instead of washing out.
+  col = uBackground * (1.0 - clamp(max(light.r, max(light.g, light.b)), 0.0, 1.0)) + light;
   fragColor = vec4(col, 1.0);
 }`,
   ),
@@ -172,6 +179,7 @@ uniform float uGlow;      // @control min=0 max=2 default=1 label="Glow"`,
     { name: "Acid", values: { uColorA: [0.55, 1, 0.2], uColorB: [0.1, 0.9, 0.8] } },
     { name: "Thin", values: { uWidth: 1, uCount: 3, uGlow: 0.6 } },
     { name: "Fat tubes", values: { uWidth: 6, uCount: 1, uScale: 1.6 } },
+    { name: "Light", values: { uBackground: [0.96, 0.95, 0.98], uColorA: [0.48, 0.13, 0.88], uColorB: [0.88, 0.14, 0.48] } },
   ],
 };
 
@@ -212,6 +220,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   ),
   presets: [
     { name: "Plasma", values: { uHot: [0.9, 0.95, 1], uGlowColor: [0.65, 0.3, 1], uRock: [0.03, 0.01, 0.08] } },
+    { name: "Light", values: { uRock: [0.97, 0.94, 0.9], uGlowColor: [1, 0.48, 0.04], uHot: [0.64, 0.09, 0.04] } },
     { name: "Gold leaf", values: { uHot: [1, 0.95, 0.75], uGlowColor: [0.85, 0.6, 0.2], uFlicker: 0, uSharpness: 14 } },
   ],
 };
@@ -245,8 +254,11 @@ uniform float uReach;     // @control min=0.2 max=2 default=0.9 label="Reach"`,
   vec3 hue = 0.5 + 0.5 * cos(a * 2.0 + vec3(0.0, 2.1, 4.2) + iTime * 0.2);
   hue = mix(vec3(dot(hue, vec3(0.333))), hue, uSaturation);
   float fall = exp(-r / uReach);
-  vec3 col = uBackground + hue * rays * fall * smoothstep(0.0, 0.08, r) * 1.4;
-  col += uCore * (vec3(1.0, 0.97, 0.92) * 0.012 / (r * r + 0.004) * 0.15 + hue * 0.25 * exp(-r * 6.0));
+  vec3 light = hue * rays * fall * smoothstep(0.0, 0.08, r) * 1.4;
+  light += uCore * (vec3(1.0, 0.97, 0.92) * 0.012 / (r * r + 0.004) * 0.15 + hue * 0.25 * exp(-r * 6.0));
+  vec3 col;
+  // Light over the ground: on dark it adds, on a light ground the lines keep their own colour instead of washing out.
+  col = uBackground * (1.0 - clamp(max(light.r, max(light.g, light.b)), 0.0, 1.0)) + light;
   fragColor = vec4(col, 1.0);
 }`,
   ),
@@ -254,6 +266,7 @@ uniform float uReach;     // @control min=0.2 max=2 default=0.9 label="Reach"`,
     { name: "Teal sun", values: { uSaturation: 0.3, uRays: 22, uBackground: [0.02, 0.08, 0.09] } },
     { name: "Corner flare", values: { uCenter: [-0.45, 0.3], uReach: 1.6, uRays: 9 } },
     { name: "Soft", values: { uSharpness: 1.5, uCore: 0.5 } },
+    { name: "Light", values: { uBackground: [0.97, 0.96, 0.98], uSharpness: 1.5, uCore: 0.5, uSaturation: 1 } },
   ],
 };
 
@@ -279,7 +292,7 @@ uniform float uWidth;     // @control min=0.5 max=4 default=1.4 label="Streak wi
   vec2 p = (fragCoord - 0.5 * iResolution.xy) / iResolution.y;
   float r = length(p);
   float a = atan(p.y, p.x) / 6.28318 + 0.5;
-  vec3 col = uBackground;
+  vec3 light = vec3(0.0);
   for (int layer = 0; layer < 3; layer++) {
     float fl = float(layer);
     float count = floor(uDensity * (1.0 + 0.37 * fl));
@@ -293,9 +306,12 @@ uniform float uWidth;     // @control min=0.5 max=4 default=1.4 label="Streak wi
     float across = abs(fract(a * count + fl * 0.37) - 0.5) / count * 6.28318 * r * iResolution.y;
     float line = smoothstep(uWidth, 0.0, across) * along * smoothstep(0.0, 0.15, z) * step(0.35, h);
     vec3 tint = mix(uColorA, uColorB, step(0.5, hash12(vec2(slot, fl + 5.0))));
-    col += tint * line * (0.6 + 1.2 * z);
+    light += tint * line * (0.6 + 1.2 * z);
   }
-  col += mix(uColorA, uColorB, 0.5) * 0.12 * exp(-pow(r - uClear, 2.0) * 40.0);
+  light += mix(uColorA, uColorB, 0.5) * 0.12 * exp(-pow(r - uClear, 2.0) * 40.0);
+  vec3 col;
+  // Light over the ground: on dark it adds, on a light ground the lines keep their own colour instead of washing out.
+  col = uBackground * (1.0 - clamp(max(light.r, max(light.g, light.b)), 0.0, 1.0)) + light;
   fragColor = vec4(col, 1.0);
 }`,
   ),
@@ -303,6 +319,7 @@ uniform float uWidth;     // @control min=0.5 max=4 default=1.4 label="Streak wi
     { name: "Classic white", values: { uColorA: [1, 1, 1], uColorB: [0.75, 0.85, 1], uBackground: [0, 0, 0.02] } },
     { name: "Cruise", values: { uSpeed: 0.15, uLength: 0.12, uDensity: 60 } },
     { name: "Full screen", values: { uClear: 0 } },
+    { name: "Light", values: { uBackground: [0.97, 0.96, 0.98], uColorA: [0.88, 0.09, 0.44], uColorB: [0.04, 0.56, 0.79], uWidth: 1.8 } },
   ],
 };
 
