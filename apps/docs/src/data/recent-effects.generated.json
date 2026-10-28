@@ -1,171 +1,47 @@
 [
   {
-    "id": "polaroid-develop",
-    "name": "Polaroid develop",
-    "kind": "shader",
-    "category": "image",
-    "description": "An instant photo sliding onto the table and given a shake, its picture developing out of murky blue-green to full, slightly faded colour inside the white frame.",
-    "tags": [
-      "image",
-      "reveal",
-      "card",
-      "polaroid",
-      "instant-photo",
-      "film",
-      "retro",
-      "develop"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "portrait"
-        },
-        "line": 3,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uTable",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            200,
-            181,
-            154
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uFrame",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            245,
-            242,
-            234
-          ]
-        },
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uTilt",
-        "t": "float",
-        "d": -4,
-        "l": "Tilt (degrees)",
-        "min": -15,
-        "max": 15,
-        "line": 6
-      },
-      {
-        "n": "uAuto",
-        "t": "bool",
-        "d": true,
-        "l": "Animate",
-        "line": 7
-      },
-      {
-        "n": "uProgress",
-        "t": "float",
-        "d": 1,
-        "l": "Developed (when still)",
-        "line": 8
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 9
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "line": 10
-      }
-    ],
-    "presets": [
-      "Dark desk",
-      "Half developed"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "filter",
-    "loop": 7,
-    "animated": true,
-    "duration": 7000,
-    "module": "shaders/treatments",
-    "addedAt": "2026-10-28T23:06:34.448Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "card-fan",
-    "name": "Card fan",
+    "id": "rolodex",
+    "name": "Rolodex",
     "kind": "vector",
-    "category": "interaction",
-    "description": "A squared-up hand of five playing cards that fans open on an arc on hover, the middle card rising, and gathers back when the pointer leaves.",
+    "category": "data",
+    "description": "Cards on a rolodex spindle flipping down one after another, each showing a figure and its label, for rotating stats, quotes or names.",
     "tags": [
-      "interactive",
-      "ui",
-      "hover",
       "card",
-      "playing-card",
-      "fan",
-      "deck",
-      "poker"
+      "rolodex",
+      "flip",
+      "stat",
+      "rotating",
+      "testimonial",
+      "retro",
+      "loop"
     ],
     "controls": [
       {
-        "n": "ranks",
+        "n": "entries",
         "t": "text",
-        "d": "A K Q J 10",
-        "l": "Ranks (five, separated by spaces)",
+        "d": "12k users, 4.9 rating, 99.9% uptime, 140 countries",
+        "l": "Entries (comma separated)",
         "line": 1
+      },
+      {
+        "n": "labels",
+        "t": "text",
+        "d": "signed up this month, on the App Store, over the last year, and counting",
+        "l": "Labels (comma separated)",
+        "line": 2
       },
       {
         "n": "background",
         "t": "vec3",
         "d": {
           "c255": [
-            20,
-            83,
-            45
+            241,
+            245,
+            249
           ]
         },
-        "l": "Table",
         "c": 1,
-        "line": 2
+        "line": 3
       },
       {
         "n": "card",
@@ -178,40 +54,53 @@
           ]
         },
         "c": 1,
-        "line": 3
-      },
-      {
-        "n": "black",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            17,
-            24,
-            39
-          ]
-        },
-        "l": "Black suits",
-        "c": 1,
         "line": 4
       },
       {
-        "n": "red",
+        "n": "ink",
         "t": "vec3",
         "d": {
           "c255": [
-            220,
-            38,
-            38
+            15,
+            23,
+            42
           ]
         },
-        "l": "Red suits",
+        "l": "Text colour",
         "c": 1,
         "line": 5
+      },
+      {
+        "n": "accent",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            99,
+            102,
+            241
+          ]
+        },
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "metal",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            148,
+            163,
+            184
+          ]
+        },
+        "l": "Spindle",
+        "c": 1,
+        "line": 7
       }
     ],
     "presets": [
-      "Royal flush",
-      "Night"
+      "Team",
+      "Dark"
     ],
     "inputs": {
       "accepts": [
@@ -220,239 +109,92 @@
       "images": [],
       "texts": [
         {
-          "name": "ranks",
-          "label": "Ranks (five, separated by spaces)",
+          "name": "entries",
+          "label": "Entries (comma separated)",
           "holds": "copy",
-          "default": "A K Q J 10"
+          "default": "12k users, 4.9 rating, 99.9% uptime, 140 countries"
+        },
+        {
+          "name": "labels",
+          "label": "Labels (comma separated)",
+          "holds": "copy",
+          "default": "signed up this month, on the App Store, over the last year, and counting"
         }
       ],
-      "interactions": [
-        "hover"
-      ],
-      "trigger": "hover",
+      "interactions": [],
       "transparent": false
     },
-    "trigger": "hover",
+    "hold": 0,
     "animated": true,
-    "duration": 1090,
-    "module": "interaction",
-    "addedAt": "2026-10-28T23:06:34.448Z",
-    "commitHash": "",
-    "order": 0
+    "duration": 5750,
+    "module": "data",
+    "addedAt": "2026-10-28T23:06:56Z",
+    "commitHash": "974f0cf9f350aec221df957137e8d457c5536011",
+    "order": 488
   },
   {
-    "id": "metal-card",
-    "name": "Metal card",
-    "kind": "shader",
-    "category": "ui",
-    "description": "A brushed-metal payment card that tilts toward the pointer, a streak of light sliding along its grain over the chip, the contactless mark and embossed digits.",
+    "id": "riffle-shuffle",
+    "name": "Riffle shuffle",
+    "kind": "vector",
+    "category": "loader",
+    "description": "A deck of cards cut in two and riffled back together, the cards dropping in from either side in turn before the deck is tapped square, over and over.",
     "tags": [
-      "ui",
+      "loader",
       "card",
-      "credit-card",
-      "payment",
-      "metal",
-      "fintech",
-      "interactive",
-      "hover"
+      "shuffle",
+      "deck",
+      "playing-card",
+      "waiting",
+      "loop"
     ],
     "controls": [
       {
-        "n": "uMetal",
+        "n": "back",
         "t": "vec3",
         "d": {
           "c255": [
-            42,
-            44,
-            49
+            79,
+            70,
+            229
           ]
         },
+        "l": "Card back",
+        "c": 1,
+        "line": 1
+      },
+      {
+        "n": "trim",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "l": "Card edge",
         "c": 1,
         "line": 2
-      },
-      {
-        "n": "uChip",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            217,
-            180,
-            90
-          ]
-        },
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uInk",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            201,
-            205,
-            212
-          ]
-        },
-        "l": "Embossing",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uShine",
-        "t": "float",
-        "d": 0.6,
-        "line": 5
-      },
-      {
-        "n": "uTilt",
-        "t": "float",
-        "d": 0.5,
-        "line": 6
-      },
-      {
-        "n": "uDemo",
-        "t": "bool",
-        "d": true,
-        "l": "Demo when idle",
-        "line": 7
       }
     ],
     "presets": [
-      "Titanium",
-      "Rose gold"
+      "Red back",
+      "Mono"
     ],
     "inputs": {
       "accepts": [],
       "images": [],
       "texts": [],
-      "interactions": [
-        "hover",
-        "pointer"
-      ],
-      "transparent": true
-    },
-    "transparent": true,
-    "animated": true,
-    "module": "shaders/ui",
-    "addedAt": "2026-10-28T23:06:34.448Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "card-spotlight",
-    "name": "Card spotlight",
-    "kind": "shader",
-    "category": "ui",
-    "description": "A bento grid of dark cards whose borders and faces light up near the pointer, one soft spotlight bleeding across the card edges and the gaps between.",
-    "tags": [
-      "ui",
-      "card",
-      "bento",
-      "grid",
-      "spotlight",
-      "interactive",
-      "hover",
-      "saas",
-      "background"
-    ],
-    "controls": [
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            9,
-            9,
-            11
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "uCard",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            17,
-            17,
-            20
-          ]
-        },
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uBorder",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            39,
-            39,
-            42
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uSpot",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            167,
-            139,
-            250
-          ]
-        },
-        "l": "Spotlight",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uRadius",
-        "t": "float",
-        "d": 0.32,
-        "l": "Spotlight size",
-        "min": 0.1,
-        "max": 0.8,
-        "line": 6
-      },
-      {
-        "n": "uGap",
-        "t": "float",
-        "d": 0.022,
-        "min": 0.005,
-        "max": 0.06,
-        "line": 7
-      },
-      {
-        "n": "uDemo",
-        "t": "bool",
-        "d": true,
-        "l": "Demo when idle",
-        "line": 8
-      }
-    ],
-    "presets": [
-      "Light",
-      "Emerald"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [
-        "hover",
-        "pointer"
-      ],
+      "interactions": [],
       "transparent": false
     },
+    "hold": 300,
     "animated": true,
-    "module": "shaders/ui",
-    "addedAt": "2026-10-28T23:06:34.448Z",
-    "commitHash": "",
-    "order": 0
+    "duration": 1800,
+    "module": "loaders",
+    "addedAt": "2026-10-28T23:06:56Z",
+    "commitHash": "974f0cf9f350aec221df957137e8d457c5536011",
+    "order": 487
   },
   {
     "id": "cover-flow",
@@ -586,117 +328,261 @@
     "video": "filter",
     "animated": true,
     "module": "shaders/three-d",
-    "addedAt": "2026-10-28T23:06:34.448Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-10-28T23:06:56Z",
+    "commitHash": "974f0cf9f350aec221df957137e8d457c5536011",
+    "order": 486
   },
   {
-    "id": "riffle-shuffle",
-    "name": "Riffle shuffle",
-    "kind": "vector",
-    "category": "loader",
-    "description": "A deck of cards cut in two and riffled back together, the cards dropping in from either side in turn before the deck is tapped square, over and over.",
+    "id": "card-spotlight",
+    "name": "Card spotlight",
+    "kind": "shader",
+    "category": "ui",
+    "description": "A bento grid of dark cards whose borders and faces light up near the pointer, one soft spotlight bleeding across the card edges and the gaps between.",
     "tags": [
-      "loader",
+      "ui",
       "card",
-      "shuffle",
-      "deck",
-      "playing-card",
-      "waiting",
-      "loop"
+      "bento",
+      "grid",
+      "spotlight",
+      "interactive",
+      "hover",
+      "saas",
+      "background"
     ],
     "controls": [
       {
-        "n": "back",
+        "n": "uBackground",
         "t": "vec3",
         "d": {
           "c255": [
-            79,
-            70,
-            229
+            9,
+            9,
+            11
           ]
         },
-        "l": "Card back",
-        "c": 1,
-        "line": 1
-      },
-      {
-        "n": "trim",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "l": "Card edge",
         "c": 1,
         "line": 2
+      },
+      {
+        "n": "uCard",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            17,
+            17,
+            20
+          ]
+        },
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uBorder",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            39,
+            39,
+            42
+          ]
+        },
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uSpot",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            167,
+            139,
+            250
+          ]
+        },
+        "l": "Spotlight",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uRadius",
+        "t": "float",
+        "d": 0.32,
+        "l": "Spotlight size",
+        "min": 0.1,
+        "max": 0.8,
+        "line": 6
+      },
+      {
+        "n": "uGap",
+        "t": "float",
+        "d": 0.022,
+        "min": 0.005,
+        "max": 0.06,
+        "line": 7
+      },
+      {
+        "n": "uDemo",
+        "t": "bool",
+        "d": true,
+        "l": "Demo when idle",
+        "line": 8
       }
     ],
     "presets": [
-      "Red back",
-      "Mono"
+      "Light",
+      "Emerald"
     ],
     "inputs": {
       "accepts": [],
       "images": [],
       "texts": [],
-      "interactions": [],
+      "interactions": [
+        "hover",
+        "pointer"
+      ],
       "transparent": false
     },
-    "hold": 300,
     "animated": true,
-    "duration": 1800,
-    "module": "loaders",
-    "addedAt": "2026-10-28T23:06:34.448Z",
-    "commitHash": "",
-    "order": 0
+    "module": "shaders/ui",
+    "addedAt": "2026-10-28T23:06:56Z",
+    "commitHash": "974f0cf9f350aec221df957137e8d457c5536011",
+    "order": 485
   },
   {
-    "id": "rolodex",
-    "name": "Rolodex",
-    "kind": "vector",
-    "category": "data",
-    "description": "Cards on a rolodex spindle flipping down one after another, each showing a figure and its label, for rotating stats, quotes or names.",
+    "id": "metal-card",
+    "name": "Metal card",
+    "kind": "shader",
+    "category": "ui",
+    "description": "A brushed-metal payment card that tilts toward the pointer, a streak of light sliding along its grain over the chip, the contactless mark and embossed digits.",
     "tags": [
+      "ui",
       "card",
-      "rolodex",
-      "flip",
-      "stat",
-      "rotating",
-      "testimonial",
-      "retro",
-      "loop"
+      "credit-card",
+      "payment",
+      "metal",
+      "fintech",
+      "interactive",
+      "hover"
     ],
     "controls": [
       {
-        "n": "entries",
-        "t": "text",
-        "d": "12k users, 4.9 rating, 99.9% uptime, 140 countries",
-        "l": "Entries (comma separated)",
-        "line": 1
+        "n": "uMetal",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            42,
+            44,
+            49
+          ]
+        },
+        "c": 1,
+        "line": 2
       },
       {
-        "n": "labels",
+        "n": "uChip",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            217,
+            180,
+            90
+          ]
+        },
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uInk",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            201,
+            205,
+            212
+          ]
+        },
+        "l": "Embossing",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uShine",
+        "t": "float",
+        "d": 0.6,
+        "line": 5
+      },
+      {
+        "n": "uTilt",
+        "t": "float",
+        "d": 0.5,
+        "line": 6
+      },
+      {
+        "n": "uDemo",
+        "t": "bool",
+        "d": true,
+        "l": "Demo when idle",
+        "line": 7
+      }
+    ],
+    "presets": [
+      "Titanium",
+      "Rose gold"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [
+        "hover",
+        "pointer"
+      ],
+      "transparent": true
+    },
+    "transparent": true,
+    "animated": true,
+    "module": "shaders/ui",
+    "addedAt": "2026-10-28T23:06:56Z",
+    "commitHash": "974f0cf9f350aec221df957137e8d457c5536011",
+    "order": 484
+  },
+  {
+    "id": "card-fan",
+    "name": "Card fan",
+    "kind": "vector",
+    "category": "interaction",
+    "description": "A squared-up hand of five playing cards that fans open on an arc on hover, the middle card rising, and gathers back when the pointer leaves.",
+    "tags": [
+      "interactive",
+      "ui",
+      "hover",
+      "card",
+      "playing-card",
+      "fan",
+      "deck",
+      "poker"
+    ],
+    "controls": [
+      {
+        "n": "ranks",
         "t": "text",
-        "d": "signed up this month, on the App Store, over the last year, and counting",
-        "l": "Labels (comma separated)",
-        "line": 2
+        "d": "A K Q J 10",
+        "l": "Ranks (five, separated by spaces)",
+        "line": 1
       },
       {
         "n": "background",
         "t": "vec3",
         "d": {
           "c255": [
-            241,
-            245,
-            249
+            20,
+            83,
+            45
           ]
         },
+        "l": "Table",
         "c": 1,
-        "line": 3
+        "line": 2
       },
       {
         "n": "card",
@@ -709,53 +595,40 @@
           ]
         },
         "c": 1,
+        "line": 3
+      },
+      {
+        "n": "black",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            17,
+            24,
+            39
+          ]
+        },
+        "l": "Black suits",
+        "c": 1,
         "line": 4
       },
       {
-        "n": "ink",
+        "n": "red",
         "t": "vec3",
         "d": {
           "c255": [
-            15,
-            23,
-            42
+            220,
+            38,
+            38
           ]
         },
-        "l": "Text colour",
+        "l": "Red suits",
         "c": 1,
         "line": 5
-      },
-      {
-        "n": "accent",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            99,
-            102,
-            241
-          ]
-        },
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "metal",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            148,
-            163,
-            184
-          ]
-        },
-        "l": "Spindle",
-        "c": 1,
-        "line": 7
       }
     ],
     "presets": [
-      "Team",
-      "Dark"
+      "Royal flush",
+      "Night"
     ],
     "inputs": {
       "accepts": [
@@ -764,28 +637,155 @@
       "images": [],
       "texts": [
         {
-          "name": "entries",
-          "label": "Entries (comma separated)",
+          "name": "ranks",
+          "label": "Ranks (five, separated by spaces)",
           "holds": "copy",
-          "default": "12k users, 4.9 rating, 99.9% uptime, 140 countries"
-        },
-        {
-          "name": "labels",
-          "label": "Labels (comma separated)",
-          "holds": "copy",
-          "default": "signed up this month, on the App Store, over the last year, and counting"
+          "default": "A K Q J 10"
         }
       ],
+      "interactions": [
+        "hover"
+      ],
+      "trigger": "hover",
+      "transparent": false
+    },
+    "trigger": "hover",
+    "animated": true,
+    "duration": 1090,
+    "module": "interaction",
+    "addedAt": "2026-10-28T23:06:56Z",
+    "commitHash": "974f0cf9f350aec221df957137e8d457c5536011",
+    "order": 483
+  },
+  {
+    "id": "polaroid-develop",
+    "name": "Polaroid develop",
+    "kind": "shader",
+    "category": "image",
+    "description": "An instant photo sliding onto the table and given a shake, its picture developing out of murky blue-green to full, slightly faded colour inside the white frame.",
+    "tags": [
+      "image",
+      "reveal",
+      "card",
+      "polaroid",
+      "instant-photo",
+      "film",
+      "retro",
+      "develop"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "line": 3,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uTable",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            200,
+            181,
+            154
+          ]
+        },
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uFrame",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            245,
+            242,
+            234
+          ]
+        },
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uTilt",
+        "t": "float",
+        "d": -4,
+        "l": "Tilt (degrees)",
+        "min": -15,
+        "max": 15,
+        "line": 6
+      },
+      {
+        "n": "uAuto",
+        "t": "bool",
+        "d": true,
+        "l": "Animate",
+        "line": 7
+      },
+      {
+        "n": "uProgress",
+        "t": "float",
+        "d": 1,
+        "l": "Developed (when still)",
+        "line": 8
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 9
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "line": 10
+      }
+    ],
+    "presets": [
+      "Dark desk",
+      "Half developed"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
       "interactions": [],
       "transparent": false
     },
-    "hold": 0,
+    "video": "filter",
+    "loop": 7,
     "animated": true,
-    "duration": 5750,
-    "module": "data",
-    "addedAt": "2026-10-28T23:06:34.448Z",
-    "commitHash": "",
-    "order": 0
+    "duration": 7000,
+    "module": "shaders/treatments",
+    "addedAt": "2026-10-28T23:06:56Z",
+    "commitHash": "974f0cf9f350aec221df957137e8d457c5536011",
+    "order": 482
   },
   {
     "id": "tarot-reveal",
@@ -915,9 +915,9 @@
     "animated": true,
     "duration": 8000,
     "module": "shaders/light",
-    "addedAt": "2026-10-28T23:06:34.447Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-10-28T23:06:56Z",
+    "commitHash": "974f0cf9f350aec221df957137e8d457c5536011",
+    "order": 481
   },
   {
     "id": "pack-opening",
