@@ -1,190 +1,58 @@
 [
   {
-    "id": "tick-ring-burst",
-    "name": "Tick ring burst",
+    "id": "knockout-wipe",
+    "name": "Knockout wipe",
     "kind": "shader",
-    "category": "light",
-    "description": "A sunburst arc of short rounded ticks popping out one after another from its middle behind a title, holding, then flying outward and fading; a transparent overlay.",
+    "category": "transition",
+    "description": "A slanted cut with a bright edge sweeping across a picture, knocking its background out to a transparency checkerboard and leaving the cut-out standing, like a background-removal reveal. Loops back and forth; or turn Animate off and set Progress.",
     "tags": [
-      "overlay",
+      "transition",
+      "image",
       "promo",
-      "title",
-      "sunburst",
-      "ring",
-      "logo",
-      "accent",
-      "burst"
+      "background-removal",
+      "cut-out",
+      "checkerboard",
+      "wipe",
+      "reveal"
     ],
     "controls": [
       {
-        "n": "uColor",
-        "t": "vec3",
+        "n": "uFrom",
+        "t": "sampler2D",
         "d": {
-          "c255": [
-            240,
-            80,
-            122
-          ]
+          "sample": "portrait"
         },
-        "l": "Ticks",
-        "c": 1,
-        "line": 3
+        "l": "Picture",
+        "line": 3,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
       },
       {
-        "n": "uColorB",
-        "t": "vec3",
+        "n": "uTo",
+        "t": "sampler2D",
         "d": {
-          "c255": [
-            255,
-            176,
-            194
-          ]
+          "sample": "cutout"
         },
-        "l": "Ends",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uCount",
-        "t": "float",
-        "d": 44,
-        "l": "Ticks round a full circle",
-        "min": 8,
-        "max": 96,
-        "s": 1,
-        "line": 5
-      },
-      {
-        "n": "uArc",
-        "t": "float",
-        "d": 0.45,
-        "l": "Arc (share of circle)",
-        "min": 0.05,
-        "line": 6
+        "l": "Cut-out",
+        "line": 4,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
       },
       {
         "n": "uAngle",
         "t": "float",
-        "d": 90,
-        "l": "Arc centre (°)",
+        "d": -35,
+        "l": "Direction (°)",
         "min": -180,
         "max": 180,
-        "line": 7
+        "line": 5
       },
       {
-        "n": "uRadius",
-        "t": "float",
-        "d": 0.3,
-        "min": 0.05,
-        "max": 0.48,
-        "line": 8
-      },
-      {
-        "n": "uLength",
-        "t": "float",
-        "d": 0.06,
-        "l": "Tick length",
-        "min": 0.01,
-        "max": 0.2,
-        "line": 9
-      },
-      {
-        "n": "uWidth",
-        "t": "float",
-        "d": 12,
-        "l": "Tick width",
-        "min": 2,
-        "max": 40,
-        "line": 10
-      },
-      {
-        "n": "uAnimate",
-        "t": "bool",
-        "d": true,
-        "line": 11
-      },
-      {
-        "n": "uCycle",
-        "t": "float",
-        "d": 3,
-        "l": "Cycle (s)",
-        "min": 1,
-        "max": 8,
-        "line": 12
-      },
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            244,
-            210
-          ]
-        },
-        "c": 1,
-        "line": 13
-      },
-      {
-        "n": "uBackgroundAlpha",
-        "t": "float",
-        "d": 0,
-        "l": "Background opacity",
-        "line": 14
-      }
-    ],
-    "presets": [
-      "Cream",
-      "Full ring",
-      "Gold",
-      "Fan below"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": true
-    },
-    "transparent": true,
-    "animated": true,
-    "module": "shaders/promo",
-    "addedAt": "2026-10-28T22:38:33.987Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "swoosh-underline",
-    "name": "Swoosh underline",
-    "kind": "shader",
-    "category": "light",
-    "description": "A glowing curved stroke sweeping on under a subtitle with a bright head and a thinner second stroke chasing it, then wiping away from its tail; a transparent overlay.",
-    "tags": [
-      "overlay",
-      "promo",
-      "underline",
-      "swoosh",
-      "title",
-      "accent",
-      "neon"
-    ],
-    "controls": [
-      {
-        "n": "uColor",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            47,
-            217,
-            196
-          ]
-        },
-        "l": "Glow",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uCore",
+        "n": "uEdge",
         "t": "vec3",
         "d": {
           "c255": [
@@ -194,119 +62,383 @@
           ]
         },
         "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uSpan",
-        "t": "float",
-        "d": 0.8,
-        "l": "Width (share of frame)",
-        "min": 0.2,
-        "line": 5
-      },
-      {
-        "n": "uY",
-        "t": "float",
-        "d": -0.1,
-        "l": "Height",
-        "min": -0.45,
-        "max": 0.45,
         "line": 6
       },
       {
-        "n": "uCurve",
+        "n": "uEdgeWidth",
         "t": "float",
-        "d": 0.06,
-        "min": -0.3,
-        "max": 0.3,
-        "line": 7
-      },
-      {
-        "n": "uRise",
-        "t": "float",
-        "d": 0.05,
-        "min": -0.3,
-        "max": 0.3,
-        "line": 8
-      },
-      {
-        "n": "uWidth",
-        "t": "float",
-        "d": 11,
-        "l": "Thickness",
-        "min": 2,
+        "d": 9,
         "max": 40,
-        "line": 9
+        "line": 7
       },
       {
         "n": "uGlow",
         "t": "float",
-        "d": 1,
-        "max": 2,
-        "line": 10
+        "d": 0.5,
+        "l": "Edge glow",
+        "line": 8
       },
       {
-        "n": "uSecond",
+        "n": "uChecker",
         "t": "bool",
         "d": true,
-        "l": "Second stroke",
-        "line": 11
+        "l": "Checkerboard",
+        "line": 9
+      },
+      {
+        "n": "uCheckerSize",
+        "t": "float",
+        "d": 26,
+        "min": 8,
+        "max": 80,
+        "line": 10
       },
       {
         "n": "uAnimate",
         "t": "bool",
         "d": true,
+        "line": 11
+      },
+      {
+        "n": "uProgress",
+        "t": "float",
+        "d": 0.5,
+        "l": "Progress (when still)",
         "line": 12
       },
       {
-        "n": "uCycle",
-        "t": "float",
-        "d": 2.5,
-        "l": "Cycle (s)",
-        "min": 1,
-        "max": 8,
-        "line": 13
-      },
-      {
-        "n": "uBackground",
+        "n": "uBackdrop",
         "t": "vec3",
         "d": {
           "c255": [
             255,
-            244,
-            210
+            255,
+            255
           ]
         },
         "c": 1,
-        "line": 14
+        "line": 13
       },
       {
-        "n": "uBackgroundAlpha",
+        "n": "uBackdropAlpha",
         "t": "float",
-        "d": 0,
-        "l": "Background opacity",
-        "line": 15
+        "d": 1,
+        "l": "Backdrop opacity",
+        "line": 14
       }
     ],
     "presets": [
-      "Cream",
-      "Hot pink",
-      "Gold",
-      "Straight"
+      "Top down",
+      "Left to right",
+      "On white",
+      "Transparent"
     ],
     "inputs": {
-      "accepts": [],
-      "images": [],
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uFrom",
+          "label": "Picture",
+          "wants": "picture"
+        },
+        {
+          "name": "uTo",
+          "label": "Cut-out",
+          "wants": "picture"
+        }
+      ],
       "texts": [],
+      "video": "transition",
       "interactions": [],
-      "transparent": true
+      "transparent": false
     },
-    "transparent": true,
+    "video": "transition",
+    "loop": 4,
     "animated": true,
+    "duration": 4000,
     "module": "shaders/promo",
-    "addedAt": "2026-10-28T22:38:33.987Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-10-28T22:40:42Z",
+    "commitHash": "bb91f86ec860386084f2ae59a2eb40590c883834",
+    "order": 476
+  },
+  {
+    "id": "app-window",
+    "name": "App window",
+    "kind": "vector",
+    "category": "ui",
+    "description": "A neo-brutalist app window with a coloured title bar, three dots and a hard offset shadow springing in at a tilt, its progress ring filling and drawing a tick as the label changes to done.",
+    "tags": [
+      "promo",
+      "ui",
+      "window",
+      "card",
+      "progress",
+      "success",
+      "brutalist",
+      "mockup"
+    ],
+    "controls": [
+      {
+        "n": "label",
+        "t": "text",
+        "d": "Exporting video",
+        "line": 1
+      },
+      {
+        "n": "done",
+        "t": "text",
+        "d": "Done!",
+        "l": "Done label",
+        "line": 2
+      },
+      {
+        "n": "font",
+        "t": "text",
+        "d": "system-ui, sans-serif",
+        "line": 3
+      },
+      {
+        "n": "card",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            246,
+            218
+          ]
+        },
+        "l": "Window",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "bar",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            245,
+            139,
+            164
+          ]
+        },
+        "l": "Title bar",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "ink",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            31,
+            26,
+            28
+          ]
+        },
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "accent",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            240,
+            80,
+            122
+          ]
+        },
+        "l": "Ring",
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "track",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            249,
+            202,
+            213
+          ]
+        },
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "tilt",
+        "t": "float",
+        "d": -4,
+        "l": "Tilt (°)",
+        "min": -15,
+        "max": 15,
+        "line": 9
+      }
+    ],
+    "presets": [
+      "Mint",
+      "Butter",
+      "Sky"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "label",
+          "label": "Label",
+          "holds": "copy",
+          "default": "Exporting video"
+        },
+        {
+          "name": "done",
+          "label": "Done label",
+          "holds": "copy",
+          "default": "Done!"
+        },
+        {
+          "name": "font",
+          "label": "Font",
+          "holds": "font",
+          "default": "system-ui, sans-serif"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 200,
+    "animated": true,
+    "duration": 3760,
+    "module": "promo",
+    "addedAt": "2026-10-28T22:40:42Z",
+    "commitHash": "bb91f86ec860386084f2ae59a2eb40590c883834",
+    "order": 475
+  },
+  {
+    "id": "slime-drop",
+    "name": "Slime drop",
+    "kind": "vector",
+    "category": "splatter",
+    "description": "A drippy slime title falling in from above, squashing flat as it lands in a puddle and splashing droplets out round it that stay as specks.",
+    "tags": [
+      "splatter",
+      "promo",
+      "title",
+      "slime",
+      "splat",
+      "drip",
+      "logo",
+      "bounce",
+      "y2k"
+    ],
+    "controls": [
+      {
+        "n": "word",
+        "t": "text",
+        "d": "SLOP",
+        "line": 1
+      },
+      {
+        "n": "font",
+        "t": "text",
+        "d": "Arial Black, Impact, system-ui, sans-serif",
+        "line": 2
+      },
+      {
+        "n": "weight",
+        "t": "int",
+        "d": 900,
+        "min": 100,
+        "max": 900,
+        "s": 100,
+        "line": 3
+      },
+      {
+        "n": "fill",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            92,
+            154
+          ]
+        },
+        "l": "Slime",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "outline",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            74,
+            13,
+            44
+          ]
+        },
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "stroke",
+        "t": "float",
+        "d": 7,
+        "l": "Outline width",
+        "max": 14,
+        "s": 0.5,
+        "line": 6
+      },
+      {
+        "n": "spread",
+        "t": "float",
+        "d": 1,
+        "l": "Splash size",
+        "min": 0.3,
+        "max": 2,
+        "line": 7
+      }
+    ],
+    "presets": [
+      "Slime",
+      "Grape",
+      "Big splash"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "word",
+          "label": "Word",
+          "holds": "copy",
+          "default": "SLOP"
+        },
+        {
+          "name": "font",
+          "label": "Font",
+          "holds": "font",
+          "default": "Arial Black, Impact, system-ui, sans-serif"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 1400,
+    "animated": true,
+    "duration": 2540,
+    "module": "promo",
+    "addedAt": "2026-10-28T22:40:42Z",
+    "commitHash": "bb91f86ec860386084f2ae59a2eb40590c883834",
+    "order": 474
   },
   {
     "id": "before-after",
@@ -477,339 +609,42 @@
     "video": "interactive",
     "animated": true,
     "module": "shaders/promo",
-    "addedAt": "2026-10-28T22:38:33.987Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-10-28T22:40:42Z",
+    "commitHash": "bb91f86ec860386084f2ae59a2eb40590c883834",
+    "order": 473
   },
   {
-    "id": "slime-drop",
-    "name": "Slime drop",
-    "kind": "vector",
-    "category": "splatter",
-    "description": "A drippy slime title falling in from above, squashing flat as it lands in a puddle and splashing droplets out round it that stay as specks.",
-    "tags": [
-      "splatter",
-      "promo",
-      "title",
-      "slime",
-      "splat",
-      "drip",
-      "logo",
-      "bounce",
-      "y2k"
-    ],
-    "controls": [
-      {
-        "n": "word",
-        "t": "text",
-        "d": "SLOP",
-        "line": 1
-      },
-      {
-        "n": "font",
-        "t": "text",
-        "d": "Arial Black, Impact, system-ui, sans-serif",
-        "line": 2
-      },
-      {
-        "n": "weight",
-        "t": "int",
-        "d": 900,
-        "min": 100,
-        "max": 900,
-        "s": 100,
-        "line": 3
-      },
-      {
-        "n": "fill",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            92,
-            154
-          ]
-        },
-        "l": "Slime",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "outline",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            74,
-            13,
-            44
-          ]
-        },
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "stroke",
-        "t": "float",
-        "d": 7,
-        "l": "Outline width",
-        "max": 14,
-        "s": 0.5,
-        "line": 6
-      },
-      {
-        "n": "spread",
-        "t": "float",
-        "d": 1,
-        "l": "Splash size",
-        "min": 0.3,
-        "max": 2,
-        "line": 7
-      }
-    ],
-    "presets": [
-      "Slime",
-      "Grape",
-      "Big splash"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "word",
-          "label": "Word",
-          "holds": "copy",
-          "default": "SLOP"
-        },
-        {
-          "name": "font",
-          "label": "Font",
-          "holds": "font",
-          "default": "Arial Black, Impact, system-ui, sans-serif"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 1400,
-    "animated": true,
-    "duration": 2540,
-    "module": "promo",
-    "addedAt": "2026-10-28T22:38:33.987Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "app-window",
-    "name": "App window",
-    "kind": "vector",
-    "category": "ui",
-    "description": "A neo-brutalist app window with a coloured title bar, three dots and a hard offset shadow springing in at a tilt, its progress ring filling and drawing a tick as the label changes to done.",
-    "tags": [
-      "promo",
-      "ui",
-      "window",
-      "card",
-      "progress",
-      "success",
-      "brutalist",
-      "mockup"
-    ],
-    "controls": [
-      {
-        "n": "label",
-        "t": "text",
-        "d": "Exporting video",
-        "line": 1
-      },
-      {
-        "n": "done",
-        "t": "text",
-        "d": "Done!",
-        "l": "Done label",
-        "line": 2
-      },
-      {
-        "n": "font",
-        "t": "text",
-        "d": "system-ui, sans-serif",
-        "line": 3
-      },
-      {
-        "n": "card",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            246,
-            218
-          ]
-        },
-        "l": "Window",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "bar",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            245,
-            139,
-            164
-          ]
-        },
-        "l": "Title bar",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "ink",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            31,
-            26,
-            28
-          ]
-        },
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "accent",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            240,
-            80,
-            122
-          ]
-        },
-        "l": "Ring",
-        "c": 1,
-        "line": 7
-      },
-      {
-        "n": "track",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            249,
-            202,
-            213
-          ]
-        },
-        "c": 1,
-        "line": 8
-      },
-      {
-        "n": "tilt",
-        "t": "float",
-        "d": -4,
-        "l": "Tilt (°)",
-        "min": -15,
-        "max": 15,
-        "line": 9
-      }
-    ],
-    "presets": [
-      "Mint",
-      "Butter",
-      "Sky"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "label",
-          "label": "Label",
-          "holds": "copy",
-          "default": "Exporting video"
-        },
-        {
-          "name": "done",
-          "label": "Done label",
-          "holds": "copy",
-          "default": "Done!"
-        },
-        {
-          "name": "font",
-          "label": "Font",
-          "holds": "font",
-          "default": "system-ui, sans-serif"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 200,
-    "animated": true,
-    "duration": 3760,
-    "module": "promo",
-    "addedAt": "2026-10-28T22:38:33.987Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "knockout-wipe",
-    "name": "Knockout wipe",
+    "id": "swoosh-underline",
+    "name": "Swoosh underline",
     "kind": "shader",
-    "category": "transition",
-    "description": "A slanted cut with a bright edge sweeping across a picture, knocking its background out to a transparency checkerboard and leaving the cut-out standing, like a background-removal reveal. Loops back and forth; or turn Animate off and set Progress.",
+    "category": "light",
+    "description": "A glowing curved stroke sweeping on under a subtitle with a bright head and a thinner second stroke chasing it, then wiping away from its tail; a transparent overlay.",
     "tags": [
-      "transition",
-      "image",
+      "overlay",
       "promo",
-      "background-removal",
-      "cut-out",
-      "checkerboard",
-      "wipe",
-      "reveal"
+      "underline",
+      "swoosh",
+      "title",
+      "accent",
+      "neon"
     ],
     "controls": [
       {
-        "n": "uFrom",
-        "t": "sampler2D",
+        "n": "uColor",
+        "t": "vec3",
         "d": {
-          "sample": "portrait"
+          "c255": [
+            47,
+            217,
+            196
+          ]
         },
-        "l": "Picture",
-        "line": 3,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
+        "l": "Glow",
+        "c": 1,
+        "line": 3
       },
       {
-        "n": "uTo",
-        "t": "sampler2D",
-        "d": {
-          "sample": "cutout"
-        },
-        "l": "Cut-out",
-        "line": 4,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uAngle",
-        "t": "float",
-        "d": -35,
-        "l": "Direction (°)",
-        "min": -180,
-        "max": 180,
-        "line": 5
-      },
-      {
-        "n": "uEdge",
+        "n": "uCore",
         "t": "vec3",
         "d": {
           "c255": [
@@ -819,35 +654,216 @@
           ]
         },
         "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uSpan",
+        "t": "float",
+        "d": 0.8,
+        "l": "Width (share of frame)",
+        "min": 0.2,
+        "line": 5
+      },
+      {
+        "n": "uY",
+        "t": "float",
+        "d": -0.1,
+        "l": "Height",
+        "min": -0.45,
+        "max": 0.45,
         "line": 6
       },
       {
-        "n": "uEdgeWidth",
+        "n": "uCurve",
         "t": "float",
-        "d": 9,
-        "max": 40,
+        "d": 0.06,
+        "min": -0.3,
+        "max": 0.3,
         "line": 7
+      },
+      {
+        "n": "uRise",
+        "t": "float",
+        "d": 0.05,
+        "min": -0.3,
+        "max": 0.3,
+        "line": 8
+      },
+      {
+        "n": "uWidth",
+        "t": "float",
+        "d": 11,
+        "l": "Thickness",
+        "min": 2,
+        "max": 40,
+        "line": 9
       },
       {
         "n": "uGlow",
         "t": "float",
-        "d": 0.5,
-        "l": "Edge glow",
+        "d": 1,
+        "max": 2,
+        "line": 10
+      },
+      {
+        "n": "uSecond",
+        "t": "bool",
+        "d": true,
+        "l": "Second stroke",
+        "line": 11
+      },
+      {
+        "n": "uAnimate",
+        "t": "bool",
+        "d": true,
+        "line": 12
+      },
+      {
+        "n": "uCycle",
+        "t": "float",
+        "d": 2.5,
+        "l": "Cycle (s)",
+        "min": 1,
+        "max": 8,
+        "line": 13
+      },
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            244,
+            210
+          ]
+        },
+        "c": 1,
+        "line": 14
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 0,
+        "l": "Background opacity",
+        "line": 15
+      }
+    ],
+    "presets": [
+      "Cream",
+      "Hot pink",
+      "Gold",
+      "Straight"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": true
+    },
+    "transparent": true,
+    "animated": true,
+    "module": "shaders/promo",
+    "addedAt": "2026-10-28T22:40:42Z",
+    "commitHash": "bb91f86ec860386084f2ae59a2eb40590c883834",
+    "order": 472
+  },
+  {
+    "id": "tick-ring-burst",
+    "name": "Tick ring burst",
+    "kind": "shader",
+    "category": "light",
+    "description": "A sunburst arc of short rounded ticks popping out one after another from its middle behind a title, holding, then flying outward and fading; a transparent overlay.",
+    "tags": [
+      "overlay",
+      "promo",
+      "title",
+      "sunburst",
+      "ring",
+      "logo",
+      "accent",
+      "burst"
+    ],
+    "controls": [
+      {
+        "n": "uColor",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            240,
+            80,
+            122
+          ]
+        },
+        "l": "Ticks",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uColorB",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            176,
+            194
+          ]
+        },
+        "l": "Ends",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uCount",
+        "t": "float",
+        "d": 44,
+        "l": "Ticks round a full circle",
+        "min": 8,
+        "max": 96,
+        "s": 1,
+        "line": 5
+      },
+      {
+        "n": "uArc",
+        "t": "float",
+        "d": 0.45,
+        "l": "Arc (share of circle)",
+        "min": 0.05,
+        "line": 6
+      },
+      {
+        "n": "uAngle",
+        "t": "float",
+        "d": 90,
+        "l": "Arc centre (°)",
+        "min": -180,
+        "max": 180,
+        "line": 7
+      },
+      {
+        "n": "uRadius",
+        "t": "float",
+        "d": 0.3,
+        "min": 0.05,
+        "max": 0.48,
         "line": 8
       },
       {
-        "n": "uChecker",
-        "t": "bool",
-        "d": true,
-        "l": "Checkerboard",
+        "n": "uLength",
+        "t": "float",
+        "d": 0.06,
+        "l": "Tick length",
+        "min": 0.01,
+        "max": 0.2,
         "line": 9
       },
       {
-        "n": "uCheckerSize",
+        "n": "uWidth",
         "t": "float",
-        "d": 26,
-        "min": 8,
-        "max": 80,
+        "d": 12,
+        "l": "Tick width",
+        "min": 2,
+        "max": 40,
         "line": 10
       },
       {
@@ -857,70 +873,54 @@
         "line": 11
       },
       {
-        "n": "uProgress",
+        "n": "uCycle",
         "t": "float",
-        "d": 0.5,
-        "l": "Progress (when still)",
+        "d": 3,
+        "l": "Cycle (s)",
+        "min": 1,
+        "max": 8,
         "line": 12
       },
       {
-        "n": "uBackdrop",
+        "n": "uBackground",
         "t": "vec3",
         "d": {
           "c255": [
             255,
-            255,
-            255
+            244,
+            210
           ]
         },
         "c": 1,
         "line": 13
       },
       {
-        "n": "uBackdropAlpha",
+        "n": "uBackgroundAlpha",
         "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
+        "d": 0,
+        "l": "Background opacity",
         "line": 14
       }
     ],
     "presets": [
-      "Top down",
-      "Left to right",
-      "On white",
-      "Transparent"
+      "Cream",
+      "Full ring",
+      "Gold",
+      "Fan below"
     ],
     "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uFrom",
-          "label": "Picture",
-          "wants": "picture"
-        },
-        {
-          "name": "uTo",
-          "label": "Cut-out",
-          "wants": "picture"
-        }
-      ],
+      "accepts": [],
+      "images": [],
       "texts": [],
-      "video": "transition",
       "interactions": [],
-      "transparent": false
+      "transparent": true
     },
-    "video": "transition",
-    "loop": 4,
+    "transparent": true,
     "animated": true,
-    "duration": 4000,
     "module": "shaders/promo",
-    "addedAt": "2026-10-28T22:38:33.987Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-10-28T22:40:42Z",
+    "commitHash": "bb91f86ec860386084f2ae59a2eb40590c883834",
+    "order": 471
   },
   {
     "id": "orbit-swoosh",
@@ -1100,9 +1100,9 @@
     "transparent": true,
     "animated": true,
     "module": "shaders/promo",
-    "addedAt": "2026-10-28T22:38:33.986Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-10-28T22:40:42Z",
+    "commitHash": "bb91f86ec860386084f2ae59a2eb40590c883834",
+    "order": 470
   },
   {
     "id": "spider-web-loader",
