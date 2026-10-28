@@ -260,8 +260,8 @@ describe("catalog", () => {
   // Effects that show a picture lay it over a backdrop, so transparent images (Lucide icons:
   // black strokes on clear) are not black on black, and pass its alpha on for overlays.
   const PICTURE_EFFECTS = SHADER_EFFECTS.filter((e) => /\b(picture|pictureRGBA|flair_transition)\(/.test(e.source));
-  // These draw a whole opaque device around the picture, so they stay opaque.
-  const OPAQUE = new Set(["gameboy-screen"]);
+  // These draw a whole opaque device or ticket around the picture, so they stay opaque.
+  const OPAQUE = new Set(["gameboy-screen", "scratch-card"]);
 
   it.each(PICTURE_EFFECTS.map((e) => [e.id, e] as const))("%s lays its image over a backdrop and keeps its alpha", (_, effect) => {
     expect(effectDefaults(effect)).toMatchObject({ uBackdrop: [1, 1, 1], uBackdropAlpha: 1 });
@@ -507,7 +507,7 @@ describe("interaction effects", () => {
 
   it("include the pointer-driven shaders", () => {
     const ids = interactive.map((e) => e.id);
-    for (const id of ["click-ripple", "click-burst", "cursor-glow", "hover-liquid", "hover-reveal", "magnifier", "holo-card", "press-charge", "hover-swap"])
+    for (const id of ["click-ripple", "click-burst", "cursor-glow", "hover-liquid", "hover-reveal", "magnifier", "holo-card", "card-flip", "press-charge", "hover-swap"])
       expect(ids).toContain(id);
   });
 
@@ -521,7 +521,7 @@ describe("interaction effects", () => {
   });
 
   it("marks the overlays transparent", () => {
-    for (const id of ["click-ripple", "click-burst", "cursor-glow", "holo-card", "press-charge"]) {
+    for (const id of ["click-ripple", "click-burst", "cursor-glow", "holo-card", "card-flip", "press-charge"]) {
       const effect = getEffect(id)!;
       expect(effect.kind === "shader" && effect.transparent).toBe(true);
     }
@@ -1595,7 +1595,7 @@ describe("scroll effects", () => {
 describe("ui effects", () => {
   const ui = findEffects({ category: "ui" });
   const shaders = ["border-beam", "gradient-border", "meteors", "background-beams", "grid-spotlight", "dot-grid", "glass-card", "liquid-glass", "noise-grain-bg", "dichroic-glass"];
-  const vectors = ["marquee", "number-ticker", "animated-badge"];
+  const vectors = ["marquee", "number-ticker", "animated-badge", "swipe-stack", "pack-opening"];
   const render = (id: string, values: Record<string, unknown> = {}) => {
     const effect = getEffect(id)!;
     if (effect.kind !== "vector") throw new Error("vector expected");
@@ -1622,7 +1622,7 @@ describe("ui effects", () => {
   });
 
   it("prefixes every vector id with the effect's name", () => {
-    for (const [id, prefix] of [["marquee", "marquee"], ["number-ticker", "numberTicker"], ["animated-badge", "animatedBadge"]] as const)
+    for (const [id, prefix] of [["marquee", "marquee"], ["number-ticker", "numberTicker"], ["animated-badge", "animatedBadge"], ["swipe-stack", "swipeStack"], ["pack-opening", "packOpening"]] as const)
       for (const [, name] of render(id).svg.matchAll(/\sid="([^"]+)"/g)) expect(name, id).toMatch(new RegExp(`^${prefix}`));
   });
 

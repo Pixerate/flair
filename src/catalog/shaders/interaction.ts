@@ -468,6 +468,108 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   ],
 };
 
+export const cardFlip: ShaderEffect = {
+  kind: "shader",
+  id: "card-flip",
+  name: "Card flip",
+  description: "A card that turns over in perspective on hover to show its back, lifting as it goes, a lit edge showing side-on and its shadow narrowing under it.",
+  category: "interaction",
+  video: "interactive",
+  tags: ["interactive", "hover", "card", "flip", "reveal", "3d"],
+  transparent: true,
+  source: glsl(
+    `// Card flip: a card turning about its upright axis as hover goes 0 → 1, front picture to back.
+uniform sampler2D uFront;    // @control filter=linear wrap=clamp default=${SAMPLE_IMAGES.portrait} label="Front"
+uniform sampler2D uBack;     // @control filter=linear wrap=clamp default=${SAMPLE_IMAGES.landscape} label="Back"
+uniform float uPerspective;  // @control min=0 max=1 default=0.5 label="Perspective"
+uniform float uShine;        // @control min=0 max=1 default=0.5 label="Shine"
+uniform float uShadow;       // @control min=0 max=1 default=0.5 label="Shadow"
+uniform float uCorner;       // @control min=0 max=0.25 default=0.06 label="Corner radius"
+uniform vec3 uEdge;          // @control color default=#E2E8F0 label="Edge"
+uniform float uHold;         // @control min=0.8 max=6 default=2 label="Demo seconds per side"
+uniform bool uDemo;          // @control default=true label="Demo when idle"
+${BACKDROP_CONTROLS}`,
+    OVER,
+    PICTURE,
+    `float roundedBox(vec2 p, vec2 hs, float r) {
+  vec2 e = abs(p) - hs + r;
+  return length(max(e, 0.0)) + min(max(e.x, e.y), 0.0) - r;
+}
+
+// A face's picture filling the card, cropped to fit.
+vec3 face(sampler2D tex, vec2 cuv, float aspect) {
+  vec2 ts = vec2(textureSize(tex, 0));
+  float imageAspect = ts.x / max(ts.y, 1.0);
+  vec2 fit = imageAspect > aspect ? vec2(aspect / imageAspect, 1.0) : vec2(1.0, imageAspect / aspect);
+  return picture(tex, 0.5 + (cuv - 0.5) * fit);
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec2 res = iResolution.xy;
+  const float aspect = 0.716;
+  const float PI = 3.14159265;
+  float h = min(res.y * 0.78, res.x * 0.78 / aspect);
+  // Idle, it rests on each side for uHold seconds, turning over in the last 0.7 s of each.
+  float demo = 0.0;
+  if (uDemo) {
+    float c = mod(iTime, 2.0 * uHold) / uHold;
+    float f = min(0.7 / uHold, 0.5);
+    demo = c < 1.0 ? smoothstep(1.0 - f, 1.0, c) : 1.0 - smoothstep(2.0 - f, 2.0, c);
+  }
+  float p = smoothstep(0.0, 1.0, mix(demo, 1.0, clamp(iPointer.z, 0.0, 1.0)));
+  float turn = PI * p;
+  float c = cos(turn);
+  float sn = sin(turn);
+  // Units of the card's half-height, round the middle; it lifts toward you as it turns.
+  float unit = h * 0.5 * (1.0 + 0.06 * sn);
+  vec2 sp = (fragCoord - 0.5 * res) / unit;
+  float D = mix(9.0, 2.4, uPerspective);
+  float radius = uCorner * aspect * 2.0;
+  vec4 acc = vec4(0.0);
+  // The shadow on the page: as wide as the card looks, softer and lower as it lifts.
+  float wide = aspect * max(abs(c), 0.04);
+  float shadowD = roundedBox(sp - vec2(0.0, -0.06 - 0.1 * sn), vec2(wide, 1.0), radius * abs(c));
+  float shadow = (1.0 - smoothstep(-0.08 - 0.1 * sn, 0.1 + 0.2 * sn, shadowD)) * uShadow * (0.5 - 0.2 * sn);
+  acc = over(acc, vec3(0.0), shadow);
+  // The near long edge, seen side-on mid-turn: a lit strip the card's thickness wide.
+  float side = sn > 0.0 ? -1.0 : 1.0;
+  float zEdge = side * aspect * sn;
+  float k = D / (D + zEdge);
+  float edgeX = side * aspect * c * k;
+  float edgeW = 0.022 * abs(sn) * k + 0.5 / unit;
+  float edge = (1.0 - smoothstep(edgeW - 1.0 / unit, edgeW, abs(sp.x - edgeX))) * (1.0 - smoothstep(k - 1.0 / unit, k, abs(sp.y)));
+  acc = over(acc, uEdge * (0.75 + 0.25 * sn), edge * smoothstep(0.02, 0.15, abs(sn)));
+  // Where the ray from the eye meets the card's plane, in the card's own units.
+  float den = D * c - sp.x * sn;
+  if (abs(den) > 1e-4) {
+    float t = D * c / den;
+    vec2 local = vec2(t * sp.x * c + (D * t - D) * sn, t * sp.y);
+    bool front = c > 0.0;
+    if (!front) local.x = -local.x;
+    float sd = roundedBox(local, vec2(aspect, 1.0), radius);
+    float mask = (1.0 - smoothstep(-fwidth(sd), fwidth(sd), sd)) * step(0.0, t);
+    if (mask > 0.0) {
+      vec2 cuv = local / vec2(aspect, 1.0) * 0.5 + 0.5;
+      vec3 col = front ? face(uFront, cuv, aspect) : face(uBack, cuv, aspect);
+      // Lit from the front: it darkens as it turns away, and a sheen crosses it mid-turn.
+      col *= 0.6 + 0.4 * abs(c);
+      float sweep = (front ? p : 1.0 - p) * 1.8 - 0.4;
+      col += uShine * 0.6 * sn * exp(-pow(cuv.x * 0.8 + cuv.y * 0.3 - sweep, 2.0) * 22.0);
+      // A thin rim in the edge colour.
+      float rim = smoothstep(-0.02 - fwidth(sd), -0.02, sd);
+      col = mix(col, uEdge, rim * 0.8);
+      acc = over(acc, clamp(col, 0.0, 1.0), mask);
+    }
+  }
+  fragColor = unpremultiply(acc);
+}`,
+  ),
+  presets: [
+    { name: "Flat", values: { uPerspective: 0.1, uShine: 0.2, uShadow: 0.3 } },
+    { name: "Dramatic", values: { uPerspective: 1, uShine: 0.9, uShadow: 0.8, uEdge: [0.98, 0.82, 0.35] } },
+  ],
+};
+
 export const pressCharge: ShaderEffect = {
   kind: "shader",
   id: "press-charge",
@@ -601,6 +703,7 @@ export const interactionShaders: ShaderEffect[] = [
   hoverReveal,
   magnifier,
   holoCard,
+  cardFlip,
   pressCharge,
   hoverSwap,
 ];

@@ -1,5 +1,685 @@
 [
   {
+    "id": "card-flip",
+    "name": "Card flip",
+    "kind": "shader",
+    "category": "interaction",
+    "description": "A card that turns over in perspective on hover to show its back, lifting as it goes, a lit edge showing side-on and its shadow narrowing under it.",
+    "tags": [
+      "interactive",
+      "hover",
+      "card",
+      "flip",
+      "reveal",
+      "3d"
+    ],
+    "controls": [
+      {
+        "n": "uFront",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "line": 2,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uBack",
+        "t": "sampler2D",
+        "d": {
+          "sample": "landscape"
+        },
+        "line": 3,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uPerspective",
+        "t": "float",
+        "d": 0.5,
+        "line": 4
+      },
+      {
+        "n": "uShine",
+        "t": "float",
+        "d": 0.5,
+        "line": 5
+      },
+      {
+        "n": "uShadow",
+        "t": "float",
+        "d": 0.5,
+        "line": 6
+      },
+      {
+        "n": "uCorner",
+        "t": "float",
+        "d": 0.06,
+        "l": "Corner radius",
+        "max": 0.25,
+        "line": 7
+      },
+      {
+        "n": "uEdge",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            226,
+            232,
+            240
+          ]
+        },
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "uHold",
+        "t": "float",
+        "d": 2,
+        "l": "Demo seconds per side",
+        "min": 0.8,
+        "max": 6,
+        "line": 9
+      },
+      {
+        "n": "uDemo",
+        "t": "bool",
+        "d": true,
+        "l": "Demo when idle",
+        "line": 10
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "line": 12
+      }
+    ],
+    "presets": [
+      "Flat",
+      "Dramatic"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uFront",
+          "label": "Front",
+          "wants": "picture"
+        },
+        {
+          "name": "uBack",
+          "label": "Back",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "interactive",
+      "interactions": [
+        "hover"
+      ],
+      "transparent": true
+    },
+    "video": "interactive",
+    "transparent": true,
+    "animated": true,
+    "module": "shaders/interaction",
+    "addedAt": "2026-10-28T22:48:53.396Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "swipe-stack",
+    "name": "Swipe stack",
+    "kind": "vector",
+    "category": "ui",
+    "description": "A dating-app stack of cards: the top one is dragged and flung off to one side or the other under a LIKE or NOPE stamp, and the cards beneath move up to take its place.",
+    "tags": [
+      "ui",
+      "card",
+      "swipe",
+      "stack",
+      "dating",
+      "deck",
+      "loop"
+    ],
+    "controls": [
+      {
+        "n": "name1",
+        "t": "text",
+        "d": "Alex, 27",
+        "l": "Card 1",
+        "line": 1
+      },
+      {
+        "n": "name2",
+        "t": "text",
+        "d": "Sam, 31",
+        "l": "Card 2",
+        "line": 2
+      },
+      {
+        "n": "name3",
+        "t": "text",
+        "d": "Jo, 24",
+        "l": "Card 3",
+        "line": 3
+      },
+      {
+        "n": "like",
+        "t": "text",
+        "d": "LIKE",
+        "l": "Right stamp",
+        "line": 4
+      },
+      {
+        "n": "nope",
+        "t": "text",
+        "d": "NOPE",
+        "l": "Left stamp",
+        "line": 5
+      },
+      {
+        "n": "background",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            241,
+            245,
+            249
+          ]
+        },
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "card",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "ink",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            15,
+            23,
+            42
+          ]
+        },
+        "l": "Text colour",
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "c1",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            244,
+            114,
+            182
+          ]
+        },
+        "l": "Card 1 colour",
+        "c": 1,
+        "line": 9
+      },
+      {
+        "n": "c2",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            129,
+            140,
+            248
+          ]
+        },
+        "l": "Card 2 colour",
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "c3",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            52,
+            211,
+            153
+          ]
+        },
+        "l": "Card 3 colour",
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "likeColor",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            22,
+            163,
+            74
+          ]
+        },
+        "l": "Right stamp colour",
+        "c": 1,
+        "line": 12
+      },
+      {
+        "n": "nopeColor",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            225,
+            29,
+            72
+          ]
+        },
+        "l": "Left stamp colour",
+        "c": 1,
+        "line": 13
+      }
+    ],
+    "presets": [
+      "Dark",
+      "Products"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "name1",
+          "label": "Card 1",
+          "holds": "copy",
+          "default": "Alex, 27"
+        },
+        {
+          "name": "name2",
+          "label": "Card 2",
+          "holds": "copy",
+          "default": "Sam, 31"
+        },
+        {
+          "name": "name3",
+          "label": "Card 3",
+          "holds": "copy",
+          "default": "Jo, 24"
+        },
+        {
+          "name": "like",
+          "label": "Right stamp",
+          "holds": "copy",
+          "default": "LIKE"
+        },
+        {
+          "name": "nope",
+          "label": "Left stamp",
+          "holds": "copy",
+          "default": "NOPE"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 0,
+    "animated": true,
+    "duration": 4500,
+    "module": "ui",
+    "addedAt": "2026-10-28T22:48:53.396Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "pack-opening",
+    "name": "Pack opening",
+    "kind": "vector",
+    "category": "ui",
+    "description": "A foil booster pack shaking, its top tearing off and a hand of trading cards rising out of it and fanning open, the rare one in the middle lifting, glowing and catching a holographic shine.",
+    "tags": [
+      "ui",
+      "card",
+      "trading-card",
+      "pack",
+      "reveal",
+      "rare",
+      "holographic",
+      "reward",
+      "celebration",
+      "loop"
+    ],
+    "controls": [
+      {
+        "n": "label",
+        "t": "text",
+        "d": "MYTHIC",
+        "l": "Set name",
+        "line": 1
+      },
+      {
+        "n": "background",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            238,
+            242,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "pack",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            67,
+            56,
+            202
+          ]
+        },
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "pack2",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            219,
+            39,
+            119
+          ]
+        },
+        "l": "Pack second colour",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "card",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            248,
+            250,
+            252
+          ]
+        },
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "rare",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            245,
+            197,
+            66
+          ]
+        },
+        "l": "Rare card edge",
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "art0",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            56,
+            189,
+            248
+          ]
+        },
+        "l": "Art colour 1",
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "art1",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            167,
+            139,
+            250
+          ]
+        },
+        "l": "Art colour 2",
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "art2",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            74,
+            222,
+            128
+          ]
+        },
+        "l": "Art colour 3",
+        "c": 1,
+        "line": 9
+      },
+      {
+        "n": "ink",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "l": "Label colour",
+        "c": 1,
+        "line": 10
+      }
+    ],
+    "presets": [
+      "Midnight",
+      "Fire set"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "label",
+          "label": "Set name",
+          "holds": "copy",
+          "default": "MYTHIC"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 400,
+    "animated": true,
+    "duration": 4660,
+    "module": "ui",
+    "addedAt": "2026-10-28T22:48:53.396Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "scratch-card",
+    "name": "Scratch card",
+    "kind": "shader",
+    "category": "image",
+    "description": "A scratch-off ticket: a coin scrapes its silver foil away row by row, flecks and curled edges and all, to reveal a picture, which shines once uncovered before the foil seals back over.",
+    "tags": [
+      "image",
+      "reveal",
+      "card",
+      "scratch",
+      "foil",
+      "lottery",
+      "prize",
+      "coin"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "landscape"
+        },
+        "line": 3,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uFoil",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            185,
+            190,
+            199
+          ]
+        },
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uTicket",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            124,
+            58,
+            237
+          ]
+        },
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uRows",
+        "t": "int",
+        "d": 4,
+        "l": "Rows scratched",
+        "min": 2,
+        "line": 6
+      },
+      {
+        "n": "uCoin",
+        "t": "bool",
+        "d": true,
+        "l": "Show the coin",
+        "line": 7
+      },
+      {
+        "n": "uAuto",
+        "t": "bool",
+        "d": true,
+        "l": "Animate",
+        "line": 8
+      },
+      {
+        "n": "uProgress",
+        "t": "float",
+        "d": 1,
+        "l": "Scratched (when still)",
+        "line": 9
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "line": 11
+      }
+    ],
+    "presets": [
+      "Gold ticket",
+      "Quick scratch"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "filter",
+    "loop": 6,
+    "animated": true,
+    "duration": 6000,
+    "module": "shaders/treatments",
+    "addedAt": "2026-10-28T22:48:53.395Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
     "id": "spider-web-loader",
     "name": "Spider web loader",
     "kind": "vector",
@@ -2022,405 +2702,5 @@
     "addedAt": "2026-10-27T08:13:03Z",
     "commitHash": "406106d3e3d4ad139b67ccfa8e7754cdbfece7d9",
     "order": 454
-  },
-  {
-    "id": "molten-web",
-    "name": "Molten web",
-    "kind": "shader",
-    "category": "organic",
-    "description": "A web of white-hot ridges glowing orange through dark cooled rock, slowly drifting and flickering like cracked lava.",
-    "tags": [
-      "background",
-      "lava",
-      "molten",
-      "fire",
-      "glow",
-      "gold",
-      "cracks"
-    ],
-    "controls": [
-      {
-        "n": "uHot",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            231,
-            160
-          ]
-        },
-        "l": "White heat",
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "uGlowColor",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            122,
-            10
-          ]
-        },
-        "l": "Glow",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uRock",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            18,
-            4,
-            2
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uScale",
-        "t": "float",
-        "d": 3.5,
-        "min": 0.5,
-        "max": 8,
-        "line": 5
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 0.12,
-        "line": 6
-      },
-      {
-        "n": "uSharpness",
-        "t": "float",
-        "d": 9,
-        "l": "Ridge sharpness",
-        "min": 1,
-        "max": 16,
-        "line": 7
-      },
-      {
-        "n": "uFlicker",
-        "t": "float",
-        "d": 0.35,
-        "line": 8
-      }
-    ],
-    "presets": [
-      "Plasma",
-      "Light",
-      "Gold leaf"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "shaders/iridescent",
-    "addedAt": "2026-10-27T08:13:03Z",
-    "commitHash": "406106d3e3d4ad139b67ccfa8e7754cdbfece7d9",
-    "order": 453
-  },
-  {
-    "id": "neon-fluid",
-    "name": "Neon fluid",
-    "kind": "shader",
-    "category": "organic",
-    "description": "Glowing strands of violet, cyan and gold swirling like dye in water, broken into fine grains with a haze of drifting sparks.",
-    "tags": [
-      "background",
-      "neon",
-      "fluid",
-      "swirl",
-      "ink",
-      "particles",
-      "glow",
-      "hero"
-    ],
-    "controls": [
-      {
-        "n": "uColorA",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            176,
-            76,
-            255
-          ]
-        },
-        "l": "Colour 1",
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "uColorB",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            47,
-            230,
-            224
-          ]
-        },
-        "l": "Colour 2",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uColorC",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            178,
-            58
-          ]
-        },
-        "l": "Colour 3",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            5,
-            4,
-            10
-          ]
-        },
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 0.1,
-        "line": 6
-      },
-      {
-        "n": "uScale",
-        "t": "float",
-        "d": 1.2,
-        "min": 0.5,
-        "max": 5,
-        "line": 7
-      },
-      {
-        "n": "uSwirl",
-        "t": "float",
-        "d": 3.5,
-        "max": 6,
-        "line": 8
-      },
-      {
-        "n": "uStrands",
-        "t": "float",
-        "d": 10,
-        "min": 2,
-        "max": 14,
-        "line": 9
-      },
-      {
-        "n": "uGlow",
-        "t": "float",
-        "d": 1,
-        "max": 2,
-        "line": 10
-      },
-      {
-        "n": "uGrain",
-        "t": "float",
-        "d": 0.55,
-        "line": 11
-      },
-      {
-        "n": "uDust",
-        "t": "float",
-        "d": 0.5,
-        "l": "Sparks",
-        "line": 12
-      }
-    ],
-    "presets": [
-      "Ice",
-      "Ember",
-      "Calm",
-      "Light"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "shaders/iridescent",
-    "addedAt": "2026-10-27T08:13:03Z",
-    "commitHash": "406106d3e3d4ad139b67ccfa8e7754cdbfece7d9",
-    "order": 452
-  },
-  {
-    "id": "shape-morph-loader",
-    "name": "Shape morph loader",
-    "kind": "vector",
-    "category": "loader",
-    "description": "A shape that turns as it morphs from a square into a circle, a triangle and back, changing colour with each.",
-    "tags": [
-      "loader",
-      "morph",
-      "shape",
-      "spinner",
-      "playful",
-      "ui"
-    ],
-    "controls": [
-      {
-        "n": "first",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            244,
-            63,
-            94
-          ]
-        },
-        "l": "Square",
-        "c": 1,
-        "line": 1
-      },
-      {
-        "n": "second",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            99,
-            102,
-            241
-          ]
-        },
-        "l": "Circle",
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "third",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            16,
-            185,
-            129
-          ]
-        },
-        "l": "Triangle",
-        "c": 1,
-        "line": 3
-      }
-    ],
-    "presets": [
-      "Mono",
-      "Pastel"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 0,
-    "animated": true,
-    "duration": 2100,
-    "module": "loaders",
-    "addedAt": "2026-10-24T23:26:41Z",
-    "commitHash": "393256f29f8d6805da3568962af218f8e673ac1b",
-    "order": 451
-  },
-  {
-    "id": "orbit-loader",
-    "name": "Orbit loader",
-    "kind": "vector",
-    "category": "loader",
-    "description": "Three dots circling a pulsing centre on tilted orbits, like an atom, each a third of a turn behind the last.",
-    "tags": [
-      "loader",
-      "orbit",
-      "atom",
-      "spinner",
-      "science",
-      "ui"
-    ],
-    "controls": [
-      {
-        "n": "dot",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            14,
-            165,
-            233
-          ]
-        },
-        "l": "Dots",
-        "c": 1,
-        "line": 1
-      },
-      {
-        "n": "core",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            99,
-            102,
-            241
-          ]
-        },
-        "l": "Centre",
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "orbit",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            226,
-            232,
-            240
-          ]
-        },
-        "l": "Orbits",
-        "c": 1,
-        "line": 3
-      }
-    ],
-    "presets": [
-      "Dark",
-      "No orbits"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 0,
-    "animated": true,
-    "duration": 1500,
-    "module": "loaders",
-    "addedAt": "2026-10-24T23:26:41Z",
-    "commitHash": "393256f29f8d6805da3568962af218f8e673ac1b",
-    "order": 450
   }
 ]

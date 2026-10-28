@@ -14,7 +14,7 @@ const PICTURE_EFFECTS = SHADER_EFFECTS.filter((e) => /uniform float uBackdropAlp
  * These draw a whole opaque device or scene around the picture, so they stay opaque with a clear
  * backdrop (the funhouse mirror hangs on a wall unless its frame is turned off).
  */
-const OPAQUE = new Set(["gameboy-screen", "funhouse-mirror"]);
+const OPAQUE = new Set(["gameboy-screen", "funhouse-mirror", "scratch-card"]);
 
 /**
  * Renders `effect` with the sample icon (black strokes on clear, like a Lucide
