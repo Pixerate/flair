@@ -429,4 +429,53 @@ export const shapeMorphLoader: VectorEffect = {
   },
 };
 
-export const loaderEffects: VectorEffect[] = [skeletonShimmer, progressBar, indeterminateBar, stepProgress, circleDotsLoader, waveBars, hourglass, infinityLoader, orbitLoader, shapeMorphLoader];
+/*
+ * Riffle shuffle: twelve cards, in the document in the order they end up
+ * stacked, so each one riffled in lands on those below it. Cut into two
+ * halves (even cards left, odd right), they drop back in turn from the
+ * bottom up, and the deck is tapped square: it ends as it began.
+ */
+const RIFFLE_CARDS = 12;
+const riffleStacked = (k: number) => `translate(80 ${r1(68 - k * 0.8)}) rotate(0)`;
+const riffleHalf = (k: number) => (k % 2 === 0 ? `translate(48 ${r1(70 - (k / 2) * 1.3)}) rotate(-12)` : `translate(112 ${r1(70 - ((k - 1) / 2) * 1.3)}) rotate(12)`);
+const RIFFLE_FROM = 420;
+const RIFFLE_GAP = 55;
+const RIFFLE_SQUARE = RIFFLE_FROM + RIFFLE_CARDS * RIFFLE_GAP + 120;
+
+export const riffleShuffle: VectorEffect = {
+  kind: "vector",
+  id: "riffle-shuffle",
+  name: "Riffle shuffle",
+  description: "A deck of cards cut in two and riffled back together, the cards dropping in from either side in turn before the deck is tapped square, over and over.",
+  category: "loader",
+  tags: ["loader", "card", "shuffle", "deck", "playing-card", "waiting", "loop"],
+  hold: 300,
+  presets: [
+    { name: "Red back", values: { back: [0.8, 0.15, 0.18] } },
+    { name: "Mono", values: { back: [0.2, 0.22, 0.27], trim: [0.85, 0.87, 0.9] } },
+  ],
+  motion: {
+    svg: `<svg viewBox="0 0 160 120"><!-- {{back: color default=#4F46E5 label='Card back'}} {{trim: color default=#FFFFFF label='Card edge'}} --><g id="riffleShuffleDeck" transform="translate(0 0)">${Array.from(
+      { length: RIFFLE_CARDS },
+      (_, k) =>
+        `<g id="riffleShuffleCard${k}" transform="${riffleStacked(k)}"><rect x="-16" y="-23" width="32" height="46" rx="3.5" fill="{{trim}}" stroke="#000000" stroke-opacity="0.18" stroke-width="0.6"/><rect x="-13" y="-20" width="26" height="40" rx="2" fill="{{back}}"/><path d="M0 -12 L7 0 L0 12 L-7 0 Z" fill="none" stroke="{{trim}}" stroke-opacity="0.55" stroke-width="1.2"/></g>`,
+    ).join("")}</g></svg>`,
+    animate: [
+      // Cut: every card to its half.
+      ...Array.from({ length: RIFFLE_CARDS }, (_, k): SvgAnimation => ({ id: `riffleShuffleCard${k}`, attrs: { transform: [riffleStacked(k), riffleHalf(k)] }, ms: 340, ease: "in-out" })),
+      // Riffle: from the bottom up, each drops back onto the stack.
+      ...Array.from({ length: RIFFLE_CARDS }, (_, k): SvgAnimation => ({
+        id: `riffleShuffleCard${k}`,
+        attrs: { transform: [riffleHalf(k), riffleStacked(k)] },
+        delay: RIFFLE_FROM + k * RIFFLE_GAP,
+        ms: 170,
+        ease: "out",
+      })),
+      // Tapped square.
+      { id: "riffleShuffleDeck", attrs: { transform: ["translate(0 0)", "translate(0 -5)"] }, delay: RIFFLE_SQUARE, ms: 140, ease: "out" },
+      { id: "riffleShuffleDeck", attrs: { transform: ["translate(0 -5)", "translate(0 0)"] }, delay: RIFFLE_SQUARE + 140, ms: 160, ease: "in-out" },
+    ],
+  },
+};
+
+export const loaderEffects: VectorEffect[] = [skeletonShimmer, progressBar, indeterminateBar, stepProgress, circleDotsLoader, waveBars, hourglass, infinityLoader, orbitLoader, shapeMorphLoader, riffleShuffle];

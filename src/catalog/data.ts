@@ -806,4 +806,73 @@ export const kpiTile: VectorEffect = {
   },
 };
 
-export const dataEffects: VectorEffect[] = [donutChart, pieChart, gauge, barRace, sparkline, leaderboard, areaChart, kpiTile];
+/*
+ * Rolodex: four cards on a spindle, the front one flipping down over the rod
+ * to show the next. Paint order is fixed, so there are two layers (the card
+ * behind and the front card), each holding every entry with one showing;
+ * when a flip ends both switch on an entry and the front stands back up,
+ * which looks like nothing changed. Four flips bring it round.
+ */
+const ROLODEX_ENTRIES = 4;
+const ROLODEX_MS = 1500;
+const ROLODEX_FLIP_AT = 950;
+const ROLODEX_FLIP = 300;
+const ROLODEX_UP = "translate(0 170) scale(1 1) translate(0 -170)";
+const ROLODEX_DOWN = "translate(0 170) scale(1 0.02) translate(0 -170)";
+
+/** One card of the rolodex, entry `i`, in layer `layer`. */
+function rolodexCard(layer: string, i: number, shown: boolean): string {
+  return `<g id="rolodex${layer}${i}" opacity="${shown ? 1 : 0}"><text x="160" y="104" text-anchor="middle" textLength="{{len${i}}}" lengthAdjust="spacingAndGlyphs" font-family="${SANS}" font-size="{{size${i}}}" font-weight="800" fill="{{ink}}">{{entry${i}}}</text><text x="160" y="130" text-anchor="middle" textLength="{{labelLen${i}}}" lengthAdjust="spacingAndGlyphs" font-family="${SANS}" font-size="{{labelSize${i}}}" fill="{{ink}}" opacity="0.6">{{label${i}}}</text></g>`;
+}
+
+/** The blank card every entry is written on. */
+const ROLODEX_BLANK = `<rect x="80" y="30" width="160" height="140" rx="8" fill="{{card}}" stroke="#000000" stroke-opacity="0.12"/><rect x="80" y="30" width="160" height="7" rx="3.5" fill="{{accent}}"/><ellipse cx="130" cy="164" rx="7" ry="3" fill="#000000" opacity="0.25"/><ellipse cx="190" cy="164" rx="7" ry="3" fill="#000000" opacity="0.25"/>`;
+
+export const rolodex: VectorEffect = {
+  kind: "vector",
+  id: "rolodex",
+  name: "Rolodex",
+  description: "Cards on a rolodex spindle flipping down one after another, each showing a figure and its label, for rotating stats, quotes or names.",
+  category: "data",
+  tags: ["card", "rolodex", "flip", "stat", "rotating", "testimonial", "retro", "loop"],
+  hold: 0,
+  presets: [
+    { name: "Team", values: { entries: "Ada, Grace, Linus, Margaret", labels: "Engineering, Research, Platform, Apollo", accent: [0.92, 0.35, 0.36] } },
+    { name: "Dark", values: { background: [0.06, 0.07, 0.1], card: [0.12, 0.13, 0.18], ink: [0.95, 0.96, 0.98] } },
+  ],
+  derived: (v) => {
+    const entries = parseLabels(v.entries, ROLODEX_ENTRIES);
+    const labels = parseLabels(v.labels, ROLODEX_ENTRIES);
+    const out: Record<string, string | number> = {};
+    for (let i = 0; i < ROLODEX_ENTRIES; i++) {
+      const entry = fitLabel(entries[i] ?? "", 136, 34, 16);
+      const label = fitLabel(labels[i] ?? "", 136, 13, 9);
+      Object.assign(out, { [`entry${i}`]: entry.text, [`size${i}`]: entry.size, [`len${i}`]: entry.length, [`label${i}`]: label.text, [`labelSize${i}`]: label.size, [`labelLen${i}`]: label.length });
+    }
+    return out;
+  },
+  motion: {
+    svg: `<svg viewBox="0 0 320 220"><!-- {{entries: text default='12k users, 4.9 rating, 99.9% uptime, 140 countries' label='Entries (comma separated)'}} {{labels: text default='signed up this month, on the App Store, over the last year, and counting' label='Labels (comma separated)'}} {{background: color default=#F1F5F9 label='Background'}} {{card: color default=#FFFFFF label='Card'}} {{ink: color default=#0F172A label='Text colour'}} {{accent: color default=#6366F1 label='Accent'}} {{metal: color default=#94A3B8 label='Spindle'}} --><rect width="320" height="220" fill="{{background}}"/><path d="M96 200 L224 200 L238 212 L82 212 Z" fill="{{metal}}" opacity="0.7"/><rect x="150" y="174" width="20" height="28" fill="{{metal}}" opacity="0.8"/>${[16, 10, 4]
+      .map((dy, k) => `<g transform="translate(0 ${-dy})" opacity="${0.55 + k * 0.15}">${ROLODEX_BLANK}</g>`)
+      .join("")}<g id="rolodexBehind">${ROLODEX_BLANK}${Array.from({ length: ROLODEX_ENTRIES }, (_, i) => rolodexCard("Behind", i, i === 1)).join("")}</g><g id="rolodexFront" transform="${ROLODEX_UP}">${ROLODEX_BLANK}${Array.from({ length: ROLODEX_ENTRIES }, (_, i) => rolodexCard("Front", i, i === 0)).join("")}<rect id="rolodexShade" x="80" y="30" width="160" height="140" rx="8" fill="#000000" opacity="0"/></g><rect x="66" y="166" width="188" height="9" rx="4.5" fill="{{metal}}"/><circle cx="66" cy="170.5" r="8" fill="{{metal}}"/><circle cx="254" cy="170.5" r="8" fill="{{metal}}"/><rect x="66" y="167" width="188" height="2.5" rx="1.2" fill="#FFFFFF" opacity="0.35"/></svg>`,
+    animate: Array.from({ length: ROLODEX_ENTRIES }, (_, k): SvgAnimation[] => {
+      const at = k * ROLODEX_MS + ROLODEX_FLIP_AT;
+      // An element shows its first change's starting value until it begins, so each swap starts from what was showing.
+      const swap = (id: string, attr: string, from: string | number, to: string | number): SvgAnimation => ({ id, attrs: { [attr]: [from, to] }, delay: at + ROLODEX_FLIP, ms: 0 });
+      const showing = (i: number, entry: number) => (i === entry % ROLODEX_ENTRIES ? 1 : 0);
+      return [
+        { id: "rolodexFront", attrs: { transform: [ROLODEX_UP, ROLODEX_DOWN] }, delay: at, ms: ROLODEX_FLIP, ease: [0.55, 0, 0.9, 0.45] },
+        { id: "rolodexShade", attrs: { opacity: [0, 0.45] }, delay: at, ms: ROLODEX_FLIP, ease: "linear" },
+        swap("rolodexFront", "transform", ROLODEX_DOWN, ROLODEX_UP),
+        swap("rolodexShade", "opacity", 0.45, 0),
+        // The front now shows the entry that was behind it, and behind it the one after.
+        ...Array.from({ length: ROLODEX_ENTRIES }, (_, i) => [
+          swap(`rolodexFront${i}`, "opacity", showing(i, k), showing(i, k + 1)),
+          swap(`rolodexBehind${i}`, "opacity", showing(i, k + 1), showing(i, k + 2)),
+        ]).flat(),
+      ];
+    }).flat(),
+  },
+};
+
+export const dataEffects: VectorEffect[] = [donutChart, pieChart, gauge, barRace, sparkline, leaderboard, areaChart, kpiTile, rolodex];

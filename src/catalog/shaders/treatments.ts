@@ -1043,6 +1043,92 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   ],
 };
 
+export const polaroidDevelop: ShaderEffect = {
+  kind: "shader",
+  id: "polaroid-develop",
+  name: "Polaroid develop",
+  description: "An instant photo sliding onto the table and given a shake, its picture developing out of murky blue-green to full, slightly faded colour inside the white frame.",
+  category: "image",
+  video: "filter",
+  tags: ["image", "reveal", "card", "polaroid", "instant-photo", "film", "retro", "develop"],
+  loop: 7,
+  source: glsl(
+    `// Polaroid develop: the print slides in (0–0.8 s), is shaken (0.8–2 s) and develops (0.8–5 s),
+// then fades away (6.3–7 s) for the next.
+uniform sampler2D uImage;  // @control filter=linear wrap=clamp default=${SAMPLE_IMAGES.portrait} label="Image"
+uniform vec3 uTable;       // @control color default=#C8B59A label="Table"
+uniform vec3 uFrame;       // @control color default=#F5F2EA label="Frame"
+uniform float uTilt;       // @control min=-15 max=15 default=-4 label="Tilt (degrees)"
+uniform bool uAuto;        // @control default=true label="Animate"
+uniform float uProgress;   // @control min=0 max=1 default=1 label="Developed (when still)"
+${BACKDROP_CONTROLS}`,
+    HASH,
+    NOISE,
+    PICTURE,
+    `float roundedBox(vec2 p, vec2 hs, float r) {
+  vec2 e = abs(p) - hs + r;
+  return length(max(e, 0.0)) + min(max(e.x, e.y), 0.0) - r;
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec2 res = iResolution.xy;
+  float t = uAuto ? mod(iTime, 7.0) : 3.0;
+  float developed = uAuto ? smoothstep(0.8, 5.0, t) : uProgress;
+  float slide = uAuto ? 1.0 - pow(1.0 - clamp(t / 0.8, 0.0, 1.0), 3.0) : 1.0;
+  float shake = uAuto ? sin((t - 0.8) * 26.0) * exp(-(t - 0.8) * 2.2) * step(0.8, t) : 0.0;
+  float gone = uAuto ? smoothstep(6.3, 7.0, t) : 0.0;
+  // The print: 88 × 107, the picture square under a thin top and sides and a deep bottom.
+  float h = min(res.y * 0.84, res.x * 0.84 / 0.822);
+  vec2 hs = vec2(h * 0.822, h) * 0.5;
+  vec2 centre = 0.5 * res + vec2(shake * h * 0.02, (1.0 - slide) * (res.y * 0.5 + h) + gone * h * 0.08);
+  float ang = radians(uTilt + shake * 6.0 + (1.0 - slide) * 14.0);
+  vec2 p = fragCoord - centre;
+  p = mat2(cos(ang), -sin(ang), sin(ang), cos(ang)) * p;
+  // The table: a soft-lit surface with a little grain.
+  vec2 g = fragCoord / res.y;
+  vec3 col = uTable * (0.92 + 0.08 * vnoise(g * vec2(3.0, 40.0))) * (1.05 - 0.25 * length(fragCoord / res - 0.5));
+  // Its shadow, softer the higher it is off the table.
+  float lift = (1.0 - slide) + abs(shake) * 0.4;
+  float sd = roundedBox(p, hs, h * 0.008);
+  float shadowD = roundedBox(p - vec2(h * 0.012, -h * (0.018 + 0.05 * lift)), hs, h * 0.02);
+  col *= 1.0 - 0.38 * (1.0 - smoothstep(-h * 0.02, h * (0.05 + 0.08 * lift), shadowD)) * (1.0 - gone);
+  float mask = (1.0 - smoothstep(-1.0, 1.0, sd)) * (1.0 - gone);
+  if (mask > 0.0) {
+    vec3 paper = uFrame * (0.97 + 0.03 * vnoise(p / h * 60.0));
+    float side = hs.x * 2.0 * 0.068;
+    float win = hs.x - side;
+    vec2 wc = vec2(0.0, hs.y - side - win);
+    vec2 wp = p - wc;
+    float wsd = roundedBox(wp, vec2(win), 1.0);
+    vec3 face = paper;
+    if (wsd < 1.0) {
+      vec2 uv = wp / (2.0 * win) + 0.5;
+      vec2 ts = vec2(textureSize(uImage, 0));
+      float imageAspect = ts.x / max(ts.y, 1.0);
+      vec2 fit = imageAspect > 1.0 ? vec2(1.0 / imageAspect, 1.0) : vec2(1.0, imageAspect);
+      vec3 pic = picture(uImage, 0.5 + (uv - 0.5) * fit);
+      // Developing unevenly: from the dark emulsion to a ghost in blue-green, then to colour.
+      float d = clamp(developed * 1.2 - 0.2 * vnoise(uv * 3.0 + 7.0), 0.0, 1.0);
+      float lum = dot(pic, vec3(0.299, 0.587, 0.114));
+      vec3 ghost = mix(vec3(0.15, 0.23, 0.25), vec3(0.55, 0.63, 0.57), lum);
+      vec3 film = mix(pic, vec3(lum), 0.12) * vec3(1.03, 0.99, 0.93) + 0.03;
+      vec3 shot = mix(vec3(0.1, 0.15, 0.17), ghost, smoothstep(0.0, 0.45, d));
+      shot = mix(shot, film, smoothstep(0.35, 1.0, d));
+      // A slight inset where the picture meets the frame.
+      shot *= 1.0 - 0.25 * exp(wsd / (h * 0.006));
+      face = mix(shot, paper, smoothstep(-1.0, 1.0, wsd));
+    }
+    col = mix(col, face, mask);
+  }
+  fragColor = vec4(col, 1.0);
+}`,
+  ),
+  presets: [
+    { name: "Dark desk", values: { uTable: [0.16, 0.13, 0.11], uTilt: 6 } },
+    { name: "Half developed", values: { uAuto: false, uProgress: 0.45, uTilt: 0 } },
+  ],
+};
+
 export const imageTreatments: ShaderEffect[] = [
   imageKenBurns,
   imageAscii,
@@ -1059,4 +1145,5 @@ export const imageTreatments: ShaderEffect[] = [
   imageChromaKey,
   imageLutGrade,
   scratchCard,
+  polaroidDevelop,
 ];

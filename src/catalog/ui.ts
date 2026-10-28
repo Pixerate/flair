@@ -185,8 +185,15 @@ function fitText(text: unknown, width: number, max: number) {
   return { size: r1(size), length: r1(e * size) };
 }
 
-/** Instant changes: the attribute snaps to `value` at `delay`. */
+/** Instant changes: the attribute snaps to `value` at `delay`, for elements that have changed before. */
 const snap = (id: string, attr: string, value: string | number, delay: number): SvgAnimation => ({ id, attrs: { [attr]: [value, value] }, delay, ms: 0 });
+
+/**
+ * An instant change from `from` to `to` at `delay`. An element shows its
+ * first change's starting value until that change begins, so a swap must
+ * start from what was showing.
+ */
+const swap = (id: string, attr: string, from: string | number, to: string | number, delay: number): SvgAnimation => ({ id, attrs: { [attr]: [from, to] }, delay, ms: 0 });
 
 /** A card's pose: moved to (`x`, `y`), turned `r` degrees, scaled `s`; the structure every card transform shares. */
 const cardPose = (x: number, y: number, r = 0, s = 1) => `translate(${r1(x)} ${r1(y)}) rotate(${r1(r)}) scale(${s})`;
@@ -201,8 +208,9 @@ const cardPose = (x: number, y: number, r = 0, s = 1) => `translate(${r1(x)} ${r
  */
 const SWIPE_SLOTS = ["Back", "Mid", "Front", "Fly"] as const;
 const SWIPE_POSES = { Back: cardPose(160, 136, 0, 0.88), Mid: cardPose(160, 124, 0, 0.94), Front: cardPose(160, 112) } as const;
-/** The card each layer shows to begin with: the first on top. */
-const SWIPE_START = { Back: 2, Mid: 1, Front: 0, Fly: 0 } as const;
+/** The card each layer shows before swipe `k`: card k on top, the next two below, the last flown one in the hidden flying layer. */
+const swipeShows = (k: number) => ({ Fly: (k + 2) % 3, Front: k % 3, Mid: (k + 1) % 3, Back: (k + 2) % 3 });
+const SWIPE_START = swipeShows(0);
 const SWIPE_MS = 1600;
 const SWIPE_AT = 500;
 
@@ -252,23 +260,28 @@ export const swipeStack: VectorEffect = {
     animate: [0, 1, 2].flatMap((k): SvgAnimation[] => {
       const at = k * SWIPE_MS + SWIPE_AT;
       // Which card each layer shows once this swipe starts: the front's goes flying, the rest move up.
-      const shows = { Fly: k % 3, Front: (k + 1) % 3, Mid: (k + 2) % 3, Back: k % 3 };
+      const before = swipeShows(k);
+      const shows = swipeShows(k + 1);
+      const after = { Fly: k % 3, Front: shows.Front, Mid: shows.Mid, Back: k % 3 };
       const right = k % 2 === 0;
       const dir = right ? 1 : -1;
       const stamp = right ? "swipeStackLike" : "swipeStackNope";
+      const flung = cardPose(160 + 300 * dir, 70, 26 * dir);
       return [
-        ...SWIPE_SLOTS.flatMap((slot) => [0, 1, 2].map((i) => snap(`swipeStack${slot}${i}`, "opacity", shows[slot] === i ? 1 : 0, at))),
-        snap("swipeStackFly", "opacity", 1, at),
-        snap("swipeStackFront", "transform", SWIPE_POSES.Mid, at),
-        snap("swipeStackMid", "transform", SWIPE_POSES.Back, at),
-        snap("swipeStackBack", "opacity", 0, at),
+        ...SWIPE_SLOTS.flatMap((slot) =>
+          [0, 1, 2].filter((i) => (before[slot] === i) !== (after[slot] === i)).map((i) => swap(`swipeStack${slot}${i}`, "opacity", before[slot] === i ? 1 : 0, after[slot] === i ? 1 : 0, at)),
+        ),
+        swap("swipeStackFly", "opacity", 0, 1, at),
+        swap("swipeStackFront", "transform", SWIPE_POSES.Front, SWIPE_POSES.Mid, at),
+        swap("swipeStackMid", "transform", SWIPE_POSES.Mid, SWIPE_POSES.Back, at),
+        swap("swipeStackBack", "opacity", 1, 0, at),
         // Dragged a little way under the stamp, then flung off.
         { id: "swipeStackFly", attrs: { transform: [SWIPE_POSES.Front, cardPose(160 + 34 * dir, 106, 7 * dir)] }, delay: at, ms: 280, ease: "out" },
         { id: stamp, attrs: { opacity: [0, 1] }, delay: at + 60, ms: 200 },
-        { id: "swipeStackFly", attrs: { transform: [cardPose(160 + 34 * dir, 106, 7 * dir), cardPose(160 + 300 * dir, 70, 26 * dir)] }, delay: at + 320, ms: 380, ease: [0.5, 0, 0.9, 0.6] },
-        snap("swipeStackFly", "opacity", 0, at + 700),
-        snap(stamp, "opacity", 0, at + 700),
-        snap("swipeStackFly", "transform", SWIPE_POSES.Front, at + 700),
+        { id: "swipeStackFly", attrs: { transform: [cardPose(160 + 34 * dir, 106, 7 * dir), flung] }, delay: at + 320, ms: 380, ease: [0.5, 0, 0.9, 0.6] },
+        swap("swipeStackFly", "opacity", 1, 0, at + 700),
+        swap(stamp, "opacity", 1, 0, at + 700),
+        swap("swipeStackFly", "transform", flung, SWIPE_POSES.Front, at + 700),
         // The rest step up a place as it goes, and the card it took slides in at the back.
         { id: "swipeStackFront", attrs: { transform: [SWIPE_POSES.Mid, SWIPE_POSES.Front] }, delay: at + 320, ms: 420, ease: { spring: { stiffness: 260, damping: 20 } } },
         { id: "swipeStackMid", attrs: { transform: [SWIPE_POSES.Back, SWIPE_POSES.Mid] }, delay: at + 380, ms: 420, ease: { spring: { stiffness: 260, damping: 20 } } },

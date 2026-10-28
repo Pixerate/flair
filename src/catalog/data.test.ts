@@ -23,7 +23,7 @@ const BAD = ["", "abc", ",,,", "-5,-2", "1e400", "Café 日本 🎉 & <b>", "$12
 describe("data and icon effects", () => {
   it("are all in the catalog, in their categories", () => {
     expect(findEffects({ category: "data" }).map((e) => e.id)).toEqual(
-      expect.arrayContaining(["donut-chart", "pie-chart", "gauge", "bar-race", "sparkline", "leaderboard", "area-chart", "kpi-tile"]),
+      expect.arrayContaining(["donut-chart", "pie-chart", "gauge", "bar-race", "sparkline", "leaderboard", "area-chart", "kpi-tile", "rolodex"]),
     );
     expect(findEffects({ category: "icon" }).map((e) => e.id)).toEqual(
       expect.arrayContaining(["weather-icons", "notification-bell", "animated-arrows", "emoji-reactions", "bookmark-star", "trash-delete", "lock-unlock", "wifi-signal"]),
@@ -226,5 +226,17 @@ describe("data effects", () => {
     const motion = render("bookmark-star", { rating: 3.4 });
     const widths = motion.animate!.filter((a) => a.id?.startsWith("bookmarkStarFill")).map((a) => a.attrs!.width![1]);
     expect(widths).toEqual([32, 32, 32, 16, 0]);
+  });
+
+  it("rolodex shows its first entry until the first flip and comes round to it after four", () => {
+    const motion = render("rolodex");
+    const shown = (layer: string, ms: number) =>
+      [...svgFrame(motion.animate!, [], ms)].filter(([id, f]) => new RegExp(`^rolodex${layer}\\d$`).test(id) && String(f.attrs.opacity) === "1").map(([id]) => id);
+    expect(shown("Front", 0)).toEqual(["rolodexFront0"]);
+    expect(shown("Behind", 0)).toEqual(["rolodexBehind1"]);
+    expect(shown("Front", 1400)).toEqual(["rolodexFront1"]);
+    expect(frame(motion, svgDuration(motion))).toBe(frame(motion, 0));
+    // Long and missing entries are cut to fit or left blank.
+    clean(render("rolodex", { entries: "x".repeat(300), labels: "" }));
   });
 });

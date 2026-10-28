@@ -704,6 +704,55 @@ export const sliderScrub: VectorEffect = {
 };
 
 /** UI micro-interactions as vector effects, each played by a hover, press or click (`trigger`). */
+/*
+ * Card fan: five playing cards turning about their bottom middle, squared up
+ * at rest and fanned on an arc while hovered, the middle one lifted. Each
+ * card's transform keeps one structure so it eases between the two.
+ */
+const FAN_SUITS = [["♠", false], ["♥", true], ["♦", true], ["♣", false], ["♠", false]] as const;
+const fanRest = (i: number) => `translate(${r1(160 + (i - 2) * 1.2)} ${r1(214 - i * 0.8)}) rotate(${r1((i - 2) * 1.5)})`;
+const fanOpen = (i: number) => `translate(${r1(160 + (i - 2) * 8)} ${i === 2 ? 204 : 212}) rotate(${(i - 2) * 16})`;
+
+export const cardFan: VectorEffect = {
+  kind: "vector",
+  id: "card-fan",
+  name: "Card fan",
+  description: "A squared-up hand of five playing cards that fans open on an arc on hover, the middle card rising, and gathers back when the pointer leaves.",
+  category: "interaction",
+  tags: ["interactive", "ui", "hover", "card", "playing-card", "fan", "deck", "poker"],
+  trigger: "hover",
+  presets: [
+    { name: "Royal flush", values: { ranks: "10 J Q K A", background: [0.05, 0.3, 0.18] } },
+    { name: "Night", values: { background: [0.06, 0.07, 0.1], card: [0.13, 0.14, 0.19], black: [0.92, 0.93, 0.95], red: [0.98, 0.44, 0.52] } },
+  ],
+  derived: (v) => {
+    const ranks = String(v.ranks).trim().split(/\s+/);
+    const out: Record<string, string | number> = {};
+    for (let i = 0; i < 5; i++) {
+      const rank = Array.from(ranks[i] ?? "").slice(0, 3).join("");
+      const { size, length } = fit(rank, 18, 17);
+      out[`rank${i}`] = rank;
+      out[`rankSize${i}`] = size;
+      out[`rankLen${i}`] = length;
+    }
+    return out;
+  },
+  motion: {
+    svg: `<svg viewBox="0 0 320 240"><!-- {{ranks: text default='A K Q J 10' label='Ranks (five, separated by spaces)'}} {{background: color default=#14532D label='Table'}} {{card: color default=#FFFFFF label='Card'}} {{black: color default=#111827 label='Black suits'}} {{red: color default=#DC2626 label='Red suits'}} --><defs><filter id="cardFanShadow" x="-40%" y="-30%" width="180%" height="160%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000000" flood-opacity="0.3"/></filter><radialGradient id="cardFanFelt" cx="0.5" cy="0.45" r="0.7"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0.12"/><stop offset="1" stop-color="#000000" stop-opacity="0.25"/></radialGradient></defs><rect width="320" height="240" fill="{{background}}"/><rect width="320" height="240" fill="url(#cardFanFelt)"/>${FAN_SUITS.map(([suit, red], i) => {
+      const ink = red ? "{{red}}" : "{{black}}";
+      const corner = `<text x="-31" y="-86" textLength="{{rankLen${i}}}" lengthAdjust="spacingAndGlyphs" font-family="Georgia, 'Times New Roman', serif" font-size="{{rankSize${i}}}" font-weight="700" fill="${ink}">{{rank${i}}}</text><text x="-31" y="-70" font-family="Georgia, serif" font-size="13" fill="${ink}">${suit}</text>`;
+      return `<g id="cardFanCard${i}" transform="${fanRest(i)}" filter="url(#cardFanShadow)"><rect x="-37" y="-104" width="74" height="104" rx="6" fill="{{card}}" stroke="#000000" stroke-opacity="0.15"/>${corner}<g transform="rotate(180 0 -52)">${corner}</g><text x="0" y="-38" text-anchor="middle" font-family="Georgia, serif" font-size="38" fill="${ink}">${suit}</text></g>`;
+    }).join("")}</svg>`,
+    animate: FAN_SUITS.map((_, i): SvgAnimation => ({
+      id: `cardFanCard${i}`,
+      attrs: { transform: [fanRest(i), fanOpen(i)] },
+      delay: Math.abs(i - 2) * 35,
+      ms: 420,
+      ease: [0.3, 1.3, 0.5, 1],
+    })),
+  },
+};
+
 export const interactionEffects: VectorEffect[] = [
   likeButton,
   toggleSwitch,
@@ -719,4 +768,5 @@ export const interactionEffects: VectorEffect[] = [
   pressButton,
   toastNotification,
   sliderScrub,
+  cardFan,
 ];

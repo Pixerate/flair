@@ -1,4 +1,4 @@
-import { glsl, HASH, OKLAB_MIX } from "../glsl.js";
+import { glsl, HASH, NOISE, OKLAB_MIX } from "../glsl.js";
 import { SAMPLE_IMAGES } from "../images.js";
 import type { ShaderEffect } from "../types.js";
 import { BACKDROP_CONTROLS, PICTURE } from "./image.js";
@@ -597,4 +597,174 @@ uniform float uGrain;     // @control min=0 max=0.4 default=0.12 label="Grain"`,
   ],
 };
 
-export const uiShaders: ShaderEffect[] = [borderBeam, gradientBorder, meteors, backgroundBeams, gridSpotlight, dotGrid, glassCard, liquidGlass, noiseGrainBg];
+export const metalCard: ShaderEffect = {
+  kind: "shader",
+  id: "metal-card",
+  name: "Metal card",
+  description: "A brushed-metal payment card that tilts toward the pointer, a streak of light sliding along its grain over the chip, the contactless mark and embossed digits.",
+  category: "ui",
+  tags: ["ui", "card", "credit-card", "payment", "metal", "fintech", "interactive", "hover"],
+  transparent: true,
+  source: glsl(
+    `// Metal card: a payment card in brushed metal, its anisotropic highlight following the tilt.
+uniform vec3 uMetal;       // @control color default=#2A2C31 label="Metal"
+uniform vec3 uChip;        // @control color default=#D9B45A label="Chip"
+uniform vec3 uInk;         // @control color default=#C9CDD4 label="Embossing"
+uniform float uShine;      // @control min=0 max=1 default=0.6 label="Shine"
+uniform float uTilt;       // @control min=0 max=1 default=0.5 label="Tilt"
+uniform bool uDemo;        // @control default=true label="Demo when idle"`,
+    HASH,
+    NOISE,
+    HOVER,
+    `float roundedBox(vec2 p, vec2 hs, float r) {
+  vec2 e = abs(p) - hs + r;
+  return length(max(e, 0.0)) + min(max(e.x, e.y), 0.0) - r;
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec2 res = iResolution.xy;
+  const float aspect = 1.586;
+  float w = min(res.x * 0.82, res.y * 0.82 * aspect);
+  vec2 hs = vec2(w, w / aspect) * 0.5;
+  vec3 hp = hoverPoint(uDemo, 0.6);
+  vec2 tilt = clamp((hp.xy - 0.5 * res) / hs, -1.0, 1.0) * hp.z * uTilt;
+  vec2 s = (fragCoord - 0.5 * res) / hs;
+  vec2 q = s / max(1.0 - 0.12 * dot(s, tilt), 0.2);
+  vec2 p = q * hs;
+  float px = 1.0;
+  float sd = roundedBox(p, hs, hs.y * 0.09);
+  float mask = 1.0 - smoothstep(-px, px, sd);
+  // A soft shadow under it, away from the light.
+  float shadowD = roundedBox(fragCoord - 0.5 * res + tilt * hs * 0.05 + vec2(0.0, hs.y * 0.08), hs, hs.y * 0.1);
+  float shadow = (1.0 - smoothstep(-hs.y * 0.05, hs.y * 0.18, shadowD)) * 0.4;
+  if (mask <= 0.0) {
+    fragColor = vec4(0.0, 0.0, 0.0, shadow);
+    return;
+  }
+  // Card units: x 0 to the aspect, y 0 to 1 from the bottom.
+  vec2 c = vec2((q.x * 0.5 + 0.5) * aspect, q.y * 0.5 + 0.5);
+  // Brushed along its length: fine streaks across the grain.
+  float grain = vnoise(vec2(c.x * 3.0, c.y * 420.0)) * 0.6 + vnoise(vec2(c.x * 1.5, c.y * 90.0)) * 0.4;
+  vec3 col = uMetal * (0.85 + 0.3 * grain);
+  // The highlight runs along the grain, sliding up and down with the tilt.
+  float band = c.y - 0.55 + tilt.y * 0.7 - (c.x - 0.8) * (0.25 + tilt.x * 0.3);
+  float spec = exp(-band * band * 18.0) * (0.6 + 0.4 * grain);
+  col += uShine * spec * mix(vec3(0.55), uMetal + 0.4, 0.5);
+  col += uShine * 0.25 * exp(-band * band * 3.0);
+  // The chip: gold, its contact pads parted by thin lines.
+  vec2 chip = c - vec2(0.28, 0.56);
+  float chipD = roundedBox(chip, vec2(0.105, 0.08), 0.018);
+  vec3 gold = uChip * (0.8 + 0.4 * smoothstep(-0.1, 0.1, chip.y + chip.x * 0.4)) + spec * 0.3;
+  float pads = min(abs(chip.y), min(abs(abs(chip.y) - 0.04), abs(chip.x + 0.02)));
+  gold *= 1.0 - 0.35 * (1.0 - smoothstep(0.002, 0.005, pads)) * step(abs(chip.x), 0.07);
+  col = mix(col, gold, 1.0 - smoothstep(-0.002, 0.002, chipD));
+  // Embossed marks: raised, lit along their top edge and shadowed below.
+  float ink = 0.0;
+  // Contactless: three arcs.
+  vec2 cl = c - vec2(0.47, 0.56);
+  float clR = length(cl);
+  float arcs = 0.0;
+  for (int i = 0; i < 3; i++) arcs = max(arcs, 1.0 - smoothstep(0.004, 0.008, abs(clR - 0.025 - 0.022 * float(i))));
+  ink = max(ink, arcs * step(0.0, cl.x) * step(abs(cl.y), cl.x * 1.1));
+  // The number: four groups of four raised dots.
+  vec2 nd = c - vec2(0.17, 0.32);
+  float group = floor(nd.x / 0.33);
+  float within = nd.x - group * 0.33;
+  vec2 bump = vec2(mod(within, 0.058) - 0.029, nd.y);
+  float digits = (1.0 - smoothstep(0.014, 0.019, length(bump))) * step(0.0, within) * step(within, 0.232) * step(0.0, group) * step(group, 3.0);
+  ink = max(ink, digits);
+  // The cardholder line and a hexagonal mark.
+  ink = max(ink, 1.0 - smoothstep(0.0, 0.004, roundedBox(c - vec2(0.42, 0.16), vec2(0.25, 0.018), 0.018)));
+  vec2 hx = abs(c - vec2(aspect - 0.2, 0.18));
+  float hex = max(hx.x * 0.866 + hx.y * 0.5, hx.y) - 0.07;
+  ink = max(ink, 1.0 - smoothstep(0.004, 0.008, abs(hex)));
+  vec3 inkCol = uInk * (0.8 + 0.4 * spec);
+  col = mix(col, inkCol, ink * 0.85);
+  // A bevelled edge catching the light.
+  float rim = smoothstep(-hs.y * 0.03, 0.0, sd);
+  col += rim * (0.15 + 0.4 * spec) * uShine;
+  float a = mask + shadow * (1.0 - mask);
+  fragColor = vec4(col * mask / max(a, 1e-4), a);
+}`,
+  ),
+  presets: [
+    { name: "Titanium", values: { uMetal: [0.62, 0.64, 0.67], uInk: [0.25, 0.27, 0.3], uChip: [0.82, 0.8, 0.75] } },
+    { name: "Rose gold", values: { uMetal: [0.78, 0.55, 0.5], uInk: [0.98, 0.9, 0.86], uChip: [0.9, 0.75, 0.45], uShine: 0.8 } },
+  ],
+};
+
+export const cardSpotlight: ShaderEffect = {
+  kind: "shader",
+  id: "card-spotlight",
+  name: "Card spotlight",
+  description: "A bento grid of dark cards whose borders and faces light up near the pointer, one soft spotlight bleeding across the card edges and the gaps between.",
+  category: "ui",
+  tags: ["ui", "card", "bento", "grid", "spotlight", "interactive", "hover", "saas", "background"],
+  source: glsl(
+    `// Card spotlight: five cards in a bento layout, their borders and faces lit round the pointer.
+uniform vec3 uBackground;  // @control color default=#09090B label="Background"
+uniform vec3 uCard;        // @control color default=#111114 label="Card"
+uniform vec3 uBorder;      // @control color default=#27272A label="Border"
+uniform vec3 uSpot;        // @control color default=#A78BFA label="Spotlight"
+uniform float uRadius;     // @control min=0.1 max=0.8 default=0.32 label="Spotlight size"
+uniform float uGap;        // @control min=0.005 max=0.06 default=0.022 label="Gap"
+uniform bool uDemo;        // @control default=true label="Demo when idle"`,
+    HOVER,
+    `float roundedBox(vec2 p, vec2 hs, float r) {
+  vec2 e = abs(p) - hs + r;
+  return length(max(e, 0.0)) + min(max(e.x, e.y), 0.0) - r;
+}
+
+// Card i of the layout as (left, bottom, right, top) in 0–1: a wide and a narrow card on top, three below.
+vec4 cardRect(int i) {
+  if (i == 0) return vec4(0.0, 0.5, 0.62, 1.0);
+  if (i == 1) return vec4(0.62, 0.5, 1.0, 1.0);
+  if (i == 2) return vec4(0.0, 0.0, 0.3, 0.5);
+  if (i == 3) return vec4(0.3, 0.0, 0.7, 0.5);
+  return vec4(0.7, 0.0, 1.0, 0.5);
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec2 res = iResolution.xy;
+  float ry = res.y;
+  vec3 hp = hoverPoint(uDemo, 0.9);
+  float d = length(fragCoord - hp.xy) / ry;
+  float spot = exp(-d * d / (uRadius * uRadius)) * hp.z;
+  vec3 col = uBackground + uSpot * spot * 0.05;
+  // The layout fills the frame inside a margin, the gaps between cards uGap high.
+  float margin = 0.06 * ry;
+  vec2 area = res - 2.0 * margin;
+  float gap = uGap * ry;
+  for (int i = 0; i < 5; i++) {
+    vec4 r = cardRect(i);
+    vec2 lo = margin + r.xy * area + gap * 0.5 * step(0.001, r.xy);
+    vec2 hi = margin + r.zw * area - gap * 0.5 * step(r.zw, vec2(0.999));
+    vec2 hs = 0.5 * (hi - lo);
+    vec2 p = fragCoord - 0.5 * (lo + hi);
+    float sd = roundedBox(p, hs, 0.035 * ry);
+    if (sd > 2.0) continue;
+    float inside = 1.0 - smoothstep(-1.0, 1.0, sd);
+    // The face: lit faintly round the pointer, with placeholder content in the corner.
+    vec3 face = uCard + uSpot * spot * 0.09;
+    vec2 tl = fragCoord - vec2(lo.x, hi.y);
+    float icon = 1.0 - smoothstep(-1.0, 1.0, length(tl - vec2(0.05, -0.05) * ry) - 0.018 * ry);
+    float bar1 = 1.0 - smoothstep(-1.0, 1.0, roundedBox(tl - vec2(0.13, -0.095) * ry, vec2(0.08, 0.008) * ry, 0.008 * ry));
+    float bar2 = 1.0 - smoothstep(-1.0, 1.0, roundedBox(tl - vec2(0.11, -0.125) * ry, vec2(0.06, 0.006) * ry, 0.006 * ry));
+    face = mix(face, mix(uBorder, uSpot, spot * 0.6), max(icon, max(bar1, bar2 * 0.7)) * 0.9);
+    // The border: a hairline at rest, glowing in the spotlight's colour near the pointer.
+    float line = 1.0 - smoothstep(0.0, 1.5, abs(sd + 0.75));
+    vec3 border = mix(uBorder, uSpot, clamp(spot * 1.4, 0.0, 1.0)) * (1.0 + spot);
+    face = mix(face, border, line);
+    col = mix(col, face, inside);
+    col += uSpot * line * spot * 0.25;
+  }
+  fragColor = vec4(col, 1.0);
+}`,
+  ),
+  presets: [
+    { name: "Light", values: { uBackground: [0.96, 0.96, 0.97], uCard: [1, 1, 1], uBorder: [0.88, 0.89, 0.91], uSpot: [0.15, 0.39, 0.92] } },
+    { name: "Emerald", values: { uSpot: [0.2, 0.83, 0.6], uRadius: 0.45 } },
+  ],
+};
+
+export const uiShaders: ShaderEffect[] = [borderBeam, gradientBorder, meteors, backgroundBeams, gridSpotlight, dotGrid, glassCard, liquidGlass, noiseGrainBg, metalCard, cardSpotlight];

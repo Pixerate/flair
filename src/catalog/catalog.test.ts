@@ -260,8 +260,8 @@ describe("catalog", () => {
   // Effects that show a picture lay it over a backdrop, so transparent images (Lucide icons:
   // black strokes on clear) are not black on black, and pass its alpha on for overlays.
   const PICTURE_EFFECTS = SHADER_EFFECTS.filter((e) => /\b(picture|pictureRGBA|flair_transition)\(/.test(e.source));
-  // These draw a whole opaque device or ticket around the picture, so they stay opaque.
-  const OPAQUE = new Set(["gameboy-screen", "scratch-card"]);
+  // These draw a whole opaque device, ticket or scene around the picture, so they stay opaque.
+  const OPAQUE = new Set(["gameboy-screen", "scratch-card", "polaroid-develop", "cover-flow", "tarot-reveal"]);
 
   it.each(PICTURE_EFFECTS.map((e) => [e.id, e] as const))("%s lays its image over a backdrop and keeps its alpha", (_, effect) => {
     expect(effectDefaults(effect)).toMatchObject({ uBackdrop: [1, 1, 1], uBackdropAlpha: 1 });
@@ -1594,7 +1594,7 @@ describe("scroll effects", () => {
 
 describe("ui effects", () => {
   const ui = findEffects({ category: "ui" });
-  const shaders = ["border-beam", "gradient-border", "meteors", "background-beams", "grid-spotlight", "dot-grid", "glass-card", "liquid-glass", "noise-grain-bg", "dichroic-glass"];
+  const shaders = ["border-beam", "gradient-border", "meteors", "background-beams", "grid-spotlight", "dot-grid", "glass-card", "liquid-glass", "noise-grain-bg", "dichroic-glass", "metal-card", "card-spotlight"];
   const vectors = ["marquee", "number-ticker", "animated-badge", "app-window", "swipe-stack", "pack-opening"];
   const render = (id: string, values: Record<string, unknown> = {}) => {
     const effect = getEffect(id)!;
@@ -1624,6 +1624,16 @@ describe("ui effects", () => {
   it("prefixes every vector id with the effect's name", () => {
     for (const [id, prefix] of [["marquee", "marquee"], ["number-ticker", "numberTicker"], ["animated-badge", "animatedBadge"], ["swipe-stack", "swipeStack"], ["pack-opening", "packOpening"]] as const)
       for (const [, name] of render(id).svg.matchAll(/\sid="([^"]+)"/g)) expect(name, id).toMatch(new RegExp(`^${prefix}`));
+  });
+
+  it("swipe stack shows its first card until the first swipe and comes round to it after three", () => {
+    const motion = render("swipe-stack");
+    const frame = (ms: number) => [...svgFrame(motion.animate!, [], ms)].sort();
+    const top = (ms: number) => frame(ms).filter(([id, f]) => /^swipeStackFront\d$/.test(id) && String(f.attrs.opacity) === "1").map(([id]) => id);
+    expect(top(0)).toEqual(["swipeStackFront0"]);
+    expect(JSON.stringify(frame(400))).toBe(JSON.stringify(frame(0)));
+    expect(top(2000)).toEqual(["swipeStackFront1"]);
+    expect(JSON.stringify(frame(svgDuration(motion)))).toBe(JSON.stringify(frame(0)));
   });
 
   it("marquee scrolls exactly one copy per loop, either way, for any words", () => {
@@ -1665,7 +1675,7 @@ describe("ui effects", () => {
 });
 
 describe("more loaders", () => {
-  const ids = ["skeleton-shimmer", "progress-bar", "indeterminate-bar", "step-progress", "circle-dots-loader", "wave-bars", "hourglass", "infinity-loader", "orbit-loader", "shape-morph-loader"];
+  const ids = ["skeleton-shimmer", "progress-bar", "indeterminate-bar", "step-progress", "circle-dots-loader", "wave-bars", "hourglass", "infinity-loader", "orbit-loader", "shape-morph-loader", "riffle-shuffle"];
   const render = (id: string, values: Record<string, unknown> = {}) => {
     const effect = getEffect(id)!;
     if (effect.kind !== "vector") throw new Error("vector expected");
@@ -1722,7 +1732,7 @@ describe("3d, space, weather and water effects", () => {
   const ids = (category: EffectCategory) => findEffects({ category }).map((e) => e.id);
 
   it("fill the new categories and add to space", () => {
-    expect(ids("3d")).toEqual(["globe", "rotating-shapes", "isometric-city", "wireframe-terrain", "metaballs-3d", "torus-knot", "gemstone"]);
+    expect(ids("3d")).toEqual(["globe", "rotating-shapes", "isometric-city", "wireframe-terrain", "metaballs-3d", "torus-knot", "cover-flow", "gemstone"]);
     expect(ids("weather")).toEqual(["rain-streaks", "thunderstorm", "rainbow", "wind-gust", "hail"]);
     expect(ids("water")).toEqual(["ocean-waves", "underwater-scene", "pond-ripples", "waterfall", "water-reflection"]);
     for (const id of ["planet", "spiral-galaxy", "solar-system"]) expect(ids("space")).toContain(id);
