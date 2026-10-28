@@ -15,7 +15,7 @@
 
 import { controlValue, parseControls, type ControlDef, type ControlType, type ControlValue } from "../shader/controls.js";
 import { controlsSchema, type JsonSchema } from "../shader/schema.js";
-import { matchesQuery, queryWords, type EffectQuery } from "./query.js";
+import { countTags, matchesQuery, queryWords, type EffectQuery, type EffectTag } from "./query.js";
 import { didYouMean } from "../motion/params.js";
 import { metaOf, type EffectMeta } from "./meta.js";
 import { svgDuration } from "../vector/svg.js";
@@ -308,7 +308,7 @@ export function drawsAlpha(effect: EffectDefinition, values?: Readonly<Record<st
   return below1("uBackgroundAlpha") ?? (Boolean(effect.transparent) || below1("uBackdropAlpha") === true);
 }
 
-export type { EffectQuery } from "./query.js";
+export { normaliseTag, TAG_FORMAT, type EffectQuery, type EffectTag } from "./query.js";
 export type { EffectMeta } from "./meta.js";
 
 /**
@@ -402,6 +402,16 @@ export function sanitizeEffectValues(
 export function findEffects(query: EffectQuery = {}): EffectDefinition[] {
   const words = queryWords(query);
   return EFFECTS.filter((e) => matchesQuery({ ...e, video: e.kind === "shader" ? e.video : undefined }, () => effectInputs(e), query, words));
+}
+
+/**
+ * The tags of the effects matching a query, each with how many of them carry
+ * it, the most used first: `effectTags()` is the whole vocabulary,
+ * `effectTags({ category: "fire" })` the tags to narrow fire effects by.
+ * Pass any of them to `findEffects({ tags })`.
+ */
+export function effectTags(query: EffectQuery = {}): EffectTag[] {
+  return countTags(findEffects(query));
 }
 
 /** One layer of an {@link effectStack}: a shader effect by id (or definition), with values or a preset. */

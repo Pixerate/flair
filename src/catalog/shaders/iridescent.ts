@@ -144,7 +144,7 @@ export const neonWorms: ShaderEffect = {
   name: "Neon worms",
   description: "Glowing neon tubes looping and wriggling across a dark frame, their colour shifting slowly from one end of the screen to the other.",
   category: "pattern",
-  tags: ["background", "neon", "glow", "lines", "squiggle", "organic", "loop"],
+  tags: ["background", "neon", "glow", "line", "squiggle", "organic", "loop"],
   source: glsl(
     `// Neon worms: contour lines of drifting, warped noise, drawn as glowing tubes a fixed number of pixels wide.
 uniform vec3 uColorA;     // @control color default=#C04BFF label="Colour 1"
@@ -276,7 +276,7 @@ export const neonWarp: ShaderEffect = {
   name: "Neon warp",
   description: "Pink and cyan light streaks rushing out from a dark centre, as if jumping to hyperspace, leaving room in the middle for a title.",
   category: "space",
-  tags: ["background", "neon", "warp", "hyperspace", "speed", "streaks", "retro", "hero"],
+  tags: ["background", "neon", "warp", "hyperspace", "speed", "streak", "retro", "hero"],
   source: glsl(
     `// Neon warp: in each of a few rings of angular slots, a streak rides outward, lengthening and brightening as it goes.
 uniform vec3 uColorA;     // @control color default=#FF3EA5 label="Colour 1"

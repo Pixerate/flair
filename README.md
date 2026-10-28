@@ -46,8 +46,8 @@ Flair gives products a library of good-looking, configurable visual effects (her
 | Import | What it provides | Runtime dependencies |
 | :--- | :--- | :--- |
 | `@pixerate/flair` | Shader engine, vector motion, time and easing, colour, blending, transitions, scenes, interchange exporters | None (browser-safe) |
-| `@pixerate/flair/catalog` | `EFFECTS`, `getEffect`, `findEffects` (also by `video` use), `effectDefaults`, `effectControlSchema`, `renderVectorEffect`, `vectorControls`, GLSL helpers, sample images, `textImage` | None |
-| `@pixerate/flair/catalog/lazy` | The catalog loaded on demand: `EFFECT_META` (every effect's id, name, category, description, tags, controls, presets' names, inputs and video use), `findEffectMeta`, `getEffectMeta`, and `loadEffect(id)` for an effect's shader or picture | None |
+| `@pixerate/flair/catalog` | `EFFECTS`, `getEffect`, `findEffects` (also by `video` use and `tags`), `effectTags`, `effectDefaults`, `effectControlSchema`, `renderVectorEffect`, `vectorControls`, GLSL helpers, sample images, `textImage` | None |
+| `@pixerate/flair/catalog/lazy` | The catalog loaded on demand: `EFFECT_META` (every effect's id, name, category, description, tags, controls, presets' names, inputs and video use), `findEffectMeta`, `effectTags`, `getEffectMeta`, and `loadEffect(id)` for an effect's shader or picture | None |
 | `@pixerate/flair/vector` | `SvgMotion`, `svgFrame`, `svgView`, `SvgPlayer`, `svgFrameMarkup`, `svgViewBox`, `animateCount`, `formatCount`, `morphPaths`, `morphSequence`, `svgAnimatedMarkup` (an animated `.svg` file), `svgMotionIssues` | None |
 | `@pixerate/flair/motion` | Motion primitives: `PRIMITIVES` (entrances, exits, emphasis and path motions as JSON descriptors), `applyPrimitive`, `removePrimitive`, `primitiveTags` | None |
 | `@pixerate/flair/embed` | `mountEffect`, `subjectValues`: any catalog effect on a page, applied to a picture, video, SVG, words or a path; `recordEffect`: MP4, WebM, GIF or PNG frames in the browser | None |
@@ -157,7 +157,7 @@ Object.assign(host.style, { display: "inline-block", height: "0.72em", aspectRat
 new SvgPlayer(host, motion, { loop: false });
 ```
 
-Find effects with `findEffects({ text: "glow", category: "light", kind: "shader" })`, or by a group of related categories with `findEffects({ group: "Backgrounds" })` (`EFFECT_CATEGORY_GROUPS` lists them, and `categoryGroup(category)` gives a category's group). Each effect has an `id`, `name`, `description`, `category`, `tags` and optional `presets`. Tags cut across categories: `findEffects({ tags: ["glass"] })` gathers every glass look (text, panes, lenses, stained glass, a prism) and `tags: ["reflection"]` every mirror. Image effects default to built-in sample pictures, so they look right before you set `uImage` to your own URL.
+Find effects with `findEffects({ text: "glow", category: "light", kind: "shader" })`, or by a group of related categories with `findEffects({ group: "Backgrounds" })` (`EFFECT_CATEGORY_GROUPS` lists them, and `categoryGroup(category)` gives a category's group). Each effect has an `id`, `name`, `description`, `category`, `tags` and optional `presets`. Tags cut across categories: `findEffects({ tags: ["glass"] })` gathers every glass look (text, panes, lenses, stained glass, a prism) and `tags: ["reflection"]` every mirror; several tags find effects with all of them. `effectTags()` lists every tag with how many effects carry it, the most used first, and `effectTags(query)` the tags of the effects a query finds (`effectTags({ category: "fire" })`: the tags to narrow fire effects by). Tags are written in kebab-case (`motion-blur`, `game-boy`); a query's tags are matched in any case, with spaces as hyphens. Image effects default to built-in sample pictures, so they look right before you set `uImage` to your own URL.
 
 #### What an effect takes
 
@@ -547,7 +547,7 @@ const registry = createEffectToolRegistry(editor); // registry.listTools(), regi
 
 The tools are `list_commands`, `run_command` and `run_commands`, plus `view_effect` when you can capture the preview. The commands they run:
 
-- **Inspect and start:** `effect.describe`, `catalog.search` (`{ total, effects }`, 20 at a time unless you pass `limit`; `offset` pages on), `effect.load`.
+- **Inspect and start:** `effect.describe`, `catalog.search` (`{ total, effects }`, each effect with its tags, 20 at a time unless you pass `limit`; `offset` pages on; filter by words, `category`, `group`, `kind`, `tags`, `video`, `accepts`, `interaction` and `transparent`), `catalog.tags` (`{ total, tags }`: the tags with how many effects carry each, 50 at a time, under the same filters; an unknown tag is refused with the nearest ones), `effect.load`.
 - **Edit the effect:** `effect.setSource` for shaders (it returns the compile report when a preview is bound, or says the source has not been compiled yet), `effect.setMotion` for vector pictures.
 - **Motion primitives** (vector pictures): `primitive.list` (by `kind`), `primitive.describe`, `primitive.apply` (returns the use's `tag` and the animations it added), `primitive.applied` and `primitive.remove`.
 - **Values and presets:** `values.schema` (the JSON Schema of the effect's values), `values.set`, `values.reset`, `values.randomize`, `preset.apply` and `preset.save`.
@@ -765,7 +765,8 @@ npx flair scene review ./scene.json          # fast headless simulation + review
 npx flair scene lottie ./scene.json out.json # also: fcp7, edl, motn
 
 # Catalog effects to files
-npx flair effects --accepts video            # pick an effect: what each takes (--interaction click, --category image, --kind, --search, --transparent, --json)
+npx flair effects --accepts video            # pick an effect: what each takes (--interaction click, --category image, --kind, --search, --tag glass, --transparent, --json)
+npx flair tags --category fire               # the tags there are, with how many effects carry each (--kind, --search, --tag, --limit, --json)
 npx flair render image-duotone --image team.jpg --preset Spotify -o team.mp4
 npx flair render crt --video clip.mp4 -o crt.mp4
 npx flair render click-ripple --alpha -o ripple.webm

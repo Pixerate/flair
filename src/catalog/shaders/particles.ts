@@ -365,7 +365,7 @@ export const boids: ShaderEffect = {
   name: "Boids",
   description: "Flocks of small birds or arrows wheeling across the sky in coherent groups that split apart and merge again.",
   category: "particles",
-  tags: ["particles", "flock", "birds", "boids", "swarm", "nature"],
+  tags: ["particles", "flock", "bird", "boids", "swarm", "nature"],
   source: glsl(
     `// Boids: each bird follows one of a few flock paths, plus its own place in the formation and
 // a little jitter, and now and then moves over to another flock (so flocks split and merge).

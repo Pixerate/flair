@@ -252,7 +252,7 @@ export const emojiReactions: VectorEffect = {
   name: "Emoji reactions",
   description: "A reaction picker: on hover the bar opens and like, love, haha, wow, sad and angry faces bounce up one after another, drawn as vectors.",
   category: "icon",
-  tags: ["interactive", "hover", "emoji", "reactions", "social", "ui"],
+  tags: ["interactive", "hover", "emoji", "reaction", "social", "ui"],
   trigger: "hover",
   hold: 600,
   presets: [{ name: "Dark", values: { pill: [0.13, 0.14, 0.19], button: [0.6, 0.63, 0.7] } }],
@@ -477,7 +477,7 @@ export const wishStar: VectorEffect = {
   name: "Wish star",
   description: "A shooting star swoops down an arc, spinning, its trail drawing on behind it, then lands with a pop and a burst of twinkling sparkles as the trail fades.",
   category: "icon",
-  tags: ["star", "shooting-star", "wish", "magic", "favourite", "celebration", "loop"],
+  tags: ["stars", "shooting-star", "wish", "magic", "favourite", "celebration", "loop"],
   hold: 300,
   presets: [
     { name: "Dark", values: { star: [0.99, 0.88, 0.45], trail: [0.65, 0.55, 1], sparkle: [1, 1, 1] } },

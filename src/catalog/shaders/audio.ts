@@ -60,7 +60,7 @@ export const spectrumBars: ShaderEffect = {
   name: "Spectrum bars",
   description: "Classic equaliser bars dancing to the music, with peak caps kicked up on each beat and an optional mirrored layout.",
   category: "audio",
-  tags: ["audio", "music", "equalizer", "spectrum", "bars", "visualizer", "beat"],
+  tags: ["audio", "music", "equalizer", "spectrum", "bar", "visualizer", "beat"],
   source: glsl(
     `// Spectrum bars: the spectrum as bars, low to high, coloured by height, with caps that jump on beats.
 uniform int uBars;           // @control min=8 max=64 default=32 label="Bars"
@@ -138,7 +138,7 @@ export const circularSpectrum: ShaderEffect = {
   description: "A ring of spectrum bars radiating round a centre picture or colour, which swells on the bass.",
   category: "audio",
   video: "filter",
-  tags: ["audio", "music", "spectrum", "radial", "ring", "visualizer", "album art", "overlay"],
+  tags: ["audio", "music", "spectrum", "radial", "ring", "visualizer", "album-art", "overlay"],
   transparent: true,
   source: glsl(
     `// Circular spectrum: bars radiating from a ring, the spectrum mirrored round it, a picture in the middle.
@@ -486,7 +486,7 @@ export const vinyl: ShaderEffect = {
   description: "A record spinning on a turntable, its label a picture, its grooves catching the light with the music, the tonearm riding the beat.",
   category: "audio",
   video: "stills",
-  tags: ["audio", "music", "vinyl", "record", "turntable", "retro", "album art", "overlay"],
+  tags: ["audio", "music", "vinyl", "record", "turntable", "retro", "album-art", "overlay"],
   transparent: true,
   source: glsl(
     `// Vinyl: a spinning record; each groove's sheen follows the spectrum at its radius, the label is a picture.

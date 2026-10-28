@@ -39,7 +39,7 @@ export const planet: ShaderEffect = {
   name: "Planet",
   description: "A turning planet, banded gas giant or rocky world, lit from one side with a soft terminator, a scattering atmosphere and optional rings.",
   category: "space",
-  tags: ["space", "planet", "saturn", "rings", "astronomy", "sci-fi", "background"],
+  tags: ["space", "planet", "saturn", "ring", "astronomy", "sci-fi", "background"],
   source: glsl(
     `// Planet: an analytic sphere on a tilted axis, banded (fbm-warped latitude) or rocky (3D noise), with a
 // rim of scattered light brighter on the day side, and a ring plane that shadows the planet and is shadowed by it.
@@ -267,7 +267,7 @@ export const solarSystem: ShaderEffect = {
   name: "Solar system",
   description: "A stylised solar system seen at a tilt: planets circling a glowing sun on their orbit lines, the outer ones slower, one with rings.",
   category: "space",
-  tags: ["space", "solar system", "planets", "orbit", "astronomy", "sun", "background"],
+  tags: ["space", "solar-system", "planet", "orbit", "astronomy", "sun", "background"],
   source: glsl(
     `// Solar system: planets as analytic spheres on circular orbits in a plane seen at a tilt, orbit lines where
 // each pixel's ray meets that plane (anti-aliased with fwidth), lit from the sun at the centre.
@@ -563,7 +563,7 @@ export const meteorShower: ShaderEffect = {
   name: "Meteor shower",
   description: "A night sky over a hilly, wooded horizon with the Milky Way, as meteors streak outward from one radiant point, the far ones short, the odd one a bright fireball.",
   category: "space",
-  tags: ["space", "night", "stars", "meteors", "perseids", "landscape", "background", "hero"],
+  tags: ["space", "night", "stars", "meteor", "perseids", "landscape", "background", "hero"],
   source: glsl(
     `// Meteor shower: meteors at a steady rate, each on a ray out of the radiant, starting further out the longer it
 // runs (as perspective foreshortens the ones heading toward us); brightness is seeded with a long tail of fireballs.

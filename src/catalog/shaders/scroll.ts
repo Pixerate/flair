@@ -38,7 +38,7 @@ export const scrollReveal: ShaderEffect = {
   category: "scroll",
   video: "filter",
   transparent: true,
-  tags: ["interactive", "scroll", "reveal", "wipe", "dissolve", "image", "landing page"],
+  tags: ["interactive", "scroll", "reveal", "wipe", "dissolve", "image", "landing-page"],
   source: glsl(
     `// Scroll reveal: the picture's coverage follows how far the canvas has come into view.
 uniform sampler2D uImage;    // @control filter=mipmap wrap=clamp default=${SAMPLE_IMAGES.landscape} label="Image"
@@ -200,7 +200,7 @@ export const scrollVelocityBlur: ShaderEffect = {
   description: "A picture smeared with motion blur and a colour split as fast as the page scrolls, sharp again when it stops.",
   category: "scroll",
   video: "filter",
-  tags: ["interactive", "scroll", "motion blur", "speed", "image", "chromatic"],
+  tags: ["interactive", "scroll", "motion-blur", "speed", "image", "chromatic"],
   source: glsl(
     `// Scroll velocity blur: samples along the scroll direction, as many viewport heights as it is moving per second.
 uniform sampler2D uImage;    // @control filter=mipmap wrap=clamp default=${SAMPLE_IMAGES.city} label="Image"
@@ -248,7 +248,7 @@ export const scrollZoom: ShaderEffect = {
   description: "A picture zooming in (or out) and drifting as it passes through the viewport, with an optional turn and vignette.",
   category: "scroll",
   video: "filter",
-  tags: ["interactive", "scroll", "zoom", "ken burns", "image", "hero"],
+  tags: ["interactive", "scroll", "zoom", "ken-burns", "image", "hero"],
   source: glsl(
     `// Scroll zoom: the picture's scale, pan and turn follow its progress through the viewport.
 uniform sampler2D uImage;    // @control filter=mipmap wrap=clamp default=${SAMPLE_IMAGES.landscape} label="Image"

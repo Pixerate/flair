@@ -750,7 +750,7 @@ export const imageChromaKey: ShaderEffect = {
   description: "A green- or blue-screen keyer: the screen turns clear (or the backdrop colour) with a soft edge, the screen colour bounced onto the subject is taken back out, and shadows cast on the screen can stay as see-through shade.",
   category: "image",
   video: "filter",
-  tags: ["image", "video", "chroma key", "green screen", "blue screen", "keying", "despill", "compositing", "filter"],
+  tags: ["image", "video", "chroma-key", "green-screen", "blue-screen", "keying", "despill", "compositing", "filter"],
   source: glsl(
     `// Chroma key: pixels whose chroma is near the key colour's (scaled to their brightness, so lit and shaded
 // parts of the screen both match) turn clear, the key colour's chroma is pulled out of what is left (despill),
@@ -806,7 +806,7 @@ export const imageLutGrade: ShaderEffect = {
   description: "A colour grade from a 3D LUT image (or a built-in teal & orange, punchy or film noir look) that leaves skin tones alone, so faces keep their colour under a heavy grade.",
   category: "image",
   video: "filter",
-  tags: ["image", "video", "lut", "colour grading", "color grading", "skin tones", "cinematic", "teal and orange", "film", "filter"],
+  tags: ["image", "video", "lut", "colour-grading", "color-grading", "skin-tones", "cinematic", "teal-and-orange", "film", "filter"],
   source: glsl(
     `// LUT grade: each colour looked up in a 3D LUT (trilinear, from 8 lattice texels), or graded by a built-in look,
 // then eased back towards the original where its hue and saturation say skin, and blended by the intensity.

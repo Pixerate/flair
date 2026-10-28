@@ -14,7 +14,7 @@ export const reactionDiffusion: ShaderEffect = {
   name: "Reaction diffusion",
   description: "Turing patterns of spots and labyrinth stripes slowly morphing, like a Gray-Scott simulation or an animal's coat.",
   category: "organic",
-  tags: ["organic", "background", "pattern", "turing", "biology", "animal print"],
+  tags: ["organic", "background", "pattern", "turing", "biology", "animal-print"],
   source: glsl(
     `// Reaction diffusion: a stateless fake of Gray-Scott: thresholded, domain-warped sine gratings.
 uniform vec3 uBase;      // @control color default=#FFE8DC label="Base"

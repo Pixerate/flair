@@ -14,7 +14,7 @@ export interface EffectQuery {
   /** Effects in any category of the group with this name (`EFFECT_CATEGORY_GROUPS`, any case). */
   group?: string;
   kind?: EffectDefinition["kind"];
-  /** Effects with every one of these tags. */
+  /** Effects with every one of these tags (any case; spaces count as hyphens, so "Game Boy" is `game-boy`). */
   tags?: readonly string[];
   /** Effects that suit video in one of these ways (shader effects with image controls only). */
   video?: readonly VideoUse[];
@@ -41,6 +41,27 @@ export interface QueryTarget {
   video?: VideoUse;
 }
 
+/** How tags are written: lower case, words joined by hyphens (`motion-blur`, `8-bit`). */
+export const TAG_FORMAT = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+/** A tag as the catalog writes it: lower case, with spaces and underscores as hyphens. */
+export function normaliseTag(tag: string): string {
+  return tag.trim().toLowerCase().replace(/[\s_]+/g, "-");
+}
+
+/** A tag and how many effects carry it. */
+export interface EffectTag {
+  tag: string;
+  count: number;
+}
+
+/** The tags these effects carry, the most used first (then A to Z). */
+export function countTags(targets: readonly Pick<QueryTarget, "tags">[]): EffectTag[] {
+  const counts = new Map<string, number>();
+  for (const t of targets) for (const tag of t.tags) counts.set(tag, (counts.get(tag) ?? 0) + 1);
+  return [...counts].map(([tag, count]) => ({ tag, count })).sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
+}
+
 /** Whether inputs show an effect made to change one picture: one image slot, wanting a picture. */
 export function singlePicture(inputs: EffectInputs): boolean {
   return inputs.accepts.includes("image") && inputs.images.length === 1 && inputs.images[0]?.wants === "picture";
@@ -57,7 +78,7 @@ export function matchesQuery(target: QueryTarget, inputsOf: () => EffectInputs, 
   if (query.category && e.category !== query.category) return false;
   if (query.group && !EFFECT_CATEGORY_GROUPS.find((g) => g.name.toLowerCase() === query.group!.toLowerCase())?.categories.includes(e.category)) return false;
   if (query.kind && e.kind !== query.kind) return false;
-  if (query.tags && !query.tags.every((t) => e.tags.includes(t))) return false;
+  if (query.tags && !query.tags.every((t) => e.tags.includes(normaliseTag(t)))) return false;
   if (query.video && !(e.kind === "shader" && e.video && query.video.includes(e.video))) return false;
   if (query.output === "animation" && e.kind !== "vector") return false;
   if (query.output === "video" && !(e.kind === "shader" && e.video !== "none")) return false;

@@ -381,7 +381,7 @@ export const stepBadges: VectorEffect = {
   name: "Step badges",
   description: "Numbered step badges popping in one after another at points on a screen, each with a label sliding out beside it.",
   category: "annotation",
-  tags: ["annotation", "steps", "badges", "numbers", "tutorial", "onboarding", "product"],
+  tags: ["annotation", "steps", "badge", "number", "tutorial", "onboarding", "product"],
   hold: 300,
   presets: [
     { name: "Orange", values: { accent: [0.98, 0.45, 0.09] } },

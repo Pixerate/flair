@@ -429,7 +429,7 @@ export const speedRamp: ShaderEffect = {
   description: "A panning picture lurching from a crawl to a blur and back, motion-blurred in proportion to its speed.",
   category: "timewarp",
   video: "stills",
-  tags: ["time", "image", "speed", "motion blur", "cinematic"],
+  tags: ["time", "image", "speed", "motion-blur", "cinematic"],
   loop: 4,
   source: glsl(
     `// Speed ramp: a pan whose speed swings from almost still to nearly double, with matching blur.

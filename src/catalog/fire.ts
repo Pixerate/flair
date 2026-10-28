@@ -62,7 +62,7 @@ export const flameIcon: VectorEffect = {
   name: "Flame icon",
   description: "A flame icon flickering in three layers with a pulsing glow and embers rising off its tip, for streaks, trending and hot items.",
   category: "fire",
-  tags: ["fire", "flame", "icon", "streak", "trending", "hot", "ui", "loop"],
+  tags: ["fire", "flames", "icon", "streak", "trending", "hot", "ui", "loop"],
   hold: 0,
   presets: [
     { name: "Light", values: { background: [1, 1, 1], glow: [1, 0.72, 0.4] } },
@@ -120,7 +120,7 @@ export const matchStrike: VectorEffect = {
   name: "Match strike",
   description: "A match struck along the side of its box: a spray of sparks, a flame that flares and settles, flickers as the stick chars, then is blown out in a curl of smoke.",
   category: "fire",
-  tags: ["fire", "match", "flame", "ignite", "spark", "smoke", "loop"],
+  tags: ["fire", "match", "flames", "ignite", "sparks", "smoke", "loop"],
   hold: 300,
   presets: [
     { name: "Light", values: { background: [0.98, 0.96, 0.93], box: [0.17, 0.35, 0.6] } },

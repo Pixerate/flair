@@ -6,7 +6,7 @@ import { callTool, createEffectToolProvider, EFFECT_AGENT_INSTRUCTIONS, toolDefi
 import { bindShaderRenderer, bindSvgView } from "./bind.js";
 import { createEffectDocument, documentIssues, parseEffectDocument, valuesAt } from "./document.js";
 import { createEffectEditor } from "./editor.js";
-import { CATALOG_SEARCH_LIMIT } from "./commands.js";
+import { CATALOG_SEARCH_LIMIT, CATALOG_TAGS_LIMIT } from "./commands.js";
 
 describe("documents", () => {
   it("start blank, from the catalog, or from source", () => {
@@ -178,6 +178,34 @@ describe("commands and agent tools", () => {
     expect(next.ok && next.result.effects[0]!.id).not.toBe(first.result.effects[0]!.id);
     const narrow = editor.commands.execute<Search>("catalog.search", { text: "fire", limit: 200 });
     expect(narrow.ok && narrow.result.more).toBeUndefined();
+  });
+
+  it("lets agents find effects by tag, and list the tags there are", async () => {
+    const editor = createEffectEditor({ from: "aurora" });
+    const provider = createEffectToolProvider(editor);
+    type Search = { total: number; effects: { id: string; tags: string[] }[] };
+    type Tags = { total: number; tags: { tag: string; count: number }[]; more?: string };
+
+    const tags = await callTool(provider, "run_command", { id: "catalog.tags", params: {} });
+    const listed = (tags.structuredContent as { result: Tags }).result;
+    expect(listed.tags).toHaveLength(CATALOG_TAGS_LIMIT);
+    expect(listed.total).toBeGreaterThan(CATALOG_TAGS_LIMIT);
+    expect(listed.more).toMatch(new RegExp(`offset ${CATALOG_TAGS_LIMIT}`));
+
+    const fireTags = editor.commands.execute<Tags>("catalog.tags", { category: "fire", limit: 500 });
+    if (!fireTags.ok) throw new Error(fireTags.message);
+    const hot = fireTags.result.tags.find((t) => t.tag === "hot")!;
+    const found = editor.commands.execute<Search>("catalog.search", { category: "fire", tags: ["HOT"], limit: 200 });
+    if (!found.ok) throw new Error(found.message);
+    expect(found.result.total).toBe(hot.count);
+    expect(found.result.effects.every((e) => e.tags.includes("hot"))).toBe(true);
+
+    const unknown = await callTool(provider, "run_command", { id: "catalog.search", params: { tags: ["glas"] } });
+    expect(unknown.isError).toBe(true);
+    expect(JSON.stringify(unknown)).toMatch(/No effect is tagged \\"glas\\"\. Did you mean \\"glass\\"/);
+    expect(JSON.stringify(unknown)).toMatch(/catalog\.tags/);
+    expect(editor.commands.execute("catalog.tags", { tags: "glass" })).toMatchObject({ ok: false });
+    expect(editor.commands.execute("catalog.tags", { limit: 0 })).toMatchObject({ ok: false });
   });
 
   it("lets agents edit vector pictures and see shader compiles", async () => {

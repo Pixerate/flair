@@ -178,6 +178,8 @@ describe('command-line arguments', () => {
     expect(() => effectQueryFromFlags({ accepts: ['sound'] })).toThrow(/--accepts takes/);
     expect(() => effectQueryFromFlags({ category: 'nope' })).toThrow(/--category takes/);
     expect(effectQueryFromFlags({ transparent: true })).toEqual({ transparent: true });
+    expect(effectQueryFromFlags({ tag: ['Glass,hover', 'game boy'] })).toEqual({ tags: ['glass', 'hover', 'game-boy'] });
+    expect(() => effectQueryFromFlags({ tag: ['glas'] })).toThrow(/No effect is tagged "glas"\. Did you mean "glass"/);
   });
 });
 

@@ -56,7 +56,7 @@ export {
   type EffectEditorOptions,
   type EffectEditorState,
 } from "./editor.js";
-export { CATALOG_SEARCH_LIMIT, describeEditor, effectCommands } from "./commands.js";
+export { CATALOG_SEARCH_LIMIT, CATALOG_TAGS_LIMIT, describeEditor, effectCommands } from "./commands.js";
 export {
   callTool,
   createEffectToolProvider,

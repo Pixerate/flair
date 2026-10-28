@@ -494,7 +494,7 @@ export const transitionWhipPan: ShaderEffect = {
   description: "A beat-cut whip pan or zoom punch: the first image flies off in a motion blur that peaks at the cut, and the next one lands from the other side.",
   category: "transition",
   video: "transition",
-  tags: ["transition", "whip", "pan", "zoom", "motion blur", "image", "cut"],
+  tags: ["transition", "whip", "pan", "zoom", "motion-blur", "image", "cut"],
   loop: 4,
   source: glsl(
     `// Whip pan: From accelerates away under a motion blur (directional, or radial in zoom mode), swaps at mid-progress, and To decelerates in.

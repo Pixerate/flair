@@ -376,7 +376,7 @@ export const fightCloud: VectorEffect = {
   name: "Fight cloud",
   description: "A cartoon brawl: a churning dust cloud of puffs with fists, boots and stars poking out at random, little impact marks where they land, shaking the whole time.",
   category: "comic",
-  tags: ["cartoon", "comic", "fight", "brawl", "dust", "cloud", "loop"],
+  tags: ["cartoon", "comic", "fight", "brawl", "dust", "clouds", "loop"],
   hold: 0,
   presets: [
     { name: "Night brawl", values: { background: [0.12, 0.16, 0.23], dust: [0.6, 0.65, 0.72], marks: [1, 0.85, 0.2] } },

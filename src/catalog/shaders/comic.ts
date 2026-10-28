@@ -299,7 +299,7 @@ export const transitionComicPanels: ShaderEffect = {
   description: "The next picture arrives panel by panel: the frame splits into comic panels with white gutters and black borders, each panel wipes, slides or pops to the new picture in turn, then the gutters close.",
   category: "transition",
   video: "transition",
-  tags: ["transition", "comic", "cartoon", "panels", "image", "slideshow"],
+  tags: ["transition", "comic", "cartoon", "panel", "image", "slideshow"],
   loop: 4,
   presets: [
     { name: "Manga", values: { uGutterColor: [0.98, 0.98, 0.98], uInk: [0, 0, 0], uGutter: 0.03, uBorder: 4 } },

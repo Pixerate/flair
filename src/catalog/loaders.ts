@@ -231,7 +231,7 @@ export const waveBars: VectorEffect = {
   name: "Wave bars",
   description: "A row of rounded bars rising and falling in a wave that runs from left to right, shading from one colour to another.",
   category: "loader",
-  tags: ["loader", "bars", "wave", "ui", "voice"],
+  tags: ["loader", "bar", "wave", "ui", "voice"],
   hold: 0,
   presets: [
     { name: "Mono", values: { colorA: [0.06, 0.09, 0.16], colorB: [0.06, 0.09, 0.16] } },
@@ -410,7 +410,7 @@ export const shapeMorphLoader: VectorEffect = {
   name: "Shape morph loader",
   description: "A shape that turns as it morphs from a square into a circle, a triangle and back, changing colour with each.",
   category: "loader",
-  tags: ["loader", "morph", "shapes", "spinner", "playful", "ui"],
+  tags: ["loader", "morph", "shape", "spinner", "playful", "ui"],
   hold: 0,
   presets: [
     { name: "Mono", values: { first: [0.07, 0.09, 0.15], second: [0.07, 0.09, 0.15], third: [0.07, 0.09, 0.15] } },

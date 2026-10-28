@@ -272,7 +272,7 @@ export const rotatingShapes: ShaderEffect = {
   name: "Rotating shapes",
   description: "A torus, a rounded cube and an icosahedron floating and turning in a soft-lit studio, casting soft shadows on the backdrop.",
   category: "3d",
-  tags: ["3d", "shapes", "studio", "geometry", "product", "background", "minimal"],
+  tags: ["3d", "shape", "studio", "geometry", "product", "background", "minimal"],
   source: glsl(
     `// Rotating shapes: three signed-distance primitives ray-marched inside their bounding spheres (64 steps at
 // most), a studio floor met analytically, soft shadows toward a key light and a little ambient occlusion.
@@ -710,7 +710,7 @@ export const metaballs3d: ShaderEffect = {
   name: "3D metaballs",
   description: "Glossy 3D metaballs drifting, merging and pulling apart like liquid, reflecting a soft studio around them.",
   category: "3d",
-  tags: ["3d", "metaballs", "liquid", "blob", "glossy", "chrome", "background"],
+  tags: ["3d", "metaball", "liquid", "blob", "glossy", "chrome", "background"],
   source: glsl(
     `// 3D metaballs: spheres joined with a smooth minimum, ray-marched inside their bounding sphere (56 steps
 // at most), shaded with a procedural studio environment for reflections and a fresnel rim.

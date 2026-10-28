@@ -246,15 +246,16 @@ program
   .option('--category <category>', 'Only this category')
   .option('--kind <kind>', 'shader or vector')
   .option('--search <words>', 'Words to look for in the id, name, description and tags')
+  .option('--tag <tags>', 'Only effects with every one of these tags (comma-separated or repeated; `flair tags` lists them)', collect, [])
   .option('--transparent', 'Only overlays: effects that draw over what is under them (they take a --backdrop in render)')
-  .option('--json', 'Output JSON (id, name, kind, category, description, inputs, presets)', false)
+  .option('--json', 'Output JSON (id, name, kind, category, description, tags, inputs, presets)', false)
   .action(async (options) => {
     try {
       const { findEffects, effectInputs } = await import('./catalog/index.js');
       const { effectQueryFromFlags, describeEffect } = await import('./export/effect.js');
       const effects = findEffects(effectQueryFromFlags(options));
       if (options.json) {
-        console.log(JSON.stringify(effects.map((e) => ({ id: e.id, name: e.name, kind: e.kind, category: e.category, description: e.description, inputs: effectInputs(e), presets: e.presets?.map((p) => p.name) ?? [] })), null, 2));
+        console.log(JSON.stringify(effects.map((e) => ({ id: e.id, name: e.name, kind: e.kind, category: e.category, description: e.description, tags: e.tags, inputs: effectInputs(e), presets: e.presets?.map((p) => p.name) ?? [] })), null, 2));
         return;
       }
       if (!effects.length) {
@@ -263,6 +264,39 @@ program
       }
       for (const e of effects) console.log(describeEffect(e));
       console.log(`\n${effects.length} effect${effects.length === 1 ? '' : 's'}. Render one with: flair render <id> [--image p | --text "…" | …] -o out.mp4`);
+    } catch (err: any) {
+      console.error(`Error: ${err.message}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('tags')
+  .description('List the tags of catalog effects, each with how many effects carry it, the most used first')
+  .option('--category <category>', 'Only tags of effects in this category')
+  .option('--kind <kind>', 'shader or vector')
+  .option('--search <words>', 'Only tags of effects matching these words')
+  .option('--tag <tags>', 'Only tags of effects that have all of these tags too (comma-separated or repeated)', collect, [])
+  .option('--limit <n>', 'Most tags to list (default all)')
+  .option('--json', 'Output JSON ([{tag, count}])', false)
+  .action(async (options) => {
+    try {
+      const { effectTags } = await import('./catalog/index.js');
+      const { effectQueryFromFlags } = await import('./export/effect.js');
+      const limit = options.limit === undefined ? Infinity : Number(options.limit);
+      if (options.limit !== undefined && !(Number.isInteger(limit) && limit >= 1)) throw new Error(`--limit takes a whole number from 1; not "${options.limit}".`);
+      const all = effectTags(effectQueryFromFlags(options));
+      const tags = all.slice(0, limit);
+      if (options.json) {
+        console.log(JSON.stringify(tags, null, 2));
+        return;
+      }
+      if (!tags.length) {
+        console.log('No effects match.');
+        return;
+      }
+      for (const { tag, count } of tags) console.log(`${String(count).padStart(4)}  ${tag}`);
+      console.log(`\n${tags.length < all.length ? `${tags.length} of ${all.length}` : all.length} tag${all.length === 1 ? '' : 's'}. Find effects with one: flair effects --tag <tag>`);
     } catch (err: any) {
       console.error(`Error: ${err.message}`);
       process.exit(1);

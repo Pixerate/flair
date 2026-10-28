@@ -192,7 +192,7 @@ export const meteors: ShaderEffect = {
   name: "Meteors",
   description: "Thin meteor streaks falling diagonally across, each trailing a fading tail.",
   category: "ui",
-  tags: ["ui", "background", "overlay", "space", "streaks", "card", "saas"],
+  tags: ["ui", "background", "overlay", "space", "streak", "card", "saas"],
   transparent: true,
   source: glsl(
     `// Meteors: thin streaks falling diagonally in lanes, each with a bright head and a fading tail.
@@ -257,7 +257,7 @@ export const backgroundBeams: ShaderEffect = {
   name: "Background beams",
   description: "Faint curved paths fanning across a dark background, with gradient pulses of light flowing along them.",
   category: "ui",
-  tags: ["ui", "background", "hero", "beams", "dark", "saas"],
+  tags: ["ui", "background", "hero", "beam", "dark", "saas"],
   source: glsl(
     `// Background beams: faint curves fanning across, with gradient pulses of light running along them.
 uniform vec3 uBackground; // @control color default=#05060A label="Background"

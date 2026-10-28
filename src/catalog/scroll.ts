@@ -42,7 +42,7 @@ export const scrollCounter: VectorEffect = {
   description: "A big number counting up as it scrolls into view, with its label and a line growing under it.",
   category: "scroll",
   trigger: "scroll",
-  tags: ["interactive", "scroll", "counter", "number", "stat", "kpi", "landing page"],
+  tags: ["interactive", "scroll", "counter", "number", "stat", "kpi", "landing-page"],
   motion: {
     svg: `<svg viewBox="0 0 400 200" font-family="${SANS}"><!-- {{accent: color default=#0EA5E9 label='Accent'}} {{ink: color default=#0F172A label='Number'}} {{muted: color default=#64748B label='Label colour'}} {{value: float min=0 max=1000000 default=2400 step=1 label='Number'}} {{decimals: int min=0 max=3 default=0 label='Decimals'}} --><text id="scrollCounterValue" x="200" y="112" text-anchor="middle" font-size="76" font-weight="800" fill="{{ink}}" style="font-variant-numeric: tabular-nums">0</text><rect id="scrollCounterLine" x="140" y="132" width="0" height="6" rx="3" fill="{{accent}}"/><text x="200" y="170" text-anchor="middle" font-size="20" font-weight="500" fill="{{muted}}">{{label: text default='happy customers' label='Label'}}</text></svg>`,
     animate: [

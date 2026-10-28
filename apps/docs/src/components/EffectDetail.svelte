@@ -12,7 +12,7 @@
   export let position = 0;
   export let total = 0;
 
-  const dispatch = createEventDispatcher<{ close: void; step: number }>();
+  const dispatch = createEventDispatcher<{ close: void; step: number; tag: string }>();
 
   let stage: HTMLDivElement;
   let panel: HTMLDivElement;
@@ -120,6 +120,18 @@
         <span class="text-xs text-faint">{meta.category} · {meta.kind}{total ? ` · ${position + 1} of ${total}` : ""}</span>
       </div>
       <p class="mt-2 text-[15px] leading-relaxed text-muted">{meta.description}</p>
+
+      <div class="mt-3 flex flex-wrap gap-1" role="group" aria-label="Tags">
+        {#each meta.tags as tag}
+          <button
+            on:click={() => dispatch("tag", tag)}
+            title="Effects tagged {tag}"
+            class="rounded-md px-1.5 py-0.5 text-xs text-faint transition hover:bg-[var(--flair-glass-hover)] hover:text-ink"
+          >
+            #{tag}
+          </button>
+        {/each}
+      </div>
 
       {#if meta.presets.length}
         <div class="mt-5 flex flex-wrap gap-1.5" role="group" aria-label="Presets">

@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { EFFECTS, effectControls, effectDuration, effectInputs, findEffects, getEffect, type EffectQuery } from "./index.js";
+import { EFFECTS, effectControls, effectDuration, effectInputs, effectTags, findEffects, getEffect, type EffectQuery } from "./index.js";
 import { metaOf, packMeta } from "./meta.js";
 import type { EffectDefinition } from "./types.js";
 
@@ -101,6 +101,11 @@ describe("@pixerate/flair/catalog/lazy", async () => {
     ["video output", { output: "video", kind: "shader" }],
   ])("finds what findEffects finds: %s", (_, query) => {
     expect(lazy.findEffectMeta(query).map((m) => m.id)).toEqual(findEffects(query).map((e) => e.id));
+  });
+
+  it("lists the tags the catalog lists", () => {
+    expect(lazy.effectTags()).toEqual(effectTags());
+    expect(lazy.effectTags({ group: "Light", text: "neon" })).toEqual(effectTags({ group: "Light", text: "neon" }));
   });
 
   it.each(EFFECTS.map((e) => [e.id]))("loads %s", async (id) => {
