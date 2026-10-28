@@ -1595,7 +1595,7 @@ describe("scroll effects", () => {
 describe("ui effects", () => {
   const ui = findEffects({ category: "ui" });
   const shaders = ["border-beam", "gradient-border", "meteors", "background-beams", "grid-spotlight", "dot-grid", "glass-card", "liquid-glass", "noise-grain-bg", "dichroic-glass"];
-  const vectors = ["marquee", "number-ticker", "animated-badge"];
+  const vectors = ["marquee", "number-ticker", "animated-badge", "app-window"];
   const render = (id: string, values: Record<string, unknown> = {}) => {
     const effect = getEffect(id)!;
     if (effect.kind !== "vector") throw new Error("vector expected");
@@ -2183,5 +2183,88 @@ describe("webbing effects", () => {
     expect(frame(0).get("spider")!.attrs.transform).toBe(frame(end).get("spider")!.attrs.transform);
     expect(frame(1800).get("spider")!.attrs.transform).not.toBe(frame(0).get("spider")!.attrs.transform);
     expect(Number(frame(end).get("web")!.attrs.opacity)).toBe(0);
+  });
+});
+
+describe("promo effects", () => {
+  const IDS = ["orbit-swoosh", "tick-ring-burst", "swoosh-underline", "knockout-wipe", "before-after", "slime-drop", "app-window"];
+  const OVERLAYS = ["orbit-swoosh", "tick-ring-burst", "swoosh-underline"];
+
+  it("are found together by their tag", () => {
+    const found = findEffects({ tags: ["promo"] }).map((e) => e.id);
+    for (const id of IDS) expect(found, id).toContain(id);
+  });
+
+  it("draws the title accents as clear overlays, with a cream background a preset away", () => {
+    for (const id of OVERLAYS) {
+      const effect = getEffect(id)!;
+      expect(effect, id).toMatchObject({ transparent: true });
+      expect(effect.tags, id).toContain("overlay");
+      expect(effectDefaults(effect).uBackgroundAlpha, id).toBe(0);
+      expect(effectDefaults(effect, { preset: "Cream" }).uBackgroundAlpha, id).toBe(1);
+    }
+  });
+
+  it("the accents hold still when not animated, for laying under a title", () => {
+    for (const id of ["tick-ring-burst", "swoosh-underline"]) expect(effectControls(getEffect(id)!).find((c) => c.name === "uAnimate"), id).toMatchObject({ type: "bool", default: true });
+  });
+
+  it("knocks a picture out to its cut-out over a checkerboard, as a transition", () => {
+    const effect = getEffect("knockout-wipe")!;
+    expect(effect).toMatchObject({ video: "transition", loop: 4 });
+    expect(effectDefaults(effect)).toMatchObject({ uFrom: SAMPLE_IMAGES.portrait, uTo: SAMPLE_IMAGES.cutout, uChecker: true });
+    expect(effectInputs(effect).images.map((i) => i.name)).toEqual(["uFrom", "uTo"]);
+  });
+
+  it("compares two pictures at the pointer while hovered, sweeping while idle", () => {
+    const effect = getEffect("before-after")!;
+    expect(effect).toMatchObject({ video: "interactive" });
+    expect(effectDefaults(effect)).toMatchObject({ uBefore: SAMPLE_IMAGES.portrait, uAfter: SAMPLE_IMAGES.cutout, uDemo: true });
+    expect(effectInputs(effect).interactions).toEqual(expect.arrayContaining(["hover", "pointer"]));
+  });
+
+  it("samples the portrait cut out of its background, lined up with it", () => {
+    const svg = (url: string) => atob(url.split(",")[1]!);
+    const portrait = svg(SAMPLE_IMAGES.portrait);
+    const cutout = svg(SAMPLE_IMAGES.cutout);
+    expect(cutout).not.toContain("<rect");
+    expect(portrait.replace(/<rect [^>]*\/>\n/, "")).toBe(cutout);
+  });
+
+  it("drops the slime title in from above, squashes and settles, leaving the splash", () => {
+    const effect = getEffect("slime-drop")!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    for (const word of ["SLOP", "A", "Supercalifragilistic & <co>"]) {
+      const motion = renderVectorEffect(effect, { word });
+      expect(svgMotionIssues(motion), word).toEqual([]);
+      expect(JSON.stringify(motion), word).not.toMatch(/\{\{|NaN|undefined/);
+    }
+    const motion = renderVectorEffect(effect, effectDefaults(effect));
+    const end = svgDuration(motion);
+    const frame = (ms: number) => svgFrame(motion.animate!, [], ms);
+    expect(frame(0).get("drop")!.attrs.transform).toBe("translate(0 -240)");
+    expect(frame(end).get("drop")!.attrs.transform).toBe("translate(0 0)");
+    expect(frame(end).get("squash")!.attrs.transform).toContain("scale(1 1)");
+    expect(Number(frame(end).get("d0")!.attrs.opacity)).toBe(1);
+    // A bigger splash throws its droplets further.
+    const far = renderVectorEffect(effect, { spread: 2 });
+    const x = (m: typeof motion) => Math.abs(Number(svgFrame(m.animate!, [], svgDuration(m)).get("d0")!.attrs.cx) - 200);
+    expect(x(far)).toBeGreaterThan(x(motion));
+  });
+
+  it("app window fills its ring, draws its tick, says it is done and leaves as it came", () => {
+    const effect = getEffect("app-window")!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    const motion = renderVectorEffect(effect, effectDefaults(effect));
+    expect(svgMotionIssues(motion)).toEqual([]);
+    expect(JSON.stringify(motion)).not.toMatch(/\{\{|NaN|undefined/);
+    const frame = (ms: number) => svgFrame(motion.animate!, [], ms);
+    expect(Number(frame(0).get("card")!.attrs.opacity)).toBe(0);
+    expect(Number(frame(2600).get("label")!.attrs.opacity)).toBe(0);
+    expect(Number(frame(2600).get("doneLabel")!.attrs.opacity)).toBe(1);
+    expect(Number(frame(svgDuration(motion)).get("card")!.attrs.opacity)).toBe(0);
+    // Long labels shrink to fit the window.
+    const long = renderVectorEffect(effect, { label: "Transcoding every clip in the project" });
+    expect(Number(/id="label"[^>]*font-size="([\d.]+)"/.exec(long.svg)![1])).toBeLessThan(18);
   });
 });

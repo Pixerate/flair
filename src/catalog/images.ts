@@ -35,6 +35,10 @@ const PORTRAIT = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360">
 <path d="M300 185 Q320 198 340 185" stroke="#7a3e2c" stroke-width="5" fill="none"/>
 </svg>`;
 
+// The portrait with its background taken away: the same figure, on transparent, for cut-outs and
+// background removal, lined up with PORTRAIT so the two can be wiped or compared.
+const CUTOUT = PORTRAIT.replace(/<rect [^>]*\/>\n/, "");
+
 // A second portrait, the face larger and right of centre, for morphing with PORTRAIT.
 // Features (viewBox units): eyes (396, 175) and (464, 175), mouth (430, 229), chin (430, 270), hairline (430, 80).
 const PORTRAIT_2 = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" width="640" height="360">
@@ -87,6 +91,8 @@ export const SAMPLE_IMAGES = {
   portrait: svgDataUrl(PORTRAIT),
   /** Another face, larger and to the right: morph it with `portrait`. */
   portrait2: svgDataUrl(PORTRAIT_2),
+  /** The portrait with its background removed (transparent), lined up with `portrait`. */
+  cutout: svgDataUrl(CUTOUT),
   /** The portrait on a green screen, with a floor shadow and green spill, for keying. */
   greenScreen: svgDataUrl(GREEN_SCREEN),
   /** A ring-and-dot mark, indigo on transparent. */
