@@ -629,7 +629,7 @@ export const waterSplash: ShaderEffect = {
   name: "Water splash",
   description: "Drops falling onto a water line and throwing up a jet and clear, glinting droplets that arc back down into small ripples.",
   category: "splatter",
-  tags: ["splatter", "water", "overlay", "drops", "liquid", "fresh"],
+  tags: ["splatter", "water", "overlay", "drop", "liquid", "fresh"],
   transparent: true,
   loop: 8,
   source: glsl(

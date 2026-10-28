@@ -102,7 +102,7 @@ export const groundSlam: ShaderEffect = {
   name: "Ground slam",
   description: "A heavy landing seen side-on: cracks shoot across the ground, a ring of dust rolls out, rocks jump and the camera shakes.",
   category: "impact",
-  tags: ["impact", "interactive", "click", "slam", "dust", "cracks", "rocks", "shake", "action"],
+  tags: ["impact", "interactive", "click", "slam", "dust", "cracks", "rock", "shake", "action"],
   source: glsl(
     `// Ground slam: cracks, a rolling dust ring, jumping rocks and camera shake at each hit on the ground.
 uniform vec3 uSky;         // @control color default=#9CC7E8 label="Sky"

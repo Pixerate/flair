@@ -166,7 +166,7 @@ export const candle: VectorEffect = {
   name: "Candle",
   description: "A candle burning down with a flickering flame and halo while wax drips run down its sides, then it is lit anew.",
   category: "melt",
-  tags: ["melt", "candle", "flame", "wax", "cosy", "loop"],
+  tags: ["melt", "candle", "flames", "wax", "cosy", "loop"],
   hold: 0,
   presets: [
     { name: "Red taper", values: { wax: [0.78, 0.15, 0.2], holder: [0.75, 0.62, 0.35] } },

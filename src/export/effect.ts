@@ -14,8 +14,10 @@ import {
   effectControls,
   effectDefaults,
   effectInputs,
+  effectTags,
   getEffect,
   drawsAlpha,
+  normaliseTag,
   renderVectorEffect,
   sanitizeEffectValues,
   type EffectCategory,
@@ -25,6 +27,7 @@ import {
   type VectorEffect,
 } from '../catalog/index.js';
 import { subjectValues, type EffectSubject } from '../embed/index.js';
+import { didYouMean } from '../motion/params.js';
 import { checkControlValue, parseColor, type ControlDef, type ControlValue } from '../shader/controls.js';
 import { wrapSource } from '../shader/program.js';
 import { svgAnimatedMarkup } from '../vector/animated.js';
@@ -985,9 +988,15 @@ export function parseChoices<T extends string>(flag: string, values: readonly st
 }
 
 /** The effects command's filters, checked. */
-export function effectQueryFromFlags(flags: { accepts?: readonly string[]; interaction?: readonly string[]; category?: string; kind?: string; search?: string; transparent?: boolean }) {
+export function effectQueryFromFlags(flags: { accepts?: readonly string[]; interaction?: readonly string[]; category?: string; kind?: string; search?: string; tag?: readonly string[]; transparent?: boolean }) {
   const accepts = parseChoices<EffectInput>('--accepts', flags.accepts, EFFECT_INPUTS);
   const interaction = parseChoices<EffectInteraction>('--interaction', flags.interaction, EFFECT_INTERACTIONS);
+  const tags = flags.tag?.length ? flags.tag.flatMap((t) => t.split(',')).map(normaliseTag).filter(Boolean) : undefined;
+  if (tags) {
+    const known = effectTags().map((t) => t.tag);
+    const unknown = tags.find((t) => !known.includes(t));
+    if (unknown !== undefined) throw new Error(`No effect is tagged "${unknown}".${didYouMean(unknown, known)} \`flair tags\` lists the tags there are.`);
+  }
   if (flags.category && !(EFFECT_CATEGORIES as readonly string[]).includes(flags.category)) {
     throw new Error(`--category takes one of ${EFFECT_CATEGORIES.join(', ')}; not "${flags.category}".`);
   }
@@ -998,6 +1007,7 @@ export function effectQueryFromFlags(flags: { accepts?: readonly string[]; inter
     ...(flags.category ? { category: flags.category as EffectCategory } : {}),
     ...(flags.kind ? { kind: flags.kind as 'shader' | 'vector' } : {}),
     ...(flags.search ? { text: flags.search } : {}),
+    ...(tags ? { tags } : {}),
     ...(flags.transparent !== undefined ? { transparent: flags.transparent } : {}),
   };
 }

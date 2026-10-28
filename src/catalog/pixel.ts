@@ -239,7 +239,7 @@ export const pixelHeartHealth: VectorEffect = {
   name: "Heart health bar",
   description: "A row of pixel hearts as a game health bar: two hearts flash and empty as damage lands, then pop back full.",
   category: "retro",
-  tags: ["pixel", "retro", "game", "health", "hud", "hearts", "8-bit", "loop"],
+  tags: ["pixel", "retro", "game", "health", "hud", "heart", "8-bit", "loop"],
   hold: 900,
   presets: [
     { name: "Shield", values: { heart: [0.2, 0.6, 1], highlight: [0.8, 0.95, 1] } },

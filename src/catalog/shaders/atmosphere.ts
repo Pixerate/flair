@@ -389,7 +389,7 @@ export const skyTimelapse: ShaderEffect = {
   name: "Sky timelapse",
   description: "A timelapse sky: layers of clouds racing over at different speeds as the light turns from day to golden hour and back.",
   category: "atmosphere",
-  tags: ["atmosphere", "clouds", "sky", "background", "timelapse"],
+  tags: ["atmosphere", "clouds", "sky", "background", "time-lapse"],
   source: glsl(
     `// Sky timelapse: parallax cloud layers on perspective planes, under a sky cycling through the day.
 uniform vec3 uDayTop;       // @control color default=#2F6FD0 label="Day sky (top)"

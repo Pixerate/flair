@@ -24,7 +24,7 @@ export const marquee: VectorEffect = {
   name: "Marquee",
   description: "An endless row of logos or words scrolling sideways, looping seamlessly and fading out at both edges.",
   category: "ui",
-  tags: ["ui", "marquee", "logos", "ticker", "scroll", "saas", "social-proof"],
+  tags: ["ui", "marquee", "logo", "ticker", "scroll", "saas", "social-proof"],
   hold: 0,
   presets: [
     { name: "Dark", values: { ink: [0.8, 0.83, 0.88] } },
@@ -73,7 +73,7 @@ export const numberTicker: VectorEffect = {
   name: "Number ticker",
   description: "A number rolling up digit by digit like an odometer, in any format: $12,480, 98.6%, 1,024 users.",
   category: "ui",
-  tags: ["ui", "counter", "odometer", "number", "kpi", "stats", "saas"],
+  tags: ["ui", "counter", "odometer", "number", "kpi", "stat", "saas"],
   hold: 1600,
   presets: [
     { name: "Dark", values: { ink: [0.97, 0.98, 0.99] } },

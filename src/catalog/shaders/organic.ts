@@ -44,7 +44,7 @@ export const smoke: ShaderEffect = {
   name: "Smoke",
   description: "Billowing smoke or cloud drifting upwards.",
   category: "organic",
-  tags: ["background", "atmosphere", "cloud", "mist"],
+  tags: ["background", "atmosphere", "clouds", "mist"],
   source: glsl(
     `// Smoke: billowing fractal noise drifting upwards.
 uniform vec3 uBackground; // @control color default=#0B0F19 label="Background"
@@ -74,7 +74,7 @@ export const lavaLamp: ShaderEffect = {
   name: "Lava lamp",
   description: "Soft metaballs merging and parting as they rise and fall.",
   category: "organic",
-  tags: ["background", "playful", "blobs", "retro"],
+  tags: ["background", "playful", "blob", "retro"],
   source: glsl(
     `// Lava lamp: metaballs merging as they rise and fall.
 uniform vec3 uBackground; // @control color default=#1A0B2E label="Background"

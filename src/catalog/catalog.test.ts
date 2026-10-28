@@ -31,6 +31,9 @@ import {
   isHumanReadableControl,
   getPromptVariables,
   getEffectReferenceSvg,
+  effectTags,
+  normaliseTag,
+  TAG_FORMAT,
 } from "./index.js";
 
 describe("catalog", () => {
@@ -189,6 +192,32 @@ describe("catalog", () => {
     expect(findEffects({ kind: "vector" }).every((e) => e.kind === "vector")).toBe(true);
     expect(findEffects({ tags: ["loader"] }).length).toBeGreaterThan(2);
     expect(findEffects({ text: "no such thing anywhere" })).toEqual([]);
+  });
+
+  it("writes tags one way: kebab-case, each once, and never both a word and its plural", () => {
+    for (const effect of EFFECTS) {
+      for (const tag of effect.tags) expect(tag, effect.id).toMatch(TAG_FORMAT);
+      expect(new Set(effect.tags).size, `${effect.id} repeats a tag`).toBe(effect.tags.length);
+    }
+    // Different words that only look like a plural.
+    const apart = new Set(["new"]);
+    const tags = new Set(effectTags().map((t) => t.tag));
+    for (const tag of tags) if (!apart.has(tag)) expect(tags.has(`${tag}s`), `"${tag}" and "${tag}s" are both tags; use one`).toBe(false);
+  });
+
+  it("lists tags with how many effects carry them, the most used first", () => {
+    const all = effectTags();
+    expect(all.reduce((n, t) => n + t.count, 0)).toBe(EFFECTS.reduce((n, e) => n + e.tags.length, 0));
+    for (let i = 1; i < all.length; i++) expect(all[i - 1]!.count).toBeGreaterThanOrEqual(all[i]!.count);
+    const fire = effectTags({ category: "fire" });
+    expect(fire.find((t) => t.tag === "fire")!.count).toBe(findEffects({ category: "fire", tags: ["fire"] }).length);
+    for (const { tag, count } of fire) expect(findEffects({ category: "fire", tags: [tag] }).length).toBe(count);
+  });
+
+  it("finds tags in any case, with spaces for hyphens", () => {
+    expect(normaliseTag(" Game Boy ")).toBe("game-boy");
+    expect(findEffects({ tags: ["Game Boy"] }).map((e) => e.id)).toEqual(findEffects({ tags: ["game-boy"] }).map((e) => e.id));
+    expect(findEffects({ tags: ["game-boy"] }).length).toBeGreaterThan(0);
   });
 
   it("says how every shader with an image control suits video, and only those", () => {

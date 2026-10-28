@@ -144,7 +144,7 @@ export const image8bit: ShaderEffect = {
   description: "An image on a chunky pixel grid, reduced to a classic console or computer palette with ordered Bayer dithering.",
   category: "retro",
   video: "filter",
-  tags: ["pixel", "retro", "image", "8-bit", "dither", "palette", "game boy", "pico-8"],
+  tags: ["pixel", "retro", "image", "8-bit", "dither", "palette", "game-boy", "pico-8"],
   source: glsl(
     `// 8-bit: an image on a chunky pixel grid in a classic palette, Bayer-dithered.
 uniform sampler2D uImage;  // @control filter=nearest wrap=clamp default=${SAMPLE_IMAGES.landscape} label="Image"
@@ -221,7 +221,7 @@ export const gameboyScreen: ShaderEffect = {
   description: "An image on a handheld's green dot-matrix LCD: four shades, a visible pixel grid and smeary ghosting, inset in an olive bezel.",
   category: "retro",
   video: "filter",
-  tags: ["pixel", "retro", "image", "game boy", "lcd", "handheld", "screen"],
+  tags: ["pixel", "retro", "image", "game-boy", "lcd", "handheld", "screen"],
   source: glsl(
     `// Game Boy screen: an image on a 4-shade green LCD with a pixel grid, ghosting and a bezel.
 uniform sampler2D uImage;  // @control filter=linear wrap=repeat default=${SAMPLE_IMAGES.landscape} label="Image"
@@ -317,7 +317,7 @@ export const pixelFire: ShaderEffect = {
   name: "Pixel fire",
   description: "Chunky Doom-style pixel fire licking up from the bottom through a stepped black, red, orange, yellow and white ramp.",
   category: "retro",
-  tags: ["pixel", "retro", "fire", "flame", "doom", "demoscene", "loop"],
+  tags: ["pixel", "retro", "fire", "flames", "doom", "demoscene", "loop"],
   source: glsl(
     `// Pixel fire: Doom-style chunky flames in a stepped palette ramp.
 uniform float uPixel;    // @control min=2 max=16 default=6 step=1 label="Pixel size"
@@ -583,7 +583,7 @@ export const paletteCycle: ShaderEffect = {
   name: "Palette cycle",
   description: "Demoscene colour cycling: a still pixel-art waterfall (or plasma) brought to life purely by rotating its palette.",
   category: "retro",
-  tags: ["pixel", "retro", "palette", "colour cycling", "demoscene", "waterfall", "plasma", "loop"],
+  tags: ["pixel", "retro", "palette", "colour-cycling", "demoscene", "waterfall", "plasma", "loop"],
   loop: 2,
   source: glsl(
     `// Palette cycle: a static indexed picture animated only by rotating its palette.
@@ -811,7 +811,7 @@ export const pixelWater: ShaderEffect = {
   name: "Pixel water",
   description: "Tiling pixel-art water in three blues with wavy highlight lines and twinkling sparkles; it loops and tiles seamlessly.",
   category: "retro",
-  tags: ["pixel", "retro", "water", "tile", "game", "background", "loop"],
+  tags: ["pixel", "retro", "water", "tiles", "game", "background", "loop"],
   loop: 4,
   source: glsl(
     `// Pixel water: a seamless tile of banded blues, crest highlights and sparkles.

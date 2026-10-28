@@ -413,7 +413,7 @@ export const barRace: VectorEffect = {
   name: "Bar race",
   description: "A bar chart race: bars stretch and overtake each other, swapping places as the period label ticks through the years.",
   category: "data",
-  tags: ["chart", "race", "ranking", "bars", "timeline", "explainer"],
+  tags: ["chart", "race", "ranking", "bar", "timeline", "explainer"],
   hold: 1800,
   presets: [
     ...PALETTE_PRESETS,
@@ -562,7 +562,7 @@ export const leaderboard: VectorEffect = {
   name: "Leaderboard",
   description: "Ranked rows sliding into place from the bottom up, each with an initials avatar and a score counting up, then a highlight on the winner.",
   category: "data",
-  tags: ["leaderboard", "ranking", "scores", "game", "dashboard", "competition"],
+  tags: ["leaderboard", "ranking", "score", "game", "dashboard", "competition"],
   hold: 1800,
   presets: [
     { name: "Dark", values: { card: [0.12, 0.14, 0.19], ink: [0.94, 0.95, 0.97] } },

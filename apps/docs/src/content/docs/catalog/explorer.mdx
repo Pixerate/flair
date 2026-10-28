@@ -5,7 +5,7 @@ description: Search, preview and copy any effect in the Flair catalog.
 
 import EffectCatalogExplorer from '../../../components/EffectCatalogExplorer.svelte';
 
-Search every effect in the catalog, preview it live, switch its presets and copy the code to mount it.
+Search every effect in the catalog, preview it live, switch its presets and copy the code to mount it. Type `#` and part of a tag (`#glass`, `#hover`) to filter by tags, or click a tag on an effect to see every effect that has it; links like `#effects?tag=glass,hover` open the explorer filtered.
 
 <div class="not-content">
   <EffectCatalogExplorer client:load heading={false} />

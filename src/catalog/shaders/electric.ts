@@ -839,7 +839,7 @@ export const electricField: ShaderEffect = {
   name: "Electric field",
   description: "Field lines between glowing positive and negative charges with dashes flowing along them; hover and one charge follows the pointer.",
   category: "electric",
-  tags: ["electric", "physics", "science", "field", "lines", "interactive", "hover"],
+  tags: ["electric", "physics", "science", "field", "line", "interactive", "hover"],
   source: glsl(
     `// Electric field: the field lines of two or three charges, dashes flowing from + to -.
 uniform vec2 uCharge1;    // @control min=-1 max=1 default=-0.5,0 label="Charge 1 (+)"

@@ -543,7 +543,7 @@ export const cornerPin: ShaderEffect = {
   description: "A picture pinned by its four corners anywhere in the frame, in true perspective, for screen replacements, signs and mock-ups.",
   category: "distortion",
   video: "filter",
-  tags: ["distortion", "corner pin", "perspective", "homography", "mockup", "screen replacement", "image"],
+  tags: ["distortion", "corner-pin", "perspective", "homography", "mockup", "screen-replacement", "image"],
   source: glsl(
     `// Corner pin: the projective map (homography) taking the picture's unit square to the four pinned corners,
 // inverted, so each pixel finds where in the picture it shows; outside the quad is the backdrop.

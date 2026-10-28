@@ -15,7 +15,7 @@ export const oceanWaves: ShaderEffect = {
   name: "Ocean waves",
   description: "An open ocean at sunset or by day: layered, sharp-crested waves rolling in, foam on the crests, the sky in the water and a glint of sun.",
   category: "water",
-  tags: ["water", "ocean", "sea", "waves", "sunset", "nature", "3d", "background"],
+  tags: ["water", "ocean", "sea", "wave", "sunset", "nature", "3d", "background"],
   source: glsl(
     `// Ocean waves: a sum of sharp-crested waves (e^(sin x − 1), each layer's position dragged by the last),
 // met by marching only between the planes of its highest and lowest points (16 steps and 4 secant steps),
@@ -260,7 +260,7 @@ export const pondRipples: ShaderEffect = {
   description: "Raindrops landing on a picture as if it lay under a pond, each spreading rings that bend the picture beneath; clicks drop stones that ripple wider.",
   category: "water",
   video: "filter",
-  tags: ["water", "ripples", "rain", "pond", "image", "distortion", "interactive", "click"],
+  tags: ["water", "ripple", "rain", "pond", "image", "distortion", "interactive", "click"],
   source: glsl(
     `// Pond ripples: drops on cycles in grid cells (a pixel sums its own and the eight around it), clicks as larger
 // drops (iClicks), each a damped ring whose slope bends the picture and catches a highlight.

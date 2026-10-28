@@ -9,7 +9,7 @@ import { EFFECT_CATEGORIES, EFFECT_CATEGORY_GROUPS, VIDEO_USES, type VectorContr
 import type { SvgEase, SvgMotion } from "../vector/motion.js";
 import { getPrimitive, listPrimitives, PRIMITIVE_KINDS, PRIMITIVES, primitiveTags, type PrimitiveKind } from "../motion/index.js";
 import { didYouMean } from "../motion/params.js";
-import { EFFECT_INPUTS, EFFECT_INTERACTIONS, effectInputs, findEffects, type EffectInput, type EffectInteraction } from "../catalog/index.js";
+import { EFFECT_INPUTS, EFFECT_INTERACTIONS, effectInputs, effectTags, findEffects, normaliseTag, type EffectInput, type EffectInteraction, type EffectQuery } from "../catalog/index.js";
 import type { EditResult, EffectEditor } from "./editor.js";
 import { EASING_PRESETS, type Easing } from "./timeline.js";
 import { controlsSchema } from "../shader/schema.js";
@@ -49,6 +49,57 @@ function vectorMotion(editor: EffectEditor): SvgMotion {
 
 /** Catalog results `catalog.search` returns when no `limit` is given. */
 export const CATALOG_SEARCH_LIMIT = 20;
+
+/** Tags `catalog.tags` returns when no `limit` is given. */
+export const CATALOG_TAGS_LIMIT = 50;
+
+/** The filters `catalog.search` and `catalog.tags` share. */
+const catalogFilters = {
+  text: { type: "string", description: "Words to look for in the id, name, description, category and tags (all must match)." },
+  category: { type: "string", enum: EFFECT_CATEGORIES },
+  group: {
+    type: "string",
+    enum: EFFECT_CATEGORY_GROUPS.map((g) => g.name),
+    description: `A set of related categories: ${EFFECT_CATEGORY_GROUPS.map((g) => `${g.name} (${g.categories.join(", ")})`).join("; ")}.`,
+  },
+  kind: { type: "string", enum: ["shader", "vector"] },
+  tags: {
+    type: "array",
+    items: { type: "string" },
+    description: "Only effects with every one of these tags, like [\"glass\", \"hover\"] (see catalog.tags for the tags there are).",
+  },
+  video: {
+    type: "array",
+    items: { type: "string", enum: VIDEO_USES },
+    description: "Only effects that suit video in one of these ways: filter (live video filter), transition (between two clips), interactive (pointer over video), stills (runs on video, made for stills), none.",
+  },
+  accepts: {
+    type: "array",
+    items: { type: "string", enum: EFFECT_INPUTS },
+    description: "Only effects that can be given all of these: image (a picture), video, svg, text (words), mask (a shape with transparency: icon, logo, word), path (SVG path data).",
+  },
+  interaction: {
+    type: "array",
+    items: { type: "string", enum: EFFECT_INTERACTIONS },
+    description: "Only effects that answer the pointer in one of these ways: hover, press, click, trail (follows where it has been), pointer (follows where it is). An empty list finds effects that don't answer it.",
+  },
+  transparent: { type: "boolean", description: "Only overlays (true), drawn over other content, or only effects that fill their frame (false)." },
+} as const;
+
+type CatalogFilters = Pick<EffectQuery, "text" | "category" | "group" | "kind" | "tags" | "video" | "accepts" | "interaction" | "transparent">;
+
+/** The catalog's tags, worked out on first use. */
+let knownTags: Set<string> | undefined;
+
+/** A catalog query from command params, with its tags written as the catalog writes them; refuses a tag no effect has. */
+function catalogQuery(filters: CatalogFilters): EffectQuery {
+  if (!filters.tags) return filters;
+  knownTags ??= new Set(effectTags().map((t) => t.tag));
+  const tags = filters.tags.map(normaliseTag);
+  const unknown = tags.find((t) => !knownTags!.has(t));
+  if (unknown !== undefined) throw new Error(`No effect is tagged ${JSON.stringify(unknown)}.${didYouMean(unknown, [...knownTags])} catalog.tags lists the tags there are; text searches descriptions too.`);
+  return { ...filters, tags };
+}
 
 /** What an agent should know about the compile: the report, or why there is none yet. */
 function compileStatus(editor: EffectEditor) {
@@ -111,57 +162,20 @@ export function effectCommands(): CommandSpec<EffectEditor>[] {
       id: "catalog.search",
       label: "Search effects",
       group: "Catalog",
-      description: `Searches the built-in effect catalog: {total, effects}, at most \`limit\` effects (default ${CATALOG_SEARCH_LIMIT}). Narrow with words and filters rather than raising the limit. Load one with effect.load to start from it.`,
+      description: `Searches the built-in effect catalog: {total, effects}, at most \`limit\` effects (default ${CATALOG_SEARCH_LIMIT}). Each effect comes with its tags; narrow with words, tags (catalog.tags lists them) and filters rather than raising the limit. Load one with effect.load to start from it.`,
       readOnly: true,
       params: {
         type: "object",
         properties: {
-          text: { type: "string", description: "Words to look for (all must match)." },
-          category: { type: "string", enum: EFFECT_CATEGORIES },
-          group: {
-            type: "string",
-            enum: EFFECT_CATEGORY_GROUPS.map((g) => g.name),
-            description: `A set of related categories: ${EFFECT_CATEGORY_GROUPS.map((g) => `${g.name} (${g.categories.join(", ")})`).join("; ")}.`,
-          },
-          kind: { type: "string", enum: ["shader", "vector"] },
-          video: {
-            type: "array",
-            items: { type: "string", enum: VIDEO_USES },
-            description: "Only effects that suit video in one of these ways: filter (live video filter), transition (between two clips), interactive (pointer over video), stills (runs on video, made for stills), none.",
-          },
-          accepts: {
-            type: "array",
-            items: { type: "string", enum: EFFECT_INPUTS },
-            description: "Only effects that can be given all of these: image (a picture), video, svg, text (words), mask (a shape with transparency: icon, logo, word), path (SVG path data).",
-          },
-          interaction: {
-            type: "array",
-            items: { type: "string", enum: EFFECT_INTERACTIONS },
-            description: "Only effects that answer the pointer in one of these ways: hover, press, click, trail (follows where it has been), pointer (follows where it is). An empty list finds effects that don't answer it.",
-          },
-          transparent: { type: "boolean", description: "Only overlays (true), drawn over other content, or only effects that fill their frame (false)." },
+          ...catalogFilters,
           limit: { type: "integer", minimum: 1, description: `Most effects to return (default ${CATALOG_SEARCH_LIMIT}).` },
           offset: { type: "integer", minimum: 0, description: "Effects to skip first, to page through more (default 0)." },
         },
         additionalProperties: false,
       },
-      run: (
-        _,
-        params: {
-          text?: string;
-          category?: (typeof EFFECT_CATEGORIES)[number];
-          group?: string;
-          kind?: "shader" | "vector";
-          video?: VideoUse[];
-          accepts?: EffectInput[];
-          interaction?: EffectInteraction[];
-          transparent?: boolean;
-          limit?: number;
-          offset?: number;
-        },
-      ) => {
+      run: (_, params: CatalogFilters & { limit?: number; offset?: number }) => {
         const { limit = CATALOG_SEARCH_LIMIT, offset = 0, ...filters } = params ?? {};
-        const found = findEffects(filters);
+        const found = findEffects(catalogQuery(filters));
         const effects = found.slice(offset, offset + limit).map((e) => {
           const inputs = effectInputs(e);
           return {
@@ -170,6 +184,7 @@ export function effectCommands(): CommandSpec<EffectEditor>[] {
             kind: e.kind,
             category: e.category,
             description: e.description,
+            tags: e.tags,
             ...(e.kind === "shader" && e.video ? { video: e.video } : {}),
             accepts: inputs.accepts,
             ...(inputs.interactions.length ? { interactions: inputs.interactions } : {}),
@@ -182,6 +197,33 @@ export function effectCommands(): CommandSpec<EffectEditor>[] {
           total: found.length,
           effects,
           ...(more > 0 && { more: `${more} more match; narrow the search, or pass offset ${offset + effects.length} for the next ones.` }),
+        };
+      },
+    },
+    {
+      id: "catalog.tags",
+      label: "Effect tags",
+      group: "Catalog",
+      description: `The tags of the catalog's effects, each with how many effects carry it, the most used first: {total, tags}, at most \`limit\` tags (default ${CATALOG_TAGS_LIMIT}). Takes catalog.search's filters, to list only the tags of the effects they find (the tags to narrow a search by). Pass tags to catalog.search's \`tags\`.`,
+      readOnly: true,
+      params: {
+        type: "object",
+        properties: {
+          ...catalogFilters,
+          limit: { type: "integer", minimum: 1, description: `Most tags to return (default ${CATALOG_TAGS_LIMIT}).` },
+          offset: { type: "integer", minimum: 0, description: "Tags to skip first, to page through more (default 0)." },
+        },
+        additionalProperties: false,
+      },
+      run: (_, params: CatalogFilters & { limit?: number; offset?: number }) => {
+        const { limit = CATALOG_TAGS_LIMIT, offset = 0, ...filters } = params ?? {};
+        const all = effectTags(catalogQuery(filters));
+        const tags = all.slice(offset, offset + limit);
+        const more = all.length - offset - tags.length;
+        return {
+          total: all.length,
+          tags,
+          ...(more > 0 && { more: `${more} more tags, each on fewer effects; pass offset ${offset + tags.length} for the next ones, or narrow with filters.` }),
         };
       },
     },

@@ -112,7 +112,7 @@ export const glassText: ShaderEffect = {
     "A title cast in glass over a picture, bending and splitting what is behind it, while a beam of light sweeps through the letters and breaks into a faint rainbow at their edges.",
   category: "text",
   video: "filter",
-  tags: ["text", "title", "glass", "refraction", "prism", "rainbow", "light sweep", "image"],
+  tags: ["text", "title", "glass", "refraction", "prism", "rainbow", "light-sweep", "image"],
   loop: 4,
   source: glsl(
     `// Glass text: bevelled glass letters refract the picture; a light beam sweeps through and disperses at the bevels.
@@ -297,7 +297,7 @@ export const glassBlocks: ShaderEffect = {
   description: "A picture seen through a wall of glass bricks: each block squeezes and ripples its own piece of the view, set in pale mortar.",
   category: "distortion",
   video: "filter",
-  tags: ["distortion", "glass", "glass block", "bricks", "privacy", "image"],
+  tags: ["distortion", "glass", "glass-block", "bricks", "privacy", "image"],
   source: glsl(
     `// Glass blocks: a grid of pillowed glass bricks, each a lens with pressed ripples, between lines of mortar.
 uniform sampler2D uImage;     // @control wrap=mirror default=${SAMPLE_IMAGES.city} label="Image"
@@ -355,7 +355,7 @@ export const crackedGlass: ShaderEffect = {
     "A picture behind a pane that cracks into a spider web from the centre and wherever you click, its shards slightly out of line and the cracks catching the light.",
   category: "distortion",
   video: "interactive",
-  tags: ["distortion", "glass", "crack", "safety glass", "impact", "image", "interactive", "click"],
+  tags: ["distortion", "glass", "cracks", "safety-glass", "impact", "image", "interactive", "click"],
   loop: 5,
   source: glsl(
     `// Cracked glass: radial cracks and rings from each impact; each shard shifts and shades the picture a little.
@@ -539,7 +539,7 @@ export const stainedGlass: ShaderEffect = {
   name: "Stained glass",
   description: "Jewel-coloured panes of mottled glass set in lead, glowing as the sun moves behind them; a rose window when you want one.",
   category: "pattern",
-  tags: ["pattern", "glass", "stained glass", "church", "window", "mosaic", "background"],
+  tags: ["pattern", "glass", "stained-glass", "church", "window", "mosaic", "background"],
   source: glsl(
     `// Stained glass: Voronoi panes in four glass colours, mottled and lit from behind, set in lead came.
 uniform float uCells;        // @control min=3 max=30 default=8 label="Panes down"
@@ -618,7 +618,7 @@ export const imageStainedGlass: ShaderEffect = {
   description: "A picture remade as a stained-glass window: each pane takes the picture's colour where it sits, mottled, lit from behind and set in lead.",
   category: "image",
   video: "filter",
-  tags: ["image", "glass", "stained glass", "mosaic", "window", "filter"],
+  tags: ["image", "glass", "stained-glass", "mosaic", "window", "filter"],
   source: glsl(
     `// Stained glass picture: Voronoi panes filled with the picture's colour at each pane, set in lead.
 uniform sampler2D uImage;    // @control wrap=mirror default=${SAMPLE_IMAGES.landscape} label="Image"

@@ -158,7 +158,7 @@ export const aura: ShaderEffect = {
   description: "A silhouette wreathed in an energetic aura, flame-like wisps of light rising off its outline and pulsing.",
   category: "glow",
   video: "stills",
-  tags: ["glow", "aura", "energy", "flame", "silhouette", "anime", "power-up"],
+  tags: ["glow", "aura", "energy", "flames", "silhouette", "anime", "power-up"],
   source: glsl(
     `// Aura: a blurred silhouette, lifted and torn by rising fbm, read as tongues of light round the outline.
 uniform sampler2D uMask;     // @control filter=mipmap wrap=clamp default=${SAMPLE_IMAGES.portrait} label="Silhouette"

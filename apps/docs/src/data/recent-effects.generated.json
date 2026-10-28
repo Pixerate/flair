@@ -615,11 +615,11 @@
     "description": "A picture pinned by its four corners anywhere in the frame, in true perspective, for screen replacements, signs and mock-ups.",
     "tags": [
       "distortion",
-      "corner pin",
+      "corner-pin",
       "perspective",
       "homography",
       "mockup",
-      "screen replacement",
+      "screen-replacement",
       "image"
     ],
     "controls": [
@@ -1196,11 +1196,11 @@
       "image",
       "video",
       "lut",
-      "colour grading",
-      "color grading",
-      "skin tones",
+      "colour-grading",
+      "color-grading",
+      "skin-tones",
       "cinematic",
-      "teal and orange",
+      "teal-and-orange",
       "film",
       "filter"
     ],
@@ -1340,9 +1340,9 @@
     "tags": [
       "image",
       "video",
-      "chroma key",
-      "green screen",
-      "blue screen",
+      "chroma-key",
+      "green-screen",
+      "blue-screen",
       "keying",
       "despill",
       "compositing",
@@ -1604,7 +1604,7 @@
       "warp",
       "hyperspace",
       "speed",
-      "streaks",
+      "streak",
       "retro",
       "hero"
     ],
@@ -1828,7 +1828,7 @@
       "background",
       "neon",
       "glow",
-      "lines",
+      "line",
       "squiggle",
       "organic",
       "loop"
@@ -2278,7 +2278,7 @@
     "tags": [
       "loader",
       "morph",
-      "shapes",
+      "shape",
       "spinner",
       "playful",
       "ui"

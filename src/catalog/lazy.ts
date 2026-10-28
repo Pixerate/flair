@@ -15,11 +15,11 @@ import { didYouMean } from "../motion/params.js";
 import { unpackMeta, type EffectMeta, type PackedMeta } from "./meta.js";
 import PACKED from "./meta.generated.json" with { type: "json" };
 import { EFFECT_MODULES } from "./modules.generated.js";
-import { matchesQuery, queryWords, type EffectQuery } from "./query.js";
+import { countTags, matchesQuery, queryWords, type EffectQuery, type EffectTag } from "./query.js";
 import type { EffectDefinition } from "./types.js";
 
 export type { EffectMeta } from "./meta.js";
-export type { EffectQuery } from "./query.js";
+export { normaliseTag, TAG_FORMAT, type EffectQuery, type EffectTag } from "./query.js";
 export { EFFECT_CATEGORIES, EFFECT_CATEGORY_GROUPS, VIDEO_USES, type EffectCategory, type EffectDefinition, type ShaderEffect, type VectorEffect, type VideoUse } from "./types.js";
 export { EFFECT_INPUTS, EFFECT_INTERACTIONS, type EffectInput, type EffectInputs, type EffectInteraction } from "./inputs.js";
 
@@ -39,6 +39,11 @@ export function getEffectMeta(id: string): EffectMeta | undefined {
 export function findEffectMeta(query: EffectQuery = {}): EffectMeta[] {
   const words = queryWords(query);
   return EFFECT_META.filter((m) => matchesQuery(m, () => m.inputs, query, words));
+}
+
+/** The tags of the effects matching a query, with how many carry each, the most used first: the same answer as the catalog's `effectTags`. */
+export function effectTags(query: EffectQuery = {}): EffectTag[] {
+  return countTags(findEffectMeta(query));
 }
 
 const loaded = new Map<string, EffectDefinition>();
