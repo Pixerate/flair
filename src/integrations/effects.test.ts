@@ -70,7 +70,7 @@ describe("the catalog as the contract sees it", () => {
     const overlay = (await provider.list()).find((e) => e.kind === "shader" && e.transparent)!;
     expect(overlay.uses).toContain("overlay");
     expect((await provider.describe("lower-third")).uses).toContain("title");
-    expect((await provider.list({ use: "transition" })).length).toBe(20);
+    expect((await provider.list({ use: "transition" })).length).toBe(21);
   });
 
   it("gives colours as #rrggbb, with defaults and presets that validate", async () => {

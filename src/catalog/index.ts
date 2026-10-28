@@ -99,6 +99,8 @@ import { mirrorShaders } from "./shaders/mirror.js";
 import { iridescentShaders } from "./shaders/iridescent.js";
 import { webShaders } from "./shaders/web.js";
 import { webEffects } from "./web.js";
+import { promoShaders } from "./shaders/promo.js";
+import { promoEffects } from "./promo.js";
 import { textEffects } from "./text.js";
 import { broadcastEffects } from "./broadcast.js";
 import { annotationEffects } from "./annotation.js";
@@ -217,11 +219,12 @@ export const SHADER_EFFECTS: readonly ShaderEffect[] = [
   ...mirrorShaders,
   ...iridescentShaders,
   ...webShaders,
+  ...promoShaders,
   ...transitions,
 ];
 
 /** Every effect in the catalog, shaders first, grouped by category. */
-export const EFFECTS: readonly EffectDefinition[] = [...SHADER_EFFECTS, ...vectorEffects, ...textEffects, ...morphEffects, ...interactionEffects, ...pyroEffects, ...timewarpEffects, ...meltEffects, ...electricEffects, ...fireEffects, ...hologramEffects, ...pixelEffects, ...splatterEffects, ...bubbleEffects, ...stickerEffects, ...trailEffects, ...impactEffects, ...comicEffects, ...glowEffects, ...shadowEffects, ...lightingEffects, ...scrollEffects, ...broadcastEffects, ...annotationEffects, ...uiEffects, ...loaderEffects, ...dataEffects, ...iconEffects, ...webEffects].sort(
+export const EFFECTS: readonly EffectDefinition[] = [...SHADER_EFFECTS, ...vectorEffects, ...textEffects, ...morphEffects, ...interactionEffects, ...pyroEffects, ...timewarpEffects, ...meltEffects, ...electricEffects, ...fireEffects, ...hologramEffects, ...pixelEffects, ...splatterEffects, ...bubbleEffects, ...stickerEffects, ...trailEffects, ...impactEffects, ...comicEffects, ...glowEffects, ...shadowEffects, ...lightingEffects, ...scrollEffects, ...broadcastEffects, ...annotationEffects, ...uiEffects, ...loaderEffects, ...dataEffects, ...iconEffects, ...webEffects, ...promoEffects].sort(
   (a, b) => EFFECT_CATEGORIES.indexOf(a.category) - EFFECT_CATEGORIES.indexOf(b.category),
 );
 
