@@ -1,36 +1,336 @@
 [
   {
-    "id": "card-flip",
-    "name": "Card flip",
+    "id": "tick-ring-burst",
+    "name": "Tick ring burst",
     "kind": "shader",
-    "category": "interaction",
-    "description": "A card that turns over in perspective on hover to show its back, lifting as it goes, a lit edge showing side-on and its shadow narrowing under it.",
+    "category": "light",
+    "description": "A sunburst arc of short rounded ticks popping out one after another from its middle behind a title, holding, then flying outward and fading; a transparent overlay.",
     "tags": [
-      "interactive",
-      "hover",
-      "card",
-      "flip",
-      "reveal",
-      "3d"
+      "overlay",
+      "promo",
+      "title",
+      "sunburst",
+      "ring",
+      "logo",
+      "accent",
+      "burst"
     ],
     "controls": [
       {
-        "n": "uFront",
+        "n": "uColor",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            240,
+            80,
+            122
+          ]
+        },
+        "l": "Ticks",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uColorB",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            176,
+            194
+          ]
+        },
+        "l": "Ends",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uCount",
+        "t": "float",
+        "d": 44,
+        "l": "Ticks round a full circle",
+        "min": 8,
+        "max": 96,
+        "s": 1,
+        "line": 5
+      },
+      {
+        "n": "uArc",
+        "t": "float",
+        "d": 0.45,
+        "l": "Arc (share of circle)",
+        "min": 0.05,
+        "line": 6
+      },
+      {
+        "n": "uAngle",
+        "t": "float",
+        "d": 90,
+        "l": "Arc centre (°)",
+        "min": -180,
+        "max": 180,
+        "line": 7
+      },
+      {
+        "n": "uRadius",
+        "t": "float",
+        "d": 0.3,
+        "min": 0.05,
+        "max": 0.48,
+        "line": 8
+      },
+      {
+        "n": "uLength",
+        "t": "float",
+        "d": 0.06,
+        "l": "Tick length",
+        "min": 0.01,
+        "max": 0.2,
+        "line": 9
+      },
+      {
+        "n": "uWidth",
+        "t": "float",
+        "d": 12,
+        "l": "Tick width",
+        "min": 2,
+        "max": 40,
+        "line": 10
+      },
+      {
+        "n": "uAnimate",
+        "t": "bool",
+        "d": true,
+        "line": 11
+      },
+      {
+        "n": "uCycle",
+        "t": "float",
+        "d": 3,
+        "l": "Cycle (s)",
+        "min": 1,
+        "max": 8,
+        "line": 12
+      },
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            244,
+            210
+          ]
+        },
+        "c": 1,
+        "line": 13
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 0,
+        "l": "Background opacity",
+        "line": 14
+      }
+    ],
+    "presets": [
+      "Cream",
+      "Full ring",
+      "Gold",
+      "Fan below"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": true
+    },
+    "transparent": true,
+    "animated": true,
+    "module": "shaders/promo",
+    "addedAt": "2026-10-28T22:53:50.490Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "swoosh-underline",
+    "name": "Swoosh underline",
+    "kind": "shader",
+    "category": "light",
+    "description": "A glowing curved stroke sweeping on under a subtitle with a bright head and a thinner second stroke chasing it, then wiping away from its tail; a transparent overlay.",
+    "tags": [
+      "overlay",
+      "promo",
+      "underline",
+      "swoosh",
+      "title",
+      "accent",
+      "neon"
+    ],
+    "controls": [
+      {
+        "n": "uColor",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            47,
+            217,
+            196
+          ]
+        },
+        "l": "Glow",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uCore",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uSpan",
+        "t": "float",
+        "d": 0.8,
+        "l": "Width (share of frame)",
+        "min": 0.2,
+        "line": 5
+      },
+      {
+        "n": "uY",
+        "t": "float",
+        "d": -0.1,
+        "l": "Height",
+        "min": -0.45,
+        "max": 0.45,
+        "line": 6
+      },
+      {
+        "n": "uCurve",
+        "t": "float",
+        "d": 0.06,
+        "min": -0.3,
+        "max": 0.3,
+        "line": 7
+      },
+      {
+        "n": "uRise",
+        "t": "float",
+        "d": 0.05,
+        "min": -0.3,
+        "max": 0.3,
+        "line": 8
+      },
+      {
+        "n": "uWidth",
+        "t": "float",
+        "d": 11,
+        "l": "Thickness",
+        "min": 2,
+        "max": 40,
+        "line": 9
+      },
+      {
+        "n": "uGlow",
+        "t": "float",
+        "d": 1,
+        "max": 2,
+        "line": 10
+      },
+      {
+        "n": "uSecond",
+        "t": "bool",
+        "d": true,
+        "l": "Second stroke",
+        "line": 11
+      },
+      {
+        "n": "uAnimate",
+        "t": "bool",
+        "d": true,
+        "line": 12
+      },
+      {
+        "n": "uCycle",
+        "t": "float",
+        "d": 2.5,
+        "l": "Cycle (s)",
+        "min": 1,
+        "max": 8,
+        "line": 13
+      },
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            244,
+            210
+          ]
+        },
+        "c": 1,
+        "line": 14
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 0,
+        "l": "Background opacity",
+        "line": 15
+      }
+    ],
+    "presets": [
+      "Cream",
+      "Hot pink",
+      "Gold",
+      "Straight"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": true
+    },
+    "transparent": true,
+    "animated": true,
+    "module": "shaders/promo",
+    "addedAt": "2026-10-28T22:53:50.490Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "before-after",
+    "name": "Before and after",
+    "kind": "shader",
+    "category": "interaction",
+    "description": "Two pictures compared either side of a divider with a round handle that follows the pointer while it hovers and sweeps back and forth when idle; a cut-out shows over a transparency checkerboard.",
+    "tags": [
+      "interactive",
+      "hover",
+      "image",
+      "promo",
+      "compare",
+      "before-after",
+      "slider",
+      "background-removal",
+      "checkerboard"
+    ],
+    "controls": [
+      {
+        "n": "uBefore",
         "t": "sampler2D",
         "d": {
           "sample": "portrait"
-        },
-        "line": 2,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uBack",
-        "t": "sampler2D",
-        "d": {
-          "sample": "landscape"
         },
         "line": 3,
         "x": {
@@ -39,59 +339,87 @@
         }
       },
       {
-        "n": "uPerspective",
-        "t": "float",
-        "d": 0.5,
-        "line": 4
+        "n": "uAfter",
+        "t": "sampler2D",
+        "d": {
+          "sample": "cutout"
+        },
+        "line": 4,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
       },
       {
-        "n": "uShine",
-        "t": "float",
-        "d": 0.5,
-        "line": 5
-      },
-      {
-        "n": "uShadow",
-        "t": "float",
-        "d": 0.5,
-        "line": 6
-      },
-      {
-        "n": "uCorner",
-        "t": "float",
-        "d": 0.06,
-        "l": "Corner radius",
-        "max": 0.25,
-        "line": 7
-      },
-      {
-        "n": "uEdge",
+        "n": "uLine",
         "t": "vec3",
         "d": {
           "c255": [
-            226,
-            232,
-            240
+            255,
+            255,
+            255
+          ]
+        },
+        "l": "Divider",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uHandle",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            240,
+            80,
+            122
           ]
         },
         "c": 1,
+        "line": 6
+      },
+      {
+        "n": "uLineWidth",
+        "t": "float",
+        "d": 4,
+        "l": "Divider width",
+        "max": 20,
+        "line": 7
+      },
+      {
+        "n": "uHandleSize",
+        "t": "float",
+        "d": 0.065,
+        "max": 0.2,
         "line": 8
       },
       {
-        "n": "uHold",
+        "n": "uSplit",
         "t": "float",
-        "d": 2,
-        "l": "Demo seconds per side",
-        "min": 0.8,
-        "max": 6,
+        "d": 0.5,
+        "l": "Split when idle",
         "line": 9
       },
       {
         "n": "uDemo",
         "t": "bool",
         "d": true,
-        "l": "Demo when idle",
+        "l": "Sweep when idle",
         "line": 10
+      },
+      {
+        "n": "uChecker",
+        "t": "bool",
+        "d": true,
+        "l": "Checkerboard",
+        "line": 11
+      },
+      {
+        "n": "uCheckerSize",
+        "t": "float",
+        "d": 26,
+        "min": 8,
+        "max": 80,
+        "line": 12
       },
       {
         "n": "uBackdrop",
@@ -104,19 +432,21 @@
           ]
         },
         "c": 1,
-        "line": 11
+        "line": 13
       },
       {
         "n": "uBackdropAlpha",
         "t": "float",
         "d": 1,
         "l": "Backdrop opacity",
-        "line": 12
+        "line": 14
       }
     ],
     "presets": [
-      "Flat",
-      "Dramatic"
+      "Still",
+      "Minimal",
+      "Dark divider",
+      "On white"
     ],
     "inputs": {
       "accepts": [
@@ -126,30 +456,831 @@
       ],
       "images": [
         {
-          "name": "uFront",
-          "label": "Front",
+          "name": "uBefore",
+          "label": "Before",
           "wants": "picture"
         },
         {
-          "name": "uBack",
-          "label": "Back",
+          "name": "uAfter",
+          "label": "After",
           "wants": "picture"
         }
       ],
       "texts": [],
       "video": "interactive",
       "interactions": [
-        "hover"
+        "hover",
+        "pointer"
       ],
-      "transparent": true
+      "transparent": false
     },
     "video": "interactive",
-    "transparent": true,
     "animated": true,
-    "module": "shaders/interaction",
-    "addedAt": "2026-10-28T22:48:53.396Z",
+    "module": "shaders/promo",
+    "addedAt": "2026-10-28T22:53:50.490Z",
     "commitHash": "",
     "order": 0
+  },
+  {
+    "id": "slime-drop",
+    "name": "Slime drop",
+    "kind": "vector",
+    "category": "splatter",
+    "description": "A drippy slime title falling in from above, squashing flat as it lands in a puddle and splashing droplets out round it that stay as specks.",
+    "tags": [
+      "splatter",
+      "promo",
+      "title",
+      "slime",
+      "splat",
+      "drip",
+      "logo",
+      "bounce",
+      "y2k"
+    ],
+    "controls": [
+      {
+        "n": "word",
+        "t": "text",
+        "d": "SLOP",
+        "line": 1
+      },
+      {
+        "n": "font",
+        "t": "text",
+        "d": "Arial Black, Impact, system-ui, sans-serif",
+        "line": 2
+      },
+      {
+        "n": "weight",
+        "t": "int",
+        "d": 900,
+        "min": 100,
+        "max": 900,
+        "s": 100,
+        "line": 3
+      },
+      {
+        "n": "fill",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            92,
+            154
+          ]
+        },
+        "l": "Slime",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "outline",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            74,
+            13,
+            44
+          ]
+        },
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "stroke",
+        "t": "float",
+        "d": 7,
+        "l": "Outline width",
+        "max": 14,
+        "s": 0.5,
+        "line": 6
+      },
+      {
+        "n": "spread",
+        "t": "float",
+        "d": 1,
+        "l": "Splash size",
+        "min": 0.3,
+        "max": 2,
+        "line": 7
+      }
+    ],
+    "presets": [
+      "Slime",
+      "Grape",
+      "Big splash"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "word",
+          "label": "Word",
+          "holds": "copy",
+          "default": "SLOP"
+        },
+        {
+          "name": "font",
+          "label": "Font",
+          "holds": "font",
+          "default": "Arial Black, Impact, system-ui, sans-serif"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 1400,
+    "animated": true,
+    "duration": 2540,
+    "module": "promo",
+    "addedAt": "2026-10-28T22:53:50.490Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "app-window",
+    "name": "App window",
+    "kind": "vector",
+    "category": "ui",
+    "description": "A neo-brutalist app window with a coloured title bar, three dots and a hard offset shadow springing in at a tilt, its progress ring filling and drawing a tick as the label changes to done.",
+    "tags": [
+      "promo",
+      "ui",
+      "window",
+      "card",
+      "progress",
+      "success",
+      "brutalist",
+      "mockup"
+    ],
+    "controls": [
+      {
+        "n": "label",
+        "t": "text",
+        "d": "Exporting video",
+        "line": 1
+      },
+      {
+        "n": "done",
+        "t": "text",
+        "d": "Done!",
+        "l": "Done label",
+        "line": 2
+      },
+      {
+        "n": "font",
+        "t": "text",
+        "d": "system-ui, sans-serif",
+        "line": 3
+      },
+      {
+        "n": "card",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            246,
+            218
+          ]
+        },
+        "l": "Window",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "bar",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            245,
+            139,
+            164
+          ]
+        },
+        "l": "Title bar",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "ink",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            31,
+            26,
+            28
+          ]
+        },
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "accent",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            240,
+            80,
+            122
+          ]
+        },
+        "l": "Ring",
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "track",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            249,
+            202,
+            213
+          ]
+        },
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "tilt",
+        "t": "float",
+        "d": -4,
+        "l": "Tilt (°)",
+        "min": -15,
+        "max": 15,
+        "line": 9
+      }
+    ],
+    "presets": [
+      "Mint",
+      "Butter",
+      "Sky"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "label",
+          "label": "Label",
+          "holds": "copy",
+          "default": "Exporting video"
+        },
+        {
+          "name": "done",
+          "label": "Done label",
+          "holds": "copy",
+          "default": "Done!"
+        },
+        {
+          "name": "font",
+          "label": "Font",
+          "holds": "font",
+          "default": "system-ui, sans-serif"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 200,
+    "animated": true,
+    "duration": 3760,
+    "module": "promo",
+    "addedAt": "2026-10-28T22:53:50.490Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "knockout-wipe",
+    "name": "Knockout wipe",
+    "kind": "shader",
+    "category": "transition",
+    "description": "A slanted cut with a bright edge sweeping across a picture, knocking its background out to a transparency checkerboard and leaving the cut-out standing, like a background-removal reveal. Loops back and forth; or turn Animate off and set Progress.",
+    "tags": [
+      "transition",
+      "image",
+      "promo",
+      "background-removal",
+      "cut-out",
+      "checkerboard",
+      "wipe",
+      "reveal"
+    ],
+    "controls": [
+      {
+        "n": "uFrom",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "l": "Picture",
+        "line": 3,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uTo",
+        "t": "sampler2D",
+        "d": {
+          "sample": "cutout"
+        },
+        "l": "Cut-out",
+        "line": 4,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uAngle",
+        "t": "float",
+        "d": -35,
+        "l": "Direction (°)",
+        "min": -180,
+        "max": 180,
+        "line": 5
+      },
+      {
+        "n": "uEdge",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "uEdgeWidth",
+        "t": "float",
+        "d": 9,
+        "max": 40,
+        "line": 7
+      },
+      {
+        "n": "uGlow",
+        "t": "float",
+        "d": 0.5,
+        "l": "Edge glow",
+        "line": 8
+      },
+      {
+        "n": "uChecker",
+        "t": "bool",
+        "d": true,
+        "l": "Checkerboard",
+        "line": 9
+      },
+      {
+        "n": "uCheckerSize",
+        "t": "float",
+        "d": 26,
+        "min": 8,
+        "max": 80,
+        "line": 10
+      },
+      {
+        "n": "uAnimate",
+        "t": "bool",
+        "d": true,
+        "line": 11
+      },
+      {
+        "n": "uProgress",
+        "t": "float",
+        "d": 0.5,
+        "l": "Progress (when still)",
+        "line": 12
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 13
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "line": 14
+      }
+    ],
+    "presets": [
+      "Top down",
+      "Left to right",
+      "On white",
+      "Transparent"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uFrom",
+          "label": "Picture",
+          "wants": "picture"
+        },
+        {
+          "name": "uTo",
+          "label": "Cut-out",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "transition",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "transition",
+    "loop": 4,
+    "animated": true,
+    "duration": 4000,
+    "module": "shaders/promo",
+    "addedAt": "2026-10-28T22:53:50.490Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "orbit-swoosh",
+    "name": "Orbit swoosh",
+    "kind": "shader",
+    "category": "light",
+    "description": "Glowing comet ribbons circling a title on tilted orbits, dimming and slipping behind it on the far side, shedding flecks of confetti that drift out and fade; a transparent overlay.",
+    "tags": [
+      "overlay",
+      "promo",
+      "title",
+      "swoosh",
+      "orbit",
+      "comet",
+      "confetti",
+      "logo",
+      "accent"
+    ],
+    "controls": [
+      {
+        "n": "uColorA",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            194,
+            61
+          ]
+        },
+        "l": "Ribbon 1",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uColorB",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            47,
+            217,
+            184
+          ]
+        },
+        "l": "Ribbon 2",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uConfetti",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            111,
+            156
+          ]
+        },
+        "l": "Confetti colour",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uRibbons",
+        "t": "float",
+        "d": 2,
+        "min": 1,
+        "max": 3,
+        "s": 1,
+        "line": 6
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 0.8,
+        "l": "Orbit size",
+        "min": 0.2,
+        "max": 1.4,
+        "line": 7
+      },
+      {
+        "n": "uFlatten",
+        "t": "float",
+        "d": 0.32,
+        "l": "Orbit depth",
+        "min": 0.1,
+        "line": 8
+      },
+      {
+        "n": "uTilt",
+        "t": "float",
+        "d": -14,
+        "l": "Tilt (°)",
+        "min": -45,
+        "max": 45,
+        "line": 9
+      },
+      {
+        "n": "uLength",
+        "t": "float",
+        "d": 0.42,
+        "l": "Tail length (turns)",
+        "min": 0.1,
+        "max": 0.9,
+        "line": 10
+      },
+      {
+        "n": "uWidth",
+        "t": "float",
+        "d": 9,
+        "min": 2,
+        "max": 30,
+        "line": 11
+      },
+      {
+        "n": "uGlow",
+        "t": "float",
+        "d": 1,
+        "max": 2,
+        "line": 12
+      },
+      {
+        "n": "uGap",
+        "t": "float",
+        "d": 0.6,
+        "l": "Gap behind title",
+        "line": 13
+      },
+      {
+        "n": "uConfettiAmount",
+        "t": "float",
+        "d": 0.6,
+        "l": "Confetti",
+        "line": 14
+      },
+      {
+        "n": "uSpeed",
+        "t": "float",
+        "d": 0.45,
+        "l": "Speed (turns/s)",
+        "max": 2,
+        "line": 15
+      },
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            244,
+            210
+          ]
+        },
+        "c": 1,
+        "line": 16
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 0,
+        "l": "Background opacity",
+        "line": 17
+      }
+    ],
+    "presets": [
+      "Cream",
+      "Night",
+      "Gold rush",
+      "Single"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": true
+    },
+    "transparent": true,
+    "animated": true,
+    "module": "shaders/promo",
+    "addedAt": "2026-10-28T22:53:50.489Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "pack-opening",
+    "name": "Pack opening",
+    "kind": "vector",
+    "category": "ui",
+    "description": "A foil booster pack shaking, its top tearing off and a hand of trading cards rising out of it and fanning open, the rare one in the middle lifting, glowing and catching a holographic shine.",
+    "tags": [
+      "ui",
+      "card",
+      "trading-card",
+      "pack",
+      "reveal",
+      "rare",
+      "holographic",
+      "reward",
+      "celebration",
+      "loop"
+    ],
+    "controls": [
+      {
+        "n": "label",
+        "t": "text",
+        "d": "MYTHIC",
+        "l": "Set name",
+        "line": 1
+      },
+      {
+        "n": "background",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            238,
+            242,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "pack",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            67,
+            56,
+            202
+          ]
+        },
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "pack2",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            219,
+            39,
+            119
+          ]
+        },
+        "l": "Pack second colour",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "card",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            248,
+            250,
+            252
+          ]
+        },
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "rare",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            245,
+            197,
+            66
+          ]
+        },
+        "l": "Rare card edge",
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "art0",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            56,
+            189,
+            248
+          ]
+        },
+        "l": "Art colour 1",
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "art1",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            167,
+            139,
+            250
+          ]
+        },
+        "l": "Art colour 2",
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "art2",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            74,
+            222,
+            128
+          ]
+        },
+        "l": "Art colour 3",
+        "c": 1,
+        "line": 9
+      },
+      {
+        "n": "ink",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "l": "Label colour",
+        "c": 1,
+        "line": 10
+      }
+    ],
+    "presets": [
+      "Midnight",
+      "Fire set"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "label",
+          "label": "Set name",
+          "holds": "copy",
+          "default": "MYTHIC"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 400,
+    "animated": true,
+    "duration": 4660,
+    "module": "ui",
+    "addedAt": "2026-10-28T22:52:34Z",
+    "commitHash": "eb9153e3ee1565e48324793423a486a3097ccf60",
+    "order": 473
   },
   {
     "id": "swipe-stack",
@@ -361,147 +1492,106 @@
     "animated": true,
     "duration": 4500,
     "module": "ui",
-    "addedAt": "2026-10-28T22:48:53.396Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-10-28T22:52:34Z",
+    "commitHash": "eb9153e3ee1565e48324793423a486a3097ccf60",
+    "order": 472
   },
   {
-    "id": "pack-opening",
-    "name": "Pack opening",
-    "kind": "vector",
-    "category": "ui",
-    "description": "A foil booster pack shaking, its top tearing off and a hand of trading cards rising out of it and fanning open, the rare one in the middle lifting, glowing and catching a holographic shine.",
+    "id": "card-flip",
+    "name": "Card flip",
+    "kind": "shader",
+    "category": "interaction",
+    "description": "A card that turns over in perspective on hover to show its back, lifting as it goes, a lit edge showing side-on and its shadow narrowing under it.",
     "tags": [
-      "ui",
+      "interactive",
+      "hover",
       "card",
-      "trading-card",
-      "pack",
+      "flip",
       "reveal",
-      "rare",
-      "holographic",
-      "reward",
-      "celebration",
-      "loop"
+      "3d"
     ],
     "controls": [
       {
-        "n": "label",
-        "t": "text",
-        "d": "MYTHIC",
-        "l": "Set name",
-        "line": 1
+        "n": "uFront",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "line": 2,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
       },
       {
-        "n": "background",
-        "t": "vec3",
+        "n": "uBack",
+        "t": "sampler2D",
         "d": {
-          "c255": [
-            238,
-            242,
-            255
-          ]
+          "sample": "landscape"
         },
-        "c": 1,
-        "line": 2
+        "line": 3,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
       },
       {
-        "n": "pack",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            67,
-            56,
-            202
-          ]
-        },
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "pack2",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            219,
-            39,
-            119
-          ]
-        },
-        "l": "Pack second colour",
-        "c": 1,
+        "n": "uPerspective",
+        "t": "float",
+        "d": 0.5,
         "line": 4
       },
       {
-        "n": "card",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            248,
-            250,
-            252
-          ]
-        },
-        "c": 1,
+        "n": "uShine",
+        "t": "float",
+        "d": 0.5,
         "line": 5
       },
       {
-        "n": "rare",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            245,
-            197,
-            66
-          ]
-        },
-        "l": "Rare card edge",
-        "c": 1,
+        "n": "uShadow",
+        "t": "float",
+        "d": 0.5,
         "line": 6
       },
       {
-        "n": "art0",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            56,
-            189,
-            248
-          ]
-        },
-        "l": "Art colour 1",
-        "c": 1,
+        "n": "uCorner",
+        "t": "float",
+        "d": 0.06,
+        "l": "Corner radius",
+        "max": 0.25,
         "line": 7
       },
       {
-        "n": "art1",
+        "n": "uEdge",
         "t": "vec3",
         "d": {
           "c255": [
-            167,
-            139,
-            250
+            226,
+            232,
+            240
           ]
         },
-        "l": "Art colour 2",
         "c": 1,
         "line": 8
       },
       {
-        "n": "art2",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            74,
-            222,
-            128
-          ]
-        },
-        "l": "Art colour 3",
-        "c": 1,
+        "n": "uHold",
+        "t": "float",
+        "d": 2,
+        "l": "Demo seconds per side",
+        "min": 0.8,
+        "max": 6,
         "line": 9
       },
       {
-        "n": "ink",
+        "n": "uDemo",
+        "t": "bool",
+        "d": true,
+        "l": "Demo when idle",
+        "line": 10
+      },
+      {
+        "n": "uBackdrop",
         "t": "vec3",
         "d": {
           "c255": [
@@ -510,38 +1600,53 @@
             255
           ]
         },
-        "l": "Label colour",
         "c": 1,
-        "line": 10
+        "line": 11
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "line": 12
       }
     ],
     "presets": [
-      "Midnight",
-      "Fire set"
+      "Flat",
+      "Dramatic"
     ],
     "inputs": {
       "accepts": [
-        "text"
+        "image",
+        "video",
+        "svg"
       ],
-      "images": [],
-      "texts": [
+      "images": [
         {
-          "name": "label",
-          "label": "Set name",
-          "holds": "copy",
-          "default": "MYTHIC"
+          "name": "uFront",
+          "label": "Front",
+          "wants": "picture"
+        },
+        {
+          "name": "uBack",
+          "label": "Back",
+          "wants": "picture"
         }
       ],
-      "interactions": [],
-      "transparent": false
+      "texts": [],
+      "video": "interactive",
+      "interactions": [
+        "hover"
+      ],
+      "transparent": true
     },
-    "hold": 400,
+    "video": "interactive",
+    "transparent": true,
     "animated": true,
-    "duration": 4660,
-    "module": "ui",
-    "addedAt": "2026-10-28T22:48:53.396Z",
-    "commitHash": "",
-    "order": 0
+    "module": "shaders/interaction",
+    "addedAt": "2026-10-28T22:52:34Z",
+    "commitHash": "eb9153e3ee1565e48324793423a486a3097ccf60",
+    "order": 471
   },
   {
     "id": "scratch-card",
@@ -675,9 +1780,9 @@
     "animated": true,
     "duration": 6000,
     "module": "shaders/treatments",
-    "addedAt": "2026-10-28T22:48:53.395Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-10-28T22:52:34Z",
+    "commitHash": "eb9153e3ee1565e48324793423a486a3097ccf60",
+    "order": 470
   },
   {
     "id": "spider-web-loader",
@@ -1865,842 +2970,5 @@
     "addedAt": "2026-10-27T11:55:16Z",
     "commitHash": "d8fa6c173ff089c9292d026648aa193b3c9b40bb",
     "order": 461
-  },
-  {
-    "id": "image-lut-grade",
-    "name": "LUT grade",
-    "kind": "shader",
-    "category": "image",
-    "description": "A colour grade from a 3D LUT image (or a built-in teal & orange, punchy or film noir look) that leaves skin tones alone, so faces keep their colour under a heavy grade.",
-    "tags": [
-      "image",
-      "video",
-      "lut",
-      "colour-grading",
-      "color-grading",
-      "skin-tones",
-      "cinematic",
-      "teal-and-orange",
-      "film",
-      "filter"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "portrait"
-        },
-        "line": 3,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uLut",
-        "t": "sampler2D",
-        "d": "",
-        "l": "LUT image (n³ colours: n × n tiles, or Hald)",
-        "line": 4,
-        "x": {
-          "filter": "nearest",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uLutLayout",
-        "t": "int",
-        "d": 0,
-        "l": "LUT layout (0 tiles, 1 Hald)",
-        "max": 1,
-        "line": 5
-      },
-      {
-        "n": "uLook",
-        "t": "int",
-        "d": 1,
-        "l": "Look without a LUT (1 teal & orange, 2 punchy, 3 film noir)",
-        "min": 1,
-        "max": 3,
-        "line": 6
-      },
-      {
-        "n": "uIntensity",
-        "t": "float",
-        "d": 1,
-        "line": 7
-      },
-      {
-        "n": "uPreserveSkinTones",
-        "t": "float",
-        "d": 0.7,
-        "l": "Protect skin tones",
-        "line": 8
-      },
-      {
-        "n": "uSkinHue",
-        "t": "float",
-        "d": 25,
-        "l": "Skin hue (°)",
-        "max": 60,
-        "line": 9
-      },
-      {
-        "n": "uSkinWidth",
-        "t": "float",
-        "d": 20,
-        "l": "Skin hue width (°)",
-        "min": 5,
-        "max": 45,
-        "line": 10
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 11
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "line": 12
-      }
-    ],
-    "presets": [
-      "Teal & Orange (Protected Face)",
-      "Punchy Contrast",
-      "Faded Film Noir"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        },
-        {
-          "name": "uLut",
-          "label": "LUT image (n³ colours: n × n tiles, or Hald)",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "filter",
-    "animated": false,
-    "module": "shaders/treatments",
-    "addedAt": "2026-10-27T11:55:16Z",
-    "commitHash": "d8fa6c173ff089c9292d026648aa193b3c9b40bb",
-    "order": 460
-  },
-  {
-    "id": "image-chroma-key",
-    "name": "Chroma key",
-    "kind": "shader",
-    "category": "image",
-    "description": "A green- or blue-screen keyer: the screen turns clear (or the backdrop colour) with a soft edge, the screen colour bounced onto the subject is taken back out, and shadows cast on the screen can stay as see-through shade.",
-    "tags": [
-      "image",
-      "video",
-      "chroma-key",
-      "green-screen",
-      "blue-screen",
-      "keying",
-      "despill",
-      "compositing",
-      "filter"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "greenScreen"
-        },
-        "line": 4,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uKeyColor",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            34,
-            194,
-            78
-          ]
-        },
-        "l": "Key colour",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uSimilarity",
-        "t": "float",
-        "d": 0.35,
-        "line": 6
-      },
-      {
-        "n": "uSmoothness",
-        "t": "float",
-        "d": 0.1,
-        "l": "Edge softness",
-        "max": 0.5,
-        "line": 7
-      },
-      {
-        "n": "uDespill",
-        "t": "float",
-        "d": 0.8,
-        "l": "Spill suppression",
-        "line": 8
-      },
-      {
-        "n": "uShadowPreserve",
-        "t": "float",
-        "d": 0.2,
-        "l": "Keep shadows",
-        "line": 9
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "line": 11
-      }
-    ],
-    "presets": [
-      "Green screen studio",
-      "Blue screen exterior",
-      "Soft spill reduction",
-      "Transparent"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "filter",
-    "animated": false,
-    "module": "shaders/treatments",
-    "addedAt": "2026-10-27T11:55:16Z",
-    "commitHash": "d8fa6c173ff089c9292d026648aa193b3c9b40bb",
-    "order": 459
-  },
-  {
-    "id": "iridescent-text",
-    "name": "Iridescent text",
-    "kind": "shader",
-    "category": "text",
-    "description": "A title in rainbow chrome: thin-film colours swirl over bevelled letters with bright white rims, a soft rainbow halo, and star glints twinkling at the edges.",
-    "tags": [
-      "text",
-      "title",
-      "iridescent",
-      "holographic",
-      "chrome",
-      "rainbow",
-      "glossy",
-      "hero",
-      "overlay"
-    ],
-    "controls": [
-      {
-        "n": "uText",
-        "t": "sampler2D",
-        "d": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20640%20256%22%20width%3D%22640%22%20height%3D%22256%22%3E%3Ctext%20x%3D%22320%22%20y%3D%22128%22%20dy%3D%220.35em%22%20text-anchor%3D%22middle%22%20textLength%3D%22467.3%22%20lengthAdjust%3D%22spacingAndGlyphs%22%20font-family%3D%22%26%2339%3BArial%20Black%26%2339%3B%2C%20%26%2339%3BHelvetica%20Neue%26%2339%3B%2C%20Helvetica%2C%20Arial%2C%20system-ui%2C%20sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%22199.7%22%20fill%3D%22%23fff%22%3EFlair%3C%2Ftext%3E%3C%2Fsvg%3E",
-        "line": 2,
-        "x": {
-          "filter": "mipmap",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            5,
-            5,
-            8
-          ]
-        },
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uBackgroundAlpha",
-        "t": "float",
-        "d": 0,
-        "l": "Background opacity",
-        "line": 4
-      },
-      {
-        "n": "uSize",
-        "t": "float",
-        "d": 0.8,
-        "l": "Text size",
-        "min": 0.3,
-        "line": 5
-      },
-      {
-        "n": "uBevel",
-        "t": "float",
-        "d": 0.016,
-        "min": 0.005,
-        "max": 0.06,
-        "line": 6
-      },
-      {
-        "n": "uFilm",
-        "t": "float",
-        "d": 1.2,
-        "l": "Colour bands",
-        "max": 3,
-        "line": 7
-      },
-      {
-        "n": "uSaturation",
-        "t": "float",
-        "d": 0.9,
-        "line": 8
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 0.12,
-        "l": "Drift speed",
-        "line": 9
-      },
-      {
-        "n": "uGloss",
-        "t": "float",
-        "d": 0.8,
-        "line": 10
-      },
-      {
-        "n": "uHalo",
-        "t": "float",
-        "d": 0.45,
-        "line": 11
-      },
-      {
-        "n": "uGlints",
-        "t": "float",
-        "d": 0.7,
-        "line": 12
-      }
-    ],
-    "presets": [
-      "Pearl",
-      "Oil slick",
-      "No glints",
-      "With background"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "svg",
-        "text",
-        "mask"
-      ],
-      "images": [
-        {
-          "name": "uText",
-          "label": "Text",
-          "wants": "text"
-        }
-      ],
-      "texts": [],
-      "video": "none",
-      "interactions": [],
-      "transparent": true
-    },
-    "video": "none",
-    "transparent": true,
-    "animated": true,
-    "module": "shaders/iridescent",
-    "addedAt": "2026-10-27T08:13:03Z",
-    "commitHash": "406106d3e3d4ad139b67ccfa8e7754cdbfece7d9",
-    "order": 458
-  },
-  {
-    "id": "neon-warp",
-    "name": "Neon warp",
-    "kind": "shader",
-    "category": "space",
-    "description": "Pink and cyan light streaks rushing out from a dark centre, as if jumping to hyperspace, leaving room in the middle for a title.",
-    "tags": [
-      "background",
-      "neon",
-      "warp",
-      "hyperspace",
-      "speed",
-      "streak",
-      "retro",
-      "hero"
-    ],
-    "controls": [
-      {
-        "n": "uColorA",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            62,
-            165
-          ]
-        },
-        "l": "Colour 1",
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "uColorB",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            53,
-            214,
-            255
-          ]
-        },
-        "l": "Colour 2",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            7,
-            3,
-            19
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 0.5,
-        "max": 2,
-        "line": 5
-      },
-      {
-        "n": "uDensity",
-        "t": "float",
-        "d": 90,
-        "l": "Streaks",
-        "min": 20,
-        "max": 200,
-        "line": 6
-      },
-      {
-        "n": "uLength",
-        "t": "float",
-        "d": 0.35,
-        "l": "Streak length",
-        "min": 0.05,
-        "line": 7
-      },
-      {
-        "n": "uClear",
-        "t": "float",
-        "d": 0.18,
-        "l": "Clear centre",
-        "max": 0.5,
-        "line": 8
-      },
-      {
-        "n": "uWidth",
-        "t": "float",
-        "d": 1.4,
-        "l": "Streak width (px)",
-        "min": 0.5,
-        "max": 4,
-        "line": 9
-      }
-    ],
-    "presets": [
-      "Classic white",
-      "Cruise",
-      "Full screen",
-      "Light"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "shaders/iridescent",
-    "addedAt": "2026-10-27T08:13:03Z",
-    "commitHash": "406106d3e3d4ad139b67ccfa8e7754cdbfece7d9",
-    "order": 457
-  },
-  {
-    "id": "prism-burst",
-    "name": "Prism burst",
-    "kind": "shader",
-    "category": "light",
-    "description": "Rainbow rays fanning out from a white-hot core, slowly turning and shimmering, like light split through a prism.",
-    "tags": [
-      "background",
-      "rays",
-      "starburst",
-      "rainbow",
-      "spectrum",
-      "iridescent",
-      "hero",
-      "glow"
-    ],
-    "controls": [
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            6,
-            5,
-            12
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "uCenter",
-        "t": "vec2",
-        "d": [
-          0,
-          0
-        ],
-        "l": "Centre",
-        "min": -0.5,
-        "max": 0.5,
-        "line": 3
-      },
-      {
-        "n": "uRays",
-        "t": "float",
-        "d": 14,
-        "min": 2,
-        "max": 40,
-        "line": 4
-      },
-      {
-        "n": "uSharpness",
-        "t": "float",
-        "d": 3,
-        "l": "Ray sharpness",
-        "min": 1,
-        "max": 8,
-        "line": 5
-      },
-      {
-        "n": "uSpin",
-        "t": "float",
-        "d": 0.05,
-        "min": -1,
-        "line": 6
-      },
-      {
-        "n": "uSaturation",
-        "t": "float",
-        "d": 0.85,
-        "line": 7
-      },
-      {
-        "n": "uCore",
-        "t": "float",
-        "d": 1,
-        "max": 2,
-        "line": 8
-      },
-      {
-        "n": "uReach",
-        "t": "float",
-        "d": 0.9,
-        "min": 0.2,
-        "max": 2,
-        "line": 9
-      }
-    ],
-    "presets": [
-      "Teal sun",
-      "Corner flare",
-      "Soft",
-      "Light"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "shaders/iridescent",
-    "addedAt": "2026-10-27T08:13:03Z",
-    "commitHash": "406106d3e3d4ad139b67ccfa8e7754cdbfece7d9",
-    "order": 456
-  },
-  {
-    "id": "neon-worms",
-    "name": "Neon worms",
-    "kind": "shader",
-    "category": "pattern",
-    "description": "Glowing neon tubes looping and wriggling across a dark frame, their colour shifting slowly from one end of the screen to the other.",
-    "tags": [
-      "background",
-      "neon",
-      "glow",
-      "line",
-      "squiggle",
-      "organic",
-      "loop"
-    ],
-    "controls": [
-      {
-        "n": "uColorA",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            192,
-            75,
-            255
-          ]
-        },
-        "l": "Colour 1",
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "uColorB",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            79,
-            184
-          ]
-        },
-        "l": "Colour 2",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            7,
-            4,
-            13
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uScale",
-        "t": "float",
-        "d": 2.4,
-        "min": 0.5,
-        "max": 6,
-        "line": 5
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 0.15,
-        "line": 6
-      },
-      {
-        "n": "uCount",
-        "t": "float",
-        "d": 2,
-        "l": "Tubes",
-        "min": 1,
-        "max": 4,
-        "line": 7
-      },
-      {
-        "n": "uWidth",
-        "t": "float",
-        "d": 2.5,
-        "l": "Tube width (px)",
-        "min": 0.5,
-        "max": 8,
-        "line": 8
-      },
-      {
-        "n": "uGlow",
-        "t": "float",
-        "d": 1,
-        "max": 2,
-        "line": 9
-      }
-    ],
-    "presets": [
-      "Acid",
-      "Thin",
-      "Fat tubes",
-      "Light"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "shaders/iridescent",
-    "addedAt": "2026-10-27T08:13:03Z",
-    "commitHash": "406106d3e3d4ad139b67ccfa8e7754cdbfece7d9",
-    "order": 455
-  },
-  {
-    "id": "iridescent-blobs",
-    "name": "Iridescent blobs",
-    "kind": "shader",
-    "category": "organic",
-    "description": "Glossy blobs of liquid chrome with an oil-slick sheen, slowly merging and pulling apart on a dark ground.",
-    "tags": [
-      "background",
-      "iridescent",
-      "holographic",
-      "chrome",
-      "liquid",
-      "blob",
-      "glossy",
-      "y2k"
-    ],
-    "controls": [
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            6,
-            6,
-            8
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "uScale",
-        "t": "float",
-        "d": 3.4,
-        "min": 0.5,
-        "max": 8,
-        "line": 3
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 0.12,
-        "line": 4
-      },
-      {
-        "n": "uAmount",
-        "t": "float",
-        "d": 0.5,
-        "line": 5
-      },
-      {
-        "n": "uFilm",
-        "t": "float",
-        "d": 1.4,
-        "l": "Colour bands",
-        "max": 3,
-        "line": 6
-      },
-      {
-        "n": "uSaturation",
-        "t": "float",
-        "d": 0.8,
-        "line": 7
-      },
-      {
-        "n": "uGloss",
-        "t": "float",
-        "d": 0.8,
-        "line": 8
-      }
-    ],
-    "presets": [
-      "Pearl",
-      "Bubbles",
-      "Flood"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "shaders/iridescent",
-    "addedAt": "2026-10-27T08:13:03Z",
-    "commitHash": "406106d3e3d4ad139b67ccfa8e7754cdbfece7d9",
-    "order": 454
   }
 ]
