@@ -301,6 +301,13 @@
         "d": 1,
         "l": "Backdrop opacity",
         "line": 11
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Background opacity",
+        "line": 163
       }
     ],
     "presets": [
@@ -426,6 +433,13 @@
         "d": true,
         "l": "Demo when idle",
         "line": 8
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Background opacity",
+        "line": 78
       }
     ],
     "presets": [
@@ -886,6 +900,13 @@
         "d": 1,
         "l": "Backdrop opacity",
         "line": 10
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Background opacity",
+        "line": 200
       }
     ],
     "presets": [

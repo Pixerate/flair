@@ -4,6 +4,8 @@
  * any Shadertoy-style host and it compiles.
  */
 
+import { withBackgroundOpacity } from "../shader/background.js";
+
 /** Hashes: `hash12` (vec2 → float), `hash22` (vec2 → vec2), both 0–1. */
 export const HASH = `
 float hash12(vec2 p) {
@@ -91,7 +93,11 @@ mat2 rot(float a) {
   return mat2(c, s, -s, c);
 }`.trim();
 
-/** Joins helpers and a body into one source, a blank line apart. */
+/**
+ * Joins helpers and a body into one source, a blank line apart. A shader that
+ * paints a `uBackground` colour gets a "Background opacity" control that keys
+ * it out (`withBackgroundOpacity`), so it can sit over other content.
+ */
 export function glsl(...parts: string[]): string {
-  return parts.map((p) => p.trim()).join("\n\n") + "\n";
+  return withBackgroundOpacity(parts.map((p) => p.trim()).join("\n\n") + "\n");
 }

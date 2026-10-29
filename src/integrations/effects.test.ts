@@ -1,7 +1,9 @@
 import { checkEffectProvider, isEffectError, type EffectPixels, type EffectProvider } from "@pixerate/editor/effects";
 import { EFFECTS } from "../catalog/index.js";
+import { EFFECT_META } from "../catalog/lazy.js";
 import { PRIMITIVES } from "../motion/library.js";
 import { installFakeImages, installFakeWebGl, type FakeGl } from "../shader/test-utils.js";
+import { ENDLESS_PLAY_MS } from "./effects.js";
 import { flairEffects, type SvgRasterizer } from "./index.js";
 
 /** Draws a vector frame as a solid picture: jsdom has no SVG layout. */
@@ -63,6 +65,18 @@ describe("the catalog as the contract sees it", () => {
     expect(Object.keys(wipe.controls.properties)).not.toEqual(expect.arrayContaining(["uAnimate"]));
     expect(wipe.controls.properties.uProgress).toBeUndefined();
     expect(wipe).toMatchObject({ loop: true, duration: 4000 });
+  });
+
+  it("names a background opacity control and gives every moving shader a play", async () => {
+    const ripple = await provider.describe("neon-ripple");
+    expect(ripple).toMatchObject({ backgroundOpacity: "uBackgroundAlpha", loop: true, duration: 2000 });
+    expect(ripple.controls.properties.uBackgroundAlpha).toMatchObject({ type: "number", minimum: 0, maximum: 1 });
+    expect(ripple.defaults.uBackgroundAlpha).toBe(1);
+    // A shader that moves without repeating plays for ENDLESS_PLAY_MS; a still one has no duration.
+    expect(await provider.describe("starfield")).toMatchObject({ loop: false, duration: ENDLESS_PLAY_MS, backgroundOpacity: "uBackgroundAlpha" });
+    const still = (await provider.list()).find((e) => e.kind === "shader" && !EFFECT_META.find((m) => m.id === e.id)!.animated)!;
+    expect(still.duration).toBeUndefined();
+    expect((await provider.list()).filter((e) => (e as { backgroundOpacity?: string }).backgroundOpacity).length).toBeGreaterThan(50);
   });
 
   it("sorts the rest into generators, overlays and titles", async () => {

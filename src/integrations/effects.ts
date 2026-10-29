@@ -39,6 +39,7 @@ import { renderVectorEffect, type EffectDefinition, type ShaderEffect, type Vect
 import { applyPrimitive } from "../motion/apply.js";
 import { getPrimitive, PRIMITIVES } from "../motion/library.js";
 import type { PrimitiveDescriptor, PrimitiveParam } from "../motion/types.js";
+import { BACKGROUND_OPACITY_CONTROL } from "../shader/background.js";
 import { checkControlValue, rgbToHex, type ControlDef, type ControlValue } from "../shader/controls.js";
 import { ShaderPipeline, type FloatPicture, type PassInput, type PipelineFormat } from "../shader/pipeline.js";
 import { srgbToLinear } from "../shader/color.js";
@@ -135,8 +136,23 @@ export function withControls(plan: Plan, controls: readonly ControlDef[]): Plan 
   return { ...plan, controls: controls.filter((c) => !bound.has(c.name) && c.type !== "sampler2D" && !(plan.transition && TRANSITION_DRIVEN.has(c.name))) };
 }
 
+/**
+ * How long one play of a shader that moves but never repeats is said to last (ms): the contract
+ * gives an effect that changes over time a `duration`, and editors size a clip or an animation
+ * from it.
+ */
+export const ENDLESS_PLAY_MS = 4000;
+
+/** The effect's play (ms): its loop, a vector picture's length, else `ENDLESS_PLAY_MS` for a shader that moves. */
+function playOf(meta: EffectMeta): number | undefined {
+  if (meta.duration !== undefined && meta.duration > 0) return meta.duration;
+  return meta.kind === "shader" && meta.animated ? ENDLESS_PLAY_MS : undefined;
+}
+
 export function summaryOf(plan: Plan): EffectSummary {
   const { meta } = plan;
+  const duration = playOf(meta);
+  const background = plan.controls.find((c) => c.name === BACKGROUND_OPACITY_CONTROL && c.type === "float");
   return {
     id: meta.id,
     name: meta.name,
@@ -147,7 +163,8 @@ export function summaryOf(plan: Plan): EffectSummary {
     tags: meta.tags,
     transparent: meta.kind === "vector" || Boolean(meta.transparent),
     loop: meta.kind === "vector" ? !meta.trigger : meta.loop !== undefined,
-    ...(meta.duration !== undefined && meta.duration > 0 && { duration: meta.duration }),
+    ...(duration !== undefined && { duration }),
+    ...(background && { backgroundOpacity: background.name }),
   };
 }
 
@@ -518,7 +535,7 @@ class ShaderRenderer extends BaseRenderer {
 
   protected draw(request: EffectRenderRequest, values: Record<string, ControlValue>): Promise<EffectPixels> {
     const { width, height, depth } = this;
-    return drawShaderFrame(this.pipeline, this.plan, request, values, { width, height, depth, duration: this.plan.meta.duration ?? 4000, disposed: () => this.disposed });
+    return drawShaderFrame(this.pipeline, this.plan, request, values, { width, height, depth, duration: this.plan.meta.duration ?? ENDLESS_PLAY_MS, disposed: () => this.disposed });
   }
 
   dispose(): void {
