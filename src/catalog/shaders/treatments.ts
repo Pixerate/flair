@@ -905,6 +905,230 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   ],
 };
 
+export const scratchCard: ShaderEffect = {
+  kind: "shader",
+  id: "scratch-card",
+  name: "Scratch card",
+  description: "A scratch-off ticket: a coin scrapes its silver foil away row by row, flecks and curled edges and all, to reveal a picture, which shines once uncovered before the foil seals back over.",
+  category: "image",
+  video: "filter",
+  tags: ["image", "reveal", "card", "scratch", "foil", "lottery", "prize", "coin"],
+  loop: 6,
+  source: glsl(
+    `// Scratch card: a coin scratching rows of foil off a ticket's panel (0.4–3.6 s), the picture
+// shining once uncovered, then the foil sealing back over (5.2–6 s).
+uniform sampler2D uImage;  // @control filter=linear wrap=clamp default=${SAMPLE_IMAGES.landscape} label="Image"
+uniform vec3 uFoil;        // @control color default=#B9BEC7 label="Foil"
+uniform vec3 uTicket;      // @control color default=#7C3AED label="Ticket"
+uniform int uRows;         // @control min=2 max=10 default=4 label="Rows scratched"
+uniform bool uCoin;        // @control default=true label="Show the coin"
+uniform bool uAuto;        // @control default=true label="Animate"
+uniform float uProgress;   // @control min=0 max=1 default=1 label="Scratched (when still)"
+${BACKDROP_CONTROLS}`,
+    HASH,
+    NOISE,
+    PICTURE,
+    `float roundedBox(vec2 p, vec2 hs, float r) {
+  vec2 e = abs(p) - hs + r;
+  return length(max(e, 0.0)) + min(max(e.x, e.y), 0.0) - r;
+}
+
+float segment(vec2 p, vec2 a, vec2 b) {
+  vec2 ab = b - a;
+  return length(p - a - ab * clamp(dot(p - a, ab) / max(dot(ab, ab), 1e-6), 0.0, 1.0));
+}
+
+// The coin's path through the panel, in the panel's own units (x 0 to its aspect, y 0 at the top
+// to 1): along each row, the way back along the next, a short drop between, wobbling as a hand does.
+vec2 pathPoint(int i, int rows, float aspect) {
+  int row = i / 2;
+  bool along = i % 2 == 0;
+  float y = (float(row) + 0.5) / float(rows);
+  bool right = row % 2 == 0;
+  float x = (along == right) ? -0.04 : aspect + 0.04;
+  return vec2(x, y + 0.04 / float(rows) * sin(float(i) * 2.3));
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec2 res = iResolution.xy;
+  float t = mod(iTime, 6.0);
+  float scratched = uAuto ? clamp((t - 0.4) / 3.2, 0.0, 1.0) : uProgress;
+  float reseal = uAuto ? smoothstep(5.2, 6.0, t) : 0.0;
+  // The ticket, with the foil panel inset on it.
+  float margin = 0.09 * min(res.x, res.y);
+  vec2 hs = 0.5 * res - margin;
+  vec2 p = fragCoord - 0.5 * res;
+  float panelR = 0.06 * min(hs.x, hs.y);
+  float panel = 1.0 - smoothstep(-1.0, 1.0, roundedBox(p, hs, panelR));
+  vec2 g = fragCoord / res.y;
+  float stripes = 0.5 + 0.5 * sin((g.x + g.y) * 60.0);
+  vec3 col = uTicket * (0.88 + 0.12 * stripes);
+  col = mix(col, vec3(1.0), 0.85 * (1.0 - smoothstep(0.0, 2.0, abs(roundedBox(p, hs + margin * 0.35, panelR * 1.6)))));
+  // Panel units: y from 0 at the top to 1, x from 0 to the panel's aspect.
+  float aspect = hs.x / hs.y;
+  vec2 q = vec2(p.x + hs.x, hs.y - p.y) / (2.0 * hs.y);
+  // The picture under the foil, cropped to the panel.
+  vec2 ts = vec2(textureSize(uImage, 0));
+  float imageAspect = ts.x / max(ts.y, 1.0);
+  vec2 fit = imageAspect > aspect ? vec2(aspect / imageAspect, 1.0) : vec2(1.0, imageAspect / aspect);
+  vec2 uv = vec2(q.x / aspect, 1.0 - q.y);
+  vec3 pic = picture(uImage, 0.5 + (uv - 0.5) * fit);
+  // How far along its path the coin has got, and how near this pixel is to where it has been.
+  int rows = clamp(uRows, 2, 10);
+  int segs = rows * 2 - 1;
+  float total = 0.0;
+  for (int i = 0; i < 19; i++) {
+    if (i >= segs) break;
+    total += length(pathPoint(i + 1, rows, aspect) - pathPoint(i, rows, aspect));
+  }
+  float reach = scratched * total;
+  float d = 1e3;
+  vec2 head = pathPoint(0, rows, aspect);
+  float done = 0.0;
+  for (int i = 0; i < 19; i++) {
+    if (i >= segs || done >= reach) break;
+    vec2 a = pathPoint(i, rows, aspect);
+    vec2 b = pathPoint(i + 1, rows, aspect);
+    float len = length(b - a);
+    float f = clamp((reach - done) / max(len, 1e-5), 0.0, 1.0);
+    head = mix(a, b, f);
+    d = min(d, segment(q, a, head));
+    done += len;
+  }
+  float brush = 0.62 / float(rows);
+  float px = 1.0 / (2.0 * hs.y);
+  // Ragged edges: the stroke's width wanders, finely and coarsely.
+  float rough = (vnoise(q * 90.0) - 0.5) * 0.22 + (vnoise(q * 14.0) - 0.5) * 0.25;
+  float edgeD = d - brush * (1.0 + rough);
+  float bare = (1.0 - smoothstep(-px, px, edgeD)) * step(0.0005, scratched) * (1.0 - reseal);
+  // Foil: brushed silver, a sheen gliding across and specks of glitter.
+  float brushed = vnoise(vec2(q.x * 4.0, q.y * 160.0));
+  vec3 foil = uFoil * (0.82 + 0.18 * brushed);
+  float sheen = exp(-pow(q.x * 0.6 - q.y * 0.4 - (fract(iTime * 0.17) * 2.4 - 0.6) * aspect * 0.6, 2.0) * 18.0);
+  foil += 0.22 * sheen;
+  foil += 0.35 * step(0.992, hash12(floor(fragCoord / 2.0))) * (0.5 + 0.5 * sin(iTime * 4.0 + hash12(floor(fragCoord / 2.0)) * 30.0));
+  // Embossed diamonds, faintly.
+  vec2 dm = abs(fract(vec2(q.x + q.y, q.x - q.y) * 6.0) - 0.5);
+  foil *= 0.96 + 0.04 * smoothstep(0.42, 0.48, max(dm.x, dm.y));
+  // The foil curls up dark along the scratched edge, and loose flecks lie just past it.
+  float lip = exp(-max(edgeD, 0.0) / (brush * 0.12)) * (1.0 - bare);
+  foil *= 1.0 - 0.35 * lip * step(0.0005, scratched) * (1.0 - reseal);
+  float fleck = step(0.93, hash12(floor(fragCoord / 3.0))) * (1.0 - smoothstep(0.0, brush * 0.5, edgeD)) * step(0.0, edgeD);
+  foil = mix(foil, uFoil * 1.25, fleck * (1.0 - reseal) * step(0.0005, scratched));
+  // Uncovered, the picture shines once across.
+  float shine = uAuto ? exp(-pow(q.x - q.y * 0.5 - (t - 3.8) * aspect * 1.1, 2.0) * 30.0) * step(3.6, t) : 0.0;
+  vec3 under = pic + 0.4 * shine;
+  // A soft inner shadow round the bare panel.
+  under *= 1.0 - 0.25 * exp(roundedBox(p, hs, panelR) / (margin * 0.15));
+  vec3 inPanel = mix(foil, under, bare);
+  col = mix(col, inPanel, panel);
+  // The coin, tilted, riding the head of the scratch.
+  if (uCoin && uAuto && scratched > 0.0 && scratched < 1.0) {
+    vec2 cp = (q - head - vec2(0.0, -0.02)) / brush;
+    vec2 e = cp * vec2(1.0, 1.6);
+    float r = length(e);
+    float body = 1.0 - smoothstep(0.95 - px / brush * 2.0, 0.95, r);
+    float shade = 1.0 - smoothstep(0.7, 1.4, length((q - head - vec2(0.05, 0.06) * brush) / brush * vec2(1.0, 1.6)));
+    col *= 1.0 - 0.3 * shade * (1.0 - body);
+    vec3 gold = mix(vec3(0.85, 0.62, 0.18), vec3(1.0, 0.86, 0.45), smoothstep(0.6, -0.6, e.x + e.y));
+    gold *= 0.85 + 0.15 * smoothstep(0.78, 0.7, r);
+    col = mix(col, gold, body);
+  }
+  fragColor = vec4(col, 1.0);
+}`,
+  ),
+  presets: [
+    { name: "Gold ticket", values: { uFoil: [0.88, 0.74, 0.38], uTicket: [0.07, 0.09, 0.16], uRows: 3 } },
+    { name: "Quick scratch", values: { uRows: 2, uTicket: [0.94, 0.27, 0.27] } },
+  ],
+};
+
+export const polaroidDevelop: ShaderEffect = {
+  kind: "shader",
+  id: "polaroid-develop",
+  name: "Polaroid develop",
+  description: "An instant photo sliding onto the table and given a shake, its picture developing out of murky blue-green to full, slightly faded colour inside the white frame.",
+  category: "image",
+  video: "filter",
+  tags: ["image", "reveal", "card", "polaroid", "instant-photo", "film", "retro", "develop"],
+  loop: 7,
+  source: glsl(
+    `// Polaroid develop: the print slides in (0–0.8 s), is shaken (0.8–2 s) and develops (0.8–5 s),
+// then fades away (6.3–7 s) for the next.
+uniform sampler2D uImage;  // @control filter=linear wrap=clamp default=${SAMPLE_IMAGES.portrait} label="Image"
+uniform vec3 uTable;       // @control color default=#C8B59A label="Table"
+uniform vec3 uFrame;       // @control color default=#F5F2EA label="Frame"
+uniform float uTilt;       // @control min=-15 max=15 default=-4 label="Tilt (degrees)"
+uniform bool uAuto;        // @control default=true label="Animate"
+uniform float uProgress;   // @control min=0 max=1 default=1 label="Developed (when still)"
+${BACKDROP_CONTROLS}`,
+    HASH,
+    NOISE,
+    PICTURE,
+    `float roundedBox(vec2 p, vec2 hs, float r) {
+  vec2 e = abs(p) - hs + r;
+  return length(max(e, 0.0)) + min(max(e.x, e.y), 0.0) - r;
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec2 res = iResolution.xy;
+  float t = uAuto ? mod(iTime, 7.0) : 3.0;
+  float developed = uAuto ? smoothstep(0.8, 5.0, t) : uProgress;
+  float slide = uAuto ? 1.0 - pow(1.0 - clamp(t / 0.8, 0.0, 1.0), 3.0) : 1.0;
+  float shake = uAuto ? sin((t - 0.8) * 26.0) * exp(-(t - 0.8) * 2.2) * step(0.8, t) : 0.0;
+  float gone = uAuto ? smoothstep(6.3, 7.0, t) : 0.0;
+  // The print: 88 × 107, the picture square under a thin top and sides and a deep bottom.
+  float h = min(res.y * 0.84, res.x * 0.84 / 0.822);
+  vec2 hs = vec2(h * 0.822, h) * 0.5;
+  vec2 centre = 0.5 * res + vec2(shake * h * 0.02, (1.0 - slide) * (res.y * 0.5 + h) + gone * h * 0.08);
+  float ang = radians(uTilt + shake * 6.0 + (1.0 - slide) * 14.0);
+  vec2 p = fragCoord - centre;
+  p = mat2(cos(ang), -sin(ang), sin(ang), cos(ang)) * p;
+  // The table: a soft-lit surface with a little grain.
+  vec2 g = fragCoord / res.y;
+  vec3 col = uTable * (0.92 + 0.08 * vnoise(g * vec2(3.0, 40.0))) * (1.05 - 0.25 * length(fragCoord / res - 0.5));
+  // Its shadow, softer the higher it is off the table.
+  float lift = (1.0 - slide) + abs(shake) * 0.4;
+  float sd = roundedBox(p, hs, h * 0.008);
+  float shadowD = roundedBox(p - vec2(h * 0.012, -h * (0.018 + 0.05 * lift)), hs, h * 0.02);
+  col *= 1.0 - 0.38 * (1.0 - smoothstep(-h * 0.02, h * (0.05 + 0.08 * lift), shadowD)) * (1.0 - gone);
+  float mask = (1.0 - smoothstep(-1.0, 1.0, sd)) * (1.0 - gone);
+  if (mask > 0.0) {
+    vec3 paper = uFrame * (0.97 + 0.03 * vnoise(p / h * 60.0));
+    float side = hs.x * 2.0 * 0.068;
+    float win = hs.x - side;
+    vec2 wc = vec2(0.0, hs.y - side - win);
+    vec2 wp = p - wc;
+    float wsd = roundedBox(wp, vec2(win), 1.0);
+    vec3 face = paper;
+    if (wsd < 1.0) {
+      vec2 uv = wp / (2.0 * win) + 0.5;
+      vec2 ts = vec2(textureSize(uImage, 0));
+      float imageAspect = ts.x / max(ts.y, 1.0);
+      vec2 fit = imageAspect > 1.0 ? vec2(1.0 / imageAspect, 1.0) : vec2(1.0, imageAspect);
+      vec3 pic = picture(uImage, 0.5 + (uv - 0.5) * fit);
+      // Developing unevenly: from the dark emulsion to a ghost in blue-green, then to colour.
+      float d = clamp(developed * 1.2 - 0.2 * vnoise(uv * 3.0 + 7.0), 0.0, 1.0);
+      float lum = dot(pic, vec3(0.299, 0.587, 0.114));
+      vec3 ghost = mix(vec3(0.15, 0.23, 0.25), vec3(0.55, 0.63, 0.57), lum);
+      vec3 film = mix(pic, vec3(lum), 0.12) * vec3(1.03, 0.99, 0.93) + 0.03;
+      vec3 shot = mix(vec3(0.1, 0.15, 0.17), ghost, smoothstep(0.0, 0.45, d));
+      shot = mix(shot, film, smoothstep(0.35, 1.0, d));
+      // A slight inset where the picture meets the frame.
+      shot *= 1.0 - 0.25 * exp(wsd / (h * 0.006));
+      face = mix(shot, paper, smoothstep(-1.0, 1.0, wsd));
+    }
+    col = mix(col, face, mask);
+  }
+  fragColor = vec4(col, 1.0);
+}`,
+  ),
+  presets: [
+    { name: "Dark desk", values: { uTable: [0.16, 0.13, 0.11], uTilt: 6 } },
+    { name: "Half developed", values: { uAuto: false, uProgress: 0.45, uTilt: 0 } },
+  ],
+};
+
 export const imageTreatments: ShaderEffect[] = [
   imageKenBurns,
   imageAscii,
@@ -920,4 +1144,6 @@ export const imageTreatments: ShaderEffect[] = [
   imageOilPaint,
   imageChromaKey,
   imageLutGrade,
+  scratchCard,
+  polaroidDevelop,
 ];

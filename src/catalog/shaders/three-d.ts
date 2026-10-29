@@ -1,6 +1,8 @@
 import { glsl, HASH } from "../glsl.js";
+import { SAMPLE_IMAGES } from "../images.js";
 import type { ShaderEffect } from "../types.js";
 import { NOISE_3D } from "./atmosphere.js";
+import { BACKDROP_CONTROLS, PICTURE } from "./image.js";
 
 /**
  * 3D effects: a globe, studio primitives, an isometric city, a wireframe
@@ -902,4 +904,119 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   ],
 };
 
-export const threeDShaders: readonly ShaderEffect[] = [globe, rotatingShapes, isometricCity, wireframeTerrain, metaballs3d, torusKnot];
+export const coverFlow: ShaderEffect = {
+  kind: "shader",
+  id: "cover-flow",
+  name: "Cover flow",
+  description: "A ring of picture cards turning in perspective, stepping round so each comes to the front in turn, mirrored on a glossy floor.",
+  category: "3d",
+  video: "filter",
+  tags: ["3d", "card", "carousel", "cover-flow", "gallery", "reflection", "showcase"],
+  source: glsl(
+    `// Cover flow: cards round a ring, ray-traced as flat rounded cards, turning a card at a time,
+// each showing the picture panned and tinted its own way, reflected in the floor.
+uniform sampler2D uImage;  // @control filter=linear wrap=clamp default=${SAMPLE_IMAGES.landscape} label="Image"
+uniform int uCards;        // @control min=3 max=12 default=7 label="Cards"
+uniform float uStep;       // @control min=0.6 max=5 default=1.8 label="Seconds per card"
+uniform float uRadius;     // @control min=1.4 max=4 default=2.2 label="Ring size"
+uniform float uReflection; // @control min=0 max=1 default=0.35 label="Reflection"
+uniform vec3 uBackground;  // @control color default=#0B1020 label="Background"
+uniform vec3 uCardBack;    // @control color default=#334155 label="Card back"
+${BACKDROP_CONTROLS}`,
+    PICTURE,
+    `const vec2 CARD = vec2(0.55, 0.75);
+
+float roundedBox(vec2 p, vec2 hs, float r) {
+  vec2 e = abs(p) - hs + r;
+  return length(max(e, 0.0)) + min(max(e.x, e.y), 0.0) - r;
+}
+
+// Card i's face: the picture cropped to the card, panned across a wide picture, lightly tinted.
+vec3 cardFace(vec2 cuv, int i) {
+  vec2 ts = vec2(textureSize(uImage, 0));
+  float imageAspect = ts.x / max(ts.y, 1.0);
+  float aspect = CARD.x / CARD.y;
+  vec2 fit = imageAspect > aspect ? vec2(aspect / imageAspect, 1.0) : vec2(1.0, imageAspect / aspect);
+  float pan = fract(float(i) * 0.618) - 0.5;
+  vec3 c = picture(uImage, 0.5 + (cuv - 0.5) * fit + vec2(pan * (1.0 - fit.x), 0.0));
+  vec3 tint = 0.5 + 0.5 * cos(6.28318 * (float(i) * 0.13 + vec3(0.0, 0.33, 0.67)));
+  return mix(c, c * tint * 1.3, 0.18);
+}
+
+// The nearest card along the ray: its colour and coverage, and how far along the ray (tHit).
+vec4 cardsHit(vec3 ro, vec3 rd, float turn, int n, out float tHit) {
+  tHit = 1e9;
+  vec4 hit = vec4(0.0);
+  for (int i = 0; i < 12; i++) {
+    if (i >= n) break;
+    float a = float(i) * 6.2831853 / float(n) + turn;
+    vec3 nrm = vec3(sin(a), 0.0, cos(a));
+    float dn = dot(rd, nrm);
+    if (abs(dn) < 1e-4) continue;
+    float t = dot(nrm * uRadius - ro, nrm) / dn;
+    if (t <= 0.0 || t >= tHit) continue;
+    vec3 p = ro + rd * t - nrm * uRadius;
+    vec2 l = vec2(dot(p, vec3(cos(a), 0.0, -sin(a))), p.y);
+    float sd = roundedBox(l, CARD, 0.05);
+    float px = t * 1.2 / (1.6 * iResolution.y);
+    float m = 1.0 - smoothstep(-px, px, sd);
+    if (m <= 0.0) continue;
+    vec2 cuv = l / CARD * 0.5 + 0.5;
+    vec3 col;
+    if (dn < 0.0) {
+      col = cardFace(cuv, i);
+    } else {
+      // The back: a lattice in the back colour inside a pale border.
+      float lattice = step(0.5, fract((cuv.x + cuv.y) * 9.0)) * 0.5 + step(0.5, fract((cuv.x - cuv.y) * 9.0)) * 0.5;
+      col = uCardBack * (0.8 + 0.25 * lattice);
+      col = mix(col, vec3(0.9), smoothstep(-0.05, -0.04, sd) * 0.6);
+    }
+    // Lit from the camera: darker as it turns away, with a thin bright rim.
+    col *= 0.4 + 0.6 * abs(dn);
+    col = mix(col, vec3(1.0), smoothstep(-0.012 - px, -0.012, sd) * 0.5);
+    tHit = t;
+    hit = vec4(col, m);
+  }
+  return hit;
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  int n = clamp(uCards, 3, 12);
+  // Rests on each card, then turns on to the next in the last 45% of its time.
+  float k = iTime / uStep;
+  float turn = -(floor(k) + smoothstep(0.55, 1.0, fract(k))) * 6.2831853 / float(n);
+  vec2 uv = (fragCoord - 0.5 * iResolution.xy) / iResolution.y;
+  vec3 eye = vec3(0.0, 0.55, uRadius + 4.2);
+  vec3 f = normalize(vec3(0.0, -0.22, uRadius * 0.5) - eye);
+  vec3 r = normalize(cross(f, vec3(0.0, 1.0, 0.0)));
+  vec3 rd = normalize(f * 1.6 + uv.x * r + uv.y * cross(r, f));
+  vec3 bg = mix(uBackground * 0.55, uBackground * 1.5 + 0.03, clamp(uv.y + 0.6, 0.0, 1.0));
+  bg *= 1.0 - 0.35 * dot(uv, uv);
+  vec3 col = bg;
+  float tc;
+  vec4 card = cardsHit(eye, rd, turn, n, tc);
+  // The glossy floor just under the cards, reflecting them and fading toward the horizon.
+  const float floorY = -0.77;
+  if (rd.y < 0.0) {
+    float tf = (floorY - eye.y) / rd.y;
+    if (tf > 0.0 && tf < tc) {
+      vec3 p = eye + rd * tf;
+      vec3 floorCol = uBackground * 0.5;
+      float tr;
+      vec4 refl = cardsHit(p, vec3(rd.x, -rd.y, rd.z), turn, n, tr);
+      float fade = exp(-max(-rd.y * tr, 0.0) * 2.4) * uReflection;
+      floorCol = mix(floorCol, refl.rgb, refl.a * fade);
+      col = mix(floorCol, bg, smoothstep(uRadius + 3.0, uRadius + 9.0, tf));
+    }
+  }
+  col = mix(col, card.rgb, card.a);
+  fragColor = vec4(col, 1.0);
+}`,
+  ),
+  presets: [
+    { name: "Wide ring", values: { uCards: 12, uRadius: 3.4, uStep: 1.2 } },
+    { name: "Studio light", values: { uBackground: [0.92, 0.93, 0.95], uCardBack: [0.8, 0.82, 0.86], uReflection: 0.2 } },
+  ],
+};
+
+export const threeDShaders: readonly ShaderEffect[] = [globe, rotatingShapes, isometricCity, wireframeTerrain, metaballs3d, torusKnot, coverFlow];
