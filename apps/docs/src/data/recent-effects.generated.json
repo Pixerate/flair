@@ -1,5 +1,769 @@
 [
   {
+    "id": "censor-blur",
+    "name": "Blur censor",
+    "kind": "shader",
+    "category": "image",
+    "description": "Part of a picture or video blurred beyond recognition, as for a face or a screen, or everything but it blurred for focus.",
+    "tags": [
+      "image",
+      "censor",
+      "redact",
+      "privacy",
+      "blur",
+      "face",
+      "anonymise",
+      "frosted"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "line": 2,
+        "x": {
+          "filter": "mipmap",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uBlur",
+        "t": "float",
+        "d": 40,
+        "l": "Blur (px)",
+        "max": 120,
+        "line": 3
+      },
+      {
+        "n": "uFrost",
+        "t": "float",
+        "d": 0,
+        "l": "Frosted grain",
+        "line": 4
+      },
+      {
+        "n": "uBrightness",
+        "t": "float",
+        "d": 0,
+        "min": -0.5,
+        "max": 0.5,
+        "line": 5
+      },
+      {
+        "n": "uCentre",
+        "t": "vec2",
+        "d": [
+          0.5,
+          0.6
+        ],
+        "l": "Region centre",
+        "line": 6
+      },
+      {
+        "n": "uSize",
+        "t": "vec2",
+        "d": [
+          0.26,
+          0.5
+        ],
+        "l": "Region size",
+        "line": 7
+      },
+      {
+        "n": "uShape",
+        "t": "int",
+        "d": 1,
+        "l": "Region shape (0 box, 1 ellipse)",
+        "max": 1,
+        "line": 8
+      },
+      {
+        "n": "uFeather",
+        "t": "float",
+        "d": 4,
+        "l": "Edge softness (px)",
+        "max": 60,
+        "line": 9
+      },
+      {
+        "n": "uInvert",
+        "t": "bool",
+        "d": false,
+        "l": "Hide everything but the region",
+        "line": 10
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "line": 12
+      }
+    ],
+    "presets": [
+      "Frosted glass",
+      "Focus on the subject",
+      "Darkened"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "filter",
+    "animated": false,
+    "module": "shaders/censor",
+    "addedAt": "2026-10-29T20:05:43.320Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "censor-scramble",
+    "name": "Scramble censor",
+    "kind": "shader",
+    "category": "image",
+    "description": "Part of a picture or video broken into shuffled, flipped blocks with digital noise, reshuffling several times a second.",
+    "tags": [
+      "image",
+      "censor",
+      "redact",
+      "privacy",
+      "scramble",
+      "glitch",
+      "digital",
+      "mosaic"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "line": 2,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uBlock",
+        "t": "float",
+        "d": 18,
+        "l": "Block size (px)",
+        "min": 6,
+        "max": 80,
+        "line": 3
+      },
+      {
+        "n": "uReach",
+        "t": "float",
+        "d": 5,
+        "l": "Shuffle reach (blocks)",
+        "min": 1,
+        "max": 12,
+        "line": 4
+      },
+      {
+        "n": "uRate",
+        "t": "float",
+        "d": 8,
+        "l": "Reshuffles per second",
+        "max": 24,
+        "line": 5
+      },
+      {
+        "n": "uNoise",
+        "t": "float",
+        "d": 0.45,
+        "l": "Digital noise",
+        "line": 6
+      },
+      {
+        "n": "uCentre",
+        "t": "vec2",
+        "d": [
+          0.5,
+          0.6
+        ],
+        "l": "Region centre",
+        "line": 7
+      },
+      {
+        "n": "uSize",
+        "t": "vec2",
+        "d": [
+          0.26,
+          0.5
+        ],
+        "l": "Region size",
+        "line": 8
+      },
+      {
+        "n": "uShape",
+        "t": "int",
+        "d": 1,
+        "l": "Region shape (0 box, 1 ellipse)",
+        "max": 1,
+        "line": 9
+      },
+      {
+        "n": "uFeather",
+        "t": "float",
+        "d": 4,
+        "l": "Edge softness (px)",
+        "max": 60,
+        "line": 10
+      },
+      {
+        "n": "uInvert",
+        "t": "bool",
+        "d": false,
+        "l": "Hide everything but the region",
+        "line": 11
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 12
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "line": 13
+      }
+    ],
+    "presets": [
+      "Calm",
+      "Corrupted"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "filter",
+    "animated": true,
+    "module": "shaders/censor",
+    "addedAt": "2026-10-29T20:05:43.320Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "redaction-bars",
+    "name": "Redaction bars",
+    "kind": "shader",
+    "category": "image",
+    "description": "Black marker bars drawn one after another over lines of a picture, like a redacted document, then wiped away.",
+    "tags": [
+      "image",
+      "censor",
+      "redact",
+      "privacy",
+      "document",
+      "classified",
+      "marker",
+      "reveal"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "line": 2,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uCentre",
+        "t": "vec2",
+        "d": [
+          0.5,
+          0.6
+        ],
+        "l": "Area centre",
+        "line": 3
+      },
+      {
+        "n": "uSize",
+        "t": "vec2",
+        "d": [
+          0.62,
+          0.3
+        ],
+        "l": "Area size",
+        "line": 4
+      },
+      {
+        "n": "uLines",
+        "t": "int",
+        "d": 3,
+        "l": "Bars",
+        "min": 1,
+        "max": 8,
+        "line": 5
+      },
+      {
+        "n": "uGap",
+        "t": "float",
+        "d": 0.4,
+        "l": "Gap between bars",
+        "line": 6
+      },
+      {
+        "n": "uInk",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            10,
+            10,
+            10
+          ]
+        },
+        "l": "Bar colour",
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "uRough",
+        "t": "float",
+        "d": 0.4,
+        "l": "Marker roughness",
+        "line": 8
+      },
+      {
+        "n": "uAnimate",
+        "t": "bool",
+        "d": true,
+        "line": 9
+      },
+      {
+        "n": "uProgress",
+        "t": "float",
+        "d": 1,
+        "l": "Drawn (when still)",
+        "line": 10
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "line": 12
+      }
+    ],
+    "presets": [
+      "Clean",
+      "Document",
+      "White-out"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "filter",
+    "loop": 5,
+    "animated": true,
+    "duration": 5000,
+    "module": "shaders/censor",
+    "addedAt": "2026-10-29T20:05:43.320Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "redact-box",
+    "name": "Redact box",
+    "kind": "vector",
+    "category": "annotation",
+    "description": "Black redaction bars drawn line by line over part of a screenshot or video, then a REDACTED stamp slammed on top.",
+    "tags": [
+      "annotation",
+      "redact",
+      "censor",
+      "privacy",
+      "classified",
+      "document",
+      "stamp",
+      "draw-on"
+    ],
+    "controls": [
+      {
+        "n": "x",
+        "t": "float",
+        "d": 50,
+        "l": "Area x (%)",
+        "max": 100,
+        "line": 1
+      },
+      {
+        "n": "y",
+        "t": "float",
+        "d": 50,
+        "l": "Area y (%)",
+        "max": 100,
+        "line": 2
+      },
+      {
+        "n": "w",
+        "t": "float",
+        "d": 44,
+        "l": "Area width (%)",
+        "min": 2,
+        "max": 100,
+        "s": 0.5,
+        "line": 3
+      },
+      {
+        "n": "h",
+        "t": "float",
+        "d": 26,
+        "l": "Area height (%)",
+        "min": 2,
+        "max": 100,
+        "s": 0.5,
+        "line": 4
+      },
+      {
+        "n": "lines",
+        "t": "int",
+        "d": 3,
+        "l": "Bars",
+        "min": 1,
+        "max": 5,
+        "line": 5
+      },
+      {
+        "n": "gap",
+        "t": "float",
+        "d": 0.35,
+        "l": "Gap between bars",
+        "s": 0.05,
+        "line": 6
+      },
+      {
+        "n": "ink",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            10,
+            10,
+            10
+          ]
+        },
+        "l": "Bar colour",
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "radius",
+        "t": "float",
+        "d": 4,
+        "l": "Corner radius",
+        "max": 40,
+        "s": 1,
+        "line": 8
+      },
+      {
+        "n": "label",
+        "t": "text",
+        "d": "REDACTED",
+        "l": "Stamp text",
+        "line": 9
+      },
+      {
+        "n": "showStamp",
+        "t": "bool",
+        "d": true,
+        "l": "Show the stamp",
+        "line": 10
+      },
+      {
+        "n": "stamp",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            220,
+            38,
+            38
+          ]
+        },
+        "l": "Stamp colour",
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "hold",
+        "t": "float",
+        "d": 2,
+        "l": "Hold (s)",
+        "min": 0.5,
+        "max": 20,
+        "s": 0.5,
+        "line": 12
+      },
+      {
+        "n": "font",
+        "t": "text",
+        "d": "'Inter', 'Helvetica Neue', Arial, system-ui, sans-serif",
+        "line": 13
+      }
+    ],
+    "presets": [
+      "Classified",
+      "Bars only",
+      "One bar"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "label",
+          "label": "Stamp text",
+          "holds": "copy",
+          "default": "REDACTED"
+        },
+        {
+          "name": "font",
+          "label": "Font",
+          "holds": "font",
+          "default": "'Inter', 'Helvetica Neue', Arial, system-ui, sans-serif"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 300,
+    "animated": true,
+    "duration": 3920,
+    "module": "annotation",
+    "addedAt": "2026-10-29T20:05:43.320Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "censor-pixelate",
+    "name": "Pixelate censor",
+    "kind": "shader",
+    "category": "image",
+    "description": "Part of a picture or video hidden behind big mosaic blocks, as for a face or a number plate, the blocks shimmering like a live censor.",
+    "tags": [
+      "image",
+      "censor",
+      "redact",
+      "privacy",
+      "mosaic",
+      "pixelate",
+      "face",
+      "anonymise"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "line": 2,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uBlock",
+        "t": "float",
+        "d": 24,
+        "l": "Block size (px)",
+        "min": 4,
+        "max": 120,
+        "line": 3
+      },
+      {
+        "n": "uShimmer",
+        "t": "float",
+        "d": 0.35,
+        "line": 4
+      },
+      {
+        "n": "uCentre",
+        "t": "vec2",
+        "d": [
+          0.5,
+          0.6
+        ],
+        "l": "Region centre",
+        "line": 5
+      },
+      {
+        "n": "uSize",
+        "t": "vec2",
+        "d": [
+          0.26,
+          0.5
+        ],
+        "l": "Region size",
+        "line": 6
+      },
+      {
+        "n": "uShape",
+        "t": "int",
+        "d": 1,
+        "l": "Region shape (0 box, 1 ellipse)",
+        "max": 1,
+        "line": 7
+      },
+      {
+        "n": "uFeather",
+        "t": "float",
+        "d": 4,
+        "l": "Edge softness (px)",
+        "max": 60,
+        "line": 8
+      },
+      {
+        "n": "uInvert",
+        "t": "bool",
+        "d": false,
+        "l": "Hide everything but the region",
+        "line": 9
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "line": 11
+      }
+    ],
+    "presets": [
+      "TV censor",
+      "Chunky",
+      "Hide the background"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "filter",
+    "animated": true,
+    "module": "shaders/censor",
+    "addedAt": "2026-10-29T20:05:43.319Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
     "id": "rolodex",
     "name": "Rolodex",
     "kind": "vector",
@@ -2060,744 +2824,5 @@
     "addedAt": "2026-10-28T22:40:42Z",
     "commitHash": "bb91f86ec860386084f2ae59a2eb40590c883834",
     "order": 474
-  },
-  {
-    "id": "before-after",
-    "name": "Before and after",
-    "kind": "shader",
-    "category": "interaction",
-    "description": "Two pictures compared either side of a divider with a round handle that follows the pointer while it hovers and sweeps back and forth when idle; a cut-out shows over a transparency checkerboard.",
-    "tags": [
-      "interactive",
-      "hover",
-      "image",
-      "promo",
-      "compare",
-      "before-after",
-      "slider",
-      "background-removal",
-      "checkerboard"
-    ],
-    "controls": [
-      {
-        "n": "uBefore",
-        "t": "sampler2D",
-        "d": {
-          "sample": "portrait"
-        },
-        "line": 3,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uAfter",
-        "t": "sampler2D",
-        "d": {
-          "sample": "cutout"
-        },
-        "line": 4,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uLine",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "l": "Divider",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uHandle",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            240,
-            80,
-            122
-          ]
-        },
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "uLineWidth",
-        "t": "float",
-        "d": 4,
-        "l": "Divider width",
-        "max": 20,
-        "line": 7
-      },
-      {
-        "n": "uHandleSize",
-        "t": "float",
-        "d": 0.065,
-        "max": 0.2,
-        "line": 8
-      },
-      {
-        "n": "uSplit",
-        "t": "float",
-        "d": 0.5,
-        "l": "Split when idle",
-        "line": 9
-      },
-      {
-        "n": "uDemo",
-        "t": "bool",
-        "d": true,
-        "l": "Sweep when idle",
-        "line": 10
-      },
-      {
-        "n": "uChecker",
-        "t": "bool",
-        "d": true,
-        "l": "Checkerboard",
-        "line": 11
-      },
-      {
-        "n": "uCheckerSize",
-        "t": "float",
-        "d": 26,
-        "min": 8,
-        "max": 80,
-        "line": 12
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 13
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "line": 14
-      }
-    ],
-    "presets": [
-      "Still",
-      "Minimal",
-      "Dark divider",
-      "On white"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uBefore",
-          "label": "Before",
-          "wants": "picture"
-        },
-        {
-          "name": "uAfter",
-          "label": "After",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "interactive",
-      "interactions": [
-        "hover",
-        "pointer"
-      ],
-      "transparent": false
-    },
-    "video": "interactive",
-    "animated": true,
-    "module": "shaders/promo",
-    "addedAt": "2026-10-28T22:40:42Z",
-    "commitHash": "bb91f86ec860386084f2ae59a2eb40590c883834",
-    "order": 473
-  },
-  {
-    "id": "swoosh-underline",
-    "name": "Swoosh underline",
-    "kind": "shader",
-    "category": "light",
-    "description": "A glowing curved stroke sweeping on under a subtitle with a bright head and a thinner second stroke chasing it, then wiping away from its tail; a transparent overlay.",
-    "tags": [
-      "overlay",
-      "promo",
-      "underline",
-      "swoosh",
-      "title",
-      "accent",
-      "neon"
-    ],
-    "controls": [
-      {
-        "n": "uColor",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            47,
-            217,
-            196
-          ]
-        },
-        "l": "Glow",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uCore",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uSpan",
-        "t": "float",
-        "d": 0.8,
-        "l": "Width (share of frame)",
-        "min": 0.2,
-        "line": 5
-      },
-      {
-        "n": "uY",
-        "t": "float",
-        "d": -0.1,
-        "l": "Height",
-        "min": -0.45,
-        "max": 0.45,
-        "line": 6
-      },
-      {
-        "n": "uCurve",
-        "t": "float",
-        "d": 0.06,
-        "min": -0.3,
-        "max": 0.3,
-        "line": 7
-      },
-      {
-        "n": "uRise",
-        "t": "float",
-        "d": 0.05,
-        "min": -0.3,
-        "max": 0.3,
-        "line": 8
-      },
-      {
-        "n": "uWidth",
-        "t": "float",
-        "d": 11,
-        "l": "Thickness",
-        "min": 2,
-        "max": 40,
-        "line": 9
-      },
-      {
-        "n": "uGlow",
-        "t": "float",
-        "d": 1,
-        "max": 2,
-        "line": 10
-      },
-      {
-        "n": "uSecond",
-        "t": "bool",
-        "d": true,
-        "l": "Second stroke",
-        "line": 11
-      },
-      {
-        "n": "uAnimate",
-        "t": "bool",
-        "d": true,
-        "line": 12
-      },
-      {
-        "n": "uCycle",
-        "t": "float",
-        "d": 2.5,
-        "l": "Cycle (s)",
-        "min": 1,
-        "max": 8,
-        "line": 13
-      },
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            244,
-            210
-          ]
-        },
-        "c": 1,
-        "line": 14
-      },
-      {
-        "n": "uBackgroundAlpha",
-        "t": "float",
-        "d": 0,
-        "l": "Background opacity",
-        "line": 15
-      }
-    ],
-    "presets": [
-      "Cream",
-      "Hot pink",
-      "Gold",
-      "Straight"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": true
-    },
-    "transparent": true,
-    "animated": true,
-    "module": "shaders/promo",
-    "addedAt": "2026-10-28T22:40:42Z",
-    "commitHash": "bb91f86ec860386084f2ae59a2eb40590c883834",
-    "order": 472
-  },
-  {
-    "id": "tick-ring-burst",
-    "name": "Tick ring burst",
-    "kind": "shader",
-    "category": "light",
-    "description": "A sunburst arc of short rounded ticks popping out one after another from its middle behind a title, holding, then flying outward and fading; a transparent overlay.",
-    "tags": [
-      "overlay",
-      "promo",
-      "title",
-      "sunburst",
-      "ring",
-      "logo",
-      "accent",
-      "burst"
-    ],
-    "controls": [
-      {
-        "n": "uColor",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            240,
-            80,
-            122
-          ]
-        },
-        "l": "Ticks",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uColorB",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            176,
-            194
-          ]
-        },
-        "l": "Ends",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uCount",
-        "t": "float",
-        "d": 44,
-        "l": "Ticks round a full circle",
-        "min": 8,
-        "max": 96,
-        "s": 1,
-        "line": 5
-      },
-      {
-        "n": "uArc",
-        "t": "float",
-        "d": 0.45,
-        "l": "Arc (share of circle)",
-        "min": 0.05,
-        "line": 6
-      },
-      {
-        "n": "uAngle",
-        "t": "float",
-        "d": 90,
-        "l": "Arc centre (°)",
-        "min": -180,
-        "max": 180,
-        "line": 7
-      },
-      {
-        "n": "uRadius",
-        "t": "float",
-        "d": 0.3,
-        "min": 0.05,
-        "max": 0.48,
-        "line": 8
-      },
-      {
-        "n": "uLength",
-        "t": "float",
-        "d": 0.06,
-        "l": "Tick length",
-        "min": 0.01,
-        "max": 0.2,
-        "line": 9
-      },
-      {
-        "n": "uWidth",
-        "t": "float",
-        "d": 12,
-        "l": "Tick width",
-        "min": 2,
-        "max": 40,
-        "line": 10
-      },
-      {
-        "n": "uAnimate",
-        "t": "bool",
-        "d": true,
-        "line": 11
-      },
-      {
-        "n": "uCycle",
-        "t": "float",
-        "d": 3,
-        "l": "Cycle (s)",
-        "min": 1,
-        "max": 8,
-        "line": 12
-      },
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            244,
-            210
-          ]
-        },
-        "c": 1,
-        "line": 13
-      },
-      {
-        "n": "uBackgroundAlpha",
-        "t": "float",
-        "d": 0,
-        "l": "Background opacity",
-        "line": 14
-      }
-    ],
-    "presets": [
-      "Cream",
-      "Full ring",
-      "Gold",
-      "Fan below"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": true
-    },
-    "transparent": true,
-    "animated": true,
-    "module": "shaders/promo",
-    "addedAt": "2026-10-28T22:40:42Z",
-    "commitHash": "bb91f86ec860386084f2ae59a2eb40590c883834",
-    "order": 471
-  },
-  {
-    "id": "orbit-swoosh",
-    "name": "Orbit swoosh",
-    "kind": "shader",
-    "category": "light",
-    "description": "Glowing comet ribbons circling a title on tilted orbits, dimming and slipping behind it on the far side, shedding flecks of confetti that drift out and fade; a transparent overlay.",
-    "tags": [
-      "overlay",
-      "promo",
-      "title",
-      "swoosh",
-      "orbit",
-      "comet",
-      "confetti",
-      "logo",
-      "accent"
-    ],
-    "controls": [
-      {
-        "n": "uColorA",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            194,
-            61
-          ]
-        },
-        "l": "Ribbon 1",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uColorB",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            47,
-            217,
-            184
-          ]
-        },
-        "l": "Ribbon 2",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uConfetti",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            111,
-            156
-          ]
-        },
-        "l": "Confetti colour",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uRibbons",
-        "t": "float",
-        "d": 2,
-        "min": 1,
-        "max": 3,
-        "s": 1,
-        "line": 6
-      },
-      {
-        "n": "uSize",
-        "t": "float",
-        "d": 0.8,
-        "l": "Orbit size",
-        "min": 0.2,
-        "max": 1.4,
-        "line": 7
-      },
-      {
-        "n": "uFlatten",
-        "t": "float",
-        "d": 0.32,
-        "l": "Orbit depth",
-        "min": 0.1,
-        "line": 8
-      },
-      {
-        "n": "uTilt",
-        "t": "float",
-        "d": -14,
-        "l": "Tilt (°)",
-        "min": -45,
-        "max": 45,
-        "line": 9
-      },
-      {
-        "n": "uLength",
-        "t": "float",
-        "d": 0.42,
-        "l": "Tail length (turns)",
-        "min": 0.1,
-        "max": 0.9,
-        "line": 10
-      },
-      {
-        "n": "uWidth",
-        "t": "float",
-        "d": 9,
-        "min": 2,
-        "max": 30,
-        "line": 11
-      },
-      {
-        "n": "uGlow",
-        "t": "float",
-        "d": 1,
-        "max": 2,
-        "line": 12
-      },
-      {
-        "n": "uGap",
-        "t": "float",
-        "d": 0.6,
-        "l": "Gap behind title",
-        "line": 13
-      },
-      {
-        "n": "uConfettiAmount",
-        "t": "float",
-        "d": 0.6,
-        "l": "Confetti",
-        "line": 14
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 0.45,
-        "l": "Speed (turns/s)",
-        "max": 2,
-        "line": 15
-      },
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            244,
-            210
-          ]
-        },
-        "c": 1,
-        "line": 16
-      },
-      {
-        "n": "uBackgroundAlpha",
-        "t": "float",
-        "d": 0,
-        "l": "Background opacity",
-        "line": 17
-      }
-    ],
-    "presets": [
-      "Cream",
-      "Night",
-      "Gold rush",
-      "Single"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": true
-    },
-    "transparent": true,
-    "animated": true,
-    "module": "shaders/promo",
-    "addedAt": "2026-10-28T22:40:42Z",
-    "commitHash": "bb91f86ec860386084f2ae59a2eb40590c883834",
-    "order": 470
-  },
-  {
-    "id": "spider-web-loader",
-    "name": "Spider web loader",
-    "kind": "vector",
-    "category": "loader",
-    "description": "A spider web weaving itself spoke by spoke and round its spiral, then a spider dropping in on its thread, bobbing, and climbing back out as the web fades.",
-    "tags": [
-      "loader",
-      "web",
-      "spider",
-      "halloween",
-      "spooky",
-      "icon",
-      "draw"
-    ],
-    "controls": [
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            13,
-            15,
-            20
-          ]
-        },
-        "c": 1,
-        "line": 1
-      },
-      {
-        "n": "silk",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            216,
-            222,
-            230
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "spider",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            241,
-            242,
-            244
-          ]
-        },
-        "c": 1,
-        "line": 3
-      }
-    ],
-    "presets": [
-      "Light",
-      "Halloween"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 400,
-    "animated": true,
-    "duration": 4100,
-    "module": "web",
-    "addedAt": "2026-10-27T18:21:38Z",
-    "commitHash": "28f98bcab0b3a01483401091b11ec126d6ed2347",
-    "order": 469
   }
 ]

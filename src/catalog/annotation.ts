@@ -4,7 +4,7 @@ import type { VectorEffect } from "./types.js";
 
 /*
  * Annotations and product-demo overlays: hand-drawn circles and arrows,
- * callouts, brackets, scribbles, step badges, a spotlight, a demo cursor and
+ * callouts, brackets, scribbles, redactions, step badges, a spotlight, a demo cursor and
  * a guided-tour tooltip. Each is a transparent 1920 × 1080 (16:9) picture
  * to lay over a screenshot or a video, placed with position controls in
  * percent of the frame (x from the left, y from the top). Like the broadcast
@@ -354,6 +354,83 @@ export const scribbleOut: VectorEffect = {
   motion: scribbleOutMotion,
 };
 
+// ── Redact box ─────────────────────────────────────────────────────────
+
+const REDACT_BARS = 5;
+const REDACT_STAGGER = 200;
+const REDACT_DRAW = 420;
+
+const redactBoxMotion: SvgMotion = {
+  svg: `<svg viewBox="0 0 1920 1080"><!-- ${at("x", 50, "Area", "x")} ${at("y", 50, "Area", "y")} {{w: float min=2 max=100 default=44 step=0.5 label='Area width (%)'}} {{h: float min=2 max=100 default=26 step=0.5 label='Area height (%)'}} {{lines: int min=1 max=${REDACT_BARS} default=3 label='Bars'}} {{gap: float min=0 max=1 default=0.35 step=0.05 label='Gap between bars'}} {{ink: color default=#0A0A0A label='Bar colour'}} {{radius: float min=0 max=40 default=4 step=1 label='Corner radius'}} {{label: text default='REDACTED' label='Stamp text'}} {{showStamp: bool default=true label='Show the stamp'}} {{stamp: color default=#DC2626 label='Stamp colour'}} ${holdControl(2)} {{font: text default="${SANS}" label='Font'}} --><g id="redactBoxAll">${Array.from(
+    { length: REDACT_BARS },
+    (_, i) => `<rect id="redactBoxBar${i}" x="{{bx}}" y="{{by${i}}}" width="0" height="{{bh}}" rx="{{rr}}" fill="{{ink}}"/>`,
+  ).join(
+    "",
+  )}<g transform="translate({{x}} {{y}}) rotate(-8)" opacity="{{stampOpacity}}"><g id="redactBoxStamp" transform="scale(0)"><rect x="{{stampX}}" y="{{stampY}}" width="{{stampW}}" height="{{stampH}}" rx="{{stampR}}" fill="none" stroke="{{stamp}}" stroke-width="{{stampStroke}}"/><text x="0" y="{{stampBase}}" text-anchor="middle" font-family="{{font}}" font-size="{{stampSize}}" font-weight="800" textLength="{{stampTextW}}" lengthAdjust="spacingAndGlyphs" fill="{{stamp}}">{{label}}</text></g></g></g></svg>`,
+  animate: [
+    // Bars beyond the count draw nothing: their width is 0.
+    ...Array.from({ length: REDACT_BARS }, (_, i): SvgAnimation => ({ id: `redactBoxBar${i}`, attrs: { width: [0, n(`bw${i}`)] }, delay: i * REDACT_STAGGER, ms: REDACT_DRAW, ease: "in-out" })),
+    // Stamped down: a little too big, then pressed home.
+    { id: "redactBoxStamp", attrs: { transform: ["scale(0)", "scale(1.25)"] }, delay: n("stampAt"), ms: 60, ease: "out" },
+    { id: "redactBoxStamp", attrs: { transform: ["scale(1.25)", "scale(1)"] }, delay: n("stampSettle"), ms: 220, ease: "out" },
+    { id: "redactBoxAll", attrs: { opacity: [1, 0] }, delay: after(0), ms: 400 },
+  ],
+};
+
+export const redactBox: VectorEffect = {
+  kind: "vector",
+  id: "redact-box",
+  name: "Redact box",
+  description: "Black redaction bars drawn line by line over part of a screenshot or video, then a REDACTED stamp slammed on top.",
+  category: "annotation",
+  tags: ["annotation", "redact", "censor", "privacy", "classified", "document", "stamp", "draw-on"],
+  hold: 300,
+  presets: [
+    { name: "Classified", values: { label: "CLASSIFIED", lines: 4, stamp: [0.86, 0.15, 0.15] } },
+    { name: "Bars only", values: { showStamp: false, radius: 0 } },
+    { name: "One bar", values: { lines: 1, h: 8, w: 30, label: "HIDDEN", stamp: [0.98, 0.8, 0.08] } },
+  ],
+  derived: (v) => {
+    const [X, Y, W, H] = [px(v.x), py(v.y), px(v.w), py(v.h)];
+    const lines = clamp(Math.round(Number(v.lines)) || 1, 1, REDACT_BARS);
+    const gap = clamp(Number(v.gap) || 0, 0, 1);
+    const bh = H / (lines + (lines - 1) * gap);
+    const out: Record<string, string | number> = {};
+    for (let i = 0; i < REDACT_BARS; i++) {
+      // Lines of a paragraph: a little ragged, the last one short.
+      const length = i === lines - 1 && lines > 1 ? 0.62 : 1 - 0.12 * ((i * 0.618) % 1);
+      out[`by${i}`] = r1(Y - H / 2 + Math.min(i, lines - 1) * bh * (1 + gap));
+      out[`bw${i}`] = i < lines ? r1(W * length) : 0;
+    }
+    const drawn = (lines - 1) * REDACT_STAGGER + REDACT_DRAW;
+    const label = String(v.label ?? "").trim();
+    const text = fit(label, Math.max(W * 0.8, 320), clamp(H * 0.42, 36, 140));
+    const [sw, sh] = [text.width + text.size * 0.9, text.size * 1.4];
+    return {
+      ...out,
+      ...outTimes(redactBoxMotion, drawn + 120 + 60 + 220 + ms(v.hold)),
+      x: X,
+      y: Y,
+      bx: r1(X - W / 2),
+      bh: r1(bh),
+      rr: r1(Math.min(Number(v.radius) || 0, bh / 2)),
+      stampAt: drawn + 120,
+      stampSettle: drawn + 180,
+      stampOpacity: v.showStamp && label ? 1 : 0,
+      stampSize: text.size,
+      stampTextW: text.width,
+      stampBase: r1(text.size * 0.36),
+      stampX: -r1(sw / 2),
+      stampY: -r1(sh / 2),
+      stampW: r1(sw),
+      stampH: r1(sh),
+      stampR: r1(text.size * 0.12),
+      stampStroke: r1(Math.max(3, text.size * 0.09)),
+    };
+  },
+  motion: redactBoxMotion,
+};
+
 // ── Step badges ────────────────────────────────────────────────────────
 
 const STEPS = 4;
@@ -644,4 +721,4 @@ export const tooltipTour: VectorEffect = {
 };
 
 /** Annotations and product-demo overlays, transparent over a screenshot or video. */
-export const annotationEffects: VectorEffect[] = [handCircle, handArrow, callout, bracketNote, scribbleOut, stepBadges, focusBox, fakeCursor, tooltipTour];
+export const annotationEffects: VectorEffect[] = [handCircle, handArrow, callout, bracketNote, scribbleOut, redactBox, stepBadges, focusBox, fakeCursor, tooltipTour];

@@ -25,6 +25,7 @@ export const EFFECT_MODULES: Record<string, () => Promise<Record<string, unknown
   "shaders/atmosphere": () => import("./shaders/atmosphere.js"),
   "shaders/audio": () => import("./shaders/audio.js"),
   "shaders/bubble": () => import("./shaders/bubble.js"),
+  "shaders/censor": () => import("./shaders/censor.js"),
   "shaders/comic": () => import("./shaders/comic.js"),
   "shaders/debris": () => import("./shaders/debris.js"),
   "shaders/distortion": () => import("./shaders/distortion.js"),
