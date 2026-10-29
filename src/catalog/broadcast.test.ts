@@ -19,7 +19,7 @@ describe("broadcast and annotation effects", () => {
     expect(findEffects({ category: "broadcast" }).map((e) => e.id)).toEqual(broadcastEffects.map((e) => e.id));
     expect(findEffects({ category: "annotation" }).map((e) => e.id)).toEqual(annotationEffects.map((e) => e.id));
     expect(broadcastEffects.map((e) => e.id)).toEqual(["lower-third", "lower-third-stacked", "title-card", "logo-reveal", "logo-sting", "end-card", "countdown", "subscribe-button", "news-ticker", "scoreboard", "chapter-marker"]);
-    expect(annotationEffects.map((e) => e.id)).toEqual(["hand-circle", "hand-arrow", "callout", "bracket-note", "scribble-out", "step-badges", "focus-box", "fake-cursor", "tooltip-tour"]);
+    expect(annotationEffects.map((e) => e.id)).toEqual(["hand-circle", "hand-arrow", "callout", "bracket-note", "scribble-out", "redact-box", "step-badges", "focus-box", "fake-cursor", "tooltip-tour"]);
     for (const e of effects) {
       expect(e.tags, e.id).toContain(e.category);
       expect(e.presets?.length, e.id).toBeGreaterThanOrEqual(2);
@@ -120,5 +120,19 @@ describe("broadcast and annotation effects", () => {
     const end = svgFrame(motion.animate!, [], svgDuration(motion)).get("focusBoxHole")!.attrs;
     const second = svgFrame(motion.animate!, [], 500 + 1500 + 700).get("focusBoxHole")!.attrs;
     expect(end).toEqual(second);
+  });
+
+  it("redact box draws one bar per line, the last a paragraph's short line, and stamps only with something to say", () => {
+    const widths = (values: Record<string, unknown>) =>
+      render("redact-box", values).animate!.filter((a) => a.id?.startsWith("redactBoxBar")).map((a) => Number(a.attrs!.width![1]));
+    const three = widths({ lines: 3, w: 50 });
+    expect(three.filter((w) => w > 0)).toHaveLength(3);
+    expect(three[2]).toBeCloseTo(960 * 0.62, 0);
+    expect(widths({ lines: 1, w: 50 })).toEqual([960, 0, 0, 0, 0]);
+    const stamp = (values: Record<string, unknown>) => /opacity="([\d.]+)"><g id="redactBoxStamp"/.exec(render("redact-box", values).svg)![1];
+    expect(stamp({})).toBe("1");
+    expect(stamp({ showStamp: false })).toBe("0");
+    expect(stamp({ label: "  " })).toBe("0");
+    expect(render("redact-box", { label: "TOP SECRET" }).svg).toContain(">TOP SECRET</text>");
   });
 });

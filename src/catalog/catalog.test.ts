@@ -1362,6 +1362,41 @@ describe("distortion effects", () => {
   });
 });
 
+describe("censor effects", () => {
+  const ids = ["censor-pixelate", "censor-blur", "censor-scramble", "redaction-bars"];
+  const names = (id: string) => effectControls(getEffect(id)!).map((c) => c.name);
+
+  it("hide part of a picture or a live video, found by the words people use", () => {
+    for (const id of ids) {
+      expect(getEffect(id), id).toMatchObject({ kind: "shader", category: "image", video: "filter" });
+      expect(getEffect(id)!.tags, id).toEqual(expect.arrayContaining(["censor", "redact", "privacy"]));
+    }
+    for (const word of ["censor", "redact", "privacy", "mosaic", "blur"]) expect(findEffects({ text: word }).length, word).toBeGreaterThan(0);
+    expect(findEffects({ tags: ["censor"] }).map((e) => e.id)).toEqual(expect.arrayContaining([...ids, "redact-box"]));
+  });
+
+  it("place a box or ellipse region, which can be turned inside out, over the sample face by default", () => {
+    for (const id of ["censor-pixelate", "censor-blur", "censor-scramble"]) {
+      expect(names(id), id).toEqual(expect.arrayContaining(["uCentre", "uSize", "uShape", "uFeather", "uInvert"]));
+      expect(effectControls(getEffect(id)!).find((c) => c.name === "uShape"), id).toMatchObject({ type: "int", min: 0, max: 1 });
+      expect(effectDefaults(getEffect(id)!), id).toMatchObject({ uImage: SAMPLE_IMAGES.portrait, uInvert: false });
+    }
+  });
+
+  it("blur from explicit mipmap levels, so scattered taps stay smooth", () => {
+    const blur = getEffect("censor-blur")!;
+    expect(effectControls(blur).find((c) => c.name === "uImage")).toMatchObject({ texture: { filter: "mipmap" } });
+    expect(blur.kind === "shader" && blur.source).toMatch(/textureLod\(uImage/);
+  });
+
+  it("draw redaction bars on a loop, or hold them at a coverage when still", () => {
+    const bars = getEffect("redaction-bars")!;
+    expect(bars).toMatchObject({ loop: 5 });
+    expect(effectControls(bars).find((c) => c.name === "uLines")).toMatchObject({ type: "int", min: 1, max: 8 });
+    expect(names("redaction-bars")).toEqual(expect.arrayContaining(["uAnimate", "uProgress", "uInk", "uRough"]));
+  });
+});
+
 describe("glow effects", () => {
   const glows = findEffects({ category: "glow" });
   const ids = ["aura", "bloom", "pulsing-halo", "neon-outline", "backlight-glow", "rim-light", "glow-ring-pulse", "glow-button"];
