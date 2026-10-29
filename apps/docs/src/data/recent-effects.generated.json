@@ -1,458 +1,5 @@
 [
   {
-    "id": "censor-blur",
-    "name": "Blur censor",
-    "kind": "shader",
-    "category": "image",
-    "description": "Part of a picture or video blurred beyond recognition, as for a face or a screen, or everything but it blurred for focus.",
-    "tags": [
-      "image",
-      "censor",
-      "redact",
-      "privacy",
-      "blur",
-      "face",
-      "anonymise",
-      "frosted"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "portrait"
-        },
-        "line": 2,
-        "x": {
-          "filter": "mipmap",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uBlur",
-        "t": "float",
-        "d": 40,
-        "l": "Blur (px)",
-        "max": 120,
-        "line": 3
-      },
-      {
-        "n": "uFrost",
-        "t": "float",
-        "d": 0,
-        "l": "Frosted grain",
-        "line": 4
-      },
-      {
-        "n": "uBrightness",
-        "t": "float",
-        "d": 0,
-        "min": -0.5,
-        "max": 0.5,
-        "line": 5
-      },
-      {
-        "n": "uCentre",
-        "t": "vec2",
-        "d": [
-          0.5,
-          0.6
-        ],
-        "l": "Region centre",
-        "line": 6
-      },
-      {
-        "n": "uSize",
-        "t": "vec2",
-        "d": [
-          0.26,
-          0.5
-        ],
-        "l": "Region size",
-        "line": 7
-      },
-      {
-        "n": "uShape",
-        "t": "int",
-        "d": 1,
-        "l": "Region shape (0 box, 1 ellipse)",
-        "max": 1,
-        "line": 8
-      },
-      {
-        "n": "uFeather",
-        "t": "float",
-        "d": 4,
-        "l": "Edge softness (px)",
-        "max": 60,
-        "line": 9
-      },
-      {
-        "n": "uInvert",
-        "t": "bool",
-        "d": false,
-        "l": "Hide everything but the region",
-        "line": 10
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 11
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "line": 12
-      }
-    ],
-    "presets": [
-      "Frosted glass",
-      "Focus on the subject",
-      "Darkened"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "filter",
-    "animated": false,
-    "module": "shaders/censor",
-    "addedAt": "2026-10-29T20:05:43.320Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "censor-scramble",
-    "name": "Scramble censor",
-    "kind": "shader",
-    "category": "image",
-    "description": "Part of a picture or video broken into shuffled, flipped blocks with digital noise, reshuffling several times a second.",
-    "tags": [
-      "image",
-      "censor",
-      "redact",
-      "privacy",
-      "scramble",
-      "glitch",
-      "digital",
-      "mosaic"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "portrait"
-        },
-        "line": 2,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uBlock",
-        "t": "float",
-        "d": 18,
-        "l": "Block size (px)",
-        "min": 6,
-        "max": 80,
-        "line": 3
-      },
-      {
-        "n": "uReach",
-        "t": "float",
-        "d": 5,
-        "l": "Shuffle reach (blocks)",
-        "min": 1,
-        "max": 12,
-        "line": 4
-      },
-      {
-        "n": "uRate",
-        "t": "float",
-        "d": 8,
-        "l": "Reshuffles per second",
-        "max": 24,
-        "line": 5
-      },
-      {
-        "n": "uNoise",
-        "t": "float",
-        "d": 0.45,
-        "l": "Digital noise",
-        "line": 6
-      },
-      {
-        "n": "uCentre",
-        "t": "vec2",
-        "d": [
-          0.5,
-          0.6
-        ],
-        "l": "Region centre",
-        "line": 7
-      },
-      {
-        "n": "uSize",
-        "t": "vec2",
-        "d": [
-          0.26,
-          0.5
-        ],
-        "l": "Region size",
-        "line": 8
-      },
-      {
-        "n": "uShape",
-        "t": "int",
-        "d": 1,
-        "l": "Region shape (0 box, 1 ellipse)",
-        "max": 1,
-        "line": 9
-      },
-      {
-        "n": "uFeather",
-        "t": "float",
-        "d": 4,
-        "l": "Edge softness (px)",
-        "max": 60,
-        "line": 10
-      },
-      {
-        "n": "uInvert",
-        "t": "bool",
-        "d": false,
-        "l": "Hide everything but the region",
-        "line": 11
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 12
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "line": 13
-      }
-    ],
-    "presets": [
-      "Calm",
-      "Corrupted"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "filter",
-    "animated": true,
-    "module": "shaders/censor",
-    "addedAt": "2026-10-29T20:05:43.320Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "redaction-bars",
-    "name": "Redaction bars",
-    "kind": "shader",
-    "category": "image",
-    "description": "Black marker bars drawn one after another over lines of a picture, like a redacted document, then wiped away.",
-    "tags": [
-      "image",
-      "censor",
-      "redact",
-      "privacy",
-      "document",
-      "classified",
-      "marker",
-      "reveal"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "portrait"
-        },
-        "line": 2,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uCentre",
-        "t": "vec2",
-        "d": [
-          0.5,
-          0.6
-        ],
-        "l": "Area centre",
-        "line": 3
-      },
-      {
-        "n": "uSize",
-        "t": "vec2",
-        "d": [
-          0.62,
-          0.3
-        ],
-        "l": "Area size",
-        "line": 4
-      },
-      {
-        "n": "uLines",
-        "t": "int",
-        "d": 3,
-        "l": "Bars",
-        "min": 1,
-        "max": 8,
-        "line": 5
-      },
-      {
-        "n": "uGap",
-        "t": "float",
-        "d": 0.4,
-        "l": "Gap between bars",
-        "line": 6
-      },
-      {
-        "n": "uInk",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            10,
-            10,
-            10
-          ]
-        },
-        "l": "Bar colour",
-        "c": 1,
-        "line": 7
-      },
-      {
-        "n": "uRough",
-        "t": "float",
-        "d": 0.4,
-        "l": "Marker roughness",
-        "line": 8
-      },
-      {
-        "n": "uAnimate",
-        "t": "bool",
-        "d": true,
-        "line": 9
-      },
-      {
-        "n": "uProgress",
-        "t": "float",
-        "d": 1,
-        "l": "Drawn (when still)",
-        "line": 10
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 11
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "line": 12
-      }
-    ],
-    "presets": [
-      "Clean",
-      "Document",
-      "White-out"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "filter",
-    "loop": 5,
-    "animated": true,
-    "duration": 5000,
-    "module": "shaders/censor",
-    "addedAt": "2026-10-29T20:05:43.320Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
     "id": "redact-box",
     "name": "Redact box",
     "kind": "vector",
@@ -621,9 +168,462 @@
     "animated": true,
     "duration": 3920,
     "module": "annotation",
-    "addedAt": "2026-10-29T20:05:43.320Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-10-29T20:07:21Z",
+    "commitHash": "9f05fe3ba32668f357c140df9c7be296f2f8fe30",
+    "order": 493
+  },
+  {
+    "id": "redaction-bars",
+    "name": "Redaction bars",
+    "kind": "shader",
+    "category": "image",
+    "description": "Black marker bars drawn one after another over lines of a picture, like a redacted document, then wiped away.",
+    "tags": [
+      "image",
+      "censor",
+      "redact",
+      "privacy",
+      "document",
+      "classified",
+      "marker",
+      "reveal"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "line": 2,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uCentre",
+        "t": "vec2",
+        "d": [
+          0.5,
+          0.6
+        ],
+        "l": "Area centre",
+        "line": 3
+      },
+      {
+        "n": "uSize",
+        "t": "vec2",
+        "d": [
+          0.62,
+          0.3
+        ],
+        "l": "Area size",
+        "line": 4
+      },
+      {
+        "n": "uLines",
+        "t": "int",
+        "d": 3,
+        "l": "Bars",
+        "min": 1,
+        "max": 8,
+        "line": 5
+      },
+      {
+        "n": "uGap",
+        "t": "float",
+        "d": 0.4,
+        "l": "Gap between bars",
+        "line": 6
+      },
+      {
+        "n": "uInk",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            10,
+            10,
+            10
+          ]
+        },
+        "l": "Bar colour",
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "uRough",
+        "t": "float",
+        "d": 0.4,
+        "l": "Marker roughness",
+        "line": 8
+      },
+      {
+        "n": "uAnimate",
+        "t": "bool",
+        "d": true,
+        "line": 9
+      },
+      {
+        "n": "uProgress",
+        "t": "float",
+        "d": 1,
+        "l": "Drawn (when still)",
+        "line": 10
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "line": 12
+      }
+    ],
+    "presets": [
+      "Clean",
+      "Document",
+      "White-out"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "filter",
+    "loop": 5,
+    "animated": true,
+    "duration": 5000,
+    "module": "shaders/censor",
+    "addedAt": "2026-10-29T20:07:21Z",
+    "commitHash": "9f05fe3ba32668f357c140df9c7be296f2f8fe30",
+    "order": 492
+  },
+  {
+    "id": "censor-scramble",
+    "name": "Scramble censor",
+    "kind": "shader",
+    "category": "image",
+    "description": "Part of a picture or video broken into shuffled, flipped blocks with digital noise, reshuffling several times a second.",
+    "tags": [
+      "image",
+      "censor",
+      "redact",
+      "privacy",
+      "scramble",
+      "glitch",
+      "digital",
+      "mosaic"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "line": 2,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uBlock",
+        "t": "float",
+        "d": 18,
+        "l": "Block size (px)",
+        "min": 6,
+        "max": 80,
+        "line": 3
+      },
+      {
+        "n": "uReach",
+        "t": "float",
+        "d": 5,
+        "l": "Shuffle reach (blocks)",
+        "min": 1,
+        "max": 12,
+        "line": 4
+      },
+      {
+        "n": "uRate",
+        "t": "float",
+        "d": 8,
+        "l": "Reshuffles per second",
+        "max": 24,
+        "line": 5
+      },
+      {
+        "n": "uNoise",
+        "t": "float",
+        "d": 0.45,
+        "l": "Digital noise",
+        "line": 6
+      },
+      {
+        "n": "uCentre",
+        "t": "vec2",
+        "d": [
+          0.5,
+          0.6
+        ],
+        "l": "Region centre",
+        "line": 7
+      },
+      {
+        "n": "uSize",
+        "t": "vec2",
+        "d": [
+          0.26,
+          0.5
+        ],
+        "l": "Region size",
+        "line": 8
+      },
+      {
+        "n": "uShape",
+        "t": "int",
+        "d": 1,
+        "l": "Region shape (0 box, 1 ellipse)",
+        "max": 1,
+        "line": 9
+      },
+      {
+        "n": "uFeather",
+        "t": "float",
+        "d": 4,
+        "l": "Edge softness (px)",
+        "max": 60,
+        "line": 10
+      },
+      {
+        "n": "uInvert",
+        "t": "bool",
+        "d": false,
+        "l": "Hide everything but the region",
+        "line": 11
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 12
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "line": 13
+      }
+    ],
+    "presets": [
+      "Calm",
+      "Corrupted"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "filter",
+    "animated": true,
+    "module": "shaders/censor",
+    "addedAt": "2026-10-29T20:07:21Z",
+    "commitHash": "9f05fe3ba32668f357c140df9c7be296f2f8fe30",
+    "order": 491
+  },
+  {
+    "id": "censor-blur",
+    "name": "Blur censor",
+    "kind": "shader",
+    "category": "image",
+    "description": "Part of a picture or video blurred beyond recognition, as for a face or a screen, or everything but it blurred for focus.",
+    "tags": [
+      "image",
+      "censor",
+      "redact",
+      "privacy",
+      "blur",
+      "face",
+      "anonymise",
+      "frosted"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "line": 2,
+        "x": {
+          "filter": "mipmap",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uBlur",
+        "t": "float",
+        "d": 40,
+        "l": "Blur (px)",
+        "max": 120,
+        "line": 3
+      },
+      {
+        "n": "uFrost",
+        "t": "float",
+        "d": 0,
+        "l": "Frosted grain",
+        "line": 4
+      },
+      {
+        "n": "uBrightness",
+        "t": "float",
+        "d": 0,
+        "min": -0.5,
+        "max": 0.5,
+        "line": 5
+      },
+      {
+        "n": "uCentre",
+        "t": "vec2",
+        "d": [
+          0.5,
+          0.6
+        ],
+        "l": "Region centre",
+        "line": 6
+      },
+      {
+        "n": "uSize",
+        "t": "vec2",
+        "d": [
+          0.26,
+          0.5
+        ],
+        "l": "Region size",
+        "line": 7
+      },
+      {
+        "n": "uShape",
+        "t": "int",
+        "d": 1,
+        "l": "Region shape (0 box, 1 ellipse)",
+        "max": 1,
+        "line": 8
+      },
+      {
+        "n": "uFeather",
+        "t": "float",
+        "d": 4,
+        "l": "Edge softness (px)",
+        "max": 60,
+        "line": 9
+      },
+      {
+        "n": "uInvert",
+        "t": "bool",
+        "d": false,
+        "l": "Hide everything but the region",
+        "line": 10
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "line": 12
+      }
+    ],
+    "presets": [
+      "Frosted glass",
+      "Focus on the subject",
+      "Darkened"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "filter",
+    "animated": false,
+    "module": "shaders/censor",
+    "addedAt": "2026-10-29T20:07:21Z",
+    "commitHash": "9f05fe3ba32668f357c140df9c7be296f2f8fe30",
+    "order": 490
   },
   {
     "id": "censor-pixelate",
@@ -759,9 +759,9 @@
     "video": "filter",
     "animated": true,
     "module": "shaders/censor",
-    "addedAt": "2026-10-29T20:05:43.319Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-10-29T20:07:21Z",
+    "commitHash": "9f05fe3ba32668f357c140df9c7be296f2f8fe30",
+    "order": 489
   },
   {
     "id": "rolodex",
