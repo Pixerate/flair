@@ -1,7 +1,8 @@
 /**
  * Shaders: Shadertoy-style WebGL2 fragment shaders for the browser.
  *
- * - Source and controls: `parseControls`, `controlValue`, `coerceControlValue`.
+ * - Source and controls: `parseControls`, `controlValue`, `coerceControlValue`,
+ *   `withBackgroundOpacity` (a background opacity for shaders with a background colour).
  * - Image controls: `sampler2D` uniforms load images through `TextureCache`.
  * - Compiling and drawing: `compileShader`, `drawFrame`, `wrapSource`.
  * - Running shaders: `ShaderRenderer` (a live preview), `ThumbnailPool`
@@ -33,6 +34,7 @@ export {
   type ControlValue,
   type TextureSettings,
 } from "./controls.js";
+export { BACKGROUND_OPACITY_CONTROL, takesBackgroundOpacity, withBackgroundOpacity } from "./background.js";
 export {
   applyTextureSettings,
   ImageLoadError,
