@@ -102,6 +102,7 @@ import { webShaders } from "./shaders/web.js";
 import { webEffects } from "./web.js";
 import { promoShaders } from "./shaders/promo.js";
 import { horrorShaders } from "./shaders/horror.js";
+import { decayShaders } from "./shaders/decay.js";
 import { horrorEffects } from "./horror.js";
 import { promoEffects } from "./promo.js";
 import { textEffects } from "./text.js";
@@ -226,6 +227,7 @@ export const SHADER_EFFECTS: readonly ShaderEffect[] = [
   ...webShaders,
   ...promoShaders,
   ...horrorShaders,
+  ...decayShaders,
   ...transitions,
 ];
 

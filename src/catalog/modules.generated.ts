@@ -29,6 +29,7 @@ export const EFFECT_MODULES: Record<string, () => Promise<Record<string, unknown
   "shaders/censor": () => import("./shaders/censor.js"),
   "shaders/comic": () => import("./shaders/comic.js"),
   "shaders/debris": () => import("./shaders/debris.js"),
+  "shaders/decay": () => import("./shaders/decay.js"),
   "shaders/distortion": () => import("./shaders/distortion.js"),
   "shaders/electric": () => import("./shaders/electric.js"),
   "shaders/fire": () => import("./shaders/fire.js"),

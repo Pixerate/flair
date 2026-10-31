@@ -1,5 +1,917 @@
 [
   {
+    "id": "film-burn",
+    "name": "Film burn",
+    "kind": "shader",
+    "category": "horror",
+    "description": "A picture as projected film that stutters and stalls in the gate, then blisters and melts open from a hot spot, a glowing charred edge spreading out to the bare projector light, before the next reel starts. Loops; or turn Animate off and set Moment.",
+    "tags": [
+      "horror",
+      "decay",
+      "film",
+      "burn",
+      "melt",
+      "projector",
+      "stall",
+      "vintage",
+      "image"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "landscape"
+        },
+        "line": 3,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uHot",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            154,
+            60
+          ]
+        },
+        "l": "Burning edge",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uLamp",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            244,
+            220
+          ]
+        },
+        "l": "Projector light",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uWeave",
+        "t": "float",
+        "d": 0.5,
+        "l": "Gate weave",
+        "line": 6
+      },
+      {
+        "n": "uMelt",
+        "t": "float",
+        "d": 0.6,
+        "line": 7
+      },
+      {
+        "n": "uCycle",
+        "t": "float",
+        "d": 6,
+        "l": "Cycle (s)",
+        "min": 3,
+        "max": 30,
+        "line": 8
+      },
+      {
+        "n": "uAnimate",
+        "t": "bool",
+        "d": true,
+        "line": 9
+      },
+      {
+        "n": "uProgress",
+        "t": "float",
+        "d": 0.62,
+        "l": "Moment (when still)",
+        "line": 10
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "line": 12
+      }
+    ],
+    "presets": [
+      "Blue flame",
+      "No melt",
+      "Slow burn",
+      "Burning open"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "stills",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "stills",
+    "loop": 6,
+    "animated": true,
+    "duration": 6000,
+    "module": "shaders/decay",
+    "addedAt": "2026-10-31T17:46:36Z",
+    "commitHash": "0ea92342cb50d5fc51f586e016d9812d9bf6af55",
+    "order": 511
+  },
+  {
+    "id": "aged-photo",
+    "name": "Aged photo",
+    "kind": "shader",
+    "category": "horror",
+    "description": "A picture as an old print: faded to sepia, foxed with brown spots, silvered with a bluish sheen in its shadows that shifts with the light, cracked along creases and worn white at the edges.",
+    "tags": [
+      "horror",
+      "decay",
+      "vintage",
+      "sepia",
+      "old",
+      "photo",
+      "foxing",
+      "creases",
+      "image"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "line": 3,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uSepia",
+        "t": "float",
+        "d": 0.75,
+        "line": 4
+      },
+      {
+        "n": "uFade",
+        "t": "float",
+        "d": 0.5,
+        "line": 5
+      },
+      {
+        "n": "uFoxing",
+        "t": "float",
+        "d": 0.6,
+        "line": 6
+      },
+      {
+        "n": "uSilver",
+        "t": "float",
+        "d": 0.5,
+        "l": "Silvering",
+        "line": 7
+      },
+      {
+        "n": "uCreases",
+        "t": "float",
+        "d": 0.6,
+        "line": 8
+      },
+      {
+        "n": "uWear",
+        "t": "float",
+        "d": 0.5,
+        "l": "Worn edges",
+        "line": 9
+      },
+      {
+        "n": "uSeed",
+        "t": "float",
+        "d": 7,
+        "l": "Variation",
+        "max": 100,
+        "s": 1,
+        "line": 10
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "line": 12
+      }
+    ],
+    "presets": [
+      "Daguerreotype",
+      "Attic find",
+      "Gently aged",
+      "Another print"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "filter",
+    "animated": true,
+    "module": "shaders/decay",
+    "addedAt": "2026-10-31T17:46:36Z",
+    "commitHash": "0ea92342cb50d5fc51f586e016d9812d9bf6af55",
+    "order": 510
+  },
+  {
+    "id": "peeling-wallpaper",
+    "name": "Peeling wallpaper",
+    "kind": "shader",
+    "category": "horror",
+    "description": "A picture as wallpaper peeling back from a corner along a torn edge, its pale backing curling over, to show a grimy, stained picture underneath, then smoothing back down. Loops; or turn Animate off and set Progress.",
+    "tags": [
+      "horror",
+      "decay",
+      "wallpaper",
+      "peel",
+      "reveal",
+      "hidden",
+      "grime",
+      "image"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "landscape"
+        },
+        "l": "Wallpaper",
+        "line": 4,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uUnder",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "l": "Underneath",
+        "line": 5,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uBacking",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            232,
+            221,
+            196
+          ]
+        },
+        "l": "Paper backing",
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "uGrime",
+        "t": "float",
+        "d": 0.6,
+        "l": "Grime underneath",
+        "line": 7
+      },
+      {
+        "n": "uAngle",
+        "t": "float",
+        "d": 145,
+        "l": "Peel direction (°)",
+        "min": -180,
+        "max": 180,
+        "line": 8
+      },
+      {
+        "n": "uReach",
+        "t": "float",
+        "d": 0.75,
+        "l": "How far it peels",
+        "min": 0.1,
+        "line": 9
+      },
+      {
+        "n": "uCycle",
+        "t": "float",
+        "d": 7,
+        "l": "Cycle (s)",
+        "min": 3,
+        "max": 30,
+        "line": 10
+      },
+      {
+        "n": "uAnimate",
+        "t": "bool",
+        "d": true,
+        "line": 11
+      },
+      {
+        "n": "uProgress",
+        "t": "float",
+        "d": 0.6,
+        "l": "Progress (when still)",
+        "line": 12
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 13
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "line": 14
+      }
+    ],
+    "presets": [
+      "From the top",
+      "Clean wall",
+      "Nearly off",
+      "Torn back"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Wallpaper",
+          "wants": "picture"
+        },
+        {
+          "name": "uUnder",
+          "label": "Underneath",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "stills",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "stills",
+    "loop": 7,
+    "animated": true,
+    "duration": 7000,
+    "module": "shaders/decay",
+    "addedAt": "2026-10-31T17:46:36Z",
+    "commitHash": "0ea92342cb50d5fc51f586e016d9812d9bf6af55",
+    "order": 509
+  },
+  {
+    "id": "wither",
+    "name": "Wither",
+    "kind": "shader",
+    "category": "horror",
+    "description": "A picture draining of colour and drying out, cracks splitting across it as its middle caves in and sags, then coming back to life. Loops; or turn Animate off and set Progress.",
+    "tags": [
+      "horror",
+      "decay",
+      "wither",
+      "dry",
+      "cracks",
+      "desaturate",
+      "cave-in",
+      "image"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "line": 3,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uDry",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            184,
+            168,
+            138
+          ]
+        },
+        "l": "Dried colour",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uCracks",
+        "t": "float",
+        "d": 0.7,
+        "line": 5
+      },
+      {
+        "n": "uCrackSize",
+        "t": "float",
+        "d": 8,
+        "l": "Crack cells",
+        "min": 3,
+        "max": 20,
+        "line": 6
+      },
+      {
+        "n": "uSag",
+        "t": "float",
+        "d": 0.6,
+        "l": "Cave in",
+        "line": 7
+      },
+      {
+        "n": "uCycle",
+        "t": "float",
+        "d": 8,
+        "l": "Cycle (s)",
+        "min": 3,
+        "max": 30,
+        "line": 8
+      },
+      {
+        "n": "uAnimate",
+        "t": "bool",
+        "d": true,
+        "line": 9
+      },
+      {
+        "n": "uProgress",
+        "t": "float",
+        "d": 0.8,
+        "l": "Progress (when still)",
+        "line": 10
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "line": 12
+      }
+    ],
+    "presets": [
+      "Ash",
+      "Parched",
+      "Collapse",
+      "Dried out"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "filter",
+    "loop": 8,
+    "animated": true,
+    "duration": 8000,
+    "module": "shaders/decay",
+    "addedAt": "2026-10-31T17:46:36Z",
+    "commitHash": "0ea92342cb50d5fc51f586e016d9812d9bf6af55",
+    "order": 508
+  },
+  {
+    "id": "mold-bloom",
+    "name": "Mould bloom",
+    "kind": "shader",
+    "category": "horror",
+    "description": "Fuzzy colonies of mould blooming across a picture one after another, dark-centred and ringed, with white fur at their edges and a yellow stain spreading round them, then wiped clean. Loops; or turn Animate off and set Progress.",
+    "tags": [
+      "horror",
+      "decay",
+      "mold",
+      "mould",
+      "fungus",
+      "growth",
+      "spread",
+      "image"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "landscape"
+        },
+        "line": 3,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uColor",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            110,
+            133,
+            54
+          ]
+        },
+        "l": "Mould",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uFur",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            236,
+            233,
+            218
+          ]
+        },
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uCore",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            28,
+            34,
+            19
+          ]
+        },
+        "l": "Centres",
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "uColonies",
+        "t": "float",
+        "d": 14,
+        "min": 3,
+        "max": 30,
+        "s": 1,
+        "line": 7
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 0.14,
+        "min": 0.03,
+        "max": 0.4,
+        "line": 8
+      },
+      {
+        "n": "uCycle",
+        "t": "float",
+        "d": 12,
+        "l": "Cycle (s)",
+        "min": 3,
+        "max": 30,
+        "line": 9
+      },
+      {
+        "n": "uAnimate",
+        "t": "bool",
+        "d": true,
+        "line": 10
+      },
+      {
+        "n": "uProgress",
+        "t": "float",
+        "d": 0.7,
+        "l": "Progress (when still)",
+        "line": 11
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 12
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "line": 13
+      }
+    ],
+    "presets": [
+      "Black mould",
+      "Penicillin",
+      "Overrun",
+      "Still"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "filter",
+    "loop": 12,
+    "animated": true,
+    "duration": 12000,
+    "module": "shaders/decay",
+    "addedAt": "2026-10-31T17:46:36Z",
+    "commitHash": "0ea92342cb50d5fc51f586e016d9812d9bf6af55",
+    "order": 507
+  },
+  {
+    "id": "rust-spread",
+    "name": "Rust spread",
+    "kind": "shader",
+    "category": "horror",
+    "description": "Rust breaking out at a few spots on a picture and eating across it along a dark wet front, leaving pitted flaking orange-brown behind, then gone again. Loops; or turn Animate off and set Progress.",
+    "tags": [
+      "horror",
+      "decay",
+      "rust",
+      "corrosion",
+      "spread",
+      "metal",
+      "image"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "city"
+        },
+        "line": 3,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uRust",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            138,
+            59,
+            18
+          ]
+        },
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uRustLight",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            201,
+            112,
+            46
+          ]
+        },
+        "l": "Rust highlights",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uDeep",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            43,
+            19,
+            9
+          ]
+        },
+        "l": "Pits",
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "uSeeds",
+        "t": "float",
+        "d": 3,
+        "l": "Spots",
+        "min": 1,
+        "max": 6,
+        "s": 1,
+        "line": 7
+      },
+      {
+        "n": "uRough",
+        "t": "float",
+        "d": 0.6,
+        "l": "Ragged edge",
+        "line": 8
+      },
+      {
+        "n": "uReach",
+        "t": "float",
+        "d": 1.1,
+        "min": 0.2,
+        "max": 1.6,
+        "line": 9
+      },
+      {
+        "n": "uCycle",
+        "t": "float",
+        "d": 10,
+        "l": "Cycle (s)",
+        "min": 3,
+        "max": 30,
+        "line": 10
+      },
+      {
+        "n": "uAnimate",
+        "t": "bool",
+        "d": true,
+        "line": 11
+      },
+      {
+        "n": "uProgress",
+        "t": "float",
+        "d": 0.6,
+        "l": "Progress (when still)",
+        "line": 12
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 13
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "line": 14
+      }
+    ],
+    "presets": [
+      "One spot",
+      "Verdigris",
+      "Clean edge",
+      "Half eaten"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "filter",
+    "loop": 10,
+    "animated": true,
+    "duration": 10000,
+    "module": "shaders/decay",
+    "addedAt": "2026-10-31T17:46:36Z",
+    "commitHash": "0ea92342cb50d5fc51f586e016d9812d9bf6af55",
+    "order": 506
+  },
+  {
     "id": "emergency-broadcast",
     "name": "Emergency broadcast",
     "kind": "vector",
@@ -2082,784 +2994,5 @@
     "addedAt": "2026-10-29T20:07:21Z",
     "commitHash": "9f05fe3ba32668f357c140df9c7be296f2f8fe30",
     "order": 492
-  },
-  {
-    "id": "censor-scramble",
-    "name": "Scramble censor",
-    "kind": "shader",
-    "category": "image",
-    "description": "Part of a picture or video broken into shuffled, flipped blocks with digital noise, reshuffling several times a second.",
-    "tags": [
-      "image",
-      "censor",
-      "redact",
-      "privacy",
-      "scramble",
-      "glitch",
-      "digital",
-      "mosaic"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "portrait"
-        },
-        "line": 2,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uBlock",
-        "t": "float",
-        "d": 18,
-        "l": "Block size (px)",
-        "min": 6,
-        "max": 80,
-        "line": 3
-      },
-      {
-        "n": "uReach",
-        "t": "float",
-        "d": 5,
-        "l": "Shuffle reach (blocks)",
-        "min": 1,
-        "max": 12,
-        "line": 4
-      },
-      {
-        "n": "uRate",
-        "t": "float",
-        "d": 8,
-        "l": "Reshuffles per second",
-        "max": 24,
-        "line": 5
-      },
-      {
-        "n": "uNoise",
-        "t": "float",
-        "d": 0.45,
-        "l": "Digital noise",
-        "line": 6
-      },
-      {
-        "n": "uCentre",
-        "t": "vec2",
-        "d": [
-          0.5,
-          0.6
-        ],
-        "l": "Region centre",
-        "line": 7
-      },
-      {
-        "n": "uSize",
-        "t": "vec2",
-        "d": [
-          0.26,
-          0.5
-        ],
-        "l": "Region size",
-        "line": 8
-      },
-      {
-        "n": "uShape",
-        "t": "int",
-        "d": 1,
-        "l": "Region shape (0 box, 1 ellipse)",
-        "max": 1,
-        "line": 9
-      },
-      {
-        "n": "uFeather",
-        "t": "float",
-        "d": 4,
-        "l": "Edge softness (px)",
-        "max": 60,
-        "line": 10
-      },
-      {
-        "n": "uInvert",
-        "t": "bool",
-        "d": false,
-        "l": "Hide everything but the region",
-        "line": 11
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 12
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "line": 13
-      }
-    ],
-    "presets": [
-      "Calm",
-      "Corrupted"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "filter",
-    "animated": true,
-    "module": "shaders/censor",
-    "addedAt": "2026-10-29T20:07:21Z",
-    "commitHash": "9f05fe3ba32668f357c140df9c7be296f2f8fe30",
-    "order": 491
-  },
-  {
-    "id": "censor-blur",
-    "name": "Blur censor",
-    "kind": "shader",
-    "category": "image",
-    "description": "Part of a picture or video blurred beyond recognition, as for a face or a screen, or everything but it blurred for focus.",
-    "tags": [
-      "image",
-      "censor",
-      "redact",
-      "privacy",
-      "blur",
-      "face",
-      "anonymise",
-      "frosted"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "portrait"
-        },
-        "line": 2,
-        "x": {
-          "filter": "mipmap",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uBlur",
-        "t": "float",
-        "d": 40,
-        "l": "Blur (px)",
-        "max": 120,
-        "line": 3
-      },
-      {
-        "n": "uFrost",
-        "t": "float",
-        "d": 0,
-        "l": "Frosted grain",
-        "line": 4
-      },
-      {
-        "n": "uBrightness",
-        "t": "float",
-        "d": 0,
-        "min": -0.5,
-        "max": 0.5,
-        "line": 5
-      },
-      {
-        "n": "uCentre",
-        "t": "vec2",
-        "d": [
-          0.5,
-          0.6
-        ],
-        "l": "Region centre",
-        "line": 6
-      },
-      {
-        "n": "uSize",
-        "t": "vec2",
-        "d": [
-          0.26,
-          0.5
-        ],
-        "l": "Region size",
-        "line": 7
-      },
-      {
-        "n": "uShape",
-        "t": "int",
-        "d": 1,
-        "l": "Region shape (0 box, 1 ellipse)",
-        "max": 1,
-        "line": 8
-      },
-      {
-        "n": "uFeather",
-        "t": "float",
-        "d": 4,
-        "l": "Edge softness (px)",
-        "max": 60,
-        "line": 9
-      },
-      {
-        "n": "uInvert",
-        "t": "bool",
-        "d": false,
-        "l": "Hide everything but the region",
-        "line": 10
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 11
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "line": 12
-      }
-    ],
-    "presets": [
-      "Frosted glass",
-      "Focus on the subject",
-      "Darkened"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "filter",
-    "animated": false,
-    "module": "shaders/censor",
-    "addedAt": "2026-10-29T20:07:21Z",
-    "commitHash": "9f05fe3ba32668f357c140df9c7be296f2f8fe30",
-    "order": 490
-  },
-  {
-    "id": "censor-pixelate",
-    "name": "Pixelate censor",
-    "kind": "shader",
-    "category": "image",
-    "description": "Part of a picture or video hidden behind big mosaic blocks, as for a face or a number plate, the blocks shimmering like a live censor.",
-    "tags": [
-      "image",
-      "censor",
-      "redact",
-      "privacy",
-      "mosaic",
-      "pixelate",
-      "face",
-      "anonymise"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "portrait"
-        },
-        "line": 2,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uBlock",
-        "t": "float",
-        "d": 24,
-        "l": "Block size (px)",
-        "min": 4,
-        "max": 120,
-        "line": 3
-      },
-      {
-        "n": "uShimmer",
-        "t": "float",
-        "d": 0.35,
-        "line": 4
-      },
-      {
-        "n": "uCentre",
-        "t": "vec2",
-        "d": [
-          0.5,
-          0.6
-        ],
-        "l": "Region centre",
-        "line": 5
-      },
-      {
-        "n": "uSize",
-        "t": "vec2",
-        "d": [
-          0.26,
-          0.5
-        ],
-        "l": "Region size",
-        "line": 6
-      },
-      {
-        "n": "uShape",
-        "t": "int",
-        "d": 1,
-        "l": "Region shape (0 box, 1 ellipse)",
-        "max": 1,
-        "line": 7
-      },
-      {
-        "n": "uFeather",
-        "t": "float",
-        "d": 4,
-        "l": "Edge softness (px)",
-        "max": 60,
-        "line": 8
-      },
-      {
-        "n": "uInvert",
-        "t": "bool",
-        "d": false,
-        "l": "Hide everything but the region",
-        "line": 9
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "line": 11
-      }
-    ],
-    "presets": [
-      "TV censor",
-      "Chunky",
-      "Hide the background"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "filter",
-    "animated": true,
-    "module": "shaders/censor",
-    "addedAt": "2026-10-29T20:07:21Z",
-    "commitHash": "9f05fe3ba32668f357c140df9c7be296f2f8fe30",
-    "order": 489
-  },
-  {
-    "id": "rolodex",
-    "name": "Rolodex",
-    "kind": "vector",
-    "category": "data",
-    "description": "Cards on a rolodex spindle flipping down one after another, each showing a figure and its label, for rotating stats, quotes or names.",
-    "tags": [
-      "card",
-      "rolodex",
-      "flip",
-      "stat",
-      "rotating",
-      "testimonial",
-      "retro",
-      "loop"
-    ],
-    "controls": [
-      {
-        "n": "entries",
-        "t": "text",
-        "d": "12k users, 4.9 rating, 99.9% uptime, 140 countries",
-        "l": "Entries (comma separated)",
-        "line": 1
-      },
-      {
-        "n": "labels",
-        "t": "text",
-        "d": "signed up this month, on the App Store, over the last year, and counting",
-        "l": "Labels (comma separated)",
-        "line": 2
-      },
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            241,
-            245,
-            249
-          ]
-        },
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "card",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "ink",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            15,
-            23,
-            42
-          ]
-        },
-        "l": "Text colour",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "accent",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            99,
-            102,
-            241
-          ]
-        },
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "metal",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            148,
-            163,
-            184
-          ]
-        },
-        "l": "Spindle",
-        "c": 1,
-        "line": 7
-      }
-    ],
-    "presets": [
-      "Team",
-      "Dark"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "entries",
-          "label": "Entries (comma separated)",
-          "holds": "copy",
-          "default": "12k users, 4.9 rating, 99.9% uptime, 140 countries"
-        },
-        {
-          "name": "labels",
-          "label": "Labels (comma separated)",
-          "holds": "copy",
-          "default": "signed up this month, on the App Store, over the last year, and counting"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 0,
-    "animated": true,
-    "duration": 5750,
-    "module": "data",
-    "addedAt": "2026-10-28T23:06:56Z",
-    "commitHash": "974f0cf9f350aec221df957137e8d457c5536011",
-    "order": 488
-  },
-  {
-    "id": "riffle-shuffle",
-    "name": "Riffle shuffle",
-    "kind": "vector",
-    "category": "loader",
-    "description": "A deck of cards cut in two and riffled back together, the cards dropping in from either side in turn before the deck is tapped square, over and over.",
-    "tags": [
-      "loader",
-      "card",
-      "shuffle",
-      "deck",
-      "playing-card",
-      "waiting",
-      "loop"
-    ],
-    "controls": [
-      {
-        "n": "back",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            79,
-            70,
-            229
-          ]
-        },
-        "l": "Card back",
-        "c": 1,
-        "line": 1
-      },
-      {
-        "n": "trim",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "l": "Card edge",
-        "c": 1,
-        "line": 2
-      }
-    ],
-    "presets": [
-      "Red back",
-      "Mono"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 300,
-    "animated": true,
-    "duration": 1800,
-    "module": "loaders",
-    "addedAt": "2026-10-28T23:06:56Z",
-    "commitHash": "974f0cf9f350aec221df957137e8d457c5536011",
-    "order": 487
-  },
-  {
-    "id": "cover-flow",
-    "name": "Cover flow",
-    "kind": "shader",
-    "category": "3d",
-    "description": "A ring of picture cards turning in perspective, stepping round so each comes to the front in turn, mirrored on a glossy floor.",
-    "tags": [
-      "3d",
-      "card",
-      "carousel",
-      "cover-flow",
-      "gallery",
-      "reflection",
-      "showcase"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "landscape"
-        },
-        "line": 3,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uCards",
-        "t": "int",
-        "d": 7,
-        "min": 3,
-        "max": 12,
-        "line": 4
-      },
-      {
-        "n": "uStep",
-        "t": "float",
-        "d": 1.8,
-        "l": "Seconds per card",
-        "min": 0.6,
-        "max": 5,
-        "line": 5
-      },
-      {
-        "n": "uRadius",
-        "t": "float",
-        "d": 2.2,
-        "l": "Ring size",
-        "min": 1.4,
-        "max": 4,
-        "line": 6
-      },
-      {
-        "n": "uReflection",
-        "t": "float",
-        "d": 0.35,
-        "line": 7
-      },
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            11,
-            16,
-            32
-          ]
-        },
-        "c": 1,
-        "line": 8
-      },
-      {
-        "n": "uCardBack",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            51,
-            65,
-            85
-          ]
-        },
-        "c": 1,
-        "line": 9
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "line": 11
-      },
-      {
-        "n": "uBackgroundAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Background opacity",
-        "line": 163
-      }
-    ],
-    "presets": [
-      "Wide ring",
-      "Studio light"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "filter",
-    "animated": true,
-    "module": "shaders/three-d",
-    "addedAt": "2026-10-28T23:06:56Z",
-    "commitHash": "974f0cf9f350aec221df957137e8d457c5536011",
-    "order": 486
   }
 ]
