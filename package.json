@@ -138,7 +138,7 @@
     "svelte": "^5.57.2",
     "tsup": "^8.5",
     "typescript": "^5.9",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.12"
   },
   "engines": {
     "node": ">=20"
