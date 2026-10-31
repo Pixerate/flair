@@ -173,7 +173,7 @@ ${BACKDROP_CONTROLS}`,
 };
 
 /** `digit7(p, d)`: distance to digit `d` drawn as a seven-segment glyph in a 1 × 2 cell (bottom-left origin). */
-const DIGIT7 = `
+export const DIGIT7 = `
 float segDist(vec2 p, vec2 a, vec2 b) {
   vec2 pa = p - a;
   vec2 ba = b - a;

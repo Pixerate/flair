@@ -101,6 +101,7 @@ import { iridescentShaders } from "./shaders/iridescent.js";
 import { webShaders } from "./shaders/web.js";
 import { webEffects } from "./web.js";
 import { promoShaders } from "./shaders/promo.js";
+import { horrorShaders } from "./shaders/horror.js";
 import { promoEffects } from "./promo.js";
 import { textEffects } from "./text.js";
 import { broadcastEffects } from "./broadcast.js";
@@ -223,6 +224,7 @@ export const SHADER_EFFECTS: readonly ShaderEffect[] = [
   ...iridescentShaders,
   ...webShaders,
   ...promoShaders,
+  ...horrorShaders,
   ...transitions,
 ];
 

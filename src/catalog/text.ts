@@ -909,6 +909,92 @@ export const captionPop: VectorEffect = {
   },
 };
 
+/** Possessed text's letter slots, and when its letters start writhing and snap back (ms). */
+const POSSESSED_SLOTS = 20;
+const WRITHE_AT = 600;
+const SNAP_AT = 3000;
+
+export const possessedText: VectorEffect = {
+  kind: "vector",
+  id: "possessed-text",
+  name: "Possessed text",
+  description:
+    "A title that something takes hold of: its letters writhe, twist and float up out of line behind a blood-red haze, then snap back into place all at once as if nothing happened.",
+  category: "horror",
+  tags: ["horror", "spectral", "text", "title", "possessed", "creepy", "halloween", "kinetic"],
+  hold: 900,
+  presets: [
+    { name: "Ectoplasm", values: { ink: [0.85, 1, 0.88], aura: [0.25, 0.95, 0.45], background: [0.02, 0.05, 0.04] } },
+    { name: "Parchment", values: { background: [0.93, 0.89, 0.8], ink: [0.12, 0.08, 0.06], aura: [0.55, 0.05, 0.05] } },
+    { name: "Violent", values: { amount: 1.8 } },
+    { name: "Uneasy", values: { amount: 0.4 } },
+  ],
+  // Up to POSSESSED_SLOTS letters, each centred in its estimated advance, each with its own writhe and rise.
+  derived: (v) => {
+    const letters = lettersOf(v.text).slice(0, POSSESSED_SLOTS);
+    const widths = letters.map((c) => textWidthEm(c));
+    const ems = Math.max(0.6, widths.reduce((a, b) => a + b, 0));
+    const size = Math.min(92, room(v, 360) / ems);
+    const base = 100 + size * 0.35;
+    const a = Number(v.amount);
+    const out: Record<string, string | number> = {
+      ...frame(v, 200 - (ems * size) / 2, ems * size, base, size, glowing([0.15 + 0.45 * a, 0.1 * a, DESCENT + 0.15 * a, 0.1 * a], 0.06)),
+      size: r1(size),
+      base: r1(base),
+      length: r1(ems * size),
+      haze: r1(size * 0.09),
+    };
+    let x = 200 - (ems * size) / 2;
+    for (let i = 0; i < POSSESSED_SLOTS; i++) {
+      const w = (widths[i] ?? 0) * size;
+      const cx = x + w / 2;
+      // Every third letter floats right up; the rest only lift a little.
+      const rise = (i % 3 === 1 ? 0.45 : 0.08 + 0.06 * (i % 2)) * size * a;
+      out[`c${i}`] = letters[i]?.trim() ?? "";
+      out[`x${i}`] = r1(cx);
+      out[`wx${i}`] = r1(cx + 0.12 * size * a);
+      out[`wy${i}`] = r1(base - 0.14 * size * a);
+      out[`wr${i}`] = r1((i % 2 ? 24 : -20) * a);
+      out[`ws${i}`] = r1(1 + 0.18 * a);
+      out[`rise${i}`] = `translate(0 ${r1(-rise)})`;
+      x += w;
+    }
+    return out;
+  },
+  motion: (() => {
+    const rest = (i: number) => `translate({{x${i}}} {{base}}) rotate(0) scale(1)`;
+    return {
+      svg: `<svg viewBox="{{viewBox}}" overflow="{{overflow}}" data-overhang="{{overhang}}"><!-- {{text: text default='GET OUT' label='Text'}} {{background: color default=#0B0708 label='Background'}} {{ink: color default=#E8E2D6 label='Text colour'}} {{aura: color default=#B3121B label='Haze'}} {{amount: float min=0 max=2 default=1 step=0.1 label='Intensity'}} ${typeface(`Georgia, 'Times New Roman', serif`, 700)} --><rect width="400" height="200" fill="{{background}}" opacity="{{backdrop}}"/><text id="aura" x="200" y="{{base}}" text-anchor="middle" textLength="{{length}}" lengthAdjust="spacingAndGlyphs" font-family="{{font}}" font-size="{{size}}" font-weight="{{weight}}" fill="{{aura}}" stroke="{{aura}}" stroke-width="{{haze}}" stroke-linejoin="round" opacity="0" transform="translate(0 0)">{{text}}</text><g id="word" transform="translate(200 {{base}}) scale(1) translate(-200 -{{base}})">${Array.from(
+        { length: POSSESSED_SLOTS },
+        (_, i) =>
+          `<g id="f${i}" transform="translate(0 0)"><text id="l${i}" text-anchor="middle" transform="${rest(i)}" font-family="{{font}}" font-size="{{size}}" font-weight="{{weight}}" fill="{{ink}}">{{c${i}}}</text></g>`,
+      ).join("")}</g></svg>`,
+      animate: [
+        // The haze swells behind the word and shudders while it writhes, then is gone at the snap.
+        { id: "aura", attrs: { opacity: [0, 0.65] }, delay: WRITHE_AT, ms: 500, ease: "out" },
+        { id: "aura", attrs: { transform: ["translate(0 0)", "translate(6 -4)"] }, delay: WRITHE_AT, ms: SNAP_AT - WRITHE_AT, behavior: { type: "wriggle", frequency: 6, seed: 3 } },
+        { id: "aura", attrs: { opacity: [0.65, 0] }, delay: SNAP_AT, ms: 90, ease: "out" },
+        ...Array.from({ length: POSSESSED_SLOTS }, (_, i): SvgAnimation[] => [
+          // Each letter writhes on its own: drifting, twisting and swelling round its place.
+          {
+            id: `l${i}`,
+            attrs: { transform: [rest(i), `translate({{wx${i}}} {{wy${i}}}) rotate({{wr${i}}}) scale({{ws${i}}})`] },
+            delay: WRITHE_AT + (i % 4) * 60,
+            ms: SNAP_AT - WRITHE_AT - (i % 4) * 60,
+            behavior: { type: "wriggle", frequency: 2.4 + 0.3 * (i % 3), octaves: 2, seed: 11 + i * 7 },
+          },
+          // Some float up out of line, and all drop back at once.
+          { id: `f${i}`, attrs: { transform: ["translate(0 0)", `{{rise${i}}}`] }, delay: WRITHE_AT + 200 + (i % 5) * 120, ms: 1300, ease: "in-out" },
+          { id: `f${i}`, attrs: { transform: [`{{rise${i}}}`, "translate(0 0)"] }, delay: SNAP_AT, ms: 110, ease: [0.55, 0, 1, 0.45] },
+        ]).flat(),
+        // The snap: the whole word jolts as the letters slam home.
+        { id: "word", attrs: { transform: ["translate(200 {{base}}) scale(1) translate(-200 -{{base}})", "translate(200 {{base}}) scale(1.07) translate(-200 -{{base}})"] }, delay: SNAP_AT + 60, ms: 50, ease: "out" },
+        { id: "word", attrs: { transform: ["translate(200 {{base}}) scale(1.07) translate(-200 -{{base}})", "translate(200 {{base}}) scale(1) translate(-200 -{{base}})"] }, delay: SNAP_AT + 110, ms: 220, ease: "out" },
+      ],
+    };
+  })(),
+};
+
 export const textEffects: VectorEffect[] = [
   typewriter,
   scrambleText,
@@ -926,4 +1012,5 @@ export const textEffects: VectorEffect[] = [
   extrudedText,
   textOnPath,
   circleText,
+  possessedText,
 ];

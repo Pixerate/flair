@@ -38,6 +38,7 @@ export type EffectCategory =
   | "debris"
   | "impact"
   | "comic"
+  | "horror"
   | "atmosphere"
   | "glow"
   | "shadow"
@@ -83,6 +84,7 @@ export const EFFECT_CATEGORIES: readonly EffectCategory[] = [
   "debris",
   "impact",
   "comic",
+  "horror",
   "atmosphere",
   "glow",
   "shadow",
@@ -111,7 +113,7 @@ export interface EffectCategoryGroup {
 export const EFFECT_CATEGORY_GROUPS: readonly EffectCategoryGroup[] = [
   { name: "Backgrounds", categories: ["gradient", "organic", "pattern", "space", "3d", "weather", "water", "atmosphere"] },
   { name: "Light", categories: ["light", "lighting", "glow", "shadow", "electric", "fire", "hologram"] },
-  { name: "Pictures", categories: ["image", "distortion", "retro", "comic", "timewarp", "melt"] },
+  { name: "Pictures", categories: ["image", "distortion", "retro", "comic", "horror", "timewarp", "melt"] },
   { name: "Particles & FX", categories: ["overlay", "splatter", "bubble", "particles", "trail", "debris", "impact", "pyrotechnics"] },
   { name: "Type & titles", categories: ["text", "morph", "broadcast", "annotation", "sticker"] },
   { name: "Inputs", categories: ["interaction", "audio", "scroll"] },
