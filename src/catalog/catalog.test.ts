@@ -2315,7 +2315,7 @@ describe("promo effects", () => {
 });
 
 describe("horror effects", () => {
-  const IDS = ["vhs-tracking", "night-vision-cam", "signal-lost", "trail-cam", "emergency-broadcast", "ghost-apparition", "ectoplasm-wisps", "spirit-orbs", "possessed-text", "eyes-in-the-dark", "creeping-dark", "shadow-hands"];
+  const IDS = ["vhs-tracking", "night-vision-cam", "signal-lost", "trail-cam", "emergency-broadcast", "ghost-apparition", "ectoplasm-wisps", "spirit-orbs", "possessed-text", "eyes-in-the-dark", "creeping-dark", "shadow-hands", "rust-spread", "mold-bloom", "wither", "peeling-wallpaper", "aged-photo", "film-burn"];
 
   it("have a category of their own, browsed with the pictures, and are tagged by kind", () => {
     expect(categoryGroup("horror").name).toBe("Pictures");
@@ -2400,6 +2400,25 @@ describe("horror effects", () => {
     expect(frame(2000).get("emergencyBroadcastAll")!.attrs.transform).toContain("scale(1 1)");
     expect(Number(frame(2000).get("emergencyBroadcastTitleWipe")!.attrs.width)).toBe(1536);
     expect(frame(svgDuration(motion)).get("emergencyBroadcastAll")!.attrs.transform).toBe(off);
+  });
+
+  it("the decay effects eat at a picture, and the growing ones hold any moment", () => {
+    const decay = ["rust-spread", "mold-bloom", "wither", "peeling-wallpaper", "aged-photo", "film-burn"];
+    expect(findEffects({ category: "horror", tags: ["decay"] }).map((e) => e.id).sort()).toEqual([...decay].sort());
+    for (const id of decay) {
+      const effect = getEffect(id)!;
+      if (effect.kind !== "shader") throw new Error("shader expected");
+      expect(effectInputs(effect).images.length, id).toBeGreaterThan(0);
+      if (id === "aged-photo") continue;
+      // Each grows over a cycle as long as its loop, or holds still at a moment.
+      expect(effect.loop, id).toBe(effectDefaults(effect).uCycle);
+      expect(effectControls(effect).map((c) => c.name), id).toEqual(expect.arrayContaining(["uAnimate", "uProgress"]));
+    }
+    expect(effectInputs(getEffect("peeling-wallpaper")!).images.map((i) => i.name)).toEqual(["uImage", "uUnder"]);
+    expect(getEffect("peeling-wallpaper")).toMatchObject({ video: "stills" });
+    expect(getEffect("film-burn")).toMatchObject({ video: "stills" });
+    for (const id of ["rust-spread", "mold-bloom", "wither", "aged-photo"]) expect(getEffect(id), id).toMatchObject({ video: "filter" });
+    expect(effectDefaults(getEffect("film-burn")!, { preset: "Burning open" })).toMatchObject({ uAnimate: false, uProgress: 0.72 });
   });
 
   it("possessed text writhes, lifts letters out of line and snaps them all back", () => {
