@@ -218,7 +218,7 @@ describe("commands and agent tools", () => {
     expect(result.effects.map((e) => e.id)).toEqual(
       expect.arrayContaining(["vhs-tracking", "night-vision-cam", "signal-lost", "ghost-apparition", "eyes-in-the-dark", "possessed-text"]),
     );
-    expect(editor.commands.execute<Search>("catalog.search", { group: "Pictures", tags: ["analog-horror"], limit: 50 })).toMatchObject({ ok: true, result: { total: 3 } });
+    expect(editor.commands.execute<Search>("catalog.search", { group: "Pictures", tags: ["analog-horror"], limit: 50 })).toMatchObject({ ok: true, result: { total: 5 } });
 
     // A category that is not there is refused, naming the ones that are.
     const wrong = await callTool(provider, "run_command", { id: "catalog.search", params: { category: "spooky" } });

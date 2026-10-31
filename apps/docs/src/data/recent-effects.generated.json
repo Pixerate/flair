@@ -1,5 +1,868 @@
 [
   {
+    "id": "emergency-broadcast",
+    "name": "Emergency broadcast",
+    "kind": "vector",
+    "category": "horror",
+    "description": "A fictional emergency alert taking over the screen like an old set switching on: a red header bar, a stark warning wiping on, instructions under it and a blinking footer, under a slow red pulse, then the set switching off.",
+    "tags": [
+      "horror",
+      "analog-horror",
+      "broadcast",
+      "emergency",
+      "alert",
+      "warning",
+      "title",
+      "card",
+      "found-footage"
+    ],
+    "controls": [
+      {
+        "n": "header",
+        "t": "text",
+        "d": "EMERGENCY ALERT SYSTEM",
+        "line": 1
+      },
+      {
+        "n": "title",
+        "t": "text",
+        "d": "DO NOT LOOK OUTSIDE",
+        "line": 2
+      },
+      {
+        "n": "message",
+        "t": "text",
+        "d": "Stay indoors. Cover every window. Do not answer the door, whoever it sounds like.",
+        "line": 3
+      },
+      {
+        "n": "footer",
+        "t": "text",
+        "d": "THIS IS NOT A TEST",
+        "line": 4
+      },
+      {
+        "n": "background",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            8,
+            8,
+            10
+          ]
+        },
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "ink",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "l": "Text colour",
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "muted",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            184,
+            188,
+            198
+          ]
+        },
+        "l": "Message colour",
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "alert",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            215,
+            20,
+            30
+          ]
+        },
+        "l": "Alert colour",
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "hold",
+        "t": "float",
+        "d": 4,
+        "l": "Hold (s)",
+        "min": 0.5,
+        "max": 20,
+        "s": 0.5,
+        "line": 9
+      },
+      {
+        "n": "font",
+        "t": "text",
+        "d": "'Inter', 'Helvetica Neue', Arial, system-ui, sans-serif",
+        "line": 10
+      }
+    ],
+    "presets": [
+      "Civil defence",
+      "Blue screen",
+      "Curfew"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "header",
+          "label": "Header",
+          "holds": "copy",
+          "default": "EMERGENCY ALERT SYSTEM"
+        },
+        {
+          "name": "title",
+          "label": "Title",
+          "holds": "copy",
+          "default": "DO NOT LOOK OUTSIDE"
+        },
+        {
+          "name": "message",
+          "label": "Message",
+          "holds": "copy",
+          "default": "Stay indoors. Cover every window. Do not answer the door, whoever it sounds like."
+        },
+        {
+          "name": "footer",
+          "label": "Footer",
+          "holds": "copy",
+          "default": "THIS IS NOT A TEST"
+        },
+        {
+          "name": "font",
+          "label": "Font",
+          "holds": "font",
+          "default": "'Inter', 'Helvetica Neue', Arial, system-ui, sans-serif"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 300,
+    "animated": true,
+    "duration": 6240,
+    "module": "horror",
+    "addedAt": "2026-10-31T17:24:00Z",
+    "commitHash": "15d1a82932439963484a69624c21b7d7d20712d6",
+    "order": 505
+  },
+  {
+    "id": "shadow-hands",
+    "name": "Shadow hands",
+    "kind": "shader",
+    "category": "horror",
+    "description": "The shadows of long-fingered hands reaching in over a picture from the edges of the frame one after another, fingers spread, closing on nothing and drawing back.",
+    "tags": [
+      "horror",
+      "creature",
+      "shadow",
+      "hands",
+      "reach",
+      "silhouette",
+      "image"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "city"
+        },
+        "line": 3,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uShadow",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            5,
+            3,
+            7
+          ]
+        },
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uDarkness",
+        "t": "float",
+        "d": 0.8,
+        "line": 5
+      },
+      {
+        "n": "uSoftness",
+        "t": "float",
+        "d": 0.35,
+        "line": 6
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 0.8,
+        "min": 0.3,
+        "max": 1.5,
+        "line": 7
+      },
+      {
+        "n": "uHands",
+        "t": "float",
+        "d": 3,
+        "min": 1,
+        "max": 3,
+        "s": 1,
+        "line": 8
+      },
+      {
+        "n": "uCycle",
+        "t": "float",
+        "d": 9,
+        "l": "Cycle (s)",
+        "min": 3,
+        "max": 20,
+        "line": 9
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "line": 11
+      }
+    ],
+    "presets": [
+      "Sharp",
+      "One hand",
+      "Faint",
+      "Slow"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "filter",
+    "loop": 9,
+    "animated": true,
+    "duration": 9000,
+    "module": "shaders/horror",
+    "addedAt": "2026-10-31T17:24:00Z",
+    "commitHash": "15d1a82932439963484a69624c21b7d7d20712d6",
+    "order": 504
+  },
+  {
+    "id": "creeping-dark",
+    "name": "Creeping dark",
+    "kind": "shader",
+    "category": "horror",
+    "description": "Darkness with tendril edges slowly closing in from the corners of a picture and drawing back, recoiling from the pointer while it hovers as if from a torch.",
+    "tags": [
+      "horror",
+      "creature",
+      "vignette",
+      "darkness",
+      "tendrils",
+      "interactive",
+      "hover",
+      "image"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "landscape"
+        },
+        "line": 3,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uDark",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            2,
+            1,
+            3
+          ]
+        },
+        "l": "Darkness",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uRim",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            90,
+            10,
+            18
+          ]
+        },
+        "l": "Edge",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uAmount",
+        "t": "float",
+        "d": 0.55,
+        "l": "How far it comes",
+        "line": 6
+      },
+      {
+        "n": "uTendrils",
+        "t": "float",
+        "d": 0.6,
+        "line": 7
+      },
+      {
+        "n": "uRecoil",
+        "t": "float",
+        "d": 0.7,
+        "l": "Recoil from the pointer",
+        "line": 8
+      },
+      {
+        "n": "uCycle",
+        "t": "float",
+        "d": 12,
+        "l": "Cycle (s)",
+        "min": 4,
+        "max": 30,
+        "line": 9
+      },
+      {
+        "n": "uAnimate",
+        "t": "bool",
+        "d": true,
+        "line": 10
+      },
+      {
+        "n": "uProgress",
+        "t": "float",
+        "d": 0.7,
+        "l": "Closed (when still)",
+        "line": 11
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 12
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "line": 13
+      }
+    ],
+    "presets": [
+      "Smothering",
+      "Gentle",
+      "Sickly",
+      "Still"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "interactive",
+      "interactions": [
+        "hover",
+        "pointer"
+      ],
+      "transparent": false
+    },
+    "video": "interactive",
+    "loop": 12,
+    "animated": true,
+    "duration": 12000,
+    "module": "shaders/horror",
+    "addedAt": "2026-10-31T17:24:00Z",
+    "commitHash": "15d1a82932439963484a69624c21b7d7d20712d6",
+    "order": 503
+  },
+  {
+    "id": "spirit-orbs",
+    "name": "Spirit orbs",
+    "kind": "shader",
+    "category": "horror",
+    "description": "Pale translucent orbs over a picture, like the ones that turn up in flash photos of haunted houses, drifting like dust and every so often darting off in a streak before drifting on.",
+    "tags": [
+      "horror",
+      "spectral",
+      "orbs",
+      "ghost",
+      "dust",
+      "bokeh",
+      "paranormal",
+      "image"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "city"
+        },
+        "line": 3,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uColor",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            230,
+            242,
+            255
+          ]
+        },
+        "l": "Orbs",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uCount",
+        "t": "float",
+        "d": 14,
+        "l": "Orbs",
+        "min": 1,
+        "max": 24,
+        "s": 1,
+        "line": 5
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 1,
+        "min": 0.3,
+        "max": 3,
+        "line": 6
+      },
+      {
+        "n": "uOpacity",
+        "t": "float",
+        "d": 0.55,
+        "line": 7
+      },
+      {
+        "n": "uDart",
+        "t": "float",
+        "d": 0.6,
+        "l": "Darting",
+        "line": 8
+      },
+      {
+        "n": "uDim",
+        "t": "float",
+        "d": 0.3,
+        "l": "Dim the picture",
+        "line": 9
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "line": 11
+      }
+    ],
+    "presets": [
+      "Swarm",
+      "Few and large",
+      "Green",
+      "Calm"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "filter",
+    "animated": true,
+    "module": "shaders/horror",
+    "addedAt": "2026-10-31T17:24:00Z",
+    "commitHash": "15d1a82932439963484a69624c21b7d7d20712d6",
+    "order": 502
+  },
+  {
+    "id": "ectoplasm-wisps",
+    "name": "Ectoplasm wisps",
+    "kind": "shader",
+    "category": "horror",
+    "description": "Glowing green trails of ectoplasm spiralling in out of the dark towards the pointer while it hovers, or a point wandering the frame, each fading as it arrives and another rising in its place.",
+    "tags": [
+      "horror",
+      "spectral",
+      "ectoplasm",
+      "wisps",
+      "glow",
+      "interactive",
+      "hover",
+      "cursor",
+      "background"
+    ],
+    "controls": [
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            3,
+            6,
+            10
+          ]
+        },
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uColor",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            125,
+            255,
+            178
+          ]
+        },
+        "l": "Ectoplasm",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uWisps",
+        "t": "float",
+        "d": 6,
+        "min": 1,
+        "max": 8,
+        "s": 1,
+        "line": 5
+      },
+      {
+        "n": "uLength",
+        "t": "float",
+        "d": 0.5,
+        "l": "Tail length",
+        "min": 0.1,
+        "line": 6
+      },
+      {
+        "n": "uWidth",
+        "t": "float",
+        "d": 8,
+        "min": 2,
+        "max": 30,
+        "line": 7
+      },
+      {
+        "n": "uGlow",
+        "t": "float",
+        "d": 1,
+        "max": 2,
+        "line": 8
+      },
+      {
+        "n": "uSpeed",
+        "t": "float",
+        "d": 0.7,
+        "min": 0.2,
+        "max": 2,
+        "line": 9
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Background opacity",
+        "line": 93
+      }
+    ],
+    "presets": [
+      "Poltergeist",
+      "Bile",
+      "Single spirit",
+      "Transparent"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [
+        "hover",
+        "pointer"
+      ],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "shaders/horror",
+    "addedAt": "2026-10-31T17:24:00Z",
+    "commitHash": "15d1a82932439963484a69624c21b7d7d20712d6",
+    "order": 501
+  },
+  {
+    "id": "trail-cam",
+    "name": "Trail cam",
+    "kind": "shader",
+    "category": "horror",
+    "description": "A picture as an infrared trail camera's stills, a new grainy grey shot every second or so under its flash, with the date and time stamped along the bottom, and a figure in a few of the shots, closer each time.",
+    "tags": [
+      "horror",
+      "analog-horror",
+      "trail-cam",
+      "infrared",
+      "found-footage",
+      "figure",
+      "date-stamp",
+      "image"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "landscape"
+        },
+        "line": 3,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uTint",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            228,
+            235,
+            226
+          ]
+        },
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uInterval",
+        "t": "float",
+        "d": 1.2,
+        "l": "Seconds between shots",
+        "min": 0.4,
+        "max": 4,
+        "line": 5
+      },
+      {
+        "n": "uGrain",
+        "t": "float",
+        "d": 0.5,
+        "line": 6
+      },
+      {
+        "n": "uFlash",
+        "t": "float",
+        "d": 0.6,
+        "l": "Flash falloff",
+        "line": 7
+      },
+      {
+        "n": "uFigure",
+        "t": "bool",
+        "d": true,
+        "line": 8
+      },
+      {
+        "n": "uMonth",
+        "t": "float",
+        "d": 10,
+        "min": 1,
+        "max": 12,
+        "s": 1,
+        "line": 9
+      },
+      {
+        "n": "uDay",
+        "t": "float",
+        "d": 31,
+        "min": 1,
+        "max": 31,
+        "s": 1,
+        "line": 10
+      },
+      {
+        "n": "uYear",
+        "t": "float",
+        "d": 2026,
+        "min": 1970,
+        "max": 2099,
+        "s": 1,
+        "line": 11
+      },
+      {
+        "n": "uClock",
+        "t": "float",
+        "d": 3,
+        "l": "Clock starts at (hour)",
+        "max": 24,
+        "line": 12
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 13
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "line": 14
+      }
+    ],
+    "presets": [
+      "Every half second",
+      "Pink IR",
+      "Empty woods",
+      "Harsh flash"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "stills",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "stills",
+    "loop": 9.6,
+    "animated": true,
+    "duration": 9600,
+    "module": "shaders/horror",
+    "addedAt": "2026-10-31T17:24:00Z",
+    "commitHash": "15d1a82932439963484a69624c21b7d7d20712d6",
+    "order": 500
+  },
+  {
     "id": "possessed-text",
     "name": "Possessed text",
     "kind": "vector",
@@ -1998,784 +2861,5 @@
     "addedAt": "2026-10-28T23:06:56Z",
     "commitHash": "974f0cf9f350aec221df957137e8d457c5536011",
     "order": 486
-  },
-  {
-    "id": "card-spotlight",
-    "name": "Card spotlight",
-    "kind": "shader",
-    "category": "ui",
-    "description": "A bento grid of dark cards whose borders and faces light up near the pointer, one soft spotlight bleeding across the card edges and the gaps between.",
-    "tags": [
-      "ui",
-      "card",
-      "bento",
-      "grid",
-      "spotlight",
-      "interactive",
-      "hover",
-      "saas",
-      "background"
-    ],
-    "controls": [
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            9,
-            9,
-            11
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "uCard",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            17,
-            17,
-            20
-          ]
-        },
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uBorder",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            39,
-            39,
-            42
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uSpot",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            167,
-            139,
-            250
-          ]
-        },
-        "l": "Spotlight",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uRadius",
-        "t": "float",
-        "d": 0.32,
-        "l": "Spotlight size",
-        "min": 0.1,
-        "max": 0.8,
-        "line": 6
-      },
-      {
-        "n": "uGap",
-        "t": "float",
-        "d": 0.022,
-        "min": 0.005,
-        "max": 0.06,
-        "line": 7
-      },
-      {
-        "n": "uDemo",
-        "t": "bool",
-        "d": true,
-        "l": "Demo when idle",
-        "line": 8
-      },
-      {
-        "n": "uBackgroundAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Background opacity",
-        "line": 78
-      }
-    ],
-    "presets": [
-      "Light",
-      "Emerald"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [
-        "hover",
-        "pointer"
-      ],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "shaders/ui",
-    "addedAt": "2026-10-28T23:06:56Z",
-    "commitHash": "974f0cf9f350aec221df957137e8d457c5536011",
-    "order": 485
-  },
-  {
-    "id": "metal-card",
-    "name": "Metal card",
-    "kind": "shader",
-    "category": "ui",
-    "description": "A brushed-metal payment card that tilts toward the pointer, a streak of light sliding along its grain over the chip, the contactless mark and embossed digits.",
-    "tags": [
-      "ui",
-      "card",
-      "credit-card",
-      "payment",
-      "metal",
-      "fintech",
-      "interactive",
-      "hover"
-    ],
-    "controls": [
-      {
-        "n": "uMetal",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            42,
-            44,
-            49
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "uChip",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            217,
-            180,
-            90
-          ]
-        },
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uInk",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            201,
-            205,
-            212
-          ]
-        },
-        "l": "Embossing",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uShine",
-        "t": "float",
-        "d": 0.6,
-        "line": 5
-      },
-      {
-        "n": "uTilt",
-        "t": "float",
-        "d": 0.5,
-        "line": 6
-      },
-      {
-        "n": "uDemo",
-        "t": "bool",
-        "d": true,
-        "l": "Demo when idle",
-        "line": 7
-      }
-    ],
-    "presets": [
-      "Titanium",
-      "Rose gold"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [
-        "hover",
-        "pointer"
-      ],
-      "transparent": true
-    },
-    "transparent": true,
-    "animated": true,
-    "module": "shaders/ui",
-    "addedAt": "2026-10-28T23:06:56Z",
-    "commitHash": "974f0cf9f350aec221df957137e8d457c5536011",
-    "order": 484
-  },
-  {
-    "id": "card-fan",
-    "name": "Card fan",
-    "kind": "vector",
-    "category": "interaction",
-    "description": "A squared-up hand of five playing cards that fans open on an arc on hover, the middle card rising, and gathers back when the pointer leaves.",
-    "tags": [
-      "interactive",
-      "ui",
-      "hover",
-      "card",
-      "playing-card",
-      "fan",
-      "deck",
-      "poker"
-    ],
-    "controls": [
-      {
-        "n": "ranks",
-        "t": "text",
-        "d": "A K Q J 10",
-        "l": "Ranks (five, separated by spaces)",
-        "line": 1
-      },
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            20,
-            83,
-            45
-          ]
-        },
-        "l": "Table",
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "card",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "black",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            17,
-            24,
-            39
-          ]
-        },
-        "l": "Black suits",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "red",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            220,
-            38,
-            38
-          ]
-        },
-        "l": "Red suits",
-        "c": 1,
-        "line": 5
-      }
-    ],
-    "presets": [
-      "Royal flush",
-      "Night"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "ranks",
-          "label": "Ranks (five, separated by spaces)",
-          "holds": "copy",
-          "default": "A K Q J 10"
-        }
-      ],
-      "interactions": [
-        "hover"
-      ],
-      "trigger": "hover",
-      "transparent": false
-    },
-    "trigger": "hover",
-    "animated": true,
-    "duration": 1090,
-    "module": "interaction",
-    "addedAt": "2026-10-28T23:06:56Z",
-    "commitHash": "974f0cf9f350aec221df957137e8d457c5536011",
-    "order": 483
-  },
-  {
-    "id": "polaroid-develop",
-    "name": "Polaroid develop",
-    "kind": "shader",
-    "category": "image",
-    "description": "An instant photo sliding onto the table and given a shake, its picture developing out of murky blue-green to full, slightly faded colour inside the white frame.",
-    "tags": [
-      "image",
-      "reveal",
-      "card",
-      "polaroid",
-      "instant-photo",
-      "film",
-      "retro",
-      "develop"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "portrait"
-        },
-        "line": 3,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uTable",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            200,
-            181,
-            154
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uFrame",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            245,
-            242,
-            234
-          ]
-        },
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uTilt",
-        "t": "float",
-        "d": -4,
-        "l": "Tilt (degrees)",
-        "min": -15,
-        "max": 15,
-        "line": 6
-      },
-      {
-        "n": "uAuto",
-        "t": "bool",
-        "d": true,
-        "l": "Animate",
-        "line": 7
-      },
-      {
-        "n": "uProgress",
-        "t": "float",
-        "d": 1,
-        "l": "Developed (when still)",
-        "line": 8
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 9
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "line": 10
-      }
-    ],
-    "presets": [
-      "Dark desk",
-      "Half developed"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "filter",
-    "loop": 7,
-    "animated": true,
-    "duration": 7000,
-    "module": "shaders/treatments",
-    "addedAt": "2026-10-28T23:06:56Z",
-    "commitHash": "974f0cf9f350aec221df957137e8d457c5536011",
-    "order": 482
-  },
-  {
-    "id": "tarot-reveal",
-    "name": "Tarot reveal",
-    "kind": "shader",
-    "category": "light",
-    "description": "A face-down tarot card hovering in a golden glow, its back inlaid with a gilt sun, moon and stars, turning over to reveal a picture in a gold frame as dust motes drift up through the light.",
-    "tags": [
-      "card",
-      "tarot",
-      "reveal",
-      "mystic",
-      "gold",
-      "flip",
-      "glow",
-      "fortune"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "portrait"
-        },
-        "line": 3,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uGold",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            232,
-            196,
-            106
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uCardBack",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            30,
-            27,
-            75
-          ]
-        },
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            10,
-            7,
-            22
-          ]
-        },
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "uGlow",
-        "t": "float",
-        "d": 0.6,
-        "line": 7
-      },
-      {
-        "n": "uDust",
-        "t": "float",
-        "d": 0.6,
-        "line": 8
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 9
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "line": 10
-      },
-      {
-        "n": "uBackgroundAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Background opacity",
-        "line": 200
-      }
-    ],
-    "presets": [
-      "Silver moon",
-      "Crimson"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "filter",
-    "loop": 8,
-    "animated": true,
-    "duration": 8000,
-    "module": "shaders/light",
-    "addedAt": "2026-10-28T23:06:56Z",
-    "commitHash": "974f0cf9f350aec221df957137e8d457c5536011",
-    "order": 481
-  },
-  {
-    "id": "pack-opening",
-    "name": "Pack opening",
-    "kind": "vector",
-    "category": "ui",
-    "description": "A foil booster pack shaking, its top tearing off and a hand of trading cards rising out of it and fanning open, the rare one in the middle lifting, glowing and catching a holographic shine.",
-    "tags": [
-      "ui",
-      "card",
-      "trading-card",
-      "pack",
-      "reveal",
-      "rare",
-      "holographic",
-      "reward",
-      "celebration",
-      "loop"
-    ],
-    "controls": [
-      {
-        "n": "label",
-        "t": "text",
-        "d": "MYTHIC",
-        "l": "Set name",
-        "line": 1
-      },
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            238,
-            242,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "pack",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            67,
-            56,
-            202
-          ]
-        },
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "pack2",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            219,
-            39,
-            119
-          ]
-        },
-        "l": "Pack second colour",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "card",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            248,
-            250,
-            252
-          ]
-        },
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "rare",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            245,
-            197,
-            66
-          ]
-        },
-        "l": "Rare card edge",
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "art0",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            56,
-            189,
-            248
-          ]
-        },
-        "l": "Art colour 1",
-        "c": 1,
-        "line": 7
-      },
-      {
-        "n": "art1",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            167,
-            139,
-            250
-          ]
-        },
-        "l": "Art colour 2",
-        "c": 1,
-        "line": 8
-      },
-      {
-        "n": "art2",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            74,
-            222,
-            128
-          ]
-        },
-        "l": "Art colour 3",
-        "c": 1,
-        "line": 9
-      },
-      {
-        "n": "ink",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "l": "Label colour",
-        "c": 1,
-        "line": 10
-      }
-    ],
-    "presets": [
-      "Midnight",
-      "Fire set"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "label",
-          "label": "Set name",
-          "holds": "copy",
-          "default": "MYTHIC"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 400,
-    "animated": true,
-    "duration": 4660,
-    "module": "ui",
-    "addedAt": "2026-10-28T22:52:34Z",
-    "commitHash": "eb9153e3ee1565e48324793423a486a3097ccf60",
-    "order": 480
   }
 ]

@@ -11,6 +11,7 @@ export const EFFECT_MODULES: Record<string, () => Promise<Record<string, unknown
   "fire": () => import("./fire.js"),
   "glow": () => import("./glow.js"),
   "hologram": () => import("./hologram.js"),
+  "horror": () => import("./horror.js"),
   "icons": () => import("./icons.js"),
   "impact": () => import("./impact.js"),
   "interaction": () => import("./interaction.js"),
