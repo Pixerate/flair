@@ -24,6 +24,7 @@
         "l": "Shades",
         "min": 1,
         "max": 5,
+        "b": 3,
         "line": 1
       },
       {
@@ -137,6 +138,7 @@
         "d": 50,
         "l": "Row x (%)",
         "max": 100,
+        "b": 3,
         "line": 12
       },
       {
@@ -145,6 +147,7 @@
         "d": 50,
         "l": "Row y (%)",
         "max": 100,
+        "b": 3,
         "line": 13
       },
       {
@@ -155,6 +158,7 @@
         "min": 40,
         "max": 320,
         "s": 1,
+        "b": 3,
         "line": 14
       },
       {
@@ -170,6 +174,7 @@
         "d": 0.5,
         "l": "Satin sheen",
         "s": 0.05,
+        "b": 3,
         "line": 16
       },
       {
@@ -194,6 +199,7 @@
         "min": 0.5,
         "max": 20,
         "s": 0.5,
+        "b": 3,
         "line": 18
       },
       {
@@ -286,6 +292,7 @@
         "d": 50,
         "l": "Swatch x (%)",
         "max": 100,
+        "b": 3,
         "line": 1
       },
       {
@@ -294,6 +301,7 @@
         "d": 44,
         "l": "Swatch y (%)",
         "max": 100,
+        "b": 3,
         "line": 2
       },
       {
@@ -304,6 +312,7 @@
         "min": 10,
         "max": 90,
         "s": 0.5,
+        "b": 3,
         "line": 3
       },
       {
@@ -313,6 +322,7 @@
         "min": 20,
         "max": 300,
         "s": 1,
+        "b": 3,
         "line": 4
       },
       {
@@ -322,6 +332,7 @@
         "min": -45,
         "max": 45,
         "s": 0.5,
+        "b": 3,
         "line": 5
       },
       {
@@ -343,6 +354,7 @@
         "t": "float",
         "d": 0.45,
         "s": 0.05,
+        "b": 3,
         "line": 7
       },
       {
@@ -352,6 +364,7 @@
         "l": "Creamy edges",
         "max": 30,
         "s": 1,
+        "b": 3,
         "line": 8
       },
       {
@@ -390,6 +403,7 @@
         "min": 0.5,
         "max": 20,
         "s": 0.5,
+        "b": 3,
         "line": 12
       },
       {
@@ -503,6 +517,7 @@
         "t": "float",
         "d": 0.7,
         "l": "Glint strength",
+        "b": 3,
         "line": 4
       },
       {
@@ -512,6 +527,7 @@
         "l": "Glint width",
         "min": 0.02,
         "max": 0.4,
+        "b": 3,
         "line": 5
       },
       {
@@ -521,6 +537,7 @@
         "l": "Glint angle (°)",
         "min": -90,
         "max": 90,
+        "b": 3,
         "line": 6
       },
       {
@@ -528,6 +545,7 @@
         "t": "int",
         "d": 4,
         "max": 8,
+        "b": 3,
         "line": 7
       },
       {
@@ -537,6 +555,7 @@
         "l": "Sparkle size (px)",
         "min": 4,
         "max": 80,
+        "b": 3,
         "line": 8
       },
       {
@@ -557,6 +576,7 @@
         "t": "float",
         "d": 1,
         "l": "Backdrop opacity",
+        "b": 3,
         "line": 10
       }
     ],
@@ -627,18 +647,21 @@
         "t": "float",
         "d": 0.85,
         "l": "Smoothing",
+        "b": 3,
         "line": 3
       },
       {
         "n": "uGlow",
         "t": "float",
         "d": 0.35,
+        "b": 3,
         "line": 4
       },
       {
         "n": "uWarmth",
         "t": "float",
         "d": 0.3,
+        "b": 3,
         "line": 5
       },
       {
@@ -646,6 +669,7 @@
         "t": "float",
         "d": 1,
         "l": "Retouch skin only",
+        "b": 3,
         "line": 6
       },
       {
@@ -659,6 +683,7 @@
         "t": "float",
         "d": 0.5,
         "l": "Split (when still)",
+        "b": 3,
         "line": 8
       },
       {
@@ -681,6 +706,7 @@
         "d": 3,
         "l": "Divider width",
         "max": 12,
+        "b": 3,
         "line": 10
       },
       {
@@ -701,6 +727,7 @@
         "t": "float",
         "d": 1,
         "l": "Backdrop opacity",
+        "b": 3,
         "line": 12
       }
     ],
@@ -784,12 +811,14 @@
         "n": "uSheen",
         "t": "float",
         "d": 0.4,
+        "b": 3,
         "line": 4
       },
       {
         "n": "uGlitter",
         "t": "float",
         "d": 0.6,
+        "b": 3,
         "line": 5
       },
       {
@@ -799,6 +828,7 @@
         "l": "Glitter size (px)",
         "min": 1,
         "max": 8,
+        "b": 3,
         "line": 6
       },
       {
@@ -806,12 +836,14 @@
         "t": "float",
         "d": 0.25,
         "l": "Glitter density",
+        "b": 3,
         "line": 7
       },
       {
         "n": "uSkinOnly",
         "t": "float",
         "d": 1,
+        "b": 3,
         "line": 8
       },
       {
@@ -822,6 +854,7 @@
           0.561
         ],
         "l": "Highlight centre (between the two)",
+        "b": 3,
         "line": 9
       },
       {
@@ -830,6 +863,7 @@
         "d": 0.055,
         "l": "Highlight spacing (from the centre)",
         "max": 0.5,
+        "b": 3,
         "line": 10
       },
       {
@@ -840,6 +874,7 @@
           0.05
         ],
         "l": "Highlight size (each)",
+        "b": 3,
         "line": 11
       },
       {
@@ -848,6 +883,7 @@
         "d": 20,
         "l": "Edge softness (px)",
         "max": 120,
+        "b": 3,
         "line": 12
       },
       {
@@ -868,6 +904,7 @@
         "t": "float",
         "d": 1,
         "l": "Backdrop opacity",
+        "b": 3,
         "line": 14
       }
     ],
@@ -966,6 +1003,7 @@
         "t": "float",
         "d": 0.7,
         "l": "Strength",
+        "b": 3,
         "line": 5
       },
       {
@@ -973,12 +1011,14 @@
         "t": "float",
         "d": 0.4,
         "l": "Colour depth",
+        "b": 3,
         "line": 6
       },
       {
         "n": "uShimmer",
         "t": "float",
         "d": 0.3,
+        "b": 3,
         "line": 7
       },
       {
@@ -986,6 +1026,7 @@
         "t": "float",
         "d": 0.8,
         "l": "Skin only (keeps eyes and lashes bare)",
+        "b": 3,
         "line": 8
       },
       {
@@ -996,6 +1037,7 @@
           0.606
         ],
         "l": "Lid centre (between the two)",
+        "b": 3,
         "line": 9
       },
       {
@@ -1004,6 +1046,7 @@
         "d": 0.039,
         "l": "Lid spacing (from the centre)",
         "max": 0.5,
+        "b": 3,
         "line": 10
       },
       {
@@ -1014,6 +1057,7 @@
           0.045
         ],
         "l": "Lid size (each)",
+        "b": 3,
         "line": 11
       },
       {
@@ -1022,6 +1066,7 @@
         "d": 8,
         "l": "Edge softness (px)",
         "max": 120,
+        "b": 3,
         "line": 12
       },
       {
@@ -1042,6 +1087,7 @@
         "t": "float",
         "d": 1,
         "l": "Backdrop opacity",
+        "b": 3,
         "line": 14
       }
     ],
@@ -1126,6 +1172,7 @@
         "t": "float",
         "d": 0.45,
         "l": "Strength",
+        "b": 3,
         "line": 4
       },
       {
@@ -1133,12 +1180,14 @@
         "t": "float",
         "d": 0.2,
         "l": "Colour depth",
+        "b": 3,
         "line": 5
       },
       {
         "n": "uSkinOnly",
         "t": "float",
         "d": 1,
+        "b": 3,
         "line": 6
       },
       {
@@ -1149,6 +1198,7 @@
           0.525
         ],
         "l": "Cheek centre (between the two)",
+        "b": 3,
         "line": 7
       },
       {
@@ -1157,6 +1207,7 @@
         "d": 0.047,
         "l": "Cheek spacing (from the centre)",
         "max": 0.5,
+        "b": 3,
         "line": 8
       },
       {
@@ -1167,6 +1218,7 @@
           0.09
         ],
         "l": "Cheek size (each)",
+        "b": 3,
         "line": 9
       },
       {
@@ -1175,6 +1227,7 @@
         "d": 30,
         "l": "Edge softness (px)",
         "max": 120,
+        "b": 3,
         "line": 10
       },
       {
@@ -1195,6 +1248,7 @@
         "t": "float",
         "d": 1,
         "l": "Backdrop opacity",
+        "b": 3,
         "line": 12
       }
     ],
@@ -1277,6 +1331,7 @@
         "t": "float",
         "d": 0.75,
         "l": "Strength",
+        "b": 3,
         "line": 4
       },
       {
@@ -1284,12 +1339,14 @@
         "t": "float",
         "d": 0.5,
         "l": "Colour depth",
+        "b": 3,
         "line": 5
       },
       {
         "n": "uGloss",
         "t": "float",
         "d": 0.35,
+        "b": 3,
         "line": 6
       },
       {
@@ -1297,6 +1354,7 @@
         "t": "float",
         "d": 0.6,
         "l": "Follow the lips' colour",
+        "b": 3,
         "line": 7
       },
       {
@@ -1307,6 +1365,7 @@
           0.478
         ],
         "l": "Region centre",
+        "b": 3,
         "line": 8
       },
       {
@@ -1317,6 +1376,7 @@
           0.06
         ],
         "l": "Region size",
+        "b": 3,
         "line": 9
       },
       {
@@ -1325,6 +1385,7 @@
         "d": 1,
         "l": "Region shape (0 box, 1 ellipse)",
         "max": 1,
+        "b": 3,
         "line": 10
       },
       {
@@ -1333,6 +1394,7 @@
         "d": 6,
         "l": "Edge softness (px)",
         "max": 60,
+        "b": 3,
         "line": 11
       },
       {
@@ -1360,6 +1422,7 @@
         "t": "float",
         "d": 1,
         "l": "Backdrop opacity",
+        "b": 3,
         "line": 14
       }
     ],
@@ -1428,6 +1491,7 @@
         "t": "float",
         "d": 0.35,
         "l": "Brighten",
+        "b": 3,
         "line": 3
       },
       {
@@ -1435,6 +1499,7 @@
         "t": "float",
         "d": 0.6,
         "l": "Whiten (less yellow)",
+        "b": 3,
         "line": 4
       },
       {
@@ -1442,6 +1507,7 @@
         "t": "float",
         "d": 0.7,
         "l": "Leave skin alone",
+        "b": 3,
         "line": 5
       },
       {
@@ -1452,6 +1518,7 @@
           0.583
         ],
         "l": "Region centre",
+        "b": 3,
         "line": 6
       },
       {
@@ -1462,6 +1529,7 @@
           0.09
         ],
         "l": "Region size",
+        "b": 3,
         "line": 7
       },
       {
@@ -1470,6 +1538,7 @@
         "d": 1,
         "l": "Region shape (0 box, 1 ellipse)",
         "max": 1,
+        "b": 3,
         "line": 8
       },
       {
@@ -1478,6 +1547,7 @@
         "d": 10,
         "l": "Edge softness (px)",
         "max": 60,
+        "b": 3,
         "line": 9
       },
       {
@@ -1505,6 +1575,7 @@
         "t": "float",
         "d": 1,
         "l": "Backdrop opacity",
+        "b": 3,
         "line": 12
       }
     ],
@@ -1571,6 +1642,7 @@
         "n": "uDiffusion",
         "t": "float",
         "d": 0.5,
+        "b": 3,
         "line": 3
       },
       {
@@ -1580,6 +1652,7 @@
         "l": "Spread (px)",
         "min": 4,
         "max": 120,
+        "b": 3,
         "line": 4
       },
       {
@@ -1587,6 +1660,7 @@
         "t": "float",
         "d": 0.45,
         "l": "Bloom from (brightness)",
+        "b": 3,
         "line": 5
       },
       {
@@ -1594,6 +1668,7 @@
         "t": "float",
         "d": 0.08,
         "max": 0.5,
+        "b": 3,
         "line": 6
       },
       {
@@ -1628,6 +1703,7 @@
         "t": "float",
         "d": 1,
         "l": "Backdrop opacity",
+        "b": 3,
         "line": 9
       }
     ],
@@ -1697,6 +1773,7 @@
         "d": 0.8,
         "l": "Glow",
         "max": 2,
+        "b": 3,
         "line": 3
       },
       {
@@ -1706,6 +1783,7 @@
         "l": "Glow size (px)",
         "min": 2,
         "max": 80,
+        "b": 3,
         "line": 4
       },
       {
@@ -1713,12 +1791,14 @@
         "t": "float",
         "d": 0.5,
         "l": "Glow from (brightness)",
+        "b": 3,
         "line": 5
       },
       {
         "n": "uSheen",
         "t": "float",
         "d": 0.25,
+        "b": 3,
         "line": 6
       },
       {
@@ -1739,6 +1819,7 @@
         "n": "uSkinOnly",
         "t": "float",
         "d": 1,
+        "b": 3,
         "line": 8
       },
       {
@@ -1749,6 +1830,7 @@
           0.6
         ],
         "l": "Region centre",
+        "b": 3,
         "line": 9
       },
       {
@@ -1759,6 +1841,7 @@
           0.6
         ],
         "l": "Region size",
+        "b": 3,
         "line": 10
       },
       {
@@ -1767,6 +1850,7 @@
         "d": 1,
         "l": "Region shape (0 box, 1 ellipse)",
         "max": 1,
+        "b": 3,
         "line": 11
       },
       {
@@ -1775,6 +1859,7 @@
         "d": 40,
         "l": "Edge softness (px)",
         "max": 60,
+        "b": 3,
         "line": 12
       },
       {
@@ -1802,6 +1887,7 @@
         "t": "float",
         "d": 1,
         "l": "Backdrop opacity",
+        "b": 3,
         "line": 15
       }
     ],
@@ -1870,6 +1956,7 @@
         "t": "float",
         "d": 0.75,
         "l": "Smoothing",
+        "b": 3,
         "line": 3
       },
       {
@@ -1879,6 +1966,7 @@
         "l": "Smoothing radius (px)",
         "min": 1,
         "max": 24,
+        "b": 3,
         "line": 4
       },
       {
@@ -1888,6 +1976,7 @@
         "l": "Edge protection (lower keeps more)",
         "min": 0.02,
         "max": 0.5,
+        "b": 3,
         "line": 5
       },
       {
@@ -1895,12 +1984,14 @@
         "t": "float",
         "d": 0.35,
         "l": "Texture kept",
+        "b": 3,
         "line": 6
       },
       {
         "n": "uSkinOnly",
         "t": "float",
         "d": 1,
+        "b": 3,
         "line": 7
       },
       {
@@ -1911,6 +2002,7 @@
           0.6
         ],
         "l": "Region centre",
+        "b": 3,
         "line": 8
       },
       {
@@ -1921,6 +2013,7 @@
           0.6
         ],
         "l": "Region size",
+        "b": 3,
         "line": 9
       },
       {
@@ -1929,6 +2022,7 @@
         "d": 1,
         "l": "Region shape (0 box, 1 ellipse)",
         "max": 1,
+        "b": 3,
         "line": 10
       },
       {
@@ -1937,6 +2031,7 @@
         "d": 30,
         "l": "Edge softness (px)",
         "max": 60,
+        "b": 3,
         "line": 11
       },
       {
@@ -1964,6 +2059,7 @@
         "t": "float",
         "d": 1,
         "l": "Backdrop opacity",
+        "b": 3,
         "line": 14
       }
     ],
