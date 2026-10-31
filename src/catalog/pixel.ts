@@ -482,5 +482,243 @@ export const ledTicker: VectorEffect = {
   },
 };
 
+/** A `w` × `h` bitmap whose pixel at (x, y) is `pixel(x, y)` ("." for none), top row first. */
+function bitmap(w: number, h: number, pixel: (x: number, y: number) => string): string[] {
+  return Array.from({ length: h }, (_, y) => Array.from({ length: w }, (_, x) => pixel(x, y)).join(""));
+}
+
+/** A fixed 0–1 hash of whole numbers, so generated sprites come out the same every time. */
+function hash3(x: number, y: number, z: number): number {
+  let n = Math.imul(x, 374761393) + Math.imul(y, 668265263) + Math.imul(z, 1274126177);
+  n = Math.imul(n ^ (n >>> 13), 1274126177);
+  return ((n ^ (n >>> 16)) >>> 0) / 4294967296;
+}
+
+// ── Snake loader ───────────────────────────────────────────────────────
+
+const SNAKE_COLS = 10;
+const SNAKE_ROWS = 5;
+const SNAKE_CELL = 10;
+const SNAKE_LENGTH = 6;
+const SNAKE_STEP = 100;
+/** The cells round the board's edge, clockwise from the top-left. */
+const SNAKE_TRACK: [number, number][] = [
+  ...Array.from({ length: SNAKE_COLS - 1 }, (_, i): [number, number] => [i, 0]),
+  ...Array.from({ length: SNAKE_ROWS - 1 }, (_, j): [number, number] => [SNAKE_COLS - 1, j]),
+  ...Array.from({ length: SNAKE_COLS - 1 }, (_, i): [number, number] => [SNAKE_COLS - 1 - i, SNAKE_ROWS - 1]),
+  ...Array.from({ length: SNAKE_ROWS - 1 }, (_, j): [number, number] => [0, SNAKE_ROWS - 1 - j]),
+];
+/** Track cells the two pieces of food sit on; each is eaten once a lap. */
+const SNAKE_FOOD = [8, 21] as const;
+const snakeAt = (step: number, k: number) => {
+  const [x, y] = SNAKE_TRACK[(((step - k) % SNAKE_TRACK.length) + SNAKE_TRACK.length) % SNAKE_TRACK.length]!;
+  return `translate(${10 + x * SNAKE_CELL} ${10 + y * SNAKE_CELL})`;
+};
+
+export const pixelSnakeLoader: VectorEffect = {
+  kind: "vector",
+  id: "pixel-snake-loader",
+  name: "Snake loader",
+  description: "A pixel snake running laps round the edge of a phone-LCD board a cell at a time, eating the food in its path, as a looping loader.",
+  category: "loader",
+  tags: ["pixel", "retro", "loader", "snake", "game", "lcd", "8-bit", "loop"],
+  // The last step's rest brings it round to the first.
+  hold: SNAKE_STEP,
+  presets: [
+    { name: "Neon", values: { background: [0.02, 0.02, 0.05], body: [0.2, 1, 0.4], head: [0.75, 1, 0.8], food: [1, 0.2, 0.4] } },
+    { name: "Light", values: { background: [1, 1, 1], body: [0.2, 0.25, 0.35], head: [0.39, 0.4, 0.95], food: [0.95, 0.35, 0.2] } },
+  ],
+  motion: (() => {
+    const lap = SNAKE_TRACK.length;
+    const animate: SvgAnimation[] = [];
+    for (let s = 1; s < lap; s++) for (let k = 0; k < SNAKE_LENGTH; k++) animate.push(snap(`snake${k}`, "transform", snakeAt(s, k), s * SNAKE_STEP));
+    const [a, b] = SNAKE_FOOD;
+    animate.push(snap("snakeFoodA", "opacity", 0, a * SNAKE_STEP), snap("snakeFoodB", "opacity", 1, a * SNAKE_STEP));
+    animate.push(snap("snakeFoodB", "opacity", 0, b * SNAKE_STEP), snap("snakeFoodA", "opacity", 1, b * SNAKE_STEP));
+    const food = (id: string, i: number, shown: number) => {
+      const [x, y] = SNAKE_TRACK[i]!;
+      return `<path id="${id}" opacity="${shown}" fill="{{food}}" d="M${13 + x * SNAKE_CELL} ${11 + y * SNAKE_CELL}h3v2h2v3h-2v2h-3v-2h-2v-3h2z"/>`;
+    };
+    const lcd = bitmapPath(bitmap(SNAKE_COLS, SNAKE_ROWS, () => "#"), "#", SNAKE_CELL, 10, 10);
+    return {
+      svg: `<svg viewBox="0 0 120 70" shape-rendering="crispEdges"><!-- {{background: color default=#C7D7A6 label='Screen'}} {{body: color default=#2E3B1F label='Snake'}} {{head: color default=#141C0C label='Head'}} {{food: color default=#2E3B1F label='Food'}} --><rect width="120" height="70" fill="{{background}}"/><path d="${lcd}" fill="none" stroke="{{body}}" stroke-opacity="0.08"/><rect x="9.5" y="9.5" width="${SNAKE_COLS * SNAKE_CELL + 1}" height="${SNAKE_ROWS * SNAKE_CELL + 1}" fill="none" stroke="{{body}}" stroke-opacity="0.5"/>${food("snakeFoodA", a, 1)}${food("snakeFoodB", b, 0)}${Array.from(
+        { length: SNAKE_LENGTH },
+        (_, k) => SNAKE_LENGTH - 1 - k,
+      )
+        .map((k) => `<rect id="snake${k}" transform="${snakeAt(0, k)}" x="1" y="1" width="8" height="8" fill="${k === 0 ? "{{head}}" : "{{body}}"}"/>`)
+        .join("")}</svg>`,
+      animate,
+    };
+  })(),
+};
+
+// ── Pixel weather ──────────────────────────────────────────────────────
+
+const PXW_UNIT = 6;
+const PXW_MS = 1920;
+/** A 16 × 16 cloud, `c` lit and `d` its shaded underside, its top `top` rows down. */
+const pxwCloud = (top: number) =>
+  bitmap(16, 16, (x, y) => {
+    const cy = y - top;
+    const inside =
+      (x - 5) ** 2 + (cy - 4) ** 2 <= 9.5 || (x - 9) ** 2 + (cy - 2.5) ** 2 <= 13 || (x - 12) ** 2 + (cy - 5) ** 2 <= 6.5 || (x >= 3 && x <= 13 && cy >= 4 && cy <= 6);
+    return !inside || cy > 6 ? "." : cy >= 6 || (cy >= 5 && x >= 11) ? "d" : "c";
+  });
+/** A sun of radius `r` at (cx, cy): `y` lit, `o` shaded lower right, and its rays, orthogonal or diagonal. */
+const pxwSun = (cx: number, cy: number, r: number, diagonal: boolean, reach: number) =>
+  bitmap(16, 16, (x, y) => {
+    const dx = x - cx;
+    const dy = y - cy;
+    const d = Math.hypot(dx, dy);
+    if (d <= r) return dx + dy > r * 0.6 ? "o" : "y";
+    if (d < r + 1.6 || d > reach) return ".";
+    const ray = diagonal ? Math.abs(Math.abs(dx) - Math.abs(dy)) < 0.6 : Math.min(Math.abs(dx), Math.abs(dy)) < 0.6;
+    return ray ? "y" : ".";
+  });
+const PXW_BOLT = [
+  ...Array<string>(8).fill("................"),
+  ".........###....",
+  "........###.....",
+  ".......###......",
+  "......#######...",
+  ".........###....",
+  "........###.....",
+  ".......##.......",
+  "......#.........",
+];
+/** Rain or snow: pixels at these spots below the cloud, falling a pixel a step. */
+const PXW_DROPS: [number, number][] = [[4, 9], [8, 11], [12, 9], [6, 12], [10, 13]];
+
+/** A sprite of `colours` drawn in units on the 16 × 16 icon grid. */
+const pxwSprite = (map: readonly string[], colours: Record<string, string>, id?: string) =>
+  `<g${id ? ` id="${id}"` : ""}>${sprite(map, colours, PXW_UNIT)}</g>`;
+
+export const pixelWeather: VectorEffect = {
+  kind: "vector",
+  id: "pixel-weather",
+  name: "Pixel weather",
+  description: "A 16 × 16 pixel-art weather icon: a sun flicking its rays, partly cloudy, a bobbing cloud, rain or snow falling in steps, or a thunderbolt flashing under a dark cloud.",
+  category: "icon",
+  tags: ["pixel", "retro", "icon", "weather", "forecast", "sun", "rain", "snow", "8-bit", "loop"],
+  hold: 0,
+  presets: [
+    { name: "Rain", values: { kind: 3 } },
+    { name: "Thunder", values: { kind: 4, cloud: [0.55, 0.58, 0.66] } },
+    { name: "Snow", values: { kind: 5, accent: [1, 1, 1], cloud: [0.78, 0.84, 0.92] } },
+  ],
+  derived: (v) => {
+    const pick = Math.min(5, Math.max(0, Math.round(Number(v.kind) || 0)));
+    return Object.fromEntries(Array.from({ length: 6 }, (_, k) => [`show${k}`, k === pick ? "inline" : "none"]));
+  },
+  motion: (() => {
+    const cloud = { c: "{{cloud}}", d: "{{cloud}}" };
+    const shade = (map: readonly string[]) => `<path fill="#000000" opacity="0.22" d="${bitmapPath(map, "d", PXW_UNIT)}"/>`;
+    const sunColours = { y: "{{sun}}", o: "{{sun}}" };
+    const sunShade = (map: readonly string[]) => `<path fill="#C2410C" opacity="0.35" d="${bitmapPath(map, "o", PXW_UNIT)}"/>`;
+    const sunA = pxwSun(7.5, 7.5, 3.6, false, 7.6);
+    const sunB = pxwSun(7.5, 7.5, 3.6, true, 7.1);
+    const smallSunA = pxwSun(10.5, 4.5, 2.6, false, 5.4);
+    const smallSunB = pxwSun(10.5, 4.5, 2.6, true, 4.9);
+    const high = pxwCloud(1);
+    const mid = pxwCloud(4);
+    const low = pxwCloud(6);
+    const drops = (char: string) => `<path fill="{{accent}}" d="${PXW_DROPS.map(([x, y]) => bitmapPath(char === "|" ? ["#", "#"] : ["#"], "#", PXW_UNIT, x * PXW_UNIT, y * PXW_UNIT)).join("")}"/>`;
+    /** Snaps `id` to `pose(k)` pixels away every `every` ms through the loop. */
+    const steps = (id: string, every: number, pose: (k: number) => [number, number]): SvgAnimation[] =>
+      Array.from({ length: PXW_MS / every }, (_, k) => {
+        const [x, y] = pose(k);
+        return snap(id, "transform", `translate(${x * PXW_UNIT} ${y * PXW_UNIT})`, k * every);
+      });
+    const flicker = (a: string, b: string): SvgAnimation[] =>
+      [0, 1, 2, 3].flatMap((k) => [snap(a, "opacity", k % 2 ? 0 : 1, k * (PXW_MS / 4)), snap(b, "opacity", k % 2 ? 1 : 0, k * (PXW_MS / 4))]);
+    return {
+      svg:
+        `<svg viewBox="0 0 108 108" shape-rendering="crispEdges"><!-- {{kind: int min=0 max=5 default=0 label='Weather (sun, partly cloudy, cloudy, rain, thunder, snow)'}} {{sun: color default=#FFC93C label='Sun'}} {{cloud: color default=#E9EEF5 label='Cloud'}} {{accent: color default=#4DABF7 label='Rain and snow'}} {{bolt: color default=#FFE066 label='Lightning'}} --><g transform="translate(6 6)">` +
+        `<g display="{{show0}}"><g id="pxwSunA">${sprite(sunA, sunColours, PXW_UNIT)}${sunShade(sunA)}</g><g id="pxwSunB" opacity="0">${sprite(sunB, sunColours, PXW_UNIT)}${sunShade(sunB)}</g></g>` +
+        `<g display="{{show1}}"><g id="pxwPartA">${sprite(smallSunA, sunColours, PXW_UNIT)}${sunShade(smallSunA)}</g><g id="pxwPartB" opacity="0">${sprite(smallSunB, sunColours, PXW_UNIT)}${sunShade(smallSunB)}</g><g id="pxwPartCloud">${pxwSprite(low, cloud)}${shade(low)}</g></g>` +
+        `<g display="{{show2}}"><g id="pxwCloud">${pxwSprite(mid, cloud)}${shade(mid)}</g></g>` +
+        `<g display="{{show3}}"><g id="pxwRain">${drops("|")}</g>${pxwSprite(high, cloud)}${shade(high)}</g>` +
+        `<g display="{{show4}}"><path id="pxwBolt" fill="{{bolt}}" opacity="0" d="${bitmapPath(PXW_BOLT, "#", PXW_UNIT)}"/>${pxwSprite(high, cloud)}<path fill="#000000" opacity="0.3" d="${bitmapPath(high, "c", PXW_UNIT)}${bitmapPath(high, "d", PXW_UNIT)}"/>${shade(high)}</g>` +
+        `<g display="{{show5}}"><g id="pxwSnow">${drops(".")}</g>${pxwSprite(high, cloud)}${shade(high)}</g>` +
+        `</g></svg>`,
+      animate: [
+        ...flicker("pxwSunA", "pxwSunB"),
+        ...flicker("pxwPartA", "pxwPartB"),
+        // Clouds drift a pixel and back; rain falls in threes, snow in fours with a sideways wobble.
+        ...steps("pxwPartCloud", PXW_MS / 4, (k) => [k % 2, 0]),
+        ...steps("pxwCloud", PXW_MS / 4, (k) => [0, k % 2]),
+        ...steps("pxwRain", 80, (k) => [0, k % 3]),
+        ...steps("pxwSnow", 240, (k) => [k % 2, Math.floor((k % 4) / 2)]),
+        // Two quick flashes, then dark until the loop comes round.
+        snap("pxwBolt", "opacity", 1, 500),
+        snap("pxwBolt", "opacity", 0, 580),
+        snap("pxwBolt", "opacity", 1, 660),
+        snap("pxwBolt", "opacity", 0, 1000),
+      ],
+    };
+  })(),
+};
+
+// ── Pixel explosion ────────────────────────────────────────────────────
+
+const BOOM_GRID = 20;
+const BOOM_UNIT = 5;
+const BOOM_FRAME_MS = 80;
+/** Each frame's outer and inner radius, in grid cells: a fireball swelling into a ring of smoke. */
+const BOOM_FRAMES: [number, number][] = [[2.5, 0], [4.5, 0], [6.5, 1.5], [8, 3.5], [9, 5.5], [9.6, 7.5], [10, 9]];
+/** Hot to cold: white core, yellow, orange, red, smoke. */
+const BOOM_HEAT = ["w", "y", "o", "r", "s"] as const;
+
+/** Frame `f` of the explosion as a bitmap of heat characters. */
+function boomFrame(f: number): string[] {
+  const [outer, inner] = BOOM_FRAMES[f]!;
+  const c = (BOOM_GRID - 1) / 2;
+  return bitmap(BOOM_GRID, BOOM_GRID, (x, y) => {
+    const d = Math.hypot(x - c, y - c);
+    const n = hash3(x, y, f);
+    if (d > outer * (0.75 + 0.4 * n) || d < inner * (0.85 + 0.3 * n)) return ".";
+    const t = outer > inner ? (d - inner) / (outer - inner) : 0;
+    const cool = f / (BOOM_FRAMES.length - 1) + t * 0.35 + (n - 0.5) * 0.3;
+    return BOOM_HEAT[Math.min(4, Math.max(0, Math.floor(cool * 4.2)))]!;
+  });
+}
+
+/** Sparks: eight directions, each a pixel flying out a cell a frame. */
+const BOOM_SPARKS: [number, number][] = [[1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1], [1, -1]];
+
+export const pixelExplosion: VectorEffect = {
+  kind: "vector",
+  id: "pixel-explosion",
+  name: "Pixel explosion",
+  description: "An 8-bit explosion: a white-hot pixel fireball swelling through yellow, orange and red into a ring of smoke, sparks flying out, frame by frame.",
+  category: "impact",
+  tags: ["pixel", "retro", "explosion", "impact", "game", "sprite", "8-bit", "loop"],
+  hold: 700,
+  presets: [
+    { name: "Plasma", values: { core: [1, 1, 1], hot: [0.6, 0.95, 1], flame: [0.3, 0.55, 1], ember: [0.5, 0.2, 0.9], smoke: [0.25, 0.2, 0.4] } },
+    { name: "Toxic", values: { core: [1, 1, 0.85], hot: [0.85, 1, 0.3], flame: [0.45, 0.9, 0.15], ember: [0.15, 0.55, 0.1], smoke: [0.2, 0.28, 0.18] } },
+  ],
+  motion: (() => {
+    const colours = { w: "{{core}}", y: "{{hot}}", o: "{{flame}}", r: "{{ember}}", s: "{{smoke}}" };
+    const frames = BOOM_FRAMES.map((_, f) => `<g id="boom${f}" opacity="0">${sprite(boomFrame(f), colours, BOOM_UNIT)}</g>`).join("");
+    const mid = (BOOM_GRID / 2 - 0.5) * BOOM_UNIT;
+    const sparkAt = ([dx, dy]: [number, number], k: number) => `translate(${dx * (3 + k * 1.6) * BOOM_UNIT} ${dy * (3 + k * 1.6) * BOOM_UNIT})`;
+    const animate: SvgAnimation[] = BOOM_FRAMES.flatMap((_, f) => [
+      snap(`boom${f}`, "opacity", 1, f * BOOM_FRAME_MS),
+      snap(`boom${f}`, "opacity", 0, (f + 1) * BOOM_FRAME_MS),
+    ]);
+    BOOM_SPARKS.forEach((dir, i) => {
+      for (let k = 0; k < 6; k++) animate.push(snap(`spark${i}`, "transform", sparkAt(dir, k), (k + 1) * BOOM_FRAME_MS));
+      animate.push(snap(`spark${i}`, "fill", "{{ember}}", 4 * BOOM_FRAME_MS), snap(`spark${i}`, "opacity", 0, 7 * BOOM_FRAME_MS));
+    });
+    return {
+      svg: `<svg viewBox="0 0 ${BOOM_GRID * BOOM_UNIT} ${BOOM_GRID * BOOM_UNIT}" shape-rendering="crispEdges"><!-- {{core: color default=#FFFFFF label='Core'}} {{hot: color default=#FFE45C label='Hot'}} {{flame: color default=#FF8A1F label='Flame'}} {{ember: color default=#D9281C label='Embers'}} {{smoke: color default=#4A3B3F label='Smoke'}} -->${frames}${BOOM_SPARKS.map(
+        (dir, i) => `<rect id="spark${i}" x="${mid}" y="${mid}" width="${BOOM_UNIT}" height="${BOOM_UNIT}" fill="{{hot}}" opacity="0" transform="${sparkAt(dir, 0)}"/>`,
+      ).join("")}</svg>`,
+      animate: [...animate, ...BOOM_SPARKS.map((_, i) => snap(`spark${i}`, "opacity", 1, BOOM_FRAME_MS))],
+    };
+  })(),
+};
+
 /** Pixel-art vector effects: sprites, pixel type and 8-bit UI. */
-export const pixelEffects: VectorEffect[] = [pixelText, coinSpin, spaceInvader, pixelHeartHealth, chompLoader, rpgDialog, ledTicker];
+export const pixelEffects: VectorEffect[] = [pixelText, coinSpin, spaceInvader, pixelHeartHealth, chompLoader, rpgDialog, ledTicker, pixelSnakeLoader, pixelWeather, pixelExplosion];
