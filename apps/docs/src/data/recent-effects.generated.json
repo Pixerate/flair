@@ -1,61 +1,49 @@
 [
   {
-    "id": "coffin-loader",
-    "name": "Coffin loader",
+    "id": "skull-chatter",
+    "name": "Skull chatter",
     "kind": "vector",
-    "category": "loader",
-    "description": "A coffin whose lid jolts, then creaks open to show a pair of eyes in the dark that blink, before it slams shut again in a puff of dust.",
+    "category": "icon",
+    "description": "A skull whose jaw chatters open and shut, its eye sockets glowing red for a moment as it does.",
     "tags": [
-      "loader",
+      "icon",
       "horror",
       "halloween",
-      "coffin",
-      "vampire",
-      "waiting",
-      "icon"
+      "skull",
+      "skeleton",
+      "chatter",
+      "teeth"
     ],
     "controls": [
       {
-        "n": "wood",
+        "n": "bone",
         "t": "vec3",
         "d": {
           "c255": [
-            90,
-            58,
-            38
+            239,
+            232,
+            218
           ]
         },
         "c": 1,
         "line": 1
       },
       {
-        "n": "trim",
+        "n": "dark",
         "t": "vec3",
         "d": {
           "c255": [
-            201,
-            168,
-            106
+            42,
+            34,
+            40
           ]
         },
+        "l": "Sockets",
         "c": 1,
         "line": 2
       },
       {
-        "n": "inside",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            12,
-            10,
-            14
-          ]
-        },
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "eyes",
+        "n": "glow",
         "t": "vec3",
         "d": {
           "c255": [
@@ -64,26 +52,14 @@
             47
           ]
         },
+        "l": "Eye glow",
         "c": 1,
-        "line": 4
-      },
-      {
-        "n": "dust",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            168,
-            159,
-            148
-          ]
-        },
-        "c": 1,
-        "line": 5
+        "line": 3
       }
     ],
     "presets": [
-      "Ebony",
-      "Green eyes"
+      "Gold",
+      "Green glow"
     ],
     "inputs": {
       "accepts": [],
@@ -92,13 +68,317 @@
       "interactions": [],
       "transparent": false
     },
-    "hold": 500,
+    "hold": 900,
     "animated": true,
-    "duration": 3400,
+    "duration": 1500,
     "module": "horror",
-    "addedAt": "2026-10-31T19:26:21.437Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-10-31T19:26:39Z",
+    "commitHash": "1991ec2f5efe1d8cc5a1dcec6e5baf0c5c69f414",
+    "order": 547
+  },
+  {
+    "id": "bat-flap",
+    "name": "Bat flap",
+    "kind": "vector",
+    "category": "icon",
+    "description": "A bat beating its scalloped wings, rising a little with each beat.",
+    "tags": [
+      "icon",
+      "horror",
+      "halloween",
+      "bats",
+      "flap",
+      "wings",
+      "flying"
+    ],
+    "controls": [
+      {
+        "n": "bat",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            28,
+            22,
+            38
+          ]
+        },
+        "c": 1,
+        "line": 1
+      },
+      {
+        "n": "eyes",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            75,
+            62
+          ]
+        },
+        "c": 1,
+        "line": 2
+      }
+    ],
+    "presets": [
+      "Purple",
+      "Light"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 300,
+    "animated": true,
+    "duration": 1320,
+    "module": "horror",
+    "addedAt": "2026-10-31T19:26:39Z",
+    "commitHash": "1991ec2f5efe1d8cc5a1dcec6e5baf0c5c69f414",
+    "order": 546
+  },
+  {
+    "id": "jack-o-lantern",
+    "name": "Jack-o'-lantern",
+    "kind": "vector",
+    "category": "icon",
+    "description": "A carved pumpkin with a candle flickering inside, its face glowing and dimming unevenly and its light breathing round it.",
+    "tags": [
+      "icon",
+      "horror",
+      "halloween",
+      "pumpkin",
+      "jack-o-lantern",
+      "glow",
+      "candle"
+    ],
+    "controls": [
+      {
+        "n": "skin",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            232,
+            112,
+            15
+          ]
+        },
+        "c": 1,
+        "line": 1
+      },
+      {
+        "n": "rib",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            168,
+            72,
+            10
+          ]
+        },
+        "l": "Ribs",
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "stem",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            77,
+            107,
+            42
+          ]
+        },
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "glow",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            213,
+            79
+          ]
+        },
+        "l": "Candlelight",
+        "c": 1,
+        "line": 4
+      }
+    ],
+    "presets": [
+      "Ghostly",
+      "Rotten"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 0,
+    "animated": true,
+    "duration": 2400,
+    "module": "horror",
+    "addedAt": "2026-10-31T19:26:39Z",
+    "commitHash": "1991ec2f5efe1d8cc5a1dcec6e5baf0c5c69f414",
+    "order": 545
+  },
+  {
+    "id": "skeleton-hand-loader",
+    "name": "Skeleton hand loader",
+    "kind": "vector",
+    "category": "loader",
+    "description": "A bony skeleton hand drumming its fingers on a table one after another, little finger to index, waiting impatiently.",
+    "tags": [
+      "loader",
+      "horror",
+      "halloween",
+      "skeleton",
+      "hands",
+      "bones",
+      "waiting",
+      "impatient"
+    ],
+    "controls": [
+      {
+        "n": "bone",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            237,
+            230,
+            214
+          ]
+        },
+        "c": 1,
+        "line": 1
+      },
+      {
+        "n": "shade",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            143,
+            134,
+            118
+          ]
+        },
+        "l": "Shading",
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "table",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            74,
+            58,
+            48
+          ]
+        },
+        "c": 1,
+        "line": 3
+      }
+    ],
+    "presets": [
+      "Dark",
+      "Glow bones"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 400,
+    "animated": true,
+    "duration": 1200,
+    "module": "horror",
+    "addedAt": "2026-10-31T19:26:39Z",
+    "commitHash": "1991ec2f5efe1d8cc5a1dcec6e5baf0c5c69f414",
+    "order": 544
+  },
+  {
+    "id": "ghost-loader",
+    "name": "Ghost loader",
+    "kind": "vector",
+    "category": "loader",
+    "description": "A little ghost floating round in a circle, its hem rippling and fainter copies of it trailing behind, blinking now and then.",
+    "tags": [
+      "loader",
+      "horror",
+      "halloween",
+      "ghost",
+      "spinner",
+      "cute",
+      "waiting"
+    ],
+    "controls": [
+      {
+        "n": "ghost",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            238,
+            242,
+            247
+          ]
+        },
+        "c": 1,
+        "line": 1
+      },
+      {
+        "n": "outline",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            140,
+            149,
+            168
+          ]
+        },
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "eyes",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            30,
+            27,
+            46
+          ]
+        },
+        "c": 1,
+        "line": 3
+      }
+    ],
+    "presets": [
+      "Ectoplasm",
+      "On dark"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 0,
+    "animated": true,
+    "duration": 2000,
+    "module": "horror",
+    "addedAt": "2026-10-31T19:26:39Z",
+    "commitHash": "1991ec2f5efe1d8cc5a1dcec6e5baf0c5c69f414",
+    "order": 543
   },
   {
     "id": "candle-burndown",
@@ -212,275 +492,33 @@
     "animated": true,
     "duration": 3660,
     "module": "horror",
-    "addedAt": "2026-10-31T19:26:21.437Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-10-31T19:26:39Z",
+    "commitHash": "1991ec2f5efe1d8cc5a1dcec6e5baf0c5c69f414",
+    "order": 542
   },
   {
-    "id": "ghost-loader",
-    "name": "Ghost loader",
+    "id": "coffin-loader",
+    "name": "Coffin loader",
     "kind": "vector",
     "category": "loader",
-    "description": "A little ghost floating round in a circle, its hem rippling and fainter copies of it trailing behind, blinking now and then.",
+    "description": "A coffin whose lid jolts, then creaks open to show a pair of eyes in the dark that blink, before it slams shut again in a puff of dust.",
     "tags": [
       "loader",
       "horror",
       "halloween",
-      "ghost",
-      "spinner",
-      "cute",
-      "waiting"
-    ],
-    "controls": [
-      {
-        "n": "ghost",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            238,
-            242,
-            247
-          ]
-        },
-        "c": 1,
-        "line": 1
-      },
-      {
-        "n": "outline",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            140,
-            149,
-            168
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "eyes",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            30,
-            27,
-            46
-          ]
-        },
-        "c": 1,
-        "line": 3
-      }
-    ],
-    "presets": [
-      "Ectoplasm",
-      "On dark"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 0,
-    "animated": true,
-    "duration": 2000,
-    "module": "horror",
-    "addedAt": "2026-10-31T19:26:21.437Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "skeleton-hand-loader",
-    "name": "Skeleton hand loader",
-    "kind": "vector",
-    "category": "loader",
-    "description": "A bony skeleton hand drumming its fingers on a table one after another, little finger to index, waiting impatiently.",
-    "tags": [
-      "loader",
-      "horror",
-      "halloween",
-      "skeleton",
-      "hands",
-      "bones",
+      "coffin",
+      "vampire",
       "waiting",
-      "impatient"
+      "icon"
     ],
     "controls": [
       {
-        "n": "bone",
+        "n": "wood",
         "t": "vec3",
         "d": {
           "c255": [
-            237,
-            230,
-            214
-          ]
-        },
-        "c": 1,
-        "line": 1
-      },
-      {
-        "n": "shade",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            143,
-            134,
-            118
-          ]
-        },
-        "l": "Shading",
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "table",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            74,
+            90,
             58,
-            48
-          ]
-        },
-        "c": 1,
-        "line": 3
-      }
-    ],
-    "presets": [
-      "Dark",
-      "Glow bones"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 400,
-    "animated": true,
-    "duration": 1200,
-    "module": "horror",
-    "addedAt": "2026-10-31T19:26:21.437Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "jack-o-lantern",
-    "name": "Jack-o'-lantern",
-    "kind": "vector",
-    "category": "icon",
-    "description": "A carved pumpkin with a candle flickering inside, its face glowing and dimming unevenly and its light breathing round it.",
-    "tags": [
-      "icon",
-      "horror",
-      "halloween",
-      "pumpkin",
-      "jack-o-lantern",
-      "glow",
-      "candle"
-    ],
-    "controls": [
-      {
-        "n": "skin",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            232,
-            112,
-            15
-          ]
-        },
-        "c": 1,
-        "line": 1
-      },
-      {
-        "n": "rib",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            168,
-            72,
-            10
-          ]
-        },
-        "l": "Ribs",
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "stem",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            77,
-            107,
-            42
-          ]
-        },
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "glow",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            213,
-            79
-          ]
-        },
-        "l": "Candlelight",
-        "c": 1,
-        "line": 4
-      }
-    ],
-    "presets": [
-      "Ghostly",
-      "Rotten"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 0,
-    "animated": true,
-    "duration": 2400,
-    "module": "horror",
-    "addedAt": "2026-10-31T19:26:21.437Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "bat-flap",
-    "name": "Bat flap",
-    "kind": "vector",
-    "category": "icon",
-    "description": "A bat beating its scalloped wings, rising a little with each beat.",
-    "tags": [
-      "icon",
-      "horror",
-      "halloween",
-      "bats",
-      "flap",
-      "wings",
-      "flying"
-    ],
-    "controls": [
-      {
-        "n": "bat",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            28,
-            22,
             38
           ]
         },
@@ -488,83 +526,33 @@
         "line": 1
       },
       {
+        "n": "trim",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            201,
+            168,
+            106
+          ]
+        },
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "inside",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            12,
+            10,
+            14
+          ]
+        },
+        "c": 1,
+        "line": 3
+      },
+      {
         "n": "eyes",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            75,
-            62
-          ]
-        },
-        "c": 1,
-        "line": 2
-      }
-    ],
-    "presets": [
-      "Purple",
-      "Light"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 300,
-    "animated": true,
-    "duration": 1320,
-    "module": "horror",
-    "addedAt": "2026-10-31T19:26:21.437Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "skull-chatter",
-    "name": "Skull chatter",
-    "kind": "vector",
-    "category": "icon",
-    "description": "A skull whose jaw chatters open and shut, its eye sockets glowing red for a moment as it does.",
-    "tags": [
-      "icon",
-      "horror",
-      "halloween",
-      "skull",
-      "skeleton",
-      "chatter",
-      "teeth"
-    ],
-    "controls": [
-      {
-        "n": "bone",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            239,
-            232,
-            218
-          ]
-        },
-        "c": 1,
-        "line": 1
-      },
-      {
-        "n": "dark",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            42,
-            34,
-            40
-          ]
-        },
-        "l": "Sockets",
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "glow",
         "t": "vec3",
         "d": {
           "c255": [
@@ -573,14 +561,26 @@
             47
           ]
         },
-        "l": "Eye glow",
         "c": 1,
-        "line": 3
+        "line": 4
+      },
+      {
+        "n": "dust",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            168,
+            159,
+            148
+          ]
+        },
+        "c": 1,
+        "line": 5
       }
     ],
     "presets": [
-      "Gold",
-      "Green glow"
+      "Ebony",
+      "Green eyes"
     ],
     "inputs": {
       "accepts": [],
@@ -589,13 +589,263 @@
       "interactions": [],
       "transparent": false
     },
-    "hold": 900,
+    "hold": 500,
     "animated": true,
-    "duration": 1500,
+    "duration": 3400,
     "module": "horror",
-    "addedAt": "2026-10-31T19:26:21.437Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-10-31T19:26:39Z",
+    "commitHash": "1991ec2f5efe1d8cc5a1dcec6e5baf0c5c69f414",
+    "order": 541
+  },
+  {
+    "id": "haunted-hover",
+    "name": "Haunted hover",
+    "kind": "vector",
+    "category": "interaction",
+    "description": "A button that will not be touched: on hover it flinches away from the pointer, tipping and trembling, leaving a ghostly outline where it was; it settles back when the pointer leaves.",
+    "tags": [
+      "interactive",
+      "ui",
+      "hover",
+      "horror",
+      "button",
+      "haunted",
+      "flinch",
+      "micro-interaction"
+    ],
+    "controls": [
+      {
+        "n": "label",
+        "t": "text",
+        "d": "Enter",
+        "line": 1
+      },
+      {
+        "n": "background",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            245,
+            242,
+            238
+          ]
+        },
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "button",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            43,
+            34,
+            51
+          ]
+        },
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "ink",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "l": "Label colour",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "ghost",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            127,
+            168,
+            160
+          ]
+        },
+        "l": "Ghostly outline",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "font",
+        "t": "text",
+        "d": "system-ui, sans-serif",
+        "line": 6
+      }
+    ],
+    "presets": [
+      "Dark",
+      "Polite"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "label",
+          "label": "Label",
+          "holds": "copy",
+          "default": "Enter"
+        },
+        {
+          "name": "font",
+          "label": "Font",
+          "holds": "font",
+          "default": "system-ui, sans-serif"
+        }
+      ],
+      "interactions": [
+        "hover"
+      ],
+      "trigger": "hover",
+      "transparent": false
+    },
+    "hold": 600,
+    "trigger": "hover",
+    "animated": true,
+    "duration": 1540,
+    "module": "horror",
+    "addedAt": "2026-10-31T19:26:39Z",
+    "commitHash": "1991ec2f5efe1d8cc5a1dcec6e5baf0c5c69f414",
+    "order": 540
+  },
+  {
+    "id": "mirror-mismatch",
+    "name": "Mirror mismatch",
+    "kind": "shader",
+    "category": "interaction",
+    "description": "A picture beside its reflection in an old framed mirror; both lean towards the pointer, but the reflection follows half a second late, and every so often it stops following and does something of its own.",
+    "tags": [
+      "interactive",
+      "hover",
+      "horror",
+      "mirror",
+      "reflection",
+      "uncanny",
+      "image"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "line": 4,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uFrame",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            74,
+            54,
+            38
+          ]
+        },
+        "l": "Mirror frame",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uRoom",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            23,
+            19,
+            26
+          ]
+        },
+        "l": "Wall",
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "uGlass",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            185,
+            199,
+            212
+          ]
+        },
+        "l": "Glass tint",
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "uLag",
+        "t": "float",
+        "d": 0.5,
+        "l": "Lag (s)",
+        "min": 0.1,
+        "max": 0.9,
+        "line": 8
+      },
+      {
+        "n": "uOwnMind",
+        "t": "float",
+        "d": 0.5,
+        "l": "Mind of its own",
+        "line": 9
+      },
+      {
+        "n": "uDemo",
+        "t": "bool",
+        "d": true,
+        "l": "Lean while idle",
+        "line": 10
+      }
+    ],
+    "presets": [
+      "Slow",
+      "Obedient",
+      "Gilt frame"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "interactive",
+      "interactions": [
+        "hover",
+        "trail",
+        "pointer"
+      ],
+      "transparent": false
+    },
+    "video": "interactive",
+    "animated": true,
+    "module": "shaders/haunted",
+    "addedAt": "2026-10-31T19:26:39Z",
+    "commitHash": "1991ec2f5efe1d8cc5a1dcec6e5baf0c5c69f414",
+    "order": 539
   },
   {
     "id": "cursor-follow-eyes",
@@ -734,259 +984,9 @@
     "transparent": true,
     "animated": true,
     "module": "shaders/haunted",
-    "addedAt": "2026-10-31T19:26:21.436Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "mirror-mismatch",
-    "name": "Mirror mismatch",
-    "kind": "shader",
-    "category": "interaction",
-    "description": "A picture beside its reflection in an old framed mirror; both lean towards the pointer, but the reflection follows half a second late, and every so often it stops following and does something of its own.",
-    "tags": [
-      "interactive",
-      "hover",
-      "horror",
-      "mirror",
-      "reflection",
-      "uncanny",
-      "image"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "portrait"
-        },
-        "line": 4,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uFrame",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            74,
-            54,
-            38
-          ]
-        },
-        "l": "Mirror frame",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uRoom",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            23,
-            19,
-            26
-          ]
-        },
-        "l": "Wall",
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "uGlass",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            185,
-            199,
-            212
-          ]
-        },
-        "l": "Glass tint",
-        "c": 1,
-        "line": 7
-      },
-      {
-        "n": "uLag",
-        "t": "float",
-        "d": 0.5,
-        "l": "Lag (s)",
-        "min": 0.1,
-        "max": 0.9,
-        "line": 8
-      },
-      {
-        "n": "uOwnMind",
-        "t": "float",
-        "d": 0.5,
-        "l": "Mind of its own",
-        "line": 9
-      },
-      {
-        "n": "uDemo",
-        "t": "bool",
-        "d": true,
-        "l": "Lean while idle",
-        "line": 10
-      }
-    ],
-    "presets": [
-      "Slow",
-      "Obedient",
-      "Gilt frame"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "interactive",
-      "interactions": [
-        "hover",
-        "trail",
-        "pointer"
-      ],
-      "transparent": false
-    },
-    "video": "interactive",
-    "animated": true,
-    "module": "shaders/haunted",
-    "addedAt": "2026-10-31T19:26:21.436Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "haunted-hover",
-    "name": "Haunted hover",
-    "kind": "vector",
-    "category": "interaction",
-    "description": "A button that will not be touched: on hover it flinches away from the pointer, tipping and trembling, leaving a ghostly outline where it was; it settles back when the pointer leaves.",
-    "tags": [
-      "interactive",
-      "ui",
-      "hover",
-      "horror",
-      "button",
-      "haunted",
-      "flinch",
-      "micro-interaction"
-    ],
-    "controls": [
-      {
-        "n": "label",
-        "t": "text",
-        "d": "Enter",
-        "line": 1
-      },
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            245,
-            242,
-            238
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "button",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            43,
-            34,
-            51
-          ]
-        },
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "ink",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "l": "Label colour",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "ghost",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            127,
-            168,
-            160
-          ]
-        },
-        "l": "Ghostly outline",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "font",
-        "t": "text",
-        "d": "system-ui, sans-serif",
-        "line": 6
-      }
-    ],
-    "presets": [
-      "Dark",
-      "Polite"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "label",
-          "label": "Label",
-          "holds": "copy",
-          "default": "Enter"
-        },
-        {
-          "name": "font",
-          "label": "Font",
-          "holds": "font",
-          "default": "system-ui, sans-serif"
-        }
-      ],
-      "interactions": [
-        "hover"
-      ],
-      "trigger": "hover",
-      "transparent": false
-    },
-    "hold": 600,
-    "trigger": "hover",
-    "animated": true,
-    "duration": 1540,
-    "module": "horror",
-    "addedAt": "2026-10-31T19:26:21.436Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-10-31T19:26:39Z",
+    "commitHash": "1991ec2f5efe1d8cc5a1dcec6e5baf0c5c69f414",
+    "order": 538
   },
   {
     "id": "transition-film-burn",

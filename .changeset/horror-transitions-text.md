@@ -1,5 +1,0 @@
----
-"@pixerate/flair": minor
----
-
-Horror additions to the transition and text categories, all tagged `horror`. Five transitions, which like the others loop back and forth or follow Progress: `transition-claw-slash` (claw marks tearing open to the next picture), `transition-blood-wipe` (a curtain of blood pouring down and draining away), `transition-shadow-swallow` (darkness swallowing one picture and giving back the next), `transition-static-cut` (the signal breaking into static and tuning back in) and `transition-film-burn` (the film burning through to the next picture). Five text effects, which take any font and sit inline like the other text effects: `zalgo-text` (combining marks creeping over a title and overrunning it), `fogged-mirror-writing` (words traced on a fogged mirror, then fogging over), `scratched-text` (words gouged into a surface), `ransom-note` (letters cut from magazines, a different face for each unless a font is set) and `carved-pumpkin-text` (letters carved in a pumpkin lit from inside by a flickering candle).
