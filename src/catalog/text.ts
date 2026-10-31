@@ -1060,6 +1060,94 @@ export const runeGlow: VectorEffect = {
   },
 };
 
+/** Bleeding text's drips: where along the word (a share of its width), how wide and how long (shares of its size). */
+const BLEEDS = [
+  { at: 0.09, w: 0.07, len: 0.55 },
+  { at: 0.27, w: 0.05, len: 0.9 },
+  { at: 0.46, w: 0.08, len: 0.45 },
+  { at: 0.64, w: 0.05, len: 1.1 },
+  { at: 0.85, w: 0.065, len: 0.7 },
+];
+/** When the blood starts seeping down, the drips run, the drops fall and it all fades (ms). */
+const SEEP_AT = 300;
+const DRIP_AT = 1000;
+const DROP_AT = 2300;
+const CLEAR_AT = 3600;
+
+export const bleedingText: VectorEffect = {
+  kind: "vector",
+  id: "bleeding-text",
+  name: "Bleeding text",
+  description:
+    "A title that starts to bleed: blood seeps down through its letters from the top, drips run from its baseline and swell, a few drops fall, then it all fades back to clean letters.",
+  category: "horror",
+  tags: ["horror", "gore", "text", "title", "blood", "drip", "halloween"],
+  hold: 900,
+  presets: [
+    { name: "On white", values: { background: [0.97, 0.95, 0.92], ink: [0.1, 0.08, 0.08] } },
+    { name: "Black blood", values: { blood: [0.06, 0.04, 0.05], ink: [0.86, 0.12, 0.14] } },
+    { name: "Ichor", values: { blood: [0.3, 0.75, 0.15] } },
+  ],
+  derived: (v) => {
+    const { size, length, left } = fit(String(v.text), room(v, 340), 104);
+    const base = 92 + size * 0.36;
+    const top = base - size * CAP;
+    return {
+      ...frame(v, left, length, base, size, [0.05, 0, 1.25, 0]),
+      size,
+      length,
+      base: r1(base),
+      top: r1(top - 2),
+      cap: r1(size * CAP + 4),
+      ...Object.fromEntries(
+        BLEEDS.flatMap((d, i) => [
+          [`bx${i}`, r1(left + d.at * length)],
+          [`bw${i}`, r1(d.w * size)],
+          [`bl${i}`, r1(d.len * size)],
+          [`by${i}`, r1(base + d.len * size)],
+          [`br${i}`, r1(d.w * size * 0.75)],
+          [`bd${i}`, r1(base + d.len * size + size * 0.9)],
+        ]),
+      ),
+    };
+  },
+  motion: (() => {
+    const word = (paint: string) =>
+      `<text x="200" y="{{base}}" text-anchor="middle" textLength="{{length}}" lengthAdjust="spacingAndGlyphs" font-family="{{font}}" font-size="{{size}}" font-weight="{{weight}}" ${paint}>{{text}}</text>`;
+    return {
+      svg: `<svg viewBox="{{viewBox}}" overflow="{{overflow}}" data-overhang="{{overhang}}"><!-- {{text: text default='BLEED' label='Text'}} {{background: color default=#0D0A0B label='Background'}} {{ink: color default=#EEE7DE label='Text colour'}} {{blood: color default=#8A0913 label='Blood'}} ${typeface(HEAVY, 900)} --><defs><clipPath id="seepClip"><rect id="seep" x="-5000" y="{{top}}" width="10400" height="0"/></clipPath></defs><rect width="400" height="200" fill="{{background}}" opacity="{{backdrop}}"/>${word(`fill="{{ink}}"`)}<g id="bleeding" opacity="1"><g clip-path="url(#seepClip)">${word(`fill="{{blood}}"`)}</g>${BLEEDS.map(
+        (_, i) =>
+          `<rect id="stem${i}" x="{{bx${i}}}" y="{{base}}" width="{{bw${i}}}" height="0" rx="{{br${i}}}" transform="translate(-{{br${i}}} -4)" fill="{{blood}}"/><circle id="bead${i}" cx="{{bx${i}}}" cy="{{base}}" r="0" fill="{{blood}}"/>`,
+      ).join("")}${[1, 3].map((i) => `<circle id="drop${i}" cx="{{bx${i}}}" cy="{{by${i}}}" r="0" fill="{{blood}}"/>`).join("")}</g></svg>`,
+      animate: [
+        // Blood seeps down through the letters from their tops.
+        { id: "seep", attrs: { height: [0, n("cap")] }, delay: SEEP_AT, ms: 1300, ease: "in-out" },
+        // Drips run down from the baseline, each at its own pace, swelling at the tip.
+        ...BLEEDS.flatMap((_, i): SvgAnimation[] => {
+          const at = DRIP_AT + i * 170;
+          const ms = 1400 + (i % 3) * 250;
+          return [
+            { id: `stem${i}`, attrs: { height: [0, n(`bl${i}`)] }, delay: at, ms, ease: "out" },
+            { id: `bead${i}`, attrs: { cy: [n("base"), n(`by${i}`)], r: [0, n(`bw${i}`)] }, delay: at, ms, ease: "out" },
+          ];
+        }),
+        // Two drops fall from the longest drips.
+        ...[1, 3].flatMap((i, k): SvgAnimation[] => [
+          { id: `drop${i}`, attrs: { r: [0, n(`br${i}`)] }, delay: DROP_AT + k * 300, ms: 120, ease: "out" },
+          { id: `drop${i}`, attrs: { cy: [n(`by${i}`), n(`bd${i}`)] }, delay: DROP_AT + k * 300 + 120, ms: 420, ease: [0.55, 0, 1, 0.45] },
+          { id: `drop${i}`, attrs: { r: [n(`br${i}`), 0] }, delay: DROP_AT + k * 300 + 420, ms: 120 },
+        ]),
+        // Then it all fades, and is reset unseen.
+        { id: "bleeding", attrs: { opacity: [1, 0] }, delay: CLEAR_AT, ms: 700, ease: "in-out" },
+        ...holds("seep", "height", [[CLEAR_AT + 700, 0]]),
+        ...BLEEDS.flatMap((_, i) => [...holds(`stem${i}`, "height", [[CLEAR_AT + 700, 0]]), ...holds(`bead${i}`, "r", [[CLEAR_AT + 700, 0]])]),
+        ...[1, 3].flatMap((i) => holds(`drop${i}`, "cy", [[CLEAR_AT + 700, n(`by${i}`)]])),
+        ...holds("bleeding", "opacity", [[CLEAR_AT + 701, 1]]),
+      ],
+    };
+  })(),
+};
+
 export const textEffects: VectorEffect[] = [
   typewriter,
   scrambleText,
@@ -1079,4 +1167,5 @@ export const textEffects: VectorEffect[] = [
   circleText,
   possessedText,
   runeGlow,
+  bleedingText,
 ];

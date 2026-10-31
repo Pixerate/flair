@@ -2315,7 +2315,7 @@ describe("promo effects", () => {
 });
 
 describe("horror effects", () => {
-  const IDS = ["vhs-tracking", "night-vision-cam", "signal-lost", "trail-cam", "emergency-broadcast", "ghost-apparition", "ectoplasm-wisps", "spirit-orbs", "possessed-text", "eyes-in-the-dark", "creeping-dark", "shadow-hands", "rust-spread", "mold-bloom", "wither", "peeling-wallpaper", "aged-photo", "film-burn", "tentacles", "bat-swarm", "passing-silhouette", "poltergeist", "summoning-circle", "rune-glow", "cauldron", "candle-ring"];
+  const IDS = ["vhs-tracking", "night-vision-cam", "signal-lost", "trail-cam", "emergency-broadcast", "ghost-apparition", "ectoplasm-wisps", "spirit-orbs", "possessed-text", "eyes-in-the-dark", "creeping-dark", "shadow-hands", "rust-spread", "mold-bloom", "wither", "peeling-wallpaper", "aged-photo", "film-burn", "tentacles", "bat-swarm", "passing-silhouette", "poltergeist", "summoning-circle", "rune-glow", "cauldron", "candle-ring", "scare-cut", "subliminal-flicker", "failing-light", "heartbeat-vignette", "blood-drip-border", "bleeding-text", "claw-slash", "blood-moon"];
 
   it("have a category of their own, browsed with the pictures, and are tagged by kind", () => {
     expect(categoryGroup("horror").name).toBe("Pictures");
@@ -2470,6 +2470,62 @@ describe("horror effects", () => {
     expect(glow(1200, 4)).toBe(1);
     expect(glow(svgDuration(motion), 0)).toBe(0);
     // Inline, in the surrounding font.
+    const inline = renderVectorEffect(effect, { inline: true, font: "inherit", weight: 300 });
+    expect(inline.svg).toMatch(/^<svg viewBox="[\d.-]+ [\d.-]+ [\d.]+ [\d.]+" overflow="visible"/);
+    expect(inline.svg.match(/font-family="([^"]*)"/g)!.every((f) => f === 'font-family="inherit"')).toBe(true);
+    expect(svgMotionIssues(inline)).toEqual([]);
+  });
+
+  it("the jump scares cannot be set to flash more than three times a second", () => {
+    expect(findEffects({ category: "horror", tags: ["shock"] }).map((e) => e.id).sort()).toEqual(["failing-light", "heartbeat-vignette", "scare-cut", "subliminal-flicker"]);
+    const control = (id: string, name: string) => effectControls(getEffect(id)!).find((c) => c.name === name)!;
+    const shader = (id: string) => {
+      const effect = getEffect(id)!;
+      if (effect.kind !== "shader") throw new Error("shader expected");
+      return effect.source;
+    };
+    // One cut a cycle, a cycle at least three seconds; one hidden frame at least every two.
+    expect(control("scare-cut", "uCycle").min).toBeGreaterThanOrEqual(3);
+    expect(control("subliminal-flicker", "uEvery").min).toBeGreaterThanOrEqual(2);
+    expect(control("subliminal-flicker", "uLength").max).toBeLessThanOrEqual(0.12);
+    // The tube switches on beats of a third of a second, so at most 1.5 flashes a second.
+    expect(shader("failing-light")).toContain("float beat = floor(iTime * 3.0);");
+    // The heartbeat: two pulses a second at most, clamped in the shader whatever the controls say.
+    expect(control("heartbeat-vignette", "uFastest").max).toBeLessThanOrEqual(120);
+    expect(control("heartbeat-vignette", "uRest").max).toBeLessThanOrEqual(120);
+    expect(shader("heartbeat-vignette")).toMatch(/min\(mix\(uRest, max\(uFastest, uRest\), near\), 120\.0\)/);
+    expect(getEffect("heartbeat-vignette")).toMatchObject({ video: "interactive" });
+  });
+
+  it("the gore stays stylised, as an overlay, a filter and a background", () => {
+    expect(findEffects({ category: "horror", tags: ["gore"] }).map((e) => e.id).sort()).toEqual(["bleeding-text", "blood-drip-border", "blood-moon", "claw-slash"]);
+    const drips = getEffect("blood-drip-border")!;
+    expect(drips).toMatchObject({ transparent: true });
+    expect(effectDefaults(drips).uBackgroundAlpha).toBe(0);
+    expect(effectDefaults(drips, { preset: "Paper" }).uBackgroundAlpha).toBe(1);
+    expect(getEffect("claw-slash")).toMatchObject({ video: "filter", loop: 4 });
+    expect(effectDefaults(getEffect("blood-moon")!, { preset: "Sky only" }).uLand).toBe(false);
+  });
+
+  it("bleeding text seeps, drips and drops, then clears back to clean letters", () => {
+    const effect = getEffect("bleeding-text")!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    for (const text of ["BLEED", "A", "Ｈｅｌｌｏ 🩸 & <you> and some other words"]) {
+      const motion = renderVectorEffect(effect, { text });
+      expect(svgMotionIssues(motion), text).toEqual([]);
+      expect(JSON.stringify(motion), text).not.toMatch(/\{\{|NaN|undefined/);
+    }
+    const motion = renderVectorEffect(effect, effectDefaults(effect));
+    const frame = (ms: number) => svgFrame(motion.animate!, [], ms);
+    const end = svgDuration(motion);
+    for (const ms of [0, end]) {
+      expect(Number(frame(ms).get("seep")!.attrs.height), `seep at ${ms}`).toBe(0);
+      expect(Number(frame(ms).get("stem1")!.attrs.height), `stem at ${ms}`).toBe(0);
+      expect(Number(frame(ms).get("bead1")!.attrs.r), `bead at ${ms}`).toBe(0);
+      expect(Number(frame(ms).get("drop1")!.attrs.r), `drop at ${ms}`).toBe(0);
+    }
+    expect(Number(frame(2600).get("stem1")!.attrs.height)).toBeGreaterThan(0);
+    expect(Number(frame(2000).get("seep")!.attrs.height)).toBeGreaterThan(0);
     const inline = renderVectorEffect(effect, { inline: true, font: "inherit", weight: 300 });
     expect(inline.svg).toMatch(/^<svg viewBox="[\d.-]+ [\d.-]+ [\d.]+ [\d.]+" overflow="visible"/);
     expect(inline.svg.match(/font-family="([^"]*)"/g)!.every((f) => f === 'font-family="inherit"')).toBe(true);
