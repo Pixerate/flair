@@ -1,542 +1,5 @@
 [
   {
-    "id": "ectoplasm-wisps",
-    "name": "Ectoplasm wisps",
-    "kind": "shader",
-    "category": "horror",
-    "description": "Glowing green trails of ectoplasm spiralling in out of the dark towards the pointer while it hovers, or a point wandering the frame, each fading as it arrives and another rising in its place.",
-    "tags": [
-      "horror",
-      "spectral",
-      "ectoplasm",
-      "wisps",
-      "glow",
-      "interactive",
-      "hover",
-      "cursor",
-      "background"
-    ],
-    "controls": [
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            3,
-            6,
-            10
-          ]
-        },
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uColor",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            125,
-            255,
-            178
-          ]
-        },
-        "l": "Ectoplasm",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uWisps",
-        "t": "float",
-        "d": 6,
-        "min": 1,
-        "max": 8,
-        "s": 1,
-        "line": 5
-      },
-      {
-        "n": "uLength",
-        "t": "float",
-        "d": 0.5,
-        "l": "Tail length",
-        "min": 0.1,
-        "line": 6
-      },
-      {
-        "n": "uWidth",
-        "t": "float",
-        "d": 8,
-        "min": 2,
-        "max": 30,
-        "line": 7
-      },
-      {
-        "n": "uGlow",
-        "t": "float",
-        "d": 1,
-        "max": 2,
-        "line": 8
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 0.7,
-        "min": 0.2,
-        "max": 2,
-        "line": 9
-      },
-      {
-        "n": "uBackgroundAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Background opacity",
-        "line": 93
-      }
-    ],
-    "presets": [
-      "Poltergeist",
-      "Bile",
-      "Single spirit",
-      "Transparent"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [
-        "hover",
-        "pointer"
-      ],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "shaders/horror",
-    "addedAt": "2026-10-31T17:06:32.059Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "spirit-orbs",
-    "name": "Spirit orbs",
-    "kind": "shader",
-    "category": "horror",
-    "description": "Pale translucent orbs over a picture, like the ones that turn up in flash photos of haunted houses, drifting like dust and every so often darting off in a streak before drifting on.",
-    "tags": [
-      "horror",
-      "spectral",
-      "orbs",
-      "ghost",
-      "dust",
-      "bokeh",
-      "paranormal",
-      "image"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "city"
-        },
-        "line": 3,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uColor",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            230,
-            242,
-            255
-          ]
-        },
-        "l": "Orbs",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uCount",
-        "t": "float",
-        "d": 14,
-        "l": "Orbs",
-        "min": 1,
-        "max": 24,
-        "s": 1,
-        "line": 5
-      },
-      {
-        "n": "uSize",
-        "t": "float",
-        "d": 1,
-        "min": 0.3,
-        "max": 3,
-        "line": 6
-      },
-      {
-        "n": "uOpacity",
-        "t": "float",
-        "d": 0.55,
-        "line": 7
-      },
-      {
-        "n": "uDart",
-        "t": "float",
-        "d": 0.6,
-        "l": "Darting",
-        "line": 8
-      },
-      {
-        "n": "uDim",
-        "t": "float",
-        "d": 0.3,
-        "l": "Dim the picture",
-        "line": 9
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "line": 11
-      }
-    ],
-    "presets": [
-      "Swarm",
-      "Few and large",
-      "Green",
-      "Calm"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "filter",
-    "animated": true,
-    "module": "shaders/horror",
-    "addedAt": "2026-10-31T17:06:32.059Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "creeping-dark",
-    "name": "Creeping dark",
-    "kind": "shader",
-    "category": "horror",
-    "description": "Darkness with tendril edges slowly closing in from the corners of a picture and drawing back, recoiling from the pointer while it hovers as if from a torch.",
-    "tags": [
-      "horror",
-      "creature",
-      "vignette",
-      "darkness",
-      "tendrils",
-      "interactive",
-      "hover",
-      "image"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "landscape"
-        },
-        "line": 3,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uDark",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            2,
-            1,
-            3
-          ]
-        },
-        "l": "Darkness",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uRim",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            90,
-            10,
-            18
-          ]
-        },
-        "l": "Edge",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uAmount",
-        "t": "float",
-        "d": 0.55,
-        "l": "How far it comes",
-        "line": 6
-      },
-      {
-        "n": "uTendrils",
-        "t": "float",
-        "d": 0.6,
-        "line": 7
-      },
-      {
-        "n": "uRecoil",
-        "t": "float",
-        "d": 0.7,
-        "l": "Recoil from the pointer",
-        "line": 8
-      },
-      {
-        "n": "uCycle",
-        "t": "float",
-        "d": 12,
-        "l": "Cycle (s)",
-        "min": 4,
-        "max": 30,
-        "line": 9
-      },
-      {
-        "n": "uAnimate",
-        "t": "bool",
-        "d": true,
-        "line": 10
-      },
-      {
-        "n": "uProgress",
-        "t": "float",
-        "d": 0.7,
-        "l": "Closed (when still)",
-        "line": 11
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 12
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "line": 13
-      }
-    ],
-    "presets": [
-      "Smothering",
-      "Gentle",
-      "Sickly",
-      "Still"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "interactive",
-      "interactions": [
-        "hover",
-        "pointer"
-      ],
-      "transparent": false
-    },
-    "video": "interactive",
-    "loop": 12,
-    "animated": true,
-    "duration": 12000,
-    "module": "shaders/horror",
-    "addedAt": "2026-10-31T17:06:32.059Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "shadow-hands",
-    "name": "Shadow hands",
-    "kind": "shader",
-    "category": "horror",
-    "description": "The shadows of long-fingered hands reaching in over a picture from the edges of the frame one after another, fingers spread, closing on nothing and drawing back.",
-    "tags": [
-      "horror",
-      "creature",
-      "shadow",
-      "hands",
-      "reach",
-      "silhouette",
-      "image"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "city"
-        },
-        "line": 3,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uShadow",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            5,
-            3,
-            7
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uDarkness",
-        "t": "float",
-        "d": 0.8,
-        "line": 5
-      },
-      {
-        "n": "uSoftness",
-        "t": "float",
-        "d": 0.35,
-        "line": 6
-      },
-      {
-        "n": "uSize",
-        "t": "float",
-        "d": 0.8,
-        "min": 0.3,
-        "max": 1.5,
-        "line": 7
-      },
-      {
-        "n": "uHands",
-        "t": "float",
-        "d": 3,
-        "min": 1,
-        "max": 3,
-        "s": 1,
-        "line": 8
-      },
-      {
-        "n": "uCycle",
-        "t": "float",
-        "d": 9,
-        "l": "Cycle (s)",
-        "min": 3,
-        "max": 20,
-        "line": 9
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "line": 11
-      }
-    ],
-    "presets": [
-      "Sharp",
-      "One hand",
-      "Faint",
-      "Slow"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "filter",
-    "loop": 9,
-    "animated": true,
-    "duration": 9000,
-    "module": "shaders/horror",
-    "addedAt": "2026-10-31T17:06:32.059Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
     "id": "emergency-broadcast",
     "name": "Emergency broadcast",
     "kind": "vector",
@@ -699,9 +162,546 @@
     "animated": true,
     "duration": 6240,
     "module": "horror",
-    "addedAt": "2026-10-31T17:06:32.059Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-10-31T17:24:00Z",
+    "commitHash": "15d1a82932439963484a69624c21b7d7d20712d6",
+    "order": 505
+  },
+  {
+    "id": "shadow-hands",
+    "name": "Shadow hands",
+    "kind": "shader",
+    "category": "horror",
+    "description": "The shadows of long-fingered hands reaching in over a picture from the edges of the frame one after another, fingers spread, closing on nothing and drawing back.",
+    "tags": [
+      "horror",
+      "creature",
+      "shadow",
+      "hands",
+      "reach",
+      "silhouette",
+      "image"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "city"
+        },
+        "line": 3,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uShadow",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            5,
+            3,
+            7
+          ]
+        },
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uDarkness",
+        "t": "float",
+        "d": 0.8,
+        "line": 5
+      },
+      {
+        "n": "uSoftness",
+        "t": "float",
+        "d": 0.35,
+        "line": 6
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 0.8,
+        "min": 0.3,
+        "max": 1.5,
+        "line": 7
+      },
+      {
+        "n": "uHands",
+        "t": "float",
+        "d": 3,
+        "min": 1,
+        "max": 3,
+        "s": 1,
+        "line": 8
+      },
+      {
+        "n": "uCycle",
+        "t": "float",
+        "d": 9,
+        "l": "Cycle (s)",
+        "min": 3,
+        "max": 20,
+        "line": 9
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "line": 11
+      }
+    ],
+    "presets": [
+      "Sharp",
+      "One hand",
+      "Faint",
+      "Slow"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "filter",
+    "loop": 9,
+    "animated": true,
+    "duration": 9000,
+    "module": "shaders/horror",
+    "addedAt": "2026-10-31T17:24:00Z",
+    "commitHash": "15d1a82932439963484a69624c21b7d7d20712d6",
+    "order": 504
+  },
+  {
+    "id": "creeping-dark",
+    "name": "Creeping dark",
+    "kind": "shader",
+    "category": "horror",
+    "description": "Darkness with tendril edges slowly closing in from the corners of a picture and drawing back, recoiling from the pointer while it hovers as if from a torch.",
+    "tags": [
+      "horror",
+      "creature",
+      "vignette",
+      "darkness",
+      "tendrils",
+      "interactive",
+      "hover",
+      "image"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "landscape"
+        },
+        "line": 3,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uDark",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            2,
+            1,
+            3
+          ]
+        },
+        "l": "Darkness",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uRim",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            90,
+            10,
+            18
+          ]
+        },
+        "l": "Edge",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uAmount",
+        "t": "float",
+        "d": 0.55,
+        "l": "How far it comes",
+        "line": 6
+      },
+      {
+        "n": "uTendrils",
+        "t": "float",
+        "d": 0.6,
+        "line": 7
+      },
+      {
+        "n": "uRecoil",
+        "t": "float",
+        "d": 0.7,
+        "l": "Recoil from the pointer",
+        "line": 8
+      },
+      {
+        "n": "uCycle",
+        "t": "float",
+        "d": 12,
+        "l": "Cycle (s)",
+        "min": 4,
+        "max": 30,
+        "line": 9
+      },
+      {
+        "n": "uAnimate",
+        "t": "bool",
+        "d": true,
+        "line": 10
+      },
+      {
+        "n": "uProgress",
+        "t": "float",
+        "d": 0.7,
+        "l": "Closed (when still)",
+        "line": 11
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 12
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "line": 13
+      }
+    ],
+    "presets": [
+      "Smothering",
+      "Gentle",
+      "Sickly",
+      "Still"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "interactive",
+      "interactions": [
+        "hover",
+        "pointer"
+      ],
+      "transparent": false
+    },
+    "video": "interactive",
+    "loop": 12,
+    "animated": true,
+    "duration": 12000,
+    "module": "shaders/horror",
+    "addedAt": "2026-10-31T17:24:00Z",
+    "commitHash": "15d1a82932439963484a69624c21b7d7d20712d6",
+    "order": 503
+  },
+  {
+    "id": "spirit-orbs",
+    "name": "Spirit orbs",
+    "kind": "shader",
+    "category": "horror",
+    "description": "Pale translucent orbs over a picture, like the ones that turn up in flash photos of haunted houses, drifting like dust and every so often darting off in a streak before drifting on.",
+    "tags": [
+      "horror",
+      "spectral",
+      "orbs",
+      "ghost",
+      "dust",
+      "bokeh",
+      "paranormal",
+      "image"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "city"
+        },
+        "line": 3,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uColor",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            230,
+            242,
+            255
+          ]
+        },
+        "l": "Orbs",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uCount",
+        "t": "float",
+        "d": 14,
+        "l": "Orbs",
+        "min": 1,
+        "max": 24,
+        "s": 1,
+        "line": 5
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 1,
+        "min": 0.3,
+        "max": 3,
+        "line": 6
+      },
+      {
+        "n": "uOpacity",
+        "t": "float",
+        "d": 0.55,
+        "line": 7
+      },
+      {
+        "n": "uDart",
+        "t": "float",
+        "d": 0.6,
+        "l": "Darting",
+        "line": 8
+      },
+      {
+        "n": "uDim",
+        "t": "float",
+        "d": 0.3,
+        "l": "Dim the picture",
+        "line": 9
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "line": 11
+      }
+    ],
+    "presets": [
+      "Swarm",
+      "Few and large",
+      "Green",
+      "Calm"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "filter",
+    "animated": true,
+    "module": "shaders/horror",
+    "addedAt": "2026-10-31T17:24:00Z",
+    "commitHash": "15d1a82932439963484a69624c21b7d7d20712d6",
+    "order": 502
+  },
+  {
+    "id": "ectoplasm-wisps",
+    "name": "Ectoplasm wisps",
+    "kind": "shader",
+    "category": "horror",
+    "description": "Glowing green trails of ectoplasm spiralling in out of the dark towards the pointer while it hovers, or a point wandering the frame, each fading as it arrives and another rising in its place.",
+    "tags": [
+      "horror",
+      "spectral",
+      "ectoplasm",
+      "wisps",
+      "glow",
+      "interactive",
+      "hover",
+      "cursor",
+      "background"
+    ],
+    "controls": [
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            3,
+            6,
+            10
+          ]
+        },
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uColor",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            125,
+            255,
+            178
+          ]
+        },
+        "l": "Ectoplasm",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uWisps",
+        "t": "float",
+        "d": 6,
+        "min": 1,
+        "max": 8,
+        "s": 1,
+        "line": 5
+      },
+      {
+        "n": "uLength",
+        "t": "float",
+        "d": 0.5,
+        "l": "Tail length",
+        "min": 0.1,
+        "line": 6
+      },
+      {
+        "n": "uWidth",
+        "t": "float",
+        "d": 8,
+        "min": 2,
+        "max": 30,
+        "line": 7
+      },
+      {
+        "n": "uGlow",
+        "t": "float",
+        "d": 1,
+        "max": 2,
+        "line": 8
+      },
+      {
+        "n": "uSpeed",
+        "t": "float",
+        "d": 0.7,
+        "min": 0.2,
+        "max": 2,
+        "line": 9
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Background opacity",
+        "line": 93
+      }
+    ],
+    "presets": [
+      "Poltergeist",
+      "Bile",
+      "Single spirit",
+      "Transparent"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [
+        "hover",
+        "pointer"
+      ],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "shaders/horror",
+    "addedAt": "2026-10-31T17:24:00Z",
+    "commitHash": "15d1a82932439963484a69624c21b7d7d20712d6",
+    "order": 501
   },
   {
     "id": "trail-cam",
@@ -858,9 +858,9 @@
     "animated": true,
     "duration": 9600,
     "module": "shaders/horror",
-    "addedAt": "2026-10-31T17:06:32.058Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-10-31T17:24:00Z",
+    "commitHash": "15d1a82932439963484a69624c21b7d7d20712d6",
+    "order": 500
   },
   {
     "id": "possessed-text",
