@@ -1,5 +1,901 @@
 [
   {
+    "id": "night-vision-cam",
+    "name": "Night vision camcorder",
+    "kind": "shader",
+    "category": "horror",
+    "description": "A picture through a camcorder's night-vision mode: amplified green phosphor with heavy grain in the shadows, blooming highlights and a dark tube vignette, where pairs of eyes catch the infrared light and shine back out of the dark now and then.",
+    "tags": [
+      "horror",
+      "analog-horror",
+      "night-vision",
+      "infrared",
+      "camcorder",
+      "found-footage",
+      "eyes",
+      "green",
+      "image"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "landscape"
+        },
+        "line": 4,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uPhosphor",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            124,
+            255,
+            107
+          ]
+        },
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uGain",
+        "t": "float",
+        "d": 1.8,
+        "min": 0.5,
+        "max": 4,
+        "line": 6
+      },
+      {
+        "n": "uGrain",
+        "t": "float",
+        "d": 0.55,
+        "line": 7
+      },
+      {
+        "n": "uBloom",
+        "t": "float",
+        "d": 0.5,
+        "line": 8
+      },
+      {
+        "n": "uVignette",
+        "t": "float",
+        "d": 0.7,
+        "line": 9
+      },
+      {
+        "n": "uEyes",
+        "t": "float",
+        "d": 0.6,
+        "l": "Eyes in the dark",
+        "line": 10
+      },
+      {
+        "n": "uEyeSize",
+        "t": "float",
+        "d": 9,
+        "min": 2,
+        "max": 30,
+        "line": 11
+      },
+      {
+        "n": "uOsd",
+        "t": "bool",
+        "d": true,
+        "l": "Camcorder display",
+        "line": 12
+      },
+      {
+        "n": "uOsdColor",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            248,
+            250,
+            252
+          ]
+        },
+        "l": "Display colour",
+        "c": 1,
+        "line": 13
+      },
+      {
+        "n": "uClock",
+        "t": "float",
+        "d": 3,
+        "l": "Clock starts at (hour)",
+        "max": 24,
+        "line": 14
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 15
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "line": 16
+      }
+    ],
+    "presets": [
+      "Gen 3 green",
+      "White phosphor",
+      "Something's there",
+      "Clean"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "filter",
+    "animated": true,
+    "module": "shaders/horror",
+    "addedAt": "2026-10-31T15:03:34.344Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "signal-lost",
+    "name": "Signal lost",
+    "kind": "shader",
+    "category": "horror",
+    "description": "A live feed that stutters and freezes, breaks into blocky corruption that smears across the frozen frame, shows a hidden picture through the broken blocks, then cuts to static and comes back as if nothing happened. Loops; or turn Animate off and set Moment.",
+    "tags": [
+      "horror",
+      "analog-horror",
+      "glitch",
+      "datamosh",
+      "corruption",
+      "freeze",
+      "static",
+      "hidden",
+      "found-footage",
+      "image"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "city"
+        },
+        "l": "Feed",
+        "line": 3,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uHidden",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "l": "Hidden picture",
+        "line": 4,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uTint",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            59,
+            48
+          ]
+        },
+        "l": "Hidden tint",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uBlock",
+        "t": "float",
+        "d": 32,
+        "l": "Block size",
+        "min": 8,
+        "max": 96,
+        "line": 6
+      },
+      {
+        "n": "uCorrupt",
+        "t": "float",
+        "d": 0.8,
+        "l": "Corruption",
+        "line": 7
+      },
+      {
+        "n": "uCycle",
+        "t": "float",
+        "d": 6,
+        "l": "Cycle (s)",
+        "min": 4,
+        "max": 12,
+        "line": 8
+      },
+      {
+        "n": "uAnimate",
+        "t": "bool",
+        "d": true,
+        "line": 9
+      },
+      {
+        "n": "uProgress",
+        "t": "float",
+        "d": 0.62,
+        "l": "Moment (when still)",
+        "line": 10
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "line": 12
+      }
+    ],
+    "presets": [
+      "Big blocks",
+      "Fine grain",
+      "Cold",
+      "Frozen reveal"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Feed",
+          "wants": "picture"
+        },
+        {
+          "name": "uHidden",
+          "label": "Hidden picture",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "stills",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "stills",
+    "loop": 6,
+    "animated": true,
+    "duration": 6000,
+    "module": "shaders/horror",
+    "addedAt": "2026-10-31T15:03:34.344Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "ghost-apparition",
+    "name": "Ghost apparition",
+    "kind": "shader",
+    "category": "horror",
+    "description": "A translucent figure fading in over a picture as it cools and darkens, flickering, hanging there with hollow eyes and wisps trailing from its hem, then fading away; turn on Double exposure to show a second picture inside it. Loops; or turn Animate off and set Presence.",
+    "tags": [
+      "horror",
+      "spectral",
+      "ghost",
+      "apparition",
+      "haunting",
+      "double-exposure",
+      "halloween",
+      "image"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "city"
+        },
+        "line": 3,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uFigure",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "l": "Double-exposure picture",
+        "line": 4,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uDouble",
+        "t": "bool",
+        "d": false,
+        "l": "Double exposure",
+        "line": 5
+      },
+      {
+        "n": "uGhost",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            207,
+            230,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "uX",
+        "t": "float",
+        "d": 0.12,
+        "l": "Position",
+        "min": -0.5,
+        "max": 0.5,
+        "line": 7
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 0.85,
+        "min": 0.3,
+        "max": 1.2,
+        "line": 8
+      },
+      {
+        "n": "uOpacity",
+        "t": "float",
+        "d": 0.6,
+        "line": 9
+      },
+      {
+        "n": "uGloom",
+        "t": "float",
+        "d": 0.6,
+        "line": 10
+      },
+      {
+        "n": "uCycle",
+        "t": "float",
+        "d": 8,
+        "l": "Cycle (s)",
+        "min": 4,
+        "max": 16,
+        "line": 11
+      },
+      {
+        "n": "uAnimate",
+        "t": "bool",
+        "d": true,
+        "line": 12
+      },
+      {
+        "n": "uProgress",
+        "t": "float",
+        "d": 1,
+        "l": "Presence (when still)",
+        "line": 13
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 14
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "line": 15
+      }
+    ],
+    "presets": [
+      "Double exposure",
+      "Faint",
+      "Wraith",
+      "Still"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        },
+        {
+          "name": "uFigure",
+          "label": "Double-exposure picture",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "filter",
+    "loop": 8,
+    "animated": true,
+    "duration": 8000,
+    "module": "shaders/horror",
+    "addedAt": "2026-10-31T15:03:34.344Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "eyes-in-the-dark",
+    "name": "Eyes in the dark",
+    "kind": "shader",
+    "category": "horror",
+    "description": "Pairs of glowing eyes opening one after another in the dark, blinking and watching the pointer, snapping shut when it comes near and opening again somewhere else.",
+    "tags": [
+      "horror",
+      "creature",
+      "eyes",
+      "dark",
+      "interactive",
+      "hover",
+      "halloween",
+      "background"
+    ],
+    "controls": [
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            5,
+            4,
+            7
+          ]
+        },
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uColor",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            200,
+            61
+          ]
+        },
+        "l": "Eyes",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uColorB",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            61,
+            46
+          ]
+        },
+        "l": "Other eyes",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uDensity",
+        "t": "float",
+        "d": 4,
+        "min": 2,
+        "max": 10,
+        "line": 6
+      },
+      {
+        "n": "uAmount",
+        "t": "float",
+        "d": 0.55,
+        "l": "Watchers",
+        "line": 7
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 1.4,
+        "min": 0.4,
+        "max": 2.5,
+        "line": 8
+      },
+      {
+        "n": "uReach",
+        "t": "float",
+        "d": 0.22,
+        "l": "Shy distance",
+        "max": 0.6,
+        "line": 9
+      },
+      {
+        "n": "uGlow",
+        "t": "float",
+        "d": 1,
+        "max": 2,
+        "line": 10
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Background opacity",
+        "line": 84
+      }
+    ],
+    "presets": [
+      "Swarm",
+      "Something big",
+      "Cats",
+      "Transparent"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [
+        "hover",
+        "pointer"
+      ],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "shaders/horror",
+    "addedAt": "2026-10-31T15:03:34.344Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "possessed-text",
+    "name": "Possessed text",
+    "kind": "vector",
+    "category": "horror",
+    "description": "A title that something takes hold of: its letters writhe, twist and float up out of line behind a blood-red haze, then snap back into place all at once as if nothing happened.",
+    "tags": [
+      "horror",
+      "spectral",
+      "text",
+      "title",
+      "possessed",
+      "creepy",
+      "halloween",
+      "kinetic"
+    ],
+    "controls": [
+      {
+        "n": "text",
+        "t": "text",
+        "d": "GET OUT",
+        "line": 1
+      },
+      {
+        "n": "background",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            11,
+            7,
+            8
+          ]
+        },
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "ink",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            232,
+            226,
+            214
+          ]
+        },
+        "l": "Text colour",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "aura",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            179,
+            18,
+            27
+          ]
+        },
+        "l": "Haze",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "amount",
+        "t": "float",
+        "d": 1,
+        "l": "Intensity",
+        "max": 2,
+        "s": 0.1,
+        "line": 5
+      },
+      {
+        "n": "font",
+        "t": "text",
+        "d": "Georgia, 'Times New Roman', serif",
+        "line": 6
+      },
+      {
+        "n": "weight",
+        "t": "int",
+        "d": 700,
+        "min": 100,
+        "max": 900,
+        "s": 100,
+        "line": 7
+      },
+      {
+        "n": "inline",
+        "t": "bool",
+        "d": false,
+        "line": 8
+      }
+    ],
+    "presets": [
+      "Ectoplasm",
+      "Parchment",
+      "Violent",
+      "Uneasy"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "text",
+          "label": "Text",
+          "holds": "copy",
+          "default": "GET OUT"
+        },
+        {
+          "name": "font",
+          "label": "Font",
+          "holds": "font",
+          "default": "Georgia, 'Times New Roman', serif"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 900,
+    "animated": true,
+    "duration": 4230,
+    "module": "text",
+    "addedAt": "2026-10-31T15:03:34.344Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "vhs-tracking",
+    "name": "VHS tracking",
+    "kind": "shader",
+    "category": "horror",
+    "description": "A picture on a cursed tape: the image warping as the tape stretches, a band of tracking noise rolling up through it, head-switching tear along the bottom, colour bleeding to the right and a camcorder's REC and clock burned in.",
+    "tags": [
+      "horror",
+      "analog-horror",
+      "vhs",
+      "tape",
+      "found-footage",
+      "camcorder",
+      "glitch",
+      "retro",
+      "image"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "city"
+        },
+        "line": 3,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uWarp",
+        "t": "float",
+        "d": 0.5,
+        "l": "Tape warp",
+        "line": 4
+      },
+      {
+        "n": "uTracking",
+        "t": "float",
+        "d": 0.6,
+        "l": "Tracking band",
+        "line": 5
+      },
+      {
+        "n": "uHeadSwitch",
+        "t": "float",
+        "d": 0.7,
+        "l": "Head-switch tear",
+        "line": 6
+      },
+      {
+        "n": "uBleed",
+        "t": "float",
+        "d": 0.007,
+        "l": "Colour bleed",
+        "max": 0.03,
+        "line": 7
+      },
+      {
+        "n": "uNoise",
+        "t": "float",
+        "d": 0.5,
+        "line": 8
+      },
+      {
+        "n": "uOsd",
+        "t": "bool",
+        "d": true,
+        "l": "Camcorder display",
+        "line": 9
+      },
+      {
+        "n": "uOsdColor",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            248,
+            250,
+            252
+          ]
+        },
+        "l": "Display colour",
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "uClock",
+        "t": "float",
+        "d": 3,
+        "l": "Clock starts at (hour)",
+        "max": 24,
+        "line": 11
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 12
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "line": 13
+      }
+    ],
+    "presets": [
+      "Worn tape",
+      "Clean deck",
+      "Midnight",
+      "No display"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "filter",
+    "animated": true,
+    "module": "shaders/horror",
+    "addedAt": "2026-10-31T15:03:34.343Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
     "id": "rolodex",
     "name": "Rolodex",
     "kind": "vector",
@@ -1940,864 +2836,5 @@
     "addedAt": "2026-10-28T22:40:42Z",
     "commitHash": "bb91f86ec860386084f2ae59a2eb40590c883834",
     "order": 475
-  },
-  {
-    "id": "slime-drop",
-    "name": "Slime drop",
-    "kind": "vector",
-    "category": "splatter",
-    "description": "A drippy slime title falling in from above, squashing flat as it lands in a puddle and splashing droplets out round it that stay as specks.",
-    "tags": [
-      "splatter",
-      "promo",
-      "title",
-      "slime",
-      "splat",
-      "drip",
-      "logo",
-      "bounce",
-      "y2k"
-    ],
-    "controls": [
-      {
-        "n": "word",
-        "t": "text",
-        "d": "SLOP",
-        "line": 1
-      },
-      {
-        "n": "font",
-        "t": "text",
-        "d": "Arial Black, Impact, system-ui, sans-serif",
-        "line": 2
-      },
-      {
-        "n": "weight",
-        "t": "int",
-        "d": 900,
-        "min": 100,
-        "max": 900,
-        "s": 100,
-        "line": 3
-      },
-      {
-        "n": "fill",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            92,
-            154
-          ]
-        },
-        "l": "Slime",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "outline",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            74,
-            13,
-            44
-          ]
-        },
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "stroke",
-        "t": "float",
-        "d": 7,
-        "l": "Outline width",
-        "max": 14,
-        "s": 0.5,
-        "line": 6
-      },
-      {
-        "n": "spread",
-        "t": "float",
-        "d": 1,
-        "l": "Splash size",
-        "min": 0.3,
-        "max": 2,
-        "line": 7
-      }
-    ],
-    "presets": [
-      "Slime",
-      "Grape",
-      "Big splash"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "word",
-          "label": "Word",
-          "holds": "copy",
-          "default": "SLOP"
-        },
-        {
-          "name": "font",
-          "label": "Font",
-          "holds": "font",
-          "default": "Arial Black, Impact, system-ui, sans-serif"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 1400,
-    "animated": true,
-    "duration": 2540,
-    "module": "promo",
-    "addedAt": "2026-10-28T22:40:42Z",
-    "commitHash": "bb91f86ec860386084f2ae59a2eb40590c883834",
-    "order": 474
-  },
-  {
-    "id": "before-after",
-    "name": "Before and after",
-    "kind": "shader",
-    "category": "interaction",
-    "description": "Two pictures compared either side of a divider with a round handle that follows the pointer while it hovers and sweeps back and forth when idle; a cut-out shows over a transparency checkerboard.",
-    "tags": [
-      "interactive",
-      "hover",
-      "image",
-      "promo",
-      "compare",
-      "before-after",
-      "slider",
-      "background-removal",
-      "checkerboard"
-    ],
-    "controls": [
-      {
-        "n": "uBefore",
-        "t": "sampler2D",
-        "d": {
-          "sample": "portrait"
-        },
-        "line": 3,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uAfter",
-        "t": "sampler2D",
-        "d": {
-          "sample": "cutout"
-        },
-        "line": 4,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uLine",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "l": "Divider",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uHandle",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            240,
-            80,
-            122
-          ]
-        },
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "uLineWidth",
-        "t": "float",
-        "d": 4,
-        "l": "Divider width",
-        "max": 20,
-        "line": 7
-      },
-      {
-        "n": "uHandleSize",
-        "t": "float",
-        "d": 0.065,
-        "max": 0.2,
-        "line": 8
-      },
-      {
-        "n": "uSplit",
-        "t": "float",
-        "d": 0.5,
-        "l": "Split when idle",
-        "line": 9
-      },
-      {
-        "n": "uDemo",
-        "t": "bool",
-        "d": true,
-        "l": "Sweep when idle",
-        "line": 10
-      },
-      {
-        "n": "uChecker",
-        "t": "bool",
-        "d": true,
-        "l": "Checkerboard",
-        "line": 11
-      },
-      {
-        "n": "uCheckerSize",
-        "t": "float",
-        "d": 26,
-        "min": 8,
-        "max": 80,
-        "line": 12
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 13
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "line": 14
-      }
-    ],
-    "presets": [
-      "Still",
-      "Minimal",
-      "Dark divider",
-      "On white"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uBefore",
-          "label": "Before",
-          "wants": "picture"
-        },
-        {
-          "name": "uAfter",
-          "label": "After",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "interactive",
-      "interactions": [
-        "hover",
-        "pointer"
-      ],
-      "transparent": false
-    },
-    "video": "interactive",
-    "animated": true,
-    "module": "shaders/promo",
-    "addedAt": "2026-10-28T22:40:42Z",
-    "commitHash": "bb91f86ec860386084f2ae59a2eb40590c883834",
-    "order": 473
-  },
-  {
-    "id": "swoosh-underline",
-    "name": "Swoosh underline",
-    "kind": "shader",
-    "category": "light",
-    "description": "A glowing curved stroke sweeping on under a subtitle with a bright head and a thinner second stroke chasing it, then wiping away from its tail; a transparent overlay.",
-    "tags": [
-      "overlay",
-      "promo",
-      "underline",
-      "swoosh",
-      "title",
-      "accent",
-      "neon"
-    ],
-    "controls": [
-      {
-        "n": "uColor",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            47,
-            217,
-            196
-          ]
-        },
-        "l": "Glow",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uCore",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uSpan",
-        "t": "float",
-        "d": 0.8,
-        "l": "Width (share of frame)",
-        "min": 0.2,
-        "line": 5
-      },
-      {
-        "n": "uY",
-        "t": "float",
-        "d": -0.1,
-        "l": "Height",
-        "min": -0.45,
-        "max": 0.45,
-        "line": 6
-      },
-      {
-        "n": "uCurve",
-        "t": "float",
-        "d": 0.06,
-        "min": -0.3,
-        "max": 0.3,
-        "line": 7
-      },
-      {
-        "n": "uRise",
-        "t": "float",
-        "d": 0.05,
-        "min": -0.3,
-        "max": 0.3,
-        "line": 8
-      },
-      {
-        "n": "uWidth",
-        "t": "float",
-        "d": 11,
-        "l": "Thickness",
-        "min": 2,
-        "max": 40,
-        "line": 9
-      },
-      {
-        "n": "uGlow",
-        "t": "float",
-        "d": 1,
-        "max": 2,
-        "line": 10
-      },
-      {
-        "n": "uSecond",
-        "t": "bool",
-        "d": true,
-        "l": "Second stroke",
-        "line": 11
-      },
-      {
-        "n": "uAnimate",
-        "t": "bool",
-        "d": true,
-        "line": 12
-      },
-      {
-        "n": "uCycle",
-        "t": "float",
-        "d": 2.5,
-        "l": "Cycle (s)",
-        "min": 1,
-        "max": 8,
-        "line": 13
-      },
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            244,
-            210
-          ]
-        },
-        "c": 1,
-        "line": 14
-      },
-      {
-        "n": "uBackgroundAlpha",
-        "t": "float",
-        "d": 0,
-        "l": "Background opacity",
-        "line": 15
-      }
-    ],
-    "presets": [
-      "Cream",
-      "Hot pink",
-      "Gold",
-      "Straight"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": true
-    },
-    "transparent": true,
-    "animated": true,
-    "module": "shaders/promo",
-    "addedAt": "2026-10-28T22:40:42Z",
-    "commitHash": "bb91f86ec860386084f2ae59a2eb40590c883834",
-    "order": 472
-  },
-  {
-    "id": "tick-ring-burst",
-    "name": "Tick ring burst",
-    "kind": "shader",
-    "category": "light",
-    "description": "A sunburst arc of short rounded ticks popping out one after another from its middle behind a title, holding, then flying outward and fading; a transparent overlay.",
-    "tags": [
-      "overlay",
-      "promo",
-      "title",
-      "sunburst",
-      "ring",
-      "logo",
-      "accent",
-      "burst"
-    ],
-    "controls": [
-      {
-        "n": "uColor",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            240,
-            80,
-            122
-          ]
-        },
-        "l": "Ticks",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uColorB",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            176,
-            194
-          ]
-        },
-        "l": "Ends",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uCount",
-        "t": "float",
-        "d": 44,
-        "l": "Ticks round a full circle",
-        "min": 8,
-        "max": 96,
-        "s": 1,
-        "line": 5
-      },
-      {
-        "n": "uArc",
-        "t": "float",
-        "d": 0.45,
-        "l": "Arc (share of circle)",
-        "min": 0.05,
-        "line": 6
-      },
-      {
-        "n": "uAngle",
-        "t": "float",
-        "d": 90,
-        "l": "Arc centre (°)",
-        "min": -180,
-        "max": 180,
-        "line": 7
-      },
-      {
-        "n": "uRadius",
-        "t": "float",
-        "d": 0.3,
-        "min": 0.05,
-        "max": 0.48,
-        "line": 8
-      },
-      {
-        "n": "uLength",
-        "t": "float",
-        "d": 0.06,
-        "l": "Tick length",
-        "min": 0.01,
-        "max": 0.2,
-        "line": 9
-      },
-      {
-        "n": "uWidth",
-        "t": "float",
-        "d": 12,
-        "l": "Tick width",
-        "min": 2,
-        "max": 40,
-        "line": 10
-      },
-      {
-        "n": "uAnimate",
-        "t": "bool",
-        "d": true,
-        "line": 11
-      },
-      {
-        "n": "uCycle",
-        "t": "float",
-        "d": 3,
-        "l": "Cycle (s)",
-        "min": 1,
-        "max": 8,
-        "line": 12
-      },
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            244,
-            210
-          ]
-        },
-        "c": 1,
-        "line": 13
-      },
-      {
-        "n": "uBackgroundAlpha",
-        "t": "float",
-        "d": 0,
-        "l": "Background opacity",
-        "line": 14
-      }
-    ],
-    "presets": [
-      "Cream",
-      "Full ring",
-      "Gold",
-      "Fan below"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": true
-    },
-    "transparent": true,
-    "animated": true,
-    "module": "shaders/promo",
-    "addedAt": "2026-10-28T22:40:42Z",
-    "commitHash": "bb91f86ec860386084f2ae59a2eb40590c883834",
-    "order": 471
-  },
-  {
-    "id": "orbit-swoosh",
-    "name": "Orbit swoosh",
-    "kind": "shader",
-    "category": "light",
-    "description": "Glowing comet ribbons circling a title on tilted orbits, dimming and slipping behind it on the far side, shedding flecks of confetti that drift out and fade; a transparent overlay.",
-    "tags": [
-      "overlay",
-      "promo",
-      "title",
-      "swoosh",
-      "orbit",
-      "comet",
-      "confetti",
-      "logo",
-      "accent"
-    ],
-    "controls": [
-      {
-        "n": "uColorA",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            194,
-            61
-          ]
-        },
-        "l": "Ribbon 1",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uColorB",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            47,
-            217,
-            184
-          ]
-        },
-        "l": "Ribbon 2",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uConfetti",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            111,
-            156
-          ]
-        },
-        "l": "Confetti colour",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uRibbons",
-        "t": "float",
-        "d": 2,
-        "min": 1,
-        "max": 3,
-        "s": 1,
-        "line": 6
-      },
-      {
-        "n": "uSize",
-        "t": "float",
-        "d": 0.8,
-        "l": "Orbit size",
-        "min": 0.2,
-        "max": 1.4,
-        "line": 7
-      },
-      {
-        "n": "uFlatten",
-        "t": "float",
-        "d": 0.32,
-        "l": "Orbit depth",
-        "min": 0.1,
-        "line": 8
-      },
-      {
-        "n": "uTilt",
-        "t": "float",
-        "d": -14,
-        "l": "Tilt (°)",
-        "min": -45,
-        "max": 45,
-        "line": 9
-      },
-      {
-        "n": "uLength",
-        "t": "float",
-        "d": 0.42,
-        "l": "Tail length (turns)",
-        "min": 0.1,
-        "max": 0.9,
-        "line": 10
-      },
-      {
-        "n": "uWidth",
-        "t": "float",
-        "d": 9,
-        "min": 2,
-        "max": 30,
-        "line": 11
-      },
-      {
-        "n": "uGlow",
-        "t": "float",
-        "d": 1,
-        "max": 2,
-        "line": 12
-      },
-      {
-        "n": "uGap",
-        "t": "float",
-        "d": 0.6,
-        "l": "Gap behind title",
-        "line": 13
-      },
-      {
-        "n": "uConfettiAmount",
-        "t": "float",
-        "d": 0.6,
-        "l": "Confetti",
-        "line": 14
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 0.45,
-        "l": "Speed (turns/s)",
-        "max": 2,
-        "line": 15
-      },
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            244,
-            210
-          ]
-        },
-        "c": 1,
-        "line": 16
-      },
-      {
-        "n": "uBackgroundAlpha",
-        "t": "float",
-        "d": 0,
-        "l": "Background opacity",
-        "line": 17
-      }
-    ],
-    "presets": [
-      "Cream",
-      "Night",
-      "Gold rush",
-      "Single"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": true
-    },
-    "transparent": true,
-    "animated": true,
-    "module": "shaders/promo",
-    "addedAt": "2026-10-28T22:40:42Z",
-    "commitHash": "bb91f86ec860386084f2ae59a2eb40590c883834",
-    "order": 470
-  },
-  {
-    "id": "spider-web-loader",
-    "name": "Spider web loader",
-    "kind": "vector",
-    "category": "loader",
-    "description": "A spider web weaving itself spoke by spoke and round its spiral, then a spider dropping in on its thread, bobbing, and climbing back out as the web fades.",
-    "tags": [
-      "loader",
-      "web",
-      "spider",
-      "halloween",
-      "spooky",
-      "icon",
-      "draw"
-    ],
-    "controls": [
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            13,
-            15,
-            20
-          ]
-        },
-        "c": 1,
-        "line": 1
-      },
-      {
-        "n": "silk",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            216,
-            222,
-            230
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "spider",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            241,
-            242,
-            244
-          ]
-        },
-        "c": 1,
-        "line": 3
-      }
-    ],
-    "presets": [
-      "Light",
-      "Halloween"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 400,
-    "animated": true,
-    "duration": 4100,
-    "module": "web",
-    "addedAt": "2026-10-27T18:21:38Z",
-    "commitHash": "28f98bcab0b3a01483401091b11ec126d6ed2347",
-    "order": 469
   }
 ]

@@ -2278,3 +2278,85 @@ describe("promo effects", () => {
     expect(Number(/id="label"[^>]*font-size="([\d.]+)"/.exec(long.svg)![1])).toBeLessThan(18);
   });
 });
+
+describe("horror effects", () => {
+  const IDS = ["vhs-tracking", "night-vision-cam", "signal-lost", "ghost-apparition", "eyes-in-the-dark", "possessed-text"];
+
+  it("have a category of their own, browsed with the pictures, and are tagged by kind", () => {
+    expect(categoryGroup("horror").name).toBe("Pictures");
+    const found = findEffects({ category: "horror" }).map((e) => e.id);
+    for (const id of IDS) expect(found, id).toContain(id);
+    for (const effect of findEffects({ category: "horror" })) expect(effect.tags, effect.id).toContain("horror");
+    expect(findEffects({ tags: ["analog-horror"] }).map((e) => e.id).sort()).toEqual(["night-vision-cam", "signal-lost", "vhs-tracking"]);
+    expect(findEffects({ tags: ["spectral"] }).map((e) => e.id).sort()).toEqual(["ghost-apparition", "possessed-text"]);
+  });
+
+  it("the tape and the camcorder filter video, with a display that can be switched off", () => {
+    for (const id of ["vhs-tracking", "night-vision-cam"]) {
+      const effect = getEffect(id)!;
+      expect(effect, id).toMatchObject({ video: "filter" });
+      expect(effectDefaults(effect), id).toMatchObject({ uOsd: true, uClock: 3 });
+      expect(isSinglePictureEffect(effect), id).toBe(true);
+    }
+  });
+
+  it("signal lost freezes a still into a hidden picture, and holds any moment", () => {
+    const effect = getEffect("signal-lost")!;
+    expect(effect).toMatchObject({ video: "stills", loop: 6 });
+    expect(effectInputs(effect).images.map((i) => i.name)).toEqual(["uImage", "uHidden"]);
+    expect(effectDefaults(effect)).toMatchObject({ uHidden: SAMPLE_IMAGES.portrait, uAnimate: true });
+    expect(effectDefaults(effect, { preset: "Frozen reveal" })).toMatchObject({ uAnimate: false, uProgress: 0.65 });
+  });
+
+  it("the apparition fades over any picture, with a second one inside it a preset away", () => {
+    const effect = getEffect("ghost-apparition")!;
+    expect(effect).toMatchObject({ video: "filter", loop: 8 });
+    expect(effectDefaults(effect).uDouble).toBe(false);
+    expect(effectDefaults(effect, { preset: "Double exposure" }).uDouble).toBe(true);
+  });
+
+  it("eyes in the dark watch the pointer, and can sit over other content", () => {
+    const effect = getEffect("eyes-in-the-dark")!;
+    expect(effectInputs(effect).interactions).toEqual(expect.arrayContaining(["hover", "pointer"]));
+    expect(effectDefaults(effect).uBackgroundAlpha).toBe(1);
+    expect(effectDefaults(effect, { preset: "Transparent" }).uBackgroundAlpha).toBe(0);
+  });
+
+  it("possessed text writhes, lifts letters out of line and snaps them all back", () => {
+    const effect = getEffect("possessed-text")!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    for (const text of ["GET OUT", "A", "Ｈｅｌｌｏ 👻 & <you> and everyone else"]) {
+      const motion = renderVectorEffect(effect, { text });
+      expect(svgMotionIssues(motion), text).toEqual([]);
+      expect(JSON.stringify(motion), text).not.toMatch(/\{\{|NaN|undefined/);
+    }
+    const motion = renderVectorEffect(effect, effectDefaults(effect));
+    const frame = (ms: number) => svgFrame(motion.animate!, [], ms);
+    const rest = frame(0).get("l1")!.attrs.transform;
+    expect(rest).toMatch(/rotate\(0\) scale\(1\)$/);
+    // Mid-writhe the letters are off their marks, the floaters up and the haze showing.
+    expect(frame(2000).get("l1")!.attrs.transform).not.toBe(rest);
+    expect(frame(2400).get("f1")!.attrs.transform).not.toBe("translate(0 0)");
+    expect(Number(frame(2000).get("aura")!.attrs.opacity)).toBeGreaterThan(0.5);
+    // After the snap, everything is back where it started.
+    const end = svgDuration(motion);
+    expect(frame(end).get("l1")!.attrs.transform).toBe(rest);
+    expect(frame(end).get("f1")!.attrs.transform).toBe("translate(0 0)");
+    expect(frame(end).get("word")!.attrs.transform).toContain("scale(1)");
+    expect(Number(frame(end).get("aura")!.attrs.opacity)).toBe(0);
+    // No intensity, no possession.
+    const calm = renderVectorEffect(effect, { amount: 0 });
+    expect(svgFrame(calm.animate!, [], 2000).get("l1")!.attrs.transform).toBe(rest);
+  });
+
+  it("possessed text sits inline on the baseline in the surrounding font", () => {
+    const effect = getEffect("possessed-text")!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    expect(renderVectorEffect(effect).svg).toMatch(/^<svg viewBox="0 0 400 200" overflow="hidden"/);
+    const inline = renderVectorEffect(effect, { inline: true, font: "inherit", weight: 300 });
+    expect(inline.svg).toMatch(/^<svg viewBox="[\d.-]+ [\d.-]+ [\d.]+ [\d.]+" overflow="visible"/);
+    expect(inline.svg.match(/font-family="([^"]*)"/g)!.every((f) => f === 'font-family="inherit"')).toBe(true);
+    expect(inline.svg).not.toMatch(/<rect width="400" height="200"[^>]*opacity="1"/);
+    expect(svgMotionIssues(inline)).toEqual([]);
+  });
+});

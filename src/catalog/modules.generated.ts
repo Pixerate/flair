@@ -36,6 +36,7 @@ export const EFFECT_MODULES: Record<string, () => Promise<Record<string, unknown
   "shaders/gradients-more": () => import("./shaders/gradients-more.js"),
   "shaders/growth": () => import("./shaders/growth.js"),
   "shaders/hologram": () => import("./shaders/hologram.js"),
+  "shaders/horror": () => import("./shaders/horror.js"),
   "shaders/image": () => import("./shaders/image.js"),
   "shaders/impact": () => import("./shaders/impact.js"),
   "shaders/interaction": () => import("./shaders/interaction.js"),
