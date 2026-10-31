@@ -258,6 +258,28 @@ describe("commands and agent tools", () => {
     expect(editor.document.values.uAmount).toBeUndefined();
   });
 
+  it("lets agents find the meme effects, caption one and tune it within its controls", async () => {
+    const editor = createEffectEditor({ from: "aurora" });
+    const provider = createEffectToolProvider(editor);
+    type Search = { total: number; effects: { id: string; category: string }[] };
+    const found = await callTool(provider, "run_command", { id: "catalog.search", params: { category: "meme", limit: 50 } });
+    expect(found.isError).toBeFalsy();
+    const { result } = found.structuredContent as { result: Search };
+    expect(result.effects.map((e) => e.id)).toEqual(expect.arrayContaining(["impact-caption", "deep-fried", "dramatic-zoom", "deal-with-it", "laser-eyes", "to-be-continued"]));
+
+    const run = await callTool(provider, "run_commands", {
+      steps: [
+        { id: "effect.load", params: { id: "impact-caption" } },
+        { id: "values.set", params: { values: { top: "When the tests pass", backdrop: 0 } } },
+      ],
+    });
+    expect(run.isError).toBeFalsy();
+    expect(editor.document.values).toMatchObject({ top: "When the tests pass", backdrop: 0 });
+    // A mistyped value is refused and nothing changes.
+    expect(editor.commands.execute("values.set", { values: { thickness: "heavy" } })).toMatchObject({ ok: false, message: expect.stringMatching(/thickness takes a number/) });
+    expect(editor.document.values.thickness).toBeUndefined();
+  });
+
   it("lets agents edit vector pictures and see shader compiles", async () => {
     const shader = createEffectEditor({ from: "aurora" });
     const provider = createEffectToolProvider(shader);

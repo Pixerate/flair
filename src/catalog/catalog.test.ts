@@ -2705,3 +2705,47 @@ describe("horror effects", () => {
     expect(svgMotionIssues(inline)).toEqual([]);
   });
 });
+
+describe("meme effects", () => {
+  const IDS = ["impact-caption", "deep-fried", "dramatic-zoom", "deal-with-it", "laser-eyes", "to-be-continued"];
+
+  it("have a category of their own, browsed with the pictures, and are tagged by kind", () => {
+    expect(categoryGroup("meme").name).toBe("Pictures");
+    expect(findEffects({ category: "meme" }).map((e) => e.id).sort()).toEqual([...IDS].sort());
+    for (const effect of findEffects({ category: "meme" })) expect(effect.tags, effect.id).toContain("meme");
+    expect(findEffects({ category: "meme", tags: ["reaction"] }).map((e) => e.id).sort()).toEqual(["deal-with-it", "dramatic-zoom", "laser-eyes"]);
+  });
+
+  it("shaders take a picture, with their points on the sample portrait's face", () => {
+    for (const id of ["deep-fried", "dramatic-zoom", "laser-eyes", "to-be-continued"]) {
+      const effect = getEffect(id)!;
+      expect(effect, id).toMatchObject({ kind: "shader", video: "stills" });
+      expect(effectDefaults(effect).uImage, id).toBe(SAMPLE_IMAGES.portrait);
+    }
+    expect(effectDefaults(getEffect("laser-eyes")!)).toMatchObject({ uEyeA: [0.461, 0.583], uEyeB: [0.539, 0.583] });
+    expect(effectInputs(getEffect("to-be-continued")!).images).toEqual([
+      { name: "uImage", label: "Image", wants: "picture" },
+      { name: "uText", label: "Text", wants: "text" },
+    ]);
+  });
+
+  it("impact caption sets both lines in capitals, fitted to the frame, and can leave one out", () => {
+    const effect = getEffect("impact-caption") as VectorEffect;
+    const motion = renderVectorEffect(effect, { ...effectDefaults(effect), top: "when the build passes", bottom: "on the first try somehow, against every expectation" });
+    expect(motion.svg).toContain(">WHEN THE BUILD PASSES</text>");
+    const widths = [...motion.svg.matchAll(/textLength="([\d.]+)"/g)].map((m) => Number(m[1]));
+    for (const w of widths) expect(w).toBeLessThanOrEqual(600);
+    const lower = renderVectorEffect(effect, { ...effectDefaults(effect), upper: false, top: "" });
+    expect(lower.svg).toContain(">BOTTOM TEXT</text>");
+    expect(svgMotionIssues(lower)).toEqual([]);
+  });
+
+  it("deal with it drops the glasses onto the eye point, over the sample face or none", () => {
+    const effect = getEffect("deal-with-it") as VectorEffect;
+    const motion = renderVectorEffect(effect, { ...effectDefaults(effect), x: 0.25, y: 0.5, width: 0.22 });
+    const scale = (0.22 * 640) / 22;
+    const landing = motion.animate![0]!.attrs!.transform![1] as string;
+    expect(landing).toBe(`translate(${Math.round((160 - 11 * scale) * 10) / 10} ${Math.round((180 - 2 * scale) * 10) / 10}) scale(${Math.round(scale * 100) / 100})`);
+    expect(renderVectorEffect(effect, { ...effectDefaults(effect), face: false }).svg).toContain('<g opacity="0"><circle');
+  });
+});
