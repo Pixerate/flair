@@ -2315,15 +2315,16 @@ describe("promo effects", () => {
 });
 
 describe("horror effects", () => {
-  const IDS = ["vhs-tracking", "night-vision-cam", "signal-lost", "ghost-apparition", "eyes-in-the-dark", "possessed-text"];
+  const IDS = ["vhs-tracking", "night-vision-cam", "signal-lost", "trail-cam", "emergency-broadcast", "ghost-apparition", "ectoplasm-wisps", "spirit-orbs", "possessed-text", "eyes-in-the-dark", "creeping-dark", "shadow-hands"];
 
   it("have a category of their own, browsed with the pictures, and are tagged by kind", () => {
     expect(categoryGroup("horror").name).toBe("Pictures");
     const found = findEffects({ category: "horror" }).map((e) => e.id);
     for (const id of IDS) expect(found, id).toContain(id);
     for (const effect of findEffects({ category: "horror" })) expect(effect.tags, effect.id).toContain("horror");
-    expect(findEffects({ tags: ["analog-horror"] }).map((e) => e.id).sort()).toEqual(["night-vision-cam", "signal-lost", "vhs-tracking"]);
-    expect(findEffects({ tags: ["spectral"] }).map((e) => e.id).sort()).toEqual(["ghost-apparition", "possessed-text"]);
+    expect(findEffects({ tags: ["analog-horror"] }).map((e) => e.id).sort()).toEqual(["emergency-broadcast", "night-vision-cam", "signal-lost", "trail-cam", "vhs-tracking"]);
+    expect(findEffects({ tags: ["spectral"] }).map((e) => e.id).sort()).toEqual(["ectoplasm-wisps", "ghost-apparition", "possessed-text", "spirit-orbs"]);
+    expect(findEffects({ category: "horror", tags: ["creature"] }).map((e) => e.id).sort()).toEqual(["creeping-dark", "eyes-in-the-dark", "shadow-hands"]);
   });
 
   it("the tape and the camcorder filter video, with a display that can be switched off", () => {
@@ -2355,6 +2356,50 @@ describe("horror effects", () => {
     expect(effectInputs(effect).interactions).toEqual(expect.arrayContaining(["hover", "pointer"]));
     expect(effectDefaults(effect).uBackgroundAlpha).toBe(1);
     expect(effectDefaults(effect, { preset: "Transparent" }).uBackgroundAlpha).toBe(0);
+  });
+
+  it("the trail cam holds each shot, stamps it, and runs on stills", () => {
+    const effect = getEffect("trail-cam")!;
+    if (effect.kind !== "shader") throw new Error("shader expected");
+    expect(effect).toMatchObject({ video: "stills" });
+    expect(effectDefaults(effect)).toMatchObject({ uInterval: 1.2, uFigure: true, uMonth: 10, uDay: 31, uYear: 2026 });
+    expect(effectDefaults(effect, { preset: "Empty woods" }).uFigure).toBe(false);
+    // Eight shots a cycle at the default interval, so its loop is whole.
+    expect(effect.loop).toBeCloseTo(8 * 1.2);
+  });
+
+  it("the wisps and the dark answer the pointer; the orbs and hands lay over any picture", () => {
+    expect(effectInputs(getEffect("ectoplasm-wisps")!).interactions).toEqual(expect.arrayContaining(["hover", "pointer"]));
+    expect(effectDefaults(getEffect("ectoplasm-wisps")!, { preset: "Transparent" }).uBackgroundAlpha).toBe(0);
+    const dark = getEffect("creeping-dark")!;
+    expect(dark).toMatchObject({ video: "interactive" });
+    expect(effectInputs(dark).interactions).toEqual(expect.arrayContaining(["hover", "pointer"]));
+    for (const id of ["spirit-orbs", "shadow-hands"]) {
+      expect(getEffect(id), id).toMatchObject({ video: "filter" });
+      expect(isSinglePictureEffect(getEffect(id)!), id).toBe(true);
+    }
+  });
+
+  it("the emergency broadcast switches on, holds, and switches off to how it started", () => {
+    const effect = getEffect("emergency-broadcast")!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    for (const values of <Record<string, string>[]>[{}, { title: "A" }, { message: "", footer: "" }, { title: "Supercalifragilistic & <co> 日本 🎉 and some more words" }]) {
+      const motion = renderVectorEffect(effect, { ...effectDefaults(effect), ...values });
+      expect(svgMotionIssues(motion)).toEqual([]);
+      expect(motion.svg).toMatch(/^<svg viewBox="0 0 1920 1080"/);
+      expect(JSON.stringify(motion)).not.toMatch(/\{\{|NaN|undefined|Infinity/);
+      for (const [, id] of motion.svg.matchAll(/\sid="([^"]+)"/g)) expect(id).toMatch(/^emergencyBroadcast/);
+    }
+    const at = (hold: number) => renderVectorEffect(effect, { ...effectDefaults(effect), hold });
+    expect(svgDuration(at(5)) - svgDuration(at(2))).toBe(3000);
+    const motion = at(2);
+    const frame = (ms: number) => svgFrame(motion.animate!, [], ms);
+    const off = frame(0).get("emergencyBroadcastAll")!.attrs.transform;
+    expect(off).toContain("scale(0 0.01)");
+    expect(Number(frame(0).get("emergencyBroadcastFooter")!.attrs.opacity)).toBe(0);
+    expect(frame(2000).get("emergencyBroadcastAll")!.attrs.transform).toContain("scale(1 1)");
+    expect(Number(frame(2000).get("emergencyBroadcastTitleWipe")!.attrs.width)).toBe(1536);
+    expect(frame(svgDuration(motion)).get("emergencyBroadcastAll")!.attrs.transform).toBe(off);
   });
 
   it("possessed text writhes, lifts letters out of line and snaps them all back", () => {

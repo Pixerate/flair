@@ -92,6 +92,19 @@ vec4 osdOver(vec3 col, float alpha, vec2 fragCoord, float shift) {
   return vec4(col, max(alpha, max(0.5 * max(shadow.x, shadow.y), max(ink.x, ink.y))));
 }`.trim();
 
+/** `smin(a, b, k)`, a smooth union; `figure(q)`, distance to a hooded figure in units of its height (0 at its middle, its head at the top). */
+const FIGURE = `
+float smin(float a, float b, float k) {
+  float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
+  return mix(b, a, h) - k * h * (1.0 - h);
+}
+float figure(vec2 q) {
+  float head = length(q - vec2(0.0, 0.33)) - 0.095;
+  float shoulders = (length((q - vec2(0.0, 0.12)) / vec2(0.17, 0.085)) - 1.0) * 0.085;
+  float robe = max(abs(q.x) - (0.15 + 0.12 * (0.12 - q.y)), q.y - 0.12);
+  return smin(smin(head, shoulders, 0.06), robe, 0.04);
+}`.trim();
+
 export const vhsTracking: ShaderEffect = {
   kind: "shader",
   id: "vhs-tracking",
@@ -355,20 +368,8 @@ ${BACKDROP_CONTROLS}`,
     NOISE,
     FBM,
     PICTURE,
-    `float smin(float a, float b, float k) {
-  float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
-  return mix(b, a, h) - k * h * (1.0 - h);
-}
-
-// Distance to the figure, in units of its height (0 at its middle, its head at the top).
-float figure(vec2 q) {
-  float head = length(q - vec2(0.0, 0.33)) - 0.095;
-  float shoulders = (length((q - vec2(0.0, 0.12)) / vec2(0.17, 0.085)) - 1.0) * 0.085;
-  float robe = max(abs(q.x) - (0.15 + 0.12 * (0.12 - q.y)), q.y - 0.12);
-  return smin(smin(head, shoulders, 0.06), robe, 0.04);
-}
-
-void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+    FIGURE,
+    `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 uv = fragCoord / iResolution.xy;
   vec2 p = (fragCoord - 0.5 * iResolution.xy) / iResolution.y;
   float T = mod(iTime, uCycle) / uCycle;
@@ -496,5 +497,411 @@ uniform float uGlow;       // @control min=0 max=2 default=1 label="Glow"`,
   ],
 };
 
+/** `stampInk(q, secs)`: a trail camera's "MM/DD/YYYY  HH:MM:SS" at q (units of half a digit's height). Needs {@link CAMCORDER} (for clockInk) and the date controls. */
+const STAMP = `
+float stampInk(vec2 q, float secs) {
+  if (q.y < -0.3 || q.y > 2.3 || q.x < -0.3) return 0.0;
+  int slot = int(floor(q.x / 1.6));
+  vec2 c = vec2(q.x - float(slot) * 1.6, q.y);
+  float dist = 1e5;
+  int month = int(uMonth + 0.5);
+  int day = int(uDay + 0.5);
+  int year = int(uYear + 0.5);
+  if (slot == 2 || slot == 5) dist = segDist(c, vec2(0.1, 0.0), vec2(0.9, 2.0));
+  else if (slot < 10) {
+    int v = slot < 2 ? month : slot < 5 ? day : year;
+    int place = slot == 0 || slot == 3 ? 10 : slot == 1 || slot == 4 ? 1 : slot == 6 ? 1000 : slot == 7 ? 100 : slot == 8 ? 10 : 1;
+    dist = digit7(c, (v / place) - (v / (place * 10)) * 10);
+  } else if (slot >= 12) return clockInk(q - vec2(19.2, 0.0), secs);
+  return smoothstep(0.2, 0.12, dist);
+}`.trim();
+
+export const trailCam: ShaderEffect = {
+  kind: "shader",
+  id: "trail-cam",
+  name: "Trail cam",
+  description:
+    "A picture as an infrared trail camera's stills, a new grainy grey shot every second or so under its flash, with the date and time stamped along the bottom, and a figure in a few of the shots, closer each time.",
+  category: "horror",
+  video: "stills",
+  tags: ["horror", "analog-horror", "trail-cam", "infrared", "found-footage", "figure", "date-stamp", "image"],
+  loop: 9.6,
+  source: glsl(
+    `// Trail cam: time held in shots (uInterval apart), each its own grain, shake and exposure, lit by the flash
+// in the middle. Over every 8 shots a dark figure stands in shots 4 to 7, closer each time, its eyes shining.
+uniform sampler2D uImage;  // @control filter=linear wrap=clamp default=${SAMPLE_IMAGES.landscape} label="Image"
+uniform vec3 uTint;        // @control color default=#E4EBE2 label="Tint"
+uniform float uInterval;   // @control min=0.4 max=4 default=1.2 label="Seconds between shots"
+uniform float uGrain;      // @control min=0 max=1 default=0.5 label="Grain"
+uniform float uFlash;      // @control min=0 max=1 default=0.6 label="Flash falloff"
+uniform bool uFigure;      // @control default=true label="Figure"
+uniform float uMonth;      // @control min=1 max=12 default=10 step=1 label="Month"
+uniform float uDay;        // @control min=1 max=31 default=31 step=1 label="Day"
+uniform float uYear;       // @control min=1970 max=2099 default=2026 step=1 label="Year"
+uniform float uClock;      // @control min=0 max=24 default=3 label="Clock starts at (hour)"
+${BACKDROP_CONTROLS}`,
+    HASH,
+    PICTURE,
+    DIGIT7,
+    CAMCORDER,
+    STAMP,
+    FIGURE,
+    `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec2 uv = fragCoord / iResolution.xy;
+  float aspect = iResolution.x / iResolution.y;
+  float shot = floor(iTime / uInterval);
+  // Each shot shakes a little (wind on the mount).
+  vec2 shake = (hash22(vec2(shot, 3.0)) - 0.5) * 0.006;
+  vec4 pic = pictureRGBA(uImage, uv + shake);
+  // Infrared: foliage reads bright, so weight green; then contrast and a per-shot exposure.
+  float l = dot(pic.rgb, vec3(0.15, 0.75, 0.1));
+  l = smoothstep(0.05, 0.85, l) * (0.85 + 0.25 * hash12(vec2(shot, 7.0)));
+  vec2 p = (fragCoord - 0.5 * iResolution.xy) / iResolution.y;
+  // The figure: dark against the flash, eyes catching it.
+  float k = mod(shot, 8.0);
+  if (uFigure && k >= 4.0) {
+    float i = k - 4.0;
+    float size = i == 0.0 ? 0.32 : i == 1.0 ? 0.48 : i == 2.0 ? 0.72 : 1.5;
+    vec2 at = vec2(i == 0.0 ? 0.42 : i == 1.0 ? -0.28 : i == 2.0 ? 0.12 : -0.05, i == 3.0 ? -0.3 : -0.5 + 0.5 * size - 0.02);
+    vec2 q = (p - at) / size;
+    float d = figure(q);
+    l = mix(l, 0.08 + 0.05 * l, smoothstep(0.012, -0.004, d) * smoothstep(-0.55, -0.35, q.y));
+    vec2 e = q - vec2(0.0, 0.335);
+    e.x = abs(e.x) - 0.037;
+    l += 1.6 * exp(-length(e) / 0.009);
+  }
+  // The flash: bright in the middle, falling off to dark corners.
+  l *= mix(1.0, 1.35 * exp(-length(p * vec2(0.8, 1.0)) * 1.6), uFlash);
+  l += (hash12(fragCoord + shot * 41.0) - 0.5) * 0.22 * uGrain;
+  vec3 col = clamp(l, 0.0, 1.0) * uTint;
+  // The stamp bar: dark, with the date and the shot's time in white.
+  float unit = iResolution.y * 0.016;
+  float bar = step(fragCoord.y, unit * 4.4);
+  col = mix(col, vec3(0.02), bar * 0.85);
+  float secs = uClock * 3600.0 + shot * 17.0;
+  float ink = stampInk((fragCoord - vec2(unit * 2.0, unit * 1.2)) / unit, secs);
+  col = mix(col, vec3(1.0), ink);
+  fragColor = vec4(col, max(pic.a, max(bar * 0.85, ink)));
+}`,
+  ),
+  presets: [
+    { name: "Every half second", values: { uInterval: 0.5 } },
+    { name: "Pink IR", values: { uTint: [1, 0.85, 0.95] } },
+    { name: "Empty woods", values: { uFigure: false } },
+    { name: "Harsh flash", values: { uFlash: 1, uGrain: 0.8 } },
+  ],
+};
+
+export const ectoplasmWisps: ShaderEffect = {
+  kind: "shader",
+  id: "ectoplasm-wisps",
+  name: "Ectoplasm wisps",
+  description:
+    "Glowing green trails of ectoplasm spiralling in out of the dark towards the pointer while it hovers, or a point wandering the frame, each fading as it arrives and another rising in its place.",
+  category: "horror",
+  tags: ["horror", "spectral", "ectoplasm", "wisps", "glow", "interactive", "hover", "cursor", "background"],
+  source: glsl(
+    `// Ectoplasm wisps: each wisp spirals in from far out to the target over its life. Shaders keep no history, so
+// its tail is the same path at earlier times, drawn as segments thinning and fading back from its head.
+uniform vec3 uBackground;  // @control color default=#03060A label="Background"
+uniform vec3 uColor;       // @control color default=#7DFFB2 label="Ectoplasm"
+uniform float uWisps;      // @control min=1 max=8 default=6 step=1 label="Wisps"
+uniform float uLength;     // @control min=0.1 max=1 default=0.5 label="Tail length"
+uniform float uWidth;      // @control min=2 max=30 default=8 label="Width"
+uniform float uGlow;       // @control min=0 max=2 default=1 label="Glow"
+uniform float uSpeed;      // @control min=0.2 max=2 default=0.7 label="Speed"`,
+    HASH,
+    `// Wisp i's random values for the life it is on at time t: its life so far (whole part: which life), its
+// start angle, reach and turn, and its wobble phase.
+vec4 wispLife(float i, float t, out float life) {
+  vec2 h = hash22(vec2(i * 7.1, 2.3));
+  float rate = uSpeed / (2.5 + 2.0 * h.x);
+  life = t * rate + h.y;
+  vec2 g = hash22(vec2(i, floor(life)) * 1.7);
+  return vec4(g.x * 6.28318, 0.5 + 0.4 * g.y, (2.0 + 2.0 * g.y) * (h.x < 0.5 ? 1.0 : -1.0), rate);
+}
+
+// Where wisp i is at life u (0–1) and time t, heading for target.
+vec2 wispAt(float i, vec4 w, float u, float t, vec2 target) {
+  float a = w.x + u * w.z;
+  float r = w.y * pow(1.0 - u, 1.4);
+  vec2 wobble = 0.02 * vec2(sin(t * 2.3 + i * 5.0), sin(t * 1.9 + i * 3.0)) * (1.0 - u);
+  return target + r * vec2(cos(a), sin(a)) + wobble;
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec2 p = (fragCoord - 0.5 * iResolution.xy) / iResolution.y;
+  float aspect = iResolution.x / iResolution.y;
+  float hover = clamp(iPointer.z, 0.0, 1.0);
+  vec2 idle = vec2(0.3 * aspect * sin(iTime * 0.31), 0.25 * sin(iTime * 0.47 + 1.0));
+  vec2 target = mix(idle, (iPointer.xy - 0.5 * iResolution.xy) / iResolution.y, hover);
+  float w = uWidth * 0.001;
+  float glow = 0.0;
+  float core = 0.0;
+  int n = int(uWisps + 0.5);
+  for (int i = 0; i < 8; i++) {
+    if (i >= n) break;
+    float fi = float(i);
+    float life;
+    vec4 wl = wispLife(fi, iTime, life);
+    float u0 = fract(life);
+    // Nothing of it reaches this far from the target (its oldest point is furthest out), so skip it.
+    if (length(p - target) > wl.y * pow(1.0 - max(u0 - 11.0 * 0.25 * uLength * wl.w, 0.0), 1.4) + 0.06 + 10.0 * w) continue;
+    vec2 prev = wispAt(fi, wl, u0, iTime, target);
+    // Fades in as it rises and out as it arrives.
+    float fadeLife = smoothstep(0.0, 0.15, u0) * (1.0 - smoothstep(0.8, 1.0, u0));
+    for (int k = 1; k < 12; k++) {
+      float dt = float(k) * 0.25 * uLength;
+      float u = u0 - dt * wl.w;
+      // Its tail stops where this life began.
+      if (u < 0.0) break;
+      vec2 s = wispAt(fi, wl, u, iTime - dt, target);
+      float along = float(k) / 12.0;
+      vec2 pa = p - prev;
+      vec2 ba = s - prev;
+      float d = length(pa - ba * clamp(dot(pa, ba) / max(dot(ba, ba), 1e-8), 0.0, 1.0));
+      float hw = w * (1.0 - 0.85 * along);
+      float fade = fadeLife * (1.0 - along);
+      glow += exp(-d / (2.5 * hw)) * fade * 0.33;
+      core = max(core, (1.0 - smoothstep(0.4 * hw, hw, d)) * fade);
+      prev = s;
+    }
+  }
+  vec3 col = uBackground + uColor * glow * uGlow + mix(uColor, vec3(1.0), 0.6) * core;
+  fragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
+}`,
+  ),
+  presets: [
+    { name: "Poltergeist", values: { uColor: [0.55, 0.75, 1], uWisps: 8, uSpeed: 1.2 } },
+    { name: "Bile", values: { uColor: [0.8, 1, 0.25], uWidth: 14 } },
+    { name: "Single spirit", values: { uWisps: 1, uLength: 1, uWidth: 14 } },
+    { name: "Transparent", values: { uBackgroundAlpha: 0 } },
+  ],
+};
+
+export const spiritOrbs: ShaderEffect = {
+  kind: "shader",
+  id: "spirit-orbs",
+  name: "Spirit orbs",
+  description:
+    "Pale translucent orbs over a picture, like the ones that turn up in flash photos of haunted houses, drifting like dust and every so often darting off in a streak before drifting on.",
+  category: "horror",
+  video: "filter",
+  tags: ["horror", "spectral", "orbs", "ghost", "dust", "bokeh", "paranormal", "image"],
+  source: glsl(
+    `// Spirit orbs: each drifts on slow noise; at the end of each of its periods it darts a set way, stretching
+// along the dart. Its place wraps round the frame, so a dart off one side comes back on the other.
+uniform sampler2D uImage;  // @control filter=linear wrap=clamp default=${SAMPLE_IMAGES.city} label="Image"
+uniform vec3 uColor;       // @control color default=#E6F2FF label="Orbs"
+uniform float uCount;      // @control min=1 max=24 default=14 step=1 label="Orbs"
+uniform float uSize;       // @control min=0.3 max=3 default=1 label="Size"
+uniform float uOpacity;    // @control min=0 max=1 default=0.55 label="Opacity"
+uniform float uDart;       // @control min=0 max=1 default=0.6 label="Darting"
+uniform float uDim;        // @control min=0 max=1 default=0.3 label="Dim the picture"
+${BACKDROP_CONTROLS}`,
+    HASH,
+    PICTURE,
+    `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec2 uv = fragCoord / iResolution.xy;
+  float aspect = iResolution.x / iResolution.y;
+  vec4 pic = pictureRGBA(uImage, uv);
+  vec3 col = pic.rgb * (1.0 - 0.45 * uDim);
+  vec2 p = vec2(uv.x * aspect, uv.y);
+  vec2 span = vec2(aspect, 1.0) + 0.2;
+  int n = int(uCount + 0.5);
+  float a = 0.0;
+  for (int i = 0; i < 24; i++) {
+    if (i >= n) break;
+    float fi = float(i);
+    vec2 h = hash22(vec2(fi * 3.7, 1.9));
+    vec2 g = hash22(vec2(fi * 1.3, 8.1));
+    float period = 2.5 + 4.0 * g.x;
+    float life = iTime / period + g.y * 5.0;
+    float dart = smoothstep(0.9, 0.97, fract(life));
+    vec2 dir = normalize(hash22(vec2(fi, 4.4)) - 0.5);
+    vec2 drift = 0.05 * vec2(sin(iTime * 0.21 + fi * 9.0) + 0.5 * sin(iTime * 0.53 + fi), sin(iTime * 0.17 + fi * 4.0) + 0.5 * sin(iTime * 0.47 + fi * 2.0));
+    vec2 c = mod(h * span + drift + dir * (floor(life) + dart) * 0.3 * uDart, span) - 0.1;
+    float r = (0.012 + 0.03 * fract(h.x * 13.0)) * uSize;
+    // Stretched along the dart while it darts.
+    vec2 d = p - c;
+    float speed = dart * (1.0 - dart) * 4.0 * uDart;
+    float along = dot(d, dir);
+    d = d - dir * along + dir * along / (1.0 + 3.0 * speed);
+    float dist = length(d);
+    float edge = smoothstep(r, 0.82 * r, dist);
+    float ring = edge * smoothstep(0.55 * r, r, dist);
+    float flicker = 0.75 + 0.25 * sin(iTime * (1.0 + g.x) + fi);
+    a += (0.18 * edge + 0.5 * ring + 0.35 * exp(-dist / (0.25 * r)) * edge) * flicker;
+  }
+  col = 1.0 - (1.0 - col) * (1.0 - uColor * clamp(a * uOpacity, 0.0, 1.0));
+  fragColor = vec4(col, pic.a);
+}`,
+  ),
+  presets: [
+    { name: "Swarm", values: { uCount: 24, uSize: 0.6, uDart: 1 } },
+    { name: "Few and large", values: { uCount: 4, uSize: 2.5, uOpacity: 0.4 } },
+    { name: "Green", values: { uColor: [0.7, 1, 0.8] } },
+    { name: "Calm", values: { uDart: 0, uDim: 0 } },
+  ],
+};
+
+export const creepingDark: ShaderEffect = {
+  kind: "shader",
+  id: "creeping-dark",
+  name: "Creeping dark",
+  description:
+    "Darkness with tendril edges slowly closing in from the corners of a picture and drawing back, recoiling from the pointer while it hovers as if from a torch.",
+  category: "horror",
+  video: "interactive",
+  tags: ["horror", "creature", "vignette", "darkness", "tendrils", "interactive", "hover", "image"],
+  loop: 12,
+  source: glsl(
+    `// Creeping dark: dark where the distance to the frame's middle (between a box and a circle) passes a front
+// that comes in and goes out over the cycle, broken into tendrils by noise; the pointer pushes it back.
+uniform sampler2D uImage;  // @control filter=linear wrap=clamp default=${SAMPLE_IMAGES.landscape} label="Image"
+uniform vec3 uDark;        // @control color default=#020103 label="Darkness"
+uniform vec3 uRim;         // @control color default=#5A0A12 label="Edge"
+uniform float uAmount;     // @control min=0 max=1 default=0.55 label="How far it comes"
+uniform float uTendrils;   // @control min=0 max=1 default=0.6 label="Tendrils"
+uniform float uRecoil;     // @control min=0 max=1 default=0.7 label="Recoil from the pointer"
+uniform float uCycle;      // @control min=4 max=30 default=12 label="Cycle (s)"
+uniform bool uAnimate;     // @control default=true label="Animate"
+uniform float uProgress;   // @control min=0 max=1 default=0.7 label="Closed (when still)"
+${BACKDROP_CONTROLS}`,
+    HASH,
+    NOISE,
+    FBM,
+    PICTURE,
+    `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec2 uv = fragCoord / iResolution.xy;
+  float aspect = iResolution.x / iResolution.y;
+  vec4 pic = pictureRGBA(uImage, uv);
+  vec2 p = (fragCoord - 0.5 * iResolution.xy) / iResolution.y;
+  vec2 e = p / vec2(0.5 * aspect, 0.5);
+  float r = mix(max(abs(e.x), abs(e.y)), length(e), 0.6);
+  float hover = clamp(iPointer.z, 0.0, 1.0);
+  float closed = uAnimate ? 0.5 - 0.5 * cos(6.28318 * iTime / uCycle) : uProgress;
+  closed *= uAmount * (1.0 - 0.6 * uRecoil * hover);
+  float front = 1.2 - 0.95 * closed;
+  // Pushed back round the pointer, as if from a light.
+  vec2 pointer = (iPointer.xy - 0.5 * iResolution.xy) / iResolution.y;
+  front += hover * uRecoil * 0.6 * exp(-length(p - pointer) / 0.18);
+  // Tendrils: noise round the edge, reaching in and curling slowly.
+  float ang = atan(e.y, e.x);
+  float t = fbm(vec2(ang * 2.5 + 0.3 * sin(iTime * 0.2), r * 3.0 - iTime * 0.15), 5);
+  float fingers = pow(vnoise(vec2(ang * 9.0, iTime * 0.1)), 3.0);
+  float edge = r + (t - 0.5) * 0.35 * uTendrils + fingers * 0.25 * uTendrils;
+  float dark = smoothstep(front - 0.08, front + 0.02, edge);
+  float rim = exp(-abs(edge - front + 0.03) / 0.03) * (1.0 - dark);
+  vec3 col = pic.rgb * (1.0 - 0.35 * closed * smoothstep(0.2, 1.0, r));
+  col = mix(col, uRim, rim * 0.6);
+  col = mix(col, uDark, dark);
+  fragColor = vec4(col, max(pic.a, dark));
+}`,
+  ),
+  presets: [
+    { name: "Smothering", values: { uAmount: 1, uTendrils: 1 } },
+    { name: "Gentle", values: { uAmount: 0.45, uTendrils: 0.3, uRim: [0.05, 0.05, 0.08] } },
+    { name: "Sickly", values: { uDark: [0.02, 0.04, 0.02], uRim: [0.3, 0.45, 0.1] } },
+    { name: "Still", values: { uAnimate: false } },
+  ],
+};
+
+export const shadowHands: ShaderEffect = {
+  kind: "shader",
+  id: "shadow-hands",
+  name: "Shadow hands",
+  description:
+    "The shadows of long-fingered hands reaching in over a picture from the edges of the frame one after another, fingers spread, closing on nothing and drawing back.",
+  category: "horror",
+  video: "filter",
+  tags: ["horror", "creature", "shadow", "hands", "reach", "silhouette", "image"],
+  loop: 9,
+  source: glsl(
+    `// Shadow hands: each hand a distance field (forearm, palm, four long two-jointed fingers and a thumb) that
+// reaches in along its own line from an edge, curls its fingers at the furthest point and draws back.
+uniform sampler2D uImage;  // @control filter=linear wrap=clamp default=${SAMPLE_IMAGES.city} label="Image"
+uniform vec3 uShadow;      // @control color default=#050307 label="Shadow"
+uniform float uDarkness;   // @control min=0 max=1 default=0.8 label="Darkness"
+uniform float uSoftness;   // @control min=0 max=1 default=0.35 label="Softness"
+uniform float uSize;       // @control min=0.3 max=1.5 default=0.8 label="Size"
+uniform float uHands;      // @control min=1 max=3 default=3 step=1 label="Hands"
+uniform float uCycle;      // @control min=3 max=20 default=9 label="Cycle (s)"
+${BACKDROP_CONTROLS}`,
+    HASH,
+    PICTURE,
+    `float capsule(vec2 p, vec2 a, vec2 b, float r) {
+  vec2 pa = p - a;
+  vec2 ba = b - a;
+  return length(pa - ba * clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0)) - r;
+}
+float smin(float a, float b, float k) {
+  float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
+  return mix(b, a, h) - k * h * (1.0 - h);
+}
+
+// A hand pointing along +x, its palm at the origin (units of its length); curl 0 spread, 1 clenched.
+float hand(vec2 q, float curl) {
+  float d = capsule(q, vec2(-3.0, 0.0), vec2(0.0, 0.0), 0.1);
+  vec2 b = abs(q - vec2(0.12, 0.0)) - vec2(0.12, 0.11);
+  d = smin(d, length(max(b, 0.0)) + min(max(b.x, b.y), 0.0) - 0.04, 0.05);
+  for (int i = 0; i < 4; i++) {
+    float fi = float(i);
+    float spread = (fi - 1.5) * (0.16 - 0.1 * curl);
+    float len = (fi == 0.0 || fi == 3.0 ? 0.2 : 0.25) * (1.0 - 0.15 * curl);
+    vec2 base = vec2(0.26, (fi - 1.5) * 0.068);
+    // Seen from above, curling fingers shorten and close in; a tremor keeps them alive.
+    float a1 = spread;
+    vec2 j1 = base + len * vec2(cos(a1), sin(a1));
+    float a2 = a1 - 0.35 * curl * sign(fi - 1.5) + 0.12 * sin(iTime * 3.0 + fi * 1.7);
+    vec2 j2 = j1 + 0.85 * len * (1.0 - 0.65 * curl) * vec2(cos(a2), sin(a2));
+    d = smin(d, capsule(q, base, j1, 0.03), 0.03);
+    d = smin(d, capsule(q, j1, j2, 0.024), 0.02);
+  }
+  vec2 t1 = vec2(0.1, 0.12);
+  vec2 t2 = t1 + vec2(0.1, 0.1 - 0.08 * curl);
+  d = smin(d, capsule(q, t1, t2, 0.034), 0.04);
+  d = smin(d, capsule(q, t2, t2 + vec2(0.1, 0.02 - 0.06 * curl), 0.028), 0.02);
+  return d;
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec2 uv = fragCoord / iResolution.xy;
+  float aspect = iResolution.x / iResolution.y;
+  vec4 pic = pictureRGBA(uImage, uv);
+  vec2 p = (fragCoord - 0.5 * iResolution.xy) / iResolution.y;
+  float S = 0.45 * uSize;
+  float shade = 0.0;
+  int n = int(uHands + 0.5);
+  for (int i = 0; i < 3; i++) {
+    if (i >= n) break;
+    float fi = float(i);
+    // From the left, the right and the bottom, in turn.
+    vec2 from = i == 0 ? vec2(-0.5 * aspect, 0.12) : i == 1 ? vec2(0.5 * aspect, -0.08) : vec2(0.15 * aspect, -0.5);
+    vec2 dir = normalize(i == 0 ? vec2(1.0, -0.25) : i == 1 ? vec2(-1.0, 0.3) : vec2(-0.2, 1.0));
+    float u = fract(iTime / uCycle - fi / 3.0);
+    float reach = smoothstep(0.0, 0.4, u) * (1.0 - smoothstep(0.62, 0.95, u));
+    float curl = smoothstep(0.35, 0.5, u) * (1.0 - smoothstep(0.58, 0.7, u));
+    vec2 palm = from + dir * (reach * 0.75 - 0.45) * S / 0.45;
+    vec2 q = p - palm;
+    vec2 h = vec2(dot(q, dir), dot(q, vec2(-dir.y, dir.x))) / S;
+    if (i == 1) h.y = -h.y;
+    float d = hand(h, curl) * S;
+    float soft = 0.002 + 0.03 * uSoftness;
+    shade = max(shade, smoothstep(soft, -soft, d));
+  }
+  vec3 col = mix(pic.rgb, pic.rgb * uShadow * 4.0, shade * uDarkness);
+  col = mix(col, uShadow, shade * uDarkness * 0.6);
+  fragColor = vec4(col, max(pic.a, shade * uDarkness));
+}`,
+  ),
+  presets: [
+    { name: "Sharp", values: { uSoftness: 0 } },
+    { name: "One hand", values: { uHands: 1, uSize: 1.2 } },
+    { name: "Faint", values: { uDarkness: 0.45, uSoftness: 0.7 } },
+    { name: "Slow", values: { uCycle: 16 } },
+  ],
+};
+
 /** The horror shaders. */
-export const horrorShaders: ShaderEffect[] = [vhsTracking, nightVisionCam, signalLost, ghostApparition, eyesInTheDark];
+export const horrorShaders: ShaderEffect[] = [vhsTracking, nightVisionCam, signalLost, trailCam, ghostApparition, ectoplasmWisps, spiritOrbs, eyesInTheDark, creepingDark, shadowHands];
