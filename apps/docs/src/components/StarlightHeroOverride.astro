@@ -1,7 +1,9 @@
 ---
 import DefaultHero from '@astrojs/starlight/components/Hero.astro';
 
-const isSplash = Astro.locals.starlightRoute.entry.data.template === 'splash' && Astro.locals.starlightRoute.entry.slug === '';
+// The home page (its route id is empty: content entries have no slug since Astro 6) draws its own hero.
+const route = Astro.locals.starlightRoute;
+const isSplash = route.entry.data.template === 'splash' && route.id === '';
 ---
 
 {isSplash ? null : <DefaultHero {...Astro.props}><slot /></DefaultHero>}
