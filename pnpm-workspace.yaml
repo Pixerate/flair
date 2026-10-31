@@ -1,3 +1,12 @@
 packages:
   - "."
   - "apps/*"
+
+# Security fixes for transitive dependencies (Dependabot), each within the range its dependents ask for or a
+# patch release past it.
+overrides:
+  "undici@>=8.0.0 <8.12.2": "^8.12.2"
+  "markdown-it@>=14.0.0 <14.3.3": "^14.3.3"
+  "postcss-selector-parser@<6.1.5": "^6.1.5"
+  "send@<0.19.0": "^0.19.0"
+  "esbuild@>=0.27.3 <0.28.1": "^0.28.1"

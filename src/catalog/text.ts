@@ -909,6 +909,534 @@ export const captionPop: VectorEffect = {
   },
 };
 
+/** Possessed text's letter slots, and when its letters start writhing and snap back (ms). */
+const POSSESSED_SLOTS = 20;
+const WRITHE_AT = 600;
+const SNAP_AT = 3000;
+
+export const possessedText: VectorEffect = {
+  kind: "vector",
+  id: "possessed-text",
+  name: "Possessed text",
+  description:
+    "A title that something takes hold of: its letters writhe, twist and float up out of line behind a blood-red haze, then snap back into place all at once as if nothing happened.",
+  category: "horror",
+  tags: ["horror", "spectral", "text", "title", "possessed", "creepy", "halloween", "kinetic"],
+  hold: 900,
+  presets: [
+    { name: "Ectoplasm", values: { ink: [0.85, 1, 0.88], aura: [0.25, 0.95, 0.45], background: [0.02, 0.05, 0.04] } },
+    { name: "Parchment", values: { background: [0.93, 0.89, 0.8], ink: [0.12, 0.08, 0.06], aura: [0.55, 0.05, 0.05] } },
+    { name: "Violent", values: { amount: 1.8 } },
+    { name: "Uneasy", values: { amount: 0.4 } },
+  ],
+  // Up to POSSESSED_SLOTS letters, each centred in its estimated advance, each with its own writhe and rise.
+  derived: (v) => {
+    const letters = lettersOf(v.text).slice(0, POSSESSED_SLOTS);
+    const widths = letters.map((c) => textWidthEm(c));
+    const ems = Math.max(0.6, widths.reduce((a, b) => a + b, 0));
+    const size = Math.min(92, room(v, 360) / ems);
+    const base = 100 + size * 0.35;
+    const a = Number(v.amount);
+    const out: Record<string, string | number> = {
+      ...frame(v, 200 - (ems * size) / 2, ems * size, base, size, glowing([0.15 + 0.45 * a, 0.1 * a, DESCENT + 0.15 * a, 0.1 * a], 0.06)),
+      size: r1(size),
+      base: r1(base),
+      length: r1(ems * size),
+      haze: r1(size * 0.09),
+    };
+    let x = 200 - (ems * size) / 2;
+    for (let i = 0; i < POSSESSED_SLOTS; i++) {
+      const w = (widths[i] ?? 0) * size;
+      const cx = x + w / 2;
+      // Every third letter floats right up; the rest only lift a little.
+      const rise = (i % 3 === 1 ? 0.45 : 0.08 + 0.06 * (i % 2)) * size * a;
+      out[`c${i}`] = letters[i]?.trim() ?? "";
+      out[`x${i}`] = r1(cx);
+      out[`wx${i}`] = r1(cx + 0.12 * size * a);
+      out[`wy${i}`] = r1(base - 0.14 * size * a);
+      out[`wr${i}`] = r1((i % 2 ? 24 : -20) * a);
+      out[`ws${i}`] = r1(1 + 0.18 * a);
+      out[`rise${i}`] = `translate(0 ${r1(-rise)})`;
+      x += w;
+    }
+    return out;
+  },
+  motion: (() => {
+    const rest = (i: number) => `translate({{x${i}}} {{base}}) rotate(0) scale(1)`;
+    return {
+      svg: `<svg viewBox="{{viewBox}}" overflow="{{overflow}}" data-overhang="{{overhang}}"><!-- {{text: text default='GET OUT' label='Text'}} {{background: color default=#0B0708 label='Background'}} {{ink: color default=#E8E2D6 label='Text colour'}} {{aura: color default=#B3121B label='Haze'}} {{amount: float min=0 max=2 default=1 step=0.1 label='Intensity'}} ${typeface(`Georgia, 'Times New Roman', serif`, 700)} --><rect width="400" height="200" fill="{{background}}" opacity="{{backdrop}}"/><text id="aura" x="200" y="{{base}}" text-anchor="middle" textLength="{{length}}" lengthAdjust="spacingAndGlyphs" font-family="{{font}}" font-size="{{size}}" font-weight="{{weight}}" fill="{{aura}}" stroke="{{aura}}" stroke-width="{{haze}}" stroke-linejoin="round" opacity="0" transform="translate(0 0)">{{text}}</text><g id="word" transform="translate(200 {{base}}) scale(1) translate(-200 -{{base}})">${Array.from(
+        { length: POSSESSED_SLOTS },
+        (_, i) =>
+          `<g id="f${i}" transform="translate(0 0)"><text id="l${i}" text-anchor="middle" transform="${rest(i)}" font-family="{{font}}" font-size="{{size}}" font-weight="{{weight}}" fill="{{ink}}">{{c${i}}}</text></g>`,
+      ).join("")}</g></svg>`,
+      animate: [
+        // The haze swells behind the word and shudders while it writhes, then is gone at the snap.
+        { id: "aura", attrs: { opacity: [0, 0.65] }, delay: WRITHE_AT, ms: 500, ease: "out" },
+        { id: "aura", attrs: { transform: ["translate(0 0)", "translate(6 -4)"] }, delay: WRITHE_AT, ms: SNAP_AT - WRITHE_AT, behavior: { type: "wriggle", frequency: 6, seed: 3 } },
+        { id: "aura", attrs: { opacity: [0.65, 0] }, delay: SNAP_AT, ms: 90, ease: "out" },
+        ...Array.from({ length: POSSESSED_SLOTS }, (_, i): SvgAnimation[] => [
+          // Each letter writhes on its own: drifting, twisting and swelling round its place.
+          {
+            id: `l${i}`,
+            attrs: { transform: [rest(i), `translate({{wx${i}}} {{wy${i}}}) rotate({{wr${i}}}) scale({{ws${i}}})`] },
+            delay: WRITHE_AT + (i % 4) * 60,
+            ms: SNAP_AT - WRITHE_AT - (i % 4) * 60,
+            behavior: { type: "wriggle", frequency: 2.4 + 0.3 * (i % 3), octaves: 2, seed: 11 + i * 7 },
+          },
+          // Some float up out of line, and all drop back at once.
+          { id: `f${i}`, attrs: { transform: ["translate(0 0)", `{{rise${i}}}`] }, delay: WRITHE_AT + 200 + (i % 5) * 120, ms: 1300, ease: "in-out" },
+          { id: `f${i}`, attrs: { transform: [`{{rise${i}}}`, "translate(0 0)"] }, delay: SNAP_AT, ms: 110, ease: [0.55, 0, 1, 0.45] },
+        ]).flat(),
+        // The snap: the whole word jolts as the letters slam home.
+        { id: "word", attrs: { transform: ["translate(200 {{base}}) scale(1) translate(-200 -{{base}})", "translate(200 {{base}}) scale(1.07) translate(-200 -{{base}})"] }, delay: SNAP_AT + 60, ms: 50, ease: "out" },
+        { id: "word", attrs: { transform: ["translate(200 {{base}}) scale(1.07) translate(-200 -{{base}})", "translate(200 {{base}}) scale(1) translate(-200 -{{base}})"] }, delay: SNAP_AT + 110, ms: 220, ease: "out" },
+      ],
+    };
+  })(),
+};
+
+/** Rune glow's letter slots. */
+const RUNE_SLOTS = 20;
+
+export const runeGlow: VectorEffect = {
+  kind: "vector",
+  id: "rune-glow",
+  name: "Rune glow",
+  description:
+    "A word carved into dark stone, its letters lighting up one after another with an inner glow as if a spell were being read, pulsing together once all are lit, then fading back into the stone.",
+  category: "horror",
+  tags: ["horror", "occult", "text", "title", "runes", "carved", "glow", "magic", "fantasy"],
+  hold: 700,
+  presets: [
+    { name: "Hellfire", values: { glow: [1, 0.42, 0.1] } },
+    { name: "Elder green", values: { glow: [0.45, 1, 0.6], stone: [0.06, 0.08, 0.07] } },
+    { name: "Marble", values: { stone: [0.85, 0.84, 0.8], carved: [0.55, 0.53, 0.5], glow: [0.3, 0.55, 1] } },
+  ],
+  derived: (v) => {
+    const letters = lettersOf(v.text).slice(0, RUNE_SLOTS);
+    const widths = letters.map((c) => textWidthEm(c) * 1.1);
+    const ems = Math.max(0.6, widths.reduce((a, b) => a + b, 0));
+    const size = Math.min(84, room(v, 360) / ems);
+    const base = 100 + size * 0.35;
+    const stagger = Number(v.stagger);
+    const lit = letters.filter((c) => c.trim()).length;
+    const out: Record<string, string | number> = {
+      ...frame(v, 200 - (ems * size) / 2, ems * size, base, size, glowing([0.05, 0, DESCENT, 0], 0.15)),
+      size: r1(size),
+      base: r1(base),
+      bevel: r1(Math.max(1, size * 0.025)),
+      halo: r1(size * 0.08),
+      pulseAt: Math.round(Math.max(1, lit) * stagger + 300),
+      fadeAt: Math.round(Math.max(1, lit) * stagger + 1500),
+    };
+    let x = 200 - (ems * size) / 2;
+    let k = 0;
+    for (let i = 0; i < RUNE_SLOTS; i++) {
+      const w = (widths[i] ?? 0) * size;
+      const c = letters[i]?.trim() ?? "";
+      out[`c${i}`] = c;
+      out[`x${i}`] = r1(x + w / 2);
+      out[`d${i}`] = Math.round(k * stagger);
+      if (c) k += 1;
+      x += w;
+    }
+    return out;
+  },
+  motion: {
+    svg: `<svg viewBox="{{viewBox}}" overflow="{{overflow}}" data-overhang="{{overhang}}"><!-- {{text: text default='NOX AETERNA' label='Text'}} {{stone: color default=#17151A label='Stone'}} {{carved: color default=#0A090C label='Carving'}} {{edge: color default=#3B3740 label='Carved edge'}} {{glow: color default=#7FD4FF label='Glow'}} {{stagger: float min=40 max=400 default=140 step=10 label='Ms between letters'}} ${typeface(`'Cinzel', 'Trajan Pro', Georgia, serif`, 700)} --><rect width="400" height="200" fill="{{stone}}" opacity="{{backdrop}}"/><g id="runes">${Array.from(
+      { length: RUNE_SLOTS },
+      (_, i) =>
+        `<text x="{{x${i}}}" y="{{base}}" dx="{{bevel}}" dy="{{bevel}}" text-anchor="middle" font-family="{{font}}" font-size="{{size}}" font-weight="{{weight}}" fill="{{edge}}">{{c${i}}}</text><text x="{{x${i}}}" y="{{base}}" text-anchor="middle" font-family="{{font}}" font-size="{{size}}" font-weight="{{weight}}" fill="{{carved}}">{{c${i}}}</text><text id="g${i}" x="{{x${i}}}" y="{{base}}" text-anchor="middle" font-family="{{font}}" font-size="{{size}}" font-weight="{{weight}}" fill="{{glow}}" stroke="{{glow}}" stroke-width="{{halo}}" stroke-opacity="0.35" stroke-linejoin="round" opacity="0">{{c${i}}}</text>`,
+    ).join("")}</g></svg>`,
+    animate: [
+      // Each letter kindles in turn, flaring a little past full before it settles.
+      ...Array.from({ length: RUNE_SLOTS }, (_, i): SvgAnimation[] => [
+        { id: `g${i}`, attrs: { opacity: [0, 1] }, delay: n(`d${i}`), ms: 260, ease: "out" },
+      ]).flat(),
+      // All of them pulse together, then sink back into the stone.
+      { id: "runes", attrs: { opacity: [1, 0.55] }, delay: n("pulseAt"), ms: 300, repeat: 2, alternate: true },
+      ...Array.from({ length: RUNE_SLOTS }, (_, i): SvgAnimation => ({ id: `g${i}`, attrs: { opacity: [1, 0] }, delay: n("fadeAt"), ms: 700, ease: "in-out" })),
+    ],
+  },
+};
+
+/** Bleeding text's drips: where along the word (a share of its width), how wide and how long (shares of its size). */
+const BLEEDS = [
+  { at: 0.09, w: 0.07, len: 0.55 },
+  { at: 0.27, w: 0.05, len: 0.9 },
+  { at: 0.46, w: 0.08, len: 0.45 },
+  { at: 0.64, w: 0.05, len: 1.1 },
+  { at: 0.85, w: 0.065, len: 0.7 },
+];
+/** When the blood starts seeping down, the drips run, the drops fall and it all fades (ms). */
+const SEEP_AT = 300;
+const DRIP_AT = 1000;
+const DROP_AT = 2300;
+const CLEAR_AT = 3600;
+
+export const bleedingText: VectorEffect = {
+  kind: "vector",
+  id: "bleeding-text",
+  name: "Bleeding text",
+  description:
+    "A title that starts to bleed: blood seeps down through its letters from the top, drips run from its baseline and swell, a few drops fall, then it all fades back to clean letters.",
+  category: "horror",
+  tags: ["horror", "gore", "text", "title", "blood", "drip", "halloween"],
+  hold: 900,
+  presets: [
+    { name: "On white", values: { background: [0.97, 0.95, 0.92], ink: [0.1, 0.08, 0.08] } },
+    { name: "Black blood", values: { blood: [0.06, 0.04, 0.05], ink: [0.86, 0.12, 0.14] } },
+    { name: "Ichor", values: { blood: [0.3, 0.75, 0.15] } },
+  ],
+  derived: (v) => {
+    const { size, length, left } = fit(String(v.text), room(v, 340), 104);
+    const base = 92 + size * 0.36;
+    const top = base - size * CAP;
+    return {
+      ...frame(v, left, length, base, size, [0.05, 0, 1.25, 0]),
+      size,
+      length,
+      base: r1(base),
+      top: r1(top - 2),
+      cap: r1(size * CAP + 4),
+      ...Object.fromEntries(
+        BLEEDS.flatMap((d, i) => [
+          [`bx${i}`, r1(left + d.at * length)],
+          [`bw${i}`, r1(d.w * size)],
+          [`bl${i}`, r1(d.len * size)],
+          [`by${i}`, r1(base + d.len * size)],
+          [`br${i}`, r1(d.w * size * 0.75)],
+          [`bd${i}`, r1(base + d.len * size + size * 0.9)],
+        ]),
+      ),
+    };
+  },
+  motion: (() => {
+    const word = (paint: string) =>
+      `<text x="200" y="{{base}}" text-anchor="middle" textLength="{{length}}" lengthAdjust="spacingAndGlyphs" font-family="{{font}}" font-size="{{size}}" font-weight="{{weight}}" ${paint}>{{text}}</text>`;
+    return {
+      svg: `<svg viewBox="{{viewBox}}" overflow="{{overflow}}" data-overhang="{{overhang}}"><!-- {{text: text default='BLEED' label='Text'}} {{background: color default=#0D0A0B label='Background'}} {{ink: color default=#EEE7DE label='Text colour'}} {{blood: color default=#8A0913 label='Blood'}} ${typeface(HEAVY, 900)} --><defs><clipPath id="seepClip"><rect id="seep" x="-5000" y="{{top}}" width="10400" height="0"/></clipPath></defs><rect width="400" height="200" fill="{{background}}" opacity="{{backdrop}}"/>${word(`fill="{{ink}}"`)}<g id="bleeding" opacity="1"><g clip-path="url(#seepClip)">${word(`fill="{{blood}}"`)}</g>${BLEEDS.map(
+        (_, i) =>
+          `<rect id="stem${i}" x="{{bx${i}}}" y="{{base}}" width="{{bw${i}}}" height="0" rx="{{br${i}}}" transform="translate(-{{br${i}}} -4)" fill="{{blood}}"/><circle id="bead${i}" cx="{{bx${i}}}" cy="{{base}}" r="0" fill="{{blood}}"/>`,
+      ).join("")}${[1, 3].map((i) => `<circle id="drop${i}" cx="{{bx${i}}}" cy="{{by${i}}}" r="0" fill="{{blood}}"/>`).join("")}</g></svg>`,
+      animate: [
+        // Blood seeps down through the letters from their tops.
+        { id: "seep", attrs: { height: [0, n("cap")] }, delay: SEEP_AT, ms: 1300, ease: "in-out" },
+        // Drips run down from the baseline, each at its own pace, swelling at the tip.
+        ...BLEEDS.flatMap((_, i): SvgAnimation[] => {
+          const at = DRIP_AT + i * 170;
+          const ms = 1400 + (i % 3) * 250;
+          return [
+            { id: `stem${i}`, attrs: { height: [0, n(`bl${i}`)] }, delay: at, ms, ease: "out" },
+            { id: `bead${i}`, attrs: { cy: [n("base"), n(`by${i}`)], r: [0, n(`bw${i}`)] }, delay: at, ms, ease: "out" },
+          ];
+        }),
+        // Two drops fall from the longest drips.
+        ...[1, 3].flatMap((i, k): SvgAnimation[] => [
+          { id: `drop${i}`, attrs: { r: [0, n(`br${i}`)] }, delay: DROP_AT + k * 300, ms: 120, ease: "out" },
+          { id: `drop${i}`, attrs: { cy: [n(`by${i}`), n(`bd${i}`)] }, delay: DROP_AT + k * 300 + 120, ms: 420, ease: [0.55, 0, 1, 0.45] },
+          { id: `drop${i}`, attrs: { r: [n(`br${i}`), 0] }, delay: DROP_AT + k * 300 + 420, ms: 120 },
+        ]),
+        // Then it all fades, and is reset unseen.
+        { id: "bleeding", attrs: { opacity: [1, 0] }, delay: CLEAR_AT, ms: 700, ease: "in-out" },
+        ...holds("seep", "height", [[CLEAR_AT + 700, 0]]),
+        ...BLEEDS.flatMap((_, i) => [...holds(`stem${i}`, "height", [[CLEAR_AT + 700, 0]]), ...holds(`bead${i}`, "r", [[CLEAR_AT + 700, 0]])]),
+        ...[1, 3].flatMap((i) => holds(`drop${i}`, "cy", [[CLEAR_AT + 700, n(`by${i}`)]])),
+        ...holds("bleeding", "opacity", [[CLEAR_AT + 701, 1]]),
+      ],
+    };
+  })(),
+};
+
+/** Zalgo text's combining marks: ones that stack above a letter and ones that hang below it. */
+const MARKS_ABOVE = [0x0300, 0x0301, 0x0302, 0x0303, 0x0304, 0x0306, 0x0307, 0x0308, 0x030a, 0x030b, 0x030c, 0x030d, 0x030e, 0x0310, 0x0311, 0x0312, 0x033d, 0x033e, 0x0346, 0x034a, 0x034b, 0x0350, 0x0351, 0x0357, 0x035b, 0x0363, 0x0364, 0x0365, 0x0366, 0x0367, 0x0368, 0x036a, 0x036b, 0x036c, 0x036f];
+const MARKS_BELOW = [0x0316, 0x0317, 0x0318, 0x0319, 0x031c, 0x031d, 0x031e, 0x031f, 0x0320, 0x0323, 0x0324, 0x0325, 0x0326, 0x0329, 0x032a, 0x032b, 0x032c, 0x032d, 0x032e, 0x032f, 0x0330, 0x0331, 0x0332, 0x0339, 0x033a, 0x033b, 0x033c, 0x0347, 0x0348, 0x0349, 0x034d, 0x034e, 0x0353, 0x0354, 0x0355, 0x0356, 0x0359, 0x035a];
+
+/** `text` with up to `above` and `below` combining marks on each letter, the same marks every time for the same seed. */
+function zalgo(text: string, above: number, below: number, seed: number) {
+  let s = seed;
+  const rand = () => ((s = (s * 16807) % 2147483647) / 2147483647);
+  return lettersOf(text)
+    .map((c) => {
+      if (!c.trim()) return c;
+      const up = Math.round(above * (0.4 + 0.6 * rand()));
+      const down = Math.round(below * (0.4 + 0.6 * rand()));
+      const pick = (marks: number[], k: number) => Array.from({ length: k }, () => String.fromCodePoint(marks[Math.floor(rand() * marks.length)]!)).join("");
+      return c + pick(MARKS_ABOVE, up) + pick(MARKS_BELOW, down);
+    })
+    .join("");
+}
+
+/** Zalgo text's states over time: which version shows (0 plain, 1 creeping, 2 overrun) from each moment (ms). */
+const ZALGO_STATES: readonly (readonly [number, 0 | 1 | 2])[] = [
+  [0, 0],
+  [600, 1],
+  [800, 0],
+  [1150, 1],
+  [1500, 2],
+  [1620, 1],
+  [1760, 2],
+  [2700, 1],
+  [2900, 0],
+];
+
+export const zalgoText: VectorEffect = {
+  kind: "vector",
+  id: "zalgo-text",
+  name: "Zalgo text",
+  description:
+    "A title that something corrupts: combining marks creep over and under its letters in fits, then overrun it in a tangle with a red echo shuddering behind, before it snaps back to plain.",
+  category: "text",
+  tags: ["text", "title", "horror", "zalgo", "glitch", "corrupt", "creepy", "unicode"],
+  hold: 900,
+  presets: [
+    { name: "Mild", values: { amount: 0.5 } },
+    { name: "Unholy", values: { amount: 2, echo: [0.55, 0.1, 1] } },
+    { name: "On paper", values: { background: [0.95, 0.93, 0.88], ink: [0.08, 0.07, 0.07] } },
+  ],
+  derived: (v) => {
+    const text = String(v.text);
+    const { size, length, left } = fit(text, room(v, 340), 92);
+    const a = Number(v.amount);
+    const base = 100 + size * 0.35;
+    return {
+      ...frame(v, left, length, base, size, [0.05 + 0.75 * a, 0.05, DESCENT + 0.65 * a, 0.05]),
+      size,
+      length,
+      base: r1(base),
+      creep: zalgo(text, 1.5 * a, 1.2 * a, 11),
+      overrun: zalgo(text, 5 * a, 4 * a, 29),
+    };
+  },
+  motion: (() => {
+    const word = (id: string, content: string, paint: string, opacity: number) =>
+      `<text id="${id}" x="200" y="{{base}}" text-anchor="middle" textLength="{{length}}" lengthAdjust="spacingAndGlyphs" font-family="{{font}}" font-size="{{size}}" font-weight="{{weight}}" ${paint} opacity="${opacity}">${content}</text>`;
+    return {
+      svg: `<svg viewBox="{{viewBox}}" overflow="{{overflow}}" data-overhang="{{overhang}}"><!-- {{text: text default='HE COMES' label='Text'}} {{background: color default=#07060A label='Background'}} {{ink: color default=#F1ECE4 label='Text colour'}} {{echo: color default=#C1121F label='Echo'}} {{amount: float min=0.2 max=2 default=1 step=0.1 label='Corruption'}} ${typeface(HEAVY, 900)} --><rect width="400" height="200" fill="{{background}}" opacity="{{backdrop}}"/><g id="zEcho" opacity="0" transform="translate(0 0)">${word("zEchoText", "{{overrun}}", `fill="{{echo}}"`, 1)}</g>${word("z0", "{{text}}", `fill="{{ink}}"`, 1)}${word("z1", "{{creep}}", `fill="{{ink}}"`, 0)}${word("z2", "{{overrun}}", `fill="{{ink}}"`, 0)}</svg>`,
+      animate: [
+        ...([0, 1, 2] as const).flatMap((k) => holds(`z${k}`, "opacity", ZALGO_STATES.map(([at, state]) => [at, state === k ? 1 : 0] as const))),
+        // While overrun, a red echo shudders behind.
+        ...holds("zEcho", "opacity", ZALGO_STATES.map(([at, state]) => [at, state === 2 ? 0.7 : 0] as const)),
+        { id: "zEcho", attrs: { transform: ["translate(0 0)", "translate(5 -3)"] }, delay: 1500, ms: 1200, behavior: { type: "wriggle", frequency: 9, seed: 4 } },
+      ],
+    };
+  })(),
+};
+
+/** Fogged mirror writing's runs of condensation: where (a share of the word's width) and how far (a share of its size). */
+const RUNS = [
+  { at: 0.18, len: 0.6 },
+  { at: 0.52, len: 0.9 },
+  { at: 0.83, len: 0.5 },
+];
+
+export const foggedMirrorWriting: VectorEffect = {
+  kind: "vector",
+  id: "fogged-mirror-writing",
+  name: "Fogged mirror writing",
+  description:
+    "Words traced by an unseen finger on a fogged-up mirror, the dark glass showing through each stroke as it is drawn, beads of condensation running down from them, then the fog creeping back over until they are gone.",
+  category: "text",
+  tags: ["text", "title", "horror", "fog", "mirror", "handwriting", "condensation", "message"],
+  hold: 1000,
+  presets: [
+    { name: "Bathroom", values: { behind: [0.32, 0.38, 0.42], fog: [0.9, 0.92, 0.93] } },
+    { name: "Car window", values: { behind: [0.02, 0.03, 0.06], fog: [0.6, 0.66, 0.72] } },
+  ],
+  derived: (v) => {
+    const { size, length, left } = fit(String(v.text), room(v, 340), 96, textWidthEm(String(v.text)) * 1.05);
+    const base = 100 + size * 0.35;
+    const stroke = r1(Math.max(2, size * Number(v.finger) * 0.12));
+    return {
+      ...frame(v, left, length, base, size, [0.15, 0.08, 1.05, 0.08]),
+      size,
+      length,
+      base: r1(base),
+      stroke,
+      dash: Math.round(size * 8),
+      fogLevel: v.inline ? 0 : r1(Number(v.fogOpacity) * 100) / 100,
+      ...Object.fromEntries(RUNS.flatMap((d, i) => [[`rx${i}`, r1(left + d.at * length)], [`ry${i}`, r1(base + d.len * size)]])),
+    };
+  },
+  motion: {
+    svg: `<svg viewBox="{{viewBox}}" overflow="{{overflow}}" data-overhang="{{overhang}}"><!-- {{text: text default='HELP ME' label='Text'}} {{behind: color default=#1A232B label='Behind the glass'}} {{fog: color default=#C8CFD3 label='Fog'}} {{fogOpacity: float min=0.2 max=1 default=0.88 label='Fog thickness'}} {{finger: float min=0.3 max=2 default=1 step=0.1 label='Finger width'}} ${typeface(SCRIPT, 400)} --><rect width="400" height="200" fill="{{behind}}" opacity="{{backdrop}}"/><rect width="400" height="200" fill="{{fog}}" opacity="{{fogLevel}}"/><g id="wiped" opacity="1" fill="none" stroke="{{behind}}" stroke-linecap="round" stroke-linejoin="round"><text id="trace" x="200" y="{{base}}" text-anchor="middle" textLength="{{length}}" lengthAdjust="spacingAndGlyphs" font-family="{{font}}" font-size="{{size}}" font-weight="{{weight}}" stroke-width="{{stroke}}" stroke-dasharray="0 {{dash}}">{{text}}</text>${RUNS.map(
+      (_, i) => `<line id="run${i}" x1="{{rx${i}}}" y1="{{base}}" x2="{{rx${i}}}" y2="{{base}}" stroke-width="2.5"/>`,
+    ).join("")}</g></svg>`,
+    animate: [
+      // Traced on, stroke by stroke.
+      { id: "trace", attrs: { "stroke-dasharray": ["0 {{dash}}", "{{dash}} 0"] }, ms: 2400, ease: "in-out" },
+      // Condensation running from the strokes.
+      ...RUNS.map((_, i): SvgAnimation => ({ id: `run${i}`, attrs: { y2: [n("base"), n(`ry${i}`)] }, delay: 1900 + i * 300, ms: 1300 + i * 200, ease: "out" })),
+      // The fog creeps back over, and it is gone.
+      { id: "wiped", attrs: { opacity: [1, 0] }, delay: 4200, ms: 1200, ease: "in-out" },
+      ...holds("trace", "stroke-dasharray", [[5400, "0 {{dash}}"]]),
+      ...RUNS.flatMap((_, i) => holds(`run${i}`, "y2", [[5400, n("base")]])),
+      ...holds("wiped", "opacity", [[5401, 1]]),
+    ],
+  },
+};
+
+/** Scratched text's passes: each a stroke of the blade over the letters, slightly off the last. */
+const SCRATCHES = [
+  { dx: 0, dy: 0, skew: 0, width: 1.4, at: 0 },
+  { dx: 1.6, dy: -1.1, skew: -4, width: 0.9, at: 380 },
+  { dx: -1.2, dy: 0.9, skew: 3, width: 1.1, at: 700 },
+];
+
+export const scratchedText: VectorEffect = {
+  kind: "vector",
+  id: "scratched-text",
+  name: "Scratched text",
+  description:
+    "Words gouged into a dark surface in a few frantic passes, each scratch a little off the last, the pale gouges filling in behind them, then fading as if they had never been there.",
+  category: "text",
+  tags: ["text", "title", "horror", "scratch", "carved", "etched", "message", "creepy"],
+  hold: 1000,
+  presets: [
+    { name: "Painted door", values: { surface: [0.45, 0.07, 0.08], scratch: [0.96, 0.9, 0.82] } },
+    { name: "Plaster", values: { surface: [0.85, 0.82, 0.76], scratch: [0.22, 0.18, 0.16] } },
+  ],
+  derived: (v) => {
+    const { size, length, left } = fit(String(v.text), room(v, 350), 90);
+    const base = 100 + size * 0.35;
+    return { ...frame(v, left, length, base, size, [0.08, 0.05, DESCENT + 0.05, 0.05]), size, length, base: r1(base), dash: Math.round(size * 7) };
+  },
+  motion: {
+    svg: `<svg viewBox="{{viewBox}}" overflow="{{overflow}}" data-overhang="{{overhang}}"><!-- {{text: text default='NO ESCAPE' label='Text'}} {{surface: color default=#26201D label='Surface'}} {{scratch: color default=#E9DFD2 label='Scratches'}} ${typeface(SANS, 700)} --><rect width="400" height="200" fill="{{surface}}" opacity="{{backdrop}}"/><g id="scratched" opacity="1"><text id="gouge" x="200" y="{{base}}" text-anchor="middle" textLength="{{length}}" lengthAdjust="spacingAndGlyphs" font-family="{{font}}" font-size="{{size}}" font-weight="{{weight}}" fill="{{scratch}}" fill-opacity="0">{{text}}</text>${SCRATCHES.map(
+      (c, i) =>
+        `<text id="pass${i}" x="200" y="{{base}}" text-anchor="middle" textLength="{{length}}" lengthAdjust="spacingAndGlyphs" font-family="{{font}}" font-size="{{size}}" font-weight="{{weight}}" fill="none" stroke="{{scratch}}" stroke-width="${c.width}" stroke-linecap="round" stroke-dasharray="0 {{dash}}" transform="translate(${c.dx} ${c.dy}) skewX(${c.skew})">{{text}}</text>`,
+    ).join("")}</g></svg>`,
+    animate: [
+      // Pass after pass, fast and jagged, then the gouges fill in pale.
+      ...SCRATCHES.map((c, i): SvgAnimation => ({ id: `pass${i}`, attrs: { "stroke-dasharray": ["0 {{dash}}", "{{dash}} 0"] }, delay: c.at, ms: 700, ease: "in-out", strobe: 18 })),
+      { id: "gouge", attrs: { "fill-opacity": [0, 0.35] }, delay: 1200, ms: 500, ease: "out" },
+      // Fading away, then reset unseen.
+      { id: "scratched", attrs: { opacity: [1, 0] }, delay: 3300, ms: 900, ease: "in-out" },
+      ...SCRATCHES.flatMap((_, i) => holds(`pass${i}`, "stroke-dasharray", [[4200, "0 {{dash}}"]])),
+      ...holds("gouge", "fill-opacity", [[4200, 0]]),
+      ...holds("scratched", "opacity", [[4201, 1]]),
+    ],
+  },
+};
+
+/** Ransom note's letter slots, and the faces it cuts letters from when no font is set. */
+const RANSOM_SLOTS = 20;
+const RANSOM_FONTS = [`Georgia, 'Times New Roman', serif`, `'Arial Black', Impact, sans-serif`, `'Courier New', Courier, monospace`, `'Trebuchet MS', 'Helvetica Neue', sans-serif`, `Didot, 'Bodoni 72', Georgia, serif`, `Impact, 'Arial Narrow', sans-serif`];
+/** The default font control: "mixed", a different face for each letter. */
+const RANSOM_MIXED = "mixed";
+
+export const ransomNote: VectorEffect = {
+  kind: "vector",
+  id: "ransom-note",
+  name: "Ransom note",
+  description:
+    "A message spelled out in letters cut from magazines, each on its own scrap of paper in its own face, size and tilt, slapped down one after another, then torn away.",
+  category: "text",
+  tags: ["text", "title", "horror", "ransom", "cut-out", "collage", "magazine", "punk", "message"],
+  hold: 1100,
+  presets: [
+    { name: "Newsprint", values: { paper: [0.93, 0.91, 0.86], accent: [0.2, 0.2, 0.2], ink: [0.05, 0.05, 0.05] } },
+    { name: "Tabloid", values: { accent: [0.9, 0.85, 0.1], paper: [1, 1, 1], ink: [0.1, 0.1, 0.1] } },
+  ],
+  derived: (v) => {
+    const letters = lettersOf(v.text).slice(0, RANSOM_SLOTS);
+    const widths = letters.map((c) => textWidthEm(c) * 1.25);
+    const ems = Math.max(0.6, widths.reduce((a, b) => a + b, 0));
+    const size = Math.min(70, room(v, 360) / ems);
+    const base = 100 + size * 0.35;
+    const mixed = String(v.font) === RANSOM_MIXED;
+    const out: Record<string, string | number> = {
+      ...frame(v, 200 - (ems * size) / 2, ems * size, base, size, [0.3, 0.1, 0.35, 0.1]),
+      size: r1(size),
+      base: r1(base),
+    };
+    let x = 200 - (ems * size) / 2;
+    let seed = 41;
+    const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    for (let i = 0; i < RANSOM_SLOTS; i++) {
+      const w = (widths[i] ?? 0) * size;
+      const c = letters[i]?.trim() ?? "";
+      const scale = 0.85 + 0.35 * rand();
+      const tilt = Math.round((rand() - 0.5) * 16);
+      const shade = rand();
+      out[`c${i}`] = c;
+      out[`x${i}`] = r1(x + w / 2);
+      out[`f${i}`] = mixed ? RANSOM_FONTS[Math.floor(rand() * RANSOM_FONTS.length)]! : String(v.font);
+      out[`s${i}`] = r1(size * scale);
+      out[`pw${i}`] = c ? r1(w * 0.95) : 0;
+      out[`ph${i}`] = c ? r1(size * scale * 1.0) : 0;
+      out[`px${i}`] = c ? r1(-w * 0.475) : 0;
+      out[`py${i}`] = r1(-size * scale * 0.78);
+      out[`t${i}`] = `translate(${r1(x + w / 2)} ${r1(base + (rand() - 0.5) * size * 0.12)}) rotate(${tilt})`;
+      // Scraps of plain paper, of the accent colour and of grey newsprint, each with a letter that reads on it.
+      out[`patch${i}`] = shade < 0.45 ? mixHex(v.paper, v.paper, 0) : shade < 0.75 ? mixHex(v.accent, v.accent, 0) : mixHex(v.paper, v.ink, 0.3);
+      out[`letter${i}`] = shade >= 0.45 && shade < 0.75 ? mixHex(v.paper, v.paper, 0) : mixHex(v.ink, v.ink, 0);
+      out[`d${i}`] = Math.round(i * 110);
+      out[`e${i}`] = Math.round(i * 110 + 140);
+      x += w;
+    }
+    return out;
+  },
+  motion: {
+    svg: `<svg viewBox="{{viewBox}}" overflow="{{overflow}}" data-overhang="{{overhang}}"><!-- {{text: text default='WE SEE YOU' label='Text'}} {{background: color default=#2B2622 label='Background'}} {{paper: color default=#F3EEE2 label='Paper'}} {{accent: color default=#D7262E label='Accent'}} {{ink: color default=#141212 label='Ink'}} {{font: text default="${RANSOM_MIXED}" label='Font'}} {{weight: int min=100 max=900 default=800 step=100 label='Weight'}} {{inline: bool default=false label='Inline'}} --><rect width="400" height="200" fill="{{background}}" opacity="{{backdrop}}"/>${Array.from(
+      { length: RANSOM_SLOTS },
+      (_, i) =>
+        `<g transform="{{t${i}}}"><g id="cut${i}" transform="scale(0)"><rect x="{{px${i}}}" y="{{py${i}}}" width="{{pw${i}}}" height="{{ph${i}}}" fill="{{patch${i}}}"/><text x="0" y="0" text-anchor="middle" font-family="{{f${i}}}" font-size="{{s${i}}}" font-weight="{{weight}}" fill="{{letter${i}}}">{{c${i}}}</text></g></g>`,
+    ).join("")}</svg>`,
+    animate: Array.from({ length: RANSOM_SLOTS }, (_, i): SvgAnimation[] => [
+      // Slapped down one after another, and torn away together.
+      { id: `cut${i}`, attrs: { transform: ["scale(0)", "scale(1.2)"] }, delay: n(`d${i}`), ms: 140, ease: "out" },
+      { id: `cut${i}`, attrs: { transform: ["scale(1.2)", "scale(1)"] }, delay: n(`e${i}`), ms: 120, ease: "in-out" },
+      { id: `cut${i}`, attrs: { transform: ["scale(1)", "scale(0)"] }, delay: 3600 + (i % 4) * 40, ms: 220, ease: [0.55, 0, 1, 0.45] },
+    ]).flat(),
+  },
+};
+
+export const carvedPumpkinText: VectorEffect = {
+  kind: "vector",
+  id: "carved-pumpkin-text",
+  name: "Carved pumpkin text",
+  description:
+    "Letters carved through the ribbed orange skin of a pumpkin, a candle inside lighting them up from within, flickering, its glow spilling round the cuts, until it gutters out.",
+  category: "text",
+  tags: ["text", "title", "horror", "halloween", "pumpkin", "jack-o-lantern", "carved", "glow", "candle"],
+  hold: 600,
+  presets: [
+    { name: "Ghostly", values: { skin: [0.85, 0.85, 0.8], rib: [0.6, 0.6, 0.56], glow: [0.6, 1, 0.75] } },
+    { name: "Rotten", values: { skin: [0.45, 0.32, 0.12], rib: [0.28, 0.18, 0.06], glow: [0.95, 0.6, 0.2] } },
+  ],
+  derived: (v) => {
+    const { size, length, left } = fit(String(v.text), room(v, 340), 96);
+    const base = 100 + size * 0.35;
+    return {
+      ...frame(v, left, length, base, size, glowing([0.05, 0, DESCENT, 0], 0.12)),
+      size,
+      length,
+      base: r1(base),
+      lip: r1(size * 0.035),
+      halo: r1(size * 0.12),
+      ribA: mixHex(v.skin, v.rib, 0.7),
+      inner: mixHex(v.glow, v.rib, 0.55),
+    };
+  },
+  motion: (() => {
+    const word = (paint: string, dy = 0) =>
+      `<text x="200" y="{{base}}" dx="${dy}" dy="${dy}" text-anchor="middle" textLength="{{length}}" lengthAdjust="spacingAndGlyphs" font-family="{{font}}" font-size="{{size}}" font-weight="{{weight}}" ${paint}>{{text}}</text>`;
+    return {
+      svg: `<svg viewBox="{{viewBox}}" overflow="{{overflow}}" data-overhang="{{overhang}}"><!-- {{text: text default='TRICK OR TREAT' label='Text'}} {{skin: color default=#E2690F label='Skin'}} {{rib: color default=#9C3F06 label='Ribs'}} {{glow: color default=#FFD45E label='Candlelight'}} ${typeface(HEAVY, 900)} --><g opacity="{{backdrop}}"><rect width="400" height="200" fill="{{skin}}"/>${[-170, -100, -35, 35, 100, 170]
+        .map((x) => `<ellipse cx="${200 + x}" cy="100" rx="${Math.round(60 - Math.abs(x) * 0.12)}" ry="150" fill="none" stroke="{{ribA}}" stroke-width="5" opacity="0.55"/>`)
+        .join("")}</g>${word(`fill="{{inner}}"`)}<g id="candle" opacity="0">${word(`fill="none" stroke="{{glow}}" stroke-width="{{halo}}" stroke-linejoin="round" stroke-opacity="0.3"`)}${word(`fill="{{glow}}"`)}</g>${word(`fill="none" stroke="{{rib}}" stroke-width="{{lip}}" stroke-linejoin="round"`)}</svg>`,
+      animate: [
+        // Lit, catching unsteadily; burning with a flicker; then guttering out.
+        { id: "candle", attrs: { opacity: [0, 1] }, delay: 200, ms: 700, ease: "out", behavior: { type: "overshoot", cycles: 3, damping: 0.4 } },
+        { id: "candle", attrs: { opacity: [1, 0.72] }, delay: 900, ms: 2600, behavior: { type: "wriggle", frequency: 3, seed: 8 } },
+        { id: "candle", attrs: { opacity: [1, 0.35] }, delay: 3500, ms: 450, behavior: { type: "oscillate", count: 3, decay: 1 } },
+        { id: "candle", attrs: { opacity: [1, 0] }, delay: 3950, ms: 500, ease: [0.55, 0, 1, 0.45] },
+      ],
+    };
+  })(),
+};
+
 export const textEffects: VectorEffect[] = [
   typewriter,
   scrambleText,
@@ -926,4 +1454,12 @@ export const textEffects: VectorEffect[] = [
   extrudedText,
   textOnPath,
   circleText,
+  possessedText,
+  runeGlow,
+  bleedingText,
+  zalgoText,
+  foggedMirrorWriting,
+  scratchedText,
+  ransomNote,
+  carvedPumpkinText,
 ];

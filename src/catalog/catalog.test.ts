@@ -2373,3 +2373,335 @@ describe("promo effects", () => {
     expect(Number(/id="label"[^>]*font-size="([\d.]+)"/.exec(long.svg)![1])).toBeLessThan(18);
   });
 });
+
+describe("horror effects", () => {
+  const IDS = ["vhs-tracking", "night-vision-cam", "signal-lost", "trail-cam", "emergency-broadcast", "ghost-apparition", "ectoplasm-wisps", "spirit-orbs", "possessed-text", "eyes-in-the-dark", "creeping-dark", "shadow-hands", "rust-spread", "mold-bloom", "wither", "peeling-wallpaper", "aged-photo", "film-burn", "tentacles", "bat-swarm", "passing-silhouette", "poltergeist", "summoning-circle", "rune-glow", "cauldron", "candle-ring", "scare-cut", "subliminal-flicker", "failing-light", "heartbeat-vignette", "blood-drip-border", "bleeding-text", "claw-slash", "blood-moon"];
+
+  it("have a category of their own, browsed with the pictures, and are tagged by kind", () => {
+    expect(categoryGroup("horror").name).toBe("Pictures");
+    const found = findEffects({ category: "horror" }).map((e) => e.id);
+    for (const id of IDS) expect(found, id).toContain(id);
+    for (const effect of findEffects({ category: "horror" })) expect(effect.tags, effect.id).toContain("horror");
+    expect(findEffects({ category: "horror", tags: ["analog-horror"] }).map((e) => e.id).sort()).toEqual(["emergency-broadcast", "night-vision-cam", "signal-lost", "trail-cam", "vhs-tracking"]);
+    expect(findEffects({ tags: ["spectral"] }).map((e) => e.id).sort()).toEqual(["ectoplasm-wisps", "ghost-apparition", "poltergeist", "possessed-text", "spirit-orbs"]);
+    expect(findEffects({ category: "horror", tags: ["creature"] }).map((e) => e.id).sort()).toEqual(["bat-swarm", "creeping-dark", "eyes-in-the-dark", "passing-silhouette", "shadow-hands", "tentacles"]);
+  });
+
+  it("the tape and the camcorder filter video, with a display that can be switched off", () => {
+    for (const id of ["vhs-tracking", "night-vision-cam"]) {
+      const effect = getEffect(id)!;
+      expect(effect, id).toMatchObject({ video: "filter" });
+      expect(effectDefaults(effect), id).toMatchObject({ uOsd: true, uClock: 3 });
+      expect(isSinglePictureEffect(effect), id).toBe(true);
+    }
+  });
+
+  it("signal lost freezes a still into a hidden picture, and holds any moment", () => {
+    const effect = getEffect("signal-lost")!;
+    expect(effect).toMatchObject({ video: "stills", loop: 6 });
+    expect(effectInputs(effect).images.map((i) => i.name)).toEqual(["uImage", "uHidden"]);
+    expect(effectDefaults(effect)).toMatchObject({ uHidden: SAMPLE_IMAGES.portrait, uAnimate: true });
+    expect(effectDefaults(effect, { preset: "Frozen reveal" })).toMatchObject({ uAnimate: false, uProgress: 0.65 });
+  });
+
+  it("the apparition fades over any picture, with a second one inside it a preset away", () => {
+    const effect = getEffect("ghost-apparition")!;
+    expect(effect).toMatchObject({ video: "filter", loop: 8 });
+    expect(effectDefaults(effect).uDouble).toBe(false);
+    expect(effectDefaults(effect, { preset: "Double exposure" }).uDouble).toBe(true);
+  });
+
+  it("eyes in the dark watch the pointer, and can sit over other content", () => {
+    const effect = getEffect("eyes-in-the-dark")!;
+    expect(effectInputs(effect).interactions).toEqual(expect.arrayContaining(["hover", "pointer"]));
+    expect(effectDefaults(effect).uBackgroundAlpha).toBe(1);
+    expect(effectDefaults(effect, { preset: "Transparent" }).uBackgroundAlpha).toBe(0);
+  });
+
+  it("the trail cam holds each shot, stamps it, and runs on stills", () => {
+    const effect = getEffect("trail-cam")!;
+    if (effect.kind !== "shader") throw new Error("shader expected");
+    expect(effect).toMatchObject({ video: "stills" });
+    expect(effectDefaults(effect)).toMatchObject({ uInterval: 1.2, uFigure: true, uMonth: 10, uDay: 31, uYear: 2026 });
+    expect(effectDefaults(effect, { preset: "Empty woods" }).uFigure).toBe(false);
+    // Eight shots a cycle at the default interval, so its loop is whole.
+    expect(effect.loop).toBeCloseTo(8 * 1.2);
+  });
+
+  it("the wisps and the dark answer the pointer; the orbs and hands lay over any picture", () => {
+    expect(effectInputs(getEffect("ectoplasm-wisps")!).interactions).toEqual(expect.arrayContaining(["hover", "pointer"]));
+    expect(effectDefaults(getEffect("ectoplasm-wisps")!, { preset: "Transparent" }).uBackgroundAlpha).toBe(0);
+    const dark = getEffect("creeping-dark")!;
+    expect(dark).toMatchObject({ video: "interactive" });
+    expect(effectInputs(dark).interactions).toEqual(expect.arrayContaining(["hover", "pointer"]));
+    for (const id of ["spirit-orbs", "shadow-hands"]) {
+      expect(getEffect(id), id).toMatchObject({ video: "filter" });
+      expect(isSinglePictureEffect(getEffect(id)!), id).toBe(true);
+    }
+  });
+
+  it("the emergency broadcast switches on, holds, and switches off to how it started", () => {
+    const effect = getEffect("emergency-broadcast")!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    for (const values of <Record<string, string>[]>[{}, { title: "A" }, { message: "", footer: "" }, { title: "Supercalifragilistic & <co> 日本 🎉 and some more words" }]) {
+      const motion = renderVectorEffect(effect, { ...effectDefaults(effect), ...values });
+      expect(svgMotionIssues(motion)).toEqual([]);
+      expect(motion.svg).toMatch(/^<svg viewBox="0 0 1920 1080"/);
+      expect(JSON.stringify(motion)).not.toMatch(/\{\{|NaN|undefined|Infinity/);
+      for (const [, id] of motion.svg.matchAll(/\sid="([^"]+)"/g)) expect(id).toMatch(/^emergencyBroadcast/);
+    }
+    const at = (hold: number) => renderVectorEffect(effect, { ...effectDefaults(effect), hold });
+    expect(svgDuration(at(5)) - svgDuration(at(2))).toBe(3000);
+    const motion = at(2);
+    const frame = (ms: number) => svgFrame(motion.animate!, [], ms);
+    const off = frame(0).get("emergencyBroadcastAll")!.attrs.transform;
+    expect(off).toContain("scale(0 0.01)");
+    expect(Number(frame(0).get("emergencyBroadcastFooter")!.attrs.opacity)).toBe(0);
+    expect(frame(2000).get("emergencyBroadcastAll")!.attrs.transform).toContain("scale(1 1)");
+    expect(Number(frame(2000).get("emergencyBroadcastTitleWipe")!.attrs.width)).toBe(1536);
+    expect(frame(svgDuration(motion)).get("emergencyBroadcastAll")!.attrs.transform).toBe(off);
+  });
+
+  it("the decay effects eat at a picture, and the growing ones hold any moment", () => {
+    const decay = ["rust-spread", "mold-bloom", "wither", "peeling-wallpaper", "aged-photo", "film-burn"];
+    expect(findEffects({ category: "horror", tags: ["decay"] }).map((e) => e.id).sort()).toEqual([...decay].sort());
+    for (const id of decay) {
+      const effect = getEffect(id)!;
+      if (effect.kind !== "shader") throw new Error("shader expected");
+      expect(effectInputs(effect).images.length, id).toBeGreaterThan(0);
+      if (id === "aged-photo") continue;
+      // Each grows over a cycle as long as its loop, or holds still at a moment.
+      expect(effect.loop, id).toBe(effectDefaults(effect).uCycle);
+      expect(effectControls(effect).map((c) => c.name), id).toEqual(expect.arrayContaining(["uAnimate", "uProgress"]));
+    }
+    expect(effectInputs(getEffect("peeling-wallpaper")!).images.map((i) => i.name)).toEqual(["uImage", "uUnder"]);
+    expect(getEffect("peeling-wallpaper")).toMatchObject({ video: "stills" });
+    expect(getEffect("film-burn")).toMatchObject({ video: "stills" });
+    for (const id of ["rust-spread", "mold-bloom", "wither", "aged-photo"]) expect(getEffect(id), id).toMatchObject({ video: "filter" });
+    expect(effectDefaults(getEffect("film-burn")!, { preset: "Burning open" })).toMatchObject({ uAnimate: false, uProgress: 0.72 });
+  });
+
+  it("the occult set gathers under its tag; the circle and the candles loop over their cycle", () => {
+    expect(findEffects({ category: "horror", tags: ["occult"] }).map((e) => e.id).sort()).toEqual(["candle-ring", "cauldron", "rune-glow", "summoning-circle"]);
+    for (const id of ["summoning-circle", "candle-ring", "passing-silhouette"]) {
+      const effect = getEffect(id)!;
+      if (effect.kind !== "shader") throw new Error("shader expected");
+      expect(effect.loop, id).toBe(effectDefaults(effect).uCycle);
+    }
+    for (const id of ["summoning-circle", "cauldron", "candle-ring", "tentacles", "bat-swarm"]) {
+      expect(effectDefaults(getEffect(id)!, { preset: "Transparent" }).uBackgroundAlpha, id).toBe(0);
+    }
+    for (const id of ["tentacles", "bat-swarm"]) expect(effectInputs(getEffect(id)!).interactions, id).toEqual(expect.arrayContaining(["hover", "pointer"]));
+    expect(getEffect("passing-silhouette")).toMatchObject({ video: "filter" });
+  });
+
+  it("the poltergeist lifts the interface, wobbles it, and slams every piece back where it was", () => {
+    const effect = getEffect("poltergeist")!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    for (const values of <Record<string, unknown>[]>[{}, { title: "", label: "A much longer button label than fits" }, { amount: 2 }, { amount: 0.2 }]) {
+      const motion = renderVectorEffect(effect, { ...effectDefaults(effect), ...values } as never);
+      expect(svgMotionIssues(motion)).toEqual([]);
+      expect(JSON.stringify(motion)).not.toMatch(/\{\{|NaN|undefined|Infinity/);
+    }
+    const motion = renderVectorEffect(effect, effectDefaults(effect));
+    const frame = (ms: number) => svgFrame(motion.animate!, [], ms);
+    const rest = frame(0).get("poltergeistCard")!.attrs.transform;
+    expect(rest).toBe("translate(150 140) rotate(0)");
+    expect(frame(2000).get("poltergeistCard")!.attrs.transform).not.toBe(rest);
+    const end = svgDuration(motion);
+    for (const id of ["poltergeistCard", "poltergeistButton", "poltergeistAvatar", "poltergeistToggle"]) expect(frame(end).get(id)!.attrs.transform, id).toBe(frame(0).get(id)!.attrs.transform);
+    expect(frame(end).get("poltergeistScreen")!.attrs.transform).toBe("translate(0 0)");
+  });
+
+  it("rune glow lights its letters in turn, then lets them sink back into the stone", () => {
+    const effect = getEffect("rune-glow")!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    for (const text of ["NOX AETERNA", "A", "Ｈｅｌｌｏ 🕯 & <you> and some other words"]) {
+      const motion = renderVectorEffect(effect, { text });
+      expect(svgMotionIssues(motion), text).toEqual([]);
+      expect(JSON.stringify(motion), text).not.toMatch(/\{\{|NaN|undefined/);
+    }
+    const motion = renderVectorEffect(effect, effectDefaults(effect));
+    const frame = (ms: number) => svgFrame(motion.animate!, [], ms);
+    const glow = (ms: number, i: number) => Number(frame(ms).get(`g${i}`)!.attrs.opacity);
+    // N lights before X; the space between words is skipped, so A follows X straight on.
+    expect(glow(300, 0)).toBe(1);
+    expect(glow(300, 2)).toBeLessThan(1);
+    expect(glow(1200, 4)).toBe(1);
+    expect(glow(svgDuration(motion), 0)).toBe(0);
+    // Inline, in the surrounding font.
+    const inline = renderVectorEffect(effect, { inline: true, font: "inherit", weight: 300 });
+    expect(inline.svg).toMatch(/^<svg viewBox="[\d.-]+ [\d.-]+ [\d.]+ [\d.]+" overflow="visible"/);
+    expect(inline.svg.match(/font-family="([^"]*)"/g)!.every((f) => f === 'font-family="inherit"')).toBe(true);
+    expect(svgMotionIssues(inline)).toEqual([]);
+  });
+
+  it("the jump scares cannot be set to flash more than three times a second", () => {
+    expect(findEffects({ category: "horror", tags: ["shock"] }).map((e) => e.id).sort()).toEqual(["failing-light", "heartbeat-vignette", "scare-cut", "subliminal-flicker"]);
+    const control = (id: string, name: string) => effectControls(getEffect(id)!).find((c) => c.name === name)!;
+    const shader = (id: string) => {
+      const effect = getEffect(id)!;
+      if (effect.kind !== "shader") throw new Error("shader expected");
+      return effect.source;
+    };
+    // One cut a cycle, a cycle at least three seconds; one hidden frame at least every two.
+    expect(control("scare-cut", "uCycle").min).toBeGreaterThanOrEqual(3);
+    expect(control("subliminal-flicker", "uEvery").min).toBeGreaterThanOrEqual(2);
+    expect(control("subliminal-flicker", "uLength").max).toBeLessThanOrEqual(0.12);
+    // The tube switches on beats of a third of a second, so at most 1.5 flashes a second.
+    expect(shader("failing-light")).toContain("float beat = floor(iTime * 3.0);");
+    // The heartbeat: two pulses a second at most, clamped in the shader whatever the controls say.
+    expect(control("heartbeat-vignette", "uFastest").max).toBeLessThanOrEqual(120);
+    expect(control("heartbeat-vignette", "uRest").max).toBeLessThanOrEqual(120);
+    expect(shader("heartbeat-vignette")).toMatch(/min\(mix\(uRest, max\(uFastest, uRest\), near\), 120\.0\)/);
+    expect(getEffect("heartbeat-vignette")).toMatchObject({ video: "interactive" });
+  });
+
+  it("the gore stays stylised, as an overlay, a filter and a background", () => {
+    expect(findEffects({ category: "horror", tags: ["gore"] }).map((e) => e.id).sort()).toEqual(["bleeding-text", "blood-drip-border", "blood-moon", "claw-slash"]);
+    const drips = getEffect("blood-drip-border")!;
+    expect(drips).toMatchObject({ transparent: true });
+    expect(effectDefaults(drips).uBackgroundAlpha).toBe(0);
+    expect(effectDefaults(drips, { preset: "Paper" }).uBackgroundAlpha).toBe(1);
+    expect(getEffect("claw-slash")).toMatchObject({ video: "filter", loop: 4 });
+    expect(effectDefaults(getEffect("blood-moon")!, { preset: "Sky only" }).uLand).toBe(false);
+  });
+
+  it("bleeding text seeps, drips and drops, then clears back to clean letters", () => {
+    const effect = getEffect("bleeding-text")!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    for (const text of ["BLEED", "A", "Ｈｅｌｌｏ 🩸 & <you> and some other words"]) {
+      const motion = renderVectorEffect(effect, { text });
+      expect(svgMotionIssues(motion), text).toEqual([]);
+      expect(JSON.stringify(motion), text).not.toMatch(/\{\{|NaN|undefined/);
+    }
+    const motion = renderVectorEffect(effect, effectDefaults(effect));
+    const frame = (ms: number) => svgFrame(motion.animate!, [], ms);
+    const end = svgDuration(motion);
+    for (const ms of [0, end]) {
+      expect(Number(frame(ms).get("seep")!.attrs.height), `seep at ${ms}`).toBe(0);
+      expect(Number(frame(ms).get("stem1")!.attrs.height), `stem at ${ms}`).toBe(0);
+      expect(Number(frame(ms).get("bead1")!.attrs.r), `bead at ${ms}`).toBe(0);
+      expect(Number(frame(ms).get("drop1")!.attrs.r), `drop at ${ms}`).toBe(0);
+    }
+    expect(Number(frame(2600).get("stem1")!.attrs.height)).toBeGreaterThan(0);
+    expect(Number(frame(2000).get("seep")!.attrs.height)).toBeGreaterThan(0);
+    const inline = renderVectorEffect(effect, { inline: true, font: "inherit", weight: 300 });
+    expect(inline.svg).toMatch(/^<svg viewBox="[\d.-]+ [\d.-]+ [\d.]+ [\d.]+" overflow="visible"/);
+    expect(inline.svg.match(/font-family="([^"]*)"/g)!.every((f) => f === 'font-family="inherit"')).toBe(true);
+    expect(svgMotionIssues(inline)).toEqual([]);
+  });
+
+  it("the horror transitions go from one picture to the next like every transition", () => {
+    const ids = ["transition-claw-slash", "transition-blood-wipe", "transition-shadow-swallow", "transition-static-cut", "transition-film-burn"];
+    expect(findEffects({ category: "transition", tags: ["horror"] }).map((e) => e.id).sort()).toEqual([...ids].sort());
+    for (const id of ids) {
+      const effect = getEffect(id)!;
+      expect(effect, id).toMatchObject({ category: "transition", video: "transition", loop: 4 });
+      expect(effectInputs(effect).images.map((i) => i.name), id).toEqual(["uFrom", "uTo"]);
+      expect(effectDefaults(effect), id).toMatchObject({ uFrom: SAMPLE_IMAGES.landscape, uTo: SAMPLE_IMAGES.city, uAnimate: true });
+      expect(effect.description, id).toMatch(/Loops back and forth; or turn Animate off and set Progress\.$/);
+    }
+  });
+
+  it("the horror text effects: zalgo marks, mixed faces, a trace that fades and a candle that goes out", () => {
+    expect(findEffects({ category: "text", tags: ["horror"] }).map((e) => e.id).sort()).toEqual(["carved-pumpkin-text", "fogged-mirror-writing", "ransom-note", "scratched-text", "zalgo-text"]);
+    const render = (id: string, values: Record<string, unknown> = {}) => {
+      const effect = getEffect(id)!;
+      if (effect.kind !== "vector") throw new Error("vector expected");
+      return renderVectorEffect(effect, { ...effectDefaults(effect), ...values } as never);
+    };
+    // Zalgo: the overrun version carries combining marks, more with more corruption; the plain one none.
+    const marks = (svg: string) => (svg.match(/[\u0300-\u036f]/g) ?? []).length;
+    expect(marks(render("zalgo-text", { amount: 2 }).svg)).toBeGreaterThan(marks(render("zalgo-text", { amount: 0.5 }).svg));
+    expect(render("zalgo-text").svg).toMatch(/id="z0"[^>]*>HE COMES</);
+    // Ransom note: a face per letter by default, one face for all once a font is set.
+    const faces = (svg: string) => new Set([...svg.matchAll(/font-family="([^"]*)"/g)].map((m) => m[1])).size;
+    expect(faces(render("ransom-note").svg)).toBeGreaterThan(2);
+    expect(faces(render("ransom-note", { font: "Georgia" }).svg)).toBe(1);
+    // Every one ends as it started.
+    for (const [id, el, attr] of [
+      ["fogged-mirror-writing", "trace", "stroke-dasharray"],
+      ["fogged-mirror-writing", "wiped", "opacity"],
+      ["scratched-text", "pass0", "stroke-dasharray"],
+      ["ransom-note", "cut0", "transform"],
+      ["carved-pumpkin-text", "candle", "opacity"],
+      ["zalgo-text", "z0", "opacity"],
+    ] as const) {
+      const motion = render(id);
+      const at = (ms: number) => svgFrame(motion.animate!, [], ms).get(el)!.attrs[attr];
+      expect(at(svgDuration(motion)), `${id} ${el}`).toEqual(at(0));
+    }
+    // The candle is lit in the middle of it.
+    const candle = render("carved-pumpkin-text");
+    expect(Number(svgFrame(candle.animate!, [], 2000).get("candle")!.attrs.opacity)).toBeGreaterThan(0.5);
+  });
+
+  it("the last of issue 97: horror loaders, interactions and icons in their own categories", () => {
+    const loaders = ["coffin-loader", "candle-burndown", "ghost-loader", "skeleton-hand-loader"];
+    const icons = ["jack-o-lantern", "bat-flap", "skull-chatter"];
+    const interactions = ["cursor-follow-eyes", "mirror-mismatch", "haunted-hover"];
+    expect(findEffects({ category: "loader", tags: ["horror"] }).map((e) => e.id).sort()).toEqual([...loaders].sort());
+    expect(findEffects({ category: "icon", tags: ["horror"] }).map((e) => e.id).sort()).toEqual([...icons].sort());
+    expect(findEffects({ category: "interaction", tags: ["horror"] }).map((e) => e.id).sort()).toEqual([...interactions].sort());
+    const render = (id: string) => {
+      const effect = getEffect(id)!;
+      if (effect.kind !== "vector") throw new Error("vector expected");
+      return renderVectorEffect(effect, effectDefaults(effect));
+    };
+    // A whole turn ends where it starts.
+    const frameAt = (motion: ReturnType<typeof render>, ms: number) => JSON.stringify([...svgFrame(motion.animate!, [], ms)].sort()).replace(/rotate\(360 /g, "rotate(0 ");
+    for (const id of [...loaders, ...icons]) {
+      const motion = render(id);
+      expect(svgMotionIssues(motion), id).toEqual([]);
+      expect(frameAt(motion, svgDuration(motion)), id).toBe(frameAt(motion, 0));
+      expect(frameAt(motion, svgDuration(motion) / 2), id).not.toBe(frameAt(motion, 0));
+      const prefix = id.replace(/-(\w)/g, (_, c: string) => c.toUpperCase());
+      for (const [, name] of motion.svg.matchAll(/\sid="([^"]+)"/g)) expect(name, id).toMatch(new RegExp(`^${prefix}`));
+    }
+    // The hover flinches away and comes back; the eyes and the mirror follow the pointer, the mirror late.
+    expect(getEffect("haunted-hover")).toMatchObject({ trigger: "hover" });
+    const eyes = getEffect("cursor-follow-eyes")!;
+    expect(eyes).toMatchObject({ transparent: true });
+    expect(effectInputs(eyes).interactions).toEqual(expect.arrayContaining(["hover", "pointer"]));
+    expect(effectInputs(getEffect("mirror-mismatch")!).interactions).toEqual(expect.arrayContaining(["hover", "pointer", "trail"]));
+  });
+
+  it("possessed text writhes, lifts letters out of line and snaps them all back", () => {
+    const effect = getEffect("possessed-text")!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    for (const text of ["GET OUT", "A", "Ｈｅｌｌｏ 👻 & <you> and everyone else"]) {
+      const motion = renderVectorEffect(effect, { text });
+      expect(svgMotionIssues(motion), text).toEqual([]);
+      expect(JSON.stringify(motion), text).not.toMatch(/\{\{|NaN|undefined/);
+    }
+    const motion = renderVectorEffect(effect, effectDefaults(effect));
+    const frame = (ms: number) => svgFrame(motion.animate!, [], ms);
+    const rest = frame(0).get("l1")!.attrs.transform;
+    expect(rest).toMatch(/rotate\(0\) scale\(1\)$/);
+    // Mid-writhe the letters are off their marks, the floaters up and the haze showing.
+    expect(frame(2000).get("l1")!.attrs.transform).not.toBe(rest);
+    expect(frame(2400).get("f1")!.attrs.transform).not.toBe("translate(0 0)");
+    expect(Number(frame(2000).get("aura")!.attrs.opacity)).toBeGreaterThan(0.5);
+    // After the snap, everything is back where it started.
+    const end = svgDuration(motion);
+    expect(frame(end).get("l1")!.attrs.transform).toBe(rest);
+    expect(frame(end).get("f1")!.attrs.transform).toBe("translate(0 0)");
+    expect(frame(end).get("word")!.attrs.transform).toContain("scale(1)");
+    expect(Number(frame(end).get("aura")!.attrs.opacity)).toBe(0);
+    // No intensity, no possession.
+    const calm = renderVectorEffect(effect, { amount: 0 });
+    expect(svgFrame(calm.animate!, [], 2000).get("l1")!.attrs.transform).toBe(rest);
+  });
+
+  it("possessed text sits inline on the baseline in the surrounding font", () => {
+    const effect = getEffect("possessed-text")!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    expect(renderVectorEffect(effect).svg).toMatch(/^<svg viewBox="0 0 400 200" overflow="hidden"/);
+    const inline = renderVectorEffect(effect, { inline: true, font: "inherit", weight: 300 });
+    expect(inline.svg).toMatch(/^<svg viewBox="[\d.-]+ [\d.-]+ [\d.]+ [\d.]+" overflow="visible"/);
+    expect(inline.svg.match(/font-family="([^"]*)"/g)!.every((f) => f === 'font-family="inherit"')).toBe(true);
+    expect(inline.svg).not.toMatch(/<rect width="400" height="200"[^>]*opacity="1"/);
+    expect(svgMotionIssues(inline)).toEqual([]);
+  });
+});

@@ -53,10 +53,13 @@ jobs:
       - name: Refresh the docs' New list
         run: pnpm --filter @pixerate/flair-docs generate:recent
 
+      # Only changesets for the published package count: the docs and demo are
+      # ignored packages (.changeset/config.json), so changesets naming only them
+      # are never used up, and counting them would run a release on every push.
       - name: Check for pending changesets
         id: changeset_check
         run: |
-          CHANGESETS=$(find .changeset -name "*.md" ! -name "README.md" | wc -l)
+          CHANGESETS=$(grep -l '^"@pixerate/flair":' .changeset/*.md 2>/dev/null | wc -l | tr -d ' ')
           echo "count=$CHANGESETS" >> $GITHUB_OUTPUT
           if [ "$CHANGESETS" -gt "0" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "Release required. Pending changesets: $CHANGESETS"
@@ -72,8 +75,14 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Version package & update CHANGELOG.md
+        id: version
         if: steps.changeset_check.outputs.should_release == 'true'
-        run: pnpm version-packages
+        run: |
+          BEFORE=$(node -p "require('./package.json').version")
+          pnpm version-packages
+          AFTER=$(node -p "require('./package.json').version")
+          echo "Version: $BEFORE -> $AFTER"
+          if [ "$BEFORE" != "$AFTER" ]; then echo "bumped=true" >> $GITHUB_OUTPUT; else echo "bumped=false" >> $GITHUB_OUTPUT; fi
 
       - name: Build package
         if: steps.changeset_check.outputs.should_release == 'true'
@@ -105,10 +114,12 @@ jobs:
           echo "Could not push the version commit; nothing was published."
           exit 1
 
-      # Publishes whatever version package.json says that npm doesn't have yet,
-      # so a manual run after a failed publish finishes the release.
+      # Publishes the version this run bumped to. A manual run publishes whatever
+      # version package.json says that npm doesn't have yet, so it finishes a
+      # release whose publish failed. (Not on every run: just after a publish, npm
+      # can still say a version is missing, and publishing it again fails.)
       - name: Publish to npm (OIDC)
-        if: steps.changeset_check.outputs.should_release == 'true'
+        if: steps.changeset_check.outputs.should_release == 'true' && (steps.version.outputs.bumped == 'true' || github.event_name == 'workflow_dispatch')
         run: pnpm release
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -116,7 +127,7 @@ jobs:
           NPM_CONFIG_PROVENANCE: "true"
 
       - name: Push release tags
-        if: steps.changeset_check.outputs.should_release == 'true'
+        if: steps.changeset_check.outputs.should_release == 'true' && (steps.version.outputs.bumped == 'true' || github.event_name == 'workflow_dispatch')
         run: git push origin --tags
 
       - name: Commit the refreshed New list

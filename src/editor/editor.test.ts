@@ -227,6 +227,37 @@ describe("commands and agent tools", () => {
     expect(editor.commands.execute("values.set", { values: { uBlush: 1 } })).toMatchObject({ ok: false, message: expect.stringMatching(/uBlush/) });
   });
 
+  it("lets agents find the horror effects, load one and tune it within its controls", async () => {
+    const editor = createEffectEditor({ from: "aurora" });
+    const provider = createEffectToolProvider(editor);
+    type Search = { total: number; effects: { id: string; category: string }[] };
+    const found = await callTool(provider, "run_command", { id: "catalog.search", params: { category: "horror", limit: 50 } });
+    expect(found.isError).toBeFalsy();
+    const { result } = found.structuredContent as { result: Search };
+    expect(result.effects.map((e) => e.id)).toEqual(
+      expect.arrayContaining(["vhs-tracking", "night-vision-cam", "signal-lost", "ghost-apparition", "eyes-in-the-dark", "possessed-text"]),
+    );
+    expect(editor.commands.execute<Search>("catalog.search", { group: "Pictures", tags: ["analog-horror"], limit: 50 })).toMatchObject({ ok: true, result: { total: 5 } });
+
+    // A category that is not there is refused, naming the ones that are.
+    const wrong = await callTool(provider, "run_command", { id: "catalog.search", params: { category: "spooky" } });
+    expect(wrong.isError).toBe(true);
+    expect(JSON.stringify(wrong)).toContain("horror");
+
+    const run = await callTool(provider, "run_commands", {
+      steps: [
+        { id: "effect.load", params: { id: "eyes-in-the-dark" } },
+        { id: "values.set", params: { values: { uDensity: 6, uReach: 0.3 } } },
+      ],
+    });
+    expect(run.isError).toBeFalsy();
+    expect(editor.document.basedOn).toBe("eyes-in-the-dark");
+    expect(editor.document.values).toMatchObject({ uDensity: 6, uReach: 0.3 });
+    // A mistyped value is refused and nothing changes.
+    expect(editor.commands.execute("values.set", { values: { uAmount: "lots" } })).toMatchObject({ ok: false, message: expect.stringMatching(/uAmount takes a number/) });
+    expect(editor.document.values.uAmount).toBeUndefined();
+  });
+
   it("lets agents edit vector pictures and see shader compiles", async () => {
     const shader = createEffectEditor({ from: "aurora" });
     const provider = createEffectToolProvider(shader);

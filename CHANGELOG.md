@@ -1,5 +1,53 @@
 # @pixerate/flair
 
+## 0.74.1
+
+### Patch Changes
+
+- 7d87d58: `hologram` now projects icons and cut-outs on a clear backdrop. It used to take its key colour from the picture's corners even when they were transparent (read as black), so it keyed away dark shapes, and it gave dark shapes almost no light; a black icon all but disappeared. The key colour now comes only from opaque corners (a picture with clear corners has no background to remove), and a cut-out's dark parts still give some light. Pictures with an opaque background render exactly as before.
+
+## 0.74.0
+
+### Minor Changes
+
+- 1991ec2: The last of the horror additions, in the loader, interaction and icon categories, all tagged `horror`. Loaders: `coffin-loader` (a lid creaking open on eyes in the dark and slamming shut), `candle-burndown` (a candle burning down and blowing out), `ghost-loader` (a ghost floating round in a circle) and `skeleton-hand-loader` (bony fingers drumming on a table). Interactions: `cursor-follow-eyes` (eyes that follow the pointer, narrowing as it comes near; a transparent overlay), `mirror-mismatch` (a reflection that follows the pointer half a second late and sometimes does its own thing) and `haunted-hover` (a button that flinches away on hover). Icons: `jack-o-lantern`, `bat-flap` and `skull-chatter`.
+
+## 0.73.0
+
+### Minor Changes
+
+- 0bcc656: Horror additions to the transition and text categories, all tagged `horror`. Five transitions, which like the others loop back and forth or follow Progress: `transition-claw-slash` (claw marks tearing open to the next picture), `transition-blood-wipe` (a curtain of blood pouring down and draining away), `transition-shadow-swallow` (darkness swallowing one picture and giving back the next), `transition-static-cut` (the signal breaking into static and tuning back in) and `transition-film-burn` (the film burning through to the next picture). Five text effects, which take any font and sit inline like the other text effects: `zalgo-text` (combining marks creeping over a title and overrunning it), `fogged-mirror-writing` (words traced on a fogged mirror, then fogging over), `scratched-text` (words gouged into a surface), `ransom-note` (letters cut from magazines, a different face for each unless a font is set) and `carved-pumpkin-text` (letters carved in a pumpkin lit from inside by a flickering candle).
+
+## 0.72.0
+
+### Minor Changes
+
+- 6028c44: Eight more `horror` effects: jump scares (tagged `shock`) and stylised gore (tagged `gore`). `scare-cut` (a sudden cut to a face with a zoom punch and a shake), `subliminal-flicker` (a single hidden frame now and then), `failing-light` (a fluorescent tube stuttering out over a picture) and `heartbeat-vignette` (a red pulse at the edges quickening as the pointer nears a target) are kept below seizure thresholds: none can be set to flash more than three times a second, and the heartbeat stops at 120 beats a minute. Then `blood-drip-border` (a transparent band of blood dripping from the top of the frame), the SVG `bleeding-text` (blood seeping through a title and dripping from it), `claw-slash` (claw marks tearing through a picture) and `blood-moon` (a crimson moon over dark hills).
+
+## 0.71.0
+
+### Minor Changes
+
+- 968c662: Eight more `horror` effects: the last of the creatures, a poltergeist, and the occult. `tentacles` (curling up out of the dark and reaching for the pointer), `bat-swarm` (bats wheeling across a dusk sky past the moon, scattering from the pointer), `passing-silhouette` (a tall figure walking once across a picture), the SVG `poltergeist` (an app's card, button, avatar and toggle lifting, wobbling and slamming back down), `summoning-circle` (a sigil drawing itself and flaring), the SVG text `rune-glow` (carved letters lighting up in turn, inline-capable), `cauldron` (a bubbling green brew under curling steam) and `candle-ring` (candles that gutter out all at once and relight round the ring). The occult ones are tagged `occult`.
+
+## 0.70.0
+
+### Minor Changes
+
+- 0ea9234: Six decay effects in the `horror` category, tagged `decay`: `rust-spread` (rust breaking out and eating across a picture), `mold-bloom` (fuzzy mould colonies blooming across it), `wither` (a picture draining, cracking and caving in), `peeling-wallpaper` (a picture peeling back like wallpaper from a grimy picture underneath), `aged-photo` (sepia, foxing, silvering, creases and worn edges) and `film-burn` (projected film stalling, blistering and burning open). The growing ones loop over their cycle, or hold a moment with Animate off.
+
+## 0.69.0
+
+### Minor Changes
+
+- 15d1a82: Six more `horror` effects, rounding out analog horror and the spectral and starting on creatures: `trail-cam` (an infrared trail camera's stills, date-stamped, with a figure closer in every shot), the SVG `emergency-broadcast` (a fictional "do not look outside" alert card switching on like an old set), `ectoplasm-wisps` (glowing trails spiralling in to the pointer), `spirit-orbs` (pale orbs drifting over a picture and darting off), `creeping-dark` (darkness with tendril edges closing in and recoiling from the pointer) and `shadow-hands` (the shadows of long-fingered hands reaching in from the edges).
+
+## 0.68.0
+
+### Minor Changes
+
+- 6ffb1b4: Add a `horror` category (browsed under Pictures) with six effects, the first batch from the spooky-effects proposal: `vhs-tracking` (a cursed tape: warp, a rolling tracking band, head-switching tear, colour bleed and a camcorder's REC and clock), `night-vision-cam` (green phosphor night vision where pairs of eyes shine out of the dark), `signal-lost` (a feed that stutters, freezes and corrupts into a hidden picture, then cuts to static), `ghost-apparition` (a translucent figure fading in over a picture, with an optional double exposure), `eyes-in-the-dark` (glowing eyes that blink, watch the pointer and shut when it comes near) and the SVG `possessed-text` (letters writhing and floating out of line, then snapping back). Tags `analog-horror`, `spectral` and `creature` group them by kind; find them all with `findEffects({ category: "horror" })` or `catalog.search` with `category: "horror"`.
+
 ## 0.67.0
 
 ### Minor Changes

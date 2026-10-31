@@ -103,6 +103,15 @@ import { iridescentShaders } from "./shaders/iridescent.js";
 import { webShaders } from "./shaders/web.js";
 import { webEffects } from "./web.js";
 import { promoShaders } from "./shaders/promo.js";
+import { horrorShaders } from "./shaders/horror.js";
+import { decayShaders } from "./shaders/decay.js";
+import { creatureShaders } from "./shaders/creatures.js";
+import { occultShaders } from "./shaders/occult.js";
+import { shockShaders } from "./shaders/shock.js";
+import { goreShaders } from "./shaders/gore.js";
+import { horrorTransitions } from "./shaders/horror-transitions.js";
+import { hauntedShaders } from "./shaders/haunted.js";
+import { horrorEffects } from "./horror.js";
 import { promoEffects } from "./promo.js";
 import { textEffects } from "./text.js";
 import { broadcastEffects } from "./broadcast.js";
@@ -226,11 +235,19 @@ export const SHADER_EFFECTS: readonly ShaderEffect[] = [
   ...iridescentShaders,
   ...webShaders,
   ...promoShaders,
+  ...horrorShaders,
+  ...decayShaders,
+  ...creatureShaders,
+  ...occultShaders,
+  ...shockShaders,
+  ...goreShaders,
+  ...horrorTransitions,
+  ...hauntedShaders,
   ...transitions,
 ];
 
 /** Every effect in the catalog, shaders first, grouped by category. */
-export const EFFECTS: readonly EffectDefinition[] = [...SHADER_EFFECTS, ...vectorEffects, ...textEffects, ...morphEffects, ...interactionEffects, ...pyroEffects, ...timewarpEffects, ...meltEffects, ...electricEffects, ...fireEffects, ...hologramEffects, ...pixelEffects, ...splatterEffects, ...bubbleEffects, ...stickerEffects, ...trailEffects, ...impactEffects, ...comicEffects, ...glowEffects, ...shadowEffects, ...lightingEffects, ...scrollEffects, ...broadcastEffects, ...annotationEffects, ...uiEffects, ...loaderEffects, ...dataEffects, ...iconEffects, ...webEffects, ...promoEffects, ...beautyEffects].sort(
+export const EFFECTS: readonly EffectDefinition[] = [...SHADER_EFFECTS, ...vectorEffects, ...textEffects, ...morphEffects, ...interactionEffects, ...pyroEffects, ...timewarpEffects, ...meltEffects, ...electricEffects, ...fireEffects, ...hologramEffects, ...pixelEffects, ...splatterEffects, ...bubbleEffects, ...stickerEffects, ...trailEffects, ...impactEffects, ...comicEffects, ...glowEffects, ...shadowEffects, ...lightingEffects, ...scrollEffects, ...broadcastEffects, ...annotationEffects, ...uiEffects, ...loaderEffects, ...dataEffects, ...iconEffects, ...webEffects, ...promoEffects, ...horrorEffects, ...beautyEffects].sort(
   (a, b) => EFFECT_CATEGORIES.indexOf(a.category) - EFFECT_CATEGORIES.indexOf(b.category),
 );
 
