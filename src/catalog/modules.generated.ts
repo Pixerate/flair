@@ -3,6 +3,7 @@
 
 export const EFFECT_MODULES: Record<string, () => Promise<Record<string, unknown>>> = {
   "annotation": () => import("./annotation.js"),
+  "beauty": () => import("./beauty.js"),
   "broadcast": () => import("./broadcast.js"),
   "bubble": () => import("./bubble.js"),
   "comic": () => import("./comic.js"),
@@ -24,6 +25,7 @@ export const EFFECT_MODULES: Record<string, () => Promise<Record<string, unknown
   "scroll": () => import("./scroll.js"),
   "shaders/atmosphere": () => import("./shaders/atmosphere.js"),
   "shaders/audio": () => import("./shaders/audio.js"),
+  "shaders/beauty": () => import("./shaders/beauty.js"),
   "shaders/bubble": () => import("./shaders/bubble.js"),
   "shaders/censor": () => import("./shaders/censor.js"),
   "shaders/comic": () => import("./shaders/comic.js"),

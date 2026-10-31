@@ -208,6 +208,25 @@ describe("commands and agent tools", () => {
     expect(editor.commands.execute("catalog.tags", { limit: 0 })).toMatchObject({ ok: false });
   });
 
+  it("lets agents find beauty effects, and refuses a category there is not", async () => {
+    const editor = createEffectEditor({ from: "aurora" });
+    const provider = createEffectToolProvider(editor);
+    type Search = { total: number; effects: { id: string; category: string; video?: string }[] };
+    const found = await callTool(provider, "run_command", { id: "catalog.search", params: { category: "beauty", limit: 50 } });
+    const result = (found.structuredContent as { result: Search }).result;
+    expect(result.total).toBe(12);
+    expect(result.effects.every((e) => e.category === "beauty")).toBe(true);
+    expect(result.effects.map((e) => e.id)).toEqual(expect.arrayContaining(["beauty-lip-tint", "lipstick-swipe"]));
+    const lips = editor.commands.execute<Search>("catalog.search", { group: "Pictures", text: "lipstick", limit: 50 });
+    expect(lips.ok && lips.result.effects.map((e) => e.id)).toEqual(expect.arrayContaining(["beauty-lip-tint", "lipstick-swipe"]));
+    const wrong = await callTool(provider, "run_command", { id: "catalog.search", params: { category: "makeup" } });
+    expect(wrong.isError).toBe(true);
+    expect(JSON.stringify(wrong)).toMatch(/beauty/);
+    expect(editor.commands.execute("effect.load", { id: "beauty-blush" })).toMatchObject({ ok: true });
+    expect(editor.commands.execute("values.set", { values: { uAmount: 0.6, uColour: "#F08080" } })).toMatchObject({ ok: true });
+    expect(editor.commands.execute("values.set", { values: { uBlush: 1 } })).toMatchObject({ ok: false, message: expect.stringMatching(/uBlush/) });
+  });
+
   it("lets agents edit vector pictures and see shader compiles", async () => {
     const shader = createEffectEditor({ from: "aurora" });
     const provider = createEffectToolProvider(shader);
