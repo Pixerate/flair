@@ -1,630 +1,17 @@
 [
   {
-    "id": "zalgo-text",
-    "name": "Zalgo text",
-    "kind": "vector",
-    "category": "text",
-    "description": "A title that something corrupts: combining marks creep over and under its letters in fits, then overrun it in a tangle with a red echo shuddering behind, before it snaps back to plain.",
-    "tags": [
-      "text",
-      "title",
-      "horror",
-      "zalgo",
-      "glitch",
-      "corrupt",
-      "creepy",
-      "unicode"
-    ],
-    "controls": [
-      {
-        "n": "text",
-        "t": "text",
-        "d": "HE COMES",
-        "line": 1
-      },
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            7,
-            6,
-            10
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "ink",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            241,
-            236,
-            228
-          ]
-        },
-        "l": "Text colour",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "echo",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            193,
-            18,
-            31
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "amount",
-        "t": "float",
-        "d": 1,
-        "l": "Corruption",
-        "min": 0.2,
-        "max": 2,
-        "s": 0.1,
-        "line": 5
-      },
-      {
-        "n": "font",
-        "t": "text",
-        "d": "'Arial Black', 'Helvetica Neue', Impact, system-ui, sans-serif",
-        "line": 6
-      },
-      {
-        "n": "weight",
-        "t": "int",
-        "d": 900,
-        "min": 100,
-        "max": 900,
-        "s": 100,
-        "line": 7
-      },
-      {
-        "n": "inline",
-        "t": "bool",
-        "d": false,
-        "line": 8
-      }
-    ],
-    "presets": [
-      "Mild",
-      "Unholy",
-      "On paper"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "text",
-          "label": "Text",
-          "holds": "copy",
-          "default": "HE COMES"
-        },
-        {
-          "name": "font",
-          "label": "Font",
-          "holds": "font",
-          "default": "'Arial Black', 'Helvetica Neue', Impact, system-ui, sans-serif"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 900,
-    "animated": true,
-    "duration": 3800,
-    "module": "text",
-    "addedAt": "2026-10-31T18:40:27.835Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "fogged-mirror-writing",
-    "name": "Fogged mirror writing",
-    "kind": "vector",
-    "category": "text",
-    "description": "Words traced by an unseen finger on a fogged-up mirror, the dark glass showing through each stroke as it is drawn, beads of condensation running down from them, then the fog creeping back over until they are gone.",
-    "tags": [
-      "text",
-      "title",
-      "horror",
-      "fog",
-      "mirror",
-      "handwriting",
-      "condensation",
-      "message"
-    ],
-    "controls": [
-      {
-        "n": "text",
-        "t": "text",
-        "d": "HELP ME",
-        "line": 1
-      },
-      {
-        "n": "behind",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            26,
-            35,
-            43
-          ]
-        },
-        "l": "Behind the glass",
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "fog",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            200,
-            207,
-            211
-          ]
-        },
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "fogOpacity",
-        "t": "float",
-        "d": 0.88,
-        "l": "Fog thickness",
-        "min": 0.2,
-        "line": 4
-      },
-      {
-        "n": "finger",
-        "t": "float",
-        "d": 1,
-        "l": "Finger width",
-        "min": 0.3,
-        "max": 2,
-        "s": 0.1,
-        "line": 5
-      },
-      {
-        "n": "font",
-        "t": "text",
-        "d": "'Pacifico', 'Brush Script MT', 'Segoe Script', 'Snell Roundhand', cursive",
-        "line": 6
-      },
-      {
-        "n": "weight",
-        "t": "int",
-        "d": 400,
-        "min": 100,
-        "max": 900,
-        "s": 100,
-        "line": 7
-      },
-      {
-        "n": "inline",
-        "t": "bool",
-        "d": false,
-        "line": 8
-      }
-    ],
-    "presets": [
-      "Bathroom",
-      "Car window"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "text",
-          "label": "Text",
-          "holds": "copy",
-          "default": "HELP ME"
-        },
-        {
-          "name": "font",
-          "label": "Font",
-          "holds": "font",
-          "default": "'Pacifico', 'Brush Script MT', 'Segoe Script', 'Snell Roundhand', cursive"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 1000,
-    "animated": true,
-    "duration": 6401,
-    "module": "text",
-    "addedAt": "2026-10-31T18:40:27.835Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "scratched-text",
-    "name": "Scratched text",
-    "kind": "vector",
-    "category": "text",
-    "description": "Words gouged into a dark surface in a few frantic passes, each scratch a little off the last, the pale gouges filling in behind them, then fading as if they had never been there.",
-    "tags": [
-      "text",
-      "title",
-      "horror",
-      "scratch",
-      "carved",
-      "etched",
-      "message",
-      "creepy"
-    ],
-    "controls": [
-      {
-        "n": "text",
-        "t": "text",
-        "d": "NO ESCAPE",
-        "line": 1
-      },
-      {
-        "n": "surface",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            38,
-            32,
-            29
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "scratch",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            233,
-            223,
-            210
-          ]
-        },
-        "l": "Scratches",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "font",
-        "t": "text",
-        "d": "system-ui, 'Helvetica Neue', Arial, sans-serif",
-        "line": 4
-      },
-      {
-        "n": "weight",
-        "t": "int",
-        "d": 700,
-        "min": 100,
-        "max": 900,
-        "s": 100,
-        "line": 5
-      },
-      {
-        "n": "inline",
-        "t": "bool",
-        "d": false,
-        "line": 6
-      }
-    ],
-    "presets": [
-      "Painted door",
-      "Plaster"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "text",
-          "label": "Text",
-          "holds": "copy",
-          "default": "NO ESCAPE"
-        },
-        {
-          "name": "font",
-          "label": "Font",
-          "holds": "font",
-          "default": "system-ui, 'Helvetica Neue', Arial, sans-serif"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 1000,
-    "animated": true,
-    "duration": 5201,
-    "module": "text",
-    "addedAt": "2026-10-31T18:40:27.835Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "ransom-note",
-    "name": "Ransom note",
-    "kind": "vector",
-    "category": "text",
-    "description": "A message spelled out in letters cut from magazines, each on its own scrap of paper in its own face, size and tilt, slapped down one after another, then torn away.",
-    "tags": [
-      "text",
-      "title",
-      "horror",
-      "ransom",
-      "cut-out",
-      "collage",
-      "magazine",
-      "punk",
-      "message"
-    ],
-    "controls": [
-      {
-        "n": "text",
-        "t": "text",
-        "d": "WE SEE YOU",
-        "line": 1
-      },
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            43,
-            38,
-            34
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "paper",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            243,
-            238,
-            226
-          ]
-        },
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "accent",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            215,
-            38,
-            46
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "ink",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            20,
-            18,
-            18
-          ]
-        },
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "font",
-        "t": "text",
-        "d": "mixed",
-        "line": 6
-      },
-      {
-        "n": "weight",
-        "t": "int",
-        "d": 800,
-        "min": 100,
-        "max": 900,
-        "s": 100,
-        "line": 7
-      },
-      {
-        "n": "inline",
-        "t": "bool",
-        "d": false,
-        "line": 8
-      }
-    ],
-    "presets": [
-      "Newsprint",
-      "Tabloid"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "text",
-          "label": "Text",
-          "holds": "copy",
-          "default": "WE SEE YOU"
-        },
-        {
-          "name": "font",
-          "label": "Font",
-          "holds": "font",
-          "default": "mixed"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 1100,
-    "animated": true,
-    "duration": 5040,
-    "module": "text",
-    "addedAt": "2026-10-31T18:40:27.835Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "carved-pumpkin-text",
-    "name": "Carved pumpkin text",
-    "kind": "vector",
-    "category": "text",
-    "description": "Letters carved through the ribbed orange skin of a pumpkin, a candle inside lighting them up from within, flickering, its glow spilling round the cuts, until it gutters out.",
-    "tags": [
-      "text",
-      "title",
-      "horror",
-      "halloween",
-      "pumpkin",
-      "jack-o-lantern",
-      "carved",
-      "glow",
-      "candle"
-    ],
-    "controls": [
-      {
-        "n": "text",
-        "t": "text",
-        "d": "TRICK OR TREAT",
-        "line": 1
-      },
-      {
-        "n": "skin",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            226,
-            105,
-            15
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "rib",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            156,
-            63,
-            6
-          ]
-        },
-        "l": "Ribs",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "glow",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            212,
-            94
-          ]
-        },
-        "l": "Candlelight",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "font",
-        "t": "text",
-        "d": "'Arial Black', 'Helvetica Neue', Impact, system-ui, sans-serif",
-        "line": 5
-      },
-      {
-        "n": "weight",
-        "t": "int",
-        "d": 900,
-        "min": 100,
-        "max": 900,
-        "s": 100,
-        "line": 6
-      },
-      {
-        "n": "inline",
-        "t": "bool",
-        "d": false,
-        "line": 7
-      }
-    ],
-    "presets": [
-      "Ghostly",
-      "Rotten"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "text",
-          "label": "Text",
-          "holds": "copy",
-          "default": "TRICK OR TREAT"
-        },
-        {
-          "name": "font",
-          "label": "Font",
-          "holds": "font",
-          "default": "'Arial Black', 'Helvetica Neue', Impact, system-ui, sans-serif"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 600,
-    "animated": true,
-    "duration": 5050,
-    "module": "text",
-    "addedAt": "2026-10-31T18:40:27.835Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "transition-claw-slash",
-    "name": "Claw tear",
+    "id": "transition-film-burn",
+    "name": "Burn through",
     "kind": "shader",
     "category": "transition",
-    "description": "Claw marks rip across the first picture and tear wider, raw-edged, until the next picture fills the frame through them. Loops back and forth; or turn Animate off and set Progress.",
+    "description": "The first picture blisters and burns through from a hot spot, a glowing charred edge spreading out across the frame and the next picture showing through the hole. Loops back and forth; or turn Animate off and set Progress.",
     "tags": [
       "transition",
       "horror",
-      "claw",
-      "slash",
-      "tear",
-      "rip",
+      "film",
+      "burn",
+      "melt",
+      "vintage",
       "image",
       "slideshow"
     ],
@@ -669,43 +56,41 @@
         "line": 6
       },
       {
-        "n": "uEdge",
+        "n": "uHot",
         "t": "vec3",
         "d": {
           "c255": [
-            138,
-            13,
-            22
+            255,
+            154,
+            60
           ]
         },
-        "l": "Raw edge",
+        "l": "Burning edge",
         "c": 1,
         "line": 7
       },
       {
-        "n": "uClaws",
+        "n": "uX",
         "t": "float",
-        "d": 4,
-        "min": 1,
-        "max": 5,
-        "s": 1,
+        "d": 0.12,
+        "l": "Hot spot across",
+        "min": -0.5,
+        "max": 0.5,
         "line": 8
       },
       {
-        "n": "uAngle",
+        "n": "uY",
         "t": "float",
-        "d": -35,
-        "l": "Angle (°)",
-        "min": -80,
-        "max": 80,
+        "d": 0.06,
+        "l": "Hot spot up",
+        "min": -0.5,
+        "max": 0.5,
         "line": 9
       },
       {
-        "n": "uSpacing",
+        "n": "uMelt",
         "t": "float",
-        "d": 0.16,
-        "min": 0.08,
-        "max": 0.3,
+        "d": 0.6,
         "line": 10
       },
       {
@@ -730,9 +115,9 @@
       }
     ],
     "presets": [
-      "Three claws",
-      "Downward",
-      "Shadow"
+      "From the corner",
+      "Blue flame",
+      "No melt"
     ],
     "inputs": {
       "accepts": [
@@ -762,23 +147,24 @@
     "animated": true,
     "duration": 4000,
     "module": "shaders/horror-transitions",
-    "addedAt": "2026-10-31T18:40:27.835Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-10-31T18:40:44Z",
+    "commitHash": "0bcc656aaf3fe8f44fc5434ff31bb87d5fcae20f",
+    "order": 537
   },
   {
-    "id": "transition-blood-wipe",
-    "name": "Blood wipe",
+    "id": "transition-static-cut",
+    "name": "Static cut",
     "kind": "shader",
     "category": "transition",
-    "description": "A curtain of blood pours down over the first picture, drips running ahead of it, then drains away from the top to show the next. Loops back and forth; or turn Animate off and set Progress.",
+    "description": "The first picture tears and rolls as the signal goes, breaks into TV static, then the next picture tunes in out of it. Loops back and forth; or turn Animate off and set Progress.",
     "tags": [
       "transition",
       "horror",
-      "blood",
-      "drip",
-      "wipe",
-      "gore",
+      "static",
+      "glitch",
+      "tv",
+      "signal",
+      "analog-horror",
       "image",
       "slideshow"
     ],
@@ -823,37 +209,19 @@
         "line": 6
       },
       {
-        "n": "uColor",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            122,
-            6,
-            16
-          ]
-        },
-        "l": "Blood",
-        "c": 1,
+        "n": "uTear",
+        "t": "float",
+        "d": 0.7,
+        "l": "Tearing",
         "line": 7
       },
       {
-        "n": "uShine",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            122,
-            122
-          ]
-        },
-        "c": 1,
-        "line": 8
-      },
-      {
-        "n": "uDrips",
+        "n": "uSplit",
         "t": "float",
-        "d": 0.7,
-        "line": 9
+        "d": 0.012,
+        "l": "Colour split",
+        "max": 0.03,
+        "line": 8
       },
       {
         "n": "uBackdrop",
@@ -866,20 +234,19 @@
           ]
         },
         "c": 1,
-        "line": 10
+        "line": 9
       },
       {
         "n": "uBackdropAlpha",
         "t": "float",
         "d": 1,
         "l": "Backdrop opacity",
-        "line": 11
+        "line": 10
       }
     ],
     "presets": [
-      "Ink",
-      "Ichor",
-      "Clean edge"
+      "Clean switch",
+      "Bad reception"
     ],
     "inputs": {
       "accepts": [
@@ -909,9 +276,9 @@
     "animated": true,
     "duration": 4000,
     "module": "shaders/horror-transitions",
-    "addedAt": "2026-10-31T18:40:27.835Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-10-31T18:40:44Z",
+    "commitHash": "0bcc656aaf3fe8f44fc5434ff31bb87d5fcae20f",
+    "order": 536
   },
   {
     "id": "transition-shadow-swallow",
@@ -1064,24 +431,23 @@
     "animated": true,
     "duration": 4000,
     "module": "shaders/horror-transitions",
-    "addedAt": "2026-10-31T18:40:27.835Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-10-31T18:40:44Z",
+    "commitHash": "0bcc656aaf3fe8f44fc5434ff31bb87d5fcae20f",
+    "order": 535
   },
   {
-    "id": "transition-static-cut",
-    "name": "Static cut",
+    "id": "transition-blood-wipe",
+    "name": "Blood wipe",
     "kind": "shader",
     "category": "transition",
-    "description": "The first picture tears and rolls as the signal goes, breaks into TV static, then the next picture tunes in out of it. Loops back and forth; or turn Animate off and set Progress.",
+    "description": "A curtain of blood pours down over the first picture, drips running ahead of it, then drains away from the top to show the next. Loops back and forth; or turn Animate off and set Progress.",
     "tags": [
       "transition",
       "horror",
-      "static",
-      "glitch",
-      "tv",
-      "signal",
-      "analog-horror",
+      "blood",
+      "drip",
+      "wipe",
+      "gore",
       "image",
       "slideshow"
     ],
@@ -1126,19 +492,37 @@
         "line": 6
       },
       {
-        "n": "uTear",
-        "t": "float",
-        "d": 0.7,
-        "l": "Tearing",
+        "n": "uColor",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            122,
+            6,
+            16
+          ]
+        },
+        "l": "Blood",
+        "c": 1,
         "line": 7
       },
       {
-        "n": "uSplit",
-        "t": "float",
-        "d": 0.012,
-        "l": "Colour split",
-        "max": 0.03,
+        "n": "uShine",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            122,
+            122
+          ]
+        },
+        "c": 1,
         "line": 8
+      },
+      {
+        "n": "uDrips",
+        "t": "float",
+        "d": 0.7,
+        "line": 9
       },
       {
         "n": "uBackdrop",
@@ -1151,19 +535,20 @@
           ]
         },
         "c": 1,
-        "line": 9
+        "line": 10
       },
       {
         "n": "uBackdropAlpha",
         "t": "float",
         "d": 1,
         "l": "Backdrop opacity",
-        "line": 10
+        "line": 11
       }
     ],
     "presets": [
-      "Clean switch",
-      "Bad reception"
+      "Ink",
+      "Ichor",
+      "Clean edge"
     ],
     "inputs": {
       "accepts": [
@@ -1193,23 +578,23 @@
     "animated": true,
     "duration": 4000,
     "module": "shaders/horror-transitions",
-    "addedAt": "2026-10-31T18:40:27.835Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-10-31T18:40:44Z",
+    "commitHash": "0bcc656aaf3fe8f44fc5434ff31bb87d5fcae20f",
+    "order": 534
   },
   {
-    "id": "transition-film-burn",
-    "name": "Burn through",
+    "id": "transition-claw-slash",
+    "name": "Claw tear",
     "kind": "shader",
     "category": "transition",
-    "description": "The first picture blisters and burns through from a hot spot, a glowing charred edge spreading out across the frame and the next picture showing through the hole. Loops back and forth; or turn Animate off and set Progress.",
+    "description": "Claw marks rip across the first picture and tear wider, raw-edged, until the next picture fills the frame through them. Loops back and forth; or turn Animate off and set Progress.",
     "tags": [
       "transition",
       "horror",
-      "film",
-      "burn",
-      "melt",
-      "vintage",
+      "claw",
+      "slash",
+      "tear",
+      "rip",
       "image",
       "slideshow"
     ],
@@ -1254,41 +639,43 @@
         "line": 6
       },
       {
-        "n": "uHot",
+        "n": "uEdge",
         "t": "vec3",
         "d": {
           "c255": [
-            255,
-            154,
-            60
+            138,
+            13,
+            22
           ]
         },
-        "l": "Burning edge",
+        "l": "Raw edge",
         "c": 1,
         "line": 7
       },
       {
-        "n": "uX",
+        "n": "uClaws",
         "t": "float",
-        "d": 0.12,
-        "l": "Hot spot across",
-        "min": -0.5,
-        "max": 0.5,
+        "d": 4,
+        "min": 1,
+        "max": 5,
+        "s": 1,
         "line": 8
       },
       {
-        "n": "uY",
+        "n": "uAngle",
         "t": "float",
-        "d": 0.06,
-        "l": "Hot spot up",
-        "min": -0.5,
-        "max": 0.5,
+        "d": -35,
+        "l": "Angle (°)",
+        "min": -80,
+        "max": 80,
         "line": 9
       },
       {
-        "n": "uMelt",
+        "n": "uSpacing",
         "t": "float",
-        "d": 0.6,
+        "d": 0.16,
+        "min": 0.08,
+        "max": 0.3,
         "line": 10
       },
       {
@@ -1313,9 +700,9 @@
       }
     ],
     "presets": [
-      "From the corner",
-      "Blue flame",
-      "No melt"
+      "Three claws",
+      "Downward",
+      "Shadow"
     ],
     "inputs": {
       "accepts": [
@@ -1345,9 +732,622 @@
     "animated": true,
     "duration": 4000,
     "module": "shaders/horror-transitions",
-    "addedAt": "2026-10-31T18:40:27.835Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-10-31T18:40:44Z",
+    "commitHash": "0bcc656aaf3fe8f44fc5434ff31bb87d5fcae20f",
+    "order": 533
+  },
+  {
+    "id": "carved-pumpkin-text",
+    "name": "Carved pumpkin text",
+    "kind": "vector",
+    "category": "text",
+    "description": "Letters carved through the ribbed orange skin of a pumpkin, a candle inside lighting them up from within, flickering, its glow spilling round the cuts, until it gutters out.",
+    "tags": [
+      "text",
+      "title",
+      "horror",
+      "halloween",
+      "pumpkin",
+      "jack-o-lantern",
+      "carved",
+      "glow",
+      "candle"
+    ],
+    "controls": [
+      {
+        "n": "text",
+        "t": "text",
+        "d": "TRICK OR TREAT",
+        "line": 1
+      },
+      {
+        "n": "skin",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            226,
+            105,
+            15
+          ]
+        },
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "rib",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            156,
+            63,
+            6
+          ]
+        },
+        "l": "Ribs",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "glow",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            212,
+            94
+          ]
+        },
+        "l": "Candlelight",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "font",
+        "t": "text",
+        "d": "'Arial Black', 'Helvetica Neue', Impact, system-ui, sans-serif",
+        "line": 5
+      },
+      {
+        "n": "weight",
+        "t": "int",
+        "d": 900,
+        "min": 100,
+        "max": 900,
+        "s": 100,
+        "line": 6
+      },
+      {
+        "n": "inline",
+        "t": "bool",
+        "d": false,
+        "line": 7
+      }
+    ],
+    "presets": [
+      "Ghostly",
+      "Rotten"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "text",
+          "label": "Text",
+          "holds": "copy",
+          "default": "TRICK OR TREAT"
+        },
+        {
+          "name": "font",
+          "label": "Font",
+          "holds": "font",
+          "default": "'Arial Black', 'Helvetica Neue', Impact, system-ui, sans-serif"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 600,
+    "animated": true,
+    "duration": 5050,
+    "module": "text",
+    "addedAt": "2026-10-31T18:40:44Z",
+    "commitHash": "0bcc656aaf3fe8f44fc5434ff31bb87d5fcae20f",
+    "order": 532
+  },
+  {
+    "id": "ransom-note",
+    "name": "Ransom note",
+    "kind": "vector",
+    "category": "text",
+    "description": "A message spelled out in letters cut from magazines, each on its own scrap of paper in its own face, size and tilt, slapped down one after another, then torn away.",
+    "tags": [
+      "text",
+      "title",
+      "horror",
+      "ransom",
+      "cut-out",
+      "collage",
+      "magazine",
+      "punk",
+      "message"
+    ],
+    "controls": [
+      {
+        "n": "text",
+        "t": "text",
+        "d": "WE SEE YOU",
+        "line": 1
+      },
+      {
+        "n": "background",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            43,
+            38,
+            34
+          ]
+        },
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "paper",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            243,
+            238,
+            226
+          ]
+        },
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "accent",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            215,
+            38,
+            46
+          ]
+        },
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "ink",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            20,
+            18,
+            18
+          ]
+        },
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "font",
+        "t": "text",
+        "d": "mixed",
+        "line": 6
+      },
+      {
+        "n": "weight",
+        "t": "int",
+        "d": 800,
+        "min": 100,
+        "max": 900,
+        "s": 100,
+        "line": 7
+      },
+      {
+        "n": "inline",
+        "t": "bool",
+        "d": false,
+        "line": 8
+      }
+    ],
+    "presets": [
+      "Newsprint",
+      "Tabloid"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "text",
+          "label": "Text",
+          "holds": "copy",
+          "default": "WE SEE YOU"
+        },
+        {
+          "name": "font",
+          "label": "Font",
+          "holds": "font",
+          "default": "mixed"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 1100,
+    "animated": true,
+    "duration": 5040,
+    "module": "text",
+    "addedAt": "2026-10-31T18:40:44Z",
+    "commitHash": "0bcc656aaf3fe8f44fc5434ff31bb87d5fcae20f",
+    "order": 531
+  },
+  {
+    "id": "scratched-text",
+    "name": "Scratched text",
+    "kind": "vector",
+    "category": "text",
+    "description": "Words gouged into a dark surface in a few frantic passes, each scratch a little off the last, the pale gouges filling in behind them, then fading as if they had never been there.",
+    "tags": [
+      "text",
+      "title",
+      "horror",
+      "scratch",
+      "carved",
+      "etched",
+      "message",
+      "creepy"
+    ],
+    "controls": [
+      {
+        "n": "text",
+        "t": "text",
+        "d": "NO ESCAPE",
+        "line": 1
+      },
+      {
+        "n": "surface",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            38,
+            32,
+            29
+          ]
+        },
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "scratch",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            233,
+            223,
+            210
+          ]
+        },
+        "l": "Scratches",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "font",
+        "t": "text",
+        "d": "system-ui, 'Helvetica Neue', Arial, sans-serif",
+        "line": 4
+      },
+      {
+        "n": "weight",
+        "t": "int",
+        "d": 700,
+        "min": 100,
+        "max": 900,
+        "s": 100,
+        "line": 5
+      },
+      {
+        "n": "inline",
+        "t": "bool",
+        "d": false,
+        "line": 6
+      }
+    ],
+    "presets": [
+      "Painted door",
+      "Plaster"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "text",
+          "label": "Text",
+          "holds": "copy",
+          "default": "NO ESCAPE"
+        },
+        {
+          "name": "font",
+          "label": "Font",
+          "holds": "font",
+          "default": "system-ui, 'Helvetica Neue', Arial, sans-serif"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 1000,
+    "animated": true,
+    "duration": 5201,
+    "module": "text",
+    "addedAt": "2026-10-31T18:40:44Z",
+    "commitHash": "0bcc656aaf3fe8f44fc5434ff31bb87d5fcae20f",
+    "order": 530
+  },
+  {
+    "id": "fogged-mirror-writing",
+    "name": "Fogged mirror writing",
+    "kind": "vector",
+    "category": "text",
+    "description": "Words traced by an unseen finger on a fogged-up mirror, the dark glass showing through each stroke as it is drawn, beads of condensation running down from them, then the fog creeping back over until they are gone.",
+    "tags": [
+      "text",
+      "title",
+      "horror",
+      "fog",
+      "mirror",
+      "handwriting",
+      "condensation",
+      "message"
+    ],
+    "controls": [
+      {
+        "n": "text",
+        "t": "text",
+        "d": "HELP ME",
+        "line": 1
+      },
+      {
+        "n": "behind",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            26,
+            35,
+            43
+          ]
+        },
+        "l": "Behind the glass",
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "fog",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            200,
+            207,
+            211
+          ]
+        },
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "fogOpacity",
+        "t": "float",
+        "d": 0.88,
+        "l": "Fog thickness",
+        "min": 0.2,
+        "line": 4
+      },
+      {
+        "n": "finger",
+        "t": "float",
+        "d": 1,
+        "l": "Finger width",
+        "min": 0.3,
+        "max": 2,
+        "s": 0.1,
+        "line": 5
+      },
+      {
+        "n": "font",
+        "t": "text",
+        "d": "'Pacifico', 'Brush Script MT', 'Segoe Script', 'Snell Roundhand', cursive",
+        "line": 6
+      },
+      {
+        "n": "weight",
+        "t": "int",
+        "d": 400,
+        "min": 100,
+        "max": 900,
+        "s": 100,
+        "line": 7
+      },
+      {
+        "n": "inline",
+        "t": "bool",
+        "d": false,
+        "line": 8
+      }
+    ],
+    "presets": [
+      "Bathroom",
+      "Car window"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "text",
+          "label": "Text",
+          "holds": "copy",
+          "default": "HELP ME"
+        },
+        {
+          "name": "font",
+          "label": "Font",
+          "holds": "font",
+          "default": "'Pacifico', 'Brush Script MT', 'Segoe Script', 'Snell Roundhand', cursive"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 1000,
+    "animated": true,
+    "duration": 6401,
+    "module": "text",
+    "addedAt": "2026-10-31T18:40:44Z",
+    "commitHash": "0bcc656aaf3fe8f44fc5434ff31bb87d5fcae20f",
+    "order": 529
+  },
+  {
+    "id": "zalgo-text",
+    "name": "Zalgo text",
+    "kind": "vector",
+    "category": "text",
+    "description": "A title that something corrupts: combining marks creep over and under its letters in fits, then overrun it in a tangle with a red echo shuddering behind, before it snaps back to plain.",
+    "tags": [
+      "text",
+      "title",
+      "horror",
+      "zalgo",
+      "glitch",
+      "corrupt",
+      "creepy",
+      "unicode"
+    ],
+    "controls": [
+      {
+        "n": "text",
+        "t": "text",
+        "d": "HE COMES",
+        "line": 1
+      },
+      {
+        "n": "background",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            7,
+            6,
+            10
+          ]
+        },
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "ink",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            241,
+            236,
+            228
+          ]
+        },
+        "l": "Text colour",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "echo",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            193,
+            18,
+            31
+          ]
+        },
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "amount",
+        "t": "float",
+        "d": 1,
+        "l": "Corruption",
+        "min": 0.2,
+        "max": 2,
+        "s": 0.1,
+        "line": 5
+      },
+      {
+        "n": "font",
+        "t": "text",
+        "d": "'Arial Black', 'Helvetica Neue', Impact, system-ui, sans-serif",
+        "line": 6
+      },
+      {
+        "n": "weight",
+        "t": "int",
+        "d": 900,
+        "min": 100,
+        "max": 900,
+        "s": 100,
+        "line": 7
+      },
+      {
+        "n": "inline",
+        "t": "bool",
+        "d": false,
+        "line": 8
+      }
+    ],
+    "presets": [
+      "Mild",
+      "Unholy",
+      "On paper"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "text",
+          "label": "Text",
+          "holds": "copy",
+          "default": "HE COMES"
+        },
+        {
+          "name": "font",
+          "label": "Font",
+          "holds": "font",
+          "default": "'Arial Black', 'Helvetica Neue', Impact, system-ui, sans-serif"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 900,
+    "animated": true,
+    "duration": 3800,
+    "module": "text",
+    "addedAt": "2026-10-31T18:40:44Z",
+    "commitHash": "0bcc656aaf3fe8f44fc5434ff31bb87d5fcae20f",
+    "order": 528
   },
   {
     "id": "bleeding-text",
