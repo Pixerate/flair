@@ -20,6 +20,7 @@ export type EffectCategory =
   | "space"
   | "retro"
   | "image"
+  | "beauty"
   | "overlay"
   | "text"
   | "morph"
@@ -66,6 +67,7 @@ export const EFFECT_CATEGORIES: readonly EffectCategory[] = [
   "space",
   "retro",
   "image",
+  "beauty",
   "overlay",
   "text",
   "morph",
@@ -113,7 +115,7 @@ export interface EffectCategoryGroup {
 export const EFFECT_CATEGORY_GROUPS: readonly EffectCategoryGroup[] = [
   { name: "Backgrounds", categories: ["gradient", "organic", "pattern", "space", "3d", "weather", "water", "atmosphere"] },
   { name: "Light", categories: ["light", "lighting", "glow", "shadow", "electric", "fire", "hologram"] },
-  { name: "Pictures", categories: ["image", "distortion", "retro", "comic", "horror", "timewarp", "melt"] },
+  { name: "Pictures", categories: ["image", "beauty", "distortion", "retro", "comic", "horror", "timewarp", "melt"] },
   { name: "Particles & FX", categories: ["overlay", "splatter", "bubble", "particles", "trail", "debris", "impact", "pyrotechnics"] },
   { name: "Type & titles", categories: ["text", "morph", "broadcast", "annotation", "sticker"] },
   { name: "Inputs", categories: ["interaction", "audio", "scroll"] },
@@ -312,17 +314,22 @@ const escapeMarkup = (text: string) =>
 /** A vector control as a full `ControlDef`, so editors treat both kinds of effect alike. */
 export function vectorControlDef(control: VectorControl, line = 0): ControlDef {
   const min = control.min ?? 0;
-  return {
+  const max = control.max ?? Math.max(min + 1, 1);
+  const def: ControlDef = {
     name: control.name,
     type: control.type,
     label: control.label ?? control.name,
     color: control.color ?? false,
     min,
-    max: control.max ?? Math.max(min + 1, 1),
+    max,
     step: control.step ?? (control.type === "int" ? 1 : 0.01),
     default: control.default,
     line,
   };
+  if (control.min !== undefined || control.max !== undefined) {
+    def.limits = { ...(control.min !== undefined && { min }), ...(control.max !== undefined && { max }) };
+  }
+  return def;
 }
 
 /** What a vector effect's colour control takes to paint in the surrounding text's colour (CSS `color`). */
@@ -357,7 +364,7 @@ export function renderVectorEffect(
       placeholders.set(control.name, CURRENT_COLOR);
       continue;
     }
-    const check = given === undefined ? undefined : checkControlValue(control, given);
+    const check = given === undefined ? undefined : checkControlValue(control, given, { limits: false });
     filled[control.name] = check?.ok ? check.value : control.default;
     placeholders.set(control.name, written(control, filled[control.name]!));
   }

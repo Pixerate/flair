@@ -208,6 +208,25 @@ describe("commands and agent tools", () => {
     expect(editor.commands.execute("catalog.tags", { limit: 0 })).toMatchObject({ ok: false });
   });
 
+  it("lets agents find beauty effects, and refuses a category there is not", async () => {
+    const editor = createEffectEditor({ from: "aurora" });
+    const provider = createEffectToolProvider(editor);
+    type Search = { total: number; effects: { id: string; category: string; video?: string }[] };
+    const found = await callTool(provider, "run_command", { id: "catalog.search", params: { category: "beauty", limit: 50 } });
+    const result = (found.structuredContent as { result: Search }).result;
+    expect(result.total).toBe(12);
+    expect(result.effects.every((e) => e.category === "beauty")).toBe(true);
+    expect(result.effects.map((e) => e.id)).toEqual(expect.arrayContaining(["beauty-lip-tint", "lipstick-swipe"]));
+    const lips = editor.commands.execute<Search>("catalog.search", { group: "Pictures", text: "lipstick", limit: 50 });
+    expect(lips.ok && lips.result.effects.map((e) => e.id)).toEqual(expect.arrayContaining(["beauty-lip-tint", "lipstick-swipe"]));
+    const wrong = await callTool(provider, "run_command", { id: "catalog.search", params: { category: "makeup" } });
+    expect(wrong.isError).toBe(true);
+    expect(JSON.stringify(wrong)).toMatch(/beauty/);
+    expect(editor.commands.execute("effect.load", { id: "beauty-blush" })).toMatchObject({ ok: true });
+    expect(editor.commands.execute("values.set", { values: { uAmount: 0.6, uColour: "#F08080" } })).toMatchObject({ ok: true });
+    expect(editor.commands.execute("values.set", { values: { uBlush: 1 } })).toMatchObject({ ok: false, message: expect.stringMatching(/uBlush/) });
+  });
+
   it("lets agents find the horror effects, load one and tune it within its controls", async () => {
     const editor = createEffectEditor({ from: "aurora" });
     const provider = createEffectToolProvider(editor);
@@ -237,6 +256,22 @@ describe("commands and agent tools", () => {
     // A mistyped value is refused and nothing changes.
     expect(editor.commands.execute("values.set", { values: { uAmount: "lots" } })).toMatchObject({ ok: false, message: expect.stringMatching(/uAmount takes a number/) });
     expect(editor.document.values.uAmount).toBeUndefined();
+  });
+
+  it("refuses values beyond a control's declared range, naming it, and changes nothing", async () => {
+    const editor = createEffectEditor({ from: "beauty-blush" });
+    const provider = createEffectToolProvider(editor);
+    const wrong = await callTool(provider, "run_command", { id: "values.set", params: { values: { uAmount: 3 } } });
+    expect(wrong.isError).toBe(true);
+    expect(JSON.stringify(wrong)).toMatch(/uAmount takes a number from 0 to 1, not 3/);
+    expect(editor.document.values.uAmount).toBeUndefined();
+    // All or nothing: one value out of range keeps the others from landing too.
+    expect(editor.commands.execute("values.set", { values: { uDepth: 0.4, uSpacing: 2 } })).toMatchObject({ ok: false, message: expect.stringMatching(/uSpacing takes a number from 0 to 0\.5/) });
+    expect(editor.document.values.uDepth).toBeUndefined();
+    expect(editor.commands.execute("values.set", { values: { uAmount: 0.9 } })).toMatchObject({ ok: true });
+    // Vector controls declared with a range are held to it as well.
+    const vector = createEffectEditor({ from: "swatch-reveal" });
+    expect(vector.commands.execute("values.set", { values: { count: 9 } })).toMatchObject({ ok: false, message: expect.stringMatching(/count takes a number from 1 to 5, not 9/) });
   });
 
   it("lets agents edit vector pictures and see shader compiles", async () => {

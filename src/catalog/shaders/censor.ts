@@ -2,6 +2,7 @@ import { glsl, HASH, NOISE } from "../glsl.js";
 import { SAMPLE_IMAGES } from "../images.js";
 import type { ShaderEffect } from "../types.js";
 import { BACKDROP_CONTROLS, PICTURE } from "./image.js";
+import { REGION, regionControls } from "./region.js";
 
 /*
  * Censoring: hiding part of a picture or video, as for a face, a number
@@ -9,31 +10,6 @@ import { BACKDROP_CONTROLS, PICTURE } from "./image.js";
  * ellipse, placed in 0–1 of the frame, y up) and can be turned inside out to
  * hide everything but it.
  */
-
-/** The region controls, with a default region (the sample portrait's face). */
-const regionControls = (centre = "0.5,0.6", size = "0.26,0.5", shape = 1) =>
-  `
-uniform vec2 uCentre;      // @control min=0 max=1 default=${centre} label="Region centre"
-uniform vec2 uSize;        // @control min=0 max=1 default=${size} label="Region size"
-uniform int uShape;        // @control min=0 max=1 default=${shape} label="Region shape (0 box, 1 ellipse)"
-uniform float uFeather;    // @control min=0 max=60 default=4 label="Edge softness (px)"
-uniform bool uInvert;      // @control default=false label="Hide everything but the region"`.trim();
-
-/** `region(fragCoord)`: 1 where the picture is hidden, 0 where it shows, soft over `uFeather` pixels. */
-const REGION = `
-float region(vec2 fragCoord) {
-  vec2 hs = max(0.5 * uSize * iResolution.xy, vec2(1.0));
-  vec2 p = fragCoord - uCentre * iResolution.xy;
-  float d;
-  if (uShape == 0) {
-    vec2 q = abs(p) - hs;
-    d = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0);
-  } else {
-    d = (length(p / hs) - 1.0) * min(hs.x, hs.y);
-  }
-  float m = 1.0 - smoothstep(-0.5 * uFeather - 0.5, 0.5 * uFeather + 0.5, d);
-  return uInvert ? 1.0 - m : m;
-}`.trim();
 
 export const censorPixelate: ShaderEffect = {
   kind: "shader",

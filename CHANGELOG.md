@@ -1,5 +1,23 @@
 # @pixerate/flair
 
+## 0.76.0
+
+### Minor Changes
+
+- 7a62a2e: A control's declared `min=` and `max=` are now limits. `checkControlValue` (and with it the editor's `values.set` and keyframes, document checks, the integrations and the CLI) refuses a number beyond them, saying what range the control takes, for example "uAmount takes a number from 0 to 1, not 3.". Before, such values were accepted silently.
+
+  A control that declares no range keeps 0–1 (0–10 for `int`) as its slider range only, and still takes any number. `ControlDef.limits` holds the declared ends. `renderVectorEffect` still draws whatever it is given.
+
+## 0.75.0
+
+### Minor Changes
+
+- 67989be: A new `beauty` catalog category, browsed under Pictures. It holds retouching and make-up for a portrait or a live face: `beauty-skin-smooth`, `beauty-dewy-glow`, `beauty-soft-focus`, `beauty-brighten` (eyes and teeth), `beauty-lip-tint`, `beauty-blush`, `beauty-eyeshadow` and `beauty-highlighter`. It also holds beauty-ad graphics: `beauty-retouch-reveal`, `beauty-product-shine`, and the vector `lipstick-swipe` and `swatch-reveal`.
+
+  Each shader works as a live video filter on a region you place by hand, defaulting to the sample face, since Flair has no face tracking. The effects keep to skin by its colour. Make-up takes a shade's hue but keeps the picture's own lightness, so texture shows through.
+
+  The censor effects now share their region helpers through `src/catalog/shaders/region.ts`, and their output is unchanged.
+
 ## 0.74.1
 
 ### Patch Changes

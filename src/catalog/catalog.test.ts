@@ -3,7 +3,7 @@ import { checkControlValue, parseControls } from "../shader/controls.js";
 import { svgFrame, svgMotionIssues } from "../vector/motion.js";
 import { svgInlineLayout } from "../vector/static.js";
 import { svgDuration } from "../vector/svg.js";
-import type { EffectCategory, VectorEffect } from "./types.js";
+import type { EffectCategory, ShaderEffect, VectorEffect } from "./types.js";
 import {
   EFFECT_CATEGORIES,
   EFFECT_CATEGORY_GROUPS,
@@ -1452,6 +1452,66 @@ describe("censor effects", () => {
     expect(bars).toMatchObject({ loop: 5 });
     expect(effectControls(bars).find((c) => c.name === "uLines")).toMatchObject({ type: "int", min: 1, max: 8 });
     expect(names("redaction-bars")).toEqual(expect.arrayContaining(["uAnimate", "uProgress", "uInk", "uRough"]));
+  });
+});
+
+describe("beauty effects", () => {
+  const shaders = ["beauty-skin-smooth", "beauty-dewy-glow", "beauty-soft-focus", "beauty-brighten", "beauty-lip-tint", "beauty-blush", "beauty-eyeshadow", "beauty-highlighter", "beauty-retouch-reveal", "beauty-product-shine"];
+  const names = (id: string) => effectControls(getEffect(id)!).map((c) => c.name);
+  const defaults = (id: string) => effectDefaults(getEffect(id)!) as Record<string, number[]>;
+  // The sample portrait's face: a circle at (0.5, 0.583) in 0–1 of the frame, y up, 0.109 wide and 0.194 tall (radii).
+  const onFace = ([x, y]: number[]) => ((x! - 0.5) / 0.109) ** 2 + ((y! - 0.583) / 0.194) ** 2 < 1;
+
+  it("browse under Pictures, take a live video or a still, and are found by the words people use", () => {
+    expect(categoryGroup("beauty").name).toBe("Pictures");
+    expect(findEffects({ category: "beauty" }).map((e) => e.id)).toEqual(expect.arrayContaining([...shaders, "lipstick-swipe", "swatch-reveal"]));
+    for (const id of shaders) {
+      expect(getEffect(id), id).toMatchObject({ kind: "shader", category: "beauty", video: "filter" });
+      expect(effectInputs(getEffect(id)!).accepts, id).toContain("video");
+      expect(getEffect(id)!.presets?.length ?? 0, id).toBeGreaterThan(1);
+    }
+    for (const word of ["makeup", "lipstick", "blush", "skin", "retouch", "cosmetics"]) expect(findEffects({ text: word, category: "beauty" }).length, word).toBeGreaterThan(0);
+  });
+
+  it("place their regions on the sample face by default", () => {
+    for (const id of ["beauty-skin-smooth", "beauty-dewy-glow", "beauty-brighten", "beauty-lip-tint"]) {
+      expect(names(id), id).toEqual(expect.arrayContaining(["uCentre", "uSize", "uShape", "uFeather", "uInvert"]));
+      expect(onFace(defaults(id).uCentre!), id).toBe(true);
+    }
+    // Pairs (cheeks, lids, cheekbones): both of the mirrored ellipses on the face.
+    for (const id of ["beauty-blush", "beauty-eyeshadow", "beauty-highlighter"]) {
+      expect(names(id), id).toEqual(expect.arrayContaining(["uCentre", "uSpacing", "uSize", "uFeather"]));
+      const [x, y] = defaults(id).uCentre!;
+      const s = defaults(id).uSpacing as unknown as number;
+      expect(onFace([x! - s, y!]) && onFace([x! + s, y!]), id).toBe(true);
+    }
+  });
+
+  it("keep make-up to skin, and lay a shade's hue over the picture's own lightness", () => {
+    const source = (id: string) => (getEffect(id) as ShaderEffect).source;
+    for (const id of ["beauty-skin-smooth", "beauty-blush", "beauty-eyeshadow", "beauty-highlighter"]) expect(source(id), id).toMatch(/skinLike\(/);
+    for (const id of ["beauty-lip-tint", "beauty-blush", "beauty-eyeshadow"]) expect(source(id), id).toMatch(/tintKeepLight\(/);
+  });
+
+  it("loop their shimmer and sweeps seamlessly, and shine a product with transparency kept", () => {
+    expect(getEffect("beauty-eyeshadow")).toMatchObject({ loop: 4 });
+    expect(getEffect("beauty-highlighter")).toMatchObject({ loop: 4 });
+    expect(getEffect("beauty-retouch-reveal")).toMatchObject({ loop: 6 });
+    expect(getEffect("beauty-product-shine")).toMatchObject({ loop: 3 });
+    expect(effectDefaults(getEffect("beauty-product-shine")!).uImage).toBe(SAMPLE_IMAGES.cutout);
+  });
+
+  it("swipe a lipstick swatch and pop a row of shades, ending as they start", () => {
+    for (const id of ["lipstick-swipe", "swatch-reveal"]) {
+      const effect = getEffect(id) as VectorEffect;
+      expect(effect, id).toMatchObject({ kind: "vector", category: "beauty" });
+      const motion = renderVectorEffect(effect);
+      expect(svgMotionIssues(motion), id).toEqual([]);
+      expect(motion.svg, id).not.toMatch(/\{\{/);
+    }
+    // Shades beyond the count are hidden.
+    const three = renderVectorEffect(getEffect("swatch-reveal") as VectorEffect, { count: 3 });
+    expect(three.svg.match(/opacity="1"/g)?.length).toBe(3);
   });
 });
 
