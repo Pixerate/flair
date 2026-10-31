@@ -995,6 +995,71 @@ export const possessedText: VectorEffect = {
   })(),
 };
 
+/** Rune glow's letter slots. */
+const RUNE_SLOTS = 20;
+
+export const runeGlow: VectorEffect = {
+  kind: "vector",
+  id: "rune-glow",
+  name: "Rune glow",
+  description:
+    "A word carved into dark stone, its letters lighting up one after another with an inner glow as if a spell were being read, pulsing together once all are lit, then fading back into the stone.",
+  category: "horror",
+  tags: ["horror", "occult", "text", "title", "runes", "carved", "glow", "magic", "fantasy"],
+  hold: 700,
+  presets: [
+    { name: "Hellfire", values: { glow: [1, 0.42, 0.1] } },
+    { name: "Elder green", values: { glow: [0.45, 1, 0.6], stone: [0.06, 0.08, 0.07] } },
+    { name: "Marble", values: { stone: [0.85, 0.84, 0.8], carved: [0.55, 0.53, 0.5], glow: [0.3, 0.55, 1] } },
+  ],
+  derived: (v) => {
+    const letters = lettersOf(v.text).slice(0, RUNE_SLOTS);
+    const widths = letters.map((c) => textWidthEm(c) * 1.1);
+    const ems = Math.max(0.6, widths.reduce((a, b) => a + b, 0));
+    const size = Math.min(84, room(v, 360) / ems);
+    const base = 100 + size * 0.35;
+    const stagger = Number(v.stagger);
+    const lit = letters.filter((c) => c.trim()).length;
+    const out: Record<string, string | number> = {
+      ...frame(v, 200 - (ems * size) / 2, ems * size, base, size, glowing([0.05, 0, DESCENT, 0], 0.15)),
+      size: r1(size),
+      base: r1(base),
+      bevel: r1(Math.max(1, size * 0.025)),
+      halo: r1(size * 0.08),
+      pulseAt: Math.round(Math.max(1, lit) * stagger + 300),
+      fadeAt: Math.round(Math.max(1, lit) * stagger + 1500),
+    };
+    let x = 200 - (ems * size) / 2;
+    let k = 0;
+    for (let i = 0; i < RUNE_SLOTS; i++) {
+      const w = (widths[i] ?? 0) * size;
+      const c = letters[i]?.trim() ?? "";
+      out[`c${i}`] = c;
+      out[`x${i}`] = r1(x + w / 2);
+      out[`d${i}`] = Math.round(k * stagger);
+      if (c) k += 1;
+      x += w;
+    }
+    return out;
+  },
+  motion: {
+    svg: `<svg viewBox="{{viewBox}}" overflow="{{overflow}}" data-overhang="{{overhang}}"><!-- {{text: text default='NOX AETERNA' label='Text'}} {{stone: color default=#17151A label='Stone'}} {{carved: color default=#0A090C label='Carving'}} {{edge: color default=#3B3740 label='Carved edge'}} {{glow: color default=#7FD4FF label='Glow'}} {{stagger: float min=40 max=400 default=140 step=10 label='Ms between letters'}} ${typeface(`'Cinzel', 'Trajan Pro', Georgia, serif`, 700)} --><rect width="400" height="200" fill="{{stone}}" opacity="{{backdrop}}"/><g id="runes">${Array.from(
+      { length: RUNE_SLOTS },
+      (_, i) =>
+        `<text x="{{x${i}}}" y="{{base}}" dx="{{bevel}}" dy="{{bevel}}" text-anchor="middle" font-family="{{font}}" font-size="{{size}}" font-weight="{{weight}}" fill="{{edge}}">{{c${i}}}</text><text x="{{x${i}}}" y="{{base}}" text-anchor="middle" font-family="{{font}}" font-size="{{size}}" font-weight="{{weight}}" fill="{{carved}}">{{c${i}}}</text><text id="g${i}" x="{{x${i}}}" y="{{base}}" text-anchor="middle" font-family="{{font}}" font-size="{{size}}" font-weight="{{weight}}" fill="{{glow}}" stroke="{{glow}}" stroke-width="{{halo}}" stroke-opacity="0.35" stroke-linejoin="round" opacity="0">{{c${i}}}</text>`,
+    ).join("")}</g></svg>`,
+    animate: [
+      // Each letter kindles in turn, flaring a little past full before it settles.
+      ...Array.from({ length: RUNE_SLOTS }, (_, i): SvgAnimation[] => [
+        { id: `g${i}`, attrs: { opacity: [0, 1] }, delay: n(`d${i}`), ms: 260, ease: "out" },
+      ]).flat(),
+      // All of them pulse together, then sink back into the stone.
+      { id: "runes", attrs: { opacity: [1, 0.55] }, delay: n("pulseAt"), ms: 300, repeat: 2, alternate: true },
+      ...Array.from({ length: RUNE_SLOTS }, (_, i): SvgAnimation => ({ id: `g${i}`, attrs: { opacity: [1, 0] }, delay: n("fadeAt"), ms: 700, ease: "in-out" })),
+    ],
+  },
+};
+
 export const textEffects: VectorEffect[] = [
   typewriter,
   scrambleText,
@@ -1013,4 +1078,5 @@ export const textEffects: VectorEffect[] = [
   textOnPath,
   circleText,
   possessedText,
+  runeGlow,
 ];

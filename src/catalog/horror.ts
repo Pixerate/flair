@@ -1,4 +1,4 @@
-import type { SvgMotion } from "../vector/motion.js";
+import type { SvgAnimation, SvgMotion } from "../vector/motion.js";
 import { after, fit, holdControl, holds, ms, outTimes, r1, SANS } from "./broadcast.js";
 import type { VectorEffect } from "./types.js";
 
@@ -84,5 +84,74 @@ export const emergencyBroadcast: VectorEffect = {
   motion: emergencyBroadcastMotion,
 };
 
+/** Poltergeist's interface pieces: where each rests (its middle), how high it lifts and which way it tips. */
+const PIECES = [
+  { id: "poltergeistCard", x: 150, y: 140, lift: 70, tip: -9 },
+  { id: "poltergeistButton", x: 300, y: 205, lift: 55, tip: 12 },
+  { id: "poltergeistAvatar", x: 300, y: 95, lift: 85, tip: -18 },
+  { id: "poltergeistToggle", x: 125, y: 240, lift: 45, tip: 7 },
+] as const;
+
+/** When the pieces start trembling, lift, are dropped and when everything has settled (ms). */
+const TREMBLE_AT = 400;
+const LIFT_AT = 900;
+const SLAM_AT = 3000;
+
+const at = (x: number, y: number, r = 0) => `translate(${x} ${y}) rotate(${r})`;
+
+export const poltergeist: VectorEffect = {
+  kind: "vector",
+  id: "poltergeist",
+  name: "Poltergeist",
+  description:
+    "An app screen where something unseen takes hold: a card, a button, an avatar and a toggle tremble, lift off and wobble in the air, then slam back down at once, shaking the screen and puffing up dust.",
+  category: "horror",
+  tags: ["horror", "spectral", "poltergeist", "ui", "haunted", "shake", "levitate", "card"],
+  hold: 900,
+  presets: [
+    { name: "Dark mode", values: { background: [0.07, 0.08, 0.1], surface: [0.14, 0.15, 0.19], ink: [0.9, 0.92, 0.96], accent: [0.55, 0.45, 1] } },
+    { name: "Violent", values: { amount: 1.8 } },
+    { name: "Unsettled", values: { amount: 0.4 } },
+  ],
+  derived: (v) => {
+    const a = Number(v.amount);
+    return Object.fromEntries(
+      PIECES.flatMap((piece, i) => [
+        [`up${i}`, at(piece.x, r1(piece.y - piece.lift * a), r1(piece.tip * a))],
+        [`wob${i}`, at(r1(piece.x + 14 * a), r1(piece.y - piece.lift * a - 10 * a), r1(piece.tip * a + 16 * a))],
+      ]),
+    );
+  },
+  motion: (() => {
+    const rest = (i: number) => at(PIECES[i]!.x, PIECES[i]!.y);
+    const shadow = (i: number, w: number) =>
+      `<ellipse id="poltergeistShadow${i}" cx="${PIECES[i]!.x}" cy="${PIECES[i]!.y + w}" rx="${w * 1.3}" ry="6" fill="#000000" opacity="0.12" transform="translate(${PIECES[i]!.x} ${PIECES[i]!.y + w}) scale(1) translate(-${PIECES[i]!.x} -${PIECES[i]!.y + w})"/>`;
+    const dust = (i: number, w: number) =>
+      [-1, 1].map((side, k) => `<circle id="poltergeistDust${i}${k}" cx="${PIECES[i]!.x + side * w}" cy="${PIECES[i]!.y + w * 0.6}" r="0" fill="{{ink}}" opacity="0"/>`).join("");
+    const halfH = [58, 20, 30, 16];
+    const halfW = [90, 50, 30, 30];
+    return {
+      svg: `<svg viewBox="0 0 400 300"><!-- {{title: text default='Untitled' label='Card title'}} {{label: text default='Submit' label='Button label'}} {{background: color default=#F3F4F6 label='Background'}} {{surface: color default=#FFFFFF label='Surface'}} {{ink: color default=#1F2937 label='Ink'}} {{accent: color default=#6366F1 label='Accent'}} {{amount: float min=0.2 max=2 default=1 step=0.1 label='Intensity'}} {{font: text default='system-ui, sans-serif' label='Font'}} --><rect width="400" height="300" fill="{{background}}"/><g id="poltergeistScreen" transform="translate(0 0)" font-family="{{font}}">${PIECES.map((_, i) => shadow(i, halfH[i]!)).join("")}${PIECES.map((_, i) => dust(i, halfW[i]!)).join("")}<g id="poltergeistCard" transform="${rest(0)}"><rect x="-90" y="-58" width="180" height="116" rx="12" fill="{{surface}}" stroke="{{ink}}" stroke-opacity="0.12"/><rect x="-74" y="-42" width="148" height="44" rx="6" fill="{{accent}}" opacity="0.18"/><text x="-74" y="24" font-size="15" font-weight="700" fill="{{ink}}">{{title}}</text><rect x="-74" y="34" width="110" height="7" rx="3.5" fill="{{ink}}" opacity="0.18"/></g><g id="poltergeistButton" transform="${rest(1)}"><rect x="-50" y="-20" width="100" height="40" rx="20" fill="{{accent}}"/><text x="0" y="5" text-anchor="middle" font-size="14" font-weight="700" fill="#FFFFFF">{{label}}</text></g><g id="poltergeistAvatar" transform="${rest(2)}"><circle r="30" fill="{{surface}}" stroke="{{ink}}" stroke-opacity="0.12"/><circle cy="-7" r="10" fill="{{ink}}" opacity="0.35"/><path d="M-18 20 Q0 2 18 20" fill="{{ink}}" opacity="0.35"/></g><g id="poltergeistToggle" transform="${rest(3)}"><rect x="-30" y="-16" width="60" height="32" rx="16" fill="{{accent}}"/><circle cx="14" r="12" fill="#FFFFFF"/></g></g></svg>`,
+      animate: [
+        ...PIECES.flatMap((piece, i): SvgAnimation[] => [
+          // A tremble, then it lifts and tips; wobbles in the air; and is dropped.
+          { id: piece.id, attrs: { transform: [rest(i), at(piece.x + 2, piece.y - 1, 2)] }, delay: TREMBLE_AT + i * 60, ms: LIFT_AT - TREMBLE_AT - i * 60, behavior: { type: "oscillate", count: 7 + i } },
+          { id: piece.id, attrs: { transform: [rest(i), `{{up${i}}}`] }, delay: LIFT_AT + i * 90, ms: 650, ease: "out" },
+          { id: piece.id, attrs: { transform: [`{{up${i}}}`, `{{wob${i}}}`] }, delay: LIFT_AT + 650 + i * 90, ms: SLAM_AT - LIFT_AT - 650 - i * 90, behavior: { type: "wriggle", frequency: 1.6 + 0.3 * i, seed: 5 + i * 11 } },
+          { id: piece.id, attrs: { transform: [`{{up${i}}}`, rest(i)] }, delay: SLAM_AT, ms: 120, ease: [0.55, 0, 1, 0.45] },
+          { id: `poltergeistShadow${i}`, attrs: { opacity: [0.12, 0.04] }, delay: LIFT_AT + i * 90, ms: 650, ease: "out" },
+          { id: `poltergeistShadow${i}`, attrs: { opacity: [0.04, 0.12] }, delay: SLAM_AT, ms: 120 },
+          // Dust puffing out from under it on impact.
+          ...[0, 1].flatMap((k): SvgAnimation[] => [
+            { id: `poltergeistDust${i}${k}`, attrs: { r: [2, 14], opacity: [0.35, 0], cx: [PIECES[i]!.x + (k ? 1 : -1) * halfW[i]!, PIECES[i]!.x + (k ? 1 : -1) * (halfW[i]! + 22)] }, delay: SLAM_AT + 120, ms: 520, ease: "out" },
+          ]),
+        ]),
+        // The whole screen shakes from the impact and settles.
+        { id: "poltergeistScreen", attrs: { transform: ["translate(0 0)", "translate(0 6)"] }, delay: SLAM_AT + 120, ms: 420, behavior: { type: "oscillate", count: 4, decay: 2 } },
+      ],
+    };
+  })(),
+};
+
 /** The horror effects drawn as vectors. */
-export const horrorEffects: VectorEffect[] = [emergencyBroadcast];
+export const horrorEffects: VectorEffect[] = [emergencyBroadcast, poltergeist];

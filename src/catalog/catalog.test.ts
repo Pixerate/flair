@@ -2315,7 +2315,7 @@ describe("promo effects", () => {
 });
 
 describe("horror effects", () => {
-  const IDS = ["vhs-tracking", "night-vision-cam", "signal-lost", "trail-cam", "emergency-broadcast", "ghost-apparition", "ectoplasm-wisps", "spirit-orbs", "possessed-text", "eyes-in-the-dark", "creeping-dark", "shadow-hands", "rust-spread", "mold-bloom", "wither", "peeling-wallpaper", "aged-photo", "film-burn"];
+  const IDS = ["vhs-tracking", "night-vision-cam", "signal-lost", "trail-cam", "emergency-broadcast", "ghost-apparition", "ectoplasm-wisps", "spirit-orbs", "possessed-text", "eyes-in-the-dark", "creeping-dark", "shadow-hands", "rust-spread", "mold-bloom", "wither", "peeling-wallpaper", "aged-photo", "film-burn", "tentacles", "bat-swarm", "passing-silhouette", "poltergeist", "summoning-circle", "rune-glow", "cauldron", "candle-ring"];
 
   it("have a category of their own, browsed with the pictures, and are tagged by kind", () => {
     expect(categoryGroup("horror").name).toBe("Pictures");
@@ -2323,8 +2323,8 @@ describe("horror effects", () => {
     for (const id of IDS) expect(found, id).toContain(id);
     for (const effect of findEffects({ category: "horror" })) expect(effect.tags, effect.id).toContain("horror");
     expect(findEffects({ tags: ["analog-horror"] }).map((e) => e.id).sort()).toEqual(["emergency-broadcast", "night-vision-cam", "signal-lost", "trail-cam", "vhs-tracking"]);
-    expect(findEffects({ tags: ["spectral"] }).map((e) => e.id).sort()).toEqual(["ectoplasm-wisps", "ghost-apparition", "possessed-text", "spirit-orbs"]);
-    expect(findEffects({ category: "horror", tags: ["creature"] }).map((e) => e.id).sort()).toEqual(["creeping-dark", "eyes-in-the-dark", "shadow-hands"]);
+    expect(findEffects({ tags: ["spectral"] }).map((e) => e.id).sort()).toEqual(["ectoplasm-wisps", "ghost-apparition", "poltergeist", "possessed-text", "spirit-orbs"]);
+    expect(findEffects({ category: "horror", tags: ["creature"] }).map((e) => e.id).sort()).toEqual(["bat-swarm", "creeping-dark", "eyes-in-the-dark", "passing-silhouette", "shadow-hands", "tentacles"]);
   });
 
   it("the tape and the camcorder filter video, with a display that can be switched off", () => {
@@ -2419,6 +2419,61 @@ describe("horror effects", () => {
     expect(getEffect("film-burn")).toMatchObject({ video: "stills" });
     for (const id of ["rust-spread", "mold-bloom", "wither", "aged-photo"]) expect(getEffect(id), id).toMatchObject({ video: "filter" });
     expect(effectDefaults(getEffect("film-burn")!, { preset: "Burning open" })).toMatchObject({ uAnimate: false, uProgress: 0.72 });
+  });
+
+  it("the occult set gathers under its tag; the circle and the candles loop over their cycle", () => {
+    expect(findEffects({ category: "horror", tags: ["occult"] }).map((e) => e.id).sort()).toEqual(["candle-ring", "cauldron", "rune-glow", "summoning-circle"]);
+    for (const id of ["summoning-circle", "candle-ring", "passing-silhouette"]) {
+      const effect = getEffect(id)!;
+      if (effect.kind !== "shader") throw new Error("shader expected");
+      expect(effect.loop, id).toBe(effectDefaults(effect).uCycle);
+    }
+    for (const id of ["summoning-circle", "cauldron", "candle-ring", "tentacles", "bat-swarm"]) {
+      expect(effectDefaults(getEffect(id)!, { preset: "Transparent" }).uBackgroundAlpha, id).toBe(0);
+    }
+    for (const id of ["tentacles", "bat-swarm"]) expect(effectInputs(getEffect(id)!).interactions, id).toEqual(expect.arrayContaining(["hover", "pointer"]));
+    expect(getEffect("passing-silhouette")).toMatchObject({ video: "filter" });
+  });
+
+  it("the poltergeist lifts the interface, wobbles it, and slams every piece back where it was", () => {
+    const effect = getEffect("poltergeist")!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    for (const values of <Record<string, unknown>[]>[{}, { title: "", label: "A much longer button label than fits" }, { amount: 2 }, { amount: 0.2 }]) {
+      const motion = renderVectorEffect(effect, { ...effectDefaults(effect), ...values } as never);
+      expect(svgMotionIssues(motion)).toEqual([]);
+      expect(JSON.stringify(motion)).not.toMatch(/\{\{|NaN|undefined|Infinity/);
+    }
+    const motion = renderVectorEffect(effect, effectDefaults(effect));
+    const frame = (ms: number) => svgFrame(motion.animate!, [], ms);
+    const rest = frame(0).get("poltergeistCard")!.attrs.transform;
+    expect(rest).toBe("translate(150 140) rotate(0)");
+    expect(frame(2000).get("poltergeistCard")!.attrs.transform).not.toBe(rest);
+    const end = svgDuration(motion);
+    for (const id of ["poltergeistCard", "poltergeistButton", "poltergeistAvatar", "poltergeistToggle"]) expect(frame(end).get(id)!.attrs.transform, id).toBe(frame(0).get(id)!.attrs.transform);
+    expect(frame(end).get("poltergeistScreen")!.attrs.transform).toBe("translate(0 0)");
+  });
+
+  it("rune glow lights its letters in turn, then lets them sink back into the stone", () => {
+    const effect = getEffect("rune-glow")!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    for (const text of ["NOX AETERNA", "A", "Ｈｅｌｌｏ 🕯 & <you> and some other words"]) {
+      const motion = renderVectorEffect(effect, { text });
+      expect(svgMotionIssues(motion), text).toEqual([]);
+      expect(JSON.stringify(motion), text).not.toMatch(/\{\{|NaN|undefined/);
+    }
+    const motion = renderVectorEffect(effect, effectDefaults(effect));
+    const frame = (ms: number) => svgFrame(motion.animate!, [], ms);
+    const glow = (ms: number, i: number) => Number(frame(ms).get(`g${i}`)!.attrs.opacity);
+    // N lights before X; the space between words is skipped, so A follows X straight on.
+    expect(glow(300, 0)).toBe(1);
+    expect(glow(300, 2)).toBeLessThan(1);
+    expect(glow(1200, 4)).toBe(1);
+    expect(glow(svgDuration(motion), 0)).toBe(0);
+    // Inline, in the surrounding font.
+    const inline = renderVectorEffect(effect, { inline: true, font: "inherit", weight: 300 });
+    expect(inline.svg).toMatch(/^<svg viewBox="[\d.-]+ [\d.-]+ [\d.]+ [\d.]+" overflow="visible"/);
+    expect(inline.svg.match(/font-family="([^"]*)"/g)!.every((f) => f === 'font-family="inherit"')).toBe(true);
+    expect(svgMotionIssues(inline)).toEqual([]);
   });
 
   it("possessed text writhes, lifts letters out of line and snaps them all back", () => {
