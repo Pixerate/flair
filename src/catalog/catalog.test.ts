@@ -2577,6 +2577,36 @@ describe("horror effects", () => {
     expect(Number(svgFrame(candle.animate!, [], 2000).get("candle")!.attrs.opacity)).toBeGreaterThan(0.5);
   });
 
+  it("the last of issue 97: horror loaders, interactions and icons in their own categories", () => {
+    const loaders = ["coffin-loader", "candle-burndown", "ghost-loader", "skeleton-hand-loader"];
+    const icons = ["jack-o-lantern", "bat-flap", "skull-chatter"];
+    const interactions = ["cursor-follow-eyes", "mirror-mismatch", "haunted-hover"];
+    expect(findEffects({ category: "loader", tags: ["horror"] }).map((e) => e.id).sort()).toEqual([...loaders].sort());
+    expect(findEffects({ category: "icon", tags: ["horror"] }).map((e) => e.id).sort()).toEqual([...icons].sort());
+    expect(findEffects({ category: "interaction", tags: ["horror"] }).map((e) => e.id).sort()).toEqual([...interactions].sort());
+    const render = (id: string) => {
+      const effect = getEffect(id)!;
+      if (effect.kind !== "vector") throw new Error("vector expected");
+      return renderVectorEffect(effect, effectDefaults(effect));
+    };
+    // A whole turn ends where it starts.
+    const frameAt = (motion: ReturnType<typeof render>, ms: number) => JSON.stringify([...svgFrame(motion.animate!, [], ms)].sort()).replace(/rotate\(360 /g, "rotate(0 ");
+    for (const id of [...loaders, ...icons]) {
+      const motion = render(id);
+      expect(svgMotionIssues(motion), id).toEqual([]);
+      expect(frameAt(motion, svgDuration(motion)), id).toBe(frameAt(motion, 0));
+      expect(frameAt(motion, svgDuration(motion) / 2), id).not.toBe(frameAt(motion, 0));
+      const prefix = id.replace(/-(\w)/g, (_, c: string) => c.toUpperCase());
+      for (const [, name] of motion.svg.matchAll(/\sid="([^"]+)"/g)) expect(name, id).toMatch(new RegExp(`^${prefix}`));
+    }
+    // The hover flinches away and comes back; the eyes and the mirror follow the pointer, the mirror late.
+    expect(getEffect("haunted-hover")).toMatchObject({ trigger: "hover" });
+    const eyes = getEffect("cursor-follow-eyes")!;
+    expect(eyes).toMatchObject({ transparent: true });
+    expect(effectInputs(eyes).interactions).toEqual(expect.arrayContaining(["hover", "pointer"]));
+    expect(effectInputs(getEffect("mirror-mismatch")!).interactions).toEqual(expect.arrayContaining(["hover", "pointer", "trail"]));
+  });
+
   it("possessed text writhes, lifts letters out of line and snaps them all back", () => {
     const effect = getEffect("possessed-text")!;
     if (effect.kind !== "vector") throw new Error("vector expected");
