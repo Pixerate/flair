@@ -1,96 +1,5 @@
 [
   {
-    "id": "pixel-snake-loader",
-    "name": "Snake loader",
-    "kind": "vector",
-    "category": "loader",
-    "description": "A pixel snake running laps round the edge of a phone-LCD board a cell at a time, eating the food in its path, as a looping loader.",
-    "tags": [
-      "pixel",
-      "retro",
-      "loader",
-      "snake",
-      "game",
-      "lcd",
-      "8-bit",
-      "loop"
-    ],
-    "controls": [
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            199,
-            215,
-            166
-          ]
-        },
-        "l": "Screen",
-        "c": 1,
-        "line": 1
-      },
-      {
-        "n": "body",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            46,
-            59,
-            31
-          ]
-        },
-        "l": "Snake",
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "head",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            20,
-            28,
-            12
-          ]
-        },
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "food",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            46,
-            59,
-            31
-          ]
-        },
-        "c": 1,
-        "line": 4
-      }
-    ],
-    "presets": [
-      "Neon",
-      "Light"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 100,
-    "animated": true,
-    "duration": 2600,
-    "module": "pixel",
-    "addedAt": "2026-10-31T23:28:54.499Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
     "id": "pixel-weather",
     "name": "Pixel weather",
     "kind": "vector",
@@ -189,9 +98,100 @@
     "animated": true,
     "duration": 1840,
     "module": "pixel",
-    "addedAt": "2026-10-31T23:28:54.499Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-10-31T23:29:14Z",
+    "commitHash": "0c8f3a60814ea939e16f1a2d92c9bf13487d9cc5",
+    "order": 572
+  },
+  {
+    "id": "pixel-snake-loader",
+    "name": "Snake loader",
+    "kind": "vector",
+    "category": "loader",
+    "description": "A pixel snake running laps round the edge of a phone-LCD board a cell at a time, eating the food in its path, as a looping loader.",
+    "tags": [
+      "pixel",
+      "retro",
+      "loader",
+      "snake",
+      "game",
+      "lcd",
+      "8-bit",
+      "loop"
+    ],
+    "controls": [
+      {
+        "n": "background",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            199,
+            215,
+            166
+          ]
+        },
+        "l": "Screen",
+        "c": 1,
+        "line": 1
+      },
+      {
+        "n": "body",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            46,
+            59,
+            31
+          ]
+        },
+        "l": "Snake",
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "head",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            20,
+            28,
+            12
+          ]
+        },
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "food",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            46,
+            59,
+            31
+          ]
+        },
+        "c": 1,
+        "line": 4
+      }
+    ],
+    "presets": [
+      "Neon",
+      "Light"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 100,
+    "animated": true,
+    "duration": 2600,
+    "module": "pixel",
+    "addedAt": "2026-10-31T23:29:14Z",
+    "commitHash": "0c8f3a60814ea939e16f1a2d92c9bf13487d9cc5",
+    "order": 571
   },
   {
     "id": "pixel-explosion",
@@ -292,9 +292,9 @@
     "animated": true,
     "duration": 1260,
     "module": "pixel",
-    "addedAt": "2026-10-31T23:28:54.498Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-10-31T23:29:14Z",
+    "commitHash": "0c8f3a60814ea939e16f1a2d92c9bf13487d9cc5",
+    "order": 570
   },
   {
     "id": "transition-pixel-staircase",
