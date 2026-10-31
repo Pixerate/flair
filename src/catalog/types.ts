@@ -316,17 +316,22 @@ const escapeMarkup = (text: string) =>
 /** A vector control as a full `ControlDef`, so editors treat both kinds of effect alike. */
 export function vectorControlDef(control: VectorControl, line = 0): ControlDef {
   const min = control.min ?? 0;
-  return {
+  const max = control.max ?? Math.max(min + 1, 1);
+  const def: ControlDef = {
     name: control.name,
     type: control.type,
     label: control.label ?? control.name,
     color: control.color ?? false,
     min,
-    max: control.max ?? Math.max(min + 1, 1),
+    max,
     step: control.step ?? (control.type === "int" ? 1 : 0.01),
     default: control.default,
     line,
   };
+  if (control.min !== undefined || control.max !== undefined) {
+    def.limits = { ...(control.min !== undefined && { min }), ...(control.max !== undefined && { max }) };
+  }
+  return def;
 }
 
 /** What a vector effect's colour control takes to paint in the surrounding text's colour (CSS `color`). */
@@ -361,7 +366,7 @@ export function renderVectorEffect(
       placeholders.set(control.name, CURRENT_COLOR);
       continue;
     }
-    const check = given === undefined ? undefined : checkControlValue(control, given);
+    const check = given === undefined ? undefined : checkControlValue(control, given, { limits: false });
     filled[control.name] = check?.ok ? check.value : control.default;
     placeholders.set(control.name, written(control, filled[control.name]!));
   }

@@ -892,6 +892,662 @@ ${BACKDROP_CONTROLS}`,
   ),
 };
 
+export const imagePixelSort: ShaderEffect = {
+  kind: "shader",
+  id: "image-pixel-sort",
+  name: "Pixel sort",
+  description: "Glitch-art pixel sorting: runs of pixels between two brightness thresholds are sorted dark to bright, smearing the picture into streaks that shift as the threshold breathes.",
+  category: "retro",
+  video: "filter",
+  tags: ["pixel", "glitch", "image", "pixel-sort", "databending", "streak"],
+  loop: 8,
+  source: glsl(
+    `// Pixel sort: each run of pixels between the thresholds, along the sort direction, sorted by brightness.
+uniform sampler2D uImage;  // @control filter=nearest wrap=clamp default=${SAMPLE_IMAGES.landscape} label="Image"
+uniform int uDirection;    // @control min=0 max=3 default=0 label="Brightest toward (0 down, 1 up, 2 right, 3 left)"
+uniform float uLow;        // @control min=0 max=1 default=0.3 label="Low threshold"
+uniform float uHigh;       // @control min=0 max=1 default=0.95 label="High threshold"
+uniform float uLength;     // @control min=4 max=128 default=64 step=1 label="Longest run (pixels)"
+uniform float uPixel;      // @control min=1 max=8 default=2 step=1 label="Pixel size"
+uniform bool uReverse;     // @control default=false label="Darkest toward instead"
+uniform float uSweep;      // @control min=0 max=0.3 default=0.12 label="Threshold sweep"
+${BACKDROP_CONTROLS}`,
+    HASH,
+    PICTURE,
+    `const int MAX_RUN = 128;
+const int SAMPLES = 8;
+
+float luma(vec3 c) {
+  return dot(c, vec3(0.2126, 0.7152, 0.0722));
+}
+
+vec2 cellUV(vec2 cell) {
+  return (cell + 0.5) * uPixel / iResolution.xy;
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec2 cell = floor(fragCoord / uPixel);
+  vec2 grid = ceil(iResolution.xy / uPixel);
+  vec2 dir = uDirection == 0 ? vec2(0.0, -1.0) : (uDirection == 1 ? vec2(0.0, 1.0) : (uDirection == 2 ? vec2(1.0, 0.0) : vec2(-1.0, 0.0)));
+  // The low threshold breathes, so runs grow, split and merge.
+  float lo = uLow + uSweep * sin(iTime * 6.28318 / 8.0);
+  vec4 here = pictureRGBA(uImage, cellUV(cell));
+  float l = luma(here.rgb);
+  if (l < lo || l > uHigh) {
+    fragColor = here;
+    return;
+  }
+
+  // Runs are cut into segments at most uLength long, staggered per line so the cuts don't line up.
+  float cap = floor(uLength);
+  float line = dot(cell, abs(dir.yx));
+  float t = dot(cell, dir);
+  float phase = floor(hash12(vec2(line, 3.7)) * cap);
+  float segStart = floor((t + phase) / cap) * cap - phase;
+  float segEnd = segStart + cap - 1.0;
+  float back = 0.0;
+  for (int i = 1; i < MAX_RUN; i++) {
+    float s = float(i);
+    vec2 c = cell - dir * s;
+    if (t - s < segStart || c.x < 0.0 || c.y < 0.0 || c.x >= grid.x || c.y >= grid.y) break;
+    float m = luma(picture(uImage, cellUV(c)));
+    if (m < lo || m > uHigh) break;
+    back = s;
+  }
+  float fwd = 0.0;
+  for (int i = 1; i < MAX_RUN; i++) {
+    float s = float(i);
+    vec2 c = cell + dir * s;
+    if (t + s > segEnd || c.x < 0.0 || c.y < 0.0 || c.x >= grid.x || c.y >= grid.y) break;
+    float m = luma(picture(uImage, cellUV(c)));
+    if (m < lo || m > uHigh) break;
+    fwd = s;
+  }
+
+  // Sorting the whole run is too dear per pixel: sort a few evenly spaced samples of it
+  // and read this pixel's place in the run off them.
+  float len = back + fwd;
+  vec3 col[SAMPLES];
+  float key[SAMPLES];
+  for (int k = 0; k < SAMPLES; k++) {
+    float s = floor(-back + len * float(k) / float(SAMPLES - 1) + 0.5);
+    col[k] = picture(uImage, cellUV(cell + dir * s));
+    key[k] = uReverse ? -luma(col[k]) : luma(col[k]);
+  }
+  for (int i = 1; i < SAMPLES; i++) {
+    for (int j = i; j > 0; j--) {
+      if (key[j - 1] <= key[j]) break;
+      float kt = key[j];
+      key[j] = key[j - 1];
+      key[j - 1] = kt;
+      vec3 ct = col[j];
+      col[j] = col[j - 1];
+      col[j - 1] = ct;
+    }
+  }
+  float r = len > 0.0 ? back / len * float(SAMPLES - 1) : 0.0;
+  int a = int(floor(r));
+  int b = min(a + 1, SAMPLES - 1);
+  fragColor = vec4(mix(col[a], col[b], fract(r)), here.a);
+}`,
+  ),
+  presets: [
+    { name: "Waterfall", values: { uDirection: 0, uLow: 0.3, uHigh: 0.95 } },
+    { name: "Sideways", values: { uDirection: 2, uLow: 0.2, uHigh: 0.8, uLength: 128 } },
+    { name: "Highlights only", values: { uLow: 0.6, uHigh: 1, uSweep: 0.08 } },
+  ],
+};
+
+export const imageLedWall: ShaderEffect = {
+  kind: "shader",
+  id: "image-led-wall",
+  name: "LED wall",
+  description: "An image on a stadium LED board: round diodes on a black grid with stepped brightness, soft bloom, sun louvres, the odd dead diode and a rolling scan band.",
+  category: "retro",
+  video: "filter",
+  tags: ["pixel", "led", "image", "screen", "billboard", "stadium", "display"],
+  loop: 5,
+  source: glsl(
+    `// LED wall: each grid cell one round diode lit with the picture's colour there, glowing into its neighbours.
+uniform sampler2D uImage;  // @control filter=nearest wrap=clamp default=${SAMPLE_IMAGES.city} label="Image"
+uniform float uPitch;      // @control min=4 max=40 default=12 step=1 label="LED pitch (px)"
+uniform float uSize;       // @control min=0.2 max=1 default=0.7 label="Diode size"
+uniform float uLevels;     // @control min=2 max=32 default=12 step=1 label="Brightness levels"
+uniform float uBloom;      // @control min=0 max=1.5 default=0.6 label="Bloom"
+uniform float uBrightness; // @control min=0.5 max=2 default=1.2 label="Brightness"
+uniform float uDead;       // @control min=0 max=0.1 default=0.01 label="Dead diodes"
+uniform float uFlicker;    // @control min=0 max=1 default=0.3 label="Scan band"
+uniform bool uLouvres;     // @control default=true label="Sun louvres"
+uniform vec3 uBoard;       // @control color default=#0A0A0C label="Board"
+${BACKDROP_CONTROLS}`,
+    HASH,
+    PICTURE,
+    `// The light of the diode in grid cell \`cell\`.
+vec3 diode(vec2 cell) {
+  vec3 c = picture(uImage, (cell + 0.5) * uPitch / iResolution.xy);
+  float steps = uLevels - 1.0;
+  c = floor(c * steps + 0.5) / steps;
+  return hash12(cell + 0.31) < uDead ? vec3(0.0) : c * uBrightness;
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec2 cell = floor(fragCoord / uPitch);
+  vec2 f = fragCoord / uPitch - cell - 0.5;
+  float r = uSize * 0.5;
+  float aa = 1.0 / uPitch;
+
+  // Bloom from this diode and its eight neighbours.
+  vec3 glow = vec3(0.0);
+  for (int y = -1; y <= 1; y++) {
+    for (int x = -1; x <= 1; x++) {
+      vec2 o = vec2(float(x), float(y));
+      vec2 d = f - o;
+      glow += diode(cell + o) * exp(-dot(d, d) / (r * r * 2.5));
+    }
+  }
+  vec3 own = diode(cell);
+  float alpha = pictureRGBA(uImage, (cell + 0.5) * uPitch / iResolution.xy).a;
+  float d = length(f);
+  float disc = smoothstep(r + aa, r - aa, d);
+  // A lens, brightest in the middle; an unlit one still shows as a dim dot.
+  vec3 lens = vec3(0.05) + own * (1.15 - 0.3 * d / r);
+  vec3 col = mix(uBoard, lens, disc) + glow * uBloom * 0.25;
+  // A ledge over each row shading the top of the diode beneath it.
+  if (uLouvres) col = mix(col, uBoard * 0.5, smoothstep(0.36, 0.42, f.y) * 0.85);
+  // The refresh scan a camera catches rolling down the board.
+  float band = abs(fract(fragCoord.y / iResolution.y + iTime * 0.4) - 0.5);
+  col *= 1.0 - uFlicker * 0.3 * smoothstep(0.12, 0.0, band);
+  fragColor = vec4(col, alpha);
+}`,
+  ),
+  presets: [
+    { name: "Fine pitch", values: { uPitch: 6, uSize: 0.8, uLevels: 24, uBloom: 0.4 } },
+    { name: "Old scoreboard", values: { uPitch: 18, uSize: 0.6, uLevels: 4, uDead: 0.04, uBloom: 0.9 } },
+  ],
+};
+
+export const imageSubpixel: ShaderEffect = {
+  kind: "shader",
+  id: "image-subpixel",
+  name: "Subpixel zoom",
+  description: "A macro zoom in and out of a screen: the picture breaks into its pixels and then into glowing red, green and blue subpixels, as LCD stripes, PenTile diamonds or CRT phosphor triads.",
+  category: "retro",
+  video: "filter",
+  tags: ["pixel", "subpixel", "image", "lcd", "screen", "macro", "zoom", "rgb"],
+  loop: 8,
+  source: glsl(
+    `// Subpixel zoom: the picture as a screen's pixels, zoomed until the red, green and blue subpixels show.
+uniform sampler2D uImage;  // @control filter=nearest wrap=clamp default=${SAMPLE_IMAGES.portrait} label="Image"
+uniform int uLayout;       // @control min=0 max=2 default=0 label="Layout (0 LCD stripes, 1 PenTile, 2 CRT triads)"
+uniform float uCell;       // @control min=2 max=12 default=4 step=1 label="Screen pixel (px)"
+uniform bool uAnimate;     // @control default=true label="Animate zoom"
+uniform float uProgress;   // @control min=0 max=1 default=1 label="Zoom (when still)"
+uniform float uMaxZoom;    // @control min=2 max=60 default=24 label="Deepest zoom"
+uniform float uCenterX;    // @control min=0 max=1 default=0.5 label="Zoom centre x"
+uniform float uCenterY;    // @control min=0 max=1 default=0.6 label="Zoom centre y"
+uniform float uGap;        // @control min=0 max=0.6 default=0.25 label="Gap between subpixels"
+${BACKDROP_CONTROLS}`,
+    PICTURE,
+    `// Coverage of a box of half-size h at p, edges softened over aa.
+float box(vec2 p, vec2 h, float aa) {
+  vec2 q = abs(p) - h;
+  return clamp(0.5 - max(q.x, q.y) / aa, 0.0, 1.0);
+}
+
+float disc(vec2 p, float r, float aa) {
+  return clamp(0.5 - (length(p) - r) / aa, 0.0, 1.0);
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  // Starts deep in the subpixels, pulls back to the whole picture by mid-loop, then dives again.
+  float k = uAnimate ? smoothstep(0.15, 0.85, 0.5 + 0.5 * cos(iTime * 6.28318 / 8.0)) : uProgress;
+  float z = exp(log(uMaxZoom) * k);
+  vec2 centre = vec2(uCenterX, uCenterY) * iResolution.xy;
+  vec2 p = (fragCoord - centre) / z + centre;
+  vec2 cell = floor(p / uCell);
+  vec2 f = p / uCell - cell;
+  vec4 pic = pictureRGBA(uImage, (cell + 0.5) * uCell / iResolution.xy);
+  vec3 c = pic.rgb;
+  // One device pixel in cell units, for soft edges.
+  float aa = 1.0 / (z * uCell);
+  float shrink = 1.0 - uGap;
+
+  vec3 sub = vec3(0.0);
+  if (uLayout == 0) {
+    // Three vertical stripes per pixel.
+    float i = min(floor(f.x * 3.0), 2.0);
+    vec3 tint = i < 0.5 ? vec3(1.0, 0.0, 0.0) : (i < 1.5 ? vec3(0.0, 1.0, 0.0) : vec3(0.0, 0.0, 1.0));
+    vec2 q = vec2((fract(f.x * 3.0) - 0.5) / 3.0, f.y - 0.5);
+    float m = box(q, vec2(shrink / 6.0, shrink * 0.5), aa);
+    sub = tint * (0.04 + dot(c, tint) * 2.2) * m;
+  } else if (uLayout == 1) {
+    // PenTile: a red or blue diamond, alternating, beside a small green dot.
+    vec2 q = f - vec2(0.27, 0.5);
+    bool red = mod(cell.x + cell.y, 2.0) < 1.0;
+    vec3 tint = red ? vec3(1.0, 0.0, 0.0) : vec3(0.0, 0.0, 1.0);
+    float diamond = clamp(0.5 - ((abs(q.x) + abs(q.y)) - 0.24 * shrink) / aa, 0.0, 1.0);
+    float green = disc(f - vec2(0.76, 0.5), 0.15 * shrink, aa);
+    sub = tint * (0.04 + dot(c, tint) * 2.4) * diamond + vec3(0.0, 0.04 + c.g * 2.0, 0.0) * green;
+  } else {
+    // CRT: three phosphor dots in a triangle, every other row offset by half a pixel.
+    vec2 g = vec2(p.x / uCell + 0.5 * mod(cell.y, 2.0), p.y / uCell);
+    vec2 tc = floor(g);
+    vec2 tf = g - tc;
+    vec3 tcol = picture(uImage, (tc + 0.5) * uCell / iResolution.xy);
+    float r = 0.21 * shrink;
+    sub = vec3(1.0, 0.0, 0.0) * (0.04 + tcol.r * 2.4) * disc(tf - vec2(0.25, 0.3), r, aa)
+        + vec3(0.0, 1.0, 0.0) * (0.04 + tcol.g * 2.4) * disc(tf - vec2(0.75, 0.3), r, aa)
+        + vec3(0.0, 0.0, 1.0) * (0.04 + tcol.b * 2.4) * disc(tf - vec2(0.5, 0.75), r, aa);
+  }
+  sub = mix(vec3(0.015), min(sub, vec3(1.0)), clamp(length(sub) * 8.0, 0.0, 1.0));
+  // Until the subpixels are a few device pixels wide they blur into the pixel's own colour.
+  float resolve = smoothstep(1.5, 5.0, z * uCell / 3.0);
+  fragColor = vec4(mix(c, sub, resolve), pic.a);
+}`,
+  ),
+  presets: [
+    { name: "LCD", values: { uLayout: 0 } },
+    { name: "Phone OLED", values: { uLayout: 1, uGap: 0.15 } },
+    { name: "CRT", values: { uLayout: 2, uCell: 6, uGap: 0.1 } },
+  ],
+};
+
+export const imageBricks: ShaderEffect = {
+  kind: "shader",
+  id: "image-bricks",
+  name: "Brick mosaic",
+  description: "An image rebuilt from toy bricks with studs, ironed fuse beads or cross-stitch on cloth, in a few flat colours, built up row by row from the bottom.",
+  category: "retro",
+  video: "filter",
+  tags: ["pixel", "image", "mosaic", "bricks", "beads", "cross-stitch", "craft", "toy"],
+  loop: 6,
+  source: glsl(
+    `// Brick mosaic: one brick, bead or stitch per cell, in the picture's colour there, flattened to a few levels.
+uniform sampler2D uImage;  // @control filter=nearest wrap=clamp default=${SAMPLE_IMAGES.portrait} label="Image"
+uniform int uStyle;        // @control min=0 max=2 default=0 label="Style (0 bricks, 1 beads, 2 cross-stitch)"
+uniform float uCell;       // @control min=6 max=48 default=18 step=1 label="Cell size (px)"
+uniform float uLevels;     // @control min=2 max=8 default=4 step=1 label="Colour levels"
+uniform bool uBuild;       // @control default=true label="Build up"
+uniform float uProgress;   // @control min=0 max=1 default=1 label="Built (when still)"
+uniform vec3 uBase;        // @control color default=#2F8F3F label="Baseplate / board / cloth"
+${BACKDROP_CONTROLS}`,
+    HASH,
+    PICTURE,
+    `// A brick seen from above: bevelled edges and a stud with a lit rim. q is -0.5–0.5 in the cell.
+vec3 brick(vec3 c, vec2 q, float aa) {
+  float edge = 0.5 - max(abs(q.x), abs(q.y));
+  vec3 col = c * (1.0 + 0.22 * sign(q.y - q.x) * (1.0 - smoothstep(0.0, 0.07, edge)));
+  col *= mix(0.55, 1.0, smoothstep(0.0, aa * 1.5, edge));
+  float r = 0.3;
+  col *= mix(0.72, 1.0, smoothstep(r - aa, r + aa * 2.0, length(q - vec2(0.05, -0.05))));
+  float d = length(q);
+  float lit = dot(q / max(d, 1e-4), vec2(-0.7071, 0.7071));
+  vec3 top = c * (1.06 + smoothstep(r - 0.08, r, d) * lit * 0.35);
+  return mix(col, top, smoothstep(r + aa, r - aa, d));
+}
+
+// A fuse bead from above: a shaded ring round its hole, on a pegboard.
+vec3 bead(vec3 c, vec2 q, float aa, bool placed) {
+  float d = length(q);
+  vec3 col = uBase * mix(0.8, 1.0, smoothstep(0.0, aa * 2.0, abs(d - 0.36) - 0.12));
+  // The board's peg, under the bead when one is placed.
+  col = mix(col, uBase * 0.82, smoothstep(0.12 + aa, 0.12 - aa, d));
+  if (!placed) return col;
+  float ring = smoothstep(aa, -aa, abs(d - 0.31) - 0.14);
+  float lit = dot(q / max(d, 1e-4), vec2(-0.7071, 0.7071));
+  vec3 b = c * (0.9 + 0.25 * lit * smoothstep(0.17, 0.45, d)) + 0.25 * smoothstep(0.06, 0.0, length(q - vec2(-0.2, 0.2)));
+  return mix(col, b, ring);
+}
+
+// Aida cloth with its holes at the cell corners, and a cross stitch over it when placed.
+vec3 stitch(vec3 c, vec2 q, float aa, bool placed) {
+  vec2 corner = 0.5 - abs(q);
+  vec3 col = uBase * (0.97 - 0.25 * smoothstep(0.1, 0.0, length(corner)));
+  col *= 0.97 + 0.03 * sin((q.x + q.y) * 60.0);
+  if (!placed || max(abs(q.x), abs(q.y)) > 0.44) return col;
+  float w = 0.13;
+  float under = abs(q.x + q.y) * 0.7071;
+  float over = abs(q.x - q.y) * 0.7071;
+  // Twisted floss: bright ridges along each thread, darker at its edges.
+  if (under < w) col = c * (0.78 + 0.12 * sin((q.x - q.y) * 50.0)) * (1.0 - 0.35 * pow(under / w, 2.0));
+  if (over < w) col = c * (0.9 + 0.12 * sin((q.x + q.y) * 50.0)) * (1.0 - 0.35 * pow(over / w, 2.0));
+  return col;
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec2 cell = floor(fragCoord / uCell);
+  vec2 q = fragCoord / uCell - cell - 0.5;
+  float aa = 1.0 / uCell;
+  vec4 pic = pictureRGBA(uImage, (cell + 0.5) * uCell / iResolution.xy);
+  float steps = uLevels - 1.0;
+  vec3 c = floor(pic.rgb * steps + 0.5) / steps;
+
+  // Built row by row from the bottom over 5 s, held a second, then cleared.
+  float rows = ceil(iResolution.y / uCell);
+  float p = uBuild ? clamp(fract(iTime / 6.0) * 1.2, 0.0, 1.0) : uProgress;
+  float order = (cell.y + hash12(cell) * 3.0) / (rows + 3.0);
+  bool placed = order < p || p >= 1.0;
+
+  vec3 col;
+  if (uStyle == 0) col = placed ? brick(c, q, aa) : brick(uBase, q, aa);
+  else if (uStyle == 1) col = bead(c, q, aa, placed);
+  else col = stitch(c, q, aa, placed);
+  // Whole cells, so alpha is cut at a half rather than blended.
+  fragColor = vec4(col, step(0.5, pic.a));
+}`,
+  ),
+  presets: [
+    { name: "Bricks", values: { uStyle: 0, uCell: 18, uBase: [0.18, 0.56, 0.25] } },
+    { name: "Beads", values: { uStyle: 1, uCell: 14, uLevels: 5, uBase: [0.85, 0.85, 0.87] } },
+    { name: "Cross-stitch", values: { uStyle: 2, uCell: 12, uLevels: 4, uBase: [0.95, 0.92, 0.86] } },
+  ],
+};
+
+export const pixelSprites: ShaderEffect = {
+  kind: "shader",
+  id: "pixel-sprites",
+  name: "Pixel sprites",
+  description: "A field of little procedurally generated pixel creatures, each mirror-symmetric with an outline and blinking eyes, bobbing in place and swapping for new ones now and then.",
+  category: "retro",
+  tags: ["pixel", "retro", "sprite", "creature", "procedural", "8-bit", "pattern", "background"],
+  source: glsl(
+    `// Pixel sprites: a grid of slots, each a creature hashed from its slot and generation, mirrored left to right.
+uniform float uPixel;      // @control min=2 max=12 default=5 step=1 label="Pixel size"
+uniform float uDensity;    // @control min=0.1 max=1 default=0.75 label="Density"
+uniform int uPalette;      // @control min=0 max=2 default=0 label="Palette (0 PICO-8, 1 NES, 2 C64)"
+uniform float uChange;     // @control min=0 max=2 default=0.25 label="New sprites per second (per slot)"
+uniform bool uBob;         // @control default=true label="Bob"
+uniform vec3 uBackground;  // @control color default=#1D2B53 label="Background"
+uniform vec3 uOutline;     // @control color default=#000000 label="Outline"`,
+    HASH,
+    paletteArray("PICO8", PICO8),
+    paletteArray("NES", NES),
+    paletteArray("C64", C64),
+    `// Colour i (1–15: index 0 is black in every palette) of the chosen palette.
+vec3 pal(int i) {
+  return uPalette == 1 ? NES[i] : (uPalette == 2 ? C64[i] : PICO8[i]);
+}
+
+// The sprite at pixel p (0–6 each way) for seed s: 0 empty, 1 body, 2 accent, 3 eye.
+int sprite(vec2 p, vec2 s) {
+  if (p.x < 0.0 || p.y < 0.0 || p.x > 6.0 || p.y > 6.0) return 0;
+  float x = min(p.x, 6.0 - p.x);
+  // Eyes on one of the upper rows, never on the centre column.
+  float eyeX = 1.0 + floor(hash12(s + 4.2) * 2.0);
+  float eyeY = 3.0 + floor(hash12(s + 5.3) * 2.0);
+  if (x == eyeX && p.y == eyeY) return 3;
+  float h = hash12(s + vec2(x, p.y) * 3.17);
+  float keep = x == 3.0 ? 0.62 : 0.5;
+  if (h > keep) return 0;
+  return h < 0.1 ? 2 : 1;
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec2 cell = floor(fragCoord / uPixel);
+  vec2 slot = floor(cell / 11.0);
+  vec2 p = cell - slot * 11.0 - 2.0;
+  float gen = floor(iTime * uChange + hash12(slot + 0.7) * 8.0);
+  vec2 s = slot * 1.7 + gen * 31.3;
+  vec3 col = uBackground;
+  if (hash12(s + 9.1) > uDensity) {
+    fragColor = vec4(col, 1.0);
+    return;
+  }
+  // Each sprite hops up a pixel on its own beat.
+  if (uBob) p.y -= step(0.5, fract(iTime * 1.2 + hash12(slot + 2.9)));
+  int v = sprite(p, s);
+  if (v == 0) {
+    bool edge = sprite(p + vec2(1.0, 0.0), s) > 0 || sprite(p - vec2(1.0, 0.0), s) > 0 || sprite(p + vec2(0.0, 1.0), s) > 0 || sprite(p - vec2(0.0, 1.0), s) > 0;
+    fragColor = vec4(edge ? uOutline : col, 1.0);
+    return;
+  }
+  vec3 body = pal(1 + int(hash12(s + 1.3) * 15.0));
+  vec3 accent = pal(1 + int(hash12(s + 2.6) * 15.0));
+  // Blinks now and then: the eye closes to the body colour.
+  bool blink = fract(iTime * 0.4 + hash12(s + 6.1)) < 0.06;
+  if (v == 3) col = blink ? body : vec3(1.0);
+  else col = v == 2 ? accent : body;
+  // Lower rows in shade.
+  if (v != 3 && p.y < 2.0) col *= 0.75;
+  fragColor = vec4(col, 1.0);
+}`,
+  ),
+  presets: [
+    { name: "Arcade", values: { uPalette: 1, uBackground: [0, 0, 0], uOutline: [0.2, 0.2, 0.2] } },
+    { name: "Crowd", values: { uPixel: 3, uDensity: 1, uChange: 0.1 } },
+    { name: "Commodore", values: { uPalette: 2, uBackground: [0.27, 0.25, 0.7], uOutline: [0.12, 0.1, 0.4] } },
+  ],
+};
+
+export const pixelCity: ShaderEffect = {
+  kind: "shader",
+  id: "pixel-city",
+  name: "Pixel city",
+  description: "A night-time pixel skyline in parallax: three rows of towers with windows flicking on and off, blinking aerials, stars, a crescent moon and car lights along the street.",
+  category: "retro",
+  tags: ["pixel", "retro", "city", "skyline", "night", "parallax", "background", "16-bit"],
+  source: glsl(
+    `// Pixel city: layers of hashed towers scrolling whole pixels at different speeds, under a dithered night sky.
+uniform float uPixel;     // @control min=2 max=12 default=4 step=1 label="Pixel size"
+uniform float uSpeed;     // @control min=0 max=4 default=1 label="Scroll speed"
+uniform float uLit;       // @control min=0 max=1 default=0.45 label="Lit windows"
+uniform float uStars;     // @control min=0 max=1 default=0.6 label="Stars"
+uniform bool uTraffic;    // @control default=true label="Traffic"
+uniform vec3 uSkyTop;     // @control color default=#0B0A24 label="Sky top"
+uniform vec3 uSkyBottom;  // @control color default=#4A2466 label="Sky bottom"
+uniform vec3 uFar;        // @control color default=#2A1E4E label="Far towers"
+uniform vec3 uMid;        // @control color default=#1A1434 label="Middle towers"
+uniform vec3 uNear;       // @control color default=#0D0A1C label="Near towers"
+uniform vec3 uWindow;     // @control color default=#FFD27A label="Windows"`,
+    HASH,
+    BAYER,
+    `// A tower layer: whether cell (x, y) is in a tower, and its slot, left edge, width and height.
+// Towers stand in slots w wide, each a few pixels narrower than its slot so gaps show.
+bool tower(float x, float y, float w, float layer, float lo, float hi, float ground, float rows, out vec4 info) {
+  float slot = floor(x / w);
+  float lx = x - slot * w;
+  float width = w - 1.0 - floor(hash12(vec2(slot, layer + 5.0)) * 3.0);
+  float h = ground + floor(rows * mix(lo, hi, hash12(vec2(slot, layer))));
+  info = vec4(slot, lx, width, h);
+  return lx < width && y < h;
+}
+
+// Whether a window is lit: each switches on or off every few seconds on its own clock.
+bool lit(vec3 id) {
+  float clock = floor(iTime * 0.4 + hash12(id.xy + id.z * 7.7) * 10.0);
+  return hash12(id.xy * 1.3 + vec2(id.z, clock)) < uLit;
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec2 cell = floor(fragCoord / uPixel);
+  float rows = max(floor(iResolution.y / uPixel), 1.0);
+  float cols = max(floor(iResolution.x / uPixel), 1.0);
+  float t = iTime * uSpeed;
+  float y = cell.y;
+  float sy = y / rows;
+  float ground = max(3.0, floor(rows * 0.06));
+
+  // Sky in eight dithered bands, with twinkling stars and a crescent moon.
+  float band = clamp(floor(sy * 8.0 + (bayer4(cell) - 0.5) * 0.9), 0.0, 7.0) / 7.0;
+  vec3 col = mix(uSkyBottom, uSkyTop, band);
+  if (sy > 0.35 && hash12(cell) > 1.0 - 0.02 * uStars)
+    col = mix(col, vec3(1.0), 0.45 + 0.55 * step(0.5, hash12(cell + floor(iTime * 1.5))));
+  vec2 moon = floor(vec2(cols * 0.8, rows * 0.8));
+  float r = max(3.0, floor(rows * 0.07));
+  vec2 dm = cell - moon;
+  vec2 bite = dm - vec2(floor(r * 0.6), floor(r * 0.3));
+  if (dot(dm, dm) <= r * r + r && dot(bite, bite) > r * r) col = vec3(0.98, 0.94, 0.8);
+
+  vec4 info;
+  // Far towers: flat silhouettes with a few lit windows.
+  float fx = cell.x + floor(t * 2.0);
+  if (tower(fx, y, 9.0, 1.0, 0.25, 0.55, ground, rows, info)) {
+    col = uFar;
+    if (mod(info.y, 2.0) == 1.0 && mod(y, 2.0) == 0.0 && lit(vec3(info.x, info.y, y)) && hash12(vec2(info.y, y) + info.x) < 0.3)
+      col = mix(uFar, uWindow, 0.55);
+  }
+  // Middle towers: rows of one-by-two windows.
+  float mx = cell.x + floor(t * 5.0);
+  if (tower(mx, y, 13.0, 2.0, 0.15, 0.42, ground, rows, info)) {
+    col = uMid;
+    bool inside = info.y >= 1.0 && info.y <= info.z - 2.0 && y >= ground + 2.0 && y <= info.w - 3.0;
+    if (inside && mod(info.y, 2.0) == 1.0 && mod(y - ground - 2.0, 3.0) < 2.0 && lit(vec3(info.x * 3.1, info.y, floor((y - ground) / 3.0))))
+      col = uWindow * 0.85;
+  }
+  // Near towers: two-by-two windows, some cooler, and an aerial on top with a blinking light.
+  float nx = cell.x + floor(t * 10.0);
+  bool near = tower(nx, y, 18.0, 3.0, 0.08, 0.3, ground, rows, info);
+  float aerial = floor(info.z * 0.5);
+  bool hasAerial = hash12(vec2(info.x, 11.0)) > 0.55;
+  if (near) {
+    col = uNear;
+    vec2 w = vec2(info.y - 1.0, y - ground - 2.0);
+    vec2 wc = floor(w / 3.0);
+    bool inside = info.y >= 1.0 && info.y <= info.z - 2.0 && y >= ground + 2.0 && y <= info.w - 3.0;
+    if (inside && mod(w.x, 3.0) < 2.0 && mod(w.y, 3.0) < 2.0 && lit(vec3(info.x * 5.3 + wc.x, wc.y, 3.0)))
+      col = hash12(wc + info.x) < 0.2 ? mix(uWindow, vec3(0.6, 0.85, 1.0), 0.7) : uWindow;
+  } else if (hasAerial && info.y == aerial && y >= info.w && y < info.w + 5.0) {
+    col = uNear;
+    if (y == info.w + 4.0 && fract(iTime * 0.8 + hash12(vec2(info.x, 12.0))) < 0.5) col = vec3(1.0, 0.2, 0.15);
+  }
+
+  // The street: tail lights going left in the far lane, headlights going right in the near.
+  if (y < ground) {
+    col = uNear * 0.6;
+    if (uTraffic && y == 2.0) {
+      float x = cell.x + floor(t * 16.0 + iTime * 8.0);
+      if (mod(x, 23.0) < 2.0 && hash12(vec2(floor(x / 23.0), 1.0)) > 0.4) col = vec3(1.0, 0.15, 0.1);
+    }
+    if (uTraffic && y == 1.0) {
+      float x = cell.x - floor(iTime * 14.0) + floor(t * 10.0);
+      if (mod(x, 29.0) < 2.0 && hash12(vec2(floor(x / 29.0), 2.0)) > 0.4) col = vec3(1.0, 0.95, 0.7);
+    }
+  }
+  fragColor = vec4(col, 1.0);
+}`,
+  ),
+  presets: [
+    { name: "Neon", values: { uSkyTop: [0.02, 0.02, 0.08], uSkyBottom: [0.55, 0.1, 0.45], uWindow: [0.3, 0.95, 1], uFar: [0.2, 0.08, 0.3] } },
+    {
+      name: "Dusk",
+      values: { uSkyTop: [0.18, 0.2, 0.45], uSkyBottom: [0.98, 0.55, 0.35], uFar: [0.45, 0.3, 0.45], uMid: [0.25, 0.17, 0.3], uNear: [0.12, 0.08, 0.16], uLit: 0.25, uStars: 0 },
+    },
+  ],
+};
+
+export const screenMelt: ShaderEffect = {
+  kind: "shader",
+  id: "transition-screen-melt",
+  name: "Screen melt",
+  description: "The classic shooter's screen melt: the old picture's columns slide down off the screen at ragged, staggered speeds, uncovering the next one. Loops back and forth; or turn Animate off and set Progress.",
+  category: "transition",
+  video: "transition",
+  tags: ["transition", "pixel", "image", "retro", "doom", "melt", "slideshow"],
+  loop: 4,
+  source: glsl(
+    `// Screen melt: each column of the old picture drops away after its own delay, falling faster as it goes.
+uniform sampler2D uFrom;   // @control filter=nearest wrap=clamp default=${SAMPLE_IMAGES.landscape} label="From image"
+uniform sampler2D uTo;     // @control filter=nearest wrap=clamp default=${SAMPLE_IMAGES.city} label="To image"
+uniform bool uAnimate;     // @control default=true label="Animate"
+uniform float uProgress;   // @control min=0 max=1 default=0.5 label="Progress (when still)"
+uniform float uColumn;     // @control min=1 max=32 default=6 step=1 label="Column width (px)"
+uniform float uStagger;    // @control min=0 max=1 default=0.4 label="Stagger"
+uniform float uRagged;     // @control min=0 max=1 default=0.4 label="Raggedness"
+uniform float uStep;       // @control min=1 max=16 default=4 step=1 label="Drop step (px)"
+${BACKDROP_CONTROLS}`,
+    HASH,
+    NOISE,
+    PICTURE,
+    `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  float p = uAnimate ? smoothstep(0.05, 0.95, 0.5 - 0.5 * cos(iTime * 6.28318 / 4.0)) : uProgress;
+  float column = floor(fragCoord.x / uColumn);
+  // Neighbouring columns start close together, with some jitter on top, like the original's random walk.
+  float delay = mix(vnoise(vec2(column * 0.12, 1.3)), hash12(vec2(column, 2.0)), uRagged) * uStagger;
+  float local = clamp(p * (1.0 + uStagger) - delay, 0.0, 1.0);
+  // Each column speeds up as it falls, moving in whole steps.
+  float drop = floor(local * local * iResolution.y / uStep) * uStep;
+  float from = fragCoord.y + drop;
+  vec2 res = iResolution.xy;
+  fragColor = local >= 1.0 || from >= res.y ? pictureRGBA(uTo, fragCoord / res) : pictureRGBA(uFrom, vec2(fragCoord.x, from) / res);
+}`,
+  ),
+};
+
+export const pixelStaircase: ShaderEffect = {
+  kind: "shader",
+  id: "transition-pixel-staircase",
+  name: "Pixel block wipe",
+  description: "An 8-bit block wipe: big squares grow in steps to cover the picture in a diagonal, spiral, closing-iris or random order, then shrink away to show the next one. Loops back and forth; or turn Animate off and set Progress.",
+  category: "transition",
+  video: "transition",
+  tags: ["transition", "pixel", "image", "retro", "8-bit", "wipe", "iris", "slideshow"],
+  loop: 4,
+  source: glsl(
+    `// Pixel block wipe: a grid of blocks, each growing in steps after its turn in the order comes, then shrinking.
+uniform sampler2D uFrom;   // @control filter=nearest wrap=clamp default=${SAMPLE_IMAGES.landscape} label="From image"
+uniform sampler2D uTo;     // @control filter=nearest wrap=clamp default=${SAMPLE_IMAGES.city} label="To image"
+uniform bool uAnimate;     // @control default=true label="Animate"
+uniform float uProgress;   // @control min=0 max=1 default=0.3 label="Progress (when still)"
+uniform int uPattern;      // @control min=0 max=3 default=0 label="Order (0 diagonal, 1 spiral, 2 iris, 3 random)"
+uniform float uBlock;      // @control min=8 max=160 default=48 step=1 label="Block size (px)"
+uniform float uSpread;     // @control min=0 max=0.9 default=0.6 label="Spread"
+uniform float uSteps;      // @control min=1 max=8 default=4 step=1 label="Growth steps"
+uniform bool uReverse;     // @control default=false label="Clear in reverse order"
+uniform vec3 uFill;        // @control color default=#000000 label="Block colour"
+${BACKDROP_CONTROLS}`,
+    HASH,
+    PICTURE,
+    `// When block b of a g-block grid takes its turn, 0–1.
+float order(vec2 b, vec2 g) {
+  if (uPattern == 0) return (b.x + (g.y - 1.0 - b.y)) / max(g.x + g.y - 2.0, 1.0);
+  if (uPattern == 1) {
+    float ring = min(min(b.x, b.y), min(g.x - 1.0 - b.x, g.y - 1.0 - b.y));
+    float rings = floor((min(g.x, g.y) + 1.0) / 2.0);
+    vec2 d = b - (g - 1.0) * 0.5;
+    float turn = fract(atan(d.y, d.x) / 6.28318 + 0.25);
+    return clamp((ring + turn) / rings, 0.0, 1.0);
+  }
+  if (uPattern == 2) return clamp(1.0 - length(b + 0.5 - g * 0.5) / length(g * 0.5), 0.0, 1.0);
+  return hash12(b + 0.5);
+}
+
+// How far block growth has got, in uSteps whole steps, at phase u for a block whose turn is o.
+float grown(float u, float o) {
+  float w = min(uSpread, 0.9);
+  float k = clamp((u - o * w) / (1.0 - w), 0.0, 1.0);
+  return floor(k * uSteps) / uSteps;
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  float p = uAnimate ? smoothstep(0.05, 0.95, 0.5 - 0.5 * cos(iTime * 6.28318 / 4.0)) : uProgress;
+  vec2 g = ceil(iResolution.xy / uBlock);
+  vec2 b = floor(fragCoord / uBlock);
+  vec2 f = fragCoord / uBlock - b - 0.5;
+  float m = max(abs(f.x), abs(f.y));
+  float o = order(b, g);
+  vec2 uv = fragCoord / iResolution.xy;
+  bool covered;
+  vec4 under;
+  if (p < 0.5) {
+    float k = grown(p * 2.0, o);
+    covered = k >= 1.0 || m < k * 0.5;
+    under = pictureRGBA(uFrom, uv);
+  } else {
+    float k = grown(p * 2.0 - 1.0, uReverse ? 1.0 - o : o);
+    covered = k <= 0.0 || m < (1.0 - k) * 0.5;
+    under = pictureRGBA(uTo, uv);
+  }
+  fragColor = covered ? vec4(uFill, 1.0) : under;
+}`,
+  ),
+  presets: [
+    { name: "Diagonal", values: { uPattern: 0 } },
+    { name: "Spiral", values: { uPattern: 1, uBlock: 64, uReverse: true } },
+    { name: "Level complete", values: { uPattern: 2, uBlock: 24, uReverse: true, uSteps: 2 } },
+    { name: "Scatter", values: { uPattern: 3, uBlock: 32, uSpread: 0.85 } },
+  ],
+};
+
 /** Retro and pixel graphics: limited palettes, chunky pixels, demoscene and arcade looks. */
 export const pixelShaders: ShaderEffect[] = [
   image8bit,
@@ -904,4 +1560,12 @@ export const pixelShaders: ShaderEffect[] = [
   loadingStripes,
   pixelWater,
   pixelDissolve,
+  imagePixelSort,
+  imageLedWall,
+  imageSubpixel,
+  imageBricks,
+  pixelSprites,
+  pixelCity,
+  screenMelt,
+  pixelStaircase,
 ];

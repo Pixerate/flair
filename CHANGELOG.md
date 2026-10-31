@@ -1,5 +1,25 @@
 # @pixerate/flair
 
+## 0.78.0
+
+### Minor Changes
+
+- 0c8f3a6: Add three more pixel effects to the catalog: `pixel-snake-loader` (a snake running laps round a phone-LCD board, eating its food, as a looping loader), `pixel-weather` (16 × 16 pixel-art weather icons: sun, partly cloudy, cloudy, rain, thunder and snow, each animated in steps) and `pixel-explosion` (an 8-bit fireball swelling into a ring of smoke with sparks flying out).
+
+## 0.77.0
+
+### Minor Changes
+
+- d6ca2e3: Add ten pixel effects to the catalog. Image treatments: `image-pixel-sort` (glitch-art pixel sorting between two brightness thresholds), `image-led-wall` (a stadium LED board), `image-subpixel` (a macro zoom down to LCD stripes, PenTile diamonds or CRT phosphor triads) and `image-bricks` (a toy-brick, fuse-bead or cross-stitch mosaic built up row by row). Backgrounds: `pixel-sprites` (procedurally generated pixel creatures) and `pixel-city` (a night skyline in parallax). Transitions: `transition-screen-melt` (the classic shooter's screen melt) and `transition-pixel-staircase` (an 8-bit block wipe in diagonal, spiral, iris or random order). SVG: `rpg-dialog` (a game text box that types out its line) and `led-ticker` (a dot-matrix sign scrolling any text).
+
+## 0.76.0
+
+### Minor Changes
+
+- 7a62a2e: A control's declared `min=` and `max=` are now limits. `checkControlValue` (and with it the editor's `values.set` and keyframes, document checks, the integrations and the CLI) refuses a number beyond them, saying what range the control takes, for example "uAmount takes a number from 0 to 1, not 3.". Before, such values were accepted silently.
+
+  A control that declares no range keeps 0–1 (0–10 for `int`) as its slider range only, and still takes any number. `ControlDef.limits` holds the declared ends. `renderVectorEffect` still draws whatever it is given.
+
 ## 0.75.0
 
 ### Minor Changes

@@ -278,6 +278,24 @@ describe("commands and agent tools", () => {
     // A mistyped value is refused and nothing changes.
     expect(editor.commands.execute("values.set", { values: { thickness: "heavy" } })).toMatchObject({ ok: false, message: expect.stringMatching(/thickness takes a number/) });
     expect(editor.document.values.thickness).toBeUndefined();
+    // So is a value beyond the control's range.
+    expect(editor.commands.execute("values.set", { values: { thickness: 5 } })).toMatchObject({ ok: false, message: expect.stringMatching(/thickness takes a number from 0 to 0\.2/) });
+  });
+
+  it("refuses values beyond a control's declared range, naming it, and changes nothing", async () => {
+    const editor = createEffectEditor({ from: "beauty-blush" });
+    const provider = createEffectToolProvider(editor);
+    const wrong = await callTool(provider, "run_command", { id: "values.set", params: { values: { uAmount: 3 } } });
+    expect(wrong.isError).toBe(true);
+    expect(JSON.stringify(wrong)).toMatch(/uAmount takes a number from 0 to 1, not 3/);
+    expect(editor.document.values.uAmount).toBeUndefined();
+    // All or nothing: one value out of range keeps the others from landing too.
+    expect(editor.commands.execute("values.set", { values: { uDepth: 0.4, uSpacing: 2 } })).toMatchObject({ ok: false, message: expect.stringMatching(/uSpacing takes a number from 0 to 0\.5/) });
+    expect(editor.document.values.uDepth).toBeUndefined();
+    expect(editor.commands.execute("values.set", { values: { uAmount: 0.9 } })).toMatchObject({ ok: true });
+    // Vector controls declared with a range are held to it as well.
+    const vector = createEffectEditor({ from: "swatch-reveal" });
+    expect(vector.commands.execute("values.set", { values: { count: 9 } })).toMatchObject({ ok: false, message: expect.stringMatching(/count takes a number from 1 to 5, not 9/) });
   });
 
   it("lets agents edit vector pictures and see shader compiles", async () => {
