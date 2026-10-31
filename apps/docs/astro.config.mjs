@@ -1,7 +1,6 @@
 import node from "@apphosting/astro-adapter";
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
-import tailwind from '@astrojs/tailwind';
 import svelte from '@astrojs/svelte';
 
 // https://astro.build/config
@@ -17,9 +16,7 @@ export default defineConfig({
         src: './src/assets/logo.svg',
         replacesTitle: false,
       },
-      social: {
-        github: 'https://github.com/Pixerate/flair',
-      },
+      social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/Pixerate/flair' }],
       customCss: ['./src/styles/custom.css'],
       components: {
         Hero: './src/components/StarlightHeroOverride.astro',
@@ -29,40 +26,37 @@ export default defineConfig({
       sidebar: [
         {
           label: 'Start Here',
-          autogenerate: { directory: 'getting-started' },
+          items: [{ autogenerate: { directory: 'getting-started' } }],
         },
         {
           label: 'Catalog & Gallery',
-          autogenerate: { directory: 'catalog' },
+          items: [{ autogenerate: { directory: 'catalog' } }],
         },
         {
           label: 'Shader Engine',
-          autogenerate: { directory: 'shader-engine' },
+          items: [{ autogenerate: { directory: 'shader-engine' } }],
         },
         {
           label: 'Vector & Motion',
-          autogenerate: { directory: 'vector-motion' },
+          items: [{ autogenerate: { directory: 'vector-motion' } }],
         },
         {
           label: 'Directing & Scenes',
-          autogenerate: { directory: 'directing' },
+          items: [{ autogenerate: { directory: 'directing' } }],
         },
         {
           label: 'Editor & Agents',
-          autogenerate: { directory: 'editor-and-agents' },
+          items: [{ autogenerate: { directory: 'editor-and-agents' } }],
         },
         {
           label: 'Frameworks',
-          autogenerate: { directory: 'frameworks' },
+          items: [{ autogenerate: { directory: 'frameworks' } }],
         },
         {
           label: 'Reference',
-          autogenerate: { directory: 'reference' },
+          items: [{ autogenerate: { directory: 'reference' } }],
         },
       ],
-    }),
-    tailwind({
-      applyBaseStyles: false,
     }),
     svelte(),
   ],

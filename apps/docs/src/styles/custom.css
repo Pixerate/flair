@@ -1,4 +1,9 @@
-@tailwind base;
+/* Tailwind's reset sits in a layer below Starlight's (Starlight styles itself in `starlight.*` layers, and an
+   unlayered reset would override them all); its components and utilities stay unlayered, so they win. */
+@layer tailwind-base, starlight;
+@layer tailwind-base {
+  @tailwind base;
+}
 @tailwind components;
 @tailwind utilities;
 
@@ -106,6 +111,13 @@ body {
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+/* Each page opens with its own headline, so Starlight's page title stays a small label above it. */
+h1#_top {
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
 }
 
 /* The splash page drops Starlight's hero padding: ours runs edge to edge, right under the header. */
