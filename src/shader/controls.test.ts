@@ -34,6 +34,7 @@ describe("parseControls", () => {
       step: 0.5,
       default: 1,
       line: 1,
+      limits: { min: 0, max: 4 },
     });
   });
 
@@ -342,6 +343,29 @@ describe("coerceControlValue", () => {
 
 describe("checkControlValue", () => {
   const photo = one("uniform sampler2D uPhoto; // @control");
+
+  it("refuses numbers beyond the limits a control declares, saying what it takes", () => {
+    const amount = one("uniform float uAmount; // @control min=0 max=1 default=0.5");
+    expect(checkControlValue(amount, 1)).toEqual({ ok: true, value: 1 });
+    expect(checkControlValue(amount, 3)).toEqual({ ok: false, message: "uAmount takes a number from 0 to 1, not 3." });
+    expect(checkControlValue(amount, -0.1)).toEqual({ ok: false, message: "uAmount takes a number from 0 to 1, not -0.1." });
+    const blur = one("uniform float uBlur; // @control min=0");
+    expect(checkControlValue(blur, 500)).toEqual({ ok: true, value: 500 });
+    expect(checkControlValue(blur, -1)).toEqual({ ok: false, message: "uBlur takes a number of at least 0, not -1." });
+    const steps = one("uniform int uSteps; // @control min=1 max=8");
+    expect(checkControlValue(steps, 9)).toMatchObject({ ok: false, message: "uSteps takes a number from 1 to 8, not 9." });
+    const at = one("uniform vec2 uAt; // @control min=0 max=1 default=0.5,0.5");
+    expect(checkControlValue(at, [0.2, 0.9])).toEqual({ ok: true, value: [0.2, 0.9] });
+    expect(checkControlValue(at, [0.2, 1.5])).toEqual({ ok: false, message: "uAt takes 2 numbers, each from 0 to 1, not [0.2, 1.5]." });
+  });
+
+  it("leaves a range the declaration does not state to the slider, and draws any value when asked to", () => {
+    const speed = one("uniform float uSpeed; // @control");
+    expect(speed.limits).toBeUndefined();
+    expect(checkControlValue(speed, 7)).toEqual({ ok: true, value: 7 });
+    const amount = one("uniform float uAmount; // @control min=0 max=1");
+    expect(checkControlValue(amount, 3, { limits: false })).toEqual({ ok: true, value: 3 });
+  });
 
   it("tells a value from a message, even for images", () => {
     expect(checkControlValue(photo, "https://example.com/a.png")).toEqual({

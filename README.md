@@ -481,6 +481,8 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 }
 ```
 
+A declared `min=` or `max=` is a limit: `checkControlValue`, the editor's `values.set` and keyframes, and the CLI's `--set` refuse a number beyond it, naming the range. A control that declares neither keeps the default range (0 to 1, or 0 to 10 for `int`) for its slider, and takes any number.
+
 ```ts
 import { ShaderRenderer, ShaderFrames, recordGif, standaloneHtml, parseControls } from "@pixerate/flair";
 

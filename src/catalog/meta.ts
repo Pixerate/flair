@@ -81,7 +81,7 @@ function bytes(value: ControlValue): number[] | undefined {
 const SAMPLE_NAMES = new Map<string, string>(Object.entries(SAMPLE_IMAGES).map(([name, url]) => [url, name]));
 
 export function packControl(c: ControlDef): PackedControl {
-  const { name, type, label, color, min, max, step, default: def, line, texture, ...rest } = c;
+  const { name, type, label, color, min, max, step, default: def, line, texture, limits, ...rest } = c;
   const c255 = color ? bytes(def) : undefined;
   const d = typeof def === "string" && SAMPLE_NAMES.has(def) ? { sample: SAMPLE_NAMES.get(def)! } : c255 ? { c255 } : def;
   const packed: PackedControl = { n: name, t: type, d, ...rest };
@@ -90,6 +90,8 @@ export function packControl(c: ControlDef): PackedControl {
   if (min !== 0) packed.min = min;
   if (max !== (type === "int" ? 10 : 1)) packed.max = max;
   if (step !== (type === "int" ? 1 : (max - min) / 200)) packed.s = step;
+  // Declared limits are the range's own ends: 1 the low one, 2 the high one, 3 both.
+  if (limits) packed.b = (limits.min !== undefined ? 1 : 0) + (limits.max !== undefined ? 2 : 0);
   if (line) packed.line = line;
   if (texture && (texture.filter !== "mipmap" || texture.wrap !== "repeat")) packed.x = texture;
   else if (texture) packed.x = 1;
@@ -97,7 +99,7 @@ export function packControl(c: ControlDef): PackedControl {
 }
 
 export function unpackControl(p: PackedControl): ControlDef {
-  const { n, t, d, l, c, min, max, s, line, x, ...rest } = p;
+  const { n, t, d, l, c, min, max, s, line, x, b, ...rest } = p;
   const lo = (min as number | undefined) ?? 0;
   const hi = (max as number | undefined) ?? (t === "int" ? 10 : 1);
   const control: ControlDef = {
@@ -112,6 +114,7 @@ export function unpackControl(p: PackedControl): ControlDef {
     line: (line as number | undefined) ?? 0,
     ...rest,
   };
+  if (typeof b === "number" && b > 0) control.limits = { ...(b & 1 && { min: lo }), ...(b & 2 && { max: hi }) };
   if (x !== undefined) control.texture = x === 1 ? { filter: "mipmap", wrap: "repeat" } : (x as ControlDef["texture"]);
   return control;
 }

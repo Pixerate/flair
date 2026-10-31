@@ -52,6 +52,12 @@ export interface ControlDef {
   texture?: TextureSettings;
   /** `unit="…"`: what the number is measured in ("pixels", "degrees"), when the label does not say. */
   unit?: string;
+  /**
+   * The bounds the declaration states (`min=`, `max=`), which values may not
+   * pass (see {@link checkControlValue}). A range left to its default (0–1,
+   * 0–10 for `int`) only sizes the slider.
+   */
+  limits?: { min?: number; max?: number };
 }
 
 const DECLARATION =
@@ -211,6 +217,10 @@ export function controlFromDeclaration(name: string, type: ControlType, attribut
     line,
   };
   if (attrs.unit) control.unit = attrs.unit;
+  const declared = (v: string | undefined) => v !== undefined && Number.isFinite(Number(v));
+  if (declared(attrs.min) || declared(attrs.max)) {
+    control.limits = { ...(declared(attrs.min) && { min }), ...(declared(attrs.max) && { max }) };
+  }
   if (type === "sampler2D") {
     const pick = <T extends string>(v: string | undefined, options: readonly T[]): T =>
       options.find((o) => o === v?.toLowerCase()) ?? options[0]!;
@@ -265,10 +275,14 @@ export type ControlCheck = { ok: true; value: ControlValue } | { ok: false; mess
  * Checks a value from outside (an agent's tool call, a URL, a form) against a
  * control. Colours also accept CSS colours (see {@link parseColor}); `int` values are rounded. Images
  * take a URL: `https:`, `http:`, `data:image/…`, `blob:` or a relative path
- * ("" for none).
+ * ("" for none). Numbers beyond the control's declared {@link ControlDef.limits}
+ * are refused, unless `limits: false` (for drawing what was given, as it is).
  */
-export function checkControlValue(control: ControlDef, raw: unknown): ControlCheck {
+export function checkControlValue(control: ControlDef, raw: unknown, options: { limits?: boolean } = {}): ControlCheck {
   const fail = (message: string): ControlCheck => ({ ok: false, message });
+  const { min, max } = options.limits === false ? {} : (control.limits ?? {});
+  const within = (x: number) => (min === undefined || x >= min) && (max === undefined || x <= max);
+  const bounds = min !== undefined && max !== undefined ? `from ${min} to ${max}` : min !== undefined ? `of at least ${min}` : `of at most ${max}`;
   const n = COMPONENTS[control.type];
   if (control.type === "bool") {
     return typeof raw === "boolean"
@@ -292,6 +306,7 @@ export function checkControlValue(control: ControlDef, raw: unknown): ControlChe
     if (typeof raw !== "number" || !Number.isFinite(raw)) {
       return fail(`${control.name} takes a number.`);
     }
+    if (!within(raw)) return fail(`${control.name} takes a number ${bounds}, not ${raw}.`);
     return { ok: true, value: control.type === "int" ? Math.round(raw) : raw };
   }
   if (
@@ -302,6 +317,9 @@ export function checkControlValue(control: ControlDef, raw: unknown): ControlChe
     return fail(
       `${control.name} takes ${n} numbers${control.color ? ' (or a colour like "#77C16A")' : ""}.`,
     );
+  }
+  if (!control.color && !(raw as number[]).every(within)) {
+    return fail(`${control.name} takes ${n} numbers, each ${bounds}, not [${(raw as number[]).join(", ")}].`);
   }
   return { ok: true, value: raw as number[] };
 }
