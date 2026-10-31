@@ -2,7 +2,7 @@
 
 > Visual effects and motion graphics for the web.
 > Source: https://flair.pixerate.com
-> Generated on: 2026-10-31T19:50:30.287Z
+> Generated on: 2026-10-31T20:50:14.332Z
 
 ================================================================================
 
@@ -155,6 +155,7 @@ Flair includes over 300 GLSL ES 3.00 fragment shaders designed for high performa
 - **Fire & Pyrotechnics**: Flame borders, burning text, campfire, fireballs, burning edges.
 - **Holograms**: Scanlines, chromatic aberration, holo projection, HUD displays.
 - **Space & Atmosphere**: Star trails, meteor showers, northern lights, clouds, weather.
+- **Beauty**: Skin smoothing, dewy glow, soft focus, lip tint, blush, eyeshadow, highlighter, product shine.
 - **Distortions & Glitch**: CRT scanlines, pixelation, ripple, chromatic split.
 - **Transitions**: Cross-zooms, light leaks, twister, wipes, dissolve.
 
