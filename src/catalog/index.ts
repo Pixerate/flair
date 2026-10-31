@@ -105,6 +105,8 @@ import { horrorShaders } from "./shaders/horror.js";
 import { decayShaders } from "./shaders/decay.js";
 import { creatureShaders } from "./shaders/creatures.js";
 import { occultShaders } from "./shaders/occult.js";
+import { shockShaders } from "./shaders/shock.js";
+import { goreShaders } from "./shaders/gore.js";
 import { horrorEffects } from "./horror.js";
 import { promoEffects } from "./promo.js";
 import { textEffects } from "./text.js";
@@ -232,6 +234,8 @@ export const SHADER_EFFECTS: readonly ShaderEffect[] = [
   ...decayShaders,
   ...creatureShaders,
   ...occultShaders,
+  ...shockShaders,
+  ...goreShaders,
   ...transitions,
 ];
 
