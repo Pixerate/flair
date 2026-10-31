@@ -1,5 +1,994 @@
 [
   {
+    "id": "skull-chatter",
+    "name": "Skull chatter",
+    "kind": "vector",
+    "category": "icon",
+    "description": "A skull whose jaw chatters open and shut, its eye sockets glowing red for a moment as it does.",
+    "tags": [
+      "icon",
+      "horror",
+      "halloween",
+      "skull",
+      "skeleton",
+      "chatter",
+      "teeth"
+    ],
+    "controls": [
+      {
+        "n": "bone",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            239,
+            232,
+            218
+          ]
+        },
+        "c": 1,
+        "line": 1
+      },
+      {
+        "n": "dark",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            42,
+            34,
+            40
+          ]
+        },
+        "l": "Sockets",
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "glow",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            59,
+            47
+          ]
+        },
+        "l": "Eye glow",
+        "c": 1,
+        "line": 3
+      }
+    ],
+    "presets": [
+      "Gold",
+      "Green glow"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 900,
+    "animated": true,
+    "duration": 1500,
+    "module": "horror",
+    "addedAt": "2026-10-31T19:26:39Z",
+    "commitHash": "1991ec2f5efe1d8cc5a1dcec6e5baf0c5c69f414",
+    "order": 547
+  },
+  {
+    "id": "bat-flap",
+    "name": "Bat flap",
+    "kind": "vector",
+    "category": "icon",
+    "description": "A bat beating its scalloped wings, rising a little with each beat.",
+    "tags": [
+      "icon",
+      "horror",
+      "halloween",
+      "bats",
+      "flap",
+      "wings",
+      "flying"
+    ],
+    "controls": [
+      {
+        "n": "bat",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            28,
+            22,
+            38
+          ]
+        },
+        "c": 1,
+        "line": 1
+      },
+      {
+        "n": "eyes",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            75,
+            62
+          ]
+        },
+        "c": 1,
+        "line": 2
+      }
+    ],
+    "presets": [
+      "Purple",
+      "Light"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 300,
+    "animated": true,
+    "duration": 1320,
+    "module": "horror",
+    "addedAt": "2026-10-31T19:26:39Z",
+    "commitHash": "1991ec2f5efe1d8cc5a1dcec6e5baf0c5c69f414",
+    "order": 546
+  },
+  {
+    "id": "jack-o-lantern",
+    "name": "Jack-o'-lantern",
+    "kind": "vector",
+    "category": "icon",
+    "description": "A carved pumpkin with a candle flickering inside, its face glowing and dimming unevenly and its light breathing round it.",
+    "tags": [
+      "icon",
+      "horror",
+      "halloween",
+      "pumpkin",
+      "jack-o-lantern",
+      "glow",
+      "candle"
+    ],
+    "controls": [
+      {
+        "n": "skin",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            232,
+            112,
+            15
+          ]
+        },
+        "c": 1,
+        "line": 1
+      },
+      {
+        "n": "rib",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            168,
+            72,
+            10
+          ]
+        },
+        "l": "Ribs",
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "stem",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            77,
+            107,
+            42
+          ]
+        },
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "glow",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            213,
+            79
+          ]
+        },
+        "l": "Candlelight",
+        "c": 1,
+        "line": 4
+      }
+    ],
+    "presets": [
+      "Ghostly",
+      "Rotten"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 0,
+    "animated": true,
+    "duration": 2400,
+    "module": "horror",
+    "addedAt": "2026-10-31T19:26:39Z",
+    "commitHash": "1991ec2f5efe1d8cc5a1dcec6e5baf0c5c69f414",
+    "order": 545
+  },
+  {
+    "id": "skeleton-hand-loader",
+    "name": "Skeleton hand loader",
+    "kind": "vector",
+    "category": "loader",
+    "description": "A bony skeleton hand drumming its fingers on a table one after another, little finger to index, waiting impatiently.",
+    "tags": [
+      "loader",
+      "horror",
+      "halloween",
+      "skeleton",
+      "hands",
+      "bones",
+      "waiting",
+      "impatient"
+    ],
+    "controls": [
+      {
+        "n": "bone",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            237,
+            230,
+            214
+          ]
+        },
+        "c": 1,
+        "line": 1
+      },
+      {
+        "n": "shade",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            143,
+            134,
+            118
+          ]
+        },
+        "l": "Shading",
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "table",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            74,
+            58,
+            48
+          ]
+        },
+        "c": 1,
+        "line": 3
+      }
+    ],
+    "presets": [
+      "Dark",
+      "Glow bones"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 400,
+    "animated": true,
+    "duration": 1200,
+    "module": "horror",
+    "addedAt": "2026-10-31T19:26:39Z",
+    "commitHash": "1991ec2f5efe1d8cc5a1dcec6e5baf0c5c69f414",
+    "order": 544
+  },
+  {
+    "id": "ghost-loader",
+    "name": "Ghost loader",
+    "kind": "vector",
+    "category": "loader",
+    "description": "A little ghost floating round in a circle, its hem rippling and fainter copies of it trailing behind, blinking now and then.",
+    "tags": [
+      "loader",
+      "horror",
+      "halloween",
+      "ghost",
+      "spinner",
+      "cute",
+      "waiting"
+    ],
+    "controls": [
+      {
+        "n": "ghost",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            238,
+            242,
+            247
+          ]
+        },
+        "c": 1,
+        "line": 1
+      },
+      {
+        "n": "outline",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            140,
+            149,
+            168
+          ]
+        },
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "eyes",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            30,
+            27,
+            46
+          ]
+        },
+        "c": 1,
+        "line": 3
+      }
+    ],
+    "presets": [
+      "Ectoplasm",
+      "On dark"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 0,
+    "animated": true,
+    "duration": 2000,
+    "module": "horror",
+    "addedAt": "2026-10-31T19:26:39Z",
+    "commitHash": "1991ec2f5efe1d8cc5a1dcec6e5baf0c5c69f414",
+    "order": 543
+  },
+  {
+    "id": "candle-burndown",
+    "name": "Candle burndown",
+    "kind": "vector",
+    "category": "loader",
+    "description": "A candle burning down to a stub as its flame flickers and wax pools at its base, then blowing out in a curl of smoke and fading back to a fresh one.",
+    "tags": [
+      "loader",
+      "horror",
+      "halloween",
+      "candle",
+      "flames",
+      "progress",
+      "waiting"
+    ],
+    "controls": [
+      {
+        "n": "wax",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            239,
+            230,
+            210
+          ]
+        },
+        "c": 1,
+        "line": 1
+      },
+      {
+        "n": "plate",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            75,
+            79,
+            88
+          ]
+        },
+        "l": "Holder",
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "wick",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            42,
+            36,
+            32
+          ]
+        },
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "flame",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            179,
+            71
+          ]
+        },
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "core",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            243,
+            196
+          ]
+        },
+        "l": "Flame core",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "smoke",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            154,
+            160,
+            168
+          ]
+        },
+        "c": 1,
+        "line": 6
+      }
+    ],
+    "presets": [
+      "Black wax",
+      "Witch light"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 0,
+    "animated": true,
+    "duration": 3660,
+    "module": "horror",
+    "addedAt": "2026-10-31T19:26:39Z",
+    "commitHash": "1991ec2f5efe1d8cc5a1dcec6e5baf0c5c69f414",
+    "order": 542
+  },
+  {
+    "id": "coffin-loader",
+    "name": "Coffin loader",
+    "kind": "vector",
+    "category": "loader",
+    "description": "A coffin whose lid jolts, then creaks open to show a pair of eyes in the dark that blink, before it slams shut again in a puff of dust.",
+    "tags": [
+      "loader",
+      "horror",
+      "halloween",
+      "coffin",
+      "vampire",
+      "waiting",
+      "icon"
+    ],
+    "controls": [
+      {
+        "n": "wood",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            90,
+            58,
+            38
+          ]
+        },
+        "c": 1,
+        "line": 1
+      },
+      {
+        "n": "trim",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            201,
+            168,
+            106
+          ]
+        },
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "inside",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            12,
+            10,
+            14
+          ]
+        },
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "eyes",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            59,
+            47
+          ]
+        },
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "dust",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            168,
+            159,
+            148
+          ]
+        },
+        "c": 1,
+        "line": 5
+      }
+    ],
+    "presets": [
+      "Ebony",
+      "Green eyes"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 500,
+    "animated": true,
+    "duration": 3400,
+    "module": "horror",
+    "addedAt": "2026-10-31T19:26:39Z",
+    "commitHash": "1991ec2f5efe1d8cc5a1dcec6e5baf0c5c69f414",
+    "order": 541
+  },
+  {
+    "id": "haunted-hover",
+    "name": "Haunted hover",
+    "kind": "vector",
+    "category": "interaction",
+    "description": "A button that will not be touched: on hover it flinches away from the pointer, tipping and trembling, leaving a ghostly outline where it was; it settles back when the pointer leaves.",
+    "tags": [
+      "interactive",
+      "ui",
+      "hover",
+      "horror",
+      "button",
+      "haunted",
+      "flinch",
+      "micro-interaction"
+    ],
+    "controls": [
+      {
+        "n": "label",
+        "t": "text",
+        "d": "Enter",
+        "line": 1
+      },
+      {
+        "n": "background",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            245,
+            242,
+            238
+          ]
+        },
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "button",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            43,
+            34,
+            51
+          ]
+        },
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "ink",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "l": "Label colour",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "ghost",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            127,
+            168,
+            160
+          ]
+        },
+        "l": "Ghostly outline",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "font",
+        "t": "text",
+        "d": "system-ui, sans-serif",
+        "line": 6
+      }
+    ],
+    "presets": [
+      "Dark",
+      "Polite"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "label",
+          "label": "Label",
+          "holds": "copy",
+          "default": "Enter"
+        },
+        {
+          "name": "font",
+          "label": "Font",
+          "holds": "font",
+          "default": "system-ui, sans-serif"
+        }
+      ],
+      "interactions": [
+        "hover"
+      ],
+      "trigger": "hover",
+      "transparent": false
+    },
+    "hold": 600,
+    "trigger": "hover",
+    "animated": true,
+    "duration": 1540,
+    "module": "horror",
+    "addedAt": "2026-10-31T19:26:39Z",
+    "commitHash": "1991ec2f5efe1d8cc5a1dcec6e5baf0c5c69f414",
+    "order": 540
+  },
+  {
+    "id": "mirror-mismatch",
+    "name": "Mirror mismatch",
+    "kind": "shader",
+    "category": "interaction",
+    "description": "A picture beside its reflection in an old framed mirror; both lean towards the pointer, but the reflection follows half a second late, and every so often it stops following and does something of its own.",
+    "tags": [
+      "interactive",
+      "hover",
+      "horror",
+      "mirror",
+      "reflection",
+      "uncanny",
+      "image"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "line": 4,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uFrame",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            74,
+            54,
+            38
+          ]
+        },
+        "l": "Mirror frame",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uRoom",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            23,
+            19,
+            26
+          ]
+        },
+        "l": "Wall",
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "uGlass",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            185,
+            199,
+            212
+          ]
+        },
+        "l": "Glass tint",
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "uLag",
+        "t": "float",
+        "d": 0.5,
+        "l": "Lag (s)",
+        "min": 0.1,
+        "max": 0.9,
+        "line": 8
+      },
+      {
+        "n": "uOwnMind",
+        "t": "float",
+        "d": 0.5,
+        "l": "Mind of its own",
+        "line": 9
+      },
+      {
+        "n": "uDemo",
+        "t": "bool",
+        "d": true,
+        "l": "Lean while idle",
+        "line": 10
+      }
+    ],
+    "presets": [
+      "Slow",
+      "Obedient",
+      "Gilt frame"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "interactive",
+      "interactions": [
+        "hover",
+        "trail",
+        "pointer"
+      ],
+      "transparent": false
+    },
+    "video": "interactive",
+    "animated": true,
+    "module": "shaders/haunted",
+    "addedAt": "2026-10-31T19:26:39Z",
+    "commitHash": "1991ec2f5efe1d8cc5a1dcec6e5baf0c5c69f414",
+    "order": 539
+  },
+  {
+    "id": "cursor-follow-eyes",
+    "name": "Cursor-follow eyes",
+    "kind": "shader",
+    "category": "interaction",
+    "description": "A row of eyes whose pupils follow the pointer wherever it goes while it hovers, narrowing as it comes close and blinking now and then, wandering on their own while idle; a transparent overlay.",
+    "tags": [
+      "interactive",
+      "hover",
+      "horror",
+      "eyes",
+      "follow",
+      "cursor",
+      "watching",
+      "overlay",
+      "halloween"
+    ],
+    "controls": [
+      {
+        "n": "uWhite",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            242,
+            236,
+            225
+          ]
+        },
+        "l": "Whites",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uIris",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            122,
+            63,
+            176
+          ]
+        },
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uLid",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            27,
+            20,
+            32
+          ]
+        },
+        "l": "Lids",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uEyes",
+        "t": "float",
+        "d": 2,
+        "min": 1,
+        "max": 6,
+        "s": 1,
+        "line": 6
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 0.12,
+        "min": 0.04,
+        "max": 0.3,
+        "line": 7
+      },
+      {
+        "n": "uBlink",
+        "t": "float",
+        "d": 0.5,
+        "l": "Blinking",
+        "line": 8
+      },
+      {
+        "n": "uVeins",
+        "t": "float",
+        "d": 0.4,
+        "l": "Bloodshot",
+        "line": 9
+      },
+      {
+        "n": "uDemo",
+        "t": "bool",
+        "d": true,
+        "l": "Wander while idle",
+        "line": 10
+      },
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            11,
+            10,
+            16
+          ]
+        },
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 0,
+        "l": "Background opacity",
+        "line": 12
+      }
+    ],
+    "presets": [
+      "Dark",
+      "Many",
+      "Cat",
+      "Unblinking"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [
+        "hover",
+        "pointer"
+      ],
+      "transparent": true
+    },
+    "transparent": true,
+    "animated": true,
+    "module": "shaders/haunted",
+    "addedAt": "2026-10-31T19:26:39Z",
+    "commitHash": "1991ec2f5efe1d8cc5a1dcec6e5baf0c5c69f414",
+    "order": 538
+  },
+  {
     "id": "transition-film-burn",
     "name": "Burn through",
     "kind": "shader",
@@ -1348,1365 +2337,5 @@
     "addedAt": "2026-10-31T18:40:44Z",
     "commitHash": "0bcc656aaf3fe8f44fc5434ff31bb87d5fcae20f",
     "order": 528
-  },
-  {
-    "id": "bleeding-text",
-    "name": "Bleeding text",
-    "kind": "vector",
-    "category": "horror",
-    "description": "A title that starts to bleed: blood seeps down through its letters from the top, drips run from its baseline and swell, a few drops fall, then it all fades back to clean letters.",
-    "tags": [
-      "horror",
-      "gore",
-      "text",
-      "title",
-      "blood",
-      "drip",
-      "halloween"
-    ],
-    "controls": [
-      {
-        "n": "text",
-        "t": "text",
-        "d": "BLEED",
-        "line": 1
-      },
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            13,
-            10,
-            11
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "ink",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            238,
-            231,
-            222
-          ]
-        },
-        "l": "Text colour",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "blood",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            138,
-            9,
-            19
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "font",
-        "t": "text",
-        "d": "'Arial Black', 'Helvetica Neue', Impact, system-ui, sans-serif",
-        "line": 5
-      },
-      {
-        "n": "weight",
-        "t": "int",
-        "d": 900,
-        "min": 100,
-        "max": 900,
-        "s": 100,
-        "line": 6
-      },
-      {
-        "n": "inline",
-        "t": "bool",
-        "d": false,
-        "line": 7
-      }
-    ],
-    "presets": [
-      "On white",
-      "Black blood",
-      "Ichor"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "text",
-          "label": "Text",
-          "holds": "copy",
-          "default": "BLEED"
-        },
-        {
-          "name": "font",
-          "label": "Font",
-          "holds": "font",
-          "default": "'Arial Black', 'Helvetica Neue', Impact, system-ui, sans-serif"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 900,
-    "animated": true,
-    "duration": 5201,
-    "module": "text",
-    "addedAt": "2026-10-31T18:25:08Z",
-    "commitHash": "6028c446db98fb99dc88427409bcfdc30019a798",
-    "order": 527
-  },
-  {
-    "id": "blood-moon",
-    "name": "Blood moon",
-    "kind": "shader",
-    "category": "horror",
-    "description": "A crimson full moon hanging over dark hills and a lone dead tree, its cratered face glowing through drifting clouds, the sky round it stained red and pricked with faint stars.",
-    "tags": [
-      "horror",
-      "gore",
-      "moon",
-      "blood-moon",
-      "night",
-      "sky",
-      "space",
-      "halloween",
-      "background"
-    ],
-    "controls": [
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            7,
-            2,
-            9
-          ]
-        },
-        "l": "Sky",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uGlow",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            90,
-            7,
-            16
-          ]
-        },
-        "l": "Red glow",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uMoon",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            210,
-            54,
-            31
-          ]
-        },
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "uMoonSize",
-        "t": "float",
-        "d": 0.17,
-        "min": 0.05,
-        "max": 0.35,
-        "line": 7
-      },
-      {
-        "n": "uClouds",
-        "t": "float",
-        "d": 0.55,
-        "line": 8
-      },
-      {
-        "n": "uStars",
-        "t": "float",
-        "d": 0.5,
-        "line": 9
-      },
-      {
-        "n": "uLand",
-        "t": "bool",
-        "d": true,
-        "l": "Hills and tree",
-        "line": 10
-      },
-      {
-        "n": "uBackgroundAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Background opacity",
-        "line": 111
-      }
-    ],
-    "presets": [
-      "Clear night",
-      "Harvest",
-      "Huge",
-      "Sky only"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "shaders/gore",
-    "addedAt": "2026-10-31T18:25:08Z",
-    "commitHash": "6028c446db98fb99dc88427409bcfdc30019a798",
-    "order": 526
-  },
-  {
-    "id": "claw-slash",
-    "name": "Claw slash",
-    "kind": "shader",
-    "category": "horror",
-    "description": "Claw marks raked across a picture in a fast stroke, each tear ripping open along its length with ragged raw edges and the picture pulled apart round it, holding a moment, then closing up again. Loops; or turn Animate off and set Progress.",
-    "tags": [
-      "horror",
-      "gore",
-      "claw",
-      "slash",
-      "scratch",
-      "tear",
-      "rip",
-      "image"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "portrait"
-        },
-        "line": 3,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uInside",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            20,
-            3,
-            6
-          ]
-        },
-        "l": "Inside the tear",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uEdge",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            138,
-            13,
-            22
-          ]
-        },
-        "l": "Raw edge",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uClaws",
-        "t": "float",
-        "d": 4,
-        "min": 1,
-        "max": 5,
-        "s": 1,
-        "line": 6
-      },
-      {
-        "n": "uAngle",
-        "t": "float",
-        "d": -35,
-        "l": "Angle (°)",
-        "min": -80,
-        "max": 80,
-        "line": 7
-      },
-      {
-        "n": "uWidth",
-        "t": "float",
-        "d": 18,
-        "min": 4,
-        "max": 50,
-        "line": 8
-      },
-      {
-        "n": "uSpacing",
-        "t": "float",
-        "d": 0.085,
-        "min": 0.03,
-        "max": 0.2,
-        "line": 9
-      },
-      {
-        "n": "uCycle",
-        "t": "float",
-        "d": 4,
-        "l": "Cycle (s)",
-        "min": 1.5,
-        "max": 10,
-        "line": 10
-      },
-      {
-        "n": "uAnimate",
-        "t": "bool",
-        "d": true,
-        "line": 11
-      },
-      {
-        "n": "uProgress",
-        "t": "float",
-        "d": 0.4,
-        "l": "Progress (when still)",
-        "line": 12
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 13
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "line": 14
-      }
-    ],
-    "presets": [
-      "Three",
-      "Vertical",
-      "Shadow beast",
-      "Torn open"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "filter",
-    "loop": 4,
-    "animated": true,
-    "duration": 4000,
-    "module": "shaders/gore",
-    "addedAt": "2026-10-31T18:25:08Z",
-    "commitHash": "6028c446db98fb99dc88427409bcfdc30019a798",
-    "order": 525
-  },
-  {
-    "id": "blood-drip-border",
-    "name": "Blood drip border",
-    "kind": "shader",
-    "category": "horror",
-    "description": "A glossy band of blood along the top of the frame, drips creeping down from it at their own pace, swelling at their tips and letting drops fall, then thinning away as new ones start; a transparent overlay.",
-    "tags": [
-      "horror",
-      "gore",
-      "blood",
-      "drip",
-      "border",
-      "overlay",
-      "halloween"
-    ],
-    "controls": [
-      {
-        "n": "uColor",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            126,
-            7,
-            17
-          ]
-        },
-        "l": "Blood",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uShine",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            138,
-            138
-          ]
-        },
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uBand",
-        "t": "float",
-        "d": 0.05,
-        "max": 0.3,
-        "line": 6
-      },
-      {
-        "n": "uDrips",
-        "t": "float",
-        "d": 0.7,
-        "line": 7
-      },
-      {
-        "n": "uLength",
-        "t": "float",
-        "d": 0.5,
-        "l": "Drip length",
-        "min": 0.1,
-        "line": 8
-      },
-      {
-        "n": "uWidth",
-        "t": "float",
-        "d": 1,
-        "l": "Drip width",
-        "min": 0.3,
-        "max": 2.5,
-        "line": 9
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 0.6,
-        "min": 0.1,
-        "max": 2,
-        "line": 10
-      },
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            244,
-            239,
-            230
-          ]
-        },
-        "c": 1,
-        "line": 11
-      },
-      {
-        "n": "uBackgroundAlpha",
-        "t": "float",
-        "d": 0,
-        "l": "Background opacity",
-        "line": 12
-      }
-    ],
-    "presets": [
-      "Paper",
-      "Heavy",
-      "Ink",
-      "Slime"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": true
-    },
-    "transparent": true,
-    "animated": true,
-    "module": "shaders/gore",
-    "addedAt": "2026-10-31T18:25:08Z",
-    "commitHash": "6028c446db98fb99dc88427409bcfdc30019a798",
-    "order": 524
-  },
-  {
-    "id": "heartbeat-vignette",
-    "name": "Heartbeat vignette",
-    "kind": "shader",
-    "category": "horror",
-    "description": "A deep red edge round a picture pulsing like a heartbeat, quickening and closing in as the pointer gets nearer a target spot, from a resting pulse up to at most 120 beats a minute; while idle, it drifts nearer and away on its own.",
-    "tags": [
-      "horror",
-      "shock",
-      "heartbeat",
-      "pulse",
-      "vignette",
-      "tension",
-      "interactive",
-      "hover",
-      "image"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "landscape"
-        },
-        "line": 4,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uColor",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            158,
-            14,
-            24
-          ]
-        },
-        "l": "Pulse",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uTargetX",
-        "t": "float",
-        "d": 0.2,
-        "l": "Target across",
-        "min": -0.5,
-        "max": 0.5,
-        "line": 6
-      },
-      {
-        "n": "uTargetY",
-        "t": "float",
-        "d": 0.08,
-        "l": "Target up",
-        "min": -0.5,
-        "max": 0.5,
-        "line": 7
-      },
-      {
-        "n": "uRest",
-        "t": "float",
-        "d": 60,
-        "l": "Resting pulse (bpm)",
-        "min": 40,
-        "max": 110,
-        "s": 1,
-        "line": 8
-      },
-      {
-        "n": "uFastest",
-        "t": "float",
-        "d": 115,
-        "l": "Fastest pulse (bpm)",
-        "min": 60,
-        "max": 120,
-        "s": 1,
-        "line": 9
-      },
-      {
-        "n": "uStrength",
-        "t": "float",
-        "d": 0.7,
-        "line": 10
-      },
-      {
-        "n": "uDemo",
-        "t": "bool",
-        "d": true,
-        "l": "Drift nearer while idle",
-        "line": 11
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 12
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "line": 13
-      }
-    ],
-    "presets": [
-      "Calm",
-      "Panic",
-      "Cold dread",
-      "Pointer only"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "interactive",
-      "interactions": [
-        "hover",
-        "pointer"
-      ],
-      "transparent": false
-    },
-    "video": "interactive",
-    "animated": true,
-    "module": "shaders/shock",
-    "addedAt": "2026-10-31T18:25:08Z",
-    "commitHash": "6028c446db98fb99dc88427409bcfdc30019a798",
-    "order": 523
-  },
-  {
-    "id": "failing-light",
-    "name": "Failing light",
-    "kind": "shader",
-    "category": "horror",
-    "description": "A picture lit by a failing fluorescent tube overhead: humming, catching, stuttering off and back on and sometimes staying dark a while, the room falling into shadow each time. It switches at most three times a second.",
-    "tags": [
-      "horror",
-      "shock",
-      "fluorescent",
-      "flicker",
-      "light",
-      "lamp",
-      "hallway",
-      "image"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "city"
-        },
-        "line": 3,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uLight",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            228,
-            241,
-            255
-          ]
-        },
-        "l": "Tube light",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uFailing",
-        "t": "float",
-        "d": 0.55,
-        "l": "How badly it fails",
-        "line": 5
-      },
-      {
-        "n": "uDark",
-        "t": "float",
-        "d": 0.22,
-        "l": "Light when off",
-        "max": 0.8,
-        "line": 6
-      },
-      {
-        "n": "uTube",
-        "t": "bool",
-        "d": true,
-        "l": "Show the tube",
-        "line": 7
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 8
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "line": 9
-      }
-    ],
-    "presets": [
-      "Dying",
-      "Mostly fine",
-      "Sodium",
-      "No fixture"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "filter",
-    "animated": true,
-    "module": "shaders/shock",
-    "addedAt": "2026-10-31T18:25:08Z",
-    "commitHash": "6028c446db98fb99dc88427409bcfdc30019a798",
-    "order": 522
-  },
-  {
-    "id": "subliminal-flicker",
-    "name": "Subliminal flicker",
-    "kind": "shader",
-    "category": "horror",
-    "description": "A picture that now and then shows something else for a single frame, a hidden picture laid over it so briefly you are not sure you saw it, never more than once every two seconds.",
-    "tags": [
-      "horror",
-      "shock",
-      "subliminal",
-      "hidden",
-      "flicker",
-      "single-frame",
-      "image"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "city"
-        },
-        "line": 3,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uHidden",
-        "t": "sampler2D",
-        "d": {
-          "sample": "portrait"
-        },
-        "l": "Hidden picture",
-        "line": 4,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uStrength",
-        "t": "float",
-        "d": 0.6,
-        "line": 5
-      },
-      {
-        "n": "uEvery",
-        "t": "float",
-        "d": 5,
-        "l": "Every (s)",
-        "min": 2,
-        "max": 20,
-        "line": 6
-      },
-      {
-        "n": "uLength",
-        "t": "float",
-        "d": 0.045,
-        "l": "Length (s)",
-        "min": 0.02,
-        "max": 0.12,
-        "line": 7
-      },
-      {
-        "n": "uGrain",
-        "t": "float",
-        "d": 0.3,
-        "line": 8
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 9
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "line": 10
-      }
-    ],
-    "presets": [
-      "Barely there",
-      "Unmissable",
-      "Rarely",
-      "Clean"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        },
-        {
-          "name": "uHidden",
-          "label": "Hidden picture",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "filter",
-    "loop": 5,
-    "animated": true,
-    "duration": 5000,
-    "module": "shaders/shock",
-    "addedAt": "2026-10-31T18:25:08Z",
-    "commitHash": "6028c446db98fb99dc88427409bcfdc30019a798",
-    "order": 521
-  },
-  {
-    "id": "scare-cut",
-    "name": "Scare cut",
-    "kind": "shader",
-    "category": "horror",
-    "description": "A jump scare: a picture slowly closing in, then a sudden cut to a stark face for a split second, the frame punching in and shaking before it settles. Once a cycle, never faster than every three seconds. Loops; or turn Animate off and set Moment.",
-    "tags": [
-      "horror",
-      "shock",
-      "jump-scare",
-      "flash",
-      "zoom",
-      "shake",
-      "image"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "landscape"
-        },
-        "line": 3,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uScare",
-        "t": "sampler2D",
-        "d": {
-          "sample": "portrait"
-        },
-        "l": "Scare picture",
-        "line": 4,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uTint",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            230,
-            225,
-            214
-          ]
-        },
-        "l": "Scare tint",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uFlash",
-        "t": "float",
-        "d": 0.8,
-        "l": "Scare brightness",
-        "line": 6
-      },
-      {
-        "n": "uPunch",
-        "t": "float",
-        "d": 0.7,
-        "l": "Zoom punch",
-        "line": 7
-      },
-      {
-        "n": "uShake",
-        "t": "float",
-        "d": 0.7,
-        "line": 8
-      },
-      {
-        "n": "uCycle",
-        "t": "float",
-        "d": 6,
-        "l": "Cycle (s)",
-        "min": 3,
-        "max": 20,
-        "line": 9
-      },
-      {
-        "n": "uAnimate",
-        "t": "bool",
-        "d": true,
-        "line": 10
-      },
-      {
-        "n": "uProgress",
-        "t": "float",
-        "d": 0.62,
-        "l": "Moment (when still)",
-        "line": 11
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 12
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "line": 13
-      }
-    ],
-    "presets": [
-      "Subtle",
-      "Brutal",
-      "Long dread",
-      "The face"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        },
-        {
-          "name": "uScare",
-          "label": "Scare picture",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "stills",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "stills",
-    "loop": 6,
-    "animated": true,
-    "duration": 6000,
-    "module": "shaders/shock",
-    "addedAt": "2026-10-31T18:25:08Z",
-    "commitHash": "6028c446db98fb99dc88427409bcfdc30019a798",
-    "order": 520
-  },
-  {
-    "id": "poltergeist",
-    "name": "Poltergeist",
-    "kind": "vector",
-    "category": "horror",
-    "description": "An app screen where something unseen takes hold: a card, a button, an avatar and a toggle tremble, lift off and wobble in the air, then slam back down at once, shaking the screen and puffing up dust.",
-    "tags": [
-      "horror",
-      "spectral",
-      "poltergeist",
-      "ui",
-      "haunted",
-      "shake",
-      "levitate",
-      "card"
-    ],
-    "controls": [
-      {
-        "n": "title",
-        "t": "text",
-        "d": "Untitled",
-        "l": "Card title",
-        "line": 1
-      },
-      {
-        "n": "label",
-        "t": "text",
-        "d": "Submit",
-        "l": "Button label",
-        "line": 2
-      },
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            243,
-            244,
-            246
-          ]
-        },
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "surface",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "ink",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            31,
-            41,
-            55
-          ]
-        },
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "accent",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            99,
-            102,
-            241
-          ]
-        },
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "amount",
-        "t": "float",
-        "d": 1,
-        "l": "Intensity",
-        "min": 0.2,
-        "max": 2,
-        "s": 0.1,
-        "line": 7
-      },
-      {
-        "n": "font",
-        "t": "text",
-        "d": "system-ui, sans-serif",
-        "line": 8
-      }
-    ],
-    "presets": [
-      "Dark mode",
-      "Violent",
-      "Unsettled"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "title",
-          "label": "Card title",
-          "holds": "copy",
-          "default": "Untitled"
-        },
-        {
-          "name": "label",
-          "label": "Button label",
-          "holds": "copy",
-          "default": "Submit"
-        },
-        {
-          "name": "font",
-          "label": "Font",
-          "holds": "font",
-          "default": "system-ui, sans-serif"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 900,
-    "animated": true,
-    "duration": 4540,
-    "module": "horror",
-    "addedAt": "2026-10-31T18:10:08Z",
-    "commitHash": "968c66214c41a166dc7f05595fef9fea8f9a5ca8",
-    "order": 519
-  },
-  {
-    "id": "rune-glow",
-    "name": "Rune glow",
-    "kind": "vector",
-    "category": "horror",
-    "description": "A word carved into dark stone, its letters lighting up one after another with an inner glow as if a spell were being read, pulsing together once all are lit, then fading back into the stone.",
-    "tags": [
-      "horror",
-      "occult",
-      "text",
-      "title",
-      "runes",
-      "carved",
-      "glow",
-      "magic",
-      "fantasy"
-    ],
-    "controls": [
-      {
-        "n": "text",
-        "t": "text",
-        "d": "NOX AETERNA",
-        "line": 1
-      },
-      {
-        "n": "stone",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            23,
-            21,
-            26
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "carved",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            10,
-            9,
-            12
-          ]
-        },
-        "l": "Carving",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "edge",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            59,
-            55,
-            64
-          ]
-        },
-        "l": "Carved edge",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "glow",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            127,
-            212,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "stagger",
-        "t": "float",
-        "d": 140,
-        "l": "Ms between letters",
-        "min": 40,
-        "max": 400,
-        "s": 10,
-        "line": 6
-      },
-      {
-        "n": "font",
-        "t": "text",
-        "d": "'Cinzel', 'Trajan Pro', Georgia, serif",
-        "line": 7
-      },
-      {
-        "n": "weight",
-        "t": "int",
-        "d": 700,
-        "min": 100,
-        "max": 900,
-        "s": 100,
-        "line": 8
-      },
-      {
-        "n": "inline",
-        "t": "bool",
-        "d": false,
-        "line": 9
-      }
-    ],
-    "presets": [
-      "Hellfire",
-      "Elder green",
-      "Marble"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "text",
-          "label": "Text",
-          "holds": "copy",
-          "default": "NOX AETERNA"
-        },
-        {
-          "name": "font",
-          "label": "Font",
-          "holds": "font",
-          "default": "'Cinzel', 'Trajan Pro', Georgia, serif"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 700,
-    "animated": true,
-    "duration": 4300,
-    "module": "text",
-    "addedAt": "2026-10-31T18:10:08Z",
-    "commitHash": "968c66214c41a166dc7f05595fef9fea8f9a5ca8",
-    "order": 518
   }
 ]
