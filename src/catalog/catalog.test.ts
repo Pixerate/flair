@@ -812,13 +812,15 @@ describe("pixel effects", () => {
     "pixel-sprites",
     "pixel-city",
   ];
-  const VECTORS = ["pixel-text", "coin-spin", "space-invader", "pixel-heart-health", "chomp-loader", "rpg-dialog", "led-ticker"];
+  const VECTORS = ["pixel-text", "coin-spin", "space-invader", "pixel-heart-health", "chomp-loader", "rpg-dialog", "led-ticker", "pixel-snake-loader", "pixel-weather", "pixel-explosion"];
+  /** Pixel effects filed with what they are for rather than under retro. */
+  const ELSEWHERE: Record<string, string> = { "chomp-loader": "loader", "pixel-snake-loader": "loader", "pixel-weather": "icon", "pixel-explosion": "impact" };
 
-  it("are retro (the chomp loader is a loader) and tagged pixel or retro", () => {
+  it("are retro (or filed with the loaders, icons and impacts) and tagged pixel or retro", () => {
     for (const id of [...SHADERS, ...VECTORS]) {
       const effect = getEffect(id)!;
       expect(effect, id).toBeDefined();
-      expect(effect.category, id).toBe(id === "chomp-loader" ? "loader" : "retro");
+      expect(effect.category, id).toBe(ELSEWHERE[id] ?? "retro");
       expect(effect.tags.some((t) => t === "pixel" || t === "retro"), id).toBe(true);
     }
     for (const id of VECTORS) {
@@ -865,6 +867,50 @@ describe("pixel effects", () => {
     expect(arrow.at(-1)!.attrs).toEqual({ opacity: [1, 1] });
     // No speaker, no name tab.
     expect(renderVectorEffect(effect, { speaker: "" }).svg).toContain('<g opacity="0">');
+  });
+
+  it("snake loader steps every segment round the track and eats each piece of food once a lap", () => {
+    const effect = getEffect("pixel-snake-loader")!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    const motion = renderVectorEffect(effect);
+    expect(svgMotionIssues(motion)).toEqual([]);
+    const head = motion.animate!.filter((a) => a.id === "snake0");
+    // A step a cell long each 100 ms, round a 26-cell lap; the hold is the last step back to the start.
+    expect(head).toHaveLength(25);
+    expect(head.map((a) => a.delay)).toEqual(Array.from({ length: 25 }, (_, s) => (s + 1) * 100));
+    expect(effect.hold).toBe(100);
+    const food = motion.animate!.filter((a) => /^snakeFood/.test(a.id!));
+    expect(food.map((a) => [a.id, a.attrs!.opacity![0], a.delay])).toEqual([
+      ["snakeFoodA", 0, 800],
+      ["snakeFoodB", 1, 800],
+      ["snakeFoodB", 0, 2100],
+      ["snakeFoodA", 1, 2100],
+    ]);
+  });
+
+  it("pixel weather shows exactly the chosen kind, clamping out-of-range picks", () => {
+    const effect = getEffect("pixel-weather")!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    for (const [kind, shown] of [[0, 0], [3, 3], [5, 5], [9, 5], [-2, 0]] as const) {
+      const motion = renderVectorEffect(effect, { kind });
+      expect(svgMotionIssues(motion), String(kind)).toEqual([]);
+      expect(motion.svg.match(/display="inline"/g), String(kind)).toHaveLength(1);
+      const groups = motion.svg.split('<g display="').slice(1).map((g) => g.startsWith("inline"));
+      expect(groups.indexOf(true), String(kind)).toBe(shown);
+    }
+  });
+
+  it("pixel explosion plays its frames one after another, then its sparks fade", () => {
+    const effect = getEffect("pixel-explosion")!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    const motion = renderVectorEffect(effect);
+    expect(svgMotionIssues(motion)).toEqual([]);
+    expect(JSON.stringify(motion)).not.toMatch(/\{\{|NaN|undefined/);
+    const shown = motion.animate!.filter((a) => /^boom\d$/.test(a.id!) && a.attrs!.opacity![0] === 1).map((a) => [a.id, a.delay]);
+    expect(shown).toEqual(Array.from({ length: 7 }, (_, f) => [`boom${f}`, f * 80]));
+    // Frames are generated the same every time.
+    expect(renderVectorEffect(effect).svg).toBe(motion.svg);
+    expect(motion.animate!.filter((a) => /^spark\d$/.test(a.id!) && a.attrs!.opacity?.[0] === 0)).toHaveLength(8);
   });
 
   it("led ticker crawls one LED column a frame, in from the right and out to the left", () => {
