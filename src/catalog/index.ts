@@ -76,6 +76,7 @@ import { overlayEffects } from "./shaders/overlay.js";
 import { digitalRain, pixelSunset, synthwaveGrid, tvStatic } from "./shaders/retro.js";
 import { textShaders } from "./shaders/text.js";
 import { imageTreatments } from "./shaders/treatments.js";
+import { censorShaders } from "./shaders/censor.js";
 import { sketchShaders } from "./shaders/sketch.js";
 import { trailShaders } from "./shaders/trail.js";
 import { particlesShaders } from "./shaders/particles.js";
@@ -183,6 +184,7 @@ export const SHADER_EFFECTS: readonly ShaderEffect[] = [
   imageHalftone,
   imagePixelate,
   ...imageTreatments,
+  ...censorShaders,
   ...sketchShaders,
   crt,
   filmGrain,
