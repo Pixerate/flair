@@ -8,7 +8,7 @@
 
   /** The live backgrounds the hero cycles through, with the preset each uses on a dark and on a light page. */
   const SCENES: { id: string; dark?: string; light: string }[] = [
-    { id: "neon-fluid", light: "Light" },
+    { id: "plexus-web", light: "Light" },
     { id: "prism-burst", dark: "Soft", light: "Light" },
     { id: "molten-web", light: "Light" },
     { id: "neon-warp", light: "Light" },

@@ -1,678 +1,235 @@
 [
   {
-    "id": "scare-cut",
-    "name": "Scare cut",
-    "kind": "shader",
+    "id": "bleeding-text",
+    "name": "Bleeding text",
+    "kind": "vector",
     "category": "horror",
-    "description": "A jump scare: a picture slowly closing in, then a sudden cut to a stark face for a split second, the frame punching in and shaking before it settles. Once a cycle, never faster than every three seconds. Loops; or turn Animate off and set Moment.",
-    "tags": [
-      "horror",
-      "shock",
-      "jump-scare",
-      "flash",
-      "zoom",
-      "shake",
-      "image"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "landscape"
-        },
-        "line": 3,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uScare",
-        "t": "sampler2D",
-        "d": {
-          "sample": "portrait"
-        },
-        "l": "Scare picture",
-        "line": 4,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uTint",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            230,
-            225,
-            214
-          ]
-        },
-        "l": "Scare tint",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uFlash",
-        "t": "float",
-        "d": 0.8,
-        "l": "Scare brightness",
-        "line": 6
-      },
-      {
-        "n": "uPunch",
-        "t": "float",
-        "d": 0.7,
-        "l": "Zoom punch",
-        "line": 7
-      },
-      {
-        "n": "uShake",
-        "t": "float",
-        "d": 0.7,
-        "line": 8
-      },
-      {
-        "n": "uCycle",
-        "t": "float",
-        "d": 6,
-        "l": "Cycle (s)",
-        "min": 3,
-        "max": 20,
-        "line": 9
-      },
-      {
-        "n": "uAnimate",
-        "t": "bool",
-        "d": true,
-        "line": 10
-      },
-      {
-        "n": "uProgress",
-        "t": "float",
-        "d": 0.62,
-        "l": "Moment (when still)",
-        "line": 11
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 12
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "line": 13
-      }
-    ],
-    "presets": [
-      "Subtle",
-      "Brutal",
-      "Long dread",
-      "The face"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        },
-        {
-          "name": "uScare",
-          "label": "Scare picture",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "stills",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "stills",
-    "loop": 6,
-    "animated": true,
-    "duration": 6000,
-    "module": "shaders/shock",
-    "addedAt": "2026-10-31T18:24:52.356Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "subliminal-flicker",
-    "name": "Subliminal flicker",
-    "kind": "shader",
-    "category": "horror",
-    "description": "A picture that now and then shows something else for a single frame, a hidden picture laid over it so briefly you are not sure you saw it, never more than once every two seconds.",
-    "tags": [
-      "horror",
-      "shock",
-      "subliminal",
-      "hidden",
-      "flicker",
-      "single-frame",
-      "image"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "city"
-        },
-        "line": 3,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uHidden",
-        "t": "sampler2D",
-        "d": {
-          "sample": "portrait"
-        },
-        "l": "Hidden picture",
-        "line": 4,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uStrength",
-        "t": "float",
-        "d": 0.6,
-        "line": 5
-      },
-      {
-        "n": "uEvery",
-        "t": "float",
-        "d": 5,
-        "l": "Every (s)",
-        "min": 2,
-        "max": 20,
-        "line": 6
-      },
-      {
-        "n": "uLength",
-        "t": "float",
-        "d": 0.045,
-        "l": "Length (s)",
-        "min": 0.02,
-        "max": 0.12,
-        "line": 7
-      },
-      {
-        "n": "uGrain",
-        "t": "float",
-        "d": 0.3,
-        "line": 8
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 9
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "line": 10
-      }
-    ],
-    "presets": [
-      "Barely there",
-      "Unmissable",
-      "Rarely",
-      "Clean"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        },
-        {
-          "name": "uHidden",
-          "label": "Hidden picture",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "filter",
-    "loop": 5,
-    "animated": true,
-    "duration": 5000,
-    "module": "shaders/shock",
-    "addedAt": "2026-10-31T18:24:52.356Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "failing-light",
-    "name": "Failing light",
-    "kind": "shader",
-    "category": "horror",
-    "description": "A picture lit by a failing fluorescent tube overhead: humming, catching, stuttering off and back on and sometimes staying dark a while, the room falling into shadow each time. It switches at most three times a second.",
-    "tags": [
-      "horror",
-      "shock",
-      "fluorescent",
-      "flicker",
-      "light",
-      "lamp",
-      "hallway",
-      "image"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "city"
-        },
-        "line": 3,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uLight",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            228,
-            241,
-            255
-          ]
-        },
-        "l": "Tube light",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uFailing",
-        "t": "float",
-        "d": 0.55,
-        "l": "How badly it fails",
-        "line": 5
-      },
-      {
-        "n": "uDark",
-        "t": "float",
-        "d": 0.22,
-        "l": "Light when off",
-        "max": 0.8,
-        "line": 6
-      },
-      {
-        "n": "uTube",
-        "t": "bool",
-        "d": true,
-        "l": "Show the tube",
-        "line": 7
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 8
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "line": 9
-      }
-    ],
-    "presets": [
-      "Dying",
-      "Mostly fine",
-      "Sodium",
-      "No fixture"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "filter",
-    "animated": true,
-    "module": "shaders/shock",
-    "addedAt": "2026-10-31T18:24:52.356Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "heartbeat-vignette",
-    "name": "Heartbeat vignette",
-    "kind": "shader",
-    "category": "horror",
-    "description": "A deep red edge round a picture pulsing like a heartbeat, quickening and closing in as the pointer gets nearer a target spot, from a resting pulse up to at most 120 beats a minute; while idle, it drifts nearer and away on its own.",
-    "tags": [
-      "horror",
-      "shock",
-      "heartbeat",
-      "pulse",
-      "vignette",
-      "tension",
-      "interactive",
-      "hover",
-      "image"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "landscape"
-        },
-        "line": 4,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uColor",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            158,
-            14,
-            24
-          ]
-        },
-        "l": "Pulse",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uTargetX",
-        "t": "float",
-        "d": 0.2,
-        "l": "Target across",
-        "min": -0.5,
-        "max": 0.5,
-        "line": 6
-      },
-      {
-        "n": "uTargetY",
-        "t": "float",
-        "d": 0.08,
-        "l": "Target up",
-        "min": -0.5,
-        "max": 0.5,
-        "line": 7
-      },
-      {
-        "n": "uRest",
-        "t": "float",
-        "d": 60,
-        "l": "Resting pulse (bpm)",
-        "min": 40,
-        "max": 110,
-        "s": 1,
-        "line": 8
-      },
-      {
-        "n": "uFastest",
-        "t": "float",
-        "d": 115,
-        "l": "Fastest pulse (bpm)",
-        "min": 60,
-        "max": 120,
-        "s": 1,
-        "line": 9
-      },
-      {
-        "n": "uStrength",
-        "t": "float",
-        "d": 0.7,
-        "line": 10
-      },
-      {
-        "n": "uDemo",
-        "t": "bool",
-        "d": true,
-        "l": "Drift nearer while idle",
-        "line": 11
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 12
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "line": 13
-      }
-    ],
-    "presets": [
-      "Calm",
-      "Panic",
-      "Cold dread",
-      "Pointer only"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "interactive",
-      "interactions": [
-        "hover",
-        "pointer"
-      ],
-      "transparent": false
-    },
-    "video": "interactive",
-    "animated": true,
-    "module": "shaders/shock",
-    "addedAt": "2026-10-31T18:24:52.356Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "blood-drip-border",
-    "name": "Blood drip border",
-    "kind": "shader",
-    "category": "horror",
-    "description": "A glossy band of blood along the top of the frame, drips creeping down from it at their own pace, swelling at their tips and letting drops fall, then thinning away as new ones start; a transparent overlay.",
+    "description": "A title that starts to bleed: blood seeps down through its letters from the top, drips run from its baseline and swell, a few drops fall, then it all fades back to clean letters.",
     "tags": [
       "horror",
       "gore",
+      "text",
+      "title",
       "blood",
       "drip",
-      "border",
-      "overlay",
       "halloween"
     ],
     "controls": [
       {
-        "n": "uColor",
+        "n": "text",
+        "t": "text",
+        "d": "BLEED",
+        "line": 1
+      },
+      {
+        "n": "background",
         "t": "vec3",
         "d": {
           "c255": [
-            126,
-            7,
-            17
+            13,
+            10,
+            11
           ]
         },
-        "l": "Blood",
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "ink",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            238,
+            231,
+            222
+          ]
+        },
+        "l": "Text colour",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "blood",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            138,
+            9,
+            19
+          ]
+        },
         "c": 1,
         "line": 4
       },
       {
-        "n": "uShine",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            138,
-            138
-          ]
-        },
-        "c": 1,
+        "n": "font",
+        "t": "text",
+        "d": "'Arial Black', 'Helvetica Neue', Impact, system-ui, sans-serif",
         "line": 5
       },
       {
-        "n": "uBand",
-        "t": "float",
-        "d": 0.05,
-        "max": 0.3,
+        "n": "weight",
+        "t": "int",
+        "d": 900,
+        "min": 100,
+        "max": 900,
+        "s": 100,
         "line": 6
       },
       {
-        "n": "uDrips",
-        "t": "float",
-        "d": 0.7,
+        "n": "inline",
+        "t": "bool",
+        "d": false,
         "line": 7
-      },
-      {
-        "n": "uLength",
-        "t": "float",
-        "d": 0.5,
-        "l": "Drip length",
-        "min": 0.1,
-        "line": 8
-      },
-      {
-        "n": "uWidth",
-        "t": "float",
-        "d": 1,
-        "l": "Drip width",
-        "min": 0.3,
-        "max": 2.5,
-        "line": 9
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 0.6,
-        "min": 0.1,
-        "max": 2,
-        "line": 10
-      },
+      }
+    ],
+    "presets": [
+      "On white",
+      "Black blood",
+      "Ichor"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "text",
+          "label": "Text",
+          "holds": "copy",
+          "default": "BLEED"
+        },
+        {
+          "name": "font",
+          "label": "Font",
+          "holds": "font",
+          "default": "'Arial Black', 'Helvetica Neue', Impact, system-ui, sans-serif"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 900,
+    "animated": true,
+    "duration": 5201,
+    "module": "text",
+    "addedAt": "2026-10-31T18:25:08Z",
+    "commitHash": "6028c446db98fb99dc88427409bcfdc30019a798",
+    "order": 527
+  },
+  {
+    "id": "blood-moon",
+    "name": "Blood moon",
+    "kind": "shader",
+    "category": "horror",
+    "description": "A crimson full moon hanging over dark hills and a lone dead tree, its cratered face glowing through drifting clouds, the sky round it stained red and pricked with faint stars.",
+    "tags": [
+      "horror",
+      "gore",
+      "moon",
+      "blood-moon",
+      "night",
+      "sky",
+      "space",
+      "halloween",
+      "background"
+    ],
+    "controls": [
       {
         "n": "uBackground",
         "t": "vec3",
         "d": {
           "c255": [
-            244,
-            239,
-            230
+            7,
+            2,
+            9
+          ]
+        },
+        "l": "Sky",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uGlow",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            90,
+            7,
+            16
+          ]
+        },
+        "l": "Red glow",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uMoon",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            210,
+            54,
+            31
           ]
         },
         "c": 1,
-        "line": 11
+        "line": 6
+      },
+      {
+        "n": "uMoonSize",
+        "t": "float",
+        "d": 0.17,
+        "min": 0.05,
+        "max": 0.35,
+        "line": 7
+      },
+      {
+        "n": "uClouds",
+        "t": "float",
+        "d": 0.55,
+        "line": 8
+      },
+      {
+        "n": "uStars",
+        "t": "float",
+        "d": 0.5,
+        "line": 9
+      },
+      {
+        "n": "uLand",
+        "t": "bool",
+        "d": true,
+        "l": "Hills and tree",
+        "line": 10
       },
       {
         "n": "uBackgroundAlpha",
         "t": "float",
-        "d": 0,
+        "d": 1,
         "l": "Background opacity",
-        "line": 12
+        "line": 111
       }
     ],
     "presets": [
-      "Paper",
-      "Heavy",
-      "Ink",
-      "Slime"
+      "Clear night",
+      "Harvest",
+      "Huge",
+      "Sky only"
     ],
     "inputs": {
       "accepts": [],
       "images": [],
       "texts": [],
       "interactions": [],
-      "transparent": true
+      "transparent": false
     },
-    "transparent": true,
     "animated": true,
     "module": "shaders/gore",
-    "addedAt": "2026-10-31T18:24:52.356Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-10-31T18:25:08Z",
+    "commitHash": "6028c446db98fb99dc88427409bcfdc30019a798",
+    "order": 526
   },
   {
     "id": "claw-slash",
@@ -837,241 +394,684 @@
     "animated": true,
     "duration": 4000,
     "module": "shaders/gore",
-    "addedAt": "2026-10-31T18:24:52.356Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-10-31T18:25:08Z",
+    "commitHash": "6028c446db98fb99dc88427409bcfdc30019a798",
+    "order": 525
   },
   {
-    "id": "blood-moon",
-    "name": "Blood moon",
+    "id": "blood-drip-border",
+    "name": "Blood drip border",
     "kind": "shader",
     "category": "horror",
-    "description": "A crimson full moon hanging over dark hills and a lone dead tree, its cratered face glowing through drifting clouds, the sky round it stained red and pricked with faint stars.",
+    "description": "A glossy band of blood along the top of the frame, drips creeping down from it at their own pace, swelling at their tips and letting drops fall, then thinning away as new ones start; a transparent overlay.",
     "tags": [
       "horror",
       "gore",
-      "moon",
-      "blood-moon",
-      "night",
-      "sky",
-      "space",
-      "halloween",
-      "background"
+      "blood",
+      "drip",
+      "border",
+      "overlay",
+      "halloween"
     ],
     "controls": [
+      {
+        "n": "uColor",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            126,
+            7,
+            17
+          ]
+        },
+        "l": "Blood",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uShine",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            138,
+            138
+          ]
+        },
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uBand",
+        "t": "float",
+        "d": 0.05,
+        "max": 0.3,
+        "line": 6
+      },
+      {
+        "n": "uDrips",
+        "t": "float",
+        "d": 0.7,
+        "line": 7
+      },
+      {
+        "n": "uLength",
+        "t": "float",
+        "d": 0.5,
+        "l": "Drip length",
+        "min": 0.1,
+        "line": 8
+      },
+      {
+        "n": "uWidth",
+        "t": "float",
+        "d": 1,
+        "l": "Drip width",
+        "min": 0.3,
+        "max": 2.5,
+        "line": 9
+      },
+      {
+        "n": "uSpeed",
+        "t": "float",
+        "d": 0.6,
+        "min": 0.1,
+        "max": 2,
+        "line": 10
+      },
       {
         "n": "uBackground",
         "t": "vec3",
         "d": {
           "c255": [
-            7,
-            2,
-            9
-          ]
-        },
-        "l": "Sky",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uGlow",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            90,
-            7,
-            16
-          ]
-        },
-        "l": "Red glow",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uMoon",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            210,
-            54,
-            31
+            244,
+            239,
+            230
           ]
         },
         "c": 1,
-        "line": 6
-      },
-      {
-        "n": "uMoonSize",
-        "t": "float",
-        "d": 0.17,
-        "min": 0.05,
-        "max": 0.35,
-        "line": 7
-      },
-      {
-        "n": "uClouds",
-        "t": "float",
-        "d": 0.55,
-        "line": 8
-      },
-      {
-        "n": "uStars",
-        "t": "float",
-        "d": 0.5,
-        "line": 9
-      },
-      {
-        "n": "uLand",
-        "t": "bool",
-        "d": true,
-        "l": "Hills and tree",
-        "line": 10
+        "line": 11
       },
       {
         "n": "uBackgroundAlpha",
         "t": "float",
-        "d": 1,
+        "d": 0,
         "l": "Background opacity",
-        "line": 111
+        "line": 12
       }
     ],
     "presets": [
-      "Clear night",
-      "Harvest",
-      "Huge",
-      "Sky only"
+      "Paper",
+      "Heavy",
+      "Ink",
+      "Slime"
     ],
     "inputs": {
       "accepts": [],
       "images": [],
       "texts": [],
       "interactions": [],
-      "transparent": false
+      "transparent": true
     },
+    "transparent": true,
     "animated": true,
     "module": "shaders/gore",
-    "addedAt": "2026-10-31T18:24:52.356Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-10-31T18:25:08Z",
+    "commitHash": "6028c446db98fb99dc88427409bcfdc30019a798",
+    "order": 524
   },
   {
-    "id": "bleeding-text",
-    "name": "Bleeding text",
-    "kind": "vector",
+    "id": "heartbeat-vignette",
+    "name": "Heartbeat vignette",
+    "kind": "shader",
     "category": "horror",
-    "description": "A title that starts to bleed: blood seeps down through its letters from the top, drips run from its baseline and swell, a few drops fall, then it all fades back to clean letters.",
+    "description": "A deep red edge round a picture pulsing like a heartbeat, quickening and closing in as the pointer gets nearer a target spot, from a resting pulse up to at most 120 beats a minute; while idle, it drifts nearer and away on its own.",
     "tags": [
       "horror",
-      "gore",
-      "text",
-      "title",
-      "blood",
-      "drip",
-      "halloween"
+      "shock",
+      "heartbeat",
+      "pulse",
+      "vignette",
+      "tension",
+      "interactive",
+      "hover",
+      "image"
     ],
     "controls": [
       {
-        "n": "text",
-        "t": "text",
-        "d": "BLEED",
-        "line": 1
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "landscape"
+        },
+        "line": 4,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
       },
       {
-        "n": "background",
+        "n": "uColor",
         "t": "vec3",
         "d": {
           "c255": [
-            13,
-            10,
-            11
+            158,
+            14,
+            24
+          ]
+        },
+        "l": "Pulse",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uTargetX",
+        "t": "float",
+        "d": 0.2,
+        "l": "Target across",
+        "min": -0.5,
+        "max": 0.5,
+        "line": 6
+      },
+      {
+        "n": "uTargetY",
+        "t": "float",
+        "d": 0.08,
+        "l": "Target up",
+        "min": -0.5,
+        "max": 0.5,
+        "line": 7
+      },
+      {
+        "n": "uRest",
+        "t": "float",
+        "d": 60,
+        "l": "Resting pulse (bpm)",
+        "min": 40,
+        "max": 110,
+        "s": 1,
+        "line": 8
+      },
+      {
+        "n": "uFastest",
+        "t": "float",
+        "d": 115,
+        "l": "Fastest pulse (bpm)",
+        "min": 60,
+        "max": 120,
+        "s": 1,
+        "line": 9
+      },
+      {
+        "n": "uStrength",
+        "t": "float",
+        "d": 0.7,
+        "line": 10
+      },
+      {
+        "n": "uDemo",
+        "t": "bool",
+        "d": true,
+        "l": "Drift nearer while idle",
+        "line": 11
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
           ]
         },
         "c": 1,
-        "line": 2
+        "line": 12
       },
       {
-        "n": "ink",
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "line": 13
+      }
+    ],
+    "presets": [
+      "Calm",
+      "Panic",
+      "Cold dread",
+      "Pointer only"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "interactive",
+      "interactions": [
+        "hover",
+        "pointer"
+      ],
+      "transparent": false
+    },
+    "video": "interactive",
+    "animated": true,
+    "module": "shaders/shock",
+    "addedAt": "2026-10-31T18:25:08Z",
+    "commitHash": "6028c446db98fb99dc88427409bcfdc30019a798",
+    "order": 523
+  },
+  {
+    "id": "failing-light",
+    "name": "Failing light",
+    "kind": "shader",
+    "category": "horror",
+    "description": "A picture lit by a failing fluorescent tube overhead: humming, catching, stuttering off and back on and sometimes staying dark a while, the room falling into shadow each time. It switches at most three times a second.",
+    "tags": [
+      "horror",
+      "shock",
+      "fluorescent",
+      "flicker",
+      "light",
+      "lamp",
+      "hallway",
+      "image"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "city"
+        },
+        "line": 3,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uLight",
         "t": "vec3",
         "d": {
           "c255": [
-            238,
-            231,
-            222
+            228,
+            241,
+            255
           ]
         },
-        "l": "Text colour",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "blood",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            138,
-            9,
-            19
-          ]
-        },
+        "l": "Tube light",
         "c": 1,
         "line": 4
       },
       {
-        "n": "font",
-        "t": "text",
-        "d": "'Arial Black', 'Helvetica Neue', Impact, system-ui, sans-serif",
+        "n": "uFailing",
+        "t": "float",
+        "d": 0.55,
+        "l": "How badly it fails",
         "line": 5
       },
       {
-        "n": "weight",
-        "t": "int",
-        "d": 900,
-        "min": 100,
-        "max": 900,
-        "s": 100,
+        "n": "uDark",
+        "t": "float",
+        "d": 0.22,
+        "l": "Light when off",
+        "max": 0.8,
         "line": 6
       },
       {
-        "n": "inline",
+        "n": "uTube",
         "t": "bool",
-        "d": false,
+        "d": true,
+        "l": "Show the tube",
         "line": 7
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "line": 9
       }
     ],
     "presets": [
-      "On white",
-      "Black blood",
-      "Ichor"
+      "Dying",
+      "Mostly fine",
+      "Sodium",
+      "No fixture"
     ],
     "inputs": {
       "accepts": [
-        "text"
+        "image",
+        "video",
+        "svg"
       ],
-      "images": [],
-      "texts": [
+      "images": [
         {
-          "name": "text",
-          "label": "Text",
-          "holds": "copy",
-          "default": "BLEED"
-        },
-        {
-          "name": "font",
-          "label": "Font",
-          "holds": "font",
-          "default": "'Arial Black', 'Helvetica Neue', Impact, system-ui, sans-serif"
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
         }
       ],
+      "texts": [],
+      "video": "filter",
       "interactions": [],
       "transparent": false
     },
-    "hold": 900,
+    "video": "filter",
     "animated": true,
-    "duration": 5201,
-    "module": "text",
-    "addedAt": "2026-10-31T18:24:52.356Z",
-    "commitHash": "",
-    "order": 0
+    "module": "shaders/shock",
+    "addedAt": "2026-10-31T18:25:08Z",
+    "commitHash": "6028c446db98fb99dc88427409bcfdc30019a798",
+    "order": 522
+  },
+  {
+    "id": "subliminal-flicker",
+    "name": "Subliminal flicker",
+    "kind": "shader",
+    "category": "horror",
+    "description": "A picture that now and then shows something else for a single frame, a hidden picture laid over it so briefly you are not sure you saw it, never more than once every two seconds.",
+    "tags": [
+      "horror",
+      "shock",
+      "subliminal",
+      "hidden",
+      "flicker",
+      "single-frame",
+      "image"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "city"
+        },
+        "line": 3,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uHidden",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "l": "Hidden picture",
+        "line": 4,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uStrength",
+        "t": "float",
+        "d": 0.6,
+        "line": 5
+      },
+      {
+        "n": "uEvery",
+        "t": "float",
+        "d": 5,
+        "l": "Every (s)",
+        "min": 2,
+        "max": 20,
+        "line": 6
+      },
+      {
+        "n": "uLength",
+        "t": "float",
+        "d": 0.045,
+        "l": "Length (s)",
+        "min": 0.02,
+        "max": 0.12,
+        "line": 7
+      },
+      {
+        "n": "uGrain",
+        "t": "float",
+        "d": 0.3,
+        "line": 8
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 9
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "line": 10
+      }
+    ],
+    "presets": [
+      "Barely there",
+      "Unmissable",
+      "Rarely",
+      "Clean"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        },
+        {
+          "name": "uHidden",
+          "label": "Hidden picture",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "filter",
+    "loop": 5,
+    "animated": true,
+    "duration": 5000,
+    "module": "shaders/shock",
+    "addedAt": "2026-10-31T18:25:08Z",
+    "commitHash": "6028c446db98fb99dc88427409bcfdc30019a798",
+    "order": 521
+  },
+  {
+    "id": "scare-cut",
+    "name": "Scare cut",
+    "kind": "shader",
+    "category": "horror",
+    "description": "A jump scare: a picture slowly closing in, then a sudden cut to a stark face for a split second, the frame punching in and shaking before it settles. Once a cycle, never faster than every three seconds. Loops; or turn Animate off and set Moment.",
+    "tags": [
+      "horror",
+      "shock",
+      "jump-scare",
+      "flash",
+      "zoom",
+      "shake",
+      "image"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "landscape"
+        },
+        "line": 3,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uScare",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "l": "Scare picture",
+        "line": 4,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uTint",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            230,
+            225,
+            214
+          ]
+        },
+        "l": "Scare tint",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uFlash",
+        "t": "float",
+        "d": 0.8,
+        "l": "Scare brightness",
+        "line": 6
+      },
+      {
+        "n": "uPunch",
+        "t": "float",
+        "d": 0.7,
+        "l": "Zoom punch",
+        "line": 7
+      },
+      {
+        "n": "uShake",
+        "t": "float",
+        "d": 0.7,
+        "line": 8
+      },
+      {
+        "n": "uCycle",
+        "t": "float",
+        "d": 6,
+        "l": "Cycle (s)",
+        "min": 3,
+        "max": 20,
+        "line": 9
+      },
+      {
+        "n": "uAnimate",
+        "t": "bool",
+        "d": true,
+        "line": 10
+      },
+      {
+        "n": "uProgress",
+        "t": "float",
+        "d": 0.62,
+        "l": "Moment (when still)",
+        "line": 11
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 12
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "line": 13
+      }
+    ],
+    "presets": [
+      "Subtle",
+      "Brutal",
+      "Long dread",
+      "The face"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        },
+        {
+          "name": "uScare",
+          "label": "Scare picture",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "stills",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "stills",
+    "loop": 6,
+    "animated": true,
+    "duration": 6000,
+    "module": "shaders/shock",
+    "addedAt": "2026-10-31T18:25:08Z",
+    "commitHash": "6028c446db98fb99dc88427409bcfdc30019a798",
+    "order": 520
   },
   {
     "id": "poltergeist",
