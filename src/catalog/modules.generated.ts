@@ -42,6 +42,7 @@ export const EFFECT_MODULES: Record<string, () => Promise<Record<string, unknown
   "shaders/growth": () => import("./shaders/growth.js"),
   "shaders/hologram": () => import("./shaders/hologram.js"),
   "shaders/horror": () => import("./shaders/horror.js"),
+  "shaders/horror-transitions": () => import("./shaders/horror-transitions.js"),
   "shaders/image": () => import("./shaders/image.js"),
   "shaders/impact": () => import("./shaders/impact.js"),
   "shaders/interaction": () => import("./shaders/interaction.js"),
