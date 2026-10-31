@@ -1148,6 +1148,295 @@ export const bleedingText: VectorEffect = {
   })(),
 };
 
+/** Zalgo text's combining marks: ones that stack above a letter and ones that hang below it. */
+const MARKS_ABOVE = [0x0300, 0x0301, 0x0302, 0x0303, 0x0304, 0x0306, 0x0307, 0x0308, 0x030a, 0x030b, 0x030c, 0x030d, 0x030e, 0x0310, 0x0311, 0x0312, 0x033d, 0x033e, 0x0346, 0x034a, 0x034b, 0x0350, 0x0351, 0x0357, 0x035b, 0x0363, 0x0364, 0x0365, 0x0366, 0x0367, 0x0368, 0x036a, 0x036b, 0x036c, 0x036f];
+const MARKS_BELOW = [0x0316, 0x0317, 0x0318, 0x0319, 0x031c, 0x031d, 0x031e, 0x031f, 0x0320, 0x0323, 0x0324, 0x0325, 0x0326, 0x0329, 0x032a, 0x032b, 0x032c, 0x032d, 0x032e, 0x032f, 0x0330, 0x0331, 0x0332, 0x0339, 0x033a, 0x033b, 0x033c, 0x0347, 0x0348, 0x0349, 0x034d, 0x034e, 0x0353, 0x0354, 0x0355, 0x0356, 0x0359, 0x035a];
+
+/** `text` with up to `above` and `below` combining marks on each letter, the same marks every time for the same seed. */
+function zalgo(text: string, above: number, below: number, seed: number) {
+  let s = seed;
+  const rand = () => ((s = (s * 16807) % 2147483647) / 2147483647);
+  return lettersOf(text)
+    .map((c) => {
+      if (!c.trim()) return c;
+      const up = Math.round(above * (0.4 + 0.6 * rand()));
+      const down = Math.round(below * (0.4 + 0.6 * rand()));
+      const pick = (marks: number[], k: number) => Array.from({ length: k }, () => String.fromCodePoint(marks[Math.floor(rand() * marks.length)]!)).join("");
+      return c + pick(MARKS_ABOVE, up) + pick(MARKS_BELOW, down);
+    })
+    .join("");
+}
+
+/** Zalgo text's states over time: which version shows (0 plain, 1 creeping, 2 overrun) from each moment (ms). */
+const ZALGO_STATES: readonly (readonly [number, 0 | 1 | 2])[] = [
+  [0, 0],
+  [600, 1],
+  [800, 0],
+  [1150, 1],
+  [1500, 2],
+  [1620, 1],
+  [1760, 2],
+  [2700, 1],
+  [2900, 0],
+];
+
+export const zalgoText: VectorEffect = {
+  kind: "vector",
+  id: "zalgo-text",
+  name: "Zalgo text",
+  description:
+    "A title that something corrupts: combining marks creep over and under its letters in fits, then overrun it in a tangle with a red echo shuddering behind, before it snaps back to plain.",
+  category: "text",
+  tags: ["text", "title", "horror", "zalgo", "glitch", "corrupt", "creepy", "unicode"],
+  hold: 900,
+  presets: [
+    { name: "Mild", values: { amount: 0.5 } },
+    { name: "Unholy", values: { amount: 2, echo: [0.55, 0.1, 1] } },
+    { name: "On paper", values: { background: [0.95, 0.93, 0.88], ink: [0.08, 0.07, 0.07] } },
+  ],
+  derived: (v) => {
+    const text = String(v.text);
+    const { size, length, left } = fit(text, room(v, 340), 92);
+    const a = Number(v.amount);
+    const base = 100 + size * 0.35;
+    return {
+      ...frame(v, left, length, base, size, [0.05 + 0.75 * a, 0.05, DESCENT + 0.65 * a, 0.05]),
+      size,
+      length,
+      base: r1(base),
+      creep: zalgo(text, 1.5 * a, 1.2 * a, 11),
+      overrun: zalgo(text, 5 * a, 4 * a, 29),
+    };
+  },
+  motion: (() => {
+    const word = (id: string, content: string, paint: string, opacity: number) =>
+      `<text id="${id}" x="200" y="{{base}}" text-anchor="middle" textLength="{{length}}" lengthAdjust="spacingAndGlyphs" font-family="{{font}}" font-size="{{size}}" font-weight="{{weight}}" ${paint} opacity="${opacity}">${content}</text>`;
+    return {
+      svg: `<svg viewBox="{{viewBox}}" overflow="{{overflow}}" data-overhang="{{overhang}}"><!-- {{text: text default='HE COMES' label='Text'}} {{background: color default=#07060A label='Background'}} {{ink: color default=#F1ECE4 label='Text colour'}} {{echo: color default=#C1121F label='Echo'}} {{amount: float min=0.2 max=2 default=1 step=0.1 label='Corruption'}} ${typeface(HEAVY, 900)} --><rect width="400" height="200" fill="{{background}}" opacity="{{backdrop}}"/><g id="zEcho" opacity="0" transform="translate(0 0)">${word("zEchoText", "{{overrun}}", `fill="{{echo}}"`, 1)}</g>${word("z0", "{{text}}", `fill="{{ink}}"`, 1)}${word("z1", "{{creep}}", `fill="{{ink}}"`, 0)}${word("z2", "{{overrun}}", `fill="{{ink}}"`, 0)}</svg>`,
+      animate: [
+        ...([0, 1, 2] as const).flatMap((k) => holds(`z${k}`, "opacity", ZALGO_STATES.map(([at, state]) => [at, state === k ? 1 : 0] as const))),
+        // While overrun, a red echo shudders behind.
+        ...holds("zEcho", "opacity", ZALGO_STATES.map(([at, state]) => [at, state === 2 ? 0.7 : 0] as const)),
+        { id: "zEcho", attrs: { transform: ["translate(0 0)", "translate(5 -3)"] }, delay: 1500, ms: 1200, behavior: { type: "wriggle", frequency: 9, seed: 4 } },
+      ],
+    };
+  })(),
+};
+
+/** Fogged mirror writing's runs of condensation: where (a share of the word's width) and how far (a share of its size). */
+const RUNS = [
+  { at: 0.18, len: 0.6 },
+  { at: 0.52, len: 0.9 },
+  { at: 0.83, len: 0.5 },
+];
+
+export const foggedMirrorWriting: VectorEffect = {
+  kind: "vector",
+  id: "fogged-mirror-writing",
+  name: "Fogged mirror writing",
+  description:
+    "Words traced by an unseen finger on a fogged-up mirror, the dark glass showing through each stroke as it is drawn, beads of condensation running down from them, then the fog creeping back over until they are gone.",
+  category: "text",
+  tags: ["text", "title", "horror", "fog", "mirror", "handwriting", "condensation", "message"],
+  hold: 1000,
+  presets: [
+    { name: "Bathroom", values: { behind: [0.32, 0.38, 0.42], fog: [0.9, 0.92, 0.93] } },
+    { name: "Car window", values: { behind: [0.02, 0.03, 0.06], fog: [0.6, 0.66, 0.72] } },
+  ],
+  derived: (v) => {
+    const { size, length, left } = fit(String(v.text), room(v, 340), 96, textWidthEm(String(v.text)) * 1.05);
+    const base = 100 + size * 0.35;
+    const stroke = r1(Math.max(2, size * Number(v.finger) * 0.12));
+    return {
+      ...frame(v, left, length, base, size, [0.15, 0.08, 1.05, 0.08]),
+      size,
+      length,
+      base: r1(base),
+      stroke,
+      dash: Math.round(size * 8),
+      fogLevel: v.inline ? 0 : r1(Number(v.fogOpacity) * 100) / 100,
+      ...Object.fromEntries(RUNS.flatMap((d, i) => [[`rx${i}`, r1(left + d.at * length)], [`ry${i}`, r1(base + d.len * size)]])),
+    };
+  },
+  motion: {
+    svg: `<svg viewBox="{{viewBox}}" overflow="{{overflow}}" data-overhang="{{overhang}}"><!-- {{text: text default='HELP ME' label='Text'}} {{behind: color default=#1A232B label='Behind the glass'}} {{fog: color default=#C8CFD3 label='Fog'}} {{fogOpacity: float min=0.2 max=1 default=0.88 label='Fog thickness'}} {{finger: float min=0.3 max=2 default=1 step=0.1 label='Finger width'}} ${typeface(SCRIPT, 400)} --><rect width="400" height="200" fill="{{behind}}" opacity="{{backdrop}}"/><rect width="400" height="200" fill="{{fog}}" opacity="{{fogLevel}}"/><g id="wiped" opacity="1" fill="none" stroke="{{behind}}" stroke-linecap="round" stroke-linejoin="round"><text id="trace" x="200" y="{{base}}" text-anchor="middle" textLength="{{length}}" lengthAdjust="spacingAndGlyphs" font-family="{{font}}" font-size="{{size}}" font-weight="{{weight}}" stroke-width="{{stroke}}" stroke-dasharray="0 {{dash}}">{{text}}</text>${RUNS.map(
+      (_, i) => `<line id="run${i}" x1="{{rx${i}}}" y1="{{base}}" x2="{{rx${i}}}" y2="{{base}}" stroke-width="2.5"/>`,
+    ).join("")}</g></svg>`,
+    animate: [
+      // Traced on, stroke by stroke.
+      { id: "trace", attrs: { "stroke-dasharray": ["0 {{dash}}", "{{dash}} 0"] }, ms: 2400, ease: "in-out" },
+      // Condensation running from the strokes.
+      ...RUNS.map((_, i): SvgAnimation => ({ id: `run${i}`, attrs: { y2: [n("base"), n(`ry${i}`)] }, delay: 1900 + i * 300, ms: 1300 + i * 200, ease: "out" })),
+      // The fog creeps back over, and it is gone.
+      { id: "wiped", attrs: { opacity: [1, 0] }, delay: 4200, ms: 1200, ease: "in-out" },
+      ...holds("trace", "stroke-dasharray", [[5400, "0 {{dash}}"]]),
+      ...RUNS.flatMap((_, i) => holds(`run${i}`, "y2", [[5400, n("base")]])),
+      ...holds("wiped", "opacity", [[5401, 1]]),
+    ],
+  },
+};
+
+/** Scratched text's passes: each a stroke of the blade over the letters, slightly off the last. */
+const SCRATCHES = [
+  { dx: 0, dy: 0, skew: 0, width: 1.4, at: 0 },
+  { dx: 1.6, dy: -1.1, skew: -4, width: 0.9, at: 380 },
+  { dx: -1.2, dy: 0.9, skew: 3, width: 1.1, at: 700 },
+];
+
+export const scratchedText: VectorEffect = {
+  kind: "vector",
+  id: "scratched-text",
+  name: "Scratched text",
+  description:
+    "Words gouged into a dark surface in a few frantic passes, each scratch a little off the last, the pale gouges filling in behind them, then fading as if they had never been there.",
+  category: "text",
+  tags: ["text", "title", "horror", "scratch", "carved", "etched", "message", "creepy"],
+  hold: 1000,
+  presets: [
+    { name: "Painted door", values: { surface: [0.45, 0.07, 0.08], scratch: [0.96, 0.9, 0.82] } },
+    { name: "Plaster", values: { surface: [0.85, 0.82, 0.76], scratch: [0.22, 0.18, 0.16] } },
+  ],
+  derived: (v) => {
+    const { size, length, left } = fit(String(v.text), room(v, 350), 90);
+    const base = 100 + size * 0.35;
+    return { ...frame(v, left, length, base, size, [0.08, 0.05, DESCENT + 0.05, 0.05]), size, length, base: r1(base), dash: Math.round(size * 7) };
+  },
+  motion: {
+    svg: `<svg viewBox="{{viewBox}}" overflow="{{overflow}}" data-overhang="{{overhang}}"><!-- {{text: text default='NO ESCAPE' label='Text'}} {{surface: color default=#26201D label='Surface'}} {{scratch: color default=#E9DFD2 label='Scratches'}} ${typeface(SANS, 700)} --><rect width="400" height="200" fill="{{surface}}" opacity="{{backdrop}}"/><g id="scratched" opacity="1"><text id="gouge" x="200" y="{{base}}" text-anchor="middle" textLength="{{length}}" lengthAdjust="spacingAndGlyphs" font-family="{{font}}" font-size="{{size}}" font-weight="{{weight}}" fill="{{scratch}}" fill-opacity="0">{{text}}</text>${SCRATCHES.map(
+      (c, i) =>
+        `<text id="pass${i}" x="200" y="{{base}}" text-anchor="middle" textLength="{{length}}" lengthAdjust="spacingAndGlyphs" font-family="{{font}}" font-size="{{size}}" font-weight="{{weight}}" fill="none" stroke="{{scratch}}" stroke-width="${c.width}" stroke-linecap="round" stroke-dasharray="0 {{dash}}" transform="translate(${c.dx} ${c.dy}) skewX(${c.skew})">{{text}}</text>`,
+    ).join("")}</g></svg>`,
+    animate: [
+      // Pass after pass, fast and jagged, then the gouges fill in pale.
+      ...SCRATCHES.map((c, i): SvgAnimation => ({ id: `pass${i}`, attrs: { "stroke-dasharray": ["0 {{dash}}", "{{dash}} 0"] }, delay: c.at, ms: 700, ease: "in-out", strobe: 18 })),
+      { id: "gouge", attrs: { "fill-opacity": [0, 0.35] }, delay: 1200, ms: 500, ease: "out" },
+      // Fading away, then reset unseen.
+      { id: "scratched", attrs: { opacity: [1, 0] }, delay: 3300, ms: 900, ease: "in-out" },
+      ...SCRATCHES.flatMap((_, i) => holds(`pass${i}`, "stroke-dasharray", [[4200, "0 {{dash}}"]])),
+      ...holds("gouge", "fill-opacity", [[4200, 0]]),
+      ...holds("scratched", "opacity", [[4201, 1]]),
+    ],
+  },
+};
+
+/** Ransom note's letter slots, and the faces it cuts letters from when no font is set. */
+const RANSOM_SLOTS = 20;
+const RANSOM_FONTS = [`Georgia, 'Times New Roman', serif`, `'Arial Black', Impact, sans-serif`, `'Courier New', Courier, monospace`, `'Trebuchet MS', 'Helvetica Neue', sans-serif`, `Didot, 'Bodoni 72', Georgia, serif`, `Impact, 'Arial Narrow', sans-serif`];
+/** The default font control: "mixed", a different face for each letter. */
+const RANSOM_MIXED = "mixed";
+
+export const ransomNote: VectorEffect = {
+  kind: "vector",
+  id: "ransom-note",
+  name: "Ransom note",
+  description:
+    "A message spelled out in letters cut from magazines, each on its own scrap of paper in its own face, size and tilt, slapped down one after another, then torn away.",
+  category: "text",
+  tags: ["text", "title", "horror", "ransom", "cut-out", "collage", "magazine", "punk", "message"],
+  hold: 1100,
+  presets: [
+    { name: "Newsprint", values: { paper: [0.93, 0.91, 0.86], accent: [0.2, 0.2, 0.2], ink: [0.05, 0.05, 0.05] } },
+    { name: "Tabloid", values: { accent: [0.9, 0.85, 0.1], paper: [1, 1, 1], ink: [0.1, 0.1, 0.1] } },
+  ],
+  derived: (v) => {
+    const letters = lettersOf(v.text).slice(0, RANSOM_SLOTS);
+    const widths = letters.map((c) => textWidthEm(c) * 1.25);
+    const ems = Math.max(0.6, widths.reduce((a, b) => a + b, 0));
+    const size = Math.min(70, room(v, 360) / ems);
+    const base = 100 + size * 0.35;
+    const mixed = String(v.font) === RANSOM_MIXED;
+    const out: Record<string, string | number> = {
+      ...frame(v, 200 - (ems * size) / 2, ems * size, base, size, [0.3, 0.1, 0.35, 0.1]),
+      size: r1(size),
+      base: r1(base),
+    };
+    let x = 200 - (ems * size) / 2;
+    let seed = 41;
+    const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    for (let i = 0; i < RANSOM_SLOTS; i++) {
+      const w = (widths[i] ?? 0) * size;
+      const c = letters[i]?.trim() ?? "";
+      const scale = 0.85 + 0.35 * rand();
+      const tilt = Math.round((rand() - 0.5) * 16);
+      const shade = rand();
+      out[`c${i}`] = c;
+      out[`x${i}`] = r1(x + w / 2);
+      out[`f${i}`] = mixed ? RANSOM_FONTS[Math.floor(rand() * RANSOM_FONTS.length)]! : String(v.font);
+      out[`s${i}`] = r1(size * scale);
+      out[`pw${i}`] = c ? r1(w * 0.95) : 0;
+      out[`ph${i}`] = c ? r1(size * scale * 1.0) : 0;
+      out[`px${i}`] = c ? r1(-w * 0.475) : 0;
+      out[`py${i}`] = r1(-size * scale * 0.78);
+      out[`t${i}`] = `translate(${r1(x + w / 2)} ${r1(base + (rand() - 0.5) * size * 0.12)}) rotate(${tilt})`;
+      // Scraps of plain paper, of the accent colour and of grey newsprint, each with a letter that reads on it.
+      out[`patch${i}`] = shade < 0.45 ? mixHex(v.paper, v.paper, 0) : shade < 0.75 ? mixHex(v.accent, v.accent, 0) : mixHex(v.paper, v.ink, 0.3);
+      out[`letter${i}`] = shade >= 0.45 && shade < 0.75 ? mixHex(v.paper, v.paper, 0) : mixHex(v.ink, v.ink, 0);
+      out[`d${i}`] = Math.round(i * 110);
+      out[`e${i}`] = Math.round(i * 110 + 140);
+      x += w;
+    }
+    return out;
+  },
+  motion: {
+    svg: `<svg viewBox="{{viewBox}}" overflow="{{overflow}}" data-overhang="{{overhang}}"><!-- {{text: text default='WE SEE YOU' label='Text'}} {{background: color default=#2B2622 label='Background'}} {{paper: color default=#F3EEE2 label='Paper'}} {{accent: color default=#D7262E label='Accent'}} {{ink: color default=#141212 label='Ink'}} {{font: text default="${RANSOM_MIXED}" label='Font'}} {{weight: int min=100 max=900 default=800 step=100 label='Weight'}} {{inline: bool default=false label='Inline'}} --><rect width="400" height="200" fill="{{background}}" opacity="{{backdrop}}"/>${Array.from(
+      { length: RANSOM_SLOTS },
+      (_, i) =>
+        `<g transform="{{t${i}}}"><g id="cut${i}" transform="scale(0)"><rect x="{{px${i}}}" y="{{py${i}}}" width="{{pw${i}}}" height="{{ph${i}}}" fill="{{patch${i}}}"/><text x="0" y="0" text-anchor="middle" font-family="{{f${i}}}" font-size="{{s${i}}}" font-weight="{{weight}}" fill="{{letter${i}}}">{{c${i}}}</text></g></g>`,
+    ).join("")}</svg>`,
+    animate: Array.from({ length: RANSOM_SLOTS }, (_, i): SvgAnimation[] => [
+      // Slapped down one after another, and torn away together.
+      { id: `cut${i}`, attrs: { transform: ["scale(0)", "scale(1.2)"] }, delay: n(`d${i}`), ms: 140, ease: "out" },
+      { id: `cut${i}`, attrs: { transform: ["scale(1.2)", "scale(1)"] }, delay: n(`e${i}`), ms: 120, ease: "in-out" },
+      { id: `cut${i}`, attrs: { transform: ["scale(1)", "scale(0)"] }, delay: 3600 + (i % 4) * 40, ms: 220, ease: [0.55, 0, 1, 0.45] },
+    ]).flat(),
+  },
+};
+
+export const carvedPumpkinText: VectorEffect = {
+  kind: "vector",
+  id: "carved-pumpkin-text",
+  name: "Carved pumpkin text",
+  description:
+    "Letters carved through the ribbed orange skin of a pumpkin, a candle inside lighting them up from within, flickering, its glow spilling round the cuts, until it gutters out.",
+  category: "text",
+  tags: ["text", "title", "horror", "halloween", "pumpkin", "jack-o-lantern", "carved", "glow", "candle"],
+  hold: 600,
+  presets: [
+    { name: "Ghostly", values: { skin: [0.85, 0.85, 0.8], rib: [0.6, 0.6, 0.56], glow: [0.6, 1, 0.75] } },
+    { name: "Rotten", values: { skin: [0.45, 0.32, 0.12], rib: [0.28, 0.18, 0.06], glow: [0.95, 0.6, 0.2] } },
+  ],
+  derived: (v) => {
+    const { size, length, left } = fit(String(v.text), room(v, 340), 96);
+    const base = 100 + size * 0.35;
+    return {
+      ...frame(v, left, length, base, size, glowing([0.05, 0, DESCENT, 0], 0.12)),
+      size,
+      length,
+      base: r1(base),
+      lip: r1(size * 0.035),
+      halo: r1(size * 0.12),
+      ribA: mixHex(v.skin, v.rib, 0.7),
+      inner: mixHex(v.glow, v.rib, 0.55),
+    };
+  },
+  motion: (() => {
+    const word = (paint: string, dy = 0) =>
+      `<text x="200" y="{{base}}" dx="${dy}" dy="${dy}" text-anchor="middle" textLength="{{length}}" lengthAdjust="spacingAndGlyphs" font-family="{{font}}" font-size="{{size}}" font-weight="{{weight}}" ${paint}>{{text}}</text>`;
+    return {
+      svg: `<svg viewBox="{{viewBox}}" overflow="{{overflow}}" data-overhang="{{overhang}}"><!-- {{text: text default='TRICK OR TREAT' label='Text'}} {{skin: color default=#E2690F label='Skin'}} {{rib: color default=#9C3F06 label='Ribs'}} {{glow: color default=#FFD45E label='Candlelight'}} ${typeface(HEAVY, 900)} --><g opacity="{{backdrop}}"><rect width="400" height="200" fill="{{skin}}"/>${[-170, -100, -35, 35, 100, 170]
+        .map((x) => `<ellipse cx="${200 + x}" cy="100" rx="${Math.round(60 - Math.abs(x) * 0.12)}" ry="150" fill="none" stroke="{{ribA}}" stroke-width="5" opacity="0.55"/>`)
+        .join("")}</g>${word(`fill="{{inner}}"`)}<g id="candle" opacity="0">${word(`fill="none" stroke="{{glow}}" stroke-width="{{halo}}" stroke-linejoin="round" stroke-opacity="0.3"`)}${word(`fill="{{glow}}"`)}</g>${word(`fill="none" stroke="{{rib}}" stroke-width="{{lip}}" stroke-linejoin="round"`)}</svg>`,
+      animate: [
+        // Lit, catching unsteadily; burning with a flicker; then guttering out.
+        { id: "candle", attrs: { opacity: [0, 1] }, delay: 200, ms: 700, ease: "out", behavior: { type: "overshoot", cycles: 3, damping: 0.4 } },
+        { id: "candle", attrs: { opacity: [1, 0.72] }, delay: 900, ms: 2600, behavior: { type: "wriggle", frequency: 3, seed: 8 } },
+        { id: "candle", attrs: { opacity: [1, 0.35] }, delay: 3500, ms: 450, behavior: { type: "oscillate", count: 3, decay: 1 } },
+        { id: "candle", attrs: { opacity: [1, 0] }, delay: 3950, ms: 500, ease: [0.55, 0, 1, 0.45] },
+      ],
+    };
+  })(),
+};
+
 export const textEffects: VectorEffect[] = [
   typewriter,
   scrambleText,
@@ -1168,4 +1457,9 @@ export const textEffects: VectorEffect[] = [
   possessedText,
   runeGlow,
   bleedingText,
+  zalgoText,
+  foggedMirrorWriting,
+  scratchedText,
+  ransomNote,
+  carvedPumpkinText,
 ];

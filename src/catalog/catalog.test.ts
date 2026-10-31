@@ -2322,7 +2322,7 @@ describe("horror effects", () => {
     const found = findEffects({ category: "horror" }).map((e) => e.id);
     for (const id of IDS) expect(found, id).toContain(id);
     for (const effect of findEffects({ category: "horror" })) expect(effect.tags, effect.id).toContain("horror");
-    expect(findEffects({ tags: ["analog-horror"] }).map((e) => e.id).sort()).toEqual(["emergency-broadcast", "night-vision-cam", "signal-lost", "trail-cam", "vhs-tracking"]);
+    expect(findEffects({ category: "horror", tags: ["analog-horror"] }).map((e) => e.id).sort()).toEqual(["emergency-broadcast", "night-vision-cam", "signal-lost", "trail-cam", "vhs-tracking"]);
     expect(findEffects({ tags: ["spectral"] }).map((e) => e.id).sort()).toEqual(["ectoplasm-wisps", "ghost-apparition", "poltergeist", "possessed-text", "spirit-orbs"]);
     expect(findEffects({ category: "horror", tags: ["creature"] }).map((e) => e.id).sort()).toEqual(["bat-swarm", "creeping-dark", "eyes-in-the-dark", "passing-silhouette", "shadow-hands", "tentacles"]);
   });
@@ -2530,6 +2530,51 @@ describe("horror effects", () => {
     expect(inline.svg).toMatch(/^<svg viewBox="[\d.-]+ [\d.-]+ [\d.]+ [\d.]+" overflow="visible"/);
     expect(inline.svg.match(/font-family="([^"]*)"/g)!.every((f) => f === 'font-family="inherit"')).toBe(true);
     expect(svgMotionIssues(inline)).toEqual([]);
+  });
+
+  it("the horror transitions go from one picture to the next like every transition", () => {
+    const ids = ["transition-claw-slash", "transition-blood-wipe", "transition-shadow-swallow", "transition-static-cut", "transition-film-burn"];
+    expect(findEffects({ category: "transition", tags: ["horror"] }).map((e) => e.id).sort()).toEqual([...ids].sort());
+    for (const id of ids) {
+      const effect = getEffect(id)!;
+      expect(effect, id).toMatchObject({ category: "transition", video: "transition", loop: 4 });
+      expect(effectInputs(effect).images.map((i) => i.name), id).toEqual(["uFrom", "uTo"]);
+      expect(effectDefaults(effect), id).toMatchObject({ uFrom: SAMPLE_IMAGES.landscape, uTo: SAMPLE_IMAGES.city, uAnimate: true });
+      expect(effect.description, id).toMatch(/Loops back and forth; or turn Animate off and set Progress\.$/);
+    }
+  });
+
+  it("the horror text effects: zalgo marks, mixed faces, a trace that fades and a candle that goes out", () => {
+    expect(findEffects({ category: "text", tags: ["horror"] }).map((e) => e.id).sort()).toEqual(["carved-pumpkin-text", "fogged-mirror-writing", "ransom-note", "scratched-text", "zalgo-text"]);
+    const render = (id: string, values: Record<string, unknown> = {}) => {
+      const effect = getEffect(id)!;
+      if (effect.kind !== "vector") throw new Error("vector expected");
+      return renderVectorEffect(effect, { ...effectDefaults(effect), ...values } as never);
+    };
+    // Zalgo: the overrun version carries combining marks, more with more corruption; the plain one none.
+    const marks = (svg: string) => (svg.match(/[\u0300-\u036f]/g) ?? []).length;
+    expect(marks(render("zalgo-text", { amount: 2 }).svg)).toBeGreaterThan(marks(render("zalgo-text", { amount: 0.5 }).svg));
+    expect(render("zalgo-text").svg).toMatch(/id="z0"[^>]*>HE COMES</);
+    // Ransom note: a face per letter by default, one face for all once a font is set.
+    const faces = (svg: string) => new Set([...svg.matchAll(/font-family="([^"]*)"/g)].map((m) => m[1])).size;
+    expect(faces(render("ransom-note").svg)).toBeGreaterThan(2);
+    expect(faces(render("ransom-note", { font: "Georgia" }).svg)).toBe(1);
+    // Every one ends as it started.
+    for (const [id, el, attr] of [
+      ["fogged-mirror-writing", "trace", "stroke-dasharray"],
+      ["fogged-mirror-writing", "wiped", "opacity"],
+      ["scratched-text", "pass0", "stroke-dasharray"],
+      ["ransom-note", "cut0", "transform"],
+      ["carved-pumpkin-text", "candle", "opacity"],
+      ["zalgo-text", "z0", "opacity"],
+    ] as const) {
+      const motion = render(id);
+      const at = (ms: number) => svgFrame(motion.animate!, [], ms).get(el)!.attrs[attr];
+      expect(at(svgDuration(motion)), `${id} ${el}`).toEqual(at(0));
+    }
+    // The candle is lit in the middle of it.
+    const candle = render("carved-pumpkin-text");
+    expect(Number(svgFrame(candle.animate!, [], 2000).get("candle")!.attrs.opacity)).toBeGreaterThan(0.5);
   });
 
   it("possessed text writhes, lifts letters out of line and snaps them all back", () => {
