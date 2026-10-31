@@ -139,19 +139,24 @@ ${BACKDROP_CONTROLS}`,
     NOISE,
     PICTURE,
     HOLO,
-    `// The colour to key out: the picture's corners, averaged (a plain backdrop, a green screen).
-vec3 keyColour() {
-  vec3 k = vec3(0.0);
-  for (int i = 0; i < 4; i++) k += pictureRGBA(uImage, vec2(i == 1 || i == 3 ? 0.98 : 0.02, i >= 2 ? 0.98 : 0.02)).rgb;
-  return k * 0.25;
+    `// The colour to key out (rgb): the picture's opaque corners, averaged (a plain backdrop, a green screen); and
+// how opaque its corners are (a). A picture whose corners are clear (an icon, a cut-out) has no background to key.
+vec4 keyColour() {
+  vec4 k = vec4(0.0);
+  for (int i = 0; i < 4; i++) {
+    vec4 c = pictureRGBA(uImage, vec2(i == 1 || i == 3 ? 0.98 : 0.02, i >= 2 ? 0.98 : 0.02));
+    k += vec4(c.rgb * c.a, c.a);
+  }
+  return vec4(k.rgb / max(k.a, 1e-4), k.a * 0.25);
 }
 
-// The picture as light (rgb) and how much of it there is (a): clear where it is near the key colour.
-vec4 lightAt(vec2 uv, vec3 key) {
+// The picture as light (rgb) and how much of it there is (a): clear where it is near the key colour. A cut-out's
+// shape is what it shows, so its dark parts still give some light.
+vec4 lightAt(vec2 uv, vec4 key) {
   vec4 s = pictureRGBA(uImage, uv);
-  float lum = dot(s.rgb, vec3(0.299, 0.587, 0.114));
+  float lum = max(dot(s.rgb, vec3(0.299, 0.587, 0.114)), 0.6 * (1.0 - key.a));
   vec3 c = mix(s.rgb, uColor * (0.25 + 1.5 * lum), uTint);
-  float keep = mix(1.0, smoothstep(0.04, 0.04 + 0.3 * uKey, length(s.rgb - key)), step(0.001, uKey));
+  float keep = mix(1.0, smoothstep(0.04, 0.04 + 0.3 * uKey, length(s.rgb - key.rgb)), step(0.001, uKey) * key.a);
   return vec4(c * (0.7 + 1.4 * lum), s.a * keep);
 }
 
@@ -169,7 +174,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 tear = holoGlitch(uv.y);
   uv.x += tear.x;
   vec2 st = clamp(uv, 0.0, 1.0);
-  vec3 key = keyColour();
+  vec4 key = keyColour();
   vec4 l = lightAt(st, key);
   vec3 c = l.rgb;
   // The edges glow: where brightness or the cut-out changes fastest (worked out everywhere, so the slopes are sound).
