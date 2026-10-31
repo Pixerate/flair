@@ -795,8 +795,24 @@ describe("electric effects", () => {
 });
 
 describe("pixel effects", () => {
-  const SHADERS = ["image-8bit", "gameboy-screen", "pixel-fire", "pixel-landscape", "outrun-road", "palette-cycle", "raster-bars", "loading-stripes", "pixel-water"];
-  const VECTORS = ["pixel-text", "coin-spin", "space-invader", "pixel-heart-health", "chomp-loader"];
+  const SHADERS = [
+    "image-8bit",
+    "gameboy-screen",
+    "pixel-fire",
+    "pixel-landscape",
+    "outrun-road",
+    "palette-cycle",
+    "raster-bars",
+    "loading-stripes",
+    "pixel-water",
+    "image-pixel-sort",
+    "image-led-wall",
+    "image-subpixel",
+    "image-bricks",
+    "pixel-sprites",
+    "pixel-city",
+  ];
+  const VECTORS = ["pixel-text", "coin-spin", "space-invader", "pixel-heart-health", "chomp-loader", "rpg-dialog", "led-ticker"];
 
   it("are retro (the chomp loader is a loader) and tagged pixel or retro", () => {
     for (const id of [...SHADERS, ...VECTORS]) {
@@ -816,12 +832,54 @@ describe("pixel effects", () => {
     expect(effect.presets!.map((p) => p.values.uPalette)).toEqual([0, 1, 2, 3, 4, 5]);
   });
 
-  it("pixel dissolve is a looping two-image transition", () => {
-    const effect = getEffect("transition-pixel-dissolve")!;
+  it.each(["transition-pixel-dissolve", "transition-screen-melt", "transition-pixel-staircase"])("%s is a looping two-image transition", (id) => {
+    const effect = getEffect(id)!;
     expect(effect.category).toBe("transition");
     expect(effect.tags).toEqual(expect.arrayContaining(["transition", "pixel"]));
     expect(effectControls(effect).map((c) => c.name)).toEqual(expect.arrayContaining(["uFrom", "uTo", "uAnimate", "uProgress"]));
     expect(effect.kind === "shader" && effect.loop).toBe(4);
+  });
+
+  it("image treatments are video filters with a preset per style or layout", () => {
+    for (const id of ["image-pixel-sort", "image-led-wall", "image-subpixel", "image-bricks"]) expect(getEffect(id), id).toMatchObject({ video: "filter" });
+    expect(getEffect("image-subpixel")!.presets!.map((p) => p.values.uLayout)).toEqual([0, 1, 2]);
+    expect(getEffect("image-bricks")!.presets!.map((p) => p.values.uStyle)).toEqual([0, 1, 2]);
+  });
+
+  it("rpg dialog wraps any text onto its lines and types it out in order, the arrow ending lit", () => {
+    const effect = getEffect("rpg-dialog")!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    for (const text of ["", "Hi", "Hello, world & <co>!", "Café 日本 🎉", "SUPERCALIFRAGILISTICEXPIALIDOCIOUS IS QUITE A LONG WORD", "A ".repeat(200)]) {
+      const motion = renderVectorEffect(effect, { text, speaker: text });
+      expect(svgMotionIssues(motion), text).toEqual([]);
+      expect(JSON.stringify(motion), text).not.toMatch(/\{\{|NaN|undefined/);
+      expect(motion.svg.match(/<path id="c\d+"/g)).toHaveLength(75);
+    }
+    // Twenty letters and a word that would run past 25 columns: the word wraps to the second line.
+    const two = renderVectorEffect(effect, { text: `${"A".repeat(20)} BBBBBBBB`, pace: 50 });
+    expect(two.svg).toMatch(/<path id="c25"[^>]*d="M24 80/);
+    const typed = two.animate!.filter((a) => /^c\d+$/.test(a.id!));
+    expect(typed.find((a) => a.id === "c0")!.delay).toBe(350);
+    expect(typed.find((a) => a.id === "c25")!.delay).toBe(350 + 21 * 50);
+    const arrow = two.animate!.filter((a) => a.id === "arrow");
+    expect(arrow.at(-1)!.attrs).toEqual({ opacity: [1, 1] });
+    // No speaker, no name tab.
+    expect(renderVectorEffect(effect, { speaker: "" }).svg).toContain('<g opacity="0">');
+  });
+
+  it("led ticker crawls one LED column a frame, in from the right and out to the left", () => {
+    const effect = getEffect("led-ticker")!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    for (const text of ["", " ", "GO", "Café 日本 🎉 <b>", "X".repeat(300)]) {
+      const motion = renderVectorEffect(effect, { text, speed: 25 });
+      expect(svgMotionIssues(motion), text).toEqual([]);
+      expect(JSON.stringify(motion), text).not.toMatch(/\{\{|NaN|undefined/);
+      const [crawl] = motion.animate!;
+      const [from, to] = crawl!.attrs!.transform!.map((t) => Number(/translate\((-?[\d.]+)/.exec(String(t))![1]));
+      // Each 1/25 s frame moves exactly one 5-unit column.
+      expect(((from! - to!) / ((crawl!.ms as number) / 1000)) / 25).toBeCloseTo(5, 1);
+      expect(crawl!.strobe).toBe(25);
+    }
   });
 
   it("pixel text draws any text as one path per letter, cut to its slots", () => {

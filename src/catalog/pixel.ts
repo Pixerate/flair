@@ -327,5 +327,160 @@ export const chompLoader: VectorEffect = {
   })(),
 };
 
+// ── RPG dialog ─────────────────────────────────────────────────────────
+
+/** Letters a dialog line holds, and the lines it has. */
+const DIALOG_COLS = 25;
+const DIALOG_LINES = 3;
+const DIALOG_SLOTS = DIALOG_COLS * DIALOG_LINES;
+/** Letters a speaker's name tab holds. */
+const NAME_SLOTS = 12;
+/** When the panel has slid in and typing starts. */
+const DIALOG_START = 350;
+/** Blinks of the continue arrow once the text is out (odd, so it ends lit). */
+const ARROW_BLINKS = 9;
+const ARROW = ["#######", ".#####.", "..###..", "...#..."];
+
+/** `text` wrapped onto lines of at most `cols` letters, breaking long words, cut to `lines` lines. */
+function wrapPixelText(text: string, cols: number, lines: number): string[] {
+  const out: string[] = [];
+  let line = "";
+  for (let word of text.trim().split(/\s+/).filter(Boolean)) {
+    while (word.length > 0) {
+      const room = line ? cols - line.length - 1 : cols;
+      if (word.length <= room) {
+        line = line ? `${line} ${word}` : word;
+        word = "";
+      } else if (line) {
+        out.push(line);
+        line = "";
+      } else {
+        out.push(word.slice(0, cols));
+        word = word.slice(cols);
+      }
+    }
+  }
+  if (line) out.push(line);
+  return out.slice(0, lines);
+}
+
+/** A line of pixel-font text as one path, `unit` per pixel, its top-left at (`x`, `y`). */
+function pixelLine(text: string, unit: number, x: number, y: number): string {
+  const d = Array.from(text)
+    .map((c, i) => (/\s/.test(c) ? "" : bitmapPath(pixelGlyph(c), "#", unit, x + i * 6 * unit, y)))
+    .filter((p) => p !== "M0 0")
+    .join("");
+  return d || "M0 0";
+}
+
+const panelPose = (dy: number) => `translate(0 ${dy})`;
+
+export const rpgDialog: VectorEffect = {
+  kind: "vector",
+  id: "rpg-dialog",
+  name: "RPG dialog",
+  description: "A role-playing game's text box: a pixel-bordered panel with a speaker's name tab slides up, the line types out letter by letter in a pixel font, and a continue arrow blinks.",
+  category: "retro",
+  tags: ["pixel", "retro", "dialog", "text", "rpg", "game", "typewriter", "8-bit", "caption"],
+  hold: 400,
+  presets: [
+    { name: "Classic blue", values: { panel: [0.1, 0.16, 0.42], border: [1, 1, 1], ink: [1, 1, 1] } },
+    { name: "Handheld", values: { panel: [0.61, 0.74, 0.06], border: [0.06, 0.22, 0.06], ink: [0.06, 0.22, 0.06], nameInk: [0.61, 0.74, 0.06] } },
+    { name: "Parchment", values: { panel: [0.96, 0.9, 0.76], border: [0.36, 0.22, 0.12], ink: [0.25, 0.15, 0.08], nameInk: [0.96, 0.9, 0.76] } },
+  ],
+  // Letters are laid out here, one path per slot (attribute values, so no markup is injected).
+  derived: (v) => {
+    const lines = wrapPixelText(String(v.text ?? ""), DIALOG_COLS, DIALOG_LINES);
+    const pace = Number(v.pace) || 45;
+    const out: Record<string, string | number> = {};
+    let typed = 0;
+    for (let l = 0; l < DIALOG_LINES; l++) {
+      const line = lines[l] ?? "";
+      for (let i = 0; i < DIALOG_COLS; i++) {
+        const k = l * DIALOG_COLS + i;
+        const c = line[i];
+        out[`d${k}`] = c === undefined || /\s/.test(c) ? "M0 0" : bitmapPath(pixelGlyph(c), "#", 2, 24 + i * 12, 58 + l * 22);
+        out[`t${k}`] = c === undefined ? 0 : Math.round(DIALOG_START + (typed + i) * pace);
+      }
+      // A line break takes a letter's time too.
+      typed += line.length + 1;
+    }
+    const done = Math.round(DIALOG_START + Math.max(0, typed - 1) * pace);
+    for (let b = 0; b < ARROW_BLINKS; b++) out[`a${b}`] = done + b * 300;
+    const name = Array.from(String(v.speaker ?? "").trim()).slice(0, NAME_SLOTS).join("");
+    out.nameD = pixelLine(name, 2, 28, 29);
+    out.tabW = name ? name.length * 12 + 18 : 0;
+    out.tabShow = name ? 1 : 0;
+    return out;
+  },
+  motion: {
+    svg: `<svg viewBox="0 0 360 140" shape-rendering="crispEdges"><!-- {{text: text default='WELCOME, TRAVELLER! THE ROAD AHEAD IS DANGEROUS. TAKE THIS.' label='Text'}} {{speaker: text default='SAGE' label='Speaker'}} {{panel: color default=#1A2A6C label='Panel'}} {{border: color default=#FFFFFF label='Border'}} {{ink: color default=#FFFFFF label='Text colour'}} {{nameInk: color default=#1A2A6C label='Name colour'}} {{pace: float min=15 max=200 default=45 step=5 label='Ms per letter'}} --><g id="box" transform="${panelPose(40)}" opacity="0"><g opacity="{{tabShow}}"><rect x="18" y="24" width="{{tabW}}" height="22" fill="{{border}}"/><path fill="{{nameInk}}" d="{{nameD}}"/></g><path fill="{{border}}" d="M16 46h328v2h2v78h-2v2h-328v-2h-2v-78h2z"/><rect x="17" y="49" width="326" height="76" fill="{{panel}}"/><rect x="19" y="51" width="322" height="72" fill="none" stroke="{{border}}" stroke-opacity="0.35" stroke-width="1"/>${Array.from(
+      { length: DIALOG_SLOTS },
+      (_, k) => `<path id="c${k}" fill="{{ink}}" opacity="0" d="{{d${k}}}"/>`,
+    ).join("")}<path id="arrow" fill="{{ink}}" opacity="0" d="${bitmapPath(ARROW, "#", 2, 326, 112)}"/></g></svg>`,
+    animate: [
+      { id: "box", attrs: { transform: [panelPose(40), panelPose(0)], opacity: [0, 1] }, ms: 240, ease: "out", strobe: 15 },
+      ...Array.from({ length: DIALOG_SLOTS }, (_, k) => snap(`c${k}`, "opacity", 1, n(`t${k}`))),
+      ...Array.from({ length: ARROW_BLINKS }, (_, b) => snap("arrow", "opacity", b % 2 ? 0 : 1, n(`a${b}`))),
+    ],
+  },
+};
+
+// ── LED ticker ─────────────────────────────────────────────────────────
+
+/** LED columns on the sign, and the spacing of LEDs in user units. */
+const LED_COLS = 64;
+const LED_PITCH = 5;
+/** Letters the ticker carries; longer text is cut. */
+const LED_TEXT_MAX = 80;
+const LED_X0 = 7.5;
+const LED_Y0 = 10.5;
+const LED_W = LED_COLS * LED_PITCH + 10;
+const LED_H = 7 * LED_PITCH + 16;
+
+/** One LED per lit point, as zero-length round-capped strokes, column `x` and row `y` from the board's first LED. */
+const ledDots = (points: readonly (readonly [number, number])[]) =>
+  points.map(([x, y]) => `M${r2(LED_X0 + x * LED_PITCH)} ${r2(LED_Y0 + y * LED_PITCH)}h0`).join("") || "M0 0";
+
+/** Every LED on the board, lit or not. */
+const LED_BOARD = ledDots(Array.from({ length: LED_COLS * 7 }, (_, i) => [i % LED_COLS, Math.floor(i / LED_COLS)] as const));
+
+export const ledTicker: VectorEffect = {
+  kind: "vector",
+  id: "led-ticker",
+  name: "LED ticker",
+  description: "A dot-matrix LED sign with any text marching across it a column at a time, its lit dots glowing over the dim unlit ones, in a seamless loop.",
+  category: "retro",
+  tags: ["pixel", "retro", "led", "dot-matrix", "ticker", "marquee", "sign", "text", "loop"],
+  hold: 0,
+  presets: [
+    { name: "Amber", values: { led: [1, 0.69, 0], off: [0.14, 0.1, 0.04] } },
+    { name: "Red", values: { led: [1, 0.16, 0.12], off: [0.16, 0.04, 0.04] } },
+    { name: "Green", values: { led: [0.3, 1, 0.35], off: [0.05, 0.14, 0.06] } },
+    { name: "Ice", values: { led: [0.55, 0.85, 1], off: [0.06, 0.1, 0.16] } },
+  ],
+  derived: (v) => {
+    const text = Array.from(String(v.text ?? "").replace(/\s+/g, " ").trim()).slice(0, LED_TEXT_MAX);
+    const points: [number, number][] = [];
+    text.forEach((c, i) =>
+      pixelGlyph(c).forEach((row, y) => [...row].forEach((p, x) => p === "#" && points.push([i * 6 + x, y]))),
+    );
+    // In from beyond the right edge, out past the left, one column a step.
+    const columns = LED_COLS + Math.max(1, text.length) * 6;
+    const speed = Number(v.speed) || 20;
+    return {
+      dots: ledDots(points),
+      enter: `translate(${LED_COLS * LED_PITCH} 0)`,
+      leave: `translate(${-(columns - LED_COLS) * LED_PITCH} 0)`,
+      period: Math.round((columns * 1000) / speed),
+      fps: speed,
+    };
+  },
+  motion: {
+    svg: `<svg viewBox="0 0 ${LED_W} ${LED_H}" shape-rendering="crispEdges"><!-- {{text: text default='NOW BOARDING  GATE 12  ' label='Text'}} {{led: color default=#FFB000 label='Lit LEDs'}} {{off: color default=#24190A label='Unlit LEDs'}} {{board: color default=#0B0B0B label='Board'}} {{frame: color default=#2B2B2B label='Frame'}} {{speed: float min=4 max=60 default=20 step=1 label='Columns per second'}} --><defs><clipPath id="ledTickerClip"><rect x="4" y="6" width="${LED_W - 8}" height="${LED_H - 12}"/></clipPath></defs><rect width="${LED_W}" height="${LED_H}" fill="{{frame}}"/><rect x="3" y="3" width="${LED_W - 6}" height="${LED_H - 6}" fill="{{board}}"/><g shape-rendering="geometricPrecision" fill="none" stroke-linecap="round"><path stroke="{{off}}" stroke-width="3.4" d="${LED_BOARD}"/><g clip-path="url(#ledTickerClip)"><g id="crawl" transform="{{enter}}"><path stroke="{{led}}" stroke-opacity="0.3" stroke-width="6" d="{{dots}}"/><path stroke="{{led}}" stroke-width="3.4" d="{{dots}}"/></g></g></g></svg>`,
+    animate: [{ id: "crawl", attrs: { transform: ["{{enter}}", "{{leave}}"] }, ms: n("period"), ease: "linear", strobe: n("fps") }],
+  },
+};
+
 /** Pixel-art vector effects: sprites, pixel type and 8-bit UI. */
-export const pixelEffects: VectorEffect[] = [pixelText, coinSpin, spaceInvader, pixelHeartHealth, chompLoader];
+export const pixelEffects: VectorEffect[] = [pixelText, coinSpin, spaceInvader, pixelHeartHealth, chompLoader, rpgDialog, ledTicker];
