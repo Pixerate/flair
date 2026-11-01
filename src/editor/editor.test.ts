@@ -282,6 +282,62 @@ describe("commands and agent tools", () => {
     expect(editor.commands.execute("values.set", { values: { thickness: 5 } })).toMatchObject({ ok: false, message: expect.stringMatching(/thickness takes a number from 0 to 0\.2/) });
   });
 
+  it("lets agents find the chart, retro and reaction memes by kind, load each, apply presets and refuse bad values", async () => {
+    const editor = createEffectEditor({ from: "aurora" });
+    const provider = createEffectToolProvider(editor);
+    type Search = { total: number; effects: { id: string; category: string }[] };
+    const search = async (params: Record<string, unknown>) => {
+      const found = await callTool(provider, "run_command", { id: "catalog.search", params: { category: "meme", limit: 50, ...params } });
+      expect(found.isError).toBeFalsy();
+      return (found.structuredContent as { result: Search }).result.effects.map((e) => e.id);
+    };
+    expect(await search({ tags: ["reaction"] })).toEqual(expect.arrayContaining(["bonk", "hitmarker-montage", "reaction-rain"]));
+    expect(await search({ tags: ["chart"] })).toEqual(["stonks-chart"]);
+    expect(await search({ tags: ["retro"] })).toEqual(expect.arrayContaining(["error-cascade", "wordart-text"]));
+
+    // Each loads, and its presets apply.
+    for (const [id, preset] of [
+      ["stonks-chart", "Not stonks"],
+      ["error-cascade", "Trail"],
+      ["bonk", "Overlay"],
+      ["hitmarker-montage", "Rapid fire"],
+      ["reaction-rain", "Hearts"],
+      ["wordart-text", "Arch"],
+    ] as const) {
+      const run = await callTool(provider, "run_commands", {
+        steps: [
+          { id: "effect.load", params: { id } },
+          { id: "preset.apply", params: { name: preset } },
+        ],
+      });
+      expect(run.isError, id).toBeFalsy();
+      expect(editor.document.basedOn).toBe(id);
+    }
+    expect(editor.document.values).toMatchObject({ arch: 0.8, wave: 0 });
+
+    // Text, numbers and switches land as given.
+    await callTool(provider, "run_command", { id: "effect.load", params: { id: "error-cascade" } });
+    const set = await callTool(provider, "run_command", { id: "values.set", params: { values: { title: "Fatal", message: "Out of memes.", count: 4, trail: true } } });
+    expect(set.isError).toBeFalsy();
+    expect(editor.document.values).toMatchObject({ title: "Fatal", message: "Out of memes.", count: 4, trail: true });
+    // Too many dialogs, a mistyped switch and an unknown preset are refused, naming what is allowed, and nothing changes.
+    const many = await callTool(provider, "run_command", { id: "values.set", params: { values: { count: 40 } } });
+    expect(many.isError).toBe(true);
+    expect(JSON.stringify(many)).toMatch(/count takes a number from 1 to 16, not 40/);
+    expect(editor.commands.execute("values.set", { values: { trail: "yes" } })).toMatchObject({ ok: false, message: expect.stringMatching(/trail takes true or false/) });
+    expect(editor.commands.execute("preset.apply", { name: "Blue screen" })).toMatchObject({ ok: false });
+    expect(editor.document.values).toMatchObject({ count: 4, trail: true });
+
+    await callTool(provider, "run_command", { id: "effect.load", params: { id: "reaction-rain" } });
+    expect(editor.commands.execute("values.set", { values: { glyphs: 5 } })).toMatchObject({ ok: false, message: expect.stringMatching(/glyphs takes text/) });
+    expect(editor.commands.execute("values.set", { values: { glyphs: "🎉 🙌" } })).toMatchObject({ ok: true });
+
+    await callTool(provider, "run_command", { id: "effect.load", params: { id: "wordart-text" } });
+    expect(editor.commands.execute("values.set", { values: { wave: 2 } })).toMatchObject({ ok: false, message: expect.stringMatching(/wave takes a number from -1 to 1/) });
+    expect(editor.commands.execute("values.set", { values: { skew: -45 } })).toMatchObject({ ok: false, message: expect.stringMatching(/skew takes a number from -30 to 30/) });
+    expect(editor.document.values.wave).toBeUndefined();
+  });
+
   it("refuses values beyond a control's declared range, naming it, and changes nothing", async () => {
     const editor = createEffectEditor({ from: "beauty-blush" });
     const provider = createEffectToolProvider(editor);
@@ -337,6 +393,51 @@ describe("commands and agent tools", () => {
     expect(documentIssues({ ...editor.document, values: { uText: { text: "HI" } } } as never)).toEqual([
       'values: uText stores a text image\'s URL; words as {"text": …} are only taken by values.set and keyframe.set.',
     ]);
+  });
+
+  it("lets agents find the second batch of meme shaders, load one by its kind and set its words and levels", async () => {
+    const editor = createEffectEditor({ from: "aurora" });
+    const provider = createEffectToolProvider(editor);
+    type Search = { total: number; effects: { id: string; category: string }[] };
+    const BATCH = ["needs-more-jpeg", "triggered", "vaporwave-grade", "galaxy-brain", "sad-mode", "game-over-banner"];
+    const all = await callTool(provider, "run_command", { id: "catalog.search", params: { category: "meme", limit: 50 } });
+    expect((all.structuredContent as { result: Search }).result.effects.map((e) => e.id)).toEqual(expect.arrayContaining(BATCH));
+    const endings = await callTool(provider, "run_command", { id: "catalog.search", params: { category: "meme", tags: ["ending"], limit: 50 } });
+    expect((endings.structuredContent as { result: Search }).result.effects.map((e) => e.id).sort()).toEqual(["game-over-banner", "to-be-continued"]);
+
+    // Every one loads, and every preset applies within its controls.
+    for (const id of BATCH) {
+      expect(editor.commands.execute("effect.load", { id }), id).toMatchObject({ ok: true });
+      for (const preset of getEffect(id)!.presets ?? []) {
+        expect(editor.commands.execute("preset.apply", { name: preset.name }), `${id}: ${preset.name}`).toMatchObject({ ok: true });
+      }
+    }
+
+    // A banner's words go in as words; the level and head point are set and checked like any control.
+    const run = await callTool(provider, "run_commands", {
+      steps: [
+        { id: "effect.load", params: { id: "game-over-banner" } },
+        { id: "values.set", params: { values: { uText: { text: "CONTINUE?" }, uPlay: 0.8 } } },
+      ],
+    });
+    expect(run.isError).toBeFalsy();
+    expect(editor.document.values).toMatchObject({ uText: expect.stringContaining("CONTINUE%3F"), uPlay: 0.8 });
+    // In the banner's own serif, since no font was named.
+    expect(decodeURIComponent(editor.document.values.uText as string)).toMatch(/font-family="Georgia[^"]*serif"/);
+
+    editor.commands.execute("effect.load", { id: "galaxy-brain" });
+    expect(editor.commands.execute("values.set", { values: { uLevel: 2, uHead: [0.42, 0.8] } })).toMatchObject({ ok: true });
+    expect(editor.document.values).toMatchObject({ uLevel: 2, uHead: [0.42, 0.8] });
+    // Out of range or mistyped, it is refused with the valid range, and nothing changes.
+    expect(editor.commands.execute("values.set", { values: { uLevel: 5 } })).toMatchObject({ ok: false, message: "uLevel takes a number from 1 to 4, not 5." });
+    expect(editor.commands.execute("values.set", { values: { uHead: [0.5, 1.4] } })).toMatchObject({ ok: false, message: expect.stringMatching(/uHead takes 2 numbers, each from 0 to 1/) });
+    expect(editor.document.values).toMatchObject({ uLevel: 2, uHead: [0.42, 0.8] });
+
+    // The jitter can't be pushed past its cap.
+    editor.commands.execute("effect.load", { id: "triggered" });
+    expect(editor.commands.execute("values.set", { values: { uShake: 3 } })).toMatchObject({ ok: false, message: "uShake takes a number from 0 to 1, not 3." });
+    expect(editor.commands.execute("values.set", { values: { uShake: "max" } })).toMatchObject({ ok: false, message: expect.stringMatching(/uShake takes a number/) });
+    expect(editor.document.values.uShake).toBeUndefined();
   });
 
   it("lets agents edit vector pictures and see shader compiles", async () => {

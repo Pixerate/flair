@@ -1,5 +1,1212 @@
 [
   {
+    "id": "wordart-text",
+    "name": "Word art",
+    "kind": "vector",
+    "category": "meme",
+    "description": "90s word art: chunky letters in a rainbow gradient that flows along them, skewed, with a deep 3D extrude growing out behind, set on a wave or an arch, spinning in with a bounce.",
+    "tags": [
+      "meme",
+      "caption",
+      "retro",
+      "word-art",
+      "rainbow",
+      "3d",
+      "extrude",
+      "90s",
+      "text"
+    ],
+    "controls": [
+      {
+        "n": "text",
+        "t": "text",
+        "d": "TOTALLY RAD",
+        "line": 1
+      },
+      {
+        "n": "wave",
+        "t": "float",
+        "d": 0.5,
+        "min": -1,
+        "s": 0.05,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "arch",
+        "t": "float",
+        "d": 0,
+        "min": -1,
+        "s": 0.05,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "skew",
+        "t": "float",
+        "d": -12,
+        "l": "Skew (°)",
+        "min": -30,
+        "max": 30,
+        "s": 1,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "depth",
+        "t": "float",
+        "d": 1,
+        "l": "Extrude depth",
+        "max": 2,
+        "s": 0.05,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "thickness",
+        "t": "float",
+        "d": 1,
+        "l": "Outline",
+        "max": 3,
+        "s": 0.1,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "flow",
+        "t": "bool",
+        "d": true,
+        "l": "Flowing colours",
+        "line": 7
+      },
+      {
+        "n": "c1",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            45,
+            45
+          ]
+        },
+        "l": "Colour 1",
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "c2",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            196,
+            0
+          ]
+        },
+        "l": "Colour 2",
+        "c": 1,
+        "line": 9
+      },
+      {
+        "n": "c3",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            39,
+            216,
+            69
+          ]
+        },
+        "l": "Colour 3",
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "c4",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            45,
+            123,
+            255
+          ]
+        },
+        "l": "Colour 4",
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "c5",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            176,
+            61,
+            255
+          ]
+        },
+        "l": "Colour 5",
+        "c": 1,
+        "line": 12
+      },
+      {
+        "n": "side",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            58,
+            29,
+            110
+          ]
+        },
+        "l": "Extrude",
+        "c": 1,
+        "line": 13
+      },
+      {
+        "n": "outline",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            20,
+            16,
+            42
+          ]
+        },
+        "l": "Outline colour",
+        "c": 1,
+        "line": 14
+      },
+      {
+        "n": "font",
+        "t": "text",
+        "d": "'Arial Black', 'Arial Bold', Impact, 'Helvetica Neue', sans-serif",
+        "line": 15
+      },
+      {
+        "n": "background",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            59,
+            66,
+            82
+          ]
+        },
+        "c": 1,
+        "line": 16
+      },
+      {
+        "n": "backdrop",
+        "t": "float",
+        "d": 1,
+        "l": "Background opacity",
+        "s": 0.05,
+        "b": 3,
+        "line": 17
+      }
+    ],
+    "presets": [
+      "Overlay",
+      "Arch",
+      "Big wave",
+      "Chrome",
+      "Flat"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "text",
+          "label": "Text",
+          "holds": "copy",
+          "default": "TOTALLY RAD"
+        },
+        {
+          "name": "font",
+          "label": "Font",
+          "holds": "font",
+          "default": "'Arial Black', 'Arial Bold', Impact, 'Helvetica Neue', sans-serif"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 1800,
+    "animated": true,
+    "duration": 4640,
+    "module": "meme",
+    "addedAt": "2026-11-01T07:26:36Z",
+    "commitHash": "097fe892afd2b3031a493c9a7a3463ee48679757",
+    "order": 584
+  },
+  {
+    "id": "reaction-rain",
+    "name": "Reaction rain",
+    "kind": "vector",
+    "category": "meme",
+    "description": "Live-stream reactions floating up the side of the frame: emoji (or any glyphs or words) popping in at the bottom, wobbling as they rise and fading out near the top.",
+    "tags": [
+      "meme",
+      "reaction",
+      "emoji",
+      "live",
+      "stream",
+      "heart",
+      "float",
+      "social",
+      "overlay"
+    ],
+    "controls": [
+      {
+        "n": "glyphs",
+        "t": "text",
+        "d": "😂🔥💀",
+        "l": "Reactions",
+        "line": 1
+      },
+      {
+        "n": "count",
+        "t": "int",
+        "d": 14,
+        "l": "How many",
+        "min": 1,
+        "max": 18,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "rate",
+        "t": "float",
+        "d": 5,
+        "l": "A second",
+        "min": 0.5,
+        "max": 12,
+        "s": 0.5,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "speed",
+        "t": "float",
+        "d": 1,
+        "l": "Rise speed",
+        "min": 0.4,
+        "max": 2.5,
+        "s": 0.1,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "side",
+        "t": "float",
+        "d": 0.86,
+        "l": "Column across",
+        "s": 0.01,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "spread",
+        "t": "float",
+        "d": 0.08,
+        "l": "Column width",
+        "max": 0.5,
+        "s": 0.01,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "scale",
+        "t": "float",
+        "d": 1,
+        "l": "Size",
+        "min": 0.5,
+        "max": 2.5,
+        "s": 0.05,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "font",
+        "t": "text",
+        "d": "'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Twemoji Mozilla', sans-serif",
+        "line": 8
+      },
+      {
+        "n": "background",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            59,
+            66,
+            82
+          ]
+        },
+        "c": 1,
+        "line": 9
+      },
+      {
+        "n": "backdrop",
+        "t": "float",
+        "d": 1,
+        "l": "Background opacity",
+        "s": 0.05,
+        "b": 3,
+        "line": 10
+      }
+    ],
+    "presets": [
+      "Overlay",
+      "Left side",
+      "Hearts",
+      "Flood"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [
+        {
+          "name": "glyphs",
+          "label": "Reactions",
+          "holds": "glyphs",
+          "default": "😂🔥💀"
+        },
+        {
+          "name": "font",
+          "label": "Font",
+          "holds": "font",
+          "default": "'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Twemoji Mozilla', sans-serif"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 300,
+    "animated": true,
+    "duration": 6704,
+    "module": "meme",
+    "addedAt": "2026-11-01T07:26:36Z",
+    "commitHash": "097fe892afd2b3031a493c9a7a3463ee48679757",
+    "order": 583
+  },
+  {
+    "id": "hitmarker-montage",
+    "name": "Hitmarker montage",
+    "kind": "vector",
+    "category": "meme",
+    "description": "A montage-parody volley: hit markers slamming down one after another at points across the frame, a score popping up and floating off each, the frame jolting with every hit and the last one in red.",
+    "tags": [
+      "meme",
+      "reaction",
+      "hitmarker",
+      "montage",
+      "game",
+      "fps",
+      "score",
+      "shake",
+      "overlay"
+    ],
+    "controls": [
+      {
+        "n": "points",
+        "t": "text",
+        "d": "0.32,0.62 0.6,0.45 0.44,0.3 0.72,0.68 0.5,0.52",
+        "l": "Hits (x,y 0–1, y up)",
+        "line": 1
+      },
+      {
+        "n": "score",
+        "t": "text",
+        "d": "+100",
+        "line": 2
+      },
+      {
+        "n": "pace",
+        "t": "float",
+        "d": 0.32,
+        "l": "Seconds between hits",
+        "min": 0.08,
+        "max": 1.5,
+        "s": 0.01,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "size",
+        "t": "float",
+        "d": 1.25,
+        "min": 0.5,
+        "max": 2.5,
+        "s": 0.05,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "weight",
+        "t": "float",
+        "d": 4.5,
+        "l": "Tick weight",
+        "min": 2,
+        "max": 9,
+        "s": 0.5,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "shake",
+        "t": "float",
+        "d": 4,
+        "max": 12,
+        "s": 0.5,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "marker",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "finale",
+        "t": "bool",
+        "d": true,
+        "l": "Last hit in red",
+        "line": 8
+      },
+      {
+        "n": "kill",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            42,
+            42
+          ]
+        },
+        "l": "Last hit",
+        "c": 1,
+        "line": 9
+      },
+      {
+        "n": "scoreInk",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            214,
+            10
+          ]
+        },
+        "l": "Score colour",
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "font",
+        "t": "text",
+        "d": "Impact, Anton, 'Haettenschweiler', 'Arial Narrow Bold', 'Arial Black', sans-serif",
+        "line": 11
+      },
+      {
+        "n": "background",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            59,
+            66,
+            82
+          ]
+        },
+        "c": 1,
+        "line": 12
+      },
+      {
+        "n": "backdrop",
+        "t": "float",
+        "d": 1,
+        "l": "Background opacity",
+        "s": 0.05,
+        "b": 3,
+        "line": 13
+      }
+    ],
+    "presets": [
+      "Overlay",
+      "Headshots",
+      "Rapid fire",
+      "Steady"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "points",
+          "label": "Hits (x,y 0–1, y up)",
+          "holds": "copy",
+          "default": "0.32,0.62 0.6,0.45 0.44,0.3 0.72,0.68 0.5,0.52"
+        },
+        {
+          "name": "score",
+          "label": "Score",
+          "holds": "copy",
+          "default": "+100"
+        },
+        {
+          "name": "font",
+          "label": "Font",
+          "holds": "font",
+          "default": "Impact, Anton, 'Haettenschweiler', 'Arial Narrow Bold', 'Arial Black', sans-serif"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 900,
+    "animated": true,
+    "duration": 3410,
+    "module": "meme",
+    "addedAt": "2026-11-01T07:26:36Z",
+    "commitHash": "097fe892afd2b3031a493c9a7a3463ee48679757",
+    "order": 582
+  },
+  {
+    "id": "bonk",
+    "name": "Bonk",
+    "kind": "vector",
+    "category": "meme",
+    "description": "A cartoon mallet winds up and swings down onto a point, the head under it squashes and springs back, and a comic impact star pops with the word BONK, the frame shaking from the hit.",
+    "tags": [
+      "meme",
+      "reaction",
+      "comic",
+      "bonk",
+      "mallet",
+      "hammer",
+      "hit",
+      "cartoon",
+      "overlay"
+    ],
+    "controls": [
+      {
+        "n": "word",
+        "t": "text",
+        "d": "BONK",
+        "line": 1
+      },
+      {
+        "n": "x",
+        "t": "float",
+        "d": 0.5,
+        "l": "Hit across",
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "y",
+        "t": "float",
+        "d": 0.775,
+        "l": "Hit up",
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "size",
+        "t": "float",
+        "d": 0.75,
+        "min": 0.4,
+        "max": 2,
+        "s": 0.05,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "head",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            181,
+            118,
+            60
+          ]
+        },
+        "l": "Mallet head",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "handle",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            138,
+            84,
+            39
+          ]
+        },
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "burst",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            214,
+            10
+          ]
+        },
+        "l": "Star",
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "letters",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            59,
+            48
+          ]
+        },
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "ink",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            17,
+            17,
+            17
+          ]
+        },
+        "c": 1,
+        "line": 9
+      },
+      {
+        "n": "face",
+        "t": "bool",
+        "d": true,
+        "l": "Sample face",
+        "line": 10
+      },
+      {
+        "n": "font",
+        "t": "text",
+        "d": "'Bangers', 'Luckiest Guy', Impact, 'Arial Black', sans-serif",
+        "line": 11
+      },
+      {
+        "n": "background",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            59,
+            66,
+            82
+          ]
+        },
+        "c": 1,
+        "line": 12
+      },
+      {
+        "n": "backdrop",
+        "t": "float",
+        "d": 1,
+        "l": "Background opacity",
+        "s": 0.05,
+        "b": 3,
+        "line": 13
+      }
+    ],
+    "presets": [
+      "Overlay",
+      "Toy hammer",
+      "Big bonk"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "word",
+          "label": "Word",
+          "holds": "copy",
+          "default": "BONK"
+        },
+        {
+          "name": "font",
+          "label": "Font",
+          "holds": "font",
+          "default": "'Bangers', 'Luckiest Guy', Impact, 'Arial Black', sans-serif"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 500,
+    "animated": true,
+    "duration": 2250,
+    "module": "meme",
+    "addedAt": "2026-11-01T07:26:36Z",
+    "commitHash": "097fe892afd2b3031a493c9a7a3463ee48679757",
+    "order": 581
+  },
+  {
+    "id": "error-cascade",
+    "name": "Error cascade",
+    "kind": "vector",
+    "category": "meme",
+    "description": "Retro error dialogs popping up one after another, cascading down the screen or dragging a trail across it like a frozen computer, each with an editable title, message and button and no real system's branding.",
+    "tags": [
+      "meme",
+      "retro",
+      "error",
+      "dialog",
+      "window",
+      "crash",
+      "glitch",
+      "90s",
+      "overlay"
+    ],
+    "controls": [
+      {
+        "n": "title",
+        "t": "text",
+        "d": "Error",
+        "line": 1
+      },
+      {
+        "n": "message",
+        "t": "text",
+        "d": "Something went horribly wrong.",
+        "line": 2
+      },
+      {
+        "n": "button",
+        "t": "text",
+        "d": "OK",
+        "line": 3
+      },
+      {
+        "n": "count",
+        "t": "int",
+        "d": 10,
+        "l": "Dialogs",
+        "min": 1,
+        "max": 16,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "pace",
+        "t": "float",
+        "d": 0.18,
+        "l": "Seconds between",
+        "min": 0.03,
+        "s": 0.01,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "trail",
+        "t": "bool",
+        "d": false,
+        "l": "Drag a trail",
+        "line": 6
+      },
+      {
+        "n": "face",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            192,
+            192,
+            192
+          ]
+        },
+        "l": "Window",
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "bar",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            0,
+            0,
+            128
+          ]
+        },
+        "l": "Title bar",
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "bar2",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            16,
+            132,
+            208
+          ]
+        },
+        "l": "Title bar fade",
+        "c": 1,
+        "line": 9
+      },
+      {
+        "n": "titleInk",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "l": "Title colour",
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "ink",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            0,
+            0,
+            0
+          ]
+        },
+        "l": "Text colour",
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "icon",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            232,
+            17,
+            35
+          ]
+        },
+        "c": 1,
+        "line": 12
+      },
+      {
+        "n": "font",
+        "t": "text",
+        "d": "Tahoma, Verdana, 'DejaVu Sans', Geneva, sans-serif",
+        "line": 13
+      },
+      {
+        "n": "background",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            59,
+            66,
+            82
+          ]
+        },
+        "c": 1,
+        "line": 14
+      },
+      {
+        "n": "backdrop",
+        "t": "float",
+        "d": 1,
+        "l": "Background opacity",
+        "s": 0.05,
+        "b": 3,
+        "line": 15
+      }
+    ],
+    "presets": [
+      "Overlay",
+      "Trail",
+      "Warning",
+      "Dark"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "title",
+          "label": "Title",
+          "holds": "copy",
+          "default": "Error"
+        },
+        {
+          "name": "message",
+          "label": "Message",
+          "holds": "copy",
+          "default": "Something went horribly wrong."
+        },
+        {
+          "name": "button",
+          "label": "Button",
+          "holds": "copy",
+          "default": "OK"
+        },
+        {
+          "name": "font",
+          "label": "Font",
+          "holds": "font",
+          "default": "Tahoma, Verdana, 'DejaVu Sans', Geneva, sans-serif"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 1500,
+    "animated": true,
+    "duration": 3450,
+    "module": "meme",
+    "addedAt": "2026-11-01T07:26:36Z",
+    "commitHash": "097fe892afd2b3031a493c9a7a3463ee48679757",
+    "order": 580
+  },
+  {
+    "id": "stonks-chart",
+    "name": "Stonks chart",
+    "kind": "vector",
+    "category": "meme",
+    "description": "The stonks trope: a jagged line chart rocketing up to a fat arrow head (or crashing down, by a switch), its value ticking up as it draws and a bold label above, laid over a picture or on its own.",
+    "tags": [
+      "meme",
+      "chart",
+      "stonks",
+      "line-chart",
+      "arrow",
+      "counter",
+      "finance",
+      "overlay"
+    ],
+    "controls": [
+      {
+        "n": "label",
+        "t": "text",
+        "d": "STONKS",
+        "line": 1
+      },
+      {
+        "n": "value",
+        "t": "float",
+        "d": 420,
+        "max": 1000000,
+        "s": 1,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "decimals",
+        "t": "int",
+        "d": 0,
+        "max": 2,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "prefix",
+        "t": "text",
+        "d": "",
+        "l": "Before the value",
+        "line": 4
+      },
+      {
+        "n": "suffix",
+        "t": "text",
+        "d": "%",
+        "l": "After the value",
+        "line": 5
+      },
+      {
+        "n": "crash",
+        "t": "bool",
+        "d": false,
+        "line": 6
+      },
+      {
+        "n": "rise",
+        "t": "float",
+        "d": 1.8,
+        "l": "Draw time (s)",
+        "min": 0.5,
+        "max": 6,
+        "s": 0.1,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "jag",
+        "t": "float",
+        "d": 1,
+        "l": "Jaggedness",
+        "max": 1.5,
+        "s": 0.05,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "line",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            34,
+            197,
+            94
+          ]
+        },
+        "c": 1,
+        "line": 9
+      },
+      {
+        "n": "grid",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            148,
+            163,
+            184
+          ]
+        },
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "ink",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "l": "Text colour",
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "outline",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            0,
+            0,
+            0
+          ]
+        },
+        "c": 1,
+        "line": 12
+      },
+      {
+        "n": "font",
+        "t": "text",
+        "d": "Impact, Anton, 'Haettenschweiler', 'Arial Narrow Bold', 'Arial Black', sans-serif",
+        "line": 13
+      },
+      {
+        "n": "background",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            59,
+            66,
+            82
+          ]
+        },
+        "c": 1,
+        "line": 14
+      },
+      {
+        "n": "backdrop",
+        "t": "float",
+        "d": 1,
+        "l": "Background opacity",
+        "s": 0.05,
+        "b": 3,
+        "line": 15
+      }
+    ],
+    "presets": [
+      "Overlay",
+      "Not stonks",
+      "Dollars",
+      "Slow burn"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "label",
+          "label": "Label",
+          "holds": "copy",
+          "default": "STONKS"
+        },
+        {
+          "name": "prefix",
+          "label": "Before the value",
+          "holds": "copy",
+          "default": ""
+        },
+        {
+          "name": "suffix",
+          "label": "After the value",
+          "holds": "copy",
+          "default": "%"
+        },
+        {
+          "name": "font",
+          "label": "Font",
+          "holds": "font",
+          "default": "Impact, Anton, 'Haettenschweiler', 'Arial Narrow Bold', 'Arial Black', sans-serif"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 1400,
+    "animated": true,
+    "duration": 4100,
+    "module": "meme",
+    "addedAt": "2026-11-01T07:26:36Z",
+    "commitHash": "097fe892afd2b3031a493c9a7a3463ee48679757",
+    "order": 579
+  },
+  {
     "id": "deal-with-it",
     "name": "Deal with it",
     "kind": "vector",
@@ -2024,993 +3231,5 @@
     "addedAt": "2026-10-31T23:08:09Z",
     "commitHash": "d6ca2e38c652f866158955b1c52b37cc4ec227dc",
     "order": 565
-  },
-  {
-    "id": "pixel-sprites",
-    "name": "Pixel sprites",
-    "kind": "shader",
-    "category": "retro",
-    "description": "A field of little procedurally generated pixel creatures, each mirror-symmetric with an outline and blinking eyes, bobbing in place and swapping for new ones now and then.",
-    "tags": [
-      "pixel",
-      "retro",
-      "sprite",
-      "creature",
-      "procedural",
-      "8-bit",
-      "pattern",
-      "background"
-    ],
-    "controls": [
-      {
-        "n": "uPixel",
-        "t": "float",
-        "d": 5,
-        "l": "Pixel size",
-        "min": 2,
-        "max": 12,
-        "s": 1,
-        "b": 3,
-        "line": 2
-      },
-      {
-        "n": "uDensity",
-        "t": "float",
-        "d": 0.75,
-        "min": 0.1,
-        "b": 3,
-        "line": 3
-      },
-      {
-        "n": "uPalette",
-        "t": "int",
-        "d": 0,
-        "l": "Palette (0 PICO-8, 1 NES, 2 C64)",
-        "max": 2,
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "uChange",
-        "t": "float",
-        "d": 0.25,
-        "l": "New sprites per second (per slot)",
-        "max": 2,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uBob",
-        "t": "bool",
-        "d": true,
-        "line": 6
-      },
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            29,
-            43,
-            83
-          ]
-        },
-        "c": 1,
-        "line": 7
-      },
-      {
-        "n": "uOutline",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            0,
-            0,
-            0
-          ]
-        },
-        "c": 1,
-        "line": 8
-      },
-      {
-        "n": "uBackgroundAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Background opacity",
-        "b": 3,
-        "line": 138
-      }
-    ],
-    "presets": [
-      "Arcade",
-      "Crowd",
-      "Commodore"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "shaders/pixel",
-    "addedAt": "2026-10-31T23:08:09Z",
-    "commitHash": "d6ca2e38c652f866158955b1c52b37cc4ec227dc",
-    "order": 564
-  },
-  {
-    "id": "image-bricks",
-    "name": "Brick mosaic",
-    "kind": "shader",
-    "category": "retro",
-    "description": "An image rebuilt from toy bricks with studs, ironed fuse beads or cross-stitch on cloth, in a few flat colours, built up row by row from the bottom.",
-    "tags": [
-      "pixel",
-      "image",
-      "mosaic",
-      "bricks",
-      "beads",
-      "cross-stitch",
-      "craft",
-      "toy"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "portrait"
-        },
-        "line": 2,
-        "x": {
-          "filter": "nearest",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uStyle",
-        "t": "int",
-        "d": 0,
-        "l": "Style (0 bricks, 1 beads, 2 cross-stitch)",
-        "max": 2,
-        "b": 3,
-        "line": 3
-      },
-      {
-        "n": "uCell",
-        "t": "float",
-        "d": 18,
-        "l": "Cell size (px)",
-        "min": 6,
-        "max": 48,
-        "s": 1,
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "uLevels",
-        "t": "float",
-        "d": 4,
-        "l": "Colour levels",
-        "min": 2,
-        "max": 8,
-        "s": 1,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uBuild",
-        "t": "bool",
-        "d": true,
-        "l": "Build up",
-        "line": 6
-      },
-      {
-        "n": "uProgress",
-        "t": "float",
-        "d": 1,
-        "l": "Built (when still)",
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uBase",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            47,
-            143,
-            63
-          ]
-        },
-        "l": "Baseplate / board / cloth",
-        "c": 1,
-        "line": 8
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 9
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "b": 3,
-        "line": 10
-      }
-    ],
-    "presets": [
-      "Bricks",
-      "Beads",
-      "Cross-stitch"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "filter",
-    "loop": 6,
-    "animated": true,
-    "duration": 6000,
-    "module": "shaders/pixel",
-    "addedAt": "2026-10-31T23:08:09Z",
-    "commitHash": "d6ca2e38c652f866158955b1c52b37cc4ec227dc",
-    "order": 563
-  },
-  {
-    "id": "image-subpixel",
-    "name": "Subpixel zoom",
-    "kind": "shader",
-    "category": "retro",
-    "description": "A macro zoom in and out of a screen: the picture breaks into its pixels and then into glowing red, green and blue subpixels, as LCD stripes, PenTile diamonds or CRT phosphor triads.",
-    "tags": [
-      "pixel",
-      "subpixel",
-      "image",
-      "lcd",
-      "screen",
-      "macro",
-      "zoom",
-      "rgb"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "portrait"
-        },
-        "line": 2,
-        "x": {
-          "filter": "nearest",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uLayout",
-        "t": "int",
-        "d": 0,
-        "l": "Layout (0 LCD stripes, 1 PenTile, 2 CRT triads)",
-        "max": 2,
-        "b": 3,
-        "line": 3
-      },
-      {
-        "n": "uCell",
-        "t": "float",
-        "d": 4,
-        "l": "Screen pixel (px)",
-        "min": 2,
-        "max": 12,
-        "s": 1,
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "uAnimate",
-        "t": "bool",
-        "d": true,
-        "l": "Animate zoom",
-        "line": 5
-      },
-      {
-        "n": "uProgress",
-        "t": "float",
-        "d": 1,
-        "l": "Zoom (when still)",
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uMaxZoom",
-        "t": "float",
-        "d": 24,
-        "l": "Deepest zoom",
-        "min": 2,
-        "max": 60,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uCenterX",
-        "t": "float",
-        "d": 0.5,
-        "l": "Zoom centre x",
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uCenterY",
-        "t": "float",
-        "d": 0.6,
-        "l": "Zoom centre y",
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uGap",
-        "t": "float",
-        "d": 0.25,
-        "l": "Gap between subpixels",
-        "max": 0.6,
-        "b": 3,
-        "line": 10
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 11
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "b": 3,
-        "line": 12
-      }
-    ],
-    "presets": [
-      "LCD",
-      "Phone OLED",
-      "CRT"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "filter",
-    "loop": 8,
-    "animated": true,
-    "duration": 8000,
-    "module": "shaders/pixel",
-    "addedAt": "2026-10-31T23:08:09Z",
-    "commitHash": "d6ca2e38c652f866158955b1c52b37cc4ec227dc",
-    "order": 562
-  },
-  {
-    "id": "image-led-wall",
-    "name": "LED wall",
-    "kind": "shader",
-    "category": "retro",
-    "description": "An image on a stadium LED board: round diodes on a black grid with stepped brightness, soft bloom, sun louvres, the odd dead diode and a rolling scan band.",
-    "tags": [
-      "pixel",
-      "led",
-      "image",
-      "screen",
-      "billboard",
-      "stadium",
-      "display"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "city"
-        },
-        "line": 2,
-        "x": {
-          "filter": "nearest",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uPitch",
-        "t": "float",
-        "d": 12,
-        "l": "LED pitch (px)",
-        "min": 4,
-        "max": 40,
-        "s": 1,
-        "b": 3,
-        "line": 3
-      },
-      {
-        "n": "uSize",
-        "t": "float",
-        "d": 0.7,
-        "l": "Diode size",
-        "min": 0.2,
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "uLevels",
-        "t": "float",
-        "d": 12,
-        "l": "Brightness levels",
-        "min": 2,
-        "max": 32,
-        "s": 1,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uBloom",
-        "t": "float",
-        "d": 0.6,
-        "max": 1.5,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uBrightness",
-        "t": "float",
-        "d": 1.2,
-        "min": 0.5,
-        "max": 2,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uDead",
-        "t": "float",
-        "d": 0.01,
-        "l": "Dead diodes",
-        "max": 0.1,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uFlicker",
-        "t": "float",
-        "d": 0.3,
-        "l": "Scan band",
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uLouvres",
-        "t": "bool",
-        "d": true,
-        "l": "Sun louvres",
-        "line": 10
-      },
-      {
-        "n": "uBoard",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            10,
-            10,
-            12
-          ]
-        },
-        "c": 1,
-        "line": 11
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 12
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "b": 3,
-        "line": 13
-      }
-    ],
-    "presets": [
-      "Fine pitch",
-      "Old scoreboard"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "filter",
-    "loop": 5,
-    "animated": true,
-    "duration": 5000,
-    "module": "shaders/pixel",
-    "addedAt": "2026-10-31T23:08:09Z",
-    "commitHash": "d6ca2e38c652f866158955b1c52b37cc4ec227dc",
-    "order": 561
-  },
-  {
-    "id": "image-pixel-sort",
-    "name": "Pixel sort",
-    "kind": "shader",
-    "category": "retro",
-    "description": "Glitch-art pixel sorting: runs of pixels between two brightness thresholds are sorted dark to bright, smearing the picture into streaks that shift as the threshold breathes.",
-    "tags": [
-      "pixel",
-      "glitch",
-      "image",
-      "pixel-sort",
-      "databending",
-      "streak"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "landscape"
-        },
-        "line": 2,
-        "x": {
-          "filter": "nearest",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uDirection",
-        "t": "int",
-        "d": 0,
-        "l": "Brightest toward (0 down, 1 up, 2 right, 3 left)",
-        "max": 3,
-        "b": 3,
-        "line": 3
-      },
-      {
-        "n": "uLow",
-        "t": "float",
-        "d": 0.3,
-        "l": "Low threshold",
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "uHigh",
-        "t": "float",
-        "d": 0.95,
-        "l": "High threshold",
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uLength",
-        "t": "float",
-        "d": 64,
-        "l": "Longest run (pixels)",
-        "min": 4,
-        "max": 128,
-        "s": 1,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uPixel",
-        "t": "float",
-        "d": 2,
-        "l": "Pixel size",
-        "min": 1,
-        "max": 8,
-        "s": 1,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uReverse",
-        "t": "bool",
-        "d": false,
-        "l": "Darkest toward instead",
-        "line": 8
-      },
-      {
-        "n": "uSweep",
-        "t": "float",
-        "d": 0.12,
-        "l": "Threshold sweep",
-        "max": 0.3,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "b": 3,
-        "line": 11
-      }
-    ],
-    "presets": [
-      "Waterfall",
-      "Sideways",
-      "Highlights only"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "filter",
-    "loop": 8,
-    "animated": true,
-    "duration": 8000,
-    "module": "shaders/pixel",
-    "addedAt": "2026-10-31T23:08:09Z",
-    "commitHash": "d6ca2e38c652f866158955b1c52b37cc4ec227dc",
-    "order": 560
-  },
-  {
-    "id": "swatch-reveal",
-    "name": "Swatch reveal",
-    "kind": "vector",
-    "category": "beauty",
-    "description": "A row of shade swatches popping in one after another with a satin sheen, each with its name fading in below, like a cosmetics range.",
-    "tags": [
-      "beauty",
-      "makeup",
-      "cosmetics",
-      "swatch",
-      "shade",
-      "palette",
-      "range",
-      "product",
-      "ad"
-    ],
-    "controls": [
-      {
-        "n": "count",
-        "t": "int",
-        "d": 5,
-        "l": "Shades",
-        "min": 1,
-        "max": 5,
-        "b": 3,
-        "line": 1
-      },
-      {
-        "n": "c1",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            242,
-            193,
-            176
-          ]
-        },
-        "l": "Shade 1",
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "l1",
-        "t": "text",
-        "d": "Blush",
-        "l": "Shade 1 name",
-        "line": 3
-      },
-      {
-        "n": "c2",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            217,
-            138,
-            122
-          ]
-        },
-        "l": "Shade 2",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "l2",
-        "t": "text",
-        "d": "Rosewood",
-        "l": "Shade 2 name",
-        "line": 5
-      },
-      {
-        "n": "c3",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            176,
-            18,
-            58
-          ]
-        },
-        "l": "Shade 3",
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "l3",
-        "t": "text",
-        "d": "Ruby",
-        "l": "Shade 3 name",
-        "line": 7
-      },
-      {
-        "n": "c4",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            122,
-            32,
-            72
-          ]
-        },
-        "l": "Shade 4",
-        "c": 1,
-        "line": 8
-      },
-      {
-        "n": "l4",
-        "t": "text",
-        "d": "Plum",
-        "l": "Shade 4 name",
-        "line": 9
-      },
-      {
-        "n": "c5",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            74,
-            42,
-            46
-          ]
-        },
-        "l": "Shade 5",
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "l5",
-        "t": "text",
-        "d": "Cocoa",
-        "l": "Shade 5 name",
-        "line": 11
-      },
-      {
-        "n": "x",
-        "t": "float",
-        "d": 50,
-        "l": "Row x (%)",
-        "max": 100,
-        "b": 3,
-        "line": 12
-      },
-      {
-        "n": "y",
-        "t": "float",
-        "d": 50,
-        "l": "Row y (%)",
-        "max": 100,
-        "b": 3,
-        "line": 13
-      },
-      {
-        "n": "size",
-        "t": "float",
-        "d": 170,
-        "l": "Swatch size",
-        "min": 40,
-        "max": 320,
-        "s": 1,
-        "b": 3,
-        "line": 14
-      },
-      {
-        "n": "round",
-        "t": "bool",
-        "d": true,
-        "l": "Round swatches",
-        "line": 15
-      },
-      {
-        "n": "satin",
-        "t": "float",
-        "d": 0.5,
-        "l": "Satin sheen",
-        "s": 0.05,
-        "b": 3,
-        "line": 16
-      },
-      {
-        "n": "ink",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            31,
-            26,
-            28
-          ]
-        },
-        "l": "Text colour",
-        "c": 1,
-        "line": 17
-      },
-      {
-        "n": "hold",
-        "t": "float",
-        "d": 2.5,
-        "l": "Hold (s)",
-        "min": 0.5,
-        "max": 20,
-        "s": 0.5,
-        "b": 3,
-        "line": 18
-      },
-      {
-        "n": "font",
-        "t": "text",
-        "d": "'Inter', 'Helvetica Neue', Arial, system-ui, sans-serif",
-        "line": 19
-      }
-    ],
-    "presets": [
-      "Nudes",
-      "Nail polish",
-      "Three shades"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "l1",
-          "label": "Shade 1 name",
-          "holds": "copy",
-          "default": "Blush"
-        },
-        {
-          "name": "l2",
-          "label": "Shade 2 name",
-          "holds": "copy",
-          "default": "Rosewood"
-        },
-        {
-          "name": "l3",
-          "label": "Shade 3 name",
-          "holds": "copy",
-          "default": "Ruby"
-        },
-        {
-          "name": "l4",
-          "label": "Shade 4 name",
-          "holds": "copy",
-          "default": "Plum"
-        },
-        {
-          "name": "l5",
-          "label": "Shade 5 name",
-          "holds": "copy",
-          "default": "Cocoa"
-        },
-        {
-          "name": "font",
-          "label": "Font",
-          "holds": "font",
-          "default": "'Inter', 'Helvetica Neue', Arial, system-ui, sans-serif"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 300,
-    "animated": true,
-    "duration": 4440,
-    "module": "beauty",
-    "addedAt": "2026-10-31T20:48:56Z",
-    "commitHash": "67989bebcdbea3247177921ad46615b2ac43f8c5",
-    "order": 559
   }
 ]
