@@ -271,7 +271,73 @@ export const cameraCrashZoom: CameraEffect = {
   ],
 };
 
-export const cameraEffects: CameraEffect[] = [cameraGlide, cameraWhipPan, cameraPunchZoom, cameraCut, cameraKenBurns, cameraCrashZoom];
+/**
+ * A smooth wander between −1 and 1 at `t` (seconds times speed): three sines
+ * at unrelated rates, their phases set by the seed and the axis `k`, so each
+ * seed and axis wanders its own way and never visibly repeats.
+ */
+function wander(t: number, seed: number, k: number): number {
+  const phase = (i: number) => {
+    const s = Math.sin(seed * 12.9898 + k * 78.233 + i * 37.719) * 43758.5453;
+    return (s - Math.floor(s)) * Math.PI * 2;
+  };
+  return 0.55 * Math.sin(t * 1.1 + phase(0)) + 0.3 * Math.sin(t * 2.3 + phase(1)) + 0.15 * Math.sin(t * 5.7 + phase(2));
+}
+
+/** The handheld camera's view `sec` seconds into the hold, before blur. */
+function handheldView(to: View, stage: Stage, sec: number, values: Readonly<Record<string, ControlValue>>): View {
+  const amount = num(values, "amount", 0.4);
+  const roll = num(values, "roll", 0.8);
+  const steps = num(values, "footsteps", 0);
+  const seed = Math.round(num(values, "seed", 1));
+  const t = sec * Math.max(0, num(values, "speed", 1));
+  // The operator settles in over half a second, so the move starts on the framing it arrived at.
+  const r = Math.min(1, Math.max(0, sec / 0.5));
+  const settle = r * r * (3 - 2 * r);
+  const [w, h] = framingSize(to, stage);
+  // Footsteps bob the camera down at each step, about two a second, around where it would be.
+  const bob = steps * 0.012 * h * (Math.abs(Math.sin(sec * Math.PI * 1.8)) - 2 / Math.PI);
+  const [cx, cy] = centreOf(to, stage);
+  const x = cx + amount * 0.025 * w * wander(t, seed, 0) * settle;
+  const y = cy + (amount * 0.02 * h * wander(t, seed, 1) + bob) * settle;
+  // A touch closer than the framing, enough that the drift and roll never show past its edges.
+  const zoom = to.zoom * (1 + (amount * 0.05 + roll * 0.032 + steps * 0.024) * settle);
+  return { ...viewAt(x, y, zoom, stage), ...cameraAngle({ ...to, roll: (to.roll ?? 0) + roll * wander(t, seed, 2) * settle }) };
+}
+
+export const cameraHandheld: CameraEffect = {
+  kind: "camera",
+  id: "camera-handheld",
+  name: "Handheld",
+  description: "While the shot holds, the camera is held by hand: it drifts, sways and rolls a little around the framing, from a documentary's gentle float to found-footage shake, with footsteps if the operator walks.",
+  category: "camera",
+  tags: ["camera", "hold", "handheld", "shake", "wobble", "documentary", "found-footage", "cinematic"],
+  controls: [
+    { name: "amount", type: "float", label: "Shake", min: 0, max: 1, step: 0.01, default: 0.4 },
+    { name: "speed", type: "float", label: "Speed", min: 0.2, max: 3, step: 0.05, default: 1 },
+    { name: "roll", type: "float", label: "Roll (°)", min: 0, max: 3, step: 0.05, default: 0.8 },
+    { name: "footsteps", type: "float", label: "Footsteps", min: 0, max: 1, step: 0.05, default: 0 },
+    { name: "seed", type: "int", label: "Seed", min: 1, max: 99, step: 1, default: 1 },
+    { ...MOTION_BLUR, default: 0 },
+  ],
+  motion: {
+    role: "hold",
+    duration: 4000,
+    view({ to, u, stage, ms }, values) {
+      const at = Math.max(0, u) * ms;
+      const view = handheldView(to, stage, at / 1000, values);
+      return blurred(view, handheldView(to, stage, Math.max(0, at - HOLD_STEP_MS) / 1000, values), stage, num(values, "motionBlur", 0));
+    },
+  },
+  presets: [
+    { name: "Subtle", values: { amount: 0.2, speed: 0.7, roll: 0.4 } },
+    { name: "Walking", values: { amount: 0.35, footsteps: 0.7 } },
+    { name: "Shaky cam", values: { amount: 0.9, speed: 1.8, roll: 1.6, motionBlur: 0.8 } },
+    { name: "Found footage", values: { amount: 1, speed: 2.4, roll: 2.5, footsteps: 0.5, motionBlur: 1.2 } },
+  ],
+};
+
+export const cameraEffects: CameraEffect[] = [cameraGlide, cameraWhipPan, cameraPunchZoom, cameraCut, cameraKenBurns, cameraCrashZoom, cameraHandheld];
 
 const byId = new Map(cameraEffects.map((e) => [e.id, e]));
 

@@ -1,5 +1,246 @@
 [
   {
+    "id": "camera-handheld",
+    "name": "Handheld",
+    "kind": "camera",
+    "category": "camera",
+    "description": "While the shot holds, the camera is held by hand: it drifts, sways and rolls a little around the framing, from a documentary's gentle float to found-footage shake, with footsteps if the operator walks.",
+    "tags": [
+      "camera",
+      "hold",
+      "handheld",
+      "shake",
+      "wobble",
+      "documentary",
+      "found-footage",
+      "cinematic"
+    ],
+    "controls": [
+      {
+        "n": "amount",
+        "t": "float",
+        "d": 0.4,
+        "l": "Shake",
+        "s": 0.01,
+        "b": 3,
+        "line": 1
+      },
+      {
+        "n": "speed",
+        "t": "float",
+        "d": 1,
+        "min": 0.2,
+        "max": 3,
+        "s": 0.05,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "roll",
+        "t": "float",
+        "d": 0.8,
+        "l": "Roll (°)",
+        "max": 3,
+        "s": 0.05,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "footsteps",
+        "t": "float",
+        "d": 0,
+        "s": 0.05,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "seed",
+        "t": "int",
+        "d": 1,
+        "min": 1,
+        "max": 99,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "motionBlur",
+        "t": "float",
+        "d": 0,
+        "max": 3,
+        "s": 0.1,
+        "b": 3,
+        "line": 6
+      }
+    ],
+    "presets": [
+      "Subtle",
+      "Walking",
+      "Shaky cam",
+      "Found footage"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Preview picture",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "role": "hold",
+    "animated": true,
+    "duration": 4000,
+    "module": "camera",
+    "addedAt": "2026-11-01T11:42:47.670Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "dolly-zoom",
+    "name": "Dolly zoom",
+    "kind": "shader",
+    "category": "cinematic",
+    "description": "The vertigo shot: the subject holds its size in the middle of the frame while the background behind it stretches towards the camera or falls away, as when a camera dollies one way and zooms the other.",
+    "tags": [
+      "cinematic",
+      "film",
+      "camera",
+      "dolly",
+      "vertigo",
+      "zoom",
+      "warp",
+      "dramatic",
+      "image"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "city"
+        },
+        "line": 5,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uSubject",
+        "t": "vec2",
+        "d": [
+          0.5,
+          0.5
+        ],
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 0.18,
+        "l": "Subject size (share of height)",
+        "min": 0.05,
+        "max": 0.6,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uStretch",
+        "t": "float",
+        "d": 0.7,
+        "l": "Background (+ rushes in, − falls away)",
+        "min": -1,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uBlur",
+        "t": "float",
+        "d": 0.5,
+        "l": "Motion blur",
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uAnimate",
+        "t": "bool",
+        "d": true,
+        "line": 10
+      },
+      {
+        "n": "uProgress",
+        "t": "float",
+        "d": 1,
+        "l": "Move (when still)",
+        "b": 3,
+        "line": 11
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 12
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 13
+      }
+    ],
+    "presets": [
+      "Vertigo",
+      "Falling away",
+      "Unease",
+      "Held"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "filter",
+    "loop": 5,
+    "animated": true,
+    "duration": 5000,
+    "module": "shaders/cinematic",
+    "addedAt": "2026-11-01T11:42:47.669Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
     "id": "camera-crash-zoom",
     "name": "Crash zoom",
     "kind": "camera",
@@ -2073,318 +2314,5 @@
     "addedAt": "2026-11-01T09:07:24Z",
     "commitHash": "45e306dc88f22c564e5999f1c137cbfcc6d984c4",
     "order": 592
-  },
-  {
-    "id": "anamorphic-lens",
-    "name": "Anamorphic lens",
-    "kind": "shader",
-    "category": "cinematic",
-    "description": "A picture through an anamorphic cinema lens: its highlights throw long horizontal streaks and soft oval glows, and the frame bows a little towards its sides.",
-    "tags": [
-      "cinematic",
-      "film",
-      "lens",
-      "anamorphic",
-      "flare",
-      "streak",
-      "image"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "city"
-        },
-        "line": 3,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uThreshold",
-        "t": "float",
-        "d": 0.7,
-        "l": "Highlight threshold",
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "uStreak",
-        "t": "float",
-        "d": 0.5,
-        "l": "Streak length",
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uIntensity",
-        "t": "float",
-        "d": 1.2,
-        "l": "Streak strength",
-        "max": 3,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uStreakColor",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            79,
-            163,
-            255
-          ]
-        },
-        "l": "Streak colour",
-        "c": 1,
-        "line": 7
-      },
-      {
-        "n": "uGlow",
-        "t": "float",
-        "d": 0.35,
-        "l": "Oval glow",
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uSqueeze",
-        "t": "float",
-        "d": 0.3,
-        "l": "Edge squeeze",
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "b": 3,
-        "line": 11
-      }
-    ],
-    "presets": [
-      "Sci-fi blue",
-      "Amber",
-      "Night city",
-      "Subtle"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "filter",
-    "animated": false,
-    "module": "shaders/cinematic",
-    "addedAt": "2026-11-01T09:07:24Z",
-    "commitHash": "45e306dc88f22c564e5999f1c137cbfcc6d984c4",
-    "order": 591
-  },
-  {
-    "id": "game-over-banner",
-    "name": "Game over banner",
-    "kind": "shader",
-    "category": "meme",
-    "description": "A picture that slows to stuttering frames and drains to grey, then a dark band fades in across it with big serif words on it, growing a little as it holds, before it starts over.",
-    "tags": [
-      "meme",
-      "ending",
-      "image",
-      "game-over",
-      "banner",
-      "serif",
-      "slow-motion",
-      "desaturate",
-      "game"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "portrait"
-        },
-        "line": 2,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uText",
-        "t": "sampler2D",
-        "d": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201024%20256%22%20width%3D%221024%22%20height%3D%22256%22%3E%3Ctext%20x%3D%22512%22%20y%3D%22128%22%20dy%3D%220.35em%22%20text-anchor%3D%22middle%22%20textLength%3D%22921.6%22%20lengthAdjust%3D%22spacingAndGlyphs%22%20font-family%3D%22Georgia%2C%20%26%2339%3BTimes%20New%20Roman%26%2339%3B%2C%20Times%2C%20serif%22%20font-weight%3D%22400%22%20font-size%3D%22141.3%22%20fill%3D%22%23fff%22%3EGAME%20OVER%3C%2Ftext%3E%3C%2Fsvg%3E",
-        "line": 3,
-        "x": {
-          "filter": "mipmap",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uInk",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            192,
-            32,
-            26
-          ]
-        },
-        "l": "Words",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uBand",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            0,
-            0,
-            0
-          ]
-        },
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uPlay",
-        "t": "float",
-        "d": 1.5,
-        "l": "Before it ends (s)",
-        "min": 0.3,
-        "max": 6,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uStutter",
-        "t": "float",
-        "d": 6,
-        "l": "Stutter frames a second",
-        "min": 2,
-        "max": 15,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uFade",
-        "t": "float",
-        "d": 1.4,
-        "l": "Fade (s)",
-        "min": 0.3,
-        "max": 4,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uHold",
-        "t": "float",
-        "d": 3,
-        "l": "Hold (s)",
-        "min": 0.5,
-        "max": 8,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uSize",
-        "t": "float",
-        "d": 0.12,
-        "l": "Words height",
-        "min": 0.06,
-        "max": 0.25,
-        "b": 3,
-        "line": 10
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 11
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "b": 3,
-        "line": 12
-      }
-    ],
-    "presets": [
-      "You lose",
-      "Gold on black",
-      "Sudden",
-      "Long goodbye"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg",
-        "text",
-        "mask"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        },
-        {
-          "name": "uText",
-          "label": "Text",
-          "wants": "text"
-        }
-      ],
-      "texts": [],
-      "video": "stills",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "stills",
-    "animated": true,
-    "module": "shaders/meme",
-    "addedAt": "2026-11-01T07:28:10Z",
-    "commitHash": "b3e462a142e9a4ae85e64692e24176dc5c40c4de",
-    "order": 590
   }
 ]

@@ -39,7 +39,7 @@ export const FLAIR_AGENT_TOOLS: AgentToolDefinition[] = [
         scene: {
           type: 'object',
           description:
-            'Full Scene object with name, stage, media, and shots. A shot camera frames a box {x, y, width, height} or elements {frame: [ids]}, and may add tilt, turn, roll (degrees, tilt/turn up to 75) and perspective (default 1.2); angles persist until changed. Its "in" is the camera move into the shot ("camera-glide" by default; "camera-whip-pan", "camera-punch-zoom", "camera-cut") and its "during" a move while the shot holds ("camera-ken-burns", "camera-crash-zoom"): an id, or {move, ms?, preset?, values?} like {"move": "camera-whip-pan", "values": {"motionBlur": 3}}. find_camera_moves lists the moves with their controls.',
+            'Full Scene object with name, stage, media, and shots. A shot camera frames a box {x, y, width, height} or elements {frame: [ids]}, and may add tilt, turn, roll (degrees, tilt/turn up to 75) and perspective (default 1.2); angles persist until changed. Its "in" is the camera move into the shot ("camera-glide" by default; "camera-whip-pan", "camera-punch-zoom", "camera-cut") and its "during" a move while the shot holds ("camera-ken-burns", "camera-crash-zoom", "camera-handheld"): an id, or {move, ms?, preset?, values?} like {"move": "camera-whip-pan", "values": {"motionBlur": 3}}. find_camera_moves lists the moves with their controls.',
         },
       },
       required: ['scene'],

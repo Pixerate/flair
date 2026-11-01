@@ -13,7 +13,7 @@ Flair includes over 300 GLSL ES 3.00 fragment shaders designed for high performa
 - **Fire & Pyrotechnics**: Flame borders, burning text, campfire, fireballs, burning edges.
 - **Holograms**: Scanlines, chromatic aberration, holo projection, HUD displays.
 - **Space & Atmosphere**: Star trails, meteor showers, northern lights, clouds, weather.
-- **Cinematic**: Anamorphic lens streaks, rack focus with bokeh, bleach bypass, Technicolor, day for night, letterbox bars, academy leader, cinema projector, trailer title slam, focus-pull and flare-wipe transitions.
+- **Cinematic**: Anamorphic lens streaks, rack focus with bokeh, bleach bypass, Technicolor, day for night, letterbox bars, academy leader, cinema projector, trailer title slam, dolly zoom, focus-pull and flare-wipe transitions.
 - **Beauty**: Skin smoothing, dewy glow, soft focus, lip tint, blush, eyeshadow, highlighter, product shine.
 - **Distortions & Glitch**: CRT scanlines, pixelation, ripple, chromatic split.
 - **Transitions**: Cross-zooms, light leaks, twister, wipes, dissolve.
