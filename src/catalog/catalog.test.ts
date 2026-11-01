@@ -262,7 +262,7 @@ describe("catalog", () => {
   // black strokes on clear) are not black on black, and pass its alpha on for overlays.
   const PICTURE_EFFECTS = SHADER_EFFECTS.filter((e) => /\b(picture|pictureRGBA|flair_transition)\(/.test(e.source));
   // These draw a whole opaque device, ticket or scene around the picture, so they stay opaque.
-  const OPAQUE = new Set(["gameboy-screen", "scratch-card", "polaroid-develop", "cover-flow", "tarot-reveal"]);
+  const OPAQUE = new Set(["gameboy-screen", "scratch-card", "polaroid-develop", "cover-flow", "tarot-reveal", "cinema-projector"]);
 
   it.each(PICTURE_EFFECTS.map((e) => [e.id, e] as const))("%s lays its image over a backdrop and keeps its alpha", (_, effect) => {
     expect(effectDefaults(effect)).toMatchObject({ uBackdrop: [1, 1, 1], uBackdropAlpha: 1 });
@@ -1503,21 +1503,36 @@ describe("censor effects", () => {
 });
 
 describe("cinematic effects", () => {
-  const shaders = ["anamorphic-lens", "rack-focus", "bleach-bypass"];
+  const shaders = ["anamorphic-lens", "rack-focus", "bleach-bypass", "technicolor", "day-for-night", "cinema-projector"];
 
   it("browse under Pictures, are tagged cinematic and are found by the words people use", () => {
     expect(categoryGroup("cinematic").name).toBe("Pictures");
-    expect(findEffects({ category: "cinematic" }).map((e) => e.id).sort()).toEqual(["anamorphic-lens", "bleach-bypass", "end-credits-roll", "letterbox", "rack-focus"]);
-    expect(findEffects({ tags: ["cinematic"] }).map((e) => e.id)).toEqual(expect.arrayContaining(["transition-focus-pull", "film-look", "vignette-grain"]));
+    expect(findEffects({ category: "cinematic" }).map((e) => e.id).sort()).toEqual([
+      "academy-leader",
+      "anamorphic-lens",
+      "bleach-bypass",
+      "cinema-projector",
+      "day-for-night",
+      "end-credits-roll",
+      "letterbox",
+      "opening-credits",
+      "rack-focus",
+      "technicolor",
+      "trailer-title-slam",
+    ]);
+    expect(findEffects({ tags: ["cinematic"] }).map((e) => e.id)).toEqual(expect.arrayContaining(["transition-focus-pull", "transition-flare-wipe", "film-look", "vignette-grain"]));
     for (const id of shaders) {
       expect(getEffect(id), id).toMatchObject({ kind: "shader", category: "cinematic", video: "filter" });
       expect(effectInputs(getEffect(id)!).accepts, id).toContain("video");
     }
-    for (const word of ["anamorphic", "focus", "bokeh", "letterbox", "credits", "grade"]) expect(findEffects({ text: word, tags: ["cinematic"] }).length, word).toBeGreaterThan(0);
+    for (const word of ["anamorphic", "focus", "bokeh", "letterbox", "credits", "grade", "countdown", "trailer", "moonlight", "projector"]) expect(findEffects({ text: word, tags: ["cinematic"] }).length, word).toBeGreaterThan(0);
   });
 
-  it("loop their focus pulls and bars seamlessly", () => {
+  it("loop their focus pulls, bars, countdown, title and flare seamlessly", () => {
     expect(getEffect("rack-focus")).toMatchObject({ loop: 6 });
+    expect(getEffect("academy-leader")).toMatchObject({ loop: 7 });
+    expect(getEffect("trailer-title-slam")).toMatchObject({ loop: 4 });
+    expect(getEffect("transition-flare-wipe")).toMatchObject({ category: "transition", video: "transition", loop: 4 });
     expect(getEffect("letterbox")).toMatchObject({ loop: 5, transparent: true });
     expect(getEffect("transition-focus-pull")).toMatchObject({ category: "transition", video: "transition", loop: 4 });
     // Letterbox bars stand still unless asked to slide.
@@ -1528,6 +1543,18 @@ describe("cinematic effects", () => {
     for (const id of ["rack-focus", "transition-focus-pull"]) expect((getEffect(id) as ShaderEffect).source, id).toMatch(/vec3 lensBlur\(sampler2D tex, vec2 uv, float radius, float bloom, float oval\)/);
     const names = effectControls(getEffect("transition-focus-pull")!).map((c) => c.name);
     expect(names).toEqual(expect.arrayContaining(["uFrom", "uTo", "uAnimate", "uProgress", "uAperture", "uBloom", "uOval"]));
+  });
+
+  it("count down without a picture, and slam a title from text that can sit over video", () => {
+    expect(effectInputs(getEffect("academy-leader")!).images).toEqual([]);
+    expect((getEffect("academy-leader") as ShaderEffect).video).toBeUndefined();
+    const slam = effectInputs(getEffect("trailer-title-slam")!);
+    expect(slam.images.map((i) => i.wants)).toEqual(["text"]);
+    expect(slam.accepts).toContain("text");
+    expect(effectControls(getEffect("trailer-title-slam")!).map((c) => c.name)).toEqual(expect.arrayContaining(["uBackgroundAlpha", "uAnimate", "uMoment"]));
+    // Technicolor prints two or three strips.
+    const strips = effectControls(getEffect("technicolor")!).find((c) => c.name === "uStrips")!;
+    expect([strips.min, strips.max, strips.default]).toEqual([2, 3, 3]);
   });
 
   it("reads credits as roles and names, headings and lines on their own", () => {
@@ -1554,6 +1581,36 @@ describe("cinematic effects", () => {
     // Text is escaped, and unused slots stay hidden.
     expect(roll({ credits: "Music: <b>Delia</b>" }).svg).toContain("&lt;b&gt;Delia");
     expect(short.svg.match(/ opacity="1"/g)?.length).toBe(2);
+  });
+});
+
+describe("opening credits", () => {
+  const effect = () => getEffect("opening-credits") as VectorEffect;
+  const cards = (values: Record<string, unknown>) => renderVectorEffect(effect(), values as never);
+
+  it("shows one card per line, the title last and larger, and hides the rest", () => {
+    const motion = cards({});
+    expect(svgMotionIssues(motion)).toEqual([]);
+    expect(motion.svg).toContain(">A FILM BY<");
+    expect(motion.svg).toContain(">The Long Way Home<");
+    const two = cards({ credits: "Starring: Grace Hopper; # Night Train" });
+    // Each card fades in, eases larger and fades out: its first change fades it in to its peak.
+    const peaks = (two.animate ?? []).filter((_, i) => i % 3 === 0).map((a) => a.attrs!.opacity![1]);
+    expect(peaks).toEqual([1, 1, 0, 0, 0, 0]);
+    expect(two.svg).toMatch(/font-weight="800"[^>]*>Night Train</);
+  });
+
+  it("lasts longer for more cards and longer holds", () => {
+    const one = svgDuration(cards({ credits: "A film by: Ada Lovelace" }));
+    const four = svgDuration(cards({ credits: "A: B; C: D; E: F; # G" }));
+    expect(four).toBeGreaterThan(one * 3);
+    expect(svgDuration(cards({ credits: "A: B; C: D; E: F; # G", hold: 5 }))).toBeGreaterThan(four);
+  });
+
+  it("places the cards centred or in a lower corner", () => {
+    expect(cards({ place: 1 }).svg).toMatch(/translate\(192 860\)[^"]*"><text x="0" y="[^"]*" text-anchor="start"/);
+    expect(cards({ place: 2 }).svg).toContain('text-anchor="end"');
+    expect(cards({}).svg).toContain("translate(960 540)");
   });
 });
 

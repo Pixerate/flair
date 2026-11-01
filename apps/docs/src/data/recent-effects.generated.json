@@ -1,5 +1,957 @@
 [
   {
+    "id": "transition-flare-wipe",
+    "name": "Flare wipe",
+    "kind": "shader",
+    "category": "transition",
+    "description": "An anamorphic lens flare sweeps across the frame, its streak and bloom washing over the cut, and the next picture is left behind it. Loops back and forth; or turn Animate off and set Progress.",
+    "tags": [
+      "transition",
+      "cinematic",
+      "flare",
+      "lens",
+      "anamorphic",
+      "streak",
+      "wipe",
+      "image",
+      "slideshow"
+    ],
+    "controls": [
+      {
+        "n": "uFrom",
+        "t": "sampler2D",
+        "d": {
+          "sample": "landscape"
+        },
+        "l": "From image",
+        "line": 4,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uTo",
+        "t": "sampler2D",
+        "d": {
+          "sample": "city"
+        },
+        "l": "To image",
+        "line": 5,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uAnimate",
+        "t": "bool",
+        "d": true,
+        "line": 6
+      },
+      {
+        "n": "uProgress",
+        "t": "float",
+        "d": 0.5,
+        "l": "Progress (when still)",
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uColor",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            95,
+            168,
+            255
+          ]
+        },
+        "l": "Streak colour",
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "uHeight",
+        "t": "float",
+        "d": 0.55,
+        "l": "Streak height",
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uStrength",
+        "t": "float",
+        "d": 1.2,
+        "l": "Flare strength",
+        "max": 2,
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uBloom",
+        "t": "float",
+        "d": 0.6,
+        "b": 3,
+        "line": 11
+      },
+      {
+        "n": "uReverse",
+        "t": "bool",
+        "d": false,
+        "l": "Right to left",
+        "line": 12
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 13
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 14
+      }
+    ],
+    "presets": [
+      "Amber",
+      "Low and fast",
+      "White out"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uFrom",
+          "label": "From image",
+          "wants": "picture"
+        },
+        {
+          "name": "uTo",
+          "label": "To image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "transition",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "transition",
+    "loop": 4,
+    "animated": true,
+    "duration": 4000,
+    "module": "shaders/cinematic",
+    "addedAt": "2026-11-01T09:26:14Z",
+    "commitHash": "b9c02b2f1aa308d20fcc980ffdc315de4b002c54",
+    "order": 603
+  },
+  {
+    "id": "opening-credits",
+    "name": "Opening credits",
+    "kind": "vector",
+    "category": "cinematic",
+    "description": "A film's opening credits: one card at a time, a small tracked lead over a name, each fading in while it eases larger and fading out, ending on the film's title.",
+    "tags": [
+      "cinematic",
+      "film",
+      "credits",
+      "intro",
+      "title"
+    ],
+    "controls": [
+      {
+        "n": "credits",
+        "t": "text",
+        "d": "A film by: Ada Lovelace; Starring: Grace Hopper; With: Alan Turing; Music by: Delia Derbyshire; # The Long Way Home",
+        "l": "Cards (Lead: Name; # Title; a name on its own)",
+        "line": 1
+      },
+      {
+        "n": "background",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            0,
+            0,
+            0
+          ]
+        },
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "backgroundOpacity",
+        "t": "float",
+        "d": 1,
+        "s": 0.05,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "ink",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            245,
+            245,
+            244
+          ]
+        },
+        "l": "Name colour",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "muted",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            168,
+            162,
+            158
+          ]
+        },
+        "l": "Lead colour",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "place",
+        "t": "int",
+        "d": 0,
+        "l": "Place (0 centre, 1 lower left, 2 lower right)",
+        "max": 2,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "hold",
+        "t": "float",
+        "d": 2,
+        "l": "Hold each card (s)",
+        "min": 0.5,
+        "max": 10,
+        "s": 0.5,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "font",
+        "t": "text",
+        "d": "'Inter', 'Helvetica Neue', Arial, system-ui, sans-serif",
+        "line": 8
+      }
+    ],
+    "presets": [
+      "Over video",
+      "Gold",
+      "Quick"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "credits",
+          "label": "Cards (Lead: Name; # Title; a name on its own)",
+          "holds": "copy",
+          "default": "A film by: Ada Lovelace; Starring: Grace Hopper; With: Alan Turing; Music by: Delia Derbyshire; # The Long Way Home"
+        },
+        {
+          "name": "font",
+          "label": "Font",
+          "holds": "font",
+          "default": "'Inter', 'Helvetica Neue', Arial, system-ui, sans-serif"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 400,
+    "animated": true,
+    "duration": 18600,
+    "module": "cinematic",
+    "addedAt": "2026-11-01T09:26:14Z",
+    "commitHash": "b9c02b2f1aa308d20fcc980ffdc315de4b002c54",
+    "order": 602
+  },
+  {
+    "id": "trailer-title-slam",
+    "name": "Trailer title slam",
+    "kind": "shader",
+    "category": "cinematic",
+    "description": "A film-trailer title hit: brushed-metal letters slam down out of the dark with a flash, a shake and a burst of dust, a lens flare glints across them, they hold and fade back to black.",
+    "tags": [
+      "cinematic",
+      "film",
+      "trailer",
+      "title",
+      "metal",
+      "flare",
+      "impact",
+      "text"
+    ],
+    "controls": [
+      {
+        "n": "uText",
+        "t": "sampler2D",
+        "d": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201024%20256%22%20width%3D%221024%22%20height%3D%22256%22%3E%3Ctext%20x%3D%22512%22%20y%3D%22128%22%20dy%3D%220.35em%22%20text-anchor%3D%22middle%22%20textLength%3D%22921.6%22%20lengthAdjust%3D%22spacingAndGlyphs%22%20font-family%3D%22%26%2339%3BCinzel%26%2339%3B%2C%20%26%2339%3BTrajan%20Pro%26%2339%3B%2C%20Georgia%2C%20%26%2339%3BTimes%20New%20Roman%26%2339%3B%2C%20serif%22%20font-weight%3D%22700%22%20font-size%3D%2277.1%22%20fill%3D%22%23fff%22%3ETHE%20LONG%20WAY%20HOME%3C%2Ftext%3E%3C%2Fsvg%3E",
+        "line": 3,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            5,
+            6,
+            8
+          ]
+        },
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uMetal",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            201,
+            206,
+            214
+          ]
+        },
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uFlare",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            125,
+            183,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 0.8,
+        "l": "Text size",
+        "min": 0.3,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uDust",
+        "t": "float",
+        "d": 0.6,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uShake",
+        "t": "float",
+        "d": 0.5,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uAnimate",
+        "t": "bool",
+        "d": true,
+        "line": 10
+      },
+      {
+        "n": "uMoment",
+        "t": "float",
+        "d": 1.1,
+        "l": "Moment (s, when still)",
+        "max": 4,
+        "b": 3,
+        "line": 11
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Background opacity",
+        "b": 3,
+        "line": 121
+      }
+    ],
+    "presets": [
+      "Gold",
+      "Blood red",
+      "No dust",
+      "Held title"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "svg",
+        "text",
+        "mask"
+      ],
+      "images": [
+        {
+          "name": "uText",
+          "label": "Text",
+          "wants": "text"
+        }
+      ],
+      "texts": [],
+      "video": "none",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "none",
+    "loop": 4,
+    "animated": true,
+    "duration": 4000,
+    "module": "shaders/cinematic",
+    "addedAt": "2026-11-01T09:26:14Z",
+    "commitHash": "b9c02b2f1aa308d20fcc980ffdc315de4b002c54",
+    "order": 601
+  },
+  {
+    "id": "cinema-projector",
+    "name": "Cinema projector",
+    "kind": "shader",
+    "category": "cinematic",
+    "description": "A picture showing on a cinema screen in a dark auditorium: it flickers and weaves in the gate, a dusty projector beam fans down onto it, its light spills onto the curtains, and a row of heads sits silhouetted in front.",
+    "tags": [
+      "cinematic",
+      "film",
+      "cinema",
+      "projector",
+      "screen",
+      "audience",
+      "vintage",
+      "image"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "landscape"
+        },
+        "line": 4,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uScreen",
+        "t": "float",
+        "d": 0.56,
+        "l": "Screen width",
+        "min": 0.4,
+        "max": 0.95,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uAspect",
+        "t": "float",
+        "d": 1.85,
+        "l": "Screen aspect ratio",
+        "min": 1.33,
+        "max": 2.4,
+        "s": 0.01,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uBeam",
+        "t": "float",
+        "d": 0.55,
+        "l": "Projector beam",
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uDust",
+        "t": "float",
+        "d": 0.5,
+        "l": "Dust in the beam",
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uFlicker",
+        "t": "float",
+        "d": 0.4,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uAudience",
+        "t": "float",
+        "d": 1,
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uRoom",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            11,
+            10,
+            14
+          ]
+        },
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "uCurtain",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            90,
+            20,
+            32
+          ]
+        },
+        "l": "Curtains",
+        "c": 1,
+        "line": 12
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 13
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 14
+      }
+    ],
+    "presets": [
+      "Scope screen",
+      "Old picture house",
+      "Empty house"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "filter",
+    "animated": true,
+    "module": "shaders/cinematic",
+    "addedAt": "2026-11-01T09:26:14Z",
+    "commitHash": "b9c02b2f1aa308d20fcc980ffdc315de4b002c54",
+    "order": 600
+  },
+  {
+    "id": "academy-leader",
+    "name": "Academy leader",
+    "kind": "shader",
+    "category": "cinematic",
+    "description": "The countdown at the head of a film reel: 8 down to 3 in a ringed circle under crosshairs, a sweep going round each second, worn with dust, scratches and flicker; the 2 flashes for a frame and the screen goes black.",
+    "tags": [
+      "cinematic",
+      "film",
+      "countdown",
+      "leader",
+      "vintage",
+      "intro",
+      "projector"
+    ],
+    "controls": [
+      {
+        "n": "uLight",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            184,
+            184,
+            180
+          ]
+        },
+        "l": "Frame",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uShade",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            110,
+            110,
+            106
+          ]
+        },
+        "l": "Sweep",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uInk",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            17,
+            17,
+            17
+          ]
+        },
+        "l": "Numerals and rings",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uWear",
+        "t": "float",
+        "d": 0.5,
+        "l": "Wear (dust, scratches, flicker)",
+        "b": 3,
+        "line": 6
+      }
+    ],
+    "presets": [
+      "Clean",
+      "Battered",
+      "Sepia"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "loop": 7,
+    "animated": true,
+    "duration": 7000,
+    "module": "shaders/cinematic",
+    "addedAt": "2026-11-01T09:26:14Z",
+    "commitHash": "b9c02b2f1aa308d20fcc980ffdc315de4b002c54",
+    "order": 599
+  },
+  {
+    "id": "day-for-night",
+    "name": "Day for night",
+    "kind": "shader",
+    "category": "cinematic",
+    "description": "A daylight picture graded into moonlit night, the way films shot night scenes by day: underexposed, drained of colour, tinted moonlight blue, with the bright sky darkened and the shadows lifted a touch.",
+    "tags": [
+      "cinematic",
+      "film",
+      "grade",
+      "colour-grade",
+      "night",
+      "moonlight",
+      "blue",
+      "image"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "landscape"
+        },
+        "line": 3,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uExposure",
+        "t": "float",
+        "d": 0.6,
+        "min": 0.1,
+        "max": 1.5,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uMoon",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            111,
+            143,
+            208
+          ]
+        },
+        "l": "Moonlight",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uSaturation",
+        "t": "float",
+        "d": 0.3,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uSkyDarken",
+        "t": "float",
+        "d": 0.55,
+        "l": "Darken the sky",
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uContrast",
+        "t": "float",
+        "d": 0.35,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uLift",
+        "t": "float",
+        "d": 0.03,
+        "l": "Shadow lift",
+        "max": 0.2,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 11
+      }
+    ],
+    "presets": [
+      "Deep night",
+      "Silver moon",
+      "Dusk"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "filter",
+    "animated": false,
+    "module": "shaders/cinematic",
+    "addedAt": "2026-11-01T09:26:14Z",
+    "commitHash": "b9c02b2f1aa308d20fcc980ffdc315de4b002c54",
+    "order": 598
+  },
+  {
+    "id": "technicolor",
+    "name": "Technicolor",
+    "kind": "shader",
+    "category": "cinematic",
+    "description": "A picture printed like three-strip (or two-strip) dye-transfer film: separate colour records laid down as dyes, saturated primaries, a warm print and a slight misregistration between the records.",
+    "tags": [
+      "cinematic",
+      "film",
+      "grade",
+      "colour-grade",
+      "vintage",
+      "saturated",
+      "image"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "landscape"
+        },
+        "line": 4,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uStrips",
+        "t": "int",
+        "d": 3,
+        "l": "Strips (2 or 3)",
+        "min": 2,
+        "max": 3,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uSaturation",
+        "t": "float",
+        "d": 1.3,
+        "max": 2,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uContrast",
+        "t": "float",
+        "d": 0.35,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uWarmth",
+        "t": "float",
+        "d": 0.3,
+        "l": "Print warmth",
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uMisregister",
+        "t": "float",
+        "d": 1.5,
+        "l": "Misregistration (px)",
+        "max": 8,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uFade",
+        "t": "float",
+        "d": 0,
+        "l": "Faded print",
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 12
+      }
+    ],
+    "presets": [
+      "Two-strip",
+      "Musical",
+      "Faded print"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "filter",
+    "animated": false,
+    "module": "shaders/cinematic",
+    "addedAt": "2026-11-01T09:26:14Z",
+    "commitHash": "b9c02b2f1aa308d20fcc980ffdc315de4b002c54",
+    "order": 597
+  },
+  {
     "id": "transition-focus-pull",
     "name": "Focus pull",
     "kind": "shader",
@@ -2090,1321 +3042,5 @@
     "addedAt": "2026-11-01T07:26:36Z",
     "commitHash": "097fe892afd2b3031a493c9a7a3463ee48679757",
     "order": 584
-  },
-  {
-    "id": "reaction-rain",
-    "name": "Reaction rain",
-    "kind": "vector",
-    "category": "meme",
-    "description": "Live-stream reactions floating up the side of the frame: emoji (or any glyphs or words) popping in at the bottom, wobbling as they rise and fading out near the top.",
-    "tags": [
-      "meme",
-      "reaction",
-      "emoji",
-      "live",
-      "stream",
-      "heart",
-      "float",
-      "social",
-      "overlay"
-    ],
-    "controls": [
-      {
-        "n": "glyphs",
-        "t": "text",
-        "d": "😂🔥💀",
-        "l": "Reactions",
-        "line": 1
-      },
-      {
-        "n": "count",
-        "t": "int",
-        "d": 14,
-        "l": "How many",
-        "min": 1,
-        "max": 18,
-        "b": 3,
-        "line": 2
-      },
-      {
-        "n": "rate",
-        "t": "float",
-        "d": 5,
-        "l": "A second",
-        "min": 0.5,
-        "max": 12,
-        "s": 0.5,
-        "b": 3,
-        "line": 3
-      },
-      {
-        "n": "speed",
-        "t": "float",
-        "d": 1,
-        "l": "Rise speed",
-        "min": 0.4,
-        "max": 2.5,
-        "s": 0.1,
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "side",
-        "t": "float",
-        "d": 0.86,
-        "l": "Column across",
-        "s": 0.01,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "spread",
-        "t": "float",
-        "d": 0.08,
-        "l": "Column width",
-        "max": 0.5,
-        "s": 0.01,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "scale",
-        "t": "float",
-        "d": 1,
-        "l": "Size",
-        "min": 0.5,
-        "max": 2.5,
-        "s": 0.05,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "font",
-        "t": "text",
-        "d": "'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Twemoji Mozilla', sans-serif",
-        "line": 8
-      },
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            59,
-            66,
-            82
-          ]
-        },
-        "c": 1,
-        "line": 9
-      },
-      {
-        "n": "backdrop",
-        "t": "float",
-        "d": 1,
-        "l": "Background opacity",
-        "s": 0.05,
-        "b": 3,
-        "line": 10
-      }
-    ],
-    "presets": [
-      "Overlay",
-      "Left side",
-      "Hearts",
-      "Flood"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [
-        {
-          "name": "glyphs",
-          "label": "Reactions",
-          "holds": "glyphs",
-          "default": "😂🔥💀"
-        },
-        {
-          "name": "font",
-          "label": "Font",
-          "holds": "font",
-          "default": "'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Twemoji Mozilla', sans-serif"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 300,
-    "animated": true,
-    "duration": 6704,
-    "module": "meme",
-    "addedAt": "2026-11-01T07:26:36Z",
-    "commitHash": "097fe892afd2b3031a493c9a7a3463ee48679757",
-    "order": 583
-  },
-  {
-    "id": "hitmarker-montage",
-    "name": "Hitmarker montage",
-    "kind": "vector",
-    "category": "meme",
-    "description": "A montage-parody volley: hit markers slamming down one after another at points across the frame, a score popping up and floating off each, the frame jolting with every hit and the last one in red.",
-    "tags": [
-      "meme",
-      "reaction",
-      "hitmarker",
-      "montage",
-      "game",
-      "fps",
-      "score",
-      "shake",
-      "overlay"
-    ],
-    "controls": [
-      {
-        "n": "points",
-        "t": "text",
-        "d": "0.32,0.62 0.6,0.45 0.44,0.3 0.72,0.68 0.5,0.52",
-        "l": "Hits (x,y 0–1, y up)",
-        "line": 1
-      },
-      {
-        "n": "score",
-        "t": "text",
-        "d": "+100",
-        "line": 2
-      },
-      {
-        "n": "pace",
-        "t": "float",
-        "d": 0.32,
-        "l": "Seconds between hits",
-        "min": 0.08,
-        "max": 1.5,
-        "s": 0.01,
-        "b": 3,
-        "line": 3
-      },
-      {
-        "n": "size",
-        "t": "float",
-        "d": 1.25,
-        "min": 0.5,
-        "max": 2.5,
-        "s": 0.05,
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "weight",
-        "t": "float",
-        "d": 4.5,
-        "l": "Tick weight",
-        "min": 2,
-        "max": 9,
-        "s": 0.5,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "shake",
-        "t": "float",
-        "d": 4,
-        "max": 12,
-        "s": 0.5,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "marker",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 7
-      },
-      {
-        "n": "finale",
-        "t": "bool",
-        "d": true,
-        "l": "Last hit in red",
-        "line": 8
-      },
-      {
-        "n": "kill",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            42,
-            42
-          ]
-        },
-        "l": "Last hit",
-        "c": 1,
-        "line": 9
-      },
-      {
-        "n": "scoreInk",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            214,
-            10
-          ]
-        },
-        "l": "Score colour",
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "font",
-        "t": "text",
-        "d": "Impact, Anton, 'Haettenschweiler', 'Arial Narrow Bold', 'Arial Black', sans-serif",
-        "line": 11
-      },
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            59,
-            66,
-            82
-          ]
-        },
-        "c": 1,
-        "line": 12
-      },
-      {
-        "n": "backdrop",
-        "t": "float",
-        "d": 1,
-        "l": "Background opacity",
-        "s": 0.05,
-        "b": 3,
-        "line": 13
-      }
-    ],
-    "presets": [
-      "Overlay",
-      "Headshots",
-      "Rapid fire",
-      "Steady"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "points",
-          "label": "Hits (x,y 0–1, y up)",
-          "holds": "copy",
-          "default": "0.32,0.62 0.6,0.45 0.44,0.3 0.72,0.68 0.5,0.52"
-        },
-        {
-          "name": "score",
-          "label": "Score",
-          "holds": "copy",
-          "default": "+100"
-        },
-        {
-          "name": "font",
-          "label": "Font",
-          "holds": "font",
-          "default": "Impact, Anton, 'Haettenschweiler', 'Arial Narrow Bold', 'Arial Black', sans-serif"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 900,
-    "animated": true,
-    "duration": 3410,
-    "module": "meme",
-    "addedAt": "2026-11-01T07:26:36Z",
-    "commitHash": "097fe892afd2b3031a493c9a7a3463ee48679757",
-    "order": 582
-  },
-  {
-    "id": "bonk",
-    "name": "Bonk",
-    "kind": "vector",
-    "category": "meme",
-    "description": "A cartoon mallet winds up and swings down onto a point, the head under it squashes and springs back, and a comic impact star pops with the word BONK, the frame shaking from the hit.",
-    "tags": [
-      "meme",
-      "reaction",
-      "comic",
-      "bonk",
-      "mallet",
-      "hammer",
-      "hit",
-      "cartoon",
-      "overlay"
-    ],
-    "controls": [
-      {
-        "n": "word",
-        "t": "text",
-        "d": "BONK",
-        "line": 1
-      },
-      {
-        "n": "x",
-        "t": "float",
-        "d": 0.5,
-        "l": "Hit across",
-        "b": 3,
-        "line": 2
-      },
-      {
-        "n": "y",
-        "t": "float",
-        "d": 0.775,
-        "l": "Hit up",
-        "b": 3,
-        "line": 3
-      },
-      {
-        "n": "size",
-        "t": "float",
-        "d": 0.75,
-        "min": 0.4,
-        "max": 2,
-        "s": 0.05,
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "head",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            181,
-            118,
-            60
-          ]
-        },
-        "l": "Mallet head",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "handle",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            138,
-            84,
-            39
-          ]
-        },
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "burst",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            214,
-            10
-          ]
-        },
-        "l": "Star",
-        "c": 1,
-        "line": 7
-      },
-      {
-        "n": "letters",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            59,
-            48
-          ]
-        },
-        "c": 1,
-        "line": 8
-      },
-      {
-        "n": "ink",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            17,
-            17,
-            17
-          ]
-        },
-        "c": 1,
-        "line": 9
-      },
-      {
-        "n": "face",
-        "t": "bool",
-        "d": true,
-        "l": "Sample face",
-        "line": 10
-      },
-      {
-        "n": "font",
-        "t": "text",
-        "d": "'Bangers', 'Luckiest Guy', Impact, 'Arial Black', sans-serif",
-        "line": 11
-      },
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            59,
-            66,
-            82
-          ]
-        },
-        "c": 1,
-        "line": 12
-      },
-      {
-        "n": "backdrop",
-        "t": "float",
-        "d": 1,
-        "l": "Background opacity",
-        "s": 0.05,
-        "b": 3,
-        "line": 13
-      }
-    ],
-    "presets": [
-      "Overlay",
-      "Toy hammer",
-      "Big bonk"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "word",
-          "label": "Word",
-          "holds": "copy",
-          "default": "BONK"
-        },
-        {
-          "name": "font",
-          "label": "Font",
-          "holds": "font",
-          "default": "'Bangers', 'Luckiest Guy', Impact, 'Arial Black', sans-serif"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 500,
-    "animated": true,
-    "duration": 2250,
-    "module": "meme",
-    "addedAt": "2026-11-01T07:26:36Z",
-    "commitHash": "097fe892afd2b3031a493c9a7a3463ee48679757",
-    "order": 581
-  },
-  {
-    "id": "error-cascade",
-    "name": "Error cascade",
-    "kind": "vector",
-    "category": "meme",
-    "description": "Retro error dialogs popping up one after another, cascading down the screen or dragging a trail across it like a frozen computer, each with an editable title, message and button and no real system's branding.",
-    "tags": [
-      "meme",
-      "retro",
-      "error",
-      "dialog",
-      "window",
-      "crash",
-      "glitch",
-      "90s",
-      "overlay"
-    ],
-    "controls": [
-      {
-        "n": "title",
-        "t": "text",
-        "d": "Error",
-        "line": 1
-      },
-      {
-        "n": "message",
-        "t": "text",
-        "d": "Something went horribly wrong.",
-        "line": 2
-      },
-      {
-        "n": "button",
-        "t": "text",
-        "d": "OK",
-        "line": 3
-      },
-      {
-        "n": "count",
-        "t": "int",
-        "d": 10,
-        "l": "Dialogs",
-        "min": 1,
-        "max": 16,
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "pace",
-        "t": "float",
-        "d": 0.18,
-        "l": "Seconds between",
-        "min": 0.03,
-        "s": 0.01,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "trail",
-        "t": "bool",
-        "d": false,
-        "l": "Drag a trail",
-        "line": 6
-      },
-      {
-        "n": "face",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            192,
-            192,
-            192
-          ]
-        },
-        "l": "Window",
-        "c": 1,
-        "line": 7
-      },
-      {
-        "n": "bar",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            0,
-            0,
-            128
-          ]
-        },
-        "l": "Title bar",
-        "c": 1,
-        "line": 8
-      },
-      {
-        "n": "bar2",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            16,
-            132,
-            208
-          ]
-        },
-        "l": "Title bar fade",
-        "c": 1,
-        "line": 9
-      },
-      {
-        "n": "titleInk",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "l": "Title colour",
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "ink",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            0,
-            0,
-            0
-          ]
-        },
-        "l": "Text colour",
-        "c": 1,
-        "line": 11
-      },
-      {
-        "n": "icon",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            232,
-            17,
-            35
-          ]
-        },
-        "c": 1,
-        "line": 12
-      },
-      {
-        "n": "font",
-        "t": "text",
-        "d": "Tahoma, Verdana, 'DejaVu Sans', Geneva, sans-serif",
-        "line": 13
-      },
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            59,
-            66,
-            82
-          ]
-        },
-        "c": 1,
-        "line": 14
-      },
-      {
-        "n": "backdrop",
-        "t": "float",
-        "d": 1,
-        "l": "Background opacity",
-        "s": 0.05,
-        "b": 3,
-        "line": 15
-      }
-    ],
-    "presets": [
-      "Overlay",
-      "Trail",
-      "Warning",
-      "Dark"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "title",
-          "label": "Title",
-          "holds": "copy",
-          "default": "Error"
-        },
-        {
-          "name": "message",
-          "label": "Message",
-          "holds": "copy",
-          "default": "Something went horribly wrong."
-        },
-        {
-          "name": "button",
-          "label": "Button",
-          "holds": "copy",
-          "default": "OK"
-        },
-        {
-          "name": "font",
-          "label": "Font",
-          "holds": "font",
-          "default": "Tahoma, Verdana, 'DejaVu Sans', Geneva, sans-serif"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 1500,
-    "animated": true,
-    "duration": 3450,
-    "module": "meme",
-    "addedAt": "2026-11-01T07:26:36Z",
-    "commitHash": "097fe892afd2b3031a493c9a7a3463ee48679757",
-    "order": 580
-  },
-  {
-    "id": "stonks-chart",
-    "name": "Stonks chart",
-    "kind": "vector",
-    "category": "meme",
-    "description": "The stonks trope: a jagged line chart rocketing up to a fat arrow head (or crashing down, by a switch), its value ticking up as it draws and a bold label above, laid over a picture or on its own.",
-    "tags": [
-      "meme",
-      "chart",
-      "stonks",
-      "line-chart",
-      "arrow",
-      "counter",
-      "finance",
-      "overlay"
-    ],
-    "controls": [
-      {
-        "n": "label",
-        "t": "text",
-        "d": "STONKS",
-        "line": 1
-      },
-      {
-        "n": "value",
-        "t": "float",
-        "d": 420,
-        "max": 1000000,
-        "s": 1,
-        "b": 3,
-        "line": 2
-      },
-      {
-        "n": "decimals",
-        "t": "int",
-        "d": 0,
-        "max": 2,
-        "b": 3,
-        "line": 3
-      },
-      {
-        "n": "prefix",
-        "t": "text",
-        "d": "",
-        "l": "Before the value",
-        "line": 4
-      },
-      {
-        "n": "suffix",
-        "t": "text",
-        "d": "%",
-        "l": "After the value",
-        "line": 5
-      },
-      {
-        "n": "crash",
-        "t": "bool",
-        "d": false,
-        "line": 6
-      },
-      {
-        "n": "rise",
-        "t": "float",
-        "d": 1.8,
-        "l": "Draw time (s)",
-        "min": 0.5,
-        "max": 6,
-        "s": 0.1,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "jag",
-        "t": "float",
-        "d": 1,
-        "l": "Jaggedness",
-        "max": 1.5,
-        "s": 0.05,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "line",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            34,
-            197,
-            94
-          ]
-        },
-        "c": 1,
-        "line": 9
-      },
-      {
-        "n": "grid",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            148,
-            163,
-            184
-          ]
-        },
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "ink",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "l": "Text colour",
-        "c": 1,
-        "line": 11
-      },
-      {
-        "n": "outline",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            0,
-            0,
-            0
-          ]
-        },
-        "c": 1,
-        "line": 12
-      },
-      {
-        "n": "font",
-        "t": "text",
-        "d": "Impact, Anton, 'Haettenschweiler', 'Arial Narrow Bold', 'Arial Black', sans-serif",
-        "line": 13
-      },
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            59,
-            66,
-            82
-          ]
-        },
-        "c": 1,
-        "line": 14
-      },
-      {
-        "n": "backdrop",
-        "t": "float",
-        "d": 1,
-        "l": "Background opacity",
-        "s": 0.05,
-        "b": 3,
-        "line": 15
-      }
-    ],
-    "presets": [
-      "Overlay",
-      "Not stonks",
-      "Dollars",
-      "Slow burn"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "label",
-          "label": "Label",
-          "holds": "copy",
-          "default": "STONKS"
-        },
-        {
-          "name": "prefix",
-          "label": "Before the value",
-          "holds": "copy",
-          "default": ""
-        },
-        {
-          "name": "suffix",
-          "label": "After the value",
-          "holds": "copy",
-          "default": "%"
-        },
-        {
-          "name": "font",
-          "label": "Font",
-          "holds": "font",
-          "default": "Impact, Anton, 'Haettenschweiler', 'Arial Narrow Bold', 'Arial Black', sans-serif"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 1400,
-    "animated": true,
-    "duration": 4100,
-    "module": "meme",
-    "addedAt": "2026-11-01T07:26:36Z",
-    "commitHash": "097fe892afd2b3031a493c9a7a3463ee48679757",
-    "order": 579
-  },
-  {
-    "id": "deal-with-it",
-    "name": "Deal with it",
-    "kind": "vector",
-    "category": "meme",
-    "description": "Pixel sunglasses sliding slowly down from the top of the frame onto a pair of eyes, landing with a little bounce, then a caption snapping on underneath.",
-    "tags": [
-      "meme",
-      "reaction",
-      "pixel",
-      "sunglasses",
-      "caption",
-      "overlay",
-      "cool"
-    ],
-    "controls": [
-      {
-        "n": "text",
-        "t": "text",
-        "d": "DEAL WITH IT",
-        "l": "Caption",
-        "line": 1
-      },
-      {
-        "n": "x",
-        "t": "float",
-        "d": 0.5,
-        "l": "Eyes across",
-        "b": 3,
-        "line": 2
-      },
-      {
-        "n": "y",
-        "t": "float",
-        "d": 0.583,
-        "l": "Eyes up",
-        "b": 3,
-        "line": 3
-      },
-      {
-        "n": "width",
-        "t": "float",
-        "d": 0.16,
-        "l": "Glasses width",
-        "min": 0.05,
-        "max": 0.8,
-        "s": 0.01,
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "drop",
-        "t": "float",
-        "d": 1.4,
-        "l": "Drop (s)",
-        "min": 0.2,
-        "max": 4,
-        "s": 0.1,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "lens",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            0,
-            0,
-            0
-          ]
-        },
-        "l": "Glasses",
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "shine",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "l": "Glint",
-        "c": 1,
-        "line": 7
-      },
-      {
-        "n": "ink",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "l": "Caption colour",
-        "c": 1,
-        "line": 8
-      },
-      {
-        "n": "outline",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            0,
-            0,
-            0
-          ]
-        },
-        "l": "Caption outline",
-        "c": 1,
-        "line": 9
-      },
-      {
-        "n": "face",
-        "t": "bool",
-        "d": true,
-        "l": "Sample face",
-        "line": 10
-      },
-      {
-        "n": "font",
-        "t": "text",
-        "d": "Impact, Anton, 'Haettenschweiler', 'Arial Narrow Bold', 'Arial Black', sans-serif",
-        "line": 11
-      },
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            59,
-            66,
-            82
-          ]
-        },
-        "c": 1,
-        "line": 12
-      },
-      {
-        "n": "backdrop",
-        "t": "float",
-        "d": 1,
-        "l": "Background opacity",
-        "s": 0.05,
-        "b": 3,
-        "line": 13
-      }
-    ],
-    "presets": [
-      "Overlay",
-      "Quick",
-      "Gold frames"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "text",
-          "label": "Caption",
-          "holds": "copy",
-          "default": "DEAL WITH IT"
-        },
-        {
-          "name": "font",
-          "label": "Font",
-          "holds": "font",
-          "default": "Impact, Anton, 'Haettenschweiler', 'Arial Narrow Bold', 'Arial Black', sans-serif"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 1600,
-    "animated": true,
-    "duration": 3560,
-    "module": "meme",
-    "addedAt": "2026-10-31T23:57:07Z",
-    "commitHash": "86d553c6fb2d6c584b89febf9a38d72ed4abb119",
-    "order": 578
-  },
-  {
-    "id": "impact-caption",
-    "name": "Impact caption",
-    "kind": "vector",
-    "category": "meme",
-    "description": "The classic meme caption: white Impact capitals with a heavy black outline across the top and bottom of the frame, each fitted to the width, popping on with the punchline a beat after the setup.",
-    "tags": [
-      "meme",
-      "caption",
-      "text",
-      "impact",
-      "top-text",
-      "bottom-text",
-      "overlay",
-      "pop"
-    ],
-    "controls": [
-      {
-        "n": "top",
-        "t": "text",
-        "d": "TOP TEXT",
-        "l": "Top text",
-        "line": 1
-      },
-      {
-        "n": "bottom",
-        "t": "text",
-        "d": "BOTTOM TEXT",
-        "l": "Bottom text",
-        "line": 2
-      },
-      {
-        "n": "ink",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "l": "Text colour",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "outline",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            0,
-            0,
-            0
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "thickness",
-        "t": "float",
-        "d": 0.09,
-        "l": "Outline width (em)",
-        "max": 0.2,
-        "s": 0.01,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "upper",
-        "t": "bool",
-        "d": true,
-        "l": "Capitals",
-        "line": 6
-      },
-      {
-        "n": "pop",
-        "t": "float",
-        "d": 1,
-        "l": "Pop-in",
-        "s": 0.1,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "beat",
-        "t": "float",
-        "d": 0.8,
-        "l": "Punchline delay (s)",
-        "max": 3,
-        "s": 0.1,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "font",
-        "t": "text",
-        "d": "Impact, Anton, 'Haettenschweiler', 'Arial Narrow Bold', 'Arial Black', sans-serif",
-        "line": 9
-      },
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            59,
-            66,
-            82
-          ]
-        },
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "backdrop",
-        "t": "float",
-        "d": 1,
-        "l": "Background opacity",
-        "s": 0.05,
-        "b": 3,
-        "line": 11
-      }
-    ],
-    "presets": [
-      "Overlay",
-      "Bottom only",
-      "No pop",
-      "Yellow subtitle"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "top",
-          "label": "Top text",
-          "holds": "copy",
-          "default": "TOP TEXT"
-        },
-        {
-          "name": "bottom",
-          "label": "Bottom text",
-          "holds": "copy",
-          "default": "BOTTOM TEXT"
-        },
-        {
-          "name": "font",
-          "label": "Font",
-          "holds": "font",
-          "default": "Impact, Anton, 'Haettenschweiler', 'Arial Narrow Bold', 'Arial Black', sans-serif"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 1800,
-    "animated": true,
-    "duration": 3400,
-    "module": "meme",
-    "addedAt": "2026-10-31T23:57:07Z",
-    "commitHash": "86d553c6fb2d6c584b89febf9a38d72ed4abb119",
-    "order": 577
   }
 ]
