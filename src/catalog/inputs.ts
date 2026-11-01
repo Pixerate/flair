@@ -83,7 +83,7 @@ export interface EffectInputs {
 }
 
 /** `textImage` output: a UTF-8 SVG `data:` URL holding a `<text>`. */
-function isTextImage(url: string): boolean {
+export function isTextImage(url: string): boolean {
   if (!url.startsWith("data:image/svg+xml;charset=utf-8,")) return false;
   try {
     return decodeURIComponent(url.slice(url.indexOf(",") + 1)).includes("<text");

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { getEffect } from "../catalog/index.js";
+import { getEffect, textImage } from "../catalog/index.js";
 import { ManualClock } from "../time/clock.js";
 import { svgDuration } from "../vector/svg.js";
 import { callTool, createEffectToolProvider, EFFECT_AGENT_INSTRUCTIONS, toolDefinitions } from "./agent.js";
@@ -272,6 +272,188 @@ describe("commands and agent tools", () => {
     // A mistyped value is refused and nothing changes.
     expect(editor.commands.execute("values.set", { values: { uAmount: "lots" } })).toMatchObject({ ok: false, message: expect.stringMatching(/uAmount takes a number/) });
     expect(editor.document.values.uAmount).toBeUndefined();
+  });
+
+  it("lets agents find the meme effects, caption one and tune it within its controls", async () => {
+    const editor = createEffectEditor({ from: "aurora" });
+    const provider = createEffectToolProvider(editor);
+    type Search = { total: number; effects: { id: string; category: string }[] };
+    const found = await callTool(provider, "run_command", { id: "catalog.search", params: { category: "meme", limit: 50 } });
+    expect(found.isError).toBeFalsy();
+    const { result } = found.structuredContent as { result: Search };
+    expect(result.effects.map((e) => e.id)).toEqual(expect.arrayContaining(["impact-caption", "deep-fried", "dramatic-zoom", "deal-with-it", "laser-eyes", "to-be-continued"]));
+
+    const run = await callTool(provider, "run_commands", {
+      steps: [
+        { id: "effect.load", params: { id: "impact-caption" } },
+        { id: "values.set", params: { values: { top: "When the tests pass", backdrop: 0 } } },
+      ],
+    });
+    expect(run.isError).toBeFalsy();
+    expect(editor.document.values).toMatchObject({ top: "When the tests pass", backdrop: 0 });
+    // A mistyped value is refused and nothing changes.
+    expect(editor.commands.execute("values.set", { values: { thickness: "heavy" } })).toMatchObject({ ok: false, message: expect.stringMatching(/thickness takes a number/) });
+    expect(editor.document.values.thickness).toBeUndefined();
+    // So is a value beyond the control's range.
+    expect(editor.commands.execute("values.set", { values: { thickness: 5 } })).toMatchObject({ ok: false, message: expect.stringMatching(/thickness takes a number from 0 to 0\.2/) });
+  });
+
+  it("lets agents find the chart, retro and reaction memes by kind, load each, apply presets and refuse bad values", async () => {
+    const editor = createEffectEditor({ from: "aurora" });
+    const provider = createEffectToolProvider(editor);
+    type Search = { total: number; effects: { id: string; category: string }[] };
+    const search = async (params: Record<string, unknown>) => {
+      const found = await callTool(provider, "run_command", { id: "catalog.search", params: { category: "meme", limit: 50, ...params } });
+      expect(found.isError).toBeFalsy();
+      return (found.structuredContent as { result: Search }).result.effects.map((e) => e.id);
+    };
+    expect(await search({ tags: ["reaction"] })).toEqual(expect.arrayContaining(["bonk", "hitmarker-montage", "reaction-rain"]));
+    expect(await search({ tags: ["chart"] })).toEqual(["stonks-chart"]);
+    expect(await search({ tags: ["retro"] })).toEqual(expect.arrayContaining(["error-cascade", "wordart-text"]));
+
+    // Each loads, and its presets apply.
+    for (const [id, preset] of [
+      ["stonks-chart", "Not stonks"],
+      ["error-cascade", "Trail"],
+      ["bonk", "Overlay"],
+      ["hitmarker-montage", "Rapid fire"],
+      ["reaction-rain", "Hearts"],
+      ["wordart-text", "Arch"],
+    ] as const) {
+      const run = await callTool(provider, "run_commands", {
+        steps: [
+          { id: "effect.load", params: { id } },
+          { id: "preset.apply", params: { name: preset } },
+        ],
+      });
+      expect(run.isError, id).toBeFalsy();
+      expect(editor.document.basedOn).toBe(id);
+    }
+    expect(editor.document.values).toMatchObject({ arch: 0.8, wave: 0 });
+
+    // Text, numbers and switches land as given.
+    await callTool(provider, "run_command", { id: "effect.load", params: { id: "error-cascade" } });
+    const set = await callTool(provider, "run_command", { id: "values.set", params: { values: { title: "Fatal", message: "Out of memes.", count: 4, trail: true } } });
+    expect(set.isError).toBeFalsy();
+    expect(editor.document.values).toMatchObject({ title: "Fatal", message: "Out of memes.", count: 4, trail: true });
+    // Too many dialogs, a mistyped switch and an unknown preset are refused, naming what is allowed, and nothing changes.
+    const many = await callTool(provider, "run_command", { id: "values.set", params: { values: { count: 40 } } });
+    expect(many.isError).toBe(true);
+    expect(JSON.stringify(many)).toMatch(/count takes a number from 1 to 16, not 40/);
+    expect(editor.commands.execute("values.set", { values: { trail: "yes" } })).toMatchObject({ ok: false, message: expect.stringMatching(/trail takes true or false/) });
+    expect(editor.commands.execute("preset.apply", { name: "Blue screen" })).toMatchObject({ ok: false });
+    expect(editor.document.values).toMatchObject({ count: 4, trail: true });
+
+    await callTool(provider, "run_command", { id: "effect.load", params: { id: "reaction-rain" } });
+    expect(editor.commands.execute("values.set", { values: { glyphs: 5 } })).toMatchObject({ ok: false, message: expect.stringMatching(/glyphs takes text/) });
+    expect(editor.commands.execute("values.set", { values: { glyphs: "🎉 🙌" } })).toMatchObject({ ok: true });
+
+    await callTool(provider, "run_command", { id: "effect.load", params: { id: "wordart-text" } });
+    expect(editor.commands.execute("values.set", { values: { wave: 2 } })).toMatchObject({ ok: false, message: expect.stringMatching(/wave takes a number from -1 to 1/) });
+    expect(editor.commands.execute("values.set", { values: { skew: -45 } })).toMatchObject({ ok: false, message: expect.stringMatching(/skew takes a number from -30 to 30/) });
+    expect(editor.document.values.wave).toBeUndefined();
+  });
+
+  it("refuses values beyond a control's declared range, naming it, and changes nothing", async () => {
+    const editor = createEffectEditor({ from: "beauty-blush" });
+    const provider = createEffectToolProvider(editor);
+    const wrong = await callTool(provider, "run_command", { id: "values.set", params: { values: { uAmount: 3 } } });
+    expect(wrong.isError).toBe(true);
+    expect(JSON.stringify(wrong)).toMatch(/uAmount takes a number from 0 to 1, not 3/);
+    expect(editor.document.values.uAmount).toBeUndefined();
+    // All or nothing: one value out of range keeps the others from landing too.
+    expect(editor.commands.execute("values.set", { values: { uDepth: 0.4, uSpacing: 2 } })).toMatchObject({ ok: false, message: expect.stringMatching(/uSpacing takes a number from 0 to 0\.5/) });
+    expect(editor.document.values.uDepth).toBeUndefined();
+    expect(editor.commands.execute("values.set", { values: { uAmount: 0.9 } })).toMatchObject({ ok: true });
+    // Vector controls declared with a range are held to it as well.
+    const vector = createEffectEditor({ from: "swatch-reveal" });
+    expect(vector.commands.execute("values.set", { values: { count: 9 } })).toMatchObject({ ok: false, message: expect.stringMatching(/count takes a number from 1 to 5, not 9/) });
+  });
+
+  it("lets agents set a text mask's words, in its own font or another, and refuses bare words", async () => {
+    const editor = createEffectEditor({ from: "to-be-continued" });
+    const provider = createEffectToolProvider(editor);
+    // effect.describe marks the control, and values.schema says what it takes.
+    const described = await callTool(provider, "run_command", { id: "effect.describe" });
+    const controls = (described.structuredContent as { result: { controls: { name: string; textMask?: boolean }[] } }).result.controls;
+    expect(controls.find((c) => c.name === "uText")).toMatchObject({ textMask: true });
+    expect(controls.find((c) => c.name === "uImage")!.textMask).toBeUndefined();
+    const schema = await callTool(provider, "run_command", { id: "values.schema" });
+    const uText = (schema.structuredContent as { result: { properties: Record<string, { anyOf?: { type: string; required?: string[] }[] }> } }).result.properties.uText!;
+    expect(uText.anyOf!.map((s) => s.type)).toEqual(["object", "string"]);
+    expect(uText.anyOf![0]!.required).toEqual(["text"]);
+
+    // Words become a text image in the default's font; a font and weight can be named.
+    const set = await callTool(provider, "run_command", { id: "values.set", params: { values: { uText: { text: "COMING SOON" } } } });
+    expect(set.isError).toBeFalsy();
+    expect(editor.document.values.uText).toBe(textImage("COMING SOON"));
+    expect(editor.commands.execute("values.set", { values: { uText: { text: "FIN", font: "Georgia, serif", weight: 400 } } })).toMatchObject({ ok: true });
+    expect(editor.document.values.uText).toBe(textImage("FIN", { font: "Georgia, serif", weight: 400 }));
+    expect(editor.commands.execute("keyframe.set", { name: "uText", time: 500, value: { text: "LATER" } })).toMatchObject({ ok: true });
+    expect(editor.document.tracks.uText!.keyframes[0]!.value).toBe(textImage("LATER"));
+    editor.commands.execute("history.undo", {});
+
+    // Bare words, empty words, unknown keys and a bad weight are refused, saying what to pass, and nothing changes.
+    expect(editor.commands.execute("values.set", { values: { uText: "ANGRY" } })).toMatchObject({
+      ok: false,
+      message: 'uText draws words from a text image, so "ANGRY" would be read as a file path: pass its words as {"text": "…"} (with "font" and "weight" if you like), or a text image\'s URL.',
+    });
+    expect(editor.commands.execute("values.set", { values: { uText: { text: " " } } })).toMatchObject({ ok: false, message: expect.stringMatching(/uText needs some words/) });
+    expect(editor.commands.execute("values.set", { values: { uText: { text: "HI", size: 40 } } })).toMatchObject({ ok: false, message: 'uText takes {"text", "font", "weight"}, not "size".' });
+    expect(editor.commands.execute("values.set", { values: { uText: { text: "HI", weight: "heavy" } } })).toMatchObject({ ok: false, message: expect.stringMatching(/"weight" is a font weight/) });
+    expect(editor.document.values.uText).toBe(textImage("FIN", { font: "Georgia, serif", weight: 400 }));
+    // A URL or a relative image path still works, and a picture control still takes any relative path.
+    expect(editor.commands.execute("values.set", { values: { uText: "words/fin.png" } })).toMatchObject({ ok: true });
+    expect(editor.commands.execute("values.set", { values: { uImage: "photo" } })).toMatchObject({ ok: true });
+    // A document stores the text image itself, so words there are an issue.
+    expect(documentIssues({ ...editor.document, values: { uText: { text: "HI" } } } as never)).toEqual([
+      'values: uText stores a text image\'s URL; words as {"text": …} are only taken by values.set and keyframe.set.',
+    ]);
+  });
+
+  it("lets agents find the second batch of meme shaders, load one by its kind and set its words and levels", async () => {
+    const editor = createEffectEditor({ from: "aurora" });
+    const provider = createEffectToolProvider(editor);
+    type Search = { total: number; effects: { id: string; category: string }[] };
+    const BATCH = ["needs-more-jpeg", "triggered", "vaporwave-grade", "galaxy-brain", "sad-mode", "game-over-banner"];
+    const all = await callTool(provider, "run_command", { id: "catalog.search", params: { category: "meme", limit: 50 } });
+    expect((all.structuredContent as { result: Search }).result.effects.map((e) => e.id)).toEqual(expect.arrayContaining(BATCH));
+    const endings = await callTool(provider, "run_command", { id: "catalog.search", params: { category: "meme", tags: ["ending"], limit: 50 } });
+    expect((endings.structuredContent as { result: Search }).result.effects.map((e) => e.id).sort()).toEqual(["game-over-banner", "to-be-continued"]);
+
+    // Every one loads, and every preset applies within its controls.
+    for (const id of BATCH) {
+      expect(editor.commands.execute("effect.load", { id }), id).toMatchObject({ ok: true });
+      for (const preset of getEffect(id)!.presets ?? []) {
+        expect(editor.commands.execute("preset.apply", { name: preset.name }), `${id}: ${preset.name}`).toMatchObject({ ok: true });
+      }
+    }
+
+    // A banner's words go in as words; the level and head point are set and checked like any control.
+    const run = await callTool(provider, "run_commands", {
+      steps: [
+        { id: "effect.load", params: { id: "game-over-banner" } },
+        { id: "values.set", params: { values: { uText: { text: "CONTINUE?" }, uPlay: 0.8 } } },
+      ],
+    });
+    expect(run.isError).toBeFalsy();
+    expect(editor.document.values).toMatchObject({ uText: expect.stringContaining("CONTINUE%3F"), uPlay: 0.8 });
+    // In the banner's own serif, since no font was named.
+    expect(decodeURIComponent(editor.document.values.uText as string)).toMatch(/font-family="Georgia[^"]*serif"/);
+
+    editor.commands.execute("effect.load", { id: "galaxy-brain" });
+    expect(editor.commands.execute("values.set", { values: { uLevel: 2, uHead: [0.42, 0.8] } })).toMatchObject({ ok: true });
+    expect(editor.document.values).toMatchObject({ uLevel: 2, uHead: [0.42, 0.8] });
+    // Out of range or mistyped, it is refused with the valid range, and nothing changes.
+    expect(editor.commands.execute("values.set", { values: { uLevel: 5 } })).toMatchObject({ ok: false, message: "uLevel takes a number from 1 to 4, not 5." });
+    expect(editor.commands.execute("values.set", { values: { uHead: [0.5, 1.4] } })).toMatchObject({ ok: false, message: expect.stringMatching(/uHead takes 2 numbers, each from 0 to 1/) });
+    expect(editor.document.values).toMatchObject({ uLevel: 2, uHead: [0.42, 0.8] });
+
+    // The jitter can't be pushed past its cap.
+    editor.commands.execute("effect.load", { id: "triggered" });
+    expect(editor.commands.execute("values.set", { values: { uShake: 3 } })).toMatchObject({ ok: false, message: "uShake takes a number from 0 to 1, not 3." });
+    expect(editor.commands.execute("values.set", { values: { uShake: "max" } })).toMatchObject({ ok: false, message: expect.stringMatching(/uShake takes a number/) });
+    expect(editor.document.values.uShake).toBeUndefined();
   });
 
   it("lets agents edit vector pictures and see shader compiles", async () => {

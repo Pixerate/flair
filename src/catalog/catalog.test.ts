@@ -796,14 +796,32 @@ describe("electric effects", () => {
 });
 
 describe("pixel effects", () => {
-  const SHADERS = ["image-8bit", "gameboy-screen", "pixel-fire", "pixel-landscape", "outrun-road", "palette-cycle", "raster-bars", "loading-stripes", "pixel-water"];
-  const VECTORS = ["pixel-text", "coin-spin", "space-invader", "pixel-heart-health", "chomp-loader"];
+  const SHADERS = [
+    "image-8bit",
+    "gameboy-screen",
+    "pixel-fire",
+    "pixel-landscape",
+    "outrun-road",
+    "palette-cycle",
+    "raster-bars",
+    "loading-stripes",
+    "pixel-water",
+    "image-pixel-sort",
+    "image-led-wall",
+    "image-subpixel",
+    "image-bricks",
+    "pixel-sprites",
+    "pixel-city",
+  ];
+  const VECTORS = ["pixel-text", "coin-spin", "space-invader", "pixel-heart-health", "chomp-loader", "rpg-dialog", "led-ticker", "pixel-snake-loader", "pixel-weather", "pixel-explosion"];
+  /** Pixel effects filed with what they are for rather than under retro. */
+  const ELSEWHERE: Record<string, string> = { "chomp-loader": "loader", "pixel-snake-loader": "loader", "pixel-weather": "icon", "pixel-explosion": "impact" };
 
-  it("are retro (the chomp loader is a loader) and tagged pixel or retro", () => {
+  it("are retro (or filed with the loaders, icons and impacts) and tagged pixel or retro", () => {
     for (const id of [...SHADERS, ...VECTORS]) {
       const effect = getEffect(id)!;
       expect(effect, id).toBeDefined();
-      expect(effect.category, id).toBe(id === "chomp-loader" ? "loader" : "retro");
+      expect(effect.category, id).toBe(ELSEWHERE[id] ?? "retro");
       expect(effect.tags.some((t) => t === "pixel" || t === "retro"), id).toBe(true);
     }
     for (const id of VECTORS) {
@@ -817,12 +835,98 @@ describe("pixel effects", () => {
     expect(effect.presets!.map((p) => p.values.uPalette)).toEqual([0, 1, 2, 3, 4, 5]);
   });
 
-  it("pixel dissolve is a looping two-image transition", () => {
-    const effect = getEffect("transition-pixel-dissolve")!;
+  it.each(["transition-pixel-dissolve", "transition-screen-melt", "transition-pixel-staircase"])("%s is a looping two-image transition", (id) => {
+    const effect = getEffect(id)!;
     expect(effect.category).toBe("transition");
     expect(effect.tags).toEqual(expect.arrayContaining(["transition", "pixel"]));
     expect(effectControls(effect).map((c) => c.name)).toEqual(expect.arrayContaining(["uFrom", "uTo", "uAnimate", "uProgress"]));
     expect(effect.kind === "shader" && effect.loop).toBe(4);
+  });
+
+  it("image treatments are video filters with a preset per style or layout", () => {
+    for (const id of ["image-pixel-sort", "image-led-wall", "image-subpixel", "image-bricks"]) expect(getEffect(id), id).toMatchObject({ video: "filter" });
+    expect(getEffect("image-subpixel")!.presets!.map((p) => p.values.uLayout)).toEqual([0, 1, 2]);
+    expect(getEffect("image-bricks")!.presets!.map((p) => p.values.uStyle)).toEqual([0, 1, 2]);
+  });
+
+  it("rpg dialog wraps any text onto its lines and types it out in order, the arrow ending lit", () => {
+    const effect = getEffect("rpg-dialog")!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    for (const text of ["", "Hi", "Hello, world & <co>!", "Café 日本 🎉", "SUPERCALIFRAGILISTICEXPIALIDOCIOUS IS QUITE A LONG WORD", "A ".repeat(200)]) {
+      const motion = renderVectorEffect(effect, { text, speaker: text });
+      expect(svgMotionIssues(motion), text).toEqual([]);
+      expect(JSON.stringify(motion), text).not.toMatch(/\{\{|NaN|undefined/);
+      expect(motion.svg.match(/<path id="c\d+"/g)).toHaveLength(75);
+    }
+    // Twenty letters and a word that would run past 25 columns: the word wraps to the second line.
+    const two = renderVectorEffect(effect, { text: `${"A".repeat(20)} BBBBBBBB`, pace: 50 });
+    expect(two.svg).toMatch(/<path id="c25"[^>]*d="M24 80/);
+    const typed = two.animate!.filter((a) => /^c\d+$/.test(a.id!));
+    expect(typed.find((a) => a.id === "c0")!.delay).toBe(350);
+    expect(typed.find((a) => a.id === "c25")!.delay).toBe(350 + 21 * 50);
+    const arrow = two.animate!.filter((a) => a.id === "arrow");
+    expect(arrow.at(-1)!.attrs).toEqual({ opacity: [1, 1] });
+    // No speaker, no name tab.
+    expect(renderVectorEffect(effect, { speaker: "" }).svg).toContain('<g opacity="0">');
+  });
+
+  it("snake loader steps every segment round the track and eats each piece of food once a lap", () => {
+    const effect = getEffect("pixel-snake-loader")!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    const motion = renderVectorEffect(effect);
+    expect(svgMotionIssues(motion)).toEqual([]);
+    const head = motion.animate!.filter((a) => a.id === "snake0");
+    // A step a cell long each 100 ms, round a 26-cell lap; the hold is the last step back to the start.
+    expect(head).toHaveLength(25);
+    expect(head.map((a) => a.delay)).toEqual(Array.from({ length: 25 }, (_, s) => (s + 1) * 100));
+    expect(effect.hold).toBe(100);
+    const food = motion.animate!.filter((a) => /^snakeFood/.test(a.id!));
+    expect(food.map((a) => [a.id, a.attrs!.opacity![0], a.delay])).toEqual([
+      ["snakeFoodA", 0, 800],
+      ["snakeFoodB", 1, 800],
+      ["snakeFoodB", 0, 2100],
+      ["snakeFoodA", 1, 2100],
+    ]);
+  });
+
+  it("pixel weather shows exactly the chosen kind, clamping out-of-range picks", () => {
+    const effect = getEffect("pixel-weather")!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    for (const [kind, shown] of [[0, 0], [3, 3], [5, 5], [9, 5], [-2, 0]] as const) {
+      const motion = renderVectorEffect(effect, { kind });
+      expect(svgMotionIssues(motion), String(kind)).toEqual([]);
+      expect(motion.svg.match(/display="inline"/g), String(kind)).toHaveLength(1);
+      const groups = motion.svg.split('<g display="').slice(1).map((g) => g.startsWith("inline"));
+      expect(groups.indexOf(true), String(kind)).toBe(shown);
+    }
+  });
+
+  it("pixel explosion plays its frames one after another, then its sparks fade", () => {
+    const effect = getEffect("pixel-explosion")!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    const motion = renderVectorEffect(effect);
+    expect(svgMotionIssues(motion)).toEqual([]);
+    expect(JSON.stringify(motion)).not.toMatch(/\{\{|NaN|undefined/);
+    const shown = motion.animate!.filter((a) => /^boom\d$/.test(a.id!) && a.attrs!.opacity![0] === 1).map((a) => [a.id, a.delay]);
+    expect(shown).toEqual(Array.from({ length: 7 }, (_, f) => [`boom${f}`, f * 80]));
+    // Frames are generated the same every time.
+    expect(renderVectorEffect(effect).svg).toBe(motion.svg);
+    expect(motion.animate!.filter((a) => /^spark\d$/.test(a.id!) && a.attrs!.opacity?.[0] === 0)).toHaveLength(8);
+  });
+
+  it("led ticker crawls one LED column a frame, in from the right and out to the left", () => {
+    const effect = getEffect("led-ticker")!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    for (const text of ["", " ", "GO", "Café 日本 🎉 <b>", "X".repeat(300)]) {
+      const motion = renderVectorEffect(effect, { text, speed: 25 });
+      expect(svgMotionIssues(motion), text).toEqual([]);
+      expect(JSON.stringify(motion), text).not.toMatch(/\{\{|NaN|undefined/);
+      const [crawl] = motion.animate!;
+      const [from, to] = crawl!.attrs!.transform!.map((t) => Number(/translate\((-?[\d.]+)/.exec(String(t))![1]));
+      // Each 1/25 s frame moves exactly one 5-unit column.
+      expect(((from! - to!) / ((crawl!.ms as number) / 1000)) / 25).toBeCloseTo(5, 1);
+      expect(crawl!.strobe).toBe(25);
+    }
   });
 
   it("pixel text draws any text as one path per letter, cut to its slots", () => {
@@ -2759,5 +2863,210 @@ describe("horror effects", () => {
     expect(inline.svg.match(/font-family="([^"]*)"/g)!.every((f) => f === 'font-family="inherit"')).toBe(true);
     expect(inline.svg).not.toMatch(/<rect width="400" height="200"[^>]*opacity="1"/);
     expect(svgMotionIssues(inline)).toEqual([]);
+  });
+});
+
+describe("meme effects", () => {
+  const IDS = [
+    "impact-caption",
+    "deep-fried",
+    "dramatic-zoom",
+    "deal-with-it",
+    "laser-eyes",
+    "to-be-continued",
+    "needs-more-jpeg",
+    "triggered",
+    "vaporwave-grade",
+    "galaxy-brain",
+    "sad-mode",
+    "game-over-banner",
+    "stonks-chart",
+    "error-cascade",
+    "bonk",
+    "hitmarker-montage",
+    "reaction-rain",
+    "wordart-text",
+  ];
+  const render = (id: string, values: Record<string, unknown> = {}) => {
+    const effect = getEffect(id) as VectorEffect;
+    return renderVectorEffect(effect, { ...effectDefaults(effect), ...values } as Parameters<typeof renderVectorEffect>[1]);
+  };
+
+  it("have a category of their own, browsed with the pictures, and are tagged by kind", () => {
+    expect(categoryGroup("meme").name).toBe("Pictures");
+    expect(findEffects({ category: "meme" }).map((e) => e.id).sort()).toEqual([...IDS].sort());
+    for (const effect of findEffects({ category: "meme" })) expect(effect.tags, effect.id).toContain("meme");
+    expect(findEffects({ category: "meme", tags: ["reaction"] }).map((e) => e.id).sort()).toEqual(["bonk", "deal-with-it", "dramatic-zoom", "galaxy-brain", "hitmarker-montage", "laser-eyes", "reaction-rain", "triggered"]);
+    expect(findEffects({ category: "meme", tags: ["retro"] }).map((e) => e.id).sort()).toEqual(["error-cascade", "vaporwave-grade", "wordart-text"]);
+    expect(findEffects({ category: "meme", tags: ["chart"] }).map((e) => e.id)).toEqual(["stonks-chart"]);
+    expect(findEffects({ category: "meme", tags: ["comic"] }).map((e) => e.id)).toEqual(["bonk"]);
+    expect(findEffects({ category: "meme", tags: ["caption"] }).map((e) => e.id).sort()).toEqual(["deal-with-it", "impact-caption", "wordart-text"]);
+    expect(findEffects({ category: "meme", tags: ["treatment"] }).map((e) => e.id).sort()).toEqual(["deep-fried", "needs-more-jpeg"]);
+    expect(findEffects({ category: "meme", tags: ["ending"] }).map((e) => e.id).sort()).toEqual(["game-over-banner", "to-be-continued"]);
+    expect(findEffects({ category: "meme", tags: ["aesthetic"] }).map((e) => e.id)).toEqual(["vaporwave-grade"]);
+    expect(findEffects({ category: "meme", tags: ["mood"] }).map((e) => e.id)).toEqual(["sad-mode"]);
+  });
+
+  it("vector memes render cleanly in every preset, with an overlay preset that drops the background", () => {
+    for (const effect of findEffects({ category: "meme" })) {
+      if (effect.kind !== "vector") continue;
+      expect(effect.presets?.find((p) => p.name === "Overlay")?.values.backdrop, effect.id).toBe(0);
+      for (const preset of effect.presets ?? []) {
+        const motion = render(effect.id, preset.values);
+        expect(svgMotionIssues(motion), `${effect.id}/${preset.name}`).toEqual([]);
+        expect(JSON.stringify(motion), `${effect.id}/${preset.name}`).not.toMatch(/\{\{/);
+      }
+    }
+  });
+
+  it("stonks chart rises or crashes, its value counting with the sign and units around it", () => {
+    const up = render("stonks-chart");
+    const down = render("stonks-chart", { crash: true, prefix: "$", suffix: "B" });
+    const line = (m: ReturnType<typeof render>) => /id="scLine" d="M([\d.]+) ([\d.]+)[^"]* L([\d.]+) ([\d.]+)"/.exec(m.svg)!.slice(1).map(Number);
+    const [, upStart, , upEnd] = line(up);
+    const [, downStart, , downEnd] = line(down);
+    expect(upEnd).toBeLessThan(upStart!);
+    expect(downEnd).toBeGreaterThan(downStart!);
+    const count = (m: ReturnType<typeof render>) => m.animate!.find((a) => a.id === "scValue")!;
+    expect(count(up)).toMatchObject({ count: [0, 420], format: "+{n}%" });
+    expect(count(down)).toMatchObject({ format: "−${n}B" });
+    expect(up.animate!.find((a) => a.id === "scArrow")).toMatchObject({ along: "scLine", orient: true });
+    // A smooth line has no zig-zag: it only ever climbs.
+    const ys = [...render("stonks-chart", { jag: 0 }).svg.match(/id="scLine" d="([^"]*)"/)![1]!.matchAll(/[\d.]+ ([\d.]+)/g)].map((m) => Number(m[1]));
+    for (let i = 1; i < ys.length; i++) expect(ys[i]).toBeLessThanOrEqual(ys[i - 1]!);
+  });
+
+  it("error cascade shows as many dialogs as asked, stepping down or trailing across, in order", () => {
+    const motion = render("error-cascade", { count: 3, title: "Uh oh", message: "Task failed successfully." });
+    expect(motion.svg.match(/display="inline"/g)).toHaveLength(3);
+    expect(motion.svg).toContain(">Task failed successfully.</text>");
+    expect(motion.svg).not.toMatch(/Windows|Microsoft|Mac ?OS/i);
+    const delays = motion.animate!.slice(0, 3).map((a) => a.delay!);
+    expect(delays).toEqual([...delays].sort((a, b) => a - b));
+    const places = (m: ReturnType<typeof render>) => [...m.svg.matchAll(/id="ecWin\d+" transform="translate\(([\d.]+) ([\d.]+)\)"/g)].map((p) => [Number(p[1]), Number(p[2])]);
+    const cascade = places(render("error-cascade"));
+    const trail = places(render("error-cascade", { trail: true }));
+    expect(cascade.slice(0, 10).every(([x, y], i) => i === 0 || (x! > cascade[i - 1]![0]! && y! > cascade[i - 1]![1]!))).toBe(true);
+    expect(trail.slice(0, 10)).not.toEqual(cascade.slice(0, 10));
+    for (const [x, y] of [...cascade, ...trail]) {
+      expect(x! + 260).toBeLessThanOrEqual(640);
+      expect(y! + 112).toBeLessThanOrEqual(360);
+    }
+  });
+
+  it("bonk swings the mallet onto the hit point, the star beside it on the side with room", () => {
+    const motion = render("bonk", { x: 0.25, y: 0.5, size: 1, word: "BOINK" });
+    expect(motion.svg).toContain('translate(160 180) scale(1)"><g id="bkLines"');
+    expect(motion.svg).toContain(">BOINK</text>");
+    expect(motion.svg).toMatch(/id="bkStar" transform="translate\(300 170\)/);
+    expect(render("bonk", { x: 0.75, y: 0.5, size: 1 }).svg).toMatch(/id="bkStar" transform="translate\(340 170\)/);
+    // The swing ends at rest on the point, and the squashed head springs back to where it was.
+    const end = svgDuration(motion);
+    const frame = svgFrame(motion.animate!, [], end);
+    expect(frame.get("bkFace")!.attrs.transform).toBe(render("bonk", { x: 0.25, y: 0.5 }).animate!.find((a) => a.id === "bkFace")!.attrs!.transform![0]);
+    expect(Number(frame.get("bkMallet")!.attrs.opacity)).toBe(0);
+  });
+
+  it("hitmarker montage lands a marker at each point, the last in red, and falls back when the points cannot be read", () => {
+    const motion = render("hitmarker-montage", { points: "0.1,0.9 0.9,0.1 0.5,0.5" });
+    expect(motion.svg.match(/display="inline"/g)).toHaveLength(3);
+    expect(motion.svg).toContain('translate(64 36) scale(1.25)');
+    expect(motion.svg).toContain('translate(576 324) scale(1.25)');
+    const strokes = [...motion.svg.matchAll(/id="hmMark\d" [^>]*><path d="[^"]*" fill="none" stroke="(#\w+)"/g)].map((m) => m[1]);
+    expect(strokes.slice(0, 3)).toEqual(["#ffffff", "#ffffff", "#ff2a2a"].map((c) => expect.stringMatching(new RegExp(c, "i"))));
+    expect(render("hitmarker-montage", { finale: false }).svg).not.toMatch(/stroke="#ff2a2a"/i);
+    // Garbage points fall back to the default volley rather than nothing.
+    expect(render("hitmarker-montage", { points: "everywhere" }).svg.match(/display="inline"/g)).toHaveLength(5);
+    // Hidden slots never shake the frame.
+    const shakes = motion.animate!.filter((a) => a.id === "hmShake").map((a) => a.attrs!.transform![1]);
+    expect(shakes.slice(3).every((t) => t === "translate(0 0)")).toBe(true);
+    expect(render("hitmarker-montage", { shake: 0 }).animate!.filter((a) => a.id === "hmShake").every((a) => a.attrs!.transform![1] === "translate(0 0)")).toBe(true);
+  });
+
+  it("reaction rain floats whole emoji, or words split at spaces, up the chosen side", () => {
+    const glyphs = (m: ReturnType<typeof render>) => [...m.svg.matchAll(/font-size="[\d.]+">([^<]*)<\/text>/g)].map((g) => g[1]);
+    expect(new Set(glyphs(render("reaction-rain", { glyphs: "❤️👍🏽" })))).toEqual(new Set(["❤️", "👍🏽"]));
+    expect(new Set(glyphs(render("reaction-rain", { glyphs: "W  LOL gg" })))).toEqual(new Set(["W", "LOL", "gg"]));
+    expect(glyphs(render("reaction-rain", { glyphs: "" })).every((g) => g === "❤")).toBe(true);
+    const xs = (m: ReturnType<typeof render>) => [...m.svg.matchAll(/id="rrRise\d+" transform="translate\(([\d.]+) 410\)"/g)].map((x) => Number(x[1]));
+    expect(xs(render("reaction-rain", { side: 0.1, spread: 0.05 })).every((x) => x >= 24 && x <= 96)).toBe(true);
+    expect(render("reaction-rain", { count: 4 }).svg.match(/display="inline"/g)).toHaveLength(4);
+  });
+
+  it("word art sets each letter along its wave or arch, with the extrude and flow switchable", () => {
+    const list = (m: ReturnType<typeof render>, attr: string) => /<text x="([^"]*)" y="([^"]*)" rotate="([^"]*)"/.exec(m.svg)!.slice(1)[["x", "y", "rotate"].indexOf(attr)]!.split(" ").map(Number);
+    const arch = render("wordart-text", { text: "ARCHED", arch: 1, wave: 0 });
+    expect(list(arch, "x")).toHaveLength(6);
+    const ys = list(arch, "y");
+    expect(Math.min(...ys)).toBeLessThan(ys[0]!);
+    expect(list(arch, "rotate")[0]).toBeLessThan(0);
+    expect(list(arch, "rotate")[5]).toBeGreaterThan(0);
+    const flat = render("wordart-text", { text: "FLAT", arch: 0, wave: 0, depth: 0, flow: false });
+    expect(new Set(list(flat, "y")).size).toBe(1);
+    expect(flat.animate!.filter((a) => a.id?.startsWith("waLayer")).every((a) => a.attrs!.transform![1] === "translate(0 0)")).toBe(true);
+    const flow = flat.animate!.find((a) => a.id === "waRainbow")!;
+    expect(flow.attrs!.x1![0]).toBe(flow.attrs!.x1![1]);
+    expect(render("wordart-text", { text: "a very long line of word art that must shrink to fit" }).svg).toMatch(/font-size="(\d|[1-3]\d)(\.\d)?"/);
+  });
+
+  it("shaders take a picture, with their points on the sample portrait's face", () => {
+    const filters = ["needs-more-jpeg", "vaporwave-grade"];
+    for (const id of ["deep-fried", "dramatic-zoom", "laser-eyes", "to-be-continued", ...filters, "triggered", "galaxy-brain", "sad-mode", "game-over-banner"]) {
+      const effect = getEffect(id)!;
+      expect(effect, id).toMatchObject({ kind: "shader", video: filters.includes(id) ? "filter" : "stills" });
+      expect((effect.presets ?? []).length, id).toBeGreaterThanOrEqual(3);
+      expect(effectDefaults(effect).uImage, id).toBe(SAMPLE_IMAGES.portrait);
+    }
+    expect(effectDefaults(getEffect("laser-eyes")!)).toMatchObject({ uEyeA: [0.461, 0.583], uEyeB: [0.539, 0.583] });
+    expect(effectInputs(getEffect("to-be-continued")!).images).toEqual([
+      { name: "uImage", label: "Image", wants: "picture" },
+      { name: "uText", label: "Text", wants: "text" },
+    ]);
+  });
+
+  it("batch two's words come from a text image fitted by its ink, with fitting defaults", () => {
+    for (const id of ["triggered", "vaporwave-grade", "game-over-banner"]) {
+      const effect = getEffect(id) as ShaderEffect;
+      expect(effectInputs(effect).images.map((s) => s.name), id).toEqual(["uImage", "uText"]);
+      expect(effect.source, id).toContain("vec4 inkBox()");
+      // Mipmapped (the default), which inkBox measures with.
+      expect(parseControls(effect.source).find((c) => c.name === "uText")!.texture?.filter ?? "mipmap", id).toBe("mipmap");
+    }
+    expect(effectDefaults(getEffect("triggered")!).uText).toBe(textImage("TRIGGERED"));
+    expect(decodeURIComponent(effectDefaults(getEffect("game-over-banner")!).uText as string)).toMatch(/font-family="Georgia[^"]*serif"[^>]*>GAME OVER</);
+    // The jitter is capped in the source, whatever the control says, and nothing flashes.
+    const triggered = getEffect("triggered") as ShaderEffect;
+    expect(triggered.source).toMatch(/const float MAX_SHIFT = 0\.02;/);
+    expect(parseControls(triggered.source).find((c) => c.name === "uShake")).toMatchObject({ min: 0, max: 1 });
+    expect(parseControls(triggered.source).map((c) => c.name)).not.toContain("uFlash");
+  });
+
+  it("galaxy brain climbs at most four levels from a head point, and the steppers say how many steps", () => {
+    const galaxy = parseControls((getEffect("galaxy-brain") as ShaderEffect).source);
+    expect(galaxy.find((c) => c.name === "uLevel")).toMatchObject({ type: "int", min: 1, max: 4, default: 4 });
+    expect(galaxy.find((c) => c.name === "uHead")).toMatchObject({ type: "vec2", min: 0, max: 1 });
+    const jpeg = parseControls((getEffect("needs-more-jpeg") as ShaderEffect).source);
+    expect(jpeg.find((c) => c.name === "uSteps")).toMatchObject({ type: "int", min: 1, max: 8 });
+    expect(jpeg.find((c) => c.name === "uBlock")).toMatchObject({ default: 8 });
+  });
+
+  it("impact caption sets both lines in capitals, fitted to the frame, and can leave one out", () => {
+    const effect = getEffect("impact-caption") as VectorEffect;
+    const motion = renderVectorEffect(effect, { ...effectDefaults(effect), top: "when the build passes", bottom: "on the first try somehow, against every expectation" });
+    expect(motion.svg).toContain(">WHEN THE BUILD PASSES</text>");
+    const widths = [...motion.svg.matchAll(/textLength="([\d.]+)"/g)].map((m) => Number(m[1]));
+    for (const w of widths) expect(w).toBeLessThanOrEqual(600);
+    const lower = renderVectorEffect(effect, { ...effectDefaults(effect), upper: false, top: "" });
+    expect(lower.svg).toContain(">BOTTOM TEXT</text>");
+    expect(svgMotionIssues(lower)).toEqual([]);
+  });
+
+  it("deal with it drops the glasses onto the eye point, over the sample face or none", () => {
+    const effect = getEffect("deal-with-it") as VectorEffect;
+    const motion = renderVectorEffect(effect, { ...effectDefaults(effect), x: 0.25, y: 0.5, width: 0.22 });
+    const scale = (0.22 * 640) / 22;
+    const landing = motion.animate![0]!.attrs!.transform![1] as string;
+    expect(landing).toBe(`translate(${Math.round((160 - 11 * scale) * 10) / 10} ${Math.round((180 - 2 * scale) * 10) / 10}) scale(${Math.round(scale * 100) / 100})`);
+    expect(renderVectorEffect(effect, { ...effectDefaults(effect), face: false }).svg).toContain('<g opacity="0"><circle');
   });
 });

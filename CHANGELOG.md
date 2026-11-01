@@ -1,5 +1,49 @@
 # @pixerate/flair
 
+## 0.82.0
+
+### Minor Changes
+
+- 3d5be3d: Agents can set a text mask's words. An image control that draws words from a `textImage` (a banner's or caption's `uText`) now takes `{ "text": "…", "font"?, "weight"? }` in the editor's `values.set` and `keyframe.set`. The words become a text image in the default's font and weight unless others are named. `effect.describe` marks these controls `textMask: true`, and `values.schema` describes both forms. Bare words for a text mask are now refused with what to pass instead: before, they were stored as an image path and the effect lost its words. A text image's URL, or a relative image path, still works.
+
+## 0.81.0
+
+### Minor Changes
+
+- b3e462a: Six more "meme" effects: `needs-more-jpeg` (a picture recompressed step by step into 8 × 8 blocks, chroma bleed and mosquito noise, then snapping back clean), `triggered` (a red-tinted picture jittering fast, capped and without a strobe, with a banner bar of words), `vaporwave-grade` (a pink and cyan regrade with scanlines, a colour split, a striped sun over a rolling grid and a strip of glyphs), `galaxy-brain` (a glow from a head point climbing through four levels: halo, rays, nebula, starburst), `sad-mode` (a cool blue-grey drain with rain, a slow push-out and a heavy vignette) and `game-over-banner` (stuttering slow motion and a drain to grey, then serif words fading in on a dark band). Their words come from `textImage(...)` and are fitted to the ink, so any text fills its banner.
+
+## 0.80.0
+
+### Minor Changes
+
+- 097fe89: Six more vector effects in the "meme" category: `stonks-chart` (a jagged line rocketing up, or crashing, to a fat arrow head with its value ticking up and a label), `error-cascade` (unbranded retro error dialogs popping up in a cascade or dragging a trail across the screen, with an editable title, message and button), `bonk` (a cartoon mallet swinging onto a point, the head squashing, an impact star and BONK popping), `hitmarker-montage` (hit markers landing at a list of points with a score floating off each and the frame jolting, the last in red), `reaction-rain` (live-stream reactions, any emoji or words, floating and wobbling up the side) and `wordart-text` (90s word art: a flowing rainbow fill, a skewed 3D extrude and a wave or arch). Each has an "Overlay" preset that drops the background for laying over a picture.
+
+## 0.79.0
+
+### Minor Changes
+
+- 86d553c: A new "meme" catalog category, browsed under Pictures, with a first batch of six effects: `impact-caption` (outlined Impact top and bottom text, the punchline popping on a beat later), `deal-with-it` (pixel sunglasses sliding down onto a pair of eyes), `deep-fried` (blown-out colour, oversharpening, JPEG blocks and glints at the eyes), `dramatic-zoom` (a stepped crash zoom onto a point), `laser-eyes` (beams firing from two eye points) and `to-be-continued` (a sepia freeze frame with an arrow sliding in). Points on the picture are 0–1 across the frame, y up, and default to the sample portrait's face.
+
+## 0.78.0
+
+### Minor Changes
+
+- 0c8f3a6: Add three more pixel effects to the catalog: `pixel-snake-loader` (a snake running laps round a phone-LCD board, eating its food, as a looping loader), `pixel-weather` (16 × 16 pixel-art weather icons: sun, partly cloudy, cloudy, rain, thunder and snow, each animated in steps) and `pixel-explosion` (an 8-bit fireball swelling into a ring of smoke with sparks flying out).
+
+## 0.77.0
+
+### Minor Changes
+
+- d6ca2e3: Add ten pixel effects to the catalog. Image treatments: `image-pixel-sort` (glitch-art pixel sorting between two brightness thresholds), `image-led-wall` (a stadium LED board), `image-subpixel` (a macro zoom down to LCD stripes, PenTile diamonds or CRT phosphor triads) and `image-bricks` (a toy-brick, fuse-bead or cross-stitch mosaic built up row by row). Backgrounds: `pixel-sprites` (procedurally generated pixel creatures) and `pixel-city` (a night skyline in parallax). Transitions: `transition-screen-melt` (the classic shooter's screen melt) and `transition-pixel-staircase` (an 8-bit block wipe in diagonal, spiral, iris or random order). SVG: `rpg-dialog` (a game text box that types out its line) and `led-ticker` (a dot-matrix sign scrolling any text).
+
+## 0.76.0
+
+### Minor Changes
+
+- 7a62a2e: A control's declared `min=` and `max=` are now limits. `checkControlValue` (and with it the editor's `values.set` and keyframes, document checks, the integrations and the CLI) refuses a number beyond them, saying what range the control takes, for example "uAmount takes a number from 0 to 1, not 3.". Before, such values were accepted silently.
+
+  A control that declares no range keeps 0–1 (0–10 for `int`) as its slider range only, and still takes any number. `ControlDef.limits` holds the declared ends. `renderVectorEffect` still draws whatever it is given.
+
 ## 0.75.0
 
 ### Minor Changes
