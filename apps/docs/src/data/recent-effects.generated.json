@@ -1,5 +1,1009 @@
 [
   {
+    "id": "game-over-banner",
+    "name": "Game over banner",
+    "kind": "shader",
+    "category": "meme",
+    "description": "A picture that slows to stuttering frames and drains to grey, then a dark band fades in across it with big serif words on it, growing a little as it holds, before it starts over.",
+    "tags": [
+      "meme",
+      "ending",
+      "image",
+      "game-over",
+      "banner",
+      "serif",
+      "slow-motion",
+      "desaturate",
+      "game"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "line": 2,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uText",
+        "t": "sampler2D",
+        "d": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201024%20256%22%20width%3D%221024%22%20height%3D%22256%22%3E%3Ctext%20x%3D%22512%22%20y%3D%22128%22%20dy%3D%220.35em%22%20text-anchor%3D%22middle%22%20textLength%3D%22921.6%22%20lengthAdjust%3D%22spacingAndGlyphs%22%20font-family%3D%22Georgia%2C%20%26%2339%3BTimes%20New%20Roman%26%2339%3B%2C%20Times%2C%20serif%22%20font-weight%3D%22400%22%20font-size%3D%22141.3%22%20fill%3D%22%23fff%22%3EGAME%20OVER%3C%2Ftext%3E%3C%2Fsvg%3E",
+        "line": 3,
+        "x": {
+          "filter": "mipmap",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uInk",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            192,
+            32,
+            26
+          ]
+        },
+        "l": "Words",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uBand",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            0,
+            0,
+            0
+          ]
+        },
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uPlay",
+        "t": "float",
+        "d": 1.5,
+        "l": "Before it ends (s)",
+        "min": 0.3,
+        "max": 6,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uStutter",
+        "t": "float",
+        "d": 6,
+        "l": "Stutter frames a second",
+        "min": 2,
+        "max": 15,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uFade",
+        "t": "float",
+        "d": 1.4,
+        "l": "Fade (s)",
+        "min": 0.3,
+        "max": 4,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uHold",
+        "t": "float",
+        "d": 3,
+        "l": "Hold (s)",
+        "min": 0.5,
+        "max": 8,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 0.12,
+        "l": "Words height",
+        "min": 0.06,
+        "max": 0.25,
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 12
+      }
+    ],
+    "presets": [
+      "You lose",
+      "Gold on black",
+      "Sudden",
+      "Long goodbye"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg",
+        "text",
+        "mask"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        },
+        {
+          "name": "uText",
+          "label": "Text",
+          "wants": "text"
+        }
+      ],
+      "texts": [],
+      "video": "stills",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "stills",
+    "animated": true,
+    "module": "shaders/meme",
+    "addedAt": "2026-11-01T07:28:10Z",
+    "commitHash": "b3e462a142e9a4ae85e64692e24176dc5c40c4de",
+    "order": 590
+  },
+  {
+    "id": "sad-mode",
+    "name": "Sad mode",
+    "kind": "shader",
+    "category": "meme",
+    "description": "A picture drained to a cool blue-grey with rain streaking down over it, the camera slowly pulling back and a heavy vignette closing in.",
+    "tags": [
+      "meme",
+      "mood",
+      "image",
+      "sad",
+      "rain",
+      "blue",
+      "desaturate",
+      "vignette",
+      "melancholy"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "line": 2,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uTint",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            124,
+            143,
+            168
+          ]
+        },
+        "l": "Mood",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uDrain",
+        "t": "float",
+        "d": 0.85,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uRain",
+        "t": "float",
+        "d": 0.6,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uAngle",
+        "t": "float",
+        "d": 10,
+        "l": "Rain angle (degrees)",
+        "min": -30,
+        "max": 30,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uPush",
+        "t": "float",
+        "d": 0.15,
+        "l": "Push out",
+        "max": 0.4,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uPushTime",
+        "t": "float",
+        "d": 8,
+        "l": "Push time (s)",
+        "min": 2,
+        "max": 20,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uVignette",
+        "t": "float",
+        "d": 0.75,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 11
+      }
+    ],
+    "presets": [
+      "Downpour",
+      "Dry tears",
+      "Sepia sorrow",
+      "Still"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "stills",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "stills",
+    "animated": true,
+    "module": "shaders/meme",
+    "addedAt": "2026-11-01T07:28:10Z",
+    "commitHash": "b3e462a142e9a4ae85e64692e24176dc5c40c4de",
+    "order": 589
+  },
+  {
+    "id": "galaxy-brain",
+    "name": "Galaxy brain",
+    "kind": "shader",
+    "category": "meme",
+    "description": "Cosmic light radiating from a head that climbs through four levels of enlightenment: a soft halo, then rays, then a nebula full of stars, then a starburst over the whole picture, before it settles and starts again.",
+    "tags": [
+      "meme",
+      "reaction",
+      "image",
+      "galaxy",
+      "cosmic",
+      "glow",
+      "rays",
+      "stars",
+      "enlightened"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "line": 2,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uHead",
+        "t": "vec2",
+        "d": [
+          0.5,
+          0.78
+        ],
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "uLevel",
+        "t": "int",
+        "d": 4,
+        "l": "Highest level",
+        "min": 1,
+        "max": 4,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uStepTime",
+        "t": "float",
+        "d": 1.4,
+        "l": "Seconds per level",
+        "min": 0.4,
+        "max": 4,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uHold",
+        "t": "float",
+        "d": 2,
+        "l": "Hold (s)",
+        "min": 0.5,
+        "max": 6,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 0.3,
+        "l": "Glow size",
+        "min": 0.1,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uGlow",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            143,
+            227,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "uNebula",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            176,
+            84,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 9
+      },
+      {
+        "n": "uDarken",
+        "t": "float",
+        "d": 0.5,
+        "l": "Darken picture",
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 12
+      }
+    ],
+    "presets": [
+      "Just a halo",
+      "Quick ascent",
+      "Golden",
+      "Big brain"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "stills",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "stills",
+    "animated": true,
+    "module": "shaders/meme",
+    "addedAt": "2026-11-01T07:28:10Z",
+    "commitHash": "b3e462a142e9a4ae85e64692e24176dc5c40c4de",
+    "order": 588
+  },
+  {
+    "id": "vaporwave-grade",
+    "name": "Vaporwave grade",
+    "kind": "shader",
+    "category": "meme",
+    "description": "A picture regraded pink and cyan, with soft scanlines and a split of its colours, a striped sun setting over a moving grid in the lower third, and a strip of glyphs along the top.",
+    "tags": [
+      "meme",
+      "aesthetic",
+      "image",
+      "vaporwave",
+      "retro",
+      "80s",
+      "grade",
+      "scanlines",
+      "sun",
+      "grid"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "line": 2,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uText",
+        "t": "sampler2D",
+        "d": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201024%20256%22%20width%3D%221024%22%20height%3D%22256%22%3E%3Ctext%20x%3D%22512%22%20y%3D%22128%22%20dy%3D%220.35em%22%20text-anchor%3D%22middle%22%20textLength%3D%22921.6%22%20lengthAdjust%3D%22spacingAndGlyphs%22%20font-family%3D%22%26%2339%3BArial%20Black%26%2339%3B%2C%20%26%2339%3BHelvetica%20Neue%26%2339%3B%2C%20Helvetica%2C%20Arial%2C%20system-ui%2C%20sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%22131.7%22%20fill%3D%22%23fff%22%3E%E3%82%A8%E3%82%B9%E3%83%86%E3%83%86%E3%82%A3%E3%83%83%E3%82%AF%3C%2Ftext%3E%3C%2Fsvg%3E",
+        "l": "Glyphs",
+        "line": 3,
+        "x": {
+          "filter": "mipmap",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uGlyphs",
+        "t": "bool",
+        "d": true,
+        "l": "Glyph strip",
+        "line": 4
+      },
+      {
+        "n": "uPink",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            106,
+            213
+          ]
+        },
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uCyan",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            38,
+            232,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "uGrade",
+        "t": "float",
+        "d": 0.8,
+        "l": "Regrade",
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uScanlines",
+        "t": "float",
+        "d": 0.35,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uSplit",
+        "t": "float",
+        "d": 0.005,
+        "l": "Colour split",
+        "max": 0.02,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uBand",
+        "t": "float",
+        "d": 1,
+        "l": "Sun and grid",
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uHorizon",
+        "t": "float",
+        "d": 0.3,
+        "min": 0.1,
+        "max": 0.5,
+        "b": 3,
+        "line": 11
+      },
+      {
+        "n": "uSunX",
+        "t": "float",
+        "d": 0.78,
+        "l": "Sun across",
+        "b": 3,
+        "line": 12
+      },
+      {
+        "n": "uSpeed",
+        "t": "float",
+        "d": 1,
+        "l": "Grid speed",
+        "max": 2,
+        "b": 3,
+        "line": 13
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 14
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 15
+      }
+    ],
+    "presets": [
+      "Grade only",
+      "Centred sun",
+      "Mint and lilac",
+      "Heavy tape"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg",
+        "text",
+        "mask"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        },
+        {
+          "name": "uText",
+          "label": "Glyphs",
+          "wants": "text"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "filter",
+    "animated": true,
+    "module": "shaders/meme",
+    "addedAt": "2026-11-01T07:28:10Z",
+    "commitHash": "b3e462a142e9a4ae85e64692e24176dc5c40c4de",
+    "order": 587
+  },
+  {
+    "id": "triggered",
+    "name": "Triggered",
+    "kind": "shader",
+    "category": "meme",
+    "description": "A picture tinted red and jittering fast in place, with a banner bar along the bottom carrying its word; the jitter is capped and nothing flashes.",
+    "tags": [
+      "meme",
+      "reaction",
+      "image",
+      "shake",
+      "jitter",
+      "red",
+      "angry",
+      "banner"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "line": 2,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uText",
+        "t": "sampler2D",
+        "d": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201024%20256%22%20width%3D%221024%22%20height%3D%22256%22%3E%3Ctext%20x%3D%22512%22%20y%3D%22128%22%20dy%3D%220.35em%22%20text-anchor%3D%22middle%22%20textLength%3D%22921.6%22%20lengthAdjust%3D%22spacingAndGlyphs%22%20font-family%3D%22%26%2339%3BArial%20Black%26%2339%3B%2C%20%26%2339%3BHelvetica%20Neue%26%2339%3B%2C%20Helvetica%2C%20Arial%2C%20system-ui%2C%20sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%22148.2%22%20fill%3D%22%23fff%22%3ETRIGGERED%3C%2Ftext%3E%3C%2Fsvg%3E",
+        "line": 3,
+        "x": {
+          "filter": "mipmap",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uTint",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            26,
+            26
+          ]
+        },
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uRed",
+        "t": "float",
+        "d": 0.6,
+        "l": "Red tint",
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uShake",
+        "t": "float",
+        "d": 0.7,
+        "l": "Jitter",
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uRate",
+        "t": "float",
+        "d": 20,
+        "l": "Jolts a second",
+        "min": 4,
+        "max": 30,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uBar",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "l": "Banner",
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "uInk",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            17,
+            17,
+            17
+          ]
+        },
+        "l": "Words",
+        "c": 1,
+        "line": 9
+      },
+      {
+        "n": "uBarHeight",
+        "t": "float",
+        "d": 0.17,
+        "l": "Banner height",
+        "min": 0.08,
+        "max": 0.3,
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 12
+      }
+    ],
+    "presets": [
+      "Red banner",
+      "Simmering",
+      "Furious",
+      "Custom word"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg",
+        "text",
+        "mask"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        },
+        {
+          "name": "uText",
+          "label": "Text",
+          "wants": "text"
+        }
+      ],
+      "texts": [],
+      "video": "stills",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "stills",
+    "animated": true,
+    "module": "shaders/meme",
+    "addedAt": "2026-11-01T07:28:10Z",
+    "commitHash": "b3e462a142e9a4ae85e64692e24176dc5c40c4de",
+    "order": 586
+  },
+  {
+    "id": "needs-more-jpeg",
+    "name": "Needs more JPEG",
+    "kind": "shader",
+    "category": "meme",
+    "description": "A picture saved again and again at lower quality: 8 × 8 blocks, smeared blocky colour and mosquito noise around its edges grow with each step down, then it snaps back clean and starts over.",
+    "tags": [
+      "meme",
+      "treatment",
+      "image",
+      "jpeg",
+      "compression",
+      "artifacts",
+      "low-quality",
+      "blocks"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "line": 2,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uCrunch",
+        "t": "float",
+        "d": 0.85,
+        "l": "Worst quality",
+        "min": 0.1,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "uSteps",
+        "t": "int",
+        "d": 5,
+        "min": 1,
+        "max": 8,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uStepTime",
+        "t": "float",
+        "d": 0.6,
+        "l": "Seconds per step",
+        "min": 0.15,
+        "max": 2,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uHold",
+        "t": "float",
+        "d": 1.2,
+        "l": "Hold (s)",
+        "min": 0.2,
+        "max": 5,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uBlock",
+        "t": "float",
+        "d": 8,
+        "l": "Block size (px)",
+        "min": 4,
+        "max": 32,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uChroma",
+        "t": "float",
+        "d": 0.7,
+        "l": "Chroma bleed",
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uMosquito",
+        "t": "float",
+        "d": 0.6,
+        "l": "Mosquito noise",
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 11
+      }
+    ],
+    "presets": [
+      "One bad save",
+      "Potato quality",
+      "Slow decline"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "filter",
+    "animated": true,
+    "module": "shaders/meme",
+    "addedAt": "2026-11-01T07:28:10Z",
+    "commitHash": "b3e462a142e9a4ae85e64692e24176dc5c40c4de",
+    "order": 585
+  },
+  {
     "id": "wordart-text",
     "name": "Word art",
     "kind": "vector",
@@ -2394,842 +3398,5 @@
     "addedAt": "2026-10-31T23:29:14Z",
     "commitHash": "0c8f3a60814ea939e16f1a2d92c9bf13487d9cc5",
     "order": 571
-  },
-  {
-    "id": "pixel-explosion",
-    "name": "Pixel explosion",
-    "kind": "vector",
-    "category": "impact",
-    "description": "An 8-bit explosion: a white-hot pixel fireball swelling through yellow, orange and red into a ring of smoke, sparks flying out, frame by frame.",
-    "tags": [
-      "pixel",
-      "retro",
-      "explosion",
-      "impact",
-      "game",
-      "sprite",
-      "8-bit",
-      "loop"
-    ],
-    "controls": [
-      {
-        "n": "core",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 1
-      },
-      {
-        "n": "hot",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            228,
-            92
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "flame",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            138,
-            31
-          ]
-        },
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "ember",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            217,
-            40,
-            28
-          ]
-        },
-        "l": "Embers",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "smoke",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            74,
-            59,
-            63
-          ]
-        },
-        "c": 1,
-        "line": 5
-      }
-    ],
-    "presets": [
-      "Plasma",
-      "Toxic"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 700,
-    "animated": true,
-    "duration": 1260,
-    "module": "pixel",
-    "addedAt": "2026-10-31T23:29:14Z",
-    "commitHash": "0c8f3a60814ea939e16f1a2d92c9bf13487d9cc5",
-    "order": 570
-  },
-  {
-    "id": "transition-pixel-staircase",
-    "name": "Pixel block wipe",
-    "kind": "shader",
-    "category": "transition",
-    "description": "An 8-bit block wipe: big squares grow in steps to cover the picture in a diagonal, spiral, closing-iris or random order, then shrink away to show the next one. Loops back and forth; or turn Animate off and set Progress.",
-    "tags": [
-      "transition",
-      "pixel",
-      "image",
-      "retro",
-      "8-bit",
-      "wipe",
-      "iris",
-      "slideshow"
-    ],
-    "controls": [
-      {
-        "n": "uFrom",
-        "t": "sampler2D",
-        "d": {
-          "sample": "landscape"
-        },
-        "l": "From image",
-        "line": 2,
-        "x": {
-          "filter": "nearest",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uTo",
-        "t": "sampler2D",
-        "d": {
-          "sample": "city"
-        },
-        "l": "To image",
-        "line": 3,
-        "x": {
-          "filter": "nearest",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uAnimate",
-        "t": "bool",
-        "d": true,
-        "line": 4
-      },
-      {
-        "n": "uProgress",
-        "t": "float",
-        "d": 0.3,
-        "l": "Progress (when still)",
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uPattern",
-        "t": "int",
-        "d": 0,
-        "l": "Order (0 diagonal, 1 spiral, 2 iris, 3 random)",
-        "max": 3,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uBlock",
-        "t": "float",
-        "d": 48,
-        "l": "Block size (px)",
-        "min": 8,
-        "max": 160,
-        "s": 1,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uSpread",
-        "t": "float",
-        "d": 0.6,
-        "max": 0.9,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uSteps",
-        "t": "float",
-        "d": 4,
-        "l": "Growth steps",
-        "min": 1,
-        "max": 8,
-        "s": 1,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uReverse",
-        "t": "bool",
-        "d": false,
-        "l": "Clear in reverse order",
-        "line": 10
-      },
-      {
-        "n": "uFill",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            0,
-            0,
-            0
-          ]
-        },
-        "l": "Block colour",
-        "c": 1,
-        "line": 11
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 12
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "b": 3,
-        "line": 13
-      }
-    ],
-    "presets": [
-      "Diagonal",
-      "Spiral",
-      "Level complete",
-      "Scatter"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uFrom",
-          "label": "From image",
-          "wants": "picture"
-        },
-        {
-          "name": "uTo",
-          "label": "To image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "transition",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "transition",
-    "loop": 4,
-    "animated": true,
-    "duration": 4000,
-    "module": "shaders/pixel",
-    "addedAt": "2026-10-31T23:08:09Z",
-    "commitHash": "d6ca2e38c652f866158955b1c52b37cc4ec227dc",
-    "order": 569
-  },
-  {
-    "id": "transition-screen-melt",
-    "name": "Screen melt",
-    "kind": "shader",
-    "category": "transition",
-    "description": "The classic shooter's screen melt: the old picture's columns slide down off the screen at ragged, staggered speeds, uncovering the next one. Loops back and forth; or turn Animate off and set Progress.",
-    "tags": [
-      "transition",
-      "pixel",
-      "image",
-      "retro",
-      "doom",
-      "melt",
-      "slideshow"
-    ],
-    "controls": [
-      {
-        "n": "uFrom",
-        "t": "sampler2D",
-        "d": {
-          "sample": "landscape"
-        },
-        "l": "From image",
-        "line": 2,
-        "x": {
-          "filter": "nearest",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uTo",
-        "t": "sampler2D",
-        "d": {
-          "sample": "city"
-        },
-        "l": "To image",
-        "line": 3,
-        "x": {
-          "filter": "nearest",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uAnimate",
-        "t": "bool",
-        "d": true,
-        "line": 4
-      },
-      {
-        "n": "uProgress",
-        "t": "float",
-        "d": 0.5,
-        "l": "Progress (when still)",
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uColumn",
-        "t": "float",
-        "d": 6,
-        "l": "Column width (px)",
-        "min": 1,
-        "max": 32,
-        "s": 1,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uStagger",
-        "t": "float",
-        "d": 0.4,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uRagged",
-        "t": "float",
-        "d": 0.4,
-        "l": "Raggedness",
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uStep",
-        "t": "float",
-        "d": 4,
-        "l": "Drop step (px)",
-        "min": 1,
-        "max": 16,
-        "s": 1,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "b": 3,
-        "line": 11
-      }
-    ],
-    "presets": [],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uFrom",
-          "label": "From image",
-          "wants": "picture"
-        },
-        {
-          "name": "uTo",
-          "label": "To image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "transition",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "transition",
-    "loop": 4,
-    "animated": true,
-    "duration": 4000,
-    "module": "shaders/pixel",
-    "addedAt": "2026-10-31T23:08:09Z",
-    "commitHash": "d6ca2e38c652f866158955b1c52b37cc4ec227dc",
-    "order": 568
-  },
-  {
-    "id": "led-ticker",
-    "name": "LED ticker",
-    "kind": "vector",
-    "category": "retro",
-    "description": "A dot-matrix LED sign with any text marching across it a column at a time, its lit dots glowing over the dim unlit ones, in a seamless loop.",
-    "tags": [
-      "pixel",
-      "retro",
-      "led",
-      "dot-matrix",
-      "ticker",
-      "marquee",
-      "sign",
-      "text",
-      "loop"
-    ],
-    "controls": [
-      {
-        "n": "text",
-        "t": "text",
-        "d": "NOW BOARDING  GATE 12  ",
-        "line": 1
-      },
-      {
-        "n": "led",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            176,
-            0
-          ]
-        },
-        "l": "Lit LEDs",
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "off",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            36,
-            25,
-            10
-          ]
-        },
-        "l": "Unlit LEDs",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "board",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            11,
-            11,
-            11
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "frame",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            43,
-            43,
-            43
-          ]
-        },
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "speed",
-        "t": "float",
-        "d": 20,
-        "l": "Columns per second",
-        "min": 4,
-        "max": 60,
-        "s": 1,
-        "b": 3,
-        "line": 6
-      }
-    ],
-    "presets": [
-      "Amber",
-      "Red",
-      "Green",
-      "Ice"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "text",
-          "label": "Text",
-          "holds": "copy",
-          "default": "NOW BOARDING  GATE 12  "
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 0,
-    "animated": true,
-    "duration": 9200,
-    "module": "pixel",
-    "addedAt": "2026-10-31T23:08:09Z",
-    "commitHash": "d6ca2e38c652f866158955b1c52b37cc4ec227dc",
-    "order": 567
-  },
-  {
-    "id": "rpg-dialog",
-    "name": "RPG dialog",
-    "kind": "vector",
-    "category": "retro",
-    "description": "A role-playing game's text box: a pixel-bordered panel with a speaker's name tab slides up, the line types out letter by letter in a pixel font, and a continue arrow blinks.",
-    "tags": [
-      "pixel",
-      "retro",
-      "dialog",
-      "text",
-      "rpg",
-      "game",
-      "typewriter",
-      "8-bit",
-      "caption"
-    ],
-    "controls": [
-      {
-        "n": "text",
-        "t": "text",
-        "d": "WELCOME, TRAVELLER! THE ROAD AHEAD IS DANGEROUS. TAKE THIS.",
-        "line": 1
-      },
-      {
-        "n": "speaker",
-        "t": "text",
-        "d": "SAGE",
-        "line": 2
-      },
-      {
-        "n": "panel",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            26,
-            42,
-            108
-          ]
-        },
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "border",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "ink",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "l": "Text colour",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "nameInk",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            26,
-            42,
-            108
-          ]
-        },
-        "l": "Name colour",
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "pace",
-        "t": "float",
-        "d": 45,
-        "l": "Ms per letter",
-        "min": 15,
-        "max": 200,
-        "s": 5,
-        "b": 3,
-        "line": 7
-      }
-    ],
-    "presets": [
-      "Classic blue",
-      "Handheld",
-      "Parchment"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "text",
-          "label": "Text",
-          "holds": "copy",
-          "default": "WELCOME, TRAVELLER! THE ROAD AHEAD IS DANGEROUS. TAKE THIS."
-        },
-        {
-          "name": "speaker",
-          "label": "Speaker",
-          "holds": "copy",
-          "default": "SAGE"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 400,
-    "animated": true,
-    "duration": 5805,
-    "module": "pixel",
-    "addedAt": "2026-10-31T23:08:09Z",
-    "commitHash": "d6ca2e38c652f866158955b1c52b37cc4ec227dc",
-    "order": 566
-  },
-  {
-    "id": "pixel-city",
-    "name": "Pixel city",
-    "kind": "shader",
-    "category": "retro",
-    "description": "A night-time pixel skyline in parallax: three rows of towers with windows flicking on and off, blinking aerials, stars, a crescent moon and car lights along the street.",
-    "tags": [
-      "pixel",
-      "retro",
-      "city",
-      "skyline",
-      "night",
-      "parallax",
-      "background",
-      "16-bit"
-    ],
-    "controls": [
-      {
-        "n": "uPixel",
-        "t": "float",
-        "d": 4,
-        "l": "Pixel size",
-        "min": 2,
-        "max": 12,
-        "s": 1,
-        "b": 3,
-        "line": 2
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 1,
-        "l": "Scroll speed",
-        "max": 4,
-        "b": 3,
-        "line": 3
-      },
-      {
-        "n": "uLit",
-        "t": "float",
-        "d": 0.45,
-        "l": "Lit windows",
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "uStars",
-        "t": "float",
-        "d": 0.6,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uTraffic",
-        "t": "bool",
-        "d": true,
-        "line": 6
-      },
-      {
-        "n": "uSkyTop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            11,
-            10,
-            36
-          ]
-        },
-        "c": 1,
-        "line": 7
-      },
-      {
-        "n": "uSkyBottom",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            74,
-            36,
-            102
-          ]
-        },
-        "c": 1,
-        "line": 8
-      },
-      {
-        "n": "uFar",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            42,
-            30,
-            78
-          ]
-        },
-        "l": "Far towers",
-        "c": 1,
-        "line": 9
-      },
-      {
-        "n": "uMid",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            26,
-            20,
-            52
-          ]
-        },
-        "l": "Middle towers",
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "uNear",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            13,
-            10,
-            28
-          ]
-        },
-        "l": "Near towers",
-        "c": 1,
-        "line": 11
-      },
-      {
-        "n": "uWindow",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            210,
-            122
-          ]
-        },
-        "l": "Windows",
-        "c": 1,
-        "line": 12
-      }
-    ],
-    "presets": [
-      "Neon",
-      "Dusk"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "shaders/pixel",
-    "addedAt": "2026-10-31T23:08:09Z",
-    "commitHash": "d6ca2e38c652f866158955b1c52b37cc4ec227dc",
-    "order": 565
   }
 ]
