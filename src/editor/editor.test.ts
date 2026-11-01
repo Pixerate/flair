@@ -214,7 +214,7 @@ describe("commands and agent tools", () => {
     type Search = { total: number; effects: { id: string; category: string }[] };
     const found = await callTool(provider, "run_command", { id: "catalog.search", params: { category: "cinematic", limit: 50 } });
     const result = (found.structuredContent as { result: Search }).result;
-    expect(result.total).toBe(11);
+    expect(result.total).toBe(12);
     expect(result.effects.map((e) => e.id)).toEqual(expect.arrayContaining(["anamorphic-lens", "end-credits-roll", "academy-leader", "opening-credits"]));
     const pulls = editor.commands.execute<Search>("catalog.search", { group: "Transitions", text: "focus", limit: 50 });
     expect(pulls.ok && pulls.result.effects.map((e) => e.id)).toContain("transition-focus-pull");

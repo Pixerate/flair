@@ -2,7 +2,7 @@
 
 > Visual effects and motion graphics for the web.
 > Source: https://flair.pixerate.com
-> Generated on: 2026-11-01T11:33:06.979Z
+> Generated on: 2026-11-01T11:44:51.440Z
 
 ================================================================================
 
@@ -155,7 +155,7 @@ Flair includes over 300 GLSL ES 3.00 fragment shaders designed for high performa
 - **Fire & Pyrotechnics**: Flame borders, burning text, campfire, fireballs, burning edges.
 - **Holograms**: Scanlines, chromatic aberration, holo projection, HUD displays.
 - **Space & Atmosphere**: Star trails, meteor showers, northern lights, clouds, weather.
-- **Cinematic**: Anamorphic lens streaks, rack focus with bokeh, bleach bypass, Technicolor, day for night, letterbox bars, academy leader, cinema projector, trailer title slam, focus-pull and flare-wipe transitions.
+- **Cinematic**: Anamorphic lens streaks, rack focus with bokeh, bleach bypass, Technicolor, day for night, letterbox bars, academy leader, cinema projector, trailer title slam, dolly zoom, focus-pull and flare-wipe transitions.
 - **Beauty**: Skin smoothing, dewy glow, soft focus, lip tint, blush, eyeshadow, highlighter, product shine.
 - **Distortions & Glitch**: CRT scanlines, pixelation, ripple, chromatic split.
 - **Transitions**: Cross-zooms, light leaks, twister, wipes, dissolve.
@@ -385,7 +385,7 @@ const tour: Scene = {
 Camera moves are catalog effects of their own kind (`kind: "camera"`), with controls and presets:
 
 - **Into a shot** (`camera.in`, role `transition`): `camera-glide` (the default), `camera-whip-pan`, `camera-punch-zoom` and `camera-cut`.
-- **While a shot holds** (`camera.during`, role `hold`): `camera-ken-burns` and `camera-crash-zoom`. The move plays across the shot's `hold`, and the next shot's move starts where it ends.
+- **While a shot holds** (`camera.during`, role `hold`): `camera-ken-burns`, `camera-crash-zoom` and `camera-handheld`. The move plays across the shot's `hold`, and the next shot's move starts where it ends.
 
 Name a move by its id, or give `{ move, ms?, preset?, values? }`. `findEffects({ kind: "camera", role: "hold" })` lists them, and so does the scene tool `find_camera_moves`. On its own, `mountEffect(el, "camera-whip-pan", { subject: { image } })` previews a move on a picture.
 

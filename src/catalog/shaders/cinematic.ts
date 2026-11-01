@@ -8,7 +8,7 @@ import { BACKDROP_CONTROLS, PICTURE } from "./image.js";
  * cinema stock. An anamorphic lens's streaks and squeeze, a focus puller
  * racking between two points, bleach-bypass, Technicolor and day-for-night
  * grades, letterbox bars, an academy leader, a picture on a cinema screen, a
- * trailer title and transitions through a focus pull and a lens flare.
+ * trailer title, a dolly zoom and transitions through a focus pull and a lens flare.
  * Each is tagged "cinematic".
  */
 
@@ -741,6 +741,63 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   ],
 };
 
+export const dollyZoom: ShaderEffect = {
+  kind: "shader",
+  id: "dolly-zoom",
+  name: "Dolly zoom",
+  description: "The vertigo shot: the subject holds its size in the middle of the frame while the background behind it stretches towards the camera or falls away, as when a camera dollies one way and zooms the other.",
+  category: "cinematic",
+  video: "filter",
+  tags: ["cinematic", "film", "camera", "dolly", "vertigo", "zoom", "warp", "dramatic", "image"],
+  loop: 5,
+  source: glsl(
+    `// Dolly zoom: a picture has no depth, so the subject's distance stands in for it: inside the subject's oval
+// nothing moves, and outside it the picture scales about the subject as one plane, as a background behind the
+// subject would (up to 1.8 × at full stretch). It streaks along the warp while it moves. Animated, it holds,
+// makes the move, holds and snaps back over 5 s.
+uniform sampler2D uImage;  // @control filter=linear wrap=clamp default=${SAMPLE_IMAGES.city} label="Image"
+uniform vec2 uSubject;     // @control min=0 max=1 default=0.5,0.5 label="Subject"
+uniform float uSize;       // @control min=0.05 max=0.6 default=0.18 label="Subject size (share of height)"
+uniform float uStretch;    // @control min=-1 max=1 default=0.7 label="Background (+ rushes in, − falls away)"
+uniform float uBlur;       // @control min=0 max=1 default=0.5 label="Motion blur"
+uniform bool uAnimate;     // @control default=true label="Animate"
+uniform float uProgress;   // @control min=0 max=1 default=1 label="Move (when still)"
+${BACKDROP_CONTROLS}`,
+    PICTURE,
+    `float dollyAt(float t) {
+  float c = mod(t, 5.0) / 5.0;
+  return smoothstep(0.1, 0.7, c) - smoothstep(0.82, 0.98, c);
+}
+
+// Where a point of the frame samples the picture \`p\` of the way through the move. Falling away starts with the
+// background grown and ends with it as it is, so the frame never reaches past the picture's edges.
+vec2 warp(vec2 uv, float p) {
+  vec2 aspect = vec2(iResolution.x / iResolution.y, 1.0);
+  vec2 d = (uv - uSubject) * aspect;
+  float r = length(d);
+  float behind = smoothstep(uSize, uSize * 2.4 + 0.1, r);
+  float s = exp(uStretch * (p - step(uStretch, 0.0)) * behind * 0.6);
+  return uSubject + d / s / aspect;
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec2 uv = fragCoord / iResolution.xy;
+  float p = uAnimate ? dollyAt(iTime) : uProgress;
+  // How far the move went in the last thirtieth of a second, which the blur spreads each pixel across.
+  float dp = uAnimate ? clamp((p - dollyAt(iTime - 0.033)) * uBlur * 4.0, -0.3, 0.3) : 0.0;
+  vec3 col = vec3(0.0);
+  for (int i = 0; i < 8; i++) col += picture(uImage, warp(uv, p - dp * float(i) / 7.0));
+  fragColor = vec4(col / 8.0, pictureRGBA(uImage, warp(uv, p)).a);
+}`,
+  ),
+  presets: [
+    { name: "Vertigo", values: { uStretch: 0.9, uBlur: 0.6 } },
+    { name: "Falling away", values: { uStretch: -0.8 } },
+    { name: "Unease", values: { uStretch: 0.35, uBlur: 0.2 } },
+    { name: "Held", values: { uAnimate: false, uProgress: 1, uStretch: 0.7 } },
+  ],
+};
+
 /** The cinematic shaders, and the transitions through a focus pull and a flare. */
 export const cinematicShaders: ShaderEffect[] = [
   anamorphicLens,
@@ -752,6 +809,7 @@ export const cinematicShaders: ShaderEffect[] = [
   academyLeader,
   cinemaProjector,
   trailerTitleSlam,
+  dollyZoom,
   transitionFocusPull,
   transitionFlareWipe,
 ];

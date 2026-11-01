@@ -276,9 +276,10 @@ export interface CameraMotion {
 /**
  * A camera move: how a scene's camera gets into a shot (a glide, a whip
  * pan, a punch zoom, a cut) or moves while it holds (a Ken Burns drift, a
- * crash zoom). Its controls are declared in a list, as a vector effect's
- * may be. Scenes name it in a shot's `camera.in` or `camera.during`; on its
- * own, `mountEffect` and `recordEffect` preview it on a picture.
+ * crash zoom, a handheld shake). Its controls are declared in a list, as a
+ * vector effect's may be. Scenes name it in a shot's `camera.in` or
+ * `camera.during`; on its own, `mountEffect` and `recordEffect` preview it
+ * on a picture.
  */
 export interface CameraEffect extends EffectBase {
   kind: "camera";
