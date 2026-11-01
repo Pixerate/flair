@@ -2,8 +2,9 @@
 // type-checks these sources through the `workspace` condition.
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="../shader/gifenc.d.ts" />
-import { drawsAlpha, effectDefaults, effectInputs, getEffect, type EffectDefinition } from "../catalog/index.js";
-import { renderVectorEffect } from "../catalog/types.js";
+import { CAMERA_PREVIEW_SOURCE, cameraPreviewLength, cameraPreviewValues } from "../catalog/camera.js";
+import { drawsAlpha, effectDefaults, effectInputs, getEffect, SAMPLE_IMAGES, type EffectDefinition } from "../catalog/index.js";
+import { renderVectorEffect, type ShaderEffect } from "../catalog/types.js";
 import { muxMp4 } from "../export/mp4mux.js";
 import { muxWebm, type WebmFrame } from "../export/webmmux.js";
 import { checkShutter, FrameAverager, shutterTimes, type Shutter, type ShutterOptions } from "../export/shutter.js";
@@ -296,9 +297,10 @@ export async function recordingPlan(effect: EffectDefinition | string, options: 
   return { effect: def, format: format!, width, height, fps, duration, start, frames: Math.max(1, Math.round(duration * fps)), alpha, ...(shutter ? { shutter } : {}), ...(encoder ? { encoder } : {}), ...(audioEncoder ? { audioEncoder } : {}) };
 }
 
-/** A shader's loop, or a vector effect's picture plus its hold, else 4 seconds. */
+/** A shader's loop, a vector effect's picture plus its hold, or one loop of a camera move's preview, else 4 seconds. */
 function defaultDuration(def: EffectDefinition, options: RecordOptions): number {
   if (def.kind === "shader") return def.loop ?? DEFAULT_SECONDS;
+  if (def.kind === "camera") return cameraPreviewLength(def) / 1000;
   const motion = renderVectorEffect(def, effectValues(def, options).values);
   return (svgDuration(motion, options.steps ?? []) + (def.hold ?? 600)) / 1000;
 }
@@ -320,9 +322,19 @@ interface FrameSource {
 }
 
 function shaderSource(plan: RecordingPlan, values: Record<string, ControlValue>, live: Record<string, LiveSource>, options: RecordOptions, sound?: AudioBufferAnalysis): FrameSource {
-  const def = plan.effect as Extract<EffectDefinition, { kind: "shader" }>;
+  const def = plan.effect as Extract<EffectDefinition, { kind: "shader" | "camera" }>;
+  // A camera move previews on its picture through the preview shader, its view worked out for each frame.
+  const camera = def.kind === "camera" ? def : undefined;
+  const base = camera ? { uImage: typeof values.uImage === "string" && values.uImage ? values.uImage : SAMPLE_IMAGES.landscape } : values;
+  const viewAt = (time: number) => (camera ? cameraPreviewValues(camera, values, time * 1000, plan.width / plan.height) : {});
   // An effect that draws alpha is drawn with it even when it is not kept, to be laid over the background.
-  const frames = new ShaderFrames({ source: def.source, values, width: plan.width, height: plan.height, alpha: plan.alpha || drawsAlpha(def, values) });
+  const frames = new ShaderFrames({
+    source: camera ? CAMERA_PREVIEW_SOURCE : (def as ShaderEffect).source,
+    values: { ...base, ...viewAt(plan.start) },
+    width: plan.width,
+    height: plan.height,
+    alpha: plan.alpha || drawsAlpha(def, values),
+  });
   const videos: { video: HTMLVideoElement; time: number; paused: boolean }[] = [];
   for (const [name, source] of Object.entries(live)) {
     frames.setLiveSource(name, source);
@@ -338,6 +350,7 @@ function shaderSource(plan: RecordingPlan, values: Record<string, ControlValue>,
       await options.beforeFrame?.(time, index);
       await frames.ready();
       const pointer = typeof script === "function" ? script(time) : script;
+      if (camera) frames.setValues({ ...base, ...viewAt(time) });
       frames.render(time, { frame: index, delta: 1 / plan.fps, ...pointer, ...(sound ? { audio: sound.at(time) } : {}) });
       frames.readPixels(out);
     },
@@ -682,14 +695,14 @@ export async function recordEffect(effect: EffectDefinition | string, options: R
   const plan = await recordingPlan(effect, options);
   const { signal, onProgress } = options;
   const { values, live } = effectValues(plan.effect, options);
-  const background = (parseColor(options.background ?? (plan.effect.kind === "shader" ? "#000000" : "#ffffff")) ?? [0, 0, 0]).map((c) => Math.round(c * 255)) as [number, number, number];
+  const background = (parseColor(options.background ?? (plan.effect.kind !== "vector" ? "#000000" : "#ffffff")) ?? [0, 0, 0]).map((c) => Math.round(c * 255)) as [number, number, number];
 
   const buffer = options.audio === undefined ? undefined : typeof options.audio === "string" ? await decodeAudio(options.audio) : options.audio;
   const sound = buffer && plan.effect.kind === "shader" && effectInputs(plan.effect).accepts.includes("audio") ? analyseAudioBuffer(buffer) : undefined;
   // The sound track encodes alongside the frames.
   const track = buffer && plan.audioEncoder ? encodeSound(buffer, plan) : undefined;
   track?.catch(() => undefined);
-  const drawn = plan.effect.kind === "shader" ? shaderSource(plan, values, live, options, sound) : vectorSource(plan, values, options);
+  const drawn = plan.effect.kind !== "vector" ? shaderSource(plan, values, live, options, sound) : vectorSource(plan, values, options);
   const source = plan.shutter ? shutterSource(drawn, plan, plan.shutter) : drawn;
   let encoder: Encoder | undefined;
   try {

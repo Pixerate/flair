@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { sharedThumbnailPool, SvgPlayer, ThumbnailPool, type ThumbnailHandle } from "@pixerate/flair";
 import {
+  CAMERA_PREVIEW_SOURCE,
+  cameraPreviewValues,
   EFFECT_CATEGORY_GROUPS,
   effectDefaults,
   findEffects,
@@ -30,6 +32,38 @@ function ShaderThumb({ effect, hovered }: { effect: Extract<EffectDefinition, { 
   }, [effect]);
   // Interactive shaders see a hovered card as the pointer over its middle.
   useEffect(() => handle.current?.setHovered(hovered), [hovered]);
+  return (
+    <>
+      <canvas ref={canvas} className="absolute inset-0 h-full w-full" />
+      {failed && <span className="absolute inset-0 grid place-items-center text-sm text-slate-400">Needs WebGL2</span>}
+    </>
+  );
+}
+
+/** A camera move previewed on the sample landscape: its view worked out each frame, drawn by the shared pool. */
+function CameraThumb({ effect, hovered }: { effect: Extract<EffectDefinition, { kind: "camera" }>; hovered: boolean }) {
+  const canvas = useRef<HTMLCanvasElement>(null);
+  const [failed, setFailed] = useState(false);
+  const hoveredRef = useRef(hovered);
+  hoveredRef.current = hovered;
+  useEffect(() => {
+    const values = effectDefaults(effect);
+    const at = (ms: number) => ({ uImage: SAMPLE_IMAGES.landscape, ...cameraPreviewValues(effect, values, ms, 16 / 9) });
+    const handle = sharedThumbnailPool().register(canvas.current!, CAMERA_PREVIEW_SOURCE, at(0), (ok) => setFailed(!ok));
+    const start = performance.now();
+    let raf = 0;
+    const step = (now: number) => {
+      raf = requestAnimationFrame(step);
+      // With reduced motion, only a hovered card plays.
+      if (prefersReducedMotion() && !hoveredRef.current) return;
+      handle.update(CAMERA_PREVIEW_SOURCE, at(now - start));
+    };
+    raf = requestAnimationFrame(step);
+    return () => {
+      cancelAnimationFrame(raf);
+      handle.dispose();
+    };
+  }, [effect]);
   return (
     <>
       <canvas ref={canvas} className="absolute inset-0 h-full w-full" />
@@ -186,7 +220,13 @@ function EffectCard({ effect, onOpen }: { effect: EffectDefinition; onOpen: () =
     >
       <div className={`relative aspect-video ${effect.kind === "vector" && !showsOverPicture(effect) ? "bg-slate-100" : "bg-black"}`}>
         {showsOverPicture(effect) && <img src={SAMPLE_IMAGES.city} alt="" className="absolute inset-0 h-full w-full object-cover" />}
-        {effect.kind === "shader" ? <ShaderThumb effect={effect} hovered={hovered} /> : <VectorThumb effect={effect} hovered={hovered} />}
+        {effect.kind === "shader" ? (
+          <ShaderThumb effect={effect} hovered={hovered} />
+        ) : effect.kind === "camera" ? (
+          <CameraThumb effect={effect} hovered={hovered} />
+        ) : (
+          <VectorThumb effect={effect} hovered={hovered} />
+        )}
         <span className="absolute top-2 left-2 rounded bg-black/60 px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-slate-200">
           {effect.kind}
           {trigger && ` · ${trigger}`}

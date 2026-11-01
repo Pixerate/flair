@@ -23,7 +23,7 @@ const scene: Scene = {
   name: 'tilt',
   shots: [
     { camera: { x: 0, y: 0, width: 1920, height: 1080 }, hold: 100, run: [{ type: 'element', element: { id: 'card', type: 'rectangle', x: 600, y: 300, width: 400, height: 300 } }] },
-    { camera: { frame: ['card'], tilt: 35, turn: -15, motionBlur: 1.5 }, hold: 100 },
+    { camera: { frame: ['card'], tilt: 35, turn: -15, in: { move: 'camera-glide', values: { motionBlur: 1.5 } } }, hold: 100 },
     { camera: { x: 0, y: 0, width: 1920, height: 1080 }, hold: 100 },
     { camera: { tilt: 0, turn: 0 }, hold: 100 },
   ],
@@ -110,11 +110,11 @@ describe('3D camera', () => {
   });
 
   it('checks angles and blur', () => {
-    const bad: Scene = { name: 'bad', shots: [{ camera: { tilt: 90, perspective: 0.1, motionBlur: 9 } }] };
-    expect(validateScene(bad).map((i) => i.message)).toEqual([
+    const bad: Scene = { name: 'bad', shots: [{ x: 1 } as never, { camera: { tilt: 90, perspective: 0.1, in: { move: 'camera-glide', values: { motionBlur: 9 } } } }] };
+    expect(validateScene(bad).filter((i) => i.shot === 2).map((i) => i.message)).toEqual([
       'Camera tilt is degrees between -75 and 75.',
       'Camera perspective is the lens distance as a multiple of the stage width, 0.3 or more (1.2 by default).',
-      'Camera motionBlur is 0 (none) to 3 (a whip); 1 is natural.',
+      '"camera-glide": motionBlur takes a number from 0 to 3, not 9.',
     ]);
     expect(validateScene(scene)).toEqual([]);
   });

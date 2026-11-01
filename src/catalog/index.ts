@@ -120,10 +120,11 @@ import { promoEffects } from "./promo.js";
 import { textEffects } from "./text.js";
 import { broadcastEffects } from "./broadcast.js";
 import { annotationEffects } from "./annotation.js";
-import { CURRENT_COLOR, EFFECT_CATEGORIES, EFFECT_CATEGORY_GROUPS, isCurrentColor, renderVectorEffect, vectorEffectControls, type EffectCategory, type EffectDefinition, type ShaderEffect, type VideoUse } from "./types.js";
+import { CURRENT_COLOR, EFFECT_CATEGORIES, EFFECT_CATEGORY_GROUPS, isCurrentColor, renderVectorEffect, vectorControlDef, vectorEffectControls, type EffectCategory, type EffectDefinition, type ShaderEffect, type VideoUse } from "./types.js";
 import { vectorEffects } from "./vector.js";
 import { dataEffects } from "./data.js";
 import { iconEffects } from "./icons.js";
+import { cameraEffects } from "./camera.js";
 
 export {
   colorControl,
@@ -140,6 +141,10 @@ export {
   vectorControls,
   vectorEffectControls,
   VIDEO_USES,
+  type CameraEffect,
+  type CameraMotion,
+  type CameraMoveContext,
+  type CameraRole,
   type EffectCategory,
   type EffectCategoryGroup,
   type EffectDefinition,
@@ -150,6 +155,16 @@ export {
   type VideoUse,
 } from "./types.js";
 export { SAMPLE_IMAGES, svgDataUrl, textImage } from "./images.js";
+export {
+  CAMERA_PREVIEW_SOURCE,
+  cameraEffects,
+  cameraPreviewLength,
+  cameraPreviewValues,
+  cameraPreviewView,
+  getCameraMove,
+  previewStage,
+  screenToScene,
+} from "./camera.js";
 export { controlSchema, controlsSchema, controlUnit, type JsonSchema, type SchemaOptions } from "../shader/schema.js";
 export { FBM, glsl, HASH, NOISE, OKLAB_MIX, PALETTE, ROTATE, SPECTRUM } from "./glsl.js";
 
@@ -253,7 +268,7 @@ export const SHADER_EFFECTS: readonly ShaderEffect[] = [
 ];
 
 /** Every effect in the catalog, shaders first, grouped by category. */
-export const EFFECTS: readonly EffectDefinition[] = [...SHADER_EFFECTS, ...vectorEffects, ...textEffects, ...morphEffects, ...interactionEffects, ...pyroEffects, ...timewarpEffects, ...meltEffects, ...electricEffects, ...fireEffects, ...hologramEffects, ...pixelEffects, ...splatterEffects, ...bubbleEffects, ...stickerEffects, ...trailEffects, ...impactEffects, ...comicEffects, ...glowEffects, ...shadowEffects, ...lightingEffects, ...scrollEffects, ...broadcastEffects, ...annotationEffects, ...uiEffects, ...loaderEffects, ...dataEffects, ...iconEffects, ...webEffects, ...promoEffects, ...horrorEffects, ...beautyEffects, ...memeEffects, ...cinematicEffects].sort(
+export const EFFECTS: readonly EffectDefinition[] = [...SHADER_EFFECTS, ...vectorEffects, ...textEffects, ...morphEffects, ...interactionEffects, ...pyroEffects, ...timewarpEffects, ...meltEffects, ...electricEffects, ...fireEffects, ...hologramEffects, ...pixelEffects, ...splatterEffects, ...bubbleEffects, ...stickerEffects, ...trailEffects, ...impactEffects, ...comicEffects, ...glowEffects, ...shadowEffects, ...lightingEffects, ...scrollEffects, ...broadcastEffects, ...annotationEffects, ...uiEffects, ...loaderEffects, ...dataEffects, ...iconEffects, ...webEffects, ...promoEffects, ...horrorEffects, ...beautyEffects, ...memeEffects, ...cinematicEffects, ...cameraEffects].sort(
   (a, b) => EFFECT_CATEGORIES.indexOf(a.category) - EFFECT_CATEGORIES.indexOf(b.category),
 );
 
@@ -281,12 +296,13 @@ export function effectMeta(effect: EffectDefinition): EffectMeta {
 }
 
 /**
- * Ms of one play of an effect: a shader's `loop`, or a vector effect's
- * picture at its default values plus its `hold` (default 600). Undefined for
- * a shader with no loop.
+ * Ms of one play of an effect: a shader's `loop`, a vector effect's
+ * picture at its default values plus its `hold` (default 600), or a camera
+ * move's own length (0 for a cut). Undefined for a shader with no loop.
  */
 export function effectDuration(effect: EffectDefinition): number | undefined {
   if (effect.kind === "shader") return effect.loop === undefined ? undefined : Math.round(effect.loop * 1000);
+  if (effect.kind === "camera") return effect.motion.duration;
   return Math.round(svgDuration(renderVectorEffect(effect, effectDefaults(effect))) + (effect.hold ?? 600));
 }
 
@@ -379,16 +395,12 @@ export function canOutputVideo(effect: EffectDefinition): boolean {
 }
 
 /**
- * Returns whether an effect is animated over time (`iTime` uniform in shader source, or a vector effect).
+ * Returns whether an effect is animated over time (`iTime` uniform in shader source, a vector effect, or a camera move).
  * Static image filters/treatments that do not reference `iTime` return `false`.
  */
 export function isMotionEffect(effect: EffectDefinition | undefined): boolean {
   if (!effect) return false;
-  if (effect.kind === "vector") return true;
-  if (effect.kind === "shader") {
-    return /\biTime\b/.test(effect.source);
-  }
-  return false;
+  return effect.kind !== "shader" || /\biTime\b/.test(effect.source);
 }
 
 /**
@@ -433,7 +445,7 @@ export function sanitizeEffectValues(
 /** Effects matching a query, in catalog order. */
 export function findEffects(query: EffectQuery = {}): EffectDefinition[] {
   const words = queryWords(query);
-  return EFFECTS.filter((e) => matchesQuery({ ...e, video: e.kind === "shader" ? e.video : undefined }, () => effectInputs(e), query, words));
+  return EFFECTS.filter((e) => matchesQuery({ ...e, video: e.kind === "shader" ? e.video : undefined, role: e.kind === "camera" ? e.motion.role : undefined }, () => effectInputs(e), query, words));
 }
 
 /**
@@ -477,8 +489,9 @@ export function effectStack(layers: readonly StackLayer[], options: { source?: L
   });
 }
 
-/** An effect's controls: a shader's `@control` uniforms, or a vector effect's declared controls. */
+/** An effect's controls: a shader's `@control` uniforms, or a vector effect's or camera move's declared controls. */
 export function effectControls(effect: EffectDefinition): ControlDef[] {
+  if (effect.kind === "camera") return effect.controls.map((c, i) => vectorControlDef(c, i + 1));
   return effect.kind === "shader" ? parseControls(effect.source) : vectorEffectControls(effect);
 }
 

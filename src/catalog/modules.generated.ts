@@ -6,6 +6,7 @@ export const EFFECT_MODULES: Record<string, () => Promise<Record<string, unknown
   "beauty": () => import("./beauty.js"),
   "broadcast": () => import("./broadcast.js"),
   "bubble": () => import("./bubble.js"),
+  "camera": () => import("./camera.js"),
   "cinematic": () => import("./cinematic.js"),
   "comic": () => import("./comic.js"),
   "data": () => import("./data.js"),

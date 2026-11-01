@@ -133,6 +133,10 @@ function shaderInteractions(source: string): EffectInteraction[] {
  * `iSpectrum`, `iBeat`), and whether it draws over other content.
  */
 export function inputsOf(effect: EffectDefinition, controls: readonly ControlDef[]): EffectInputs {
+  // A camera move moves a scene's camera; on its own it previews on a picture or video.
+  if (effect.kind === "camera") {
+    return { accepts: ["image", "video", "svg"], images: [{ name: "uImage", label: "Preview picture", wants: "picture" }], texts: [], video: "filter", interactions: [], transparent: false };
+  }
   const accepts = new Set<EffectInput>();
   const images: ImageSlot[] = [];
   const texts: TextSlot[] = [];
@@ -157,12 +161,7 @@ export function inputsOf(effect: EffectDefinition, controls: readonly ControlDef
     }
   }
   if (effect.kind === "shader" && /\bi(Audio|Spectrum|Beat)\b/.test(codeOf(effect.source))) accepts.add("audio");
-  const interactions =
-    effect.kind === "vector"
-      ? effect.trigger
-        ? [effect.trigger]
-        : []
-      : shaderInteractions(effect.source);
+  const interactions = effect.kind === "vector" ? (effect.trigger ? [effect.trigger] : []) : shaderInteractions(effect.source);
   return {
     accepts: EFFECT_INPUTS.filter((i) => accepts.has(i)),
     images,

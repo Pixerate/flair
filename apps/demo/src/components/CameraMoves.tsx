@@ -38,9 +38,9 @@ const EXAMPLES: Example[] = [
       name: "swoop",
       shots: [
         { title: "Dashboard", camera: WIDE, hold: 900, run: place(DASHBOARD) },
-        { title: "Tilt in", camera: { frame: ["graph"], tilt: 32, turn: -16, motionBlur: 1.5 }, hold: 1600 },
-        { title: "Across", camera: { frame: ["velocity"], tilt: 24, turn: 18, motionBlur: 1.5 }, hold: 1200 },
-        { title: "Flat", camera: { ...WIDE, tilt: 0, turn: 0, motionBlur: 1 }, hold: 900 },
+        { title: "Tilt in", camera: { frame: ["graph"], tilt: 32, turn: -16, in: { move: "camera-glide", values: { motionBlur: 1.5 } } }, hold: 1600 },
+        { title: "Across", camera: { frame: ["velocity"], tilt: 24, turn: 18, in: { move: "camera-glide", values: { motionBlur: 1.5 } } }, hold: 1200 },
+        { title: "Flat", camera: { ...WIDE, tilt: 0, turn: 0, in: { move: "camera-glide", values: { motionBlur: 1 } } }, hold: 900 },
       ],
     },
   },
@@ -51,9 +51,9 @@ const EXAMPLES: Example[] = [
       name: "whip",
       shots: [
         { title: "To do", camera: { frame: ["todo"], padding: 0.3 }, hold: 900, run: place(DASHBOARD) },
-        { title: "In progress", camera: { frame: ["doing"], padding: 0.3, motionBlur: 3 }, hold: 900 },
-        { title: "Done", camera: { frame: ["done"], padding: 0.3, motionBlur: 3 }, hold: 900 },
-        { title: "Velocity", camera: { frame: ["velocity"], padding: 0.2, motionBlur: 3 }, hold: 900 },
+        { title: "In progress", camera: { frame: ["doing"], padding: 0.3, in: { move: "camera-glide", values: { motionBlur: 3 } } }, hold: 900 },
+        { title: "Done", camera: { frame: ["done"], padding: 0.3, in: { move: "camera-glide", values: { motionBlur: 3 } } }, hold: 900 },
+        { title: "Velocity", camera: { frame: ["velocity"], padding: 0.2, in: { move: "camera-glide", values: { motionBlur: 3 } } }, hold: 900 },
       ],
     },
   },
@@ -64,8 +64,8 @@ const EXAMPLES: Example[] = [
       name: "roll",
       shots: [
         { title: "Close", camera: { frame: ["graph"], padding: 0.05, tilt: 40, roll: -14, perspective: 0.7 }, hold: 1100, run: place(DASHBOARD) },
-        { title: "Pull back", camera: { ...WIDE, tilt: 12, roll: 0, perspective: 1.2, motionBlur: 1 }, hold: 1100 },
-        { title: "Level", camera: { ...WIDE, tilt: 0, motionBlur: 0.5 }, hold: 900 },
+        { title: "Pull back", camera: { ...WIDE, tilt: 12, roll: 0, perspective: 1.2, in: { move: "camera-glide", values: { motionBlur: 1 } } }, hold: 1100 },
+        { title: "Level", camera: { ...WIDE, tilt: 0, in: { move: "camera-glide", values: { motionBlur: 0.5 } } }, hold: 900 },
       ],
     },
   },
@@ -201,7 +201,7 @@ export function CameraMoves() {
         <h2 className="text-lg font-semibold">Camera moves</h2>
         <p className="text-sm text-slate-400">
           Scene shots can tilt, turn and roll the camera in 3D and blur while it moves:{" "}
-          <code className="text-slate-300">{`{ "camera": { "frame": ["graph"], "tilt": 32, "turn": -16, "motionBlur": 1.5 } }`}</code>
+          <code className="text-slate-300">{`{ "camera": { "frame": ["graph"], "tilt": 32, "turn": -16, "in": { "move": "camera-glide", "values": { "motionBlur": 1.5 } } } }`}</code>
         </p>
       </div>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

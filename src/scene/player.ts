@@ -4,20 +4,18 @@ import {
   boardHeight,
   cameraAngle,
   centreOf,
-  CAMERA_MS,
   CAMERA_STEPS,
   DEFAULT_STAGE,
   frame,
   calculateFramingRect,
   isAngled,
   projectPoint,
-  transitionStrength,
-  transitionView,
   viewAt,
   type Stage,
   type View,
 } from './camera.js';
 import { checkShot } from './check.js';
+import { moveView, resolveCameraMove, shotHoldMove, shotInMove } from './moves.js';
 import { effectGone, type RunningEffect } from './effects.js';
 import { evaluateBehavior } from './behavior.js';
 import type { Rect, SceneElement } from './geometry.js';
@@ -216,23 +214,20 @@ export async function playScene(
       );
     }
 
-    // Camera move
+    // Camera move: a move from the catalog into the shot (`camera.in`, a glide by default)
     const targetView = shotView(shot, board.elements(), stage, board.getView());
+    if (shot.camera?.in !== undefined) failedCmds.push(...resolveCameraMove(shot.camera.in, 'transition').issues);
+    if (shot.camera?.during !== undefined) failedCmds.push(...resolveCameraMove(shot.camera.during, 'hold', shot.hold ?? 800).issues);
     if (targetView) {
-      if (idx === 0) {
+      const move = idx === 0 ? undefined : shotInMove(shot);
+      if (!move || !(move.ms > 0)) {
         board.setView(targetView);
       } else {
-        const kind = shot.camera?.transition ?? 'move';
-        const strength = transitionStrength(kind, shot.camera?.motionBlur);
-        if (kind === 'cut') {
-          board.setView(targetView);
-        } else {
-          const fromView = board.getView();
-          const stepMs = CAMERA_MS / CAMERA_STEPS;
-          for (let s = 1; s <= CAMERA_STEPS; s++) {
-            board.setView(transitionView(kind, fromView, targetView, s / CAMERA_STEPS, stage, strength));
-            await clock.sleep(stepMs);
-          }
+        const fromView = board.getView();
+        const stepMs = move.ms / CAMERA_STEPS;
+        for (let s = 1; s <= CAMERA_STEPS; s++) {
+          board.setView(moveView(move, fromView, targetView, s / CAMERA_STEPS, stage));
+          await clock.sleep(stepMs);
         }
       }
     }
@@ -279,10 +274,12 @@ export async function playScene(
       ? checkShot(shot, board.elements(), board.getView(), stage, shot.title)
       : { framing: [], overlaps: [], edges: [], underTitle: [] };
 
-    // Hold dwell time and active behaviors
+    // Hold dwell time, active behaviors and the camera's move while it holds (`camera.during`)
     const holdMs = shot.hold ?? 800;
     const behaviors = shot.behaviors ?? [];
-    if (behaviors.length > 0) {
+    const during = targetView ? shotHoldMove(shot) : undefined;
+    const settled = board.getView();
+    if (behaviors.length > 0 || during) {
       const initialProps = new Map<string, number>();
       for (const b of behaviors) {
         const key = `${b.target}:${b.property}`;
@@ -301,6 +298,7 @@ export async function playScene(
 
       for (let s = 1; s <= steps; s++) {
         await clock.sleep(actualStepMs);
+        if (during) board.setView(moveView(during, settled, settled, s / steps, stage));
         const elapsedSec = (s * actualStepMs) / 1000;
         for (const b of behaviors) {
           const baseVal = initialProps.get(`${b.target}:${b.property}`) ?? 0;

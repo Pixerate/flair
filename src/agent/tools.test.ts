@@ -195,3 +195,54 @@ describe('applySceneTool', () => {
   });
 });
 
+
+describe('camera moves through the scene tools', () => {
+  const cards: Scene = {
+    name: 'cards',
+    shots: [
+      { camera: { frame: ['a'] }, hold: 300, run: [{ type: 'element', element: { id: 'a', type: 'rectangle', x: 100, y: 100, width: 300, height: 200 } }, { type: 'element', element: { id: 'b', type: 'rectangle', x: 1200, y: 600, width: 300, height: 200 } }] },
+      { camera: { frame: ['b'] }, hold: 300 },
+    ],
+  };
+  const issuesAfter = async (camera: Record<string, unknown>) => {
+    const res = await applySceneTool(cards, 'update_shot', { shot: 2, set: { camera: { frame: ['b'], ...camera } } });
+    expect(res.ok).toBe(true);
+    return res.ok ? res.issues.map((i) => i.message) : [];
+  };
+
+  it('lists the moves for camera "in" and "during", with their controls', async () => {
+    const all = await applySceneTool(cards, 'find_camera_moves', {});
+    expect(all.output.total).toBe(6);
+    const hold = await applySceneTool(cards, 'find_camera_moves', { role: 'hold' });
+    expect((hold.output.moves as { id: string; field: string }[]).map((m) => [m.id, m.field])).toEqual([
+      ['camera-ken-burns', 'during'],
+      ['camera-crash-zoom', 'during'],
+    ]);
+    const whip = await applySceneTool(cards, 'find_camera_moves', { text: 'whip' });
+    expect(whip.output.moves).toEqual([expect.objectContaining({ id: 'camera-whip-pan', ms: 600, controls: [expect.objectContaining({ name: 'motionBlur', min: 0, max: 3, default: 2 })], presets: ['Soft', 'Hard'] })]);
+    const none = await applySceneTool(cards, 'find_camera_moves', { text: 'dolly' });
+    expect(none.output.note).toMatch(/^No camera move matches; there are 6: camera-glide/);
+    const bad = await applySceneTool(cards, 'find_camera_moves', { role: 'sideways' });
+    expect(bad.ok).toBe(false);
+  });
+
+  it('takes a whip with values, and previews it at its length', async () => {
+    expect(await issuesAfter({ in: { move: 'camera-whip-pan', ms: 400, values: { motionBlur: 3 } } })).toEqual([]);
+    const res = await applySceneTool(cards, 'batch_scene', {
+      steps: [
+        { tool: 'update_shot', params: { shot: 2, set: { camera: { frame: ['b'], in: { move: 'camera-whip-pan', ms: 400 }, during: 'camera-ken-burns' } } } },
+        { tool: 'preview_scene' },
+      ],
+    });
+    expect(res.ok).toBe(true);
+    if (res.ok) expect(res.issues).toEqual([]);
+  });
+
+  it('says what is wrong with a move and what to use instead', async () => {
+    expect(await issuesAfter({ in: 'camera-dolly' })).toEqual(['There is no camera move "camera-dolly"; camera "in" takes one of "camera-glide", "camera-whip-pan", "camera-punch-zoom", "camera-cut".']);
+    expect((await issuesAfter({ in: 'camera-ken-burns' }))[0]).toMatch(/while a shot holds, so it goes in camera "during", not "in"/);
+    expect(await issuesAfter({ in: { move: 'camera-glide', values: { motionBlur: 7 } } })).toEqual(['"camera-glide": motionBlur takes a number from 0 to 3, not 7.']);
+    expect(await issuesAfter({ in: { move: 'camera-glide', values: { blur: 1 } } })).toEqual(['"camera-glide" has no control "blur"; its controls are motionBlur.']);
+    expect((await issuesAfter({ transition: 'zoom' }))[0]).toMatch(/replaced by camera moves from the catalog; write \{ "in": "camera-punch-zoom" \}/);
+  });
+});

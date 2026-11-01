@@ -15,9 +15,9 @@
       ]
     },
     { "title": "Write", "camera": { "frame": ["write"] }, "hold": 700 },
-    { "title": "Render", "camera": { "frame": ["render"], "transition": "whip" }, "hold": 700 },
-    { "title": "Ship", "camera": { "frame": ["ship"], "transition": "zoom" }, "hold": 700 },
-    { "title": "Write", "camera": { "frame": ["write"], "transition": "cut" }, "hold": 700 },
-    { "title": "All three", "camera": { "x": 0, "y": 0, "width": 1920, "height": 1080, "transition": "whip", "motionBlur": 3 }, "hold": 900 }
+    { "title": "Render", "camera": { "frame": ["render"], "in": "camera-whip-pan" }, "hold": 700 },
+    { "title": "Ship", "camera": { "frame": ["ship"], "in": "camera-punch-zoom" }, "hold": 700 },
+    { "title": "Write", "camera": { "frame": ["write"], "in": "camera-cut" }, "hold": 700 },
+    { "title": "All three", "camera": { "x": 0, "y": 0, "width": 1920, "height": 1080, "in": { "move": "camera-whip-pan", "values": { "motionBlur": 3 } } }, "hold": 900 }
   ]
 }

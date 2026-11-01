@@ -45,7 +45,8 @@ describe("effectInputs", () => {
     for (const effect of EFFECTS) {
       const i = effectInputs(effect);
       const images = effectControls(effect).filter((c) => c.type === "sampler2D");
-      expect(i.images.length, effect.id).toBe(images.length);
+      // A camera move has no picture of its own; it previews on one.
+      expect(i.images.length, effect.id).toBe(effect.kind === "camera" ? 1 : images.length);
       expect(i.accepts.every((a) => EFFECT_INPUTS.includes(a)), effect.id).toBe(true);
       if (effect.kind === "shader") expect(i.video, effect.id).toBe(effect.video);
       if (effect.kind === "vector") expect(i.interactions, effect.id).toEqual(effect.trigger ? [effect.trigger] : []);
@@ -61,7 +62,7 @@ describe("findEffects by inputs", () => {
   it("finds what can be given a picture, a word or a path", () => {
     const forVideo = findEffects({ accepts: ["video"] });
     expect(forVideo.length).toBeGreaterThan(50);
-    expect(forVideo.every((e) => e.kind === "shader" && e.video && e.video !== "none")).toBe(true);
+    expect(forVideo.every((e) => e.kind === "camera" || (e.kind === "shader" && e.video && e.video !== "none"))).toBe(true);
     const forText = findEffects({ accepts: ["text"] });
     expect(forText.map((e) => e.id)).toEqual(expect.arrayContaining(["typewriter", "shader-text", "neon-sign"]));
     expect(findEffects({ accepts: ["path"] }).map((e) => e.id)).toEqual(expect.arrayContaining(["shape-morph", "line-boil"]));

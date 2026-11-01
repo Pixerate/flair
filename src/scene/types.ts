@@ -1,5 +1,6 @@
 import type { Rect, SceneElement } from './geometry.js';
-import type { CameraAngle, CameraTransition, Stage } from './camera.js';
+import type { CameraAngle, Stage } from './camera.js';
+import type { CameraMoveSpec } from './moves.js';
 import type { Effect } from './effects.js';
 import type { Behavior } from './behavior.js';
 import type { SceneRig } from './rig.js';
@@ -70,29 +71,29 @@ export interface DynamicFraming {
 
 /**
  * A shot's camera beyond its framing: its 3D angle (see `CameraAngle`) and
- * how much it blurs while moving into the shot. A part left out keeps the
- * value the camera already has, so set `tilt: 0` to come back flat.
+ * the camera moves from the catalog it plays (see `CameraMoveSpec`). An
+ * angle left out keeps the value the camera already has, so set `tilt: 0`
+ * to come back flat.
  */
 export interface CameraLens extends CameraAngle {
   /**
-   * Motion blur while the camera moves into this shot: 0 (the default) for
-   * none, 1 for natural, up to 3 for a whip. The blur follows the move's
-   * speed, so it peaks mid-move and is gone when the camera settles.
+   * How the camera gets into this shot: a camera move from the catalog
+   * whose role is `transition` (`camera-glide`, the default, eases across;
+   * `camera-whip-pan`, `camera-punch-zoom`, `camera-cut`…), by id or with
+   * its length and values: `{ "move": "camera-whip-pan", "values": { "motionBlur": 3 } }`.
    */
-  motionBlur?: number;
+  in?: CameraMoveSpec;
   /**
-   * How the camera gets into this shot: `move` (the default) eases across,
-   * `whip` whip-pans off the last framing and onto this one, `zoom` punches
-   * in and cuts to this one settling out, and `cut` jumps straight here
-   * (see `CameraTransition`). A whip or zoom blurs at `motionBlur` 2 unless
-   * the shot sets one; a zoom punches in to (1 + motionBlur) ×.
+   * How the camera moves while this shot holds: a camera move whose role is
+   * `hold` (`camera-ken-burns`, `camera-crash-zoom`…), played across the
+   * shot's `hold`. The next shot's move starts from where it ends.
    */
-  transition?: CameraTransition;
+  during?: CameraMoveSpec;
 }
 
 /**
  * Where the camera goes for a shot: a framing box, a dynamic framing, or
- * neither (only a new angle or blur, keeping the framing), with any
+ * neither (only a new angle or move, keeping the framing), with any
  * {@link CameraLens} fields alongside: `{ "frame": ["chart"], "tilt": 30 }`.
  */
 export type ShotCamera = (Rect | DynamicFraming | Record<never, never>) & CameraLens;

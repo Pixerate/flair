@@ -3,6 +3,7 @@ import { validateScene, type SceneIssue } from '../scene/validate.js';
 import { simulateScene } from '../scene/player.js';
 import type { Review } from '../scene/report.js';
 import { applyRig, setRigWidget } from '../scene/rig.js';
+import { cameraEffects, cameraMoveControls } from '../catalog/camera.js';
 import { applySceneBatch } from './batch.js';
 import { checkSchema } from './schema.js';
 
@@ -38,7 +39,7 @@ export const FLAIR_AGENT_TOOLS: AgentToolDefinition[] = [
         scene: {
           type: 'object',
           description:
-            'Full Scene object with name, stage, media, and shots. A shot camera frames a box {x, y, width, height} or elements {frame: [ids]}, and may add tilt, turn, roll (degrees, tilt/turn up to 75), perspective (default 1.2), motionBlur (0-3, 1 natural) and transition ("move" eases across, the default; "whip" whip-pans in; "zoom" punches through; "cut" jumps); angles persist until changed.',
+            'Full Scene object with name, stage, media, and shots. A shot camera frames a box {x, y, width, height} or elements {frame: [ids]}, and may add tilt, turn, roll (degrees, tilt/turn up to 75) and perspective (default 1.2); angles persist until changed. Its "in" is the camera move into the shot ("camera-glide" by default; "camera-whip-pan", "camera-punch-zoom", "camera-cut") and its "during" a move while the shot holds ("camera-ken-burns", "camera-crash-zoom"): an id, or {move, ms?, preset?, values?} like {"move": "camera-whip-pan", "values": {"motionBlur": 3}}. find_camera_moves lists the moves with their controls.',
         },
       },
       required: ['scene'],
@@ -117,6 +118,19 @@ export const FLAIR_AGENT_TOOLS: AgentToolDefinition[] = [
         },
       },
       required: ['id', 'media'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'find_camera_moves',
+    description:
+      'Lists the camera moves a shot can use: "transition" moves for its camera "in" (how the camera gets into the shot) and "hold" moves for its camera "during" (how it moves while the shot holds), each with its controls, defaults and presets.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        role: { type: 'string', enum: ['transition', 'hold'], description: 'Only moves for camera "in" (transition) or camera "during" (hold).' },
+        text: { type: 'string', description: 'Words to look for in the id, name, description and tags (all must match).' },
+      },
       additionalProperties: false,
     },
   },
@@ -338,6 +352,25 @@ export async function applySceneTool(
       const existed = input.id in media;
       media[input.id] = input.media as SceneMedia;
       return edited({ ...scene, media }, `${existed ? 'Replaced' : 'Added'} ${input.media.type} media "${input.id}".`);
+    }
+
+    case 'find_camera_moves': {
+      const words = String(input.text ?? '').toLowerCase().split(/\s+/).filter(Boolean);
+      const moves = cameraEffects
+        .filter((m) => !input.role || m.motion.role === input.role)
+        .filter((m) => words.every((w) => [m.id, m.name, m.description, ...m.tags].join(' ').toLowerCase().includes(w)))
+        .map((m) => ({
+          id: m.id,
+          name: m.name,
+          role: m.motion.role,
+          field: m.motion.role === 'transition' ? 'in' : 'during',
+          ...(m.motion.role === 'transition' && { ms: m.motion.duration }),
+          description: m.description,
+          controls: cameraMoveControls(m).map((c) => ({ name: c.name, type: c.type, label: c.label, min: c.min, max: c.max, default: c.default })),
+          presets: (m.presets ?? []).map((p) => p.name),
+        }));
+      const note = moves.length ? undefined : `No camera move matches; there are ${cameraEffects.length}: ${cameraEffects.map((m) => m.id).join(', ')}.`;
+      return { ok: true, scene, issues: [], output: { ok: true, total: moves.length, moves, ...(note && { note }) } };
     }
 
     case 'preview_scene': {

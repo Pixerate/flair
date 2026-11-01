@@ -84,8 +84,8 @@ export function App() {
         {tab === "gallery" && (
           <GalleryTab
             onOpen={(id) => {
-              editor.load(id);
-              go("editor");
+              // Camera moves are for scenes, not the effect editor, which refuses them.
+              if (editor.load(id).ok) go("editor");
             }}
           />
         )}

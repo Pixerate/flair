@@ -4,7 +4,7 @@
  * same way.
  */
 
-import { EFFECT_CATEGORY_GROUPS, type EffectCategory, type EffectDefinition, type VideoUse } from "./types.js";
+import { EFFECT_CATEGORY_GROUPS, type CameraRole, type EffectCategory, type EffectDefinition, type VideoUse } from "./types.js";
 import type { EffectInput, EffectInputs, EffectInteraction } from "./inputs.js";
 
 export interface EffectQuery {
@@ -14,6 +14,8 @@ export interface EffectQuery {
   /** Effects in any category of the group with this name (`EFFECT_CATEGORY_GROUPS`, any case). */
   group?: string;
   kind?: EffectDefinition["kind"];
+  /** Camera moves for this: getting into a shot (`transition`) or moving while it holds (`hold`). */
+  role?: CameraRole;
   /** Effects with every one of these tags (any case; spaces count as hyphens, so "Game Boy" is `game-boy`). */
   tags?: readonly string[];
   /** Effects that suit video in one of these ways (shader effects with image controls only). */
@@ -39,6 +41,7 @@ export interface QueryTarget {
   tags: readonly string[];
   kind: EffectDefinition["kind"];
   video?: VideoUse;
+  role?: CameraRole;
 }
 
 /** How tags are written: lower case, words joined by hyphens (`motion-blur`, `8-bit`). */
@@ -78,6 +81,7 @@ export function matchesQuery(target: QueryTarget, inputsOf: () => EffectInputs, 
   if (query.category && e.category !== query.category) return false;
   if (query.group && !EFFECT_CATEGORY_GROUPS.find((g) => g.name.toLowerCase() === query.group!.toLowerCase())?.categories.includes(e.category)) return false;
   if (query.kind && e.kind !== query.kind) return false;
+  if (query.role && e.role !== query.role) return false;
   if (query.tags && !query.tags.every((t) => e.tags.includes(normaliseTag(t)))) return false;
   if (query.video && !(e.kind === "shader" && e.video && query.video.includes(e.video))) return false;
   if (query.output === "animation" && e.kind !== "vector") return false;
