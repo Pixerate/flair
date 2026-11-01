@@ -1,15 +1,6 @@
-import {
-  CAMERA_MS,
-  CAMERA_STEPS,
-  DEFAULT_STAGE,
-  transitionStrength,
-  transitionView,
-  viewAt,
-  type CameraTransition,
-  type Stage,
-  type View,
-} from './camera.js';
+import { CAMERA_STEPS, DEFAULT_STAGE, viewAt, type Stage, type View } from './camera.js';
 import type { SceneElement } from './geometry.js';
+import { moveView, shotHoldMove, shotInMove, type ShotMove } from './moves.js';
 import { MemorySceneBoard, shotView } from './player.js';
 import type { Scene, Shot } from './types.js';
 
@@ -25,17 +16,19 @@ export interface CameraShot {
   holdMs: number;
   from: View;
   to: View;
-  /** How the camera gets into the shot (`camera.transition`, `move` by default). */
-  transition: CameraTransition;
-  /** The blur strength the move plays with: `camera.motionBlur`, or 2 for a whip or zoom without one (0 for none). */
-  motionBlur: number;
+  /** The camera move it gets into the shot with (`camera.in`, a glide by default), when it moves. */
+  move?: ShotMove;
+  /** The camera move it makes while the shot holds (`camera.during`), when it has one. */
+  during?: ShotMove;
+  /** Where the camera is at the end of the shot: `to`, or where the hold's move ends. */
+  end: View;
   /** The elements on stage once the shot's commands have run. */
   elements: SceneElement[];
 }
 
-/** How long the camera moves at the start of a shot, in ms: none for the first shot, a shot without a camera, or a cut. */
+/** How long the camera moves at the start of a shot, in ms: none for the first shot or a shot without a camera, else its move's length (0 for a cut). */
 export function shotMoveMs(shot: Shot, index: number): number {
-  return index > 0 && shot.camera && shot.camera.transition !== 'cut' ? CAMERA_MS : 0;
+  return index > 0 ? (shotInMove(shot)?.ms ?? 0) : 0;
 }
 
 /** The scene's stage with defaults filled in. */
@@ -50,7 +43,7 @@ export function sceneStage(scene: Scene): Stage {
 /**
  * The camera through every shot of a scene, worked out the way `playScene`
  * moves it, for exporters and players that lay a scene out on a timeline:
- * each shot's move (framing, angle and blur strength) and hold.
+ * each shot's move (framing, angle and camera moves) and hold.
  */
 export function cameraTrack(scene: Scene): CameraShot[] {
   const stage = sceneStage(scene);
@@ -59,12 +52,14 @@ export function cameraTrack(scene: Scene): CameraShot[] {
   let startMs = 0;
   return scene.shots.map((shot, index) => {
     const target = shotView(shot, board.elements(), stage, view);
-    const transition = shot.camera?.transition ?? 'move';
     const moveMs = shotMoveMs(shot, index);
     const from = index === 0 && target ? target : view;
     const to = target ?? view;
     const holdMs = shot.hold ?? 800;
+    const move = index > 0 ? shotInMove(shot) : undefined;
+    const during = shotHoldMove(shot);
     for (const cmd of shot.run ?? []) board.runCommand(cmd);
+    const end = during ? moveView(during, to, to, 1, stage) : to;
     const entry: CameraShot = {
       shot,
       index,
@@ -73,31 +68,39 @@ export function cameraTrack(scene: Scene): CameraShot[] {
       holdMs,
       from,
       to,
-      transition,
-      motionBlur: transitionStrength(transition, shot.camera?.motionBlur),
+      ...(move ? { move } : {}),
+      ...(during ? { during } : {}),
+      end: stripBlur(end),
       elements: board.elements().map((e) => ({ ...e })),
     };
-    view = to;
+    view = entry.end;
     startMs += moveMs + holdMs;
     return entry;
   });
 }
 
-/** The time the player waits between steps of a camera move, in ms (its blur is measured over one). */
-export const CAMERA_STEP_MS = CAMERA_MS / CAMERA_STEPS;
-
-/**
- * The camera `ms` into a shot: part-way through its move (eased, with its
- * motion blur) or settled.
- */
-export function cameraAt(entry: CameraShot, ms: number, stage: Stage): View {
-  if (!(entry.moveMs > 0) || ms >= entry.moveMs) return entry.to;
-  return transitionView(entry.transition, entry.from, entry.to, Math.max(0, ms) / entry.moveMs, stage, entry.motionBlur);
+/** A view without its motion blur: where the camera is, for the next move to start from. */
+function stripBlur(view: View): View {
+  const { blur: _blur, blurAngle: _angle, ...still } = view;
+  return still;
 }
 
-/** Whether the shot's move jumps from one framing to the other halfway (a whip or zoom). */
-export const cutsHalfway = (entry: CameraShot): boolean =>
-  entry.moveMs > 0 && (entry.transition === 'whip' || entry.transition === 'zoom');
+/** The time the player waits between steps of a default-length camera move, in ms (its blur is measured over one). */
+export const CAMERA_STEP_MS = 600 / CAMERA_STEPS;
+
+/**
+ * The camera `ms` into a shot: part-way through its move into the shot
+ * (with its motion blur), then through the move it makes while it holds,
+ * or settled.
+ */
+export function cameraAt(entry: CameraShot, ms: number, stage: Stage): View {
+  if (entry.move && entry.moveMs > 0 && ms < entry.moveMs) return moveView(entry.move, entry.from, entry.to, Math.max(0, ms) / entry.moveMs, stage);
+  if (entry.during) return moveView(entry.during, entry.to, entry.to, entry.holdMs > 0 ? Math.min(1, (ms - entry.moveMs) / entry.holdMs) : 1, stage);
+  return entry.to;
+}
+
+/** Where the shot's move jumps from one framing to the other (0 to 1 through it, for a whip or punch), or undefined when it moves smoothly. */
+export const moveCut = (entry: CameraShot): number | undefined => (entry.moveMs > 0 ? entry.move?.move.motion.cut : undefined);
 
 /** The camera at one frame of a scene's timeline. */
 export interface CameraSample {
@@ -110,8 +113,8 @@ export interface CameraSample {
 /**
  * The camera sampled for a timeline at `frameRate`: every `every` frames
  * during each move (so an editor's straight-line interpolation follows the
- * eased path and perspective), and once where each move settles. Views
- * include the move's motion blur.
+ * eased path and perspective), once where each move settles, and through
+ * each hold that has a move of its own. Views include the moves' motion blur.
  */
 export function cameraSamples(scene: Scene, frameRate: number, every = 2): CameraSample[] {
   const stage = sceneStage(scene);
@@ -125,8 +128,9 @@ export function cameraSamples(scene: Scene, frameRate: number, every = 2): Camer
     const start = Math.round((entry.startMs / 1000) * frameRate);
     const moveFrames = Math.round((entry.moveMs / 1000) * frameRate);
     const at = (f: number) => add({ frame: start + f, view: cameraAt(entry, (f / frameRate) * 1000, stage), shot: entry.index });
-    // A whip or zoom jumps halfway: key the frames either side of the jump, so straight-line interpolation never tweens across it.
-    const cut = cutsHalfway(entry) ? Math.ceil((entry.moveMs / 2000) * frameRate) : -1;
+    // A whip or punch jumps part-way: key the frames either side of the jump, so straight-line interpolation never tweens across it.
+    const jump = moveCut(entry);
+    const cut = jump !== undefined ? Math.ceil(((entry.moveMs * jump) / 1000) * frameRate) : -1;
     for (let f = 0; f < moveFrames; f += every) {
       if (cut > 0 && f < cut && f + every >= cut) {
         at(f);
@@ -137,6 +141,12 @@ export function cameraSamples(scene: Scene, frameRate: number, every = 2): Camer
       at(f);
     }
     add({ frame: start + moveFrames, view: entry.to, shot: entry.index });
+    // A move while the shot holds is sampled through the hold too.
+    if (entry.during) {
+      const holdFrames = Math.round(((entry.moveMs + entry.holdMs) / 1000) * frameRate) - moveFrames;
+      for (let f = every; f < holdFrames; f += every) at(moveFrames + f);
+      if (holdFrames > 0) at(moveFrames + holdFrames);
+    }
   }
   return samples;
 }

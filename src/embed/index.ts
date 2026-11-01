@@ -5,12 +5,14 @@
  * - Pairing: `subjectValues` turns a subject into the control values (and
  *   live sources) an effect needs, using `effectInputs`.
  * - Embedding: `mountEffect` runs a shader effect (`ShaderRenderer`) or a
- *   vector effect (`SvgPlayer`) in an element, with its subject.
+ *   vector effect (`SvgPlayer`) in an element, with its subject, and
+ *   previews a camera move on its subject.
  *
  * @packageDocumentation
  */
 
-import { drawsAlpha, effectDefaults, effectInputs, getEffect, textImage, type EffectDefinition, type ImageSlot, type TextSlot } from "../catalog/index.js";
+import { CAMERA_PREVIEW_SOURCE, cameraPreviewLength, cameraPreviewValues } from "../catalog/camera.js";
+import { drawsAlpha, effectDefaults, effectInputs, getEffect, SAMPLE_IMAGES, textImage, type CameraEffect, type EffectDefinition, type ImageSlot, type TextSlot } from "../catalog/index.js";
 import { renderVectorEffect } from "../catalog/types.js";
 import type { AudioSource } from "../shader/audio.js";
 import type { ControlValue } from "../shader/controls.js";
@@ -169,7 +171,9 @@ export interface MountedEffect {
  * Runs a catalog effect (by id or definition) in `host`, applied to
  * `subject`: a shader on a canvas (transparent for overlays, so it lays over
  * the page), or a vector effect in an SVG player that answers its trigger
- * (hover, press, click, scroll). Shaders that read `iScroll` follow the
+ * (hover, press, click, scroll), or a camera move previewed on the subject
+ * (a picture standing in for a scene's board: a transition moves from the
+ * whole picture to a detail, a hold plays across it). Shaders that read `iScroll` follow the
  * page's scrolling, and audio-reactive shaders hear an `{ audio }` subject.
  * Throws a sentence when the effect is unknown or takes no such subject.
  *
@@ -195,6 +199,8 @@ export function mountEffect(host: HTMLElement, effect: EffectDefinition | string
     audio = s.audio;
   };
   apply(options.subject);
+
+  if (def.kind === "camera") return mountCameraMove(host, def, values, live, options);
 
   if (def.kind === "shader") {
     const isOneShot = options.loop === false && ("uProgress" in values || "uAnimate" in values);
@@ -378,5 +384,106 @@ export function mountEffect(host: HTMLElement, effect: EffectDefinition | string
     pause: () => player.pause(),
     dispose: () => player.dispose(),
     ready: async () => {},
+  };
+}
+
+/**
+ * A camera move previewed on its subject: the preview shader, with the
+ * move's view worked out in TypeScript for each frame. `options.duration`
+ * sets the move's length; `loop: false` plays it once.
+ */
+function mountCameraMove(
+  host: HTMLElement,
+  def: CameraEffect,
+  initial: Record<string, ControlValue>,
+  initialLive: Record<string, LiveSource>,
+  options: MountOptions,
+): MountedEffect {
+  let values = initial;
+  let live = initialLive;
+  const renderer = new ShaderRenderer(host, {
+    autoplay: false,
+    pauseWhenHidden: options.pauseWhenHidden ?? true,
+    ...(options.className ? { className: options.className } : {}),
+  });
+  renderer.setSource(CAMERA_PREVIEW_SOURCE);
+  const picture = () => ({ uImage: typeof values.uImage === "string" && values.uImage ? values.uImage : SAMPLE_IMAGES.landscape });
+  const setLive = (previous: Record<string, LiveSource>) => {
+    for (const name of Object.keys(previous)) if (!(name in live)) renderer.setLiveSource(name, null);
+    for (const [name, source] of Object.entries(live)) renderer.setLiveSource(name, source);
+  };
+  setLive({});
+  const length = cameraPreviewLength(def, options.duration);
+  const aspect = () => {
+    const c = renderer.canvas;
+    const w = c.clientWidth || c.width;
+    const h = c.clientHeight || c.height;
+    return w > 0 && h > 0 ? w / h : 16 / 9;
+  };
+  const draw = (ms: number) => renderer.setValues({ ...picture(), ...cameraPreviewValues(def, values, ms, aspect(), options.duration) });
+  let raf = 0;
+  let started = 0;
+  let at = 0;
+  const frame = (now: number) => {
+    at = now - started;
+    if (options.loop === false && at >= length) {
+      draw(length - 1);
+      raf = 0;
+      renderer.pause();
+      return;
+    }
+    draw(at);
+    raf = requestAnimationFrame(frame);
+  };
+  const play = () => {
+    if (raf) return;
+    if (options.loop === false && at >= length) at = 0;
+    started = performance.now() - at;
+    renderer.play();
+    raf = requestAnimationFrame(frame);
+  };
+  const pause = () => {
+    if (raf) cancelAnimationFrame(raf);
+    raf = 0;
+    renderer.pause();
+  };
+  draw(0);
+  let observer: IntersectionObserver | undefined;
+  if (options.autoplay ?? true) {
+    if (options.playOnEnter && typeof IntersectionObserver !== "undefined") {
+      observer = new IntersectionObserver(([entry]) => {
+        if (!entry?.isIntersecting) return;
+        observer?.disconnect();
+        observer = undefined;
+        play();
+      });
+      observer.observe(renderer.canvas);
+    } else play();
+  }
+  return {
+    effect: def,
+    element: renderer.canvas,
+    renderer,
+    setSubject(subject) {
+      const before = live;
+      const next = subjectValues(def, subject);
+      values = { ...values, ...next.values };
+      if (!("uImage" in next.values)) delete values.uImage;
+      live = next.live;
+      setLive(before);
+      draw(at);
+    },
+    setValues(next) {
+      values = { ...values, ...next };
+      draw(at);
+    },
+    play,
+    pause,
+    dispose() {
+      pause();
+      observer?.disconnect();
+      renderer.dispose();
+    },
+    ready: () => renderer.ready(),
   };
 }

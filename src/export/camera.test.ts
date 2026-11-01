@@ -8,7 +8,7 @@ const scene: Scene = {
   name: 'tilt',
   shots: [
     { title: 'Wide', camera: { x: 0, y: 0, width: 1920, height: 1080 }, hold: 500, run: [{ type: 'element', element: { id: 'card', type: 'rectangle', x: 600, y: 300, width: 400, height: 300 } }] },
-    { title: 'Swoop', camera: { frame: ['card'], tilt: 35, turn: -15, motionBlur: 1.5 }, hold: 500 },
+    { title: 'Swoop', camera: { frame: ['card'], tilt: 35, turn: -15, in: { move: 'camera-glide', values: { motionBlur: 1.5 } } }, hold: 500 },
   ],
 };
 

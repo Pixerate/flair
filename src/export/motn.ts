@@ -1,6 +1,7 @@
 import type { Scene, Shot } from '../scene/types.js';
 import { DEFAULT_STAGE, DEFAULT_PERSPECTIVE, centreOf, isAngled, type View } from '../scene/camera.js';
-import { cameraSamples, shotMoveMs, sceneStage, type CameraSample } from '../scene/cameratrack.js';
+import { cameraSamples, cameraTrack, shotMoveMs, sceneStage, type CameraSample } from '../scene/cameratrack.js';
+import { DEFAULT_CAMERA_MOVE } from '../scene/moves.js';
 import { isElementCommand } from '../scene/types.js';
 
 export interface MotnExportOptions {
@@ -48,10 +49,13 @@ function cameraGroupOpen(scene: Scene, frameRate: number, totalFrames: number, i
     const distance = r3((samples.find((x) => x.view.perspective)?.view.perspective ?? DEFAULT_PERSPECTIVE) * stage.width);
     lines.push(`      <!-- 3D group: view it through a camera ${distance}px from the canvas -->`);
   }
-  for (const shot of scene.shots) {
-    const transition = shot.camera?.transition;
-    if (transition && transition !== 'move') lines.push(`      <!-- ${escapeXml(shot.title ?? 'Shot')}: ${transition} in -->`);
-    if (shot.camera?.motionBlur) lines.push(`      <!-- ${escapeXml(shot.title ?? 'Shot')}: motion blur ${shot.camera.motionBlur} on the move in -->`);
+  for (const entry of cameraTrack(scene)) {
+    const title = escapeXml(entry.shot.title ?? 'Shot');
+    const move = entry.moveMs > 0 ? entry.move : undefined;
+    if (move && move.move.id !== DEFAULT_CAMERA_MOVE) lines.push(`      <!-- ${title}: ${move.move.id} in -->`);
+    const blur = move?.values.motionBlur;
+    if (typeof blur === 'number' && blur > 0) lines.push(`      <!-- ${title}: motion blur ${blur} on the move in -->`);
+    if (entry.during) lines.push(`      <!-- ${title}: ${entry.during.move.id} while it holds -->`);
   }
   lines.push(`      <timing in="0" out="${totalFrames - 1}" offset="0"/>`);
   lines.push('      <parameter name="Properties" id="1">');

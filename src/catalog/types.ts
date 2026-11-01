@@ -7,6 +7,7 @@ import {
   type ControlType,
   type ControlValue,
 } from "../shader/controls.js";
+import type { Stage, View } from "../scene/camera.js";
 import type { SvgMotion } from "../vector/motion.js";
 import type { SvgTrigger } from "../vector/svg.js";
 
@@ -57,7 +58,8 @@ export type EffectCategory =
   | "transition"
   | "loader"
   | "data"
-  | "icon";
+  | "icon"
+  | "camera";
 
 /** Every category, in the order the catalog lists them. */
 export const EFFECT_CATEGORIES: readonly EffectCategory[] = [
@@ -107,6 +109,7 @@ export const EFFECT_CATEGORIES: readonly EffectCategory[] = [
   "loader",
   "data",
   "icon",
+  "camera",
 ];
 
 /** A set of related categories, for browsing a catalog too long for one row of filters. */
@@ -126,6 +129,7 @@ export const EFFECT_CATEGORY_GROUPS: readonly EffectCategoryGroup[] = [
   { name: "Interface", categories: ["ui", "icon", "data"] },
   { name: "Loaders", categories: ["loader"] },
   { name: "Transitions", categories: ["transition"] },
+  { name: "Camera", categories: ["camera"] },
 ];
 
 /** The group a category is browsed under. */
@@ -229,7 +233,60 @@ export interface VectorEffect extends EffectBase {
   trigger?: SvgTrigger;
 }
 
-export type EffectDefinition = ShaderEffect | VectorEffect;
+/**
+ * What a camera move is for: a `transition` takes the camera from the last
+ * shot's framing to the next one's; a `hold` moves it within a framing while
+ * the shot holds (a drift, a crash zoom).
+ */
+export type CameraRole = "transition" | "hold";
+
+/** Where a camera move is: the framings it goes between and how far through it is. */
+export interface CameraMoveContext {
+  /** The framing the move leaves; for a hold, the framing it moves within (the same as `to`). */
+  from: View;
+  /** The framing the move arrives at. */
+  to: View;
+  /** How far through the move, 0 to 1. */
+  u: number;
+  /** Ms the whole move takes: its duration, the shot's override, or for a hold the shot's hold. */
+  ms: number;
+  stage: Stage;
+}
+
+/** How a camera move moves: its role, its length and the view at each point of it. */
+export interface CameraMotion {
+  role: CameraRole;
+  /** Ms of the move at its default values (0 for a cut); a hold plays across the shot's hold instead. */
+  duration: number;
+  /**
+   * Where the view jumps (0 to 1 through the move), for a move that cuts
+   * part-way (a whip pan or punch zoom cuts halfway): timelines key the
+   * frames either side, so straight-line interpolation never tweens across it.
+   */
+  cut?: number;
+  /**
+   * The camera `ctx.u` of the way through the move, with its motion blur
+   * (`blur`, `blurAngle`) when it moves fast enough to blur. Pure: the same
+   * context and values give the same view. Values are the move's controls,
+   * filled in with their defaults.
+   */
+  view(ctx: CameraMoveContext, values: Readonly<Record<string, ControlValue>>): View;
+}
+
+/**
+ * A camera move: how a scene's camera gets into a shot (a glide, a whip
+ * pan, a punch zoom, a cut) or moves while it holds (a Ken Burns drift, a
+ * crash zoom). Its controls are declared in a list, as a vector effect's
+ * may be. Scenes name it in a shot's `camera.in` or `camera.during`; on its
+ * own, `mountEffect` and `recordEffect` preview it on a picture.
+ */
+export interface CameraEffect extends EffectBase {
+  kind: "camera";
+  controls: readonly VectorControl[];
+  motion: CameraMotion;
+}
+
+export type EffectDefinition = ShaderEffect | VectorEffect | CameraEffect;
 
 /** The types a vector effect's `{{name: type …}}` placeholder can declare. */
 export const VECTOR_CONTROL_TYPES = ["float", "int", "bool", "color", "text"] as const;

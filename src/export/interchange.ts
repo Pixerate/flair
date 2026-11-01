@@ -1,6 +1,13 @@
 import type { Scene, Shot } from '../scene/types.js';
-import { DEFAULT_STAGE, boardHeight, centreOf, projectPoint, type CameraTransition, type View } from '../scene/camera.js';
-import { cameraSamples, shotMoveMs, cameraTrack, sceneStage, type CameraSample } from '../scene/cameratrack.js';
+import { DEFAULT_STAGE, boardHeight, centreOf, projectPoint, type View } from '../scene/camera.js';
+import { cameraSamples, shotMoveMs, cameraTrack, sceneStage, type CameraSample, type CameraShot } from '../scene/cameratrack.js';
+import { DEFAULT_CAMERA_MOVE } from '../scene/moves.js';
+
+/** The motion blur a shot's camera moves play with: the largest `motionBlur` of its move in and its move while it holds (0 for none). */
+function shotMotionBlur(entry: CameraShot | undefined): number {
+  const blur = (values: Record<string, unknown> | undefined) => (typeof values?.motionBlur === 'number' ? values.motionBlur : 0);
+  return Math.max(entry && entry.moveMs > 0 ? blur(entry.move?.values) : 0, blur(entry?.during?.values));
+}
 
 export interface Fcp7ExportOptions {
   /** Timeline timebase / frame rate (default 30). */
@@ -234,6 +241,7 @@ export function exportFcp7Xml(scene: Scene, options: Fcp7ExportOptions = {}): st
   const startFrameOffset = timecodeToFrames(timecodeStart, frameRate);
   const stage = sceneStage(scene);
   const samples = scene.shots.some((s) => s.camera) ? cameraSamples(scene, frameRate) : [];
+  const track = scene.shots.some((s) => s.camera) ? cameraTrack(scene) : [];
   // A shot's camera keys: its own, after the view it starts from (the last key before it).
   const shotSamples = (index: number, startFrame: number): CameraSample[] => {
     const own = samples.filter((x) => x.shot === index);
@@ -370,7 +378,7 @@ export function exportFcp7Xml(scene: Scene, options: Fcp7ExportOptions = {}): st
     lines.push('              </effect>');
     lines.push('            </filter>');
     const keys = shotSamples(index, startFrame);
-    if (keys.length > 0) lines.push(...cameraFilters(keys, stage, startFrame, shot.camera?.motionBlur ?? 0, '            '));
+    if (keys.length > 0) lines.push(...cameraFilters(keys, stage, startFrame, shotMotionBlur(track[index]), '            '));
     lines.push('          </clipitem>');
   });
 
@@ -425,16 +433,20 @@ export function exportFcp7Xml(scene: Scene, options: Fcp7ExportOptions = {}): st
   return lines.join('\n');
 }
 
-/** A camera view as a line an editor can follow: "whip to zoom 1.6x on (800, 450), tilt 35°, turn -15°, motion blur 1.5". */
-function describeCamera(view: View, motionBlur: number, stage: ReturnType<typeof sceneStage>, transition: CameraTransition = 'move'): string {
+/** A shot's camera as a line an editor can follow: "camera-whip-pan to zoom 1.6x on (800, 450), tilt 35°, turn -15°, motion blur 1.5, then camera-ken-burns". */
+function describeCamera(entry: CameraShot, stage: ReturnType<typeof sceneStage>): string {
+  const view = entry.to;
+  const motionBlur = shotMotionBlur(entry);
   const [cx, cy] = centreOf(view, stage);
-  const lead = transition === 'move' ? '' : `${transition} to `;
+  const move = entry.moveMs > 0 || entry.move?.move.motion.duration === 0 ? entry.move?.move.id : undefined;
+  const lead = move && move !== DEFAULT_CAMERA_MOVE ? `${move} to ` : '';
   const parts = [`${lead}zoom ${r4(view.zoom).toFixed(2)}x on (${Math.round(cx)}, ${Math.round(cy)})`];
   if (view.tilt) parts.push(`tilt ${r4(view.tilt)}°`);
   if (view.turn) parts.push(`turn ${r4(view.turn)}°`);
   if (view.roll) parts.push(`roll ${r4(view.roll)}°`);
   if (view.perspective) parts.push(`perspective ${view.perspective}`);
   if (motionBlur > 0) parts.push(`motion blur ${motionBlur}`);
+  if (entry.during) parts.push(`then ${entry.during.move.id}`);
   return parts.join(', ');
 }
 
@@ -481,7 +493,7 @@ export function exportCmx3600Edl(scene: Scene, options: EdlExportOptions = {}): 
     }
     // CMX 3600 has no transforms, so the camera is a note for the editor.
     const camera = track?.[index];
-    if (camera && shot.camera) lines.push(`* CAMERA: ${describeCamera(camera.to, camera.motionBlur, sceneStage(scene), camera.transition)}`);
+    if (camera && shot.camera) lines.push(`* CAMERA: ${describeCamera(camera, sceneStage(scene))}`);
     lines.push('');
   });
 

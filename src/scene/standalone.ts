@@ -1,25 +1,32 @@
-import type { Stage, View } from './camera.js';
-import { CAMERA_STEP_MS, cameraAt, cameraTrack, sceneStage } from './cameratrack.js';
+import { CAMERA_STEPS, type Stage, type View } from './camera.js';
+import { cameraAt, cameraTrack, sceneStage } from './cameratrack.js';
 import type { SceneElement } from './geometry.js';
 import type { Scene } from './types.js';
 
-/** What the standalone player shows for one shot: the camera's move into it and the elements on stage. */
+/** What the standalone player shows for one shot: the camera's move into it, its move while it holds, and the elements on stage. */
 interface ShotPlan {
   /** The camera at each step of its move into the shot (one view when it does not move). */
   move: View[];
   /** How long the move takes, in ms (0 when the shot cuts or stays). */
   moveMs: number;
+  /** The camera at each step through the hold, when it moves while the shot holds (`camera.during`). */
+  hold?: View[];
+  holdMs: number;
   elements: SceneElement[];
 }
 
-/** Each shot's camera move and elements, worked out the way `playScene` plays them. */
+/** The steps a hold's camera move is drawn in: one every 50 ms, as `playScene` steps it. */
+const HOLD_STEP_MS = 50;
+
+/** Each shot's camera moves and elements, worked out the way `playScene` plays them. */
 function planShots(scene: Scene, stage: Stage): ShotPlan[] {
   return cameraTrack(scene).map((entry) => {
     // The player's steps: the last one lands on the shot's view, with no blur.
-    const steps = Math.round(entry.moveMs / CAMERA_STEP_MS);
-    const move = Array.from({ length: Math.max(0, steps - 1) }, (_, i) => cameraAt(entry, (i + 1) * CAMERA_STEP_MS, stage));
+    const move = entry.moveMs > 0 ? Array.from({ length: CAMERA_STEPS - 1 }, (_, i) => cameraAt(entry, ((i + 1) / CAMERA_STEPS) * entry.moveMs, stage)) : [];
     move.push(entry.to);
-    return { move, moveMs: entry.moveMs, elements: entry.elements };
+    const steps = Math.max(1, Math.round(entry.holdMs / HOLD_STEP_MS));
+    const hold = entry.during ? Array.from({ length: steps }, (_, i) => cameraAt(entry, entry.moveMs + ((i + 1) / steps) * entry.holdMs, stage)) : undefined;
+    return { move, moveMs: entry.moveMs, ...(hold ? { hold } : {}), holdMs: entry.holdMs, elements: entry.elements };
   });
 }
 
@@ -293,10 +300,15 @@ export function standaloneSceneHtml(scene: Scene): string {
       progressEl.style.width = pct + '%';
     }
 
-    // The camera at time 'now': a step of the current shot's move, or where it settled.
+    // The camera at time 'now': a step of the current shot's move, a step of its move while it holds, or where it settled.
     function cameraNow(now) {
-      const { move, moveMs } = plan.shots[currentShotIdx];
-      const u = moveMs > 0 ? Math.min(1, (now - moveFrom) / moveMs) : 1;
+      const { move, moveMs, hold, holdMs } = plan.shots[currentShotIdx];
+      const t = now - moveFrom;
+      if (hold && t >= moveMs && holdMs > 0) {
+        const u = Math.min(1, (t - moveMs) / holdMs);
+        return hold[Math.min(hold.length - 1, Math.max(0, Math.ceil(u * hold.length) - 1))];
+      }
+      const u = moveMs > 0 ? Math.min(1, t / moveMs) : 1;
       return move[Math.min(move.length - 1, Math.floor(u * move.length))];
     }
 

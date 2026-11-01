@@ -9,7 +9,7 @@
 import { humanise, type ControlDef, type ControlValue } from "../shader/controls.js";
 import type { EffectInputs } from "./inputs.js";
 import { SAMPLE_IMAGES } from "./images.js";
-import type { EffectCategory, EffectDefinition, VideoUse } from "./types.js";
+import type { CameraRole, EffectCategory, EffectDefinition, VideoUse } from "./types.js";
 import type { SvgTrigger } from "../vector/svg.js";
 
 export interface EffectMeta {
@@ -36,11 +36,14 @@ export interface EffectMeta {
   hold?: number;
   /** What makes a vector effect play, when not a loop. */
   trigger?: SvgTrigger;
-  /** Whether it moves over time (a shader reading `iTime`, or any vector effect), rather than a still treatment. */
+  /** What a camera move is for: getting into a shot (`transition`) or moving while it holds (`hold`). */
+  role?: CameraRole;
+  /** Whether it moves over time (a shader reading `iTime`, or any vector effect or camera move), rather than a still treatment. */
   animated: boolean;
   /**
-   * Ms of one play: a shader's `loop`, or a vector effect's picture (at its
-   * default values) plus its `hold`. Undefined for a shader with no loop.
+   * Ms of one play: a shader's `loop`, a vector effect's picture (at its
+   * default values) plus its `hold`, or a camera move's own length.
+   * Undefined for a shader with no loop.
    */
   duration?: number;
 }
@@ -59,8 +62,10 @@ export function metaOf(effect: EffectDefinition, controls: readonly ControlDef[]
     inputs,
     ...(effect.kind === "shader"
       ? { ...(effect.video && { video: effect.video }), ...(effect.transparent && { transparent: true }), ...(effect.loop !== undefined && { loop: effect.loop }) }
-      : { ...(effect.hold !== undefined && { hold: effect.hold }), ...(effect.trigger && { trigger: effect.trigger }) }),
-    animated: effect.kind === "vector" || /\biTime\b/.test(effect.source),
+      : effect.kind === "vector"
+        ? { ...(effect.hold !== undefined && { hold: effect.hold }), ...(effect.trigger && { trigger: effect.trigger }) }
+        : { role: effect.motion.role }),
+    animated: effect.kind !== "shader" || /\biTime\b/.test(effect.source),
     ...(duration !== undefined && { duration }),
   };
 }

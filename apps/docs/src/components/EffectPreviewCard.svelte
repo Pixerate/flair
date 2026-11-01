@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
   import { sharedThumbnailPool, SvgPlayer, ThumbnailPool, type ThumbnailHandle } from "@pixerate/flair";
-  import { effectDefaults, renderVectorEffect, SAMPLE_IMAGES } from "@pixerate/flair/catalog";
+  import { CAMERA_PREVIEW_SOURCE, cameraPreviewValues, effectDefaults, renderVectorEffect, SAMPLE_IMAGES } from "@pixerate/flair/catalog";
   import { loadEffect, type EffectMeta } from "@pixerate/flair/catalog/lazy";
   import { showsOverPicture } from "../lib/overPicture";
 
@@ -53,6 +53,21 @@
       if (effect.kind === "shader") {
         shaderHandle = poolFor(effect.transparent).register(canvasEl, effect.source, effectDefaults(effect), (ok) => (webglFailed = !ok));
         shaderHandle.setHovered(hovered);
+      } else if (effect.kind === "camera") {
+        // A camera move previews on the sample landscape, its view worked out each frame.
+        const values = effectDefaults(effect);
+        const at = (ms: number) => ({ uImage: SAMPLE_IMAGES.landscape, ...cameraPreviewValues(effect, values, ms, 16 / 9) });
+        const handle = sharedThumbnailPool().register(canvasEl, CAMERA_PREVIEW_SOURCE, at(0), (ok) => (webglFailed = !ok));
+        shaderHandle = handle;
+        const begin = performance.now();
+        let raf = 0;
+        const step = (now: number) => {
+          raf = requestAnimationFrame(step);
+          if (matchMedia("(prefers-reduced-motion: reduce)").matches && !hovered) return;
+          handle.update(CAMERA_PREVIEW_SOURCE, at(now - begin));
+        };
+        raf = requestAnimationFrame(step);
+        stopDemo = () => cancelAnimationFrame(raf);
       } else {
         // The player listens to nothing: the card's hover and the demo below drive it.
         svgPlayer = new SvgPlayer(vectorHostEl, renderVectorEffect(effect, effectDefaults(effect)), {
@@ -169,7 +184,7 @@
     <img src={SAMPLE_IMAGES.city} alt="" loading="lazy" class="pointer-events-none absolute inset-0 h-full w-full object-cover" />
   {/if}
 
-  {#if effectMeta.kind === "shader"}
+  {#if effectMeta.kind !== "vector"}
     <canvas bind:this={canvasEl} class="pointer-events-none absolute inset-0 h-full w-full"></canvas>
     {#if webglFailed}
       <span class="absolute inset-0 grid place-items-center text-xs text-white/50">Needs WebGL2</span>

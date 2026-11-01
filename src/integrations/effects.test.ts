@@ -36,7 +36,8 @@ describe("flairEffects conforms to @pixerate/editor/effects", () => {
   it("lists every effect and primitive once, with search('') the same as list()", async () => {
     const { provider } = setup();
     const list = await provider.list();
-    expect(list).toHaveLength(EFFECTS.length + PRIMITIVES.length);
+    // Camera moves are left out: they move a scene's camera, and the editor's contract has no kind for them.
+    expect(list).toHaveLength(EFFECTS.filter((e) => e.kind !== "camera").length + PRIMITIVES.length);
     expect(await provider.search("")).toEqual(list);
     expect(provider).toMatchObject({ id: "flair", name: "Flair", capabilities: { supportsHostImages: true, supportsVector: true, supportsMask: true, supportsFloat: true } });
   });

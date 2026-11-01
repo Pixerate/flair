@@ -1,4 +1,8 @@
-import { CAMERA_TRANSITIONS, MAX_TILT } from './camera.js';
+import { MAX_TILT } from './camera.js';
+import { cameraMoveIds, DEFAULT_CAMERA_MOVE, resolveCameraMove } from './moves.js';
+
+/** The camera moves that replaced the camera's old built-in transitions. */
+const LEGACY_TRANSITIONS: Record<string, string> = { move: 'camera-glide', whip: 'camera-whip-pan', zoom: 'camera-punch-zoom', cut: 'camera-cut' };
 import type { Scene, Shot } from './types.js';
 import { EFFECT_TYPES } from './effects.js';
 
@@ -98,12 +102,18 @@ export function validateScene(scene: Scene): SceneIssue[] {
       angle('roll', 180);
       if (cam.perspective !== undefined && !(typeof cam.perspective === 'number' && cam.perspective >= 0.3))
         say(shotNum, 'Camera perspective is the lens distance as a multiple of the stage width, 0.3 or more (1.2 by default).');
-      if (cam.motionBlur !== undefined && !(typeof cam.motionBlur === 'number' && cam.motionBlur >= 0 && cam.motionBlur <= 3))
-        say(shotNum, 'Camera motionBlur is 0 (none) to 3 (a whip); 1 is natural.');
-      if (cam.transition !== undefined && !CAMERA_TRANSITIONS.includes(cam.transition))
-        say(shotNum, `Camera transition is one of ${CAMERA_TRANSITIONS.map((t) => `"${t}"`).join(', ')}; leave it out to move.`);
-      else if (idx === 0 && (cam.transition === 'whip' || cam.transition === 'zoom'))
-        say(shotNum, `The first shot has no framing to ${cam.transition} from, so its camera starts in place; move the transition to a later shot or leave it out.`);
+      // The fields camera moves replaced, refused with what to write instead.
+      const old = cam as { transition?: unknown; motionBlur?: unknown };
+      if (old.transition !== undefined || old.motionBlur !== undefined) {
+        const id = typeof old.transition === 'string' ? (LEGACY_TRANSITIONS[old.transition] ?? DEFAULT_CAMERA_MOVE) : DEFAULT_CAMERA_MOVE;
+        const replacement = old.motionBlur !== undefined ? `{ "in": { "move": "${id}", "values": { "motionBlur": ${JSON.stringify(old.motionBlur)} } } }` : `{ "in": "${id}" }`;
+        say(shotNum, `Camera "transition" and "motionBlur" were replaced by camera moves from the catalog; write ${replacement}. Camera "in" takes one of ${cameraMoveIds('transition')}.`);
+      }
+      if (cam.in !== undefined) {
+        for (const issue of resolveCameraMove(cam.in, 'transition').issues) say(shotNum, issue);
+        if (idx === 0) say(shotNum, 'The first shot has no framing to move from, so its camera starts in place and its "in" does nothing; give the move to a later shot or leave it out.');
+      }
+      if (cam.during !== undefined) for (const issue of resolveCameraMove(cam.during, 'hold', shot.hold ?? 800).issues) say(shotNum, issue);
     }
 
     // Check hold

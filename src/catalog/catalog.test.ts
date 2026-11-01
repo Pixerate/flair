@@ -1879,7 +1879,7 @@ describe("scroll effects", () => {
     expect(effectInputs(effect).interactions).toEqual(["scroll"]);
     expect(effect.tags).toEqual(expect.arrayContaining(["interactive", "scroll"]));
     if (effect.kind === "vector") expect(effect.trigger).toBe("scroll");
-    else {
+    else if (effect.kind === "shader") {
       expect(effect.source).toContain("dot(iScroll, iScroll) == 0.0");
       expect(effectControls(effect).find((c) => c.name === "uDemo")).toMatchObject({ type: "bool", default: true });
     }

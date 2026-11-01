@@ -63,6 +63,7 @@ export function createEffectDocument(from?: string | EffectDefinition | { source
   if (typeof from === "object" && !("kind" in from)) return blankDocument(from.name ?? "Untitled effect", from.source);
   const effect = typeof from === "string" ? getEffect(from) : from;
   if (!effect) throw new Error(`There is no effect "${String(from)}" in the catalog.`);
+  if (effect.kind === "camera") throw new Error(cameraMoveRefusal(effect.id));
   return {
     version: 1,
     name: effect.name,
@@ -88,6 +89,11 @@ export function createEffectDocument(from?: string | EffectDefinition | { source
     loop: true,
     presets: (effect.presets ?? []).map((p) => ({ name: p.name, values: { ...p.values } })),
   };
+}
+
+/** Why a camera move cannot be opened as an effect, and what to do with it instead. */
+export function cameraMoveRefusal(id: string): string {
+  return `"${id}" is a camera move, which moves a scene's camera rather than drawing a picture, so it cannot be opened as an effect. Use it in a scene shot's camera ({ "in": "${id}" } for a move into the shot, { "during": … } for a move while it holds) with write_scene or update_shot, or preview it on a picture with mountEffect.`;
 }
 
 function blankDocument(name: string, source: string): EffectDocument {

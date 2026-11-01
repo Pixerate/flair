@@ -63,7 +63,11 @@ const catalogFilters = {
     enum: EFFECT_CATEGORY_GROUPS.map((g) => g.name),
     description: `A set of related categories: ${EFFECT_CATEGORY_GROUPS.map((g) => `${g.name} (${g.categories.join(", ")})`).join("; ")}.`,
   },
-  kind: { type: "string", enum: ["shader", "vector"] },
+  kind: {
+    type: "string",
+    enum: ["shader", "vector", "camera"],
+    description: "shader (WebGL), vector (animated SVG) or camera (a move for a scene's camera, used in a shot's camera.in or camera.during rather than loaded here).",
+  },
   tags: {
     type: "array",
     items: { type: "string" },
@@ -192,6 +196,7 @@ export function effectCommands(): CommandSpec<EffectEditor>[] {
             description: e.description,
             tags: e.tags,
             ...(e.kind === "shader" && e.video ? { video: e.video } : {}),
+            ...(e.kind === "camera" ? { role: e.motion.role } : {}),
             accepts: inputs.accepts,
             ...(inputs.interactions.length ? { interactions: inputs.interactions } : {}),
             ...(inputs.transparent ? { transparent: true } : {}),

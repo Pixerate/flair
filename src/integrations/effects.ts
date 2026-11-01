@@ -156,7 +156,8 @@ export function summaryOf(plan: Plan): EffectSummary {
   return {
     id: meta.id,
     name: meta.name,
-    kind: meta.kind,
+    // flairEffects leaves camera moves out, so a plan's effect is a shader or a vector effect.
+    kind: meta.kind as EffectKind,
     category: meta.category,
     uses: plan.uses,
     description: meta.description,
@@ -606,7 +607,8 @@ class VectorRenderer extends BaseRenderer {
  */
 export function flairEffects(options: FlairEffectsOptions = {}): EffectProvider {
   const kinds = new Set<EffectKind>(options.kinds ?? ["shader", "vector", "motion"]);
-  const plans = new Map(EFFECT_META.filter((m) => kinds.has(m.kind)).map((m) => [m.id, planOf(m)]));
+  // Camera moves move a scene's camera rather than drawing a picture, so the editor's effect contract has no kind for them.
+  const plans = new Map(EFFECT_META.filter((m) => m.kind !== "camera" && kinds.has(m.kind)).map((m) => [m.id, planOf(m)]));
   const primitives = kinds.has("motion") ? PRIMITIVES : [];
   const summaries: EffectSummary[] = [...[...plans.values()].map(summaryOf), ...primitives.map(primitiveSummary)];
   const descriptions = new Map<string, Promise<EffectDescription>>();
@@ -672,6 +674,7 @@ export function flairEffects(options: FlairEffectsOptions = {}): EffectProvider 
       const { width, height, depth } = rendererSize(id, rendererOptions);
       const { plan, effect, description } = await catalogEffect(id);
       if (effect.kind === "shader") return new ShaderRenderer(plan, description, effect, width, height, depth);
+      if (effect.kind === "camera") throw new EffectUnsupportedError(`"${id}" is a camera move, which moves a scene's camera rather than drawing a picture; Flair's scene tools use it (a shot's camera.in or camera.during).`, id);
       if (!rasterize) {
         throw new EffectUnsupportedError(
           `"${id}" is a vector effect, and a Worker has no DOM to draw SVG in: render it on the page, pass rasterizeSvg to flairEffects, or use applyVectorEffect for the animated SVG.`,
