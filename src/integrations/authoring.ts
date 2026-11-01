@@ -100,6 +100,9 @@ function planOf(env: AuthoringEnvironment, id: string): Plan {
   if (env.isPrimitive(id)) throw unsupportedPrimitive(id);
   const plan = env.plans.get(id);
   if (!plan) throw new UnknownEffectError(String(id), "Flair");
+  if (plan.meta.kind === "camera") {
+    throw new EffectUnsupportedError(`"${id}" is a camera move: it has no picture or source to edit here. Set its controls where a shot uses it, and see where it puts the camera with cameraView.`, id);
+  }
   return plan;
 }
 

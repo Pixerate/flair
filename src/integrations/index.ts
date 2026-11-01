@@ -3,9 +3,11 @@
  *
  * - `flairEffects()`: Flair's catalog and motion primitives as an effects
  *   provider for `@pixerate/editor`'s editors (its `@pixerate/editor/effects`
- *   contract). Needs `@pixerate/editor` 0.148 or later (an optional peer)
- *   for its `/effects` subpath; opening an authoring session also loads
- *   Flair's `EffectEditor`, with the editor subpaths it uses.
+ *   contract), camera moves included. Needs `@pixerate/editor` 0.224 or
+ *   later (an optional peer) for its `/effects` subpath (0.148 without
+ *   camera moves: pass `kinds` without `camera`); opening an authoring
+ *   session also loads Flair's `EffectEditor`, with the editor subpaths it
+ *   uses.
  *
  * @packageDocumentation
  */

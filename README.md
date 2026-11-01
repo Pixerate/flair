@@ -54,7 +54,7 @@ Flair gives products a library of good-looking, configurable visual effects (her
 | `@pixerate/flair/react` | `<FlairEffect>`: any catalog effect applied to a subject; `<VectorEffect>`, `<SvgPlayerView>`: vector effects as React components, server-rendered as a still | `react` ≥ 18 (optional peer) |
 | `@pixerate/flair/svelte` | `flairEffect` action: any catalog effect applied to a subject; `vectorEffect` action, `vectorEffectStill`: vector effects in Svelte, server-rendered as a still | `svelte` ≥ 5 (optional peer; types only) |
 | `@pixerate/flair/editor` | `EffectEditor`, effect documents, keyframe tracks, renderer bindings, parameter-panel binding, agent tools and instructions, and `effectDocumentFromAnimation` / `loadAnimation` for scenes from `@pixerate/editor`'s animation editor | `@pixerate/editor` ≥ 0.55 (optional peer; only its dependency-free `/history`, `/commands`, `/tools`, `/animation`, `/animation-editor` and `/parameters` subpaths) |
-| `@pixerate/flair/integrations` | `flairEffects()`: Flair's catalog and motion primitives as an effects provider for `@pixerate/editor`'s editors (its `@pixerate/editor/effects` contract) | `@pixerate/editor` ≥ 0.148 (optional peer, the first version with effect authoring): `/effects`, plus the subpaths `/editor` uses once an authoring session opens |
+| `@pixerate/flair/integrations` | `flairEffects()`: Flair's catalog, camera moves and motion primitives as an effects provider for `@pixerate/editor`'s editors (its `@pixerate/editor/effects` contract) | `@pixerate/editor` ≥ 0.224 (optional peer, the first version with camera moves; ≥ 0.148 with `kinds` that leave out `camera`): `/effects`, plus the subpaths `/editor` uses once an authoring session opens |
 | `@pixerate/flair/testing` | `installFakeWebGl`, `FakeGl`: a fake WebGL2 context, so code that renders with Flair runs in jsdom, Node or CI with the same pixels every time (any test runner) | None |
 | `@pixerate/flair/node` | `exportEffect` and `exportMotionGraphic`: render a catalog effect (on a picture, video, SVG, words or a path) or a shader to MP4, WebM, MOV, GIF, PNG frames or animated SVG, through headless Chrome (and ffmpeg for video) | Node.js |
 
@@ -574,7 +574,7 @@ const renderer = await provider.createRenderer(wipe.id, { width: 1920, height: 1
 const frame = await renderer.render({ time: 0, progress: 0.5, inputs: { from: clipA, to: clipB } }); // { width, height, data }
 ```
 
-- **Catalog.** Every shader and vector effect, plus the motion primitives as `motion` effects. Metadata comes from the lazy catalog; an effect's source loads when it is described or rendered.
+- **Catalog.** Every shader and vector effect, the camera moves as `camera` effects, and the motion primitives as `motion` effects. Metadata comes from the lazy catalog; an effect's source loads when it is described or rendered.
 - **Uses and inputs.**
   - Video filters (and stills and interactive effects over a picture) are `filter`, and read the input `source`.
   - Transitions read `from` and `to`. `progress` (0–1, default `time / duration`) drives them in place of their own clock.
@@ -591,6 +591,7 @@ const frame = await renderer.render({ time: 0, progress: 0.5, inputs: { from: cl
   - Shaders open with their GLSL (`sourceLanguage: "glsl"`). `setSource` compiles straight away, so errors come back with their lines in the source even before a preview exists; a `// @control` uniform added to the source becomes a control.
   - Vector effects open with their controls, keyframes and presets, without source (`sourceLanguage: null`). Their preview needs a page, or `rasterizeSvg` in a Worker. Motion primitives cannot be authored.
   - `exportDocument()` keeps Flair's own document in `flair`, so the source survives `openAuthoring({ document })`.
+- **Camera.** `capabilities.supportsCamera` is true. Camera moves have the use `camera` and say their role (`transition` into a shot, or `hold` while it holds), length and cut. `cameraView(id, { from, to, u, ms, stage }, values)` gives the view a scene's camera has `u` of the way through the move, exactly as Flair's scene player moves it, motion blur included. `sampleCameraMove` keys a move for an editor to bake, with two keys at a cut. Camera moves draw no picture, so `createRenderer` refuses them; for an editor older than 0.224, pass `kinds: ["shader", "vector", "motion"]`.
 
 ```ts
 const session = await provider.openAuthoring({ effectId: "aurora", preset: "Ember" });

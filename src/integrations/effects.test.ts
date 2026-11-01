@@ -1,4 +1,5 @@
 import { checkEffectProvider, isEffectError, type EffectPixels, type EffectProvider } from "@pixerate/editor/effects";
+import { getCameraMove } from "../catalog/camera.js";
 import { EFFECTS } from "../catalog/index.js";
 import { EFFECT_META } from "../catalog/lazy.js";
 import { PRIMITIVES } from "../motion/library.js";
@@ -36,10 +37,9 @@ describe("flairEffects conforms to @pixerate/editor/effects", () => {
   it("lists every effect and primitive once, with search('') the same as list()", async () => {
     const { provider } = setup();
     const list = await provider.list();
-    // Camera moves are left out: they move a scene's camera, and the editor's contract has no kind for them.
-    expect(list).toHaveLength(EFFECTS.filter((e) => e.kind !== "camera").length + PRIMITIVES.length);
+    expect(list).toHaveLength(EFFECTS.length + PRIMITIVES.length);
     expect(await provider.search("")).toEqual(list);
-    expect(provider).toMatchObject({ id: "flair", name: "Flair", capabilities: { supportsHostImages: true, supportsVector: true, supportsMask: true, supportsFloat: true } });
+    expect(provider).toMatchObject({ id: "flair", name: "Flair", capabilities: { supportsHostImages: true, supportsVector: true, supportsMask: true, supportsFloat: true, supportsCamera: true } });
   });
 });
 
@@ -262,6 +262,64 @@ describe("rendering", () => {
     const provider = flairEffects();
     expect(provider.capabilities.supportsWorker).toBe(true);
     expect(await failure(() => provider.createRenderer("lower-third", { width: 4, height: 2 }))).toMatchObject({ code: "unsupported", message: expect.stringMatching(/Worker.*rasterizeSvg.*applyVectorEffect/) });
+  });
+});
+
+describe("camera moves", () => {
+  const stage = { width: 1920, height: 1080 };
+  const wide = { zoom: 1, scrollX: 0, scrollY: 0 };
+  const close = { zoom: 2, scrollX: -400, scrollY: -200 };
+  let provider: EffectProvider;
+  beforeEach(() => {
+    provider = setup().provider;
+  });
+
+  it("lists the moves as camera effects, with their role, length and cut", async () => {
+    const moves = await provider.list({ kind: "camera" });
+    expect(moves.map((m) => m.id)).toEqual(EFFECTS.filter((e) => e.kind === "camera").map((e) => e.id));
+    expect(moves.find((m) => m.id === "camera-whip-pan")).toMatchObject({ kind: "camera", uses: ["camera"], camera: { role: "transition", durationMs: 600, cut: 0.5 } });
+    expect(moves.find((m) => m.id === "camera-cut")).toMatchObject({ camera: { role: "transition", durationMs: 0 } });
+    expect(moves.find((m) => m.id === "camera-cut")!.duration).toBeUndefined();
+    expect(moves.find((m) => m.id === "camera-ken-burns")!.camera!.role).toBe("hold");
+    const whip = await provider.describe("camera-whip-pan");
+    expect(whip.inputs).toEqual([]);
+    expect(whip.controls.properties.motionBlur).toMatchObject({ type: "number", minimum: 0, maximum: 3 });
+    expect(whip.presets.map((p) => p.name)).toEqual(["Soft", "Hard"]);
+  });
+
+  it("gives the view the scene player gives, blur included", () => {
+    const ctx = { from: wide, to: close, u: 0.25, ms: 600, stage };
+    const view = provider.cameraView!("camera-whip-pan", ctx, { motionBlur: 3 });
+    expect(view).toEqual(getCameraMove("camera-whip-pan")!.motion.view(ctx, { motionBlur: 3 }));
+    expect(view.blur).toBeGreaterThan(0);
+    expect(provider.cameraView!("camera-glide", { ...ctx, u: 1 })).toMatchObject({ zoom: 2, scrollX: -400, scrollY: -200 });
+  });
+
+  it("keys a move with the two keys of its cut", async () => {
+    const sample = await provider.sampleCameraMove!("camera-whip-pan", { from: wide, to: close, ms: 600, stage, fps: 30 });
+    expect(sample.cut).toBe(300);
+    expect(sample.keys[0]!.t).toBe(0);
+    expect(sample.keys.at(-1)!.t).toBe(600);
+    expect(sample.keys.filter((k) => k.t === 300)).toHaveLength(2);
+  });
+
+  it("refuses what is not a camera move, a bad u and bad values, saying what to do", async () => {
+    const ctx = { from: wide, to: close, u: 0.5, ms: 600, stage };
+    expect(await failure(() => provider.cameraView!("no-such-move", ctx))).toMatchObject({ code: "unknown_effect" });
+    expect(await failure(() => provider.cameraView!("crt", ctx))).toMatchObject({ code: "unsupported", message: expect.stringContaining('list({ kind: "camera" })') });
+    expect(await failure(() => provider.cameraView!("camera-glide", { ...ctx, u: 2 }))).toMatchObject({ code: "unsupported", message: expect.stringContaining("0 to 1") });
+    expect(await failure(() => provider.cameraView!("camera-glide", { ...ctx, from: { zoom: 0, scrollX: 0, scrollY: 0 } }))).toMatchObject({ code: "unsupported", message: expect.stringContaining("ctx.from") });
+    expect(await failure(() => provider.cameraView!("camera-whip-pan", ctx, { motionBlur: 9 }))).toMatchObject({ code: "invalid_values" });
+    expect(await failure(() => provider.sampleCameraMove!("camera-glide", { from: wide, to: close, ms: 600, stage, fps: 0 }))).toMatchObject({ code: "unsupported", message: expect.stringContaining("fps") });
+    expect(await failure(() => provider.createRenderer("camera-glide", { width: 8, height: 8 }))).toMatchObject({ code: "unsupported", message: expect.stringContaining("cameraView") });
+    expect(await failure(() => provider.openAuthoring!({ effectId: "camera-glide" }))).toMatchObject({ code: "unsupported", message: expect.stringContaining("cameraView") });
+  });
+
+  it("leaves the moves out when the camera kind is not asked for", async () => {
+    const without = setup({ kinds: ["shader", "vector", "motion"] }).provider;
+    expect(without.capabilities.supportsCamera).toBe(false);
+    expect((await without.list()).some((e) => e.kind === "camera")).toBe(false);
+    expect(await failure(() => without.cameraView!("camera-glide", { from: wide, to: close, u: 0.5, ms: 600, stage }))).toMatchObject({ code: "unknown_effect" });
   });
 });
 

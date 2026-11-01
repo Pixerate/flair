@@ -230,8 +230,9 @@ function crashView(to: View, stage: Stage, ms: number, values: Readonly<Record<s
   const target = [cx + (tx - 0.5) * w, cy + (ty - 0.5) * h] as const;
   // Zoom in about the target, so it stays where it is on screen; a kick rings down as each step lands.
   const kick = Number.isFinite(age) ? num(values, "shake", 0.5) * Math.exp(-age * 16) : 0;
-  const x = target[0] + (cx - target[0]) / z + ((kick * 0.03) / z) * w * Math.sin(age * 90);
-  const y = target[1] + (cy - target[1]) / z + ((kick * 0.03) / z) * h * Math.cos(age * 70 + 1);
+  // Before the first step there is no kick (and age is Infinity, whose sine is NaN).
+  const x = target[0] + (cx - target[0]) / z + (kick ? ((kick * 0.03) / z) * w * Math.sin(age * 90) : 0);
+  const y = target[1] + (cy - target[1]) / z + (kick ? ((kick * 0.03) / z) * h * Math.cos(age * 70 + 1) : 0);
   return { ...viewAt(x, y, to.zoom * z, stage), ...cameraAngle(to) };
 }
 
