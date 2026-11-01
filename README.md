@@ -37,7 +37,7 @@ Flair gives products a library of good-looking, configurable visual effects (her
 - 🤖 **Agent-native, bring your own model**:
   - Every editing action is a command, and the commands are exposed as MCP-shaped tools.
   - Ships instructions for the model. The host supplies the model, keys and agent loop.
-- 🎬 **Directing and interchange**: multi-shot scenes with camera moves (3D tilt and motion blur included), procedural effects, validation and fast headless simulation. Also blend modes, Oklab colour and grading, retiming, timecode, and export to Lottie, Apple Motion, FCP7 XML and CMX 3600 EDL.
+- 🎬 **Directing and interchange**: multi-shot scenes on one board, each shot arranging catalog effects as layers (on pictures, videos and slots the host fills) with catalog transitions and camera moves (3D tilt and motion blur included) between them; validation, fast headless simulation, a renderer-neutral `ScenePlan`, and recording in the browser. Also blend modes, Oklab colour and grading, retiming, timecode, and export to Lottie, Apple Motion, FCP7 XML and CMX 3600 EDL.
 
 ---
 
@@ -50,7 +50,7 @@ Flair gives products a library of good-looking, configurable visual effects (her
 | `@pixerate/flair/catalog/lazy` | The catalog loaded on demand: `EFFECT_META` (every effect's id, name, category, description, tags, controls, presets' names, inputs and video use), `findEffectMeta`, `effectTags`, `getEffectMeta`, and `loadEffect(id)` for an effect's shader or picture | None |
 | `@pixerate/flair/vector` | `SvgMotion`, `svgFrame`, `svgView`, `SvgPlayer`, `svgFrameMarkup`, `svgViewBox`, `animateCount`, `formatCount`, `morphPaths`, `morphSequence`, `svgAnimatedMarkup` (an animated `.svg` file), `svgMotionIssues` | None |
 | `@pixerate/flair/motion` | Motion primitives: `PRIMITIVES` (entrances, exits, emphasis and path motions as JSON descriptors), `applyPrimitive`, `removePrimitive`, `primitiveTags` | None |
-| `@pixerate/flair/embed` | `mountEffect`, `subjectValues`: any catalog effect on a page, applied to a picture, video, SVG, words or a path; `recordEffect`: MP4, WebM, GIF or PNG frames in the browser | None |
+| `@pixerate/flair/embed` | `mountEffect`, `subjectValues`: any catalog effect on a page, applied to a picture, video, SVG, words or a path; `recordEffect`: MP4, WebM, GIF or PNG frames in the browser; `mountScene`, `recordScene`, `SceneCompositor`: scenes with their layers and transitions | None |
 | `@pixerate/flair/react` | `<FlairEffect>`: any catalog effect applied to a subject; `<VectorEffect>`, `<SvgPlayerView>`: vector effects as React components, server-rendered as a still | `react` ≥ 18 (optional peer) |
 | `@pixerate/flair/svelte` | `flairEffect` action: any catalog effect applied to a subject; `vectorEffect` action, `vectorEffectStill`: vector effects in Svelte, server-rendered as a still | `svelte` ≥ 5 (optional peer; types only) |
 | `@pixerate/flair/editor` | `EffectEditor`, effect documents, keyframe tracks, renderer bindings, parameter-panel binding, agent tools and instructions, and `effectDocumentFromAnimation` / `loadAnimation` for scenes from `@pixerate/editor`'s animation editor | `@pixerate/editor` ≥ 0.55 (optional peer; only its dependency-free `/history`, `/commands`, `/tools`, `/animation`, `/animation-editor` and `/parameters` subpaths) |
@@ -619,9 +619,58 @@ if (result.ok) scene = result.scene; // keep the new state
 reply(call.id, result.output); // send the model only `output`
 ```
 
-The tools are `get_scene` (the scene, or with `view: "outline"` just its structure), `write_scene`, `update_shot`, `insert_shots`, `delete_shots`, `set_media`, `set_rig_widget`, `find_camera_moves` (the camera moves a shot can use, with their controls), `preview_scene` (a headless run: length, warnings, notes) and `batch_scene`, which runs several of them as one all-or-nothing change and lets a step use an earlier step's result (`"$1.output.outline.shots[0].hold"`).
+The tools are `get_scene` (the scene, or with `view: "outline"` just its structure: each shot's layers, transition and the slots the host fills), `write_scene`, `update_shot`, `insert_shots`, `delete_shots`, `set_rig_widget`, `find_layer_effects` (catalog effects for a shot's layers or its transition, with what each takes as a subject, its controls and presets, a page at a time), `find_camera_moves` (the camera moves a shot can use, with their controls), `preview_scene` (a headless run: length, warnings, notes) and `batch_scene`, which runs several of them as one all-or-nothing change and lets a step use an earlier step's result (`"$1.output.outline.shots[0].hold"`).
 
-Arguments are checked against each tool's schema, and a call that cannot apply (a shot that does not exist, an unresolved reference) is refused with `ok: false` and a sentence saying what to fix, leaving the scene as it was. Edits that apply return the scene's validation issues (unknown shot fields, wrong types, a shader without `mainImage`) so the model can correct them. `output` keeps replies small: an edit returns a one-line summary and the issues, not the whole scene.
+Arguments are checked against each tool's schema, and a call that cannot apply (a shot that does not exist, an unresolved reference) is refused with `ok: false` and a sentence saying what to fix, leaving the scene as it was. Edits that apply return the scene's validation issues (unknown shot fields, an unknown effect with the nearest ids, a subject an effect does not take, a transition used as a layer, presets and control values checked against the catalog) so the model can correct them. `output` keeps replies small: an edit returns a one-line summary and the issues, not the whole scene.
+
+---
+
+## 🎞️ Layers and transitions
+
+A shot arranges **catalog effects as layers** over its board, and can name a **catalog transition** into it:
+
+```json
+{
+  "title": "Compute",
+  "transition": { "effect": "transition-film-burn", "ms": 900 },
+  "run": [{ "type": "element", "element": { "id": "card", "type": "rectangle", "x": 900, "y": 400, "width": 500, "height": 280 } }],
+  "layers": [
+    { "id": "sky", "effect": "aurora", "role": "background", "until": { "shots": 3 } },
+    { "effect": "image-duotone", "preset": "Spotify", "subject": { "slot": "productShot" }, "rect": { "x": 1450, "y": 400, "width": 280, "height": 280 } },
+    { "effect": "tick-ring-burst", "ids": ["card"], "padding": 60, "role": "overlay" },
+    { "effect": "lower-third", "role": "overlay", "values": { "name": "Ada Lovelace" }, "from": 300, "fade": 200 }
+  ]
+}
+```
+
+- **What it draws:** a catalog shader or vector effect (`effect`, with `preset` and `values`), a custom shader (`source`: GLSL with `mainImage` and `// @control` uniforms), or a bare picture (only a `subject`).
+- **On what:** `subject` is `{ image }`, `{ video }` (a URL), `{ svg }`, `{ text }`, or `{ slot: "name" }`, which the host fills when it plays or records the scene: `playScene(scene, board, clock, { subjects: { productShot: { video: videoEl } } })`, `recordScene(scene, { subjects })`, `standaloneSceneHtml(scene, { subjects })`, `flair scene html --subject productShot=./shot.mp4`.
+- **Where:** without `rect` or `ids` a layer fills the screen; with them it sits on the board and moves with the camera (`ids` follow their elements, a path behavior included). `role` orders the stack: `background` under the board's elements, `subject` on the board over them (the default when placed), `overlay` above everything but the title and caption.
+- **When:** `from` and `until` are ms after the shot starts, or `{ "shots": n }` for the start of the n-th shot after it. By default a layer lasts until the next shot. `opacity` (0–1) and `fade` (ms in and out).
+- **Transitions:** `transition.effect` is a catalog transition (`findEffects({ video: ["transition"] })`; the scene tool `find_layer_effects` with `transition: true`). The last shot's final frame is its `uFrom`, the new shot its `uTo`, and `uProgress` runs 0 to 1 over `ms` (800 by default). With no camera `in` the camera cuts and the transition does the move; with one, both play together.
+- **Copies and paths:** a run command `{ "type": "replicate", "element": {…}, "pattern": "grid" | "line" | "circle" | "spiral", "count": 8, … }` draws copies `<id>_0…` (`sequence.delayPerItem` staggers them through the hold), and a behavior `{ "type": "path", "target": "card", "waypoints": [{ "point": [x, y], "inTangent"?, "outTangent"? }, …], "orient"? }` moves an element along a curve at an even speed while the shot holds.
+
+`validateScene` checks all of it (with the nearest effect ids, the subjects an effect takes, the elements there are), and `checkSceneLayers(scene)` checks presets and control values against the catalog, which it loads on demand. `playScene` tells a board which layers show at every step (`board.setLayers(layers, ms)`, bottom of the stack first) and which transition plays (`board.setTransition`).
+
+**Playing and recording.** `scenePlan(scene)` works a scene out into a `ScenePlan`: plain JSON with each shot's timing, the camera at every frame, every element as it changes, and each layer and transition with its shader source or vector picture and its values. It holds no code and needs no catalog, so any player can draw it (its JSON Schema is `@pixerate/flair/schemas/scene-plan.json`; a native player would compile the GLSL ES 3.00 shaders for its GPU). In the browser (`@pixerate/flair/embed`):
+- `mountScene(host, scene, { subjects })` plays it in a page.
+- `recordScene(scene, { subjects, format, fps, width, height })` records it as `recordEffect` records an effect: MP4, WebM, GIF or PNG frames, frame-exact.
+- `SceneCompositor` draws a plan at any time onto a canvas, for players of your own.
+
+`standaloneSceneHtml(scene, options)` (async) is a page with the plan and the compositor in it, carrying only the effects the scene uses.
+
+**Exporting.** The exporters carry what their formats can and name the rest (`sceneExportNotes(scene, format)`, written into each file and printed by `flair export`): Lottie takes picture layers as image layers and transitions as markers; Motion and FCP7 XML take every layer as a placeholder with its place and time (FCP7 on tracks above the shots, with each transition a cross dissolve); the EDL takes transitions as dissolve events and layers as comments.
+
+**Moving from scene media and effects:** `Scene.media`, `Shot.effects` and `Shot.stopEffects` were replaced by layers, and `validateScene` says what to write for each:
+
+| Before | Now |
+| --- | --- |
+| `"media": { "plasma": { "type": "shader", "source": "…" } }` and `{ "type": "media", "media": "plasma" }` | `{ "layers": [{ "id": "plasma", "source": "…", "role": "background" }] }` on the shot that shows it |
+| `{ "type": "glow", "ids": ["card"] }` (and the other built-in types) | a catalog effect: `{ "effect": "glow-ring-pulse", "ids": ["card"] }`; `find_layer_effects` finds one |
+| `"stopEffects": ["glow"]` | the layer's `"until": { "shots": n }` (or ms) |
+| rig target `media.plasma.speed` | `layers.plasma.speed` |
+| `standaloneSceneHtml(scene)` | `await standaloneSceneHtml(scene)` |
+| the `set_media` scene tool | `update_shot` with `layers` |
 
 ---
 
@@ -669,7 +718,7 @@ Camera moves move the **scene's camera** across its whole board. The catalog's t
 - `projectPoint` gives where a scene point lands on screen.
 - `cameraTrack` and `cameraSamples` lay the camera out on a timeline: each shot's `move` and `during`, sampled through the move and through a hold that has one.
 
-The standalone player (`flair scene html`) plays all of it. Layout checks (framing, edges, text size, the title) are judged on screen, where the angle puts each element.
+The standalone player (`flair scene html`) plays all of it, with the scene's layers and transitions. Layout checks (framing, edges, text size, the title) are judged on screen, where the angle puts each element.
 
 The exporters carry the camera too, keyed through every move (a hold's move included):
 - **Lottie:** a "Camera" null layer that the element layers hang off. When the camera is angled, it is a 3D layer with an AE camera (lottie-web draws it with its `html` renderer).
@@ -791,6 +840,7 @@ npx flair controls ./effect.frag            # list @control uniforms (--json for
 npx flair html ./effect.frag --out page.html --open
 npx flair scene validate ./scene.json        # layout, framing and timing checks
 npx flair scene review ./scene.json          # fast headless simulation + review
+npx flair scene html ./scene.json --subject logo=./logo.svg  # a standalone player, its slots filled
 npx flair scene lottie ./scene.json out.json # also: fcp7, edl, motn
 
 # Catalog effects to files

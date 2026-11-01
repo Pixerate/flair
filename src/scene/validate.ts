@@ -1,10 +1,14 @@
 import { MAX_TILT } from './camera.js';
 import { cameraMoveIds, DEFAULT_CAMERA_MOVE, resolveCameraMove } from './moves.js';
+import { checkLayer, checkTransition, legacyEffectIssues } from './layercheck.js';
+import { replicaIds, replicateIssues } from './replicator.js';
+import { BEHAVIOR_TYPES } from './behavior.js';
+import { layerKey } from './layers.js';
+import { rigTargets } from './rig.js';
+import { isElementCommand, isReplicateCommand, type Scene, type Shot } from './types.js';
 
 /** The camera moves that replaced the camera's old built-in transitions. */
 const LEGACY_TRANSITIONS: Record<string, string> = { move: 'camera-glide', whip: 'camera-whip-pan', zoom: 'camera-punch-zoom', cut: 'camera-cut' };
-import type { Scene, Shot } from './types.js';
-import { EFFECT_TYPES } from './effects.js';
 
 export interface SceneIssue {
   /** 1-based shot index (0 indicates whole scene level). */
@@ -14,10 +18,13 @@ export interface SceneIssue {
 
 const LONG_CAPTION = 120;
 const LONG_TITLE = 60;
-const MAX_EFFECTS_PER_SHOT = 5;
+const MAX_LAYERS_PER_SHOT = 8;
 
-const SCENE_FIELDS = ['name', 'title', 'description', 'stage', 'media', 'target', 'rig', 'shots'];
-const SHOT_FIELDS = ['caption', 'title', 'camera', 'hold', 'run', 'effects', 'stopEffects', 'behaviors'];
+const SCENE_FIELDS = ['name', 'title', 'description', 'stage', 'target', 'rig', 'shots'];
+const SHOT_FIELDS = ['caption', 'title', 'camera', 'hold', 'run', 'layers', 'transition', 'behaviors'];
+/** Fields earlier versions had, refused with what to write instead rather than as unknown. */
+const LEGACY_SCENE_FIELDS = ['media'];
+const LEGACY_SHOT_FIELDS = ['effects', 'stopEffects'];
 const list = (names: string[]) => names.map((n) => `"${n}"`).join(', ');
 
 /** Validates a Scene before running or rendering it. */
@@ -32,7 +39,20 @@ export function validateScene(scene: Scene): SceneIssue[] {
   }
 
   for (const key of Object.keys(scene)) {
-    if (!SCENE_FIELDS.includes(key)) say(0, `Scene has an unknown field "${key}"; scene fields are ${list(SCENE_FIELDS)}.`);
+    if (!SCENE_FIELDS.includes(key) && !LEGACY_SCENE_FIELDS.includes(key)) say(0, `Scene has an unknown field "${key}"; scene fields are ${list(SCENE_FIELDS)}.`);
+  }
+  const legacy = scene as { media?: unknown };
+  if (legacy.media !== undefined) {
+    const ids = legacy.media && typeof legacy.media === 'object' ? Object.keys(legacy.media) : [];
+    say(0, `Scene "media" was replaced by layers: put each shader on the shot that shows it as { "layers": [{ "source": "…", "role": "background", "until": { "shots": N } }] } (or a catalog effect's id in "effect"), and remove "media"${ids.length ? ` (it has ${list(ids)})` : ''}.`);
+  }
+  if (scene.rig && typeof scene.rig === 'object') {
+    const layerIds = new Set((Array.isArray(scene.shots) ? scene.shots : []).flatMap((s) => (Array.isArray(s?.layers) ? s.layers.map((l) => l?.id).filter(Boolean) : [])));
+    for (const target of rigTargets(scene.rig)) {
+      if (target.startsWith('media.')) say(0, `Rig target "${target}" names scene media, which layers replaced; give the layer an "id" and write "layers.<id>.${target.split('.').slice(target.split('.')[2] === 'values' ? 3 : 2).join('.') || '<control>'}".`);
+      else if (target.startsWith('layers.') && !layerIds.has(target.split('.')[1]))
+        say(0, `Rig target "${target}" names no layer; ${layerIds.size ? `the layers with ids are ${list([...layerIds] as string[])}` : 'no layer has an "id" yet: give the layer one'}.`);
+    }
   }
 
   if (!Array.isArray(scene.shots) || scene.shots.length === 0) {
@@ -40,23 +60,9 @@ export function validateScene(scene: Scene): SceneIssue[] {
     return issues;
   }
 
-  const mediaKeys = new Set(Object.keys(scene.media ?? {}));
-  const effectIds = new Set<string>();
-
-  // Check media
-  if (scene.media) {
-    for (const [id, m] of Object.entries(scene.media)) {
-      if (!m || typeof m !== 'object') {
-        say(0, `Media "${id}" must be an object.`);
-      } else if (!m.type) {
-        say(0, `Media "${id}" needs a type.`);
-      } else if (m.type === 'shader' && (!m.source || typeof m.source !== 'string')) {
-        say(0, `Shader media "${id}" needs a source string.`);
-      } else if (m.type === 'shader' && !/\bmainImage\s*\(/.test(m.source as string)) {
-        say(0, `Shader media "${id}" needs a function void mainImage(out vec4 fragColor, in vec2 fragCoord).`);
-      }
-    }
-  }
+  /** Element ids drawn so far (copies included), and layer keys used so far. */
+  const drawn = new Set<string>();
+  const layerKeys = new Map<string, number>();
 
   for (const [idx, shot] of scene.shots.entries()) {
     const shotNum = idx + 1;
@@ -66,21 +72,70 @@ export function validateScene(scene: Scene): SceneIssue[] {
       continue;
     }
     for (const key of Object.keys(shot)) {
-      if (!SHOT_FIELDS.includes(key)) say(shotNum, `Shot has an unknown field "${key}"; shot fields are ${list(SHOT_FIELDS)}.`);
+      if (!SHOT_FIELDS.includes(key) && !LEGACY_SHOT_FIELDS.includes(key)) say(shotNum, `Shot has an unknown field "${key}"; shot fields are ${list(SHOT_FIELDS)}.`);
     }
+    for (const issue of legacyEffectIssues(shot as Record<string, unknown>)) say(shotNum, issue);
     for (const key of ['caption', 'title'] as const) {
       if (shot[key] !== undefined && typeof shot[key] !== 'string') say(shotNum, `Shot ${key} must be a string.`);
     }
     if (shot.hold !== undefined && typeof shot.hold !== 'number') say(shotNum, 'Shot hold must be a number of milliseconds.');
-    for (const key of ['run', 'effects', 'stopEffects', 'behaviors'] as const) {
+    for (const key of ['run', 'layers', 'behaviors'] as const) {
       if (shot[key] !== undefined && !Array.isArray(shot[key])) say(shotNum, `Shot ${key} must be an array.`);
     }
     if (Array.isArray(shot.run)) {
       shot.run.forEach((cmd, i) => {
-        if (!cmd || typeof cmd !== 'object' || typeof cmd.type !== 'string')
-          say(shotNum, `Command ${i + 1} in run needs a string type ("element", "update", "delete" or "clear").`);
+        if (!cmd || typeof cmd !== 'object' || typeof cmd.type !== 'string') {
+          say(shotNum, `Command ${i + 1} in run needs a string type ("element", "update", "delete", "clear" or "replicate").`);
+          return;
+        }
+        if (cmd.type === 'replicate') {
+          const problems = replicateIssues(cmd as Record<string, unknown>);
+          for (const p of problems) say(shotNum, `Command ${i + 1} in run: ${p}`);
+          if (!problems.length && isReplicateCommand(cmd)) {
+            drawn.add(cmd.element.id);
+            for (const id of replicaIds(cmd)) drawn.add(id);
+          }
+        } else if (isElementCommand(cmd)) drawn.add(cmd.element.id);
       });
     }
+
+    // Check behaviors
+    if (Array.isArray(shot.behaviors)) {
+      const keysSoFar = new Set([...layerKeys.keys(), ...(Array.isArray(shot.layers) ? shot.layers.map((l, i) => layerKey(l ?? {}, idx, i)) : [])]);
+      shot.behaviors.forEach((b, i) => {
+        const where = `Behavior ${i + 1}`;
+        if (!b || typeof b !== 'object') return say(shotNum, `${where} must be an object.`);
+        if (!BEHAVIOR_TYPES.includes(b.type as (typeof BEHAVIOR_TYPES)[number])) say(shotNum, `${where} has type ${JSON.stringify(b.type)}; behavior types are ${list([...BEHAVIOR_TYPES])}.`);
+        if (typeof b.target !== 'string') return say(shotNum, `${where} needs a "target": an element's id, or a layer's id.`);
+        const known = drawn.has(b.target) || (b.type !== 'path' && keysSoFar.has(b.target));
+        if (!known) {
+          const els = [...drawn];
+          say(shotNum, `${where} targets "${b.target}", which no shot has drawn by now${b.type === 'path' ? '' : ' and no layer is called'}; ${els.length ? `the elements drawn are ${list(els.slice(0, 12))}${els.length > 12 ? ` and ${els.length - 12} more` : ''}` : 'no elements are drawn yet'}.`);
+        }
+        if (b.type === 'path') {
+          const wps = (b as { waypoints?: unknown }).waypoints;
+          const point = (w: any) => w && Array.isArray(w.point) && (w.point.length === 2 || w.point.length === 3) && w.point.every((n: unknown) => typeof n === 'number');
+          if (!Array.isArray(wps) || wps.length < 2 || !wps.every(point))
+            say(shotNum, `${where} is a path: its "waypoints" are at least two { "point": [x, y] } (with optional "inTangent" and "outTangent" handles, [dx, dy]).`);
+        } else if (typeof (b as { property?: unknown }).property !== 'string') {
+          say(shotNum, `${where} needs a "property" to change: an element's (x, y, rotation, opacity…) or a layer's control.`);
+        }
+      });
+    }
+
+    // Check layers and the transition into the shot
+    if (Array.isArray(shot.layers)) {
+      if (shot.layers.length > MAX_LAYERS_PER_SHOT) say(shotNum, `Shot starts ${shot.layers.length} layers at once; keep a shot to ${MAX_LAYERS_PER_SHOT} or fewer so each reads.`);
+      shot.layers.forEach((layer, i) => {
+        for (const issue of checkLayer(layer, { shot: idx, index: i, shots: scene.shots.length, drawn })) say(shotNum, issue);
+        if (layer && typeof layer === 'object') {
+          const key = layerKey(layer, idx, i);
+          if (layerKeys.has(key)) say(shotNum, `Layer id "${key}" is already used in shot ${layerKeys.get(key)! + 1}; layer ids are unique in the scene.`);
+          else layerKeys.set(key, idx);
+        }
+      });
+    }
+    if (shot.transition !== undefined) for (const issue of checkTransition(shot.transition, idx)) say(shotNum, issue);
 
     // Check camera
     if (shot.camera) {
@@ -127,46 +182,6 @@ export function validateScene(scene: Scene): SceneIssue[] {
     }
     if (typeof shot.title === 'string' && shot.title.length > LONG_TITLE) {
       say(shotNum, `Title is long (${shot.title.length} chars); titles should be concise headings.`);
-    }
-
-    // Check effects
-    const effects = Array.isArray(shot.effects) ? shot.effects : [];
-    if (effects.length > MAX_EFFECTS_PER_SHOT) {
-      say(shotNum, `Shot starts ${effects.length} effects at once; consider keeping effects focused.`);
-    }
-
-    for (const eff of effects) {
-      if (!eff.id || typeof eff.id !== 'string') {
-        say(shotNum, 'Every effect needs a unique string id.');
-        continue;
-      }
-      if (effectIds.has(eff.id)) {
-        say(shotNum, `Duplicate effect id "${eff.id}".`);
-      }
-      effectIds.add(eff.id);
-
-      if (!EFFECT_TYPES.includes(eff.type as any)) {
-        say(shotNum, `Unknown effect type "${(eff as any).type}".`);
-      }
-
-      if (eff.type === 'media') {
-        if (!eff.media) {
-          say(shotNum, `Media effect "${eff.id}" needs a media id.`);
-        } else if (!mediaKeys.has(eff.media)) {
-          say(shotNum, `Media effect "${eff.id}" references "${eff.media}" which is not defined in scene.media.`);
-        }
-      }
-
-      if (eff.type === 'flow' && !eff.along) {
-        say(shotNum, `Flow effect "${eff.id}" needs an "along" element id.`);
-      }
-
-      if (['glow', 'ripple', 'spotlight', 'shimmer', 'timer', 'blur', 'burst'].includes(eff.type)) {
-        const withIds = eff as { ids?: string[] };
-        if (!Array.isArray(withIds.ids) || withIds.ids.length === 0) {
-          say(shotNum, `${eff.type} effect "${eff.id}" needs a non-empty ids array.`);
-        }
-      }
     }
   }
 

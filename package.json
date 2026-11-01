@@ -72,6 +72,7 @@
       "import": "./dist/node.js"
     },
     "./schemas/effect-document.json": "./dist/schemas/effect-document.json",
+    "./schemas/scene-plan.json": "./dist/schemas/scene-plan.json",
     "./package.json": "./package.json"
   },
   "bin": {
@@ -89,7 +90,8 @@
     "changeset": "changeset",
     "version-packages": "changeset version",
     "release": "changeset publish",
-    "catalog:meta": "UPDATE_CATALOG_META=1 vitest run src/catalog/lazy.test.ts"
+    "catalog:meta": "UPDATE_CATALOG_META=1 vitest run src/catalog/lazy.test.ts",
+    "scene:runtime": "UPDATE_SCENE_RUNTIME=1 vitest run src/scene/runtime.test.ts"
   },
   "keywords": [
     "webgl2",
@@ -132,6 +134,7 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "ajv": "^8.20.0",
+    "esbuild": "^0.28.2",
     "jsdom": "^30.1.3",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",

@@ -3,8 +3,10 @@ import { Command } from 'commander';
 import path from 'path';
 import fs from 'fs';
 import { exec } from 'child_process';
+import { pathToFileURL } from 'url';
 import { parseControls, standaloneHtml, type ControlValue } from './shader/index.js';
-import { validateScene, simulateScene, standaloneSceneHtml, type Scene } from './scene/index.js';
+import { validateScene, simulateScene, standaloneSceneHtml, type Scene, type SceneSubject } from './scene/index.js';
+import { sceneExportNotes, type SceneExportFormat } from './export/notes.js';
 
 const program = new Command();
 
@@ -164,6 +166,7 @@ program
         fs.mkdirSync(path.dirname(destination), { recursive: true });
         fs.writeFileSync(destination, content, 'utf-8');
         console.log(`✅ Successfully exported ${targetOrShader.toUpperCase()} to: ${destination}`);
+        printExportNotes(scene, targetOrShader as SceneExportFormat);
       } catch (err: any) {
         console.error(`Error exporting scene to ${targetOrShader}: ${err.message}`);
         process.exit(1);
@@ -424,12 +427,48 @@ sceneCmd
     }
   });
 
+/** Prints what an export left out of the scene, or carries only in part. */
+function printExportNotes(scene: Scene, format: SceneExportFormat) {
+  const notes = sceneExportNotes(scene, format);
+  if (notes.length) console.warn(`Not carried over in full:\n${notes.map((n) => `  • ${n}`).join('\n')}`);
+}
+
+/**
+ * Slots from `--subject slot=value`: words after `text:`, else a file or URL,
+ * by its extension a video, an SVG or a picture. Local pictures and SVGs are
+ * inlined as `data:` URLs so the page carries them.
+ */
+function sceneSubjects(given: string[], base: string): Record<string, SceneSubject> {
+  const subjects: Record<string, SceneSubject> = {};
+  for (const entry of given) {
+    const at = entry.indexOf('=');
+    if (at < 1) throw new Error(`--subject takes slot=value (like logo=./logo.png or title=text:Hello), not "${entry}".`);
+    const slot = entry.slice(0, at);
+    const value = entry.slice(at + 1);
+    if (value.startsWith('text:')) {
+      subjects[slot] = { text: value.slice(5) };
+      continue;
+    }
+    const ext = path.extname(value.split('?')[0]!).toLowerCase();
+    const file = path.resolve(base, value);
+    const local = !/^[a-z]+:/i.test(value) && fs.existsSync(file);
+    if (['.mp4', '.webm', '.mov', '.m4v'].includes(ext)) subjects[slot] = { video: local ? pathToFileURL(file).href : value };
+    else if (ext === '.svg') subjects[slot] = { svg: local ? fs.readFileSync(file, 'utf-8') : value };
+    else {
+      const types: Record<string, string> = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp', '.avif': 'image/avif' };
+      subjects[slot] = { image: local ? `data:${types[ext] ?? 'application/octet-stream'};base64,${fs.readFileSync(file).toString('base64')}` : value };
+    }
+  }
+  return subjects;
+}
+
 sceneCmd
   .command('html <sceneFile>')
   .description('Generate standalone interactive web player for the scene')
   .option('-o, --out <outputPath>', 'Output HTML path')
   .option('--open', 'Open generated HTML in browser', false)
-  .action((sceneFile, options) => {
+  .option('--subject <slot=value...>', 'Fill a slot: a picture, SVG or video file or URL (slot=./logo.png), or words (slot=text:Hello)')
+  .action(async (sceneFile, options) => {
     const fullPath = path.resolve(process.cwd(), sceneFile);
     if (!fs.existsSync(fullPath)) {
       console.error(`Error: Scene file not found at: ${fullPath}`);
@@ -438,7 +477,8 @@ sceneCmd
 
     try {
       const scene: Scene = JSON.parse(fs.readFileSync(fullPath, 'utf-8'));
-      const htmlContent = standaloneSceneHtml(scene);
+      const subjects = sceneSubjects(options.subject ?? [], path.dirname(fullPath));
+      const htmlContent = await standaloneSceneHtml(scene, { subjects });
       const outputPath = path.resolve(
         process.cwd(),
         options.out || `${scene.name || 'scene'}.html`
@@ -479,6 +519,7 @@ sceneCmd
       fs.mkdirSync(path.dirname(destination), { recursive: true });
       fs.writeFileSync(destination, xml, 'utf-8');
       console.log(`✅ Successfully exported Apple Motion scene to: ${destination}`);
+      printExportNotes(scene, 'motn');
     } catch (err: any) {
       console.error(`Error exporting scene to .motn: ${err.message}`);
       process.exit(1);
@@ -507,6 +548,7 @@ sceneCmd
       fs.mkdirSync(path.dirname(destination), { recursive: true });
       fs.writeFileSync(destination, JSON.stringify(animation, null, 2), 'utf-8');
       console.log(`✅ Successfully exported Lottie animation to: ${destination}`);
+      printExportNotes(scene, 'lottie');
     } catch (err: any) {
       console.error(`Error exporting scene to Lottie: ${err.message}`);
       process.exit(1);
@@ -535,6 +577,7 @@ sceneCmd
       fs.mkdirSync(path.dirname(destination), { recursive: true });
       fs.writeFileSync(destination, xml, 'utf-8');
       console.log(`✅ Successfully exported FCP7 XML to: ${destination}`);
+      printExportNotes(scene, 'fcp7');
     } catch (err: any) {
       console.error(`Error exporting scene to FCP7 XML: ${err.message}`);
       process.exit(1);
@@ -567,6 +610,7 @@ sceneCmd
       fs.mkdirSync(path.dirname(destination), { recursive: true });
       fs.writeFileSync(destination, edl, 'utf-8');
       console.log(`✅ Successfully exported CMX 3600 EDL to: ${destination}`);
+      printExportNotes(scene, 'edl');
     } catch (err: any) {
       console.error(`Error exporting scene to CMX 3600 EDL: ${err.message}`);
       process.exit(1);

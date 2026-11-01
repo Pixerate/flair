@@ -8,6 +8,7 @@ import { cameraAt, cameraSamples, cameraTrack } from './cameratrack.js';
 import { moveView, resolveCameraMove } from './moves.js';
 import { MemorySceneBoard, playScene, simulateScene } from './player.js';
 import { standaloneSceneHtml } from './standalone.js';
+import { scenePlan } from './plan.js';
 import type { Scene } from './types.js';
 import { validateScene } from './validate.js';
 
@@ -136,9 +137,9 @@ describe('camera moves into a shot', () => {
   });
 
   it('carries transitions into the standalone player and exporters', async () => {
-    const html = standaloneSceneHtml(scene);
-    expect(html).toContain('"moveMs":0');
-    expect(html).not.toContain('plan.cameraMs');
+    const html = await standaloneSceneHtml(scene);
+    expect(html).toContain('id="flair-scene-plan"');
+    expect(html).toContain('"moveMs":600');
     expect(exportMotn(scene)).toContain(': camera-whip-pan in -->');
     expect(exportFcp7Xml(scene)).toContain('<');
     const { result } = await simulateScene(scene);
@@ -204,12 +205,16 @@ describe('camera moves while a shot holds', () => {
     expect(views[20]!.zoom).toBeCloseTo(track[0]!.end.zoom, 6);
   });
 
-  it('is sampled through the hold for exporters and the standalone player', () => {
+  it('is sampled through the hold for exporters and the standalone player', async () => {
     const samples = cameraSamples(drift, 30);
     expect(samples.filter((s) => s.shot === 0).length).toBeGreaterThan(10);
     // The hold ends on frame 30, where the next shot's move sets off from where the drift ended.
     expect(samples.find((s) => s.frame === 30)!.view.zoom).toBeCloseTo(cameraTrack(drift)[0]!.end.zoom, 6);
-    expect(standaloneSceneHtml(drift)).toContain('"hold":[');
+    // The plan keys the camera at every frame of the hold, where it drifts.
+    const plan = await scenePlan(drift);
+    const inHold = plan.camera.filter((k) => k.ms > 0 && k.ms < 1000);
+    expect(new Set(inHold.map((k) => k.view.zoom)).size).toBeGreaterThan(10);
+    expect((await standaloneSceneHtml(drift)).length).toBeGreaterThan(1000);
     expect(validateScene(drift)).toEqual([]);
     expect(validateScene({ name: 'x', shots: [{ camera: { during: 'camera-whip-pan' } }] })[0]!.message).toContain('goes in camera "in", not "during"');
   });

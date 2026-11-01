@@ -2,6 +2,9 @@ import type { Scene, Shot } from '../scene/types.js';
 import { DEFAULT_STAGE, boardHeight, centreOf, projectPoint, type View } from '../scene/camera.js';
 import { cameraSamples, shotMoveMs, cameraTrack, sceneStage, type CameraSample, type CameraShot } from '../scene/cameratrack.js';
 import { DEFAULT_CAMERA_MOVE } from '../scene/moves.js';
+import { layerWhat } from '../scene/layers.js';
+import { sceneTimeline, type TimedLayer } from '../scene/timeline.js';
+import { sceneExportNotes } from './notes.js';
 
 /** The motion blur a shot's camera moves play with: the largest `motionBlur` of its move in and its move while it holds (0 for none). */
 function shotMotionBlur(entry: CameraShot | undefined): number {
@@ -255,6 +258,7 @@ export function exportFcp7Xml(scene: Scene, options: Fcp7ExportOptions = {}): st
   lines.push('<?xml version="1.0" encoding="UTF-8"?>');
   lines.push('<!DOCTYPE xmeml>');
   lines.push('<xmeml version="4">');
+  for (const note of sceneExportNotes(scene, 'fcp7')) lines.push(`  <!-- ${note.replace(/--/g, '- -')} -->`);
   lines.push(`  <sequence id="sequence-1">`);
   lines.push(`    <name>${escapeXml(sequenceName)}</name>`);
   lines.push(`    <duration>${totalFrames}</duration>`);
@@ -305,7 +309,30 @@ export function exportFcp7Xml(scene: Scene, options: Fcp7ExportOptions = {}): st
   lines.push('          <enabled>TRUE</enabled>');
   lines.push('          <locked>FALSE</locked>');
 
+  const timeline = sceneTimeline(scene);
+  const frameOf = (ms: number) => Math.round((ms / 1000) * frameRate);
   timings.forEach(({ shot, index, startFrame, endFrame, durationFrames }) => {
+    // A transition into the shot: a cross dissolve from the cut, as long as the transition.
+    const into = timeline.transitions.find((t) => t.shot === index);
+    if (into) {
+      lines.push(`          <!-- ${escapeXml(into.transition.effect)} -->`);
+      lines.push('          <transitionitem>');
+      lines.push(`            <start>${startFrame}</start>`);
+      lines.push(`            <end>${startFrame + Math.max(1, frameOf(into.ms))}</end>`);
+      lines.push('            <alignment>start</alignment>');
+      lines.push('            <rate>');
+      lines.push(`              <timebase>${timebase}</timebase>`);
+      lines.push(`              <ntsc>${ntscStr}</ntsc>`);
+      lines.push('            </rate>');
+      lines.push('            <effect>');
+      lines.push('              <name>Cross Dissolve</name>');
+      lines.push('              <effectid>Cross Dissolve</effectid>');
+      lines.push('              <effectcategory>Dissolve</effectcategory>');
+      lines.push('              <effecttype>transition</effecttype>');
+      lines.push('              <mediatype>video</mediatype>');
+      lines.push('            </effect>');
+      lines.push('          </transitionitem>');
+    }
     const shotName = shot.title || `Shot_${index + 1}`;
     const fileId = `file-${index + 1}`;
     const clipId = `clipitem-${index + 1}`;
@@ -383,6 +410,50 @@ export function exportFcp7Xml(scene: Scene, options: Fcp7ExportOptions = {}): st
   });
 
   lines.push('        </track>');
+
+  // Layer tracks: each layer a placeholder clip named after its effect, bottom of the stack first, packed so clips on a track never overlap.
+  const lanes: TimedLayer[][] = [];
+  for (const t of timeline.layers) {
+    const lane = lanes.find((l) => l.every((o) => o.endMs <= t.startMs || o.startMs >= t.endMs));
+    if (lane) lane.push(t);
+    else lanes.push([t]);
+  }
+  lanes.forEach((lane, li) => {
+    lines.push('        <track>');
+    lines.push('          <enabled>TRUE</enabled>');
+    lines.push('          <locked>FALSE</locked>');
+    lane.forEach((t, k) => {
+      const start = frameOf(t.startMs);
+      const end = Math.max(start + 1, frameOf(t.endMs));
+      const name = `${t.key}: ${layerWhat(t.layer)}`;
+      lines.push(`          <clipitem id="layer-${li + 1}-${k + 1}">`);
+      lines.push(`            <name>${escapeXml(name)}</name>`);
+      lines.push(`            <duration>${end - start}</duration>`);
+      lines.push('            <rate>');
+      lines.push(`              <timebase>${timebase}</timebase>`);
+      lines.push(`              <ntsc>${ntscStr}</ntsc>`);
+      lines.push('            </rate>');
+      lines.push(`            <start>${start}</start>`);
+      lines.push(`            <end>${end}</end>`);
+      lines.push('            <in>0</in>');
+      lines.push(`            <out>${end - start}</out>`);
+      lines.push('            <effect>');
+      lines.push('              <name>Slug</name>');
+      lines.push('              <effectid>slug</effectid>');
+      lines.push('              <effectcategory>Matte</effectcategory>');
+      lines.push('              <effecttype>generator</effecttype>');
+      lines.push('              <mediatype>video</mediatype>');
+      lines.push('            </effect>');
+      lines.push('            <marker>');
+      lines.push(`              <name>${escapeXml(name)}</name>`);
+      lines.push(`              <comment>${escapeXml(`${t.role} layer, ${t.layer.rect || t.layer.ids ? 'on the board' : 'over the screen'}, opacity ${typeof t.layer.opacity === 'number' ? t.layer.opacity : 1}; render it with recordEffect and swap it in`)}</comment>`);
+      lines.push('              <in>0</in>');
+      lines.push(`              <out>${end - start}</out>`);
+      lines.push('            </marker>');
+      lines.push('          </clipitem>');
+    });
+    lines.push('        </track>');
+  });
 
   // Video Track 2: Title / Narration Overlay Track (Generators)
   const hasTextOverlays = timings.some((t) => t.shot.title || t.shot.caption);
@@ -471,7 +542,11 @@ export function exportCmx3600Edl(scene: Scene, options: EdlExportOptions = {}): 
   const lines: string[] = [];
   lines.push(`TITLE: ${title}`);
   lines.push(dropFrame ? 'FCM: DROP FRAME' : 'FCM: NON-DROP FRAME');
+  for (const note of sceneExportNotes(scene, 'edl')) lines.push(`* FLAIR NOTE: ${note}`);
   lines.push('');
+  const timeline = sceneTimeline(scene);
+  const startFrame = timecodeToFrames(startTc, timebase, dropFrame);
+  const tcAt = (ms: number) => framesToTimecode(startFrame + Math.round((ms / 1000) * frameRate), timebase, dropFrame);
 
   timings.forEach(({ shot, index, durationFrames }) => {
     const eventNum = (index + 1).toString().padStart(3, '0');
@@ -484,7 +559,16 @@ export function exportCmx3600Edl(scene: Scene, options: EdlExportOptions = {}): 
 
     // Standard CMX 3600 line format:
     // Event  Reel      Track  Transition  SourceIn     SourceOut    RecordIn     RecordOut
-    lines.push(`${eventNum}  ${reel} V     C        ${srcInTc} ${srcOutTc} ${recInTc} ${recOutTc}`);
+    const into = timeline.transitions.find((t) => t.shot === index);
+    if (into) {
+      // A dissolve: the outgoing source for no time, then the incoming one dissolving in over the transition's frames.
+      const frames = Math.min(999, Math.max(1, Math.round((into.ms / 1000) * frameRate)));
+      lines.push(`${eventNum}  ${reel} V     C        ${srcInTc} ${srcInTc} ${recInTc} ${recInTc}`);
+      lines.push(`${eventNum}  ${reel} V     D    ${String(frames).padStart(3, '0')} ${srcInTc} ${srcOutTc} ${recInTc} ${recOutTc}`);
+      lines.push(`* FLAIR TRANSITION: ${into.transition.effect}`);
+    } else {
+      lines.push(`${eventNum}  ${reel} V     C        ${srcInTc} ${srcOutTc} ${recInTc} ${recOutTc}`);
+    }
 
     const clipName = shot.title || `Shot ${index + 1}`;
     lines.push(`* FROM CLIP NAME: ${clipName}`);
@@ -494,6 +578,9 @@ export function exportCmx3600Edl(scene: Scene, options: EdlExportOptions = {}): 
     // CMX 3600 has no transforms, so the camera is a note for the editor.
     const camera = track?.[index];
     if (camera && shot.camera) lines.push(`* CAMERA: ${describeCamera(camera, sceneStage(scene))}`);
+    for (const t of timeline.layers.filter((l) => l.shot === index)) {
+      lines.push(`* LAYER: ${t.key} (${layerWhat(t.layer)}), ${t.role}, ${tcAt(t.startMs)} to ${tcAt(t.endMs)}`);
+    }
     lines.push('');
   });
 

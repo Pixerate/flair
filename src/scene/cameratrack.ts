@@ -1,7 +1,7 @@
 import { CAMERA_STEPS, DEFAULT_STAGE, viewAt, type Stage, type View } from './camera.js';
 import type { SceneElement } from './geometry.js';
-import { moveView, shotHoldMove, shotInMove, type ShotMove } from './moves.js';
-import { MemorySceneBoard, shotView } from './player.js';
+import { moveView, shotHoldMove, shotInMove, shotTransitionMs, type ShotMove } from './moves.js';
+import { applyBehaviors, behaviorBase, MemorySceneBoard, shotView } from './player.js';
 import type { Scene, Shot } from './types.js';
 
 /** The camera through one shot, timed as `playScene` plays it: a move from `from` to `to`, then a hold. */
@@ -10,8 +10,12 @@ export interface CameraShot {
   index: number;
   /** When the shot starts on the scene's timeline, in ms. */
   startMs: number;
-  /** How long the camera moves at the start of the shot (0 when it cuts or stays). */
+  /** How long the shot's lead-in takes: its camera move or its transition, whichever is longer (0 when it cuts or stays). */
   moveMs: number;
+  /** How long the camera itself moves, within `moveMs` (0 when it cuts or stays). */
+  cameraMs: number;
+  /** How long the shot's transition plays, from its start (0 without one). */
+  transitionMs: number;
   /** How long the shot holds after the move. */
   holdMs: number;
   from: View;
@@ -22,13 +26,17 @@ export interface CameraShot {
   during?: ShotMove;
   /** Where the camera is at the end of the shot: `to`, or where the hold's move ends. */
   end: View;
-  /** The elements on stage once the shot's commands have run. */
+  /** The elements on stage once the shot's commands have run (before its behaviors move them). */
   elements: SceneElement[];
 }
 
-/** How long the camera moves at the start of a shot, in ms: none for the first shot or a shot without a camera, else its move's length (0 for a cut). */
+/**
+ * How long a shot's lead-in takes, in ms, before its hold: none for the
+ * first shot, else the longer of its camera move (none without a camera,
+ * 0 for a cut) and its transition.
+ */
 export function shotMoveMs(shot: Shot, index: number): number {
-  return index > 0 ? (shotInMove(shot)?.ms ?? 0) : 0;
+  return index > 0 ? Math.max(shotInMove(shot)?.ms ?? 0, shotTransitionMs(shot)) : 0;
 }
 
 /** The scene's stage with defaults filled in. */
@@ -53,25 +61,32 @@ export function cameraTrack(scene: Scene): CameraShot[] {
   return scene.shots.map((shot, index) => {
     const target = shotView(shot, board.elements(), stage, view);
     const moveMs = shotMoveMs(shot, index);
+    const cameraMs = index > 0 ? (shotInMove(shot)?.ms ?? 0) : 0;
+    const transitionMs = index > 0 ? shotTransitionMs(shot) : 0;
     const from = index === 0 && target ? target : view;
     const to = target ?? view;
     const holdMs = shot.hold ?? 800;
     const move = index > 0 ? shotInMove(shot) : undefined;
     const during = shotHoldMove(shot);
     for (const cmd of shot.run ?? []) board.runCommand(cmd);
+    const elements = board.elements().map((e) => ({ ...e }));
+    // The next shot starts from where the behaviors leave the elements, as in `playScene`.
+    if (shot.behaviors?.length) applyBehaviors(board, shot.behaviors, holdMs, holdMs, behaviorBase(board, shot.behaviors));
     const end = during ? moveView(during, to, to, 1, stage) : to;
     const entry: CameraShot = {
       shot,
       index,
       startMs,
       moveMs,
+      cameraMs,
+      transitionMs,
       holdMs,
       from,
       to,
       ...(move ? { move } : {}),
       ...(during ? { during } : {}),
       end: stripBlur(end),
-      elements: board.elements().map((e) => ({ ...e })),
+      elements,
     };
     view = entry.end;
     startMs += moveMs + holdMs;
@@ -94,13 +109,14 @@ export const CAMERA_STEP_MS = 600 / CAMERA_STEPS;
  * or settled.
  */
 export function cameraAt(entry: CameraShot, ms: number, stage: Stage): View {
-  if (entry.move && entry.moveMs > 0 && ms < entry.moveMs) return moveView(entry.move, entry.from, entry.to, Math.max(0, ms) / entry.moveMs, stage);
+  if (entry.move && entry.cameraMs > 0 && ms < entry.cameraMs) return moveView(entry.move, entry.from, entry.to, Math.max(0, ms) / entry.cameraMs, stage);
+  if (ms < entry.moveMs) return entry.to;
   if (entry.during) return moveView(entry.during, entry.to, entry.to, entry.holdMs > 0 ? Math.min(1, (ms - entry.moveMs) / entry.holdMs) : 1, stage);
   return entry.to;
 }
 
 /** Where the shot's move jumps from one framing to the other (0 to 1 through it, for a whip or punch), or undefined when it moves smoothly. */
-export const moveCut = (entry: CameraShot): number | undefined => (entry.moveMs > 0 ? entry.move?.move.motion.cut : undefined);
+export const moveCut = (entry: CameraShot): number | undefined => (entry.cameraMs > 0 ? entry.move?.move.motion.cut : undefined);
 
 /** The camera at one frame of a scene's timeline. */
 export interface CameraSample {
@@ -130,7 +146,7 @@ export function cameraSamples(scene: Scene, frameRate: number, every = 2): Camer
     const at = (f: number) => add({ frame: start + f, view: cameraAt(entry, (f / frameRate) * 1000, stage), shot: entry.index });
     // A whip or punch jumps part-way: key the frames either side of the jump, so straight-line interpolation never tweens across it.
     const jump = moveCut(entry);
-    const cut = jump !== undefined ? Math.ceil(((entry.moveMs * jump) / 1000) * frameRate) : -1;
+    const cut = jump !== undefined ? Math.ceil(((entry.cameraMs * jump) / 1000) * frameRate) : -1;
     for (let f = 0; f < moveFrames; f += every) {
       if (cut > 0 && f < cut && f + every >= cut) {
         at(f);

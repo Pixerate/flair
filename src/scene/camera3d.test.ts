@@ -119,14 +119,13 @@ describe('3D camera', () => {
     expect(validateScene(scene)).toEqual([]);
   });
 
-  it('plays the camera in the standalone player', () => {
-    const html = standaloneSceneHtml(scene);
-    const plan = JSON.parse(html.match(/const plan = (\{.*\});/)![1]!);
+  it('plays the camera in the standalone player', async () => {
+    const html = await standaloneSceneHtml(scene);
+    const plan = JSON.parse(html.match(/<script type="application\/json" id="flair-scene-plan">(.*?)<\/script>/s)![1]!);
     expect(plan.shots).toHaveLength(4);
-    expect(plan.shots[1].move).toHaveLength(15);
-    expect(plan.shots[1].move.at(-1)).toMatchObject({ tilt: 35, turn: -15 });
-    expect(plan.shots[1].elements.map((e: { id: string }) => e.id)).toEqual(['card']);
-    expect(html).toContain("'perspective('");
+    const settled = plan.camera.filter((k: { ms: number }) => k.ms <= plan.shots[1].startMs + plan.shots[1].moveMs).at(-1);
+    expect(settled.view).toMatchObject({ tilt: 35, turn: -15 });
+    expect(plan.elements.map((e: { id: string }) => e.id)).toEqual(['card']);
   });
 });
 

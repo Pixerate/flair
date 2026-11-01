@@ -487,3 +487,16 @@ function mountCameraMove(
     ready: () => renderer.ready(),
   };
 }
+export {
+  mountScene,
+  recordScene,
+  sceneRecordingPlan,
+  SceneCompositor,
+  shotIndexAt,
+  type MountedScene,
+  type MountSceneOptions,
+  type SceneCompositorOptions,
+  type SceneRecordingPlan,
+  type SceneRecordOptions,
+  type SceneSlotSubjects,
+} from "./scene.js";

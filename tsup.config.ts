@@ -16,9 +16,24 @@ const shared = {
   define: { __FLAIR_VERSION__: JSON.stringify(version) },
 };
 
+/**
+ * The scene code loads the lazy catalog on demand (`import("../catalog/lazy.js")`). It is built
+ * on its own (below), so here that import stays an import of the published entry, which the
+ * package resolves to itself, rather than pulling a second copy of the catalog into this build.
+ */
+const lazyCatalogExternal = {
+  name: "lazy-catalog-external",
+  setup(build: { onResolve(options: { filter: RegExp }, callback: (args: { path: string; kind: string; importer: string }) => { path: string; external: boolean } | undefined): void }) {
+    build.onResolve({ filter: /(^|\/)catalog\/lazy\.js$/ }, (args) =>
+      args.kind === "dynamic-import" && !/[\\/]src[\\/]catalog[\\/]/.test(args.importer) ? { path: "@pixerate/flair/catalog/lazy", external: true } : undefined,
+    );
+  },
+};
+
 export default defineConfig([
   {
     ...shared,
+    esbuildPlugins: [lazyCatalogExternal],
     entry: {
       index: "src/index.ts",
       "catalog/index": "src/catalog/index.ts",
@@ -38,6 +53,8 @@ export default defineConfig([
       const { EFFECT_DOCUMENT_SCHEMA } = await import(built);
       await mkdir("dist/schemas", { recursive: true });
       await writeFile("dist/schemas/effect-document.json", `${JSON.stringify(EFFECT_DOCUMENT_SCHEMA, null, 2)}\n`);
+      const { SCENE_PLAN_SCHEMA } = await import(pathToFileURL(resolve("dist/index.js")).href);
+      await writeFile("dist/schemas/scene-plan.json", `${JSON.stringify(SCENE_PLAN_SCHEMA, null, 2)}\n`);
     },
   },
   // The lazy catalog (and the integrations, which use it) are built on their own, with a chunk per

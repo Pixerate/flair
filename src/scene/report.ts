@@ -9,7 +9,8 @@ export interface ShotLog extends ShotCheck {
   caption?: string;
   title?: string;
   failed: string[];
-  effects?: string[];
+  /** The layers that showed during the shot, bottom of the stack first (their ids, or `shot<N>.layer<M>`). */
+  layers?: string[];
 }
 
 export interface ReviewOptions {

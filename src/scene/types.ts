@@ -1,17 +1,10 @@
 import type { Rect, SceneElement } from './geometry.js';
 import type { CameraAngle, Stage } from './camera.js';
 import type { CameraMoveSpec } from './moves.js';
-import type { Effect } from './effects.js';
 import type { Behavior } from './behavior.js';
 import type { SceneRig } from './rig.js';
-
-/** Shader or external visual stream in the scene. */
-export interface SceneMedia {
-  type: 'shader' | string;
-  source?: string;
-  values?: Record<string, unknown>;
-  [field: string]: unknown;
-}
+import type { SceneLayer, ShotTransition } from './layers.js';
+import type { ReplicatorConfig } from './replicator.js';
 
 export interface ElementCommand {
   type: 'element';
@@ -33,6 +26,18 @@ export interface ClearCommand {
   type: 'clear';
 }
 
+/**
+ * Copies of one element laid out in a pattern (see `ReplicatorConfig`):
+ * `{ "type": "replicate", "element": {…}, "pattern": "grid", "count": 6 }`
+ * draws `<id>_0` to `<id>_5`. A camera's `frame` or a layer's `ids` can
+ * name the copies, or the element's own id for all of them. With
+ * `sequence.delayPerItem`, each copy appears that many ms after the last.
+ */
+export interface ReplicateCommand extends ReplicatorConfig {
+  type: 'replicate';
+  element: SceneElement;
+}
+
 export interface CustomCommand {
   type: string;
   [key: string]: unknown;
@@ -44,6 +49,7 @@ export type SceneCommand =
   | UpdateCommand
   | DeleteCommand
   | ClearCommand
+  | ReplicateCommand
   | CustomCommand;
 
 export function isElementCommand(cmd: SceneCommand): cmd is ElementCommand {
@@ -52,6 +58,10 @@ export function isElementCommand(cmd: SceneCommand): cmd is ElementCommand {
 
 export function isUpdateCommand(cmd: SceneCommand): cmd is UpdateCommand {
   return cmd.type === 'update' && 'id' in cmd && typeof cmd.id === 'string';
+}
+
+export function isReplicateCommand(cmd: SceneCommand): cmd is ReplicateCommand {
+  return cmd.type === 'replicate' && 'element' in cmd && !!cmd.element && typeof (cmd as ReplicateCommand).count === 'number';
 }
 
 export function isDeleteCommand(cmd: SceneCommand): cmd is DeleteCommand {
@@ -98,7 +108,7 @@ export interface CameraLens extends CameraAngle {
  */
 export type ShotCamera = (Rect | DynamicFraming | Record<never, never>) & CameraLens;
 
-/** One beat of a scene: camera framing, title, narration/caption, commands, and procedural effects. */
+/** One beat of a scene: camera framing, title, narration/caption, commands, layers of catalog effects and a transition into it. */
 export interface Shot {
   /** Narration / caption spoken or displayed during this beat. */
   caption?: string;
@@ -110,11 +120,11 @@ export interface Shot {
   hold?: number;
   /** Drawing or state change commands played during this shot. */
   run?: SceneCommand[];
-  /** Procedural visual effects started in this shot. */
-  effects?: Effect[];
-  /** IDs of active effects to stop/fade at the start of this shot. */
-  stopEffects?: string[];
-  /** Continuous procedural parameter and physics behaviors played during this shot. */
+  /** Catalog effects, custom shaders and pictures this shot starts, as layers (see {@link SceneLayer}). */
+  layers?: SceneLayer[];
+  /** A catalog transition from the last shot into this one (see {@link ShotTransition}). */
+  transition?: ShotTransition;
+  /** Continuous procedural parameter and physics behaviors (a path among them) played while this shot holds. */
   behaviors?: Behavior[];
 }
 
@@ -124,11 +134,9 @@ export interface Scene {
   title?: string;
   description?: string;
   stage?: Partial<Stage>;
-  /** Embedded media (e.g. bespoke WebGL fragment shaders). */
-  media?: Record<string, SceneMedia>;
   /** Target duration [minSeconds, maxSeconds]. */
   target?: [number, number];
-  /** Interactive macro rigs binding high-level controls to uniforms or element properties. */
+  /** Interactive macro rigs binding high-level controls to layers' control values or element properties. */
   rig?: SceneRig;
   shots: Shot[];
 }
