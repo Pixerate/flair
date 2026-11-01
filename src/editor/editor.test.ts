@@ -282,6 +282,62 @@ describe("commands and agent tools", () => {
     expect(editor.commands.execute("values.set", { values: { thickness: 5 } })).toMatchObject({ ok: false, message: expect.stringMatching(/thickness takes a number from 0 to 0\.2/) });
   });
 
+  it("lets agents find the chart, retro and reaction memes by kind, load each, apply presets and refuse bad values", async () => {
+    const editor = createEffectEditor({ from: "aurora" });
+    const provider = createEffectToolProvider(editor);
+    type Search = { total: number; effects: { id: string; category: string }[] };
+    const search = async (params: Record<string, unknown>) => {
+      const found = await callTool(provider, "run_command", { id: "catalog.search", params: { category: "meme", limit: 50, ...params } });
+      expect(found.isError).toBeFalsy();
+      return (found.structuredContent as { result: Search }).result.effects.map((e) => e.id);
+    };
+    expect(await search({ tags: ["reaction"] })).toEqual(expect.arrayContaining(["bonk", "hitmarker-montage", "reaction-rain"]));
+    expect(await search({ tags: ["chart"] })).toEqual(["stonks-chart"]);
+    expect(await search({ tags: ["retro"] })).toEqual(expect.arrayContaining(["error-cascade", "wordart-text"]));
+
+    // Each loads, and its presets apply.
+    for (const [id, preset] of [
+      ["stonks-chart", "Not stonks"],
+      ["error-cascade", "Trail"],
+      ["bonk", "Overlay"],
+      ["hitmarker-montage", "Rapid fire"],
+      ["reaction-rain", "Hearts"],
+      ["wordart-text", "Arch"],
+    ] as const) {
+      const run = await callTool(provider, "run_commands", {
+        steps: [
+          { id: "effect.load", params: { id } },
+          { id: "preset.apply", params: { name: preset } },
+        ],
+      });
+      expect(run.isError, id).toBeFalsy();
+      expect(editor.document.basedOn).toBe(id);
+    }
+    expect(editor.document.values).toMatchObject({ arch: 0.8, wave: 0 });
+
+    // Text, numbers and switches land as given.
+    await callTool(provider, "run_command", { id: "effect.load", params: { id: "error-cascade" } });
+    const set = await callTool(provider, "run_command", { id: "values.set", params: { values: { title: "Fatal", message: "Out of memes.", count: 4, trail: true } } });
+    expect(set.isError).toBeFalsy();
+    expect(editor.document.values).toMatchObject({ title: "Fatal", message: "Out of memes.", count: 4, trail: true });
+    // Too many dialogs, a mistyped switch and an unknown preset are refused, naming what is allowed, and nothing changes.
+    const many = await callTool(provider, "run_command", { id: "values.set", params: { values: { count: 40 } } });
+    expect(many.isError).toBe(true);
+    expect(JSON.stringify(many)).toMatch(/count takes a number from 1 to 16, not 40/);
+    expect(editor.commands.execute("values.set", { values: { trail: "yes" } })).toMatchObject({ ok: false, message: expect.stringMatching(/trail takes true or false/) });
+    expect(editor.commands.execute("preset.apply", { name: "Blue screen" })).toMatchObject({ ok: false });
+    expect(editor.document.values).toMatchObject({ count: 4, trail: true });
+
+    await callTool(provider, "run_command", { id: "effect.load", params: { id: "reaction-rain" } });
+    expect(editor.commands.execute("values.set", { values: { glyphs: 5 } })).toMatchObject({ ok: false, message: expect.stringMatching(/glyphs takes text/) });
+    expect(editor.commands.execute("values.set", { values: { glyphs: "🎉 🙌" } })).toMatchObject({ ok: true });
+
+    await callTool(provider, "run_command", { id: "effect.load", params: { id: "wordart-text" } });
+    expect(editor.commands.execute("values.set", { values: { wave: 2 } })).toMatchObject({ ok: false, message: expect.stringMatching(/wave takes a number from -1 to 1/) });
+    expect(editor.commands.execute("values.set", { values: { skew: -45 } })).toMatchObject({ ok: false, message: expect.stringMatching(/skew takes a number from -30 to 30/) });
+    expect(editor.document.values.wave).toBeUndefined();
+  });
+
   it("refuses values beyond a control's declared range, naming it, and changes nothing", async () => {
     const editor = createEffectEditor({ from: "beauty-blush" });
     const provider = createEffectToolProvider(editor);

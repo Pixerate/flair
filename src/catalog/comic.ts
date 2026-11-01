@@ -16,18 +16,18 @@ const r2 = (v: number) => Math.round(v * 100) / 100;
 /** A derived number in an animation's numeric field (`ms`, `delay`). */
 const n = (name: string) => `{{${name}}}` as unknown as number;
 
-/** A repeatable 0–1 number for `k`. */
-const rand = (k: number) => {
+/** @internal A repeatable 0–1 number for `k`. */
+export const rand = (k: number) => {
   const x = Math.sin(k * 12.9898 + 4.1414) * 43758.5453;
   return x - Math.floor(x);
 };
 
-/** A transform about (`cx`, `cy`): scaled `sx` by `sy`, turned `rot` degrees and moved by (`dx`, `dy`). */
-const about = (cx: number, cy: number, sx: number, sy = sx, rot = 0, dx = 0, dy = 0) =>
+/** @internal A transform about (`cx`, `cy`): scaled `sx` by `sy`, turned `rot` degrees and moved by (`dx`, `dy`). */
+export const about = (cx: number, cy: number, sx: number, sy = sx, rot = 0, dx = 0, dy = 0) =>
   `translate(${r1(cx + dx)} ${r1(cy + dy)}) rotate(${r1(rot)}) scale(${r2(sx)} ${r2(sy)}) translate(${r1(-cx)} ${r1(-cy)})`;
 
-/** Instant change: the attribute snaps to `value` at `delay`. */
-const snap = (id: string, attr: string, value: string | number, delay: number, step?: number): SvgAnimation => ({
+/** @internal Instant change: the attribute snaps to `value` at `delay`. */
+export const snap = (id: string, attr: string, value: string | number, delay: number, step?: number): SvgAnimation => ({
   id,
   ...(step === undefined ? {} : { step }),
   attrs: { [attr]: [value, value] },
@@ -35,8 +35,8 @@ const snap = (id: string, attr: string, value: string | number, delay: number, s
   ms: 0,
 });
 
-/** Keyframes `[ms, value]` of one attribute as changes, each from the frame before (equal times snap). */
-function keys(
+/** @internal Keyframes `[ms, value]` of one attribute as changes, each from the frame before (equal times snap). */
+export function keys(
   id: string,
   attr: string,
   frames: readonly (readonly [number, string | number])[],
@@ -60,8 +60,8 @@ type Point = readonly [number, number];
 /** A closed outline through `points`. */
 const outline = (points: readonly Point[]) => `M${points.map(([x, y]) => `${r1(x)} ${r1(y)}`).join(" L")} Z`;
 
-/** A star of `points` points, outer radius `r`, inner `inner`, point up, round (`cx`, `cy`). */
-function star(cx: number, cy: number, r: number, inner: number, points = 5): string {
+/** @internal A star of `points` points, outer radius `r`, inner `inner`, point up, round (`cx`, `cy`). */
+export function star(cx: number, cy: number, r: number, inner: number, points = 5): string {
   return outline(
     Array.from({ length: points * 2 }, (_, k) => {
       const a = -Math.PI / 2 + (k * Math.PI) / points;
@@ -81,8 +81,8 @@ function sparkle(cx: number, cy: number, r: number): string {
 const ellipse = (cx: number, cy: number, rx: number, ry: number) =>
   `M${r1(cx - rx)} ${r1(cy)} A${r1(rx)} ${r1(ry)} 0 1 0 ${r1(cx + rx)} ${r1(cy)} A${r1(rx)} ${r1(ry)} 0 1 0 ${r1(cx - rx)} ${r1(cy)} Z`;
 
-/** Lettering faces, the comic ones first. */
-const LETTERING = `'Bangers', 'Luckiest Guy', Impact, 'Arial Black', sans-serif`;
+/** @internal Lettering faces, the comic ones first. */
+export const LETTERING = `'Bangers', 'Luckiest Guy', Impact, 'Arial Black', sans-serif`;
 const HANDWRITTEN = `'Comic Neue', 'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', cursive`;
 
 // ── Sound effect ───────────────────────────────────────────────────────
