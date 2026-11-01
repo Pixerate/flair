@@ -35,6 +35,7 @@
 
 - [Multi-Shot Scenes](https://flair.pixerate.com/directing/scenes/): Directing shots on one board, each arranging catalog effects as layers, with catalog transitions and camera moves between them.
 - [Interchange & Exporters](https://flair.pixerate.com/directing/interchange/): Exporting scenes to Lottie, Final Cut Pro XML, and EDL formats.
+- [Sequence Templates](https://flair.pixerate.com/directing/templates/): Reusable scenes with typed slots that a person or an agent fills to get a finished scene.
 
 ## Editor & Agents
 

@@ -6,6 +6,7 @@ import { exec } from 'child_process';
 import { pathToFileURL } from 'url';
 import { parseControls, standaloneHtml, type ControlValue } from './shader/index.js';
 import { validateScene, simulateScene, standaloneSceneHtml, type Scene, type SceneSubject } from './scene/index.js';
+import { instantiateTemplate, isSubjectSlotType, templateSlotSummary, type SceneTemplate, type TemplateValue, type TemplateValues } from './scene/template.js';
 import { sceneExportNotes, type SceneExportFormat } from './export/notes.js';
 
 const program = new Command();
@@ -443,23 +444,21 @@ function sceneSubjects(given: string[], base: string): Record<string, SceneSubje
   for (const entry of given) {
     const at = entry.indexOf('=');
     if (at < 1) throw new Error(`--subject takes slot=value (like logo=./logo.png or title=text:Hello), not "${entry}".`);
-    const slot = entry.slice(0, at);
     const value = entry.slice(at + 1);
-    if (value.startsWith('text:')) {
-      subjects[slot] = { text: value.slice(5) };
-      continue;
-    }
-    const ext = path.extname(value.split('?')[0]!).toLowerCase();
-    const file = path.resolve(base, value);
-    const local = !/^[a-z]+:/i.test(value) && fs.existsSync(file);
-    if (['.mp4', '.webm', '.mov', '.m4v'].includes(ext)) subjects[slot] = { video: local ? pathToFileURL(file).href : value };
-    else if (ext === '.svg') subjects[slot] = { svg: local ? fs.readFileSync(file, 'utf-8') : value };
-    else {
-      const types: Record<string, string> = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp', '.avif': 'image/avif' };
-      subjects[slot] = { image: local ? `data:${types[ext] ?? 'application/octet-stream'};base64,${fs.readFileSync(file).toString('base64')}` : value };
-    }
+    subjects[entry.slice(0, at)] = value.startsWith('text:') ? { text: value.slice(5) } : fileSubject(value, base);
   }
   return subjects;
+}
+
+/** A file or URL as a subject: by its extension a video, an SVG or a picture; local pictures and SVGs are inlined. */
+function fileSubject(value: string, base: string): SceneSubject {
+  const ext = path.extname(value.split('?')[0]!).toLowerCase();
+  const file = path.resolve(base, value);
+  const local = !/^[a-z]+:/i.test(value) && fs.existsSync(file);
+  if (['.mp4', '.webm', '.mov', '.m4v'].includes(ext)) return { video: local ? pathToFileURL(file).href : value };
+  if (ext === '.svg') return { svg: local ? fs.readFileSync(file, 'utf-8') : value };
+  const types: Record<string, string> = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp', '.avif': 'image/avif' };
+  return { image: local ? `data:${types[ext] ?? 'application/octet-stream'};base64,${fs.readFileSync(file).toString('base64')}` : value };
 }
 
 sceneCmd
@@ -617,5 +616,108 @@ sceneCmd
     }
   });
 
+
+// ==========================================
+// Template Commands
+// ==========================================
+const templateCmd = program
+  .command('template')
+  .description('List sequence templates and fill one into a scene');
+
+/** A catalog template by id, or a template JSON file. */
+async function loadTemplate(ref: string): Promise<SceneTemplate> {
+  const { SCENE_TEMPLATES } = await import('./catalog/templates.js');
+  const found = SCENE_TEMPLATES.find((t) => t.id === ref);
+  if (found) return found;
+  const file = path.resolve(process.cwd(), ref);
+  if (fs.existsSync(file)) return JSON.parse(fs.readFileSync(file, 'utf-8'));
+  throw new Error(`There is no template "${ref}" and no such file; the templates are ${SCENE_TEMPLATES.map((t) => t.id).join(', ')} (flair template list).`);
+}
+
+/**
+ * A slot's value from the command line or a values file: a number for a
+ * number slot, a file or URL (local files inlined) for a subject slot, else
+ * the words as given.
+ */
+function templateValue(template: SceneTemplate, slot: string, value: unknown, base: string): TemplateValue {
+  const declared = template.slots.find((s) => s.name === slot);
+  if (typeof value !== 'string' || !declared) return value as TemplateValue;
+  if (declared.type === 'number') return value.trim() !== '' && Number.isFinite(Number(value)) ? Number(value) : value;
+  if (isSubjectSlotType(declared.type) && !value.trimStart().startsWith('<') && !value.startsWith('data:')) return fileSubject(value, base);
+  return value;
+}
+
+templateCmd
+  .command('list')
+  .description('List the catalog templates')
+  .action(async () => {
+    const { SCENE_TEMPLATES } = await import('./catalog/templates.js');
+    for (const t of SCENE_TEMPLATES) {
+      console.log(`${t.id} — ${t.name} (${t.scene.shots.length} shots)\n  ${t.description}\n  slots: ${t.slots.map((s) => `${s.name} (${s.type})`).join(', ')}`);
+    }
+  });
+
+templateCmd
+  .command('show <template>')
+  .description("Describe a template's slots: type, label, default and range")
+  .action(async (ref) => {
+    try {
+      const template = await loadTemplate(ref);
+      console.log(`${template.name} (${template.id})\n${template.description}\n\nSlots:`);
+      for (const slot of template.slots) console.log(`  • ${templateSlotSummary(slot)}`);
+    } catch (err: any) {
+      console.error(`Error: ${err.message}`);
+      process.exit(1);
+    }
+  });
+
+templateCmd
+  .command('fill <template>')
+  .description('Fill a template (a catalog id or a template JSON file) with values, writing the scene JSON and optionally a standalone player')
+  .option('--values <valuesFile>', 'A JSON file of values by slot name; picture paths in it are relative to it')
+  .option('--set <slot=value...>', 'Set a slot: words, a #RRGGBB colour, a number, or a picture/SVG/video file or URL')
+  .option('--name <name>', "The scene's name (default the template's id)")
+  .option('-o, --out <sceneFile>', 'Output scene JSON path (default <name>.scene.json)')
+  .option('--html <htmlFile>', 'Also write a standalone HTML player for the scene')
+  .option('--open', 'Open the HTML player in the browser', false)
+  .action(async (ref, options) => {
+    try {
+      const template = await loadTemplate(ref);
+      const values: TemplateValues = {};
+      if (options.values) {
+        const file = path.resolve(process.cwd(), options.values);
+        const given = JSON.parse(fs.readFileSync(file, 'utf-8'));
+        if (!given || typeof given !== 'object' || Array.isArray(given)) throw new Error(`${options.values} should hold an object of values by slot name.`);
+        for (const [slot, value] of Object.entries(given)) values[slot] = templateValue(template, slot, value, path.dirname(file));
+      }
+      for (const entry of options.set ?? []) {
+        const at = entry.indexOf('=');
+        if (at < 1) throw new Error(`--set takes slot=value (like headline="Meet Nova" or product=./product.png), not "${entry}".`);
+        values[entry.slice(0, at)] = templateValue(template, entry.slice(0, at), entry.slice(at + 1), process.cwd());
+      }
+      const result = instantiateTemplate(template, values, options.name ? { name: options.name } : {});
+      if (!result.ok) {
+        console.error(`Could not fill "${template.id}":`);
+        for (const error of result.errors) console.error(`  • ${error}`);
+        process.exit(1);
+      }
+      const scenePath = path.resolve(process.cwd(), options.out || `${result.scene.name}.scene.json`);
+      fs.mkdirSync(path.dirname(scenePath), { recursive: true });
+      fs.writeFileSync(scenePath, `${JSON.stringify(result.scene, null, 2)}\n`, 'utf-8');
+      console.log(`Filled "${template.id}" into ${scenePath} (${result.scene.shots.length} shots).`);
+      for (const issue of result.issues) console.warn(`  • [${issue.shot ? `Shot ${issue.shot}` : 'Scene'}] ${issue.message}`);
+      if (result.openSlots.length) console.log(`Open slots for the host to fill: ${result.openSlots.join(', ')} (flair scene html --subject slot=value).`);
+      if (options.html) {
+        const htmlPath = path.resolve(process.cwd(), options.html);
+        fs.mkdirSync(path.dirname(htmlPath), { recursive: true });
+        fs.writeFileSync(htmlPath, await standaloneSceneHtml(result.scene), 'utf-8');
+        console.log(`Generated standalone scene player at: ${htmlPath}`);
+        if (options.open) exec(`open "${htmlPath}"`);
+      }
+    } catch (err: any) {
+      console.error(`Error filling template: ${err.message}`);
+      process.exit(1);
+    }
+  });
 
 program.parse(process.argv);

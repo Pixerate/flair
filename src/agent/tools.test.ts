@@ -315,3 +315,79 @@ describe('layers through the scene tools', () => {
     expect(bad).toContainEqual(expect.stringMatching(/"waypoints" are at least two/));
   });
 });
+
+describe('templates, as a model calls them', () => {
+  const start: Scene = { name: 'draft', shots: [{ caption: 'Draft', hold: 500 }] };
+
+  it('lists templates with a total, a limit and a way to page', async () => {
+    const all = await applySceneTool(start, 'find_templates', {});
+    expect(all.ok).toBe(true);
+    expect(all.output.total).toBeGreaterThanOrEqual(4);
+    const page = await applySceneTool(start, 'find_templates', { limit: 1 });
+    expect(page.output.templates).toHaveLength(1);
+    expect(page.output.more).toMatch(/more match; ask again with offset 1/);
+    const product = await applySceneTool(start, 'find_templates', { text: 'product reveal' });
+    expect((product.output.templates as any[]).map((t) => t.id)).toContain('product-reveal');
+    expect((product.output.templates as any[])[0].slots).toContain('product (image)');
+    const none = await applySceneTool(start, 'find_templates', { text: 'zzz' });
+    expect(none.output.note).toMatch(/No template matches "zzz"; there are \d+: .*before-after/);
+    expect(none.ok && none.scene).toBe(start);
+  });
+
+  it('describes a template\'s slots without dumping its placeholder pictures', async () => {
+    const res = await applySceneTool(start, 'describe_template', { template: 'stat-countdown' });
+    expect(res.ok).toBe(true);
+    const slots = res.output.slots as any[];
+    expect(slots.find((s) => s.name === 'value')).toMatchObject({ type: 'number', min: 0, max: 100000, default: 12500 });
+    expect(res.output.shots).toHaveLength(3);
+    const tour = await applySceneTool(start, 'describe_template', { template: 'title-into-tour' });
+    expect(tour.output.slots as any[]).toContainEqual(expect.objectContaining({ name: 'screen1', type: 'image', hasDefault: true }));
+    expect(JSON.stringify(tour.output)).not.toContain('<svg xmlns');
+  });
+
+  it('fills a template into the working scene', async () => {
+    const res = await applySceneTool(start, 'use_template', { template: 'product-reveal', values: { productName: 'Orbit Mug', accent: '#2266FF', holdMs: 1800, product: { slot: 'hero' } }, name: 'orbit-launch' });
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.scene.name).toBe('orbit-launch');
+    expect(res.scene.shots[0]!.hold).toBe(1800);
+    expect(res.issues).toEqual([]);
+    expect(res.output.summary).toMatch(/Started the scene "orbit-launch" from the template "product-reveal" with 3 shots, filling productName, accent, holdMs, product; tagline, price took their defaults\./);
+    expect(res.output.openSlots).toEqual(['hero']);
+    expect(JSON.stringify(res.output)).not.toContain('"shots":[');
+  });
+
+  it('refuses bad arguments and leaves the scene alone', async () => {
+    const refusals = [
+      [{ template: 'product-reveel' }, /There is no template "product-reveel"; the templates are product-reveal, before-after/],
+      [{ template: 'product-reveal', values: { colour: '#000000' } }, /There is no slot "colour"; "product-reveal" has product \(image\), productName \(text\)/],
+      [{ template: 'product-reveal', values: { accent: 'blue' } }, /Slot "accent" takes a colour like "#FF5A36", not the words "blue"\. Nothing was changed\./],
+      [{ template: 'product-reveal', values: { holdMs: 100 } }, /Slot "holdMs" takes a whole number from 1200 to 6000; 100 is out of range/],
+      [{ template: 'product-reveal', values: { product: 42 } }, /Slot "product" takes a picture: a URL, a data: URL or <svg> markup \(or \{ "slot": "product" \} to leave it for the host\), not the number 42/],
+      [{ template: 'product-reveal', name: 'Big Launch' }, /lowercase words and dashes/],
+      [{ template: 'product-reveal', valuez: {} }, /arguments\.valuez is not a parameter; expected "template", "values", "name"/],
+      [{ values: {} }, /arguments\.template is required/],
+      [{ template: 'product-reveal', values: 'headline=Hi' }, /arguments\.values must be an object/],
+    ] as const;
+    for (const [input, message] of refusals) {
+      const res = await applySceneTool(start, 'use_template', input as any);
+      expect(res.ok, JSON.stringify(input)).toBe(false);
+      expect(res.output.error).toMatch(message);
+    }
+    expect((await applySceneTool(start, 'describe_template', { template: 'nope' })).output.error).toMatch(/the templates are/);
+    expect((await applySceneTool(start, 'find_templates', { limit: 0 })).output.error).toMatch(/limit must be at least 1/);
+  });
+
+  it('works inside batch_scene, editing the filled scene', async () => {
+    const res = await applySceneTool(start, 'batch_scene', {
+      steps: [
+        { tool: 'use_template', params: { template: 'before-after', values: { headline: 'Kitchen makeover' } } },
+        { tool: 'update_shot', params: { shot: 1, set: { caption: 'Day one' } } },
+      ],
+    });
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.scene.shots[2]!.title).toBe('Kitchen makeover');
+    expect(res.scene.shots[0]!.caption).toBe('Day one');
+  });
+});

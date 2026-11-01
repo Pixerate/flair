@@ -64,6 +64,8 @@ const mp4 = await recordScene(scene, { subjects: { productShot: { image: "/shot.
 
 `flair scene html scene.json --subject productShot=./shot.jpg` fills one in a standalone page. A slot left out fails the shot that uses it when subjects are given, and is noted otherwise.
 
+A [sequence template](../templates/) declares a scene's slots, with types, labels and defaults, alongside `{{placeholders}}` for words, colours and numbers.
+
 ## Transitions
 
 `transition: { effect, ms?, preset?, values? }` names a catalog transition into the shot (`find_layer_effects` with `transition: true` lists them). The last shot's final frame is its `uFrom`, the new shot its `uTo`, and `uProgress` runs from 0 to 1 over `ms` (800 by default). Without a camera `in` the camera cuts, so the transition does the move; with one, the camera moves inside the incoming picture as it is revealed.
