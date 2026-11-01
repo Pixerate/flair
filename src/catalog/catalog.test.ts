@@ -2811,19 +2811,38 @@ describe("horror effects", () => {
 });
 
 describe("meme effects", () => {
-  const IDS = ["impact-caption", "deep-fried", "dramatic-zoom", "deal-with-it", "laser-eyes", "to-be-continued"];
+  const IDS = [
+    "impact-caption",
+    "deep-fried",
+    "dramatic-zoom",
+    "deal-with-it",
+    "laser-eyes",
+    "to-be-continued",
+    "needs-more-jpeg",
+    "triggered",
+    "vaporwave-grade",
+    "galaxy-brain",
+    "sad-mode",
+    "game-over-banner",
+  ];
 
   it("have a category of their own, browsed with the pictures, and are tagged by kind", () => {
     expect(categoryGroup("meme").name).toBe("Pictures");
     expect(findEffects({ category: "meme" }).map((e) => e.id).sort()).toEqual([...IDS].sort());
     for (const effect of findEffects({ category: "meme" })) expect(effect.tags, effect.id).toContain("meme");
-    expect(findEffects({ category: "meme", tags: ["reaction"] }).map((e) => e.id).sort()).toEqual(["deal-with-it", "dramatic-zoom", "laser-eyes"]);
+    expect(findEffects({ category: "meme", tags: ["reaction"] }).map((e) => e.id).sort()).toEqual(["deal-with-it", "dramatic-zoom", "galaxy-brain", "laser-eyes", "triggered"]);
+    expect(findEffects({ category: "meme", tags: ["treatment"] }).map((e) => e.id).sort()).toEqual(["deep-fried", "needs-more-jpeg"]);
+    expect(findEffects({ category: "meme", tags: ["ending"] }).map((e) => e.id).sort()).toEqual(["game-over-banner", "to-be-continued"]);
+    expect(findEffects({ category: "meme", tags: ["aesthetic"] }).map((e) => e.id)).toEqual(["vaporwave-grade"]);
+    expect(findEffects({ category: "meme", tags: ["mood"] }).map((e) => e.id)).toEqual(["sad-mode"]);
   });
 
   it("shaders take a picture, with their points on the sample portrait's face", () => {
-    for (const id of ["deep-fried", "dramatic-zoom", "laser-eyes", "to-be-continued"]) {
+    const filters = ["needs-more-jpeg", "vaporwave-grade"];
+    for (const id of ["deep-fried", "dramatic-zoom", "laser-eyes", "to-be-continued", ...filters, "triggered", "galaxy-brain", "sad-mode", "game-over-banner"]) {
       const effect = getEffect(id)!;
-      expect(effect, id).toMatchObject({ kind: "shader", video: "stills" });
+      expect(effect, id).toMatchObject({ kind: "shader", video: filters.includes(id) ? "filter" : "stills" });
+      expect((effect.presets ?? []).length, id).toBeGreaterThanOrEqual(3);
       expect(effectDefaults(effect).uImage, id).toBe(SAMPLE_IMAGES.portrait);
     }
     expect(effectDefaults(getEffect("laser-eyes")!)).toMatchObject({ uEyeA: [0.461, 0.583], uEyeB: [0.539, 0.583] });
@@ -2831,6 +2850,32 @@ describe("meme effects", () => {
       { name: "uImage", label: "Image", wants: "picture" },
       { name: "uText", label: "Text", wants: "text" },
     ]);
+  });
+
+  it("batch two's words come from a text image fitted by its ink, with fitting defaults", () => {
+    for (const id of ["triggered", "vaporwave-grade", "game-over-banner"]) {
+      const effect = getEffect(id) as ShaderEffect;
+      expect(effectInputs(effect).images.map((s) => s.name), id).toEqual(["uImage", "uText"]);
+      expect(effect.source, id).toContain("vec4 inkBox()");
+      // Mipmapped (the default), which inkBox measures with.
+      expect(parseControls(effect.source).find((c) => c.name === "uText")!.texture?.filter ?? "mipmap", id).toBe("mipmap");
+    }
+    expect(effectDefaults(getEffect("triggered")!).uText).toBe(textImage("TRIGGERED"));
+    expect(decodeURIComponent(effectDefaults(getEffect("game-over-banner")!).uText as string)).toMatch(/font-family="Georgia[^"]*serif"[^>]*>GAME OVER</);
+    // The jitter is capped in the source, whatever the control says, and nothing flashes.
+    const triggered = getEffect("triggered") as ShaderEffect;
+    expect(triggered.source).toMatch(/const float MAX_SHIFT = 0\.02;/);
+    expect(parseControls(triggered.source).find((c) => c.name === "uShake")).toMatchObject({ min: 0, max: 1 });
+    expect(parseControls(triggered.source).map((c) => c.name)).not.toContain("uFlash");
+  });
+
+  it("galaxy brain climbs at most four levels from a head point, and the steppers say how many steps", () => {
+    const galaxy = parseControls((getEffect("galaxy-brain") as ShaderEffect).source);
+    expect(galaxy.find((c) => c.name === "uLevel")).toMatchObject({ type: "int", min: 1, max: 4, default: 4 });
+    expect(galaxy.find((c) => c.name === "uHead")).toMatchObject({ type: "vec2", min: 0, max: 1 });
+    const jpeg = parseControls((getEffect("needs-more-jpeg") as ShaderEffect).source);
+    expect(jpeg.find((c) => c.name === "uSteps")).toMatchObject({ type: "int", min: 1, max: 8 });
+    expect(jpeg.find((c) => c.name === "uBlock")).toMatchObject({ default: 8 });
   });
 
   it("impact caption sets both lines in capitals, fitted to the frame, and can leave one out", () => {
