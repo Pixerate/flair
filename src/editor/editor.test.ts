@@ -208,6 +208,22 @@ describe("commands and agent tools", () => {
     expect(editor.commands.execute("catalog.tags", { limit: 0 })).toMatchObject({ ok: false });
   });
 
+  it("lets agents find cinematic effects and set up a letterbox", async () => {
+    const editor = createEffectEditor({ from: "aurora" });
+    const provider = createEffectToolProvider(editor);
+    type Search = { total: number; effects: { id: string; category: string }[] };
+    const found = await callTool(provider, "run_command", { id: "catalog.search", params: { category: "cinematic", limit: 50 } });
+    const result = (found.structuredContent as { result: Search }).result;
+    expect(result.total).toBe(5);
+    expect(result.effects.map((e) => e.id)).toEqual(expect.arrayContaining(["anamorphic-lens", "end-credits-roll"]));
+    const pulls = editor.commands.execute<Search>("catalog.search", { group: "Transitions", text: "focus", limit: 50 });
+    expect(pulls.ok && pulls.result.effects.map((e) => e.id)).toContain("transition-focus-pull");
+    expect(editor.commands.execute("effect.load", { id: "letterbox" })).toMatchObject({ ok: true });
+    expect(editor.commands.execute("values.set", { values: { uAspect: 1.85, uAnimate: true } })).toMatchObject({ ok: true });
+    expect(editor.commands.execute("values.set", { values: { uAspect: "wide" } })).toMatchObject({ ok: false, message: expect.stringMatching(/uAspect/) });
+    expect(editor.commands.execute("values.set", { values: { uRatio: 2 } })).toMatchObject({ ok: false, message: expect.stringMatching(/uRatio/) });
+  });
+
   it("lets agents find beauty effects, and refuses a category there is not", async () => {
     const editor = createEffectEditor({ from: "aurora" });
     const provider = createEffectToolProvider(editor);
