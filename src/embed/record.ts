@@ -105,8 +105,12 @@ export interface RecordOptions extends ShutterOptions {
 }
 
 /** What a recording will be, worked out from the options before any frame is drawn (see {@link recordingPlan}). */
-export interface RecordingPlan {
+export interface RecordingPlan extends OutputPlan {
   effect: EffectDefinition;
+}
+
+/** The file a recording makes and how it is drawn, whatever it records (an effect or a scene). */
+export interface OutputPlan {
   format: RecordFormat;
   width: number;
   height: number;
@@ -225,10 +229,25 @@ export async function recordingPlan(effect: EffectDefinition | string, options: 
   if (!Number.isFinite(start) || start < 0) throw new Error(`start must be 0 or more seconds (it was ${String(options.start)}).`);
   const duration = positive("duration", options.duration, defaultDuration(def, options));
   const shutter = checkShutter(options);
+  const alpha = options.alpha ?? drawsAlpha(def, effectDefaults(def, { ...(options.preset ? { preset: options.preset } : {}), ...(options.values ? { values: options.values } : {}) }));
+  const output = await negotiateOutput(options, fps, alpha);
+  return { effect: def, ...output, fps, duration, start, frames: Math.max(1, Math.round(duration * fps)), ...(shutter ? { shutter } : {}) };
+}
+
+/** The options that decide a recording's file. */
+type OutputOptions = Pick<RecordOptions, "format" | "width" | "height" | "bitrate" | "alpha" | "audio" | "audioTrack">;
+
+/**
+ * The format, size, transparency and encoders a recording gets, after
+ * falling back where the browser cannot encode what was asked for (`alpha`
+ * is whether the picture would draw transparency, when the options do not
+ * say). Rejects with a sentence naming the formats that would work.
+ */
+export async function negotiateOutput(options: OutputOptions, fps: number, drawnAlpha: boolean): Promise<Pick<OutputPlan, "format" | "width" | "height" | "alpha" | "encoder" | "audioEncoder">> {
   let width = Math.round(positive("width", options.width, 1280));
   let height = Math.round(positive("height", options.height, 720));
   const explicitAlpha = options.alpha === true;
-  let alpha = options.alpha ?? drawsAlpha(def, effectDefaults(def, { ...(options.preset ? { preset: options.preset } : {}), ...(options.values ? { values: options.values } : {}) }));
+  let alpha = options.alpha ?? drawnAlpha;
   let format = options.format;
   if (format && !["mp4", "webm", "gif", "png"].includes(format)) throw new Error(`format is one of "mp4", "webm", "gif" or "png" (it was "${format}").`);
   if (format === "mp4" && alpha) {
@@ -294,7 +313,7 @@ export async function recordingPlan(effect: EffectDefinition | string, options: 
       throw new Error(`This browser cannot encode ${codec} audio, so it cannot put the sound in ${format === "mp4" ? "an mp4" : "a webm"}; ${format === "mp4" ? 'record "webm" (Opus), or ' : ""}pass audioTrack: false to record the picture alone (the sound still drives it).`);
     }
   }
-  return { effect: def, format: format!, width, height, fps, duration, start, frames: Math.max(1, Math.round(duration * fps)), alpha, ...(shutter ? { shutter } : {}), ...(encoder ? { encoder } : {}), ...(audioEncoder ? { audioEncoder } : {}) };
+  return { format: format!, width, height, alpha, ...(encoder ? { encoder } : {}), ...(audioEncoder ? { audioEncoder } : {}) };
 }
 
 /** A shader's loop, a vector effect's picture plus its hold, or one loop of a camera move's preview, else 4 seconds. */
@@ -313,10 +332,10 @@ function effectValues(def: EffectDefinition, options: RecordOptions) {
 }
 
 /** RGBA bytes of one frame. */
-type Pixels = Uint8ClampedArray<ArrayBuffer>;
+export type Pixels = Uint8ClampedArray<ArrayBuffer>;
 
 /** Draws frames as straight (not premultiplied) RGBA, rows top down. */
-interface FrameSource {
+export interface FrameSource {
   frame(time: number, index: number, out: Pixels): Promise<void>;
   dispose(): void;
 }
@@ -390,7 +409,7 @@ function vectorSource(plan: RecordingPlan, values: Record<string, ControlValue>,
  * Motion blur: each frame is the average (in premultiplied alpha) of the
  * shutter's sub-frames, each drawn by `source` at its own time.
  */
-function shutterSource(source: FrameSource, plan: RecordingPlan, shutter: Shutter): FrameSource {
+export function shutterSource(source: FrameSource, plan: OutputPlan, shutter: Shutter): FrameSource {
   const average = new FrameAverager(plan.width * plan.height);
   const sub: Pixels = new Uint8ClampedArray(plan.width * plan.height * 4);
   return {
@@ -426,7 +445,7 @@ interface Encoder {
   close(): void;
 }
 
-async function gifEncoder(plan: RecordingPlan): Promise<Encoder> {
+async function gifEncoder(plan: OutputPlan): Promise<Encoder> {
   const { GIFEncoder, quantize, applyPalette } = await import("gifenc");
   const gif = GIFEncoder();
   const delay = 1000 / plan.fps;
@@ -457,7 +476,7 @@ async function gifEncoder(plan: RecordingPlan): Promise<Encoder> {
   };
 }
 
-function pngEncoder(plan: RecordingPlan): Encoder {
+function pngEncoder(plan: OutputPlan): Encoder {
   const canvas = document.createElement("canvas");
   canvas.width = plan.width;
   canvas.height = plan.height;
@@ -521,7 +540,7 @@ async function decodeAudio(url: string): Promise<AudioBuffer> {
 }
 
 /** Encoded sound, ready to mux. */
-interface EncodedSound {
+export interface EncodedSound {
   codec: "aac" | "opus";
   sampleRate: number;
   channels: number;
@@ -534,7 +553,7 @@ interface EncodedSound {
  * an `OfflineAudioContext`, which resamples and mixes), encoded with
  * WebCodecs.
  */
-async function encodeSound(buffer: AudioBuffer, plan: RecordingPlan): Promise<EncodedSound> {
+async function encodeSound(buffer: AudioBuffer, plan: OutputPlan): Promise<EncodedSound> {
   const config = plan.audioEncoder!;
   const channels = config.numberOfChannels;
   const length = Math.max(1, Math.round(plan.duration * AUDIO_RATE));
@@ -582,7 +601,7 @@ async function encodeSound(buffer: AudioBuffer, plan: RecordingPlan): Promise<En
  * frame's alpha goes beside it in the webm, as Chrome's own recordings do:
  * browsers' encoders do not keep alpha themselves.
  */
-function videoEncoder(plan: RecordingPlan, sound?: Promise<EncodedSound>): Encoder {
+function videoEncoder(plan: OutputPlan, sound?: Promise<EncodedSound>): Encoder {
   const config = plan.encoder!;
   let failure: Error | undefined;
   const fail = (e: Error) => (failure ??= e);
@@ -693,7 +712,6 @@ function videoEncoder(plan: RecordingPlan, sound?: Promise<EncodedSound>): Encod
  */
 export async function recordEffect(effect: EffectDefinition | string, options: RecordOptions = {}): Promise<Blob> {
   const plan = await recordingPlan(effect, options);
-  const { signal, onProgress } = options;
   const { values, live } = effectValues(plan.effect, options);
   const background = (parseColor(options.background ?? (plan.effect.kind !== "vector" ? "#000000" : "#ffffff")) ?? [0, 0, 0]).map((c) => Math.round(c * 255)) as [number, number, number];
 
@@ -703,6 +721,22 @@ export async function recordEffect(effect: EffectDefinition | string, options: R
   const track = buffer && plan.audioEncoder ? encodeSound(buffer, plan) : undefined;
   track?.catch(() => undefined);
   const drawn = plan.effect.kind !== "vector" ? shaderSource(plan, values, live, options, sound) : vectorSource(plan, values, options);
+  return encodeFrames(plan, drawn, background, options, track);
+}
+
+/**
+ * Draws `plan.frames` frames from `drawn` (motion-blurred when the plan has
+ * a shutter), lays them over `background` unless the plan keeps alpha, and
+ * encodes them into the plan's format, with `track` as the sound.
+ */
+export async function encodeFrames(
+  plan: OutputPlan,
+  drawn: FrameSource,
+  background: [number, number, number],
+  options: Pick<RecordOptions, "signal" | "onProgress">,
+  track?: Promise<EncodedSound>,
+): Promise<Blob> {
+  const { signal, onProgress } = options;
   const source = plan.shutter ? shutterSource(drawn, plan, plan.shutter) : drawn;
   let encoder: Encoder | undefined;
   try {

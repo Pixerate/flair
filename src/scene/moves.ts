@@ -3,6 +3,7 @@ import type { CameraEffect, CameraRole } from '../catalog/types.js';
 import type { ControlValue } from '../shader/controls.js';
 import type { Stage, View } from './camera.js';
 import type { Shot } from './types.js';
+import { DEFAULT_TRANSITION_MS } from './layers.js';
 
 /**
  * A camera move from the catalog, as a shot names it: its id
@@ -90,11 +91,24 @@ export function resolveCameraMove(
   return { move: { move, values: resolved.values, ms: move.motion.duration === 0 && role === 'transition' ? 0 : ms }, issues };
 }
 
-/** The move a shot's camera gets in with (its `in`, else a glide), or undefined when it does not move (no camera). */
+/** The camera move a shot with a transition and no camera `in` makes: a cut, so the transition does the move. */
+export const TRANSITION_CAMERA_MOVE = 'camera-cut';
+
+/**
+ * The move a shot's camera gets in with (its `in`, else a cut when the shot
+ * has a transition, else a glide), or undefined when it does not move (no camera).
+ */
 export function shotInMove(shot: Shot): ShotMove | undefined {
   if (!shot.camera) return undefined;
-  const spec = shot.camera.in ?? DEFAULT_CAMERA_MOVE;
+  const spec = shot.camera.in ?? (shot.transition ? TRANSITION_CAMERA_MOVE : DEFAULT_CAMERA_MOVE);
   return resolveCameraMove(spec, 'transition').move ?? resolveCameraMove(DEFAULT_CAMERA_MOVE, 'transition').move;
+}
+
+/** How long a shot's transition takes, in ms (0 without one). */
+export function shotTransitionMs(shot: Shot): number {
+  const t = shot.transition;
+  if (!t || typeof t !== 'object') return 0;
+  return typeof t.ms === 'number' && t.ms >= 0 ? t.ms : DEFAULT_TRANSITION_MS;
 }
 
 /** The move a shot's camera makes while it holds (its `during`), or undefined. */

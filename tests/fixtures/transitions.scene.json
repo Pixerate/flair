@@ -1,7 +1,7 @@
 {
   "name": "transitions",
   "title": "Whip, zoom and cut",
-  "description": "Each camera transition between three cards: an eased move, a whip pan, a zoom punch and a hard cut",
+  "description": "Each camera move between three cards (an eased move, a whip pan, a zoom punch and a hard cut), then a catalog transition that wipes into the last shot",
   "stage": { "width": 1920, "height": 1080 },
   "shots": [
     {
@@ -18,6 +18,7 @@
     { "title": "Render", "camera": { "frame": ["render"], "in": "camera-whip-pan" }, "hold": 700 },
     { "title": "Ship", "camera": { "frame": ["ship"], "in": "camera-punch-zoom" }, "hold": 700 },
     { "title": "Write", "camera": { "frame": ["write"], "in": "camera-cut" }, "hold": 700 },
-    { "title": "All three", "camera": { "x": 0, "y": 0, "width": 1920, "height": 1080, "in": { "move": "camera-whip-pan", "values": { "motionBlur": 3 } } }, "hold": 900 }
+    { "title": "All three", "camera": { "x": 0, "y": 0, "width": 1920, "height": 1080, "in": { "move": "camera-whip-pan", "values": { "motionBlur": 3 } } }, "hold": 900 },
+    { "title": "Shipped", "camera": { "frame": ["ship"] }, "transition": { "effect": "transition-wipe", "ms": 700 }, "hold": 900 }
   ]
 }

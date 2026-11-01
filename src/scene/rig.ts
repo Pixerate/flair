@@ -1,3 +1,4 @@
+import { parseControls } from '../shader/controls.js';
 import type { Scene } from './types.js';
 
 export interface SliderSnapshot {
@@ -124,36 +125,44 @@ function resolveWidgetValues(widget: RigWidget): Record<string, number | string>
   return {};
 }
 
+/** Every target key a rig's widgets set (`layers.<id>.<control>`, `element.<id>.<prop>`, or a bare control name). */
+export function rigTargets(rig: SceneRig): string[] {
+  const keys = new Set<string>();
+  for (const widget of Object.values(rig.widgets ?? {})) {
+    const records =
+      widget.type === 'popup' ? Object.values(widget.options ?? {}) : widget.type === 'toggle' ? [widget.on, widget.off] : (widget.snapshots ?? []).map((s) => s.values);
+    for (const r of records) for (const k of Object.keys(r ?? {})) keys.add(k);
+  }
+  return [...keys];
+}
+
 /**
- * Propagates rig widget state into the scene's shader uniforms and elements.
+ * Propagates rig widget state into the scene's layers' control values and
+ * its elements. A target is `layers.<id>.<control>` (a layer by its `id`),
+ * `element.<id>.<prop>`, or a bare control name (`<control>` or
+ * `uniforms.<control>`), set on every layer that has it (a custom shader
+ * declaring it, or a layer whose `values` already set it).
  */
 export function applyRig(rig: SceneRig, scene: Scene): Scene {
-  // Deep clone media and shots to prevent mutation
-  const nextMedia: Record<string, any> = {};
-  if (scene.media) {
-    for (const [id, m] of Object.entries(scene.media)) {
-      nextMedia[id] = {
-        ...m,
-        values: { ...(m.values ?? {}) },
-      };
-    }
-  }
-
-  const nextShots = scene.shots.map((shot) => {
-    if (!shot.run) return { ...shot };
-    return {
-      ...shot,
-      run: shot.run.map((cmd) => {
-        if (cmd.type === 'element' && 'element' in cmd && cmd.element) {
-          return { ...cmd, element: { ...cmd.element } };
+  // Copy shots, their layers and commands, so the scene given is left as it was
+  const nextShots = scene.shots.map((shot) => ({
+    ...shot,
+    ...(shot.layers ? { layers: shot.layers.map((l) => ({ ...l, values: { ...(l.values ?? {}) } })) } : {}),
+    ...(shot.run
+      ? {
+          run: shot.run.map((cmd) => {
+            if (cmd.type === 'element' && 'element' in cmd && cmd.element) {
+              return { ...cmd, element: { ...cmd.element } };
+            }
+            if (cmd.type === 'update' && 'props' in cmd && (cmd as any).props) {
+              return { ...cmd, props: { ...(cmd as any).props } };
+            }
+            return { ...cmd };
+          }),
         }
-        if (cmd.type === 'update' && 'props' in cmd && (cmd as any).props) {
-          return { ...cmd, props: { ...(cmd as any).props } };
-        }
-        return { ...cmd };
-      }),
-    };
-  });
+      : {}),
+  }));
+  const allLayers = nextShots.flatMap((s) => s.layers ?? []);
 
   // Collect all resolved values across all widgets in the rig
   const resolvedAll: Record<string, number | string> = {};
@@ -163,13 +172,11 @@ export function applyRig(rig: SceneRig, scene: Scene): Scene {
 
   // Apply resolved values
   for (const [targetKey, val] of Object.entries(resolvedAll)) {
-    if (targetKey.startsWith('media.')) {
+    if (targetKey.startsWith('layers.')) {
       const parts = targetKey.split('.');
-      const mediaId = parts[1]!;
+      const layerId = parts[1]!;
       const prop = parts.length > 3 && parts[2] === 'values' ? parts[3]! : parts[2]!;
-      if (nextMedia[mediaId]) {
-        nextMedia[mediaId].values[prop] = val;
-      }
+      for (const layer of allLayers) if (layer.id === layerId) layer.values![prop] = val;
     } else if (targetKey.startsWith('element.')) {
       const parts = targetKey.split('.');
       const elId = parts[1]!;
@@ -178,7 +185,7 @@ export function applyRig(rig: SceneRig, scene: Scene): Scene {
         if (shot.run) {
           for (const cmd of shot.run) {
             if (cmd.type === 'element' && 'element' in cmd && (cmd as any).element?.id === elId) {
-              (cmd.element as any)[prop] = val;
+              ((cmd as any).element as any)[prop] = val;
             } else if (cmd.type === 'update' && 'id' in cmd && cmd.id === elId) {
               (cmd as any).props[prop] = val;
             }
@@ -186,17 +193,17 @@ export function applyRig(rig: SceneRig, scene: Scene): Scene {
         }
       }
     } else {
-      // General uniform shorthand: uniforms.<name> or simply <name>
-      const uniformName = targetKey.replace(/^uniforms\./, '');
-      for (const m of Object.values(nextMedia)) {
-        m.values[uniformName] = val;
+      // A bare control name (or uniforms.<name>): the layers that have that control
+      const control = targetKey.replace(/^uniforms\./, '');
+      for (const layer of allLayers) {
+        const declared = typeof layer.source === 'string' && parseControls(layer.source).some((c) => c.name === control);
+        if (declared || control in layer.values!) layer.values![control] = val;
       }
     }
   }
 
   return {
     ...scene,
-    media: Object.keys(nextMedia).length > 0 ? nextMedia : scene.media,
     shots: nextShots,
     rig,
   };

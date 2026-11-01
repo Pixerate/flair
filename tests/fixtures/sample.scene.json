@@ -1,23 +1,17 @@
 {
   "name": "sample-pipeline",
   "title": "Real-time Pipeline Overview",
-  "description": "Demonstrating camera moves, shader background, and procedural effects",
+  "description": "Layers of catalog effects over a board: a custom shader background, a catalog shader on a slot-filled picture, a vector lower third, a burst overlay, copies on a ring and a catalog transition",
   "stage": {
     "width": 1920,
     "height": 1080
-  },
-  "media": {
-    "plasma": {
-      "type": "shader",
-      "source": "// @control float speed \"Animation Speed\" [0.1, 5.0] = 1.0\nuniform float speed;\nvoid mainImage(out vec4 fragColor, in vec2 fragCoord) {\n  vec2 uv = fragCoord / u_resolution.xy;\n  float v = sin(uv.x * 10.0 + u_time * speed) * cos(uv.y * 10.0 + u_time * speed);\n  fragColor = vec4(0.1 + 0.1 * v, 0.2 + 0.2 * v, 0.4 + 0.3 * v, 1.0);\n}"
-    }
   },
   "shots": [
     {
       "title": "Ingestion Layer",
       "caption": "Events stream directly into our high-throughput ingestion buffer.",
       "camera": { "x": 0, "y": 0, "width": 1920, "height": 1080 },
-      "hold": 800,
+      "hold": 1600,
       "run": [
         {
           "type": "element",
@@ -32,16 +26,22 @@
           }
         }
       ],
-      "effects": [
+      "layers": [
         {
-          "type": "media",
-          "id": "bgShader",
-          "media": "plasma"
+          "id": "plasma",
+          "source": "uniform float speed; // @control min=0.1 max=5 default=1 label=\"Animation Speed\"\nvoid mainImage(out vec4 fragColor, in vec2 fragCoord) {\n  vec2 uv = fragCoord / iResolution.xy;\n  float v = sin(uv.x * 10.0 + iTime * speed) * cos(uv.y * 10.0 + iTime * speed);\n  fragColor = vec4(0.1 + 0.1 * v, 0.2 + 0.2 * v, 0.4 + 0.3 * v, 1.0);\n}",
+          "values": { "speed": 1.5 },
+          "role": "background",
+          "until": { "shots": 3 }
         },
         {
-          "type": "glow",
-          "id": "ingestGlow",
-          "ids": ["ingest"]
+          "id": "nameplate",
+          "effect": "lower-third",
+          "preset": "News",
+          "values": { "name": "Ingest", "title": "200k events a second" },
+          "role": "overlay",
+          "from": 300,
+          "fade": 200
         }
       ]
     },
@@ -49,7 +49,8 @@
       "title": "Compute Cluster",
       "caption": "Workers scale dynamically to process concurrent partitions.",
       "camera": { "x": 800, "y": 300, "width": 1000, "height": 600 },
-      "hold": 900,
+      "transition": { "effect": "transition-film-burn", "ms": 900 },
+      "hold": 1800,
       "run": [
         {
           "type": "element",
@@ -64,14 +65,47 @@
           }
         }
       ],
-      "effects": [
+      "layers": [
         {
-          "type": "burst",
-          "id": "workBurst",
-          "ids": ["compute"]
+          "id": "logo",
+          "effect": "image-duotone",
+          "preset": "Spotify",
+          "subject": { "slot": "logo" },
+          "rect": { "x": 1450, "y": 400, "width": 280, "height": 280 }
+        },
+        {
+          "id": "burst",
+          "effect": "tick-ring-burst",
+          "ids": ["compute"],
+          "padding": 60,
+          "role": "overlay",
+          "opacity": 0.9
+        }
+      ]
+    },
+    {
+      "title": "Fan-out",
+      "caption": "Results fan out to every region.",
+      "camera": { "frame": ["region"], "in": "camera-whip-pan" },
+      "hold": 1600,
+      "run": [
+        {
+          "type": "replicate",
+          "element": { "id": "region", "type": "ellipse", "x": 1150, "y": 540, "width": 90, "height": 90, "text": "" },
+          "pattern": "circle",
+          "count": 8,
+          "radius": 320,
+          "origin": [1110, 500],
+          "sequence": { "delayPerItem": 80 }
         }
       ],
-      "stopEffects": ["ingestGlow"]
+      "behaviors": [
+        {
+          "type": "path",
+          "target": "compute",
+          "waypoints": [{ "point": [1150, 540] }, { "point": [1150, 300], "inTangent": [-200, 0], "outTangent": [200, 0] }, { "point": [1450, 540] }]
+        }
+      ]
     }
   ]
 }

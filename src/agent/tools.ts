@@ -1,5 +1,7 @@
-import type { Scene, SceneMedia, Shot } from '../scene/types.js';
+import type { Scene, Shot } from '../scene/types.js';
 import { validateScene, type SceneIssue } from '../scene/validate.js';
+import { checkSceneLayers } from '../scene/layercheck.js';
+import { layerKey, layerRole, layerWhat, isSlot, type LayerTime } from '../scene/layers.js';
 import { simulateScene } from '../scene/player.js';
 import type { Review } from '../scene/report.js';
 import { applyRig, setRigWidget } from '../scene/rig.js';
@@ -12,6 +14,10 @@ export interface AgentToolDefinition {
   description: string;
   input_schema: Record<string, unknown>;
 }
+
+/** How a shot arranges layers, a transition, copies and paths, for the tools' descriptions. */
+const SHOT_GUIDE =
+  'A shot\'s "layers" are catalog effects ({"effect": id, "preset"?, "values"?}), custom shaders ({"source": GLSL with void mainImage}) or bare pictures, each with an optional "subject" ({"image": url}, {"video": url}, {"svg": markup}, {"text": words}, or {"slot": name} that the host fills when it plays or records), a "role" ("background", "subject" or "overlay"), a place on the board ("rect" {x, y, width, height} or "ids" of elements; without either it fills the screen), "from"/"until" (ms after the shot starts, or {"shots": n}; by default it lasts until the next shot), "opacity" and "fade" (ms). find_layer_effects finds effects and what they take. A shot\'s "transition" is a catalog transition from the last shot ({"effect": "transition-wipe", "ms"?, "preset"?, "values"?}); without a camera "in" the camera cuts and the transition does the move. A run command {"type": "replicate", "element": {...}, "pattern": "grid"|"line"|"circle"|"spiral", "count"} draws copies <id>_0…, and a behavior {"type": "path", "target": id, "waypoints": [{"point": [x, y]}, ...], "orient"?} moves an element along a curve while the shot holds.';
 
 export const FLAIR_AGENT_TOOLS: AgentToolDefinition[] = [
   {
@@ -39,7 +45,7 @@ export const FLAIR_AGENT_TOOLS: AgentToolDefinition[] = [
         scene: {
           type: 'object',
           description:
-            'Full Scene object with name, stage, media, and shots. A shot camera frames a box {x, y, width, height} or elements {frame: [ids]}, and may add tilt, turn, roll (degrees, tilt/turn up to 75) and perspective (default 1.2); angles persist until changed. Its "in" is the camera move into the shot ("camera-glide" by default; "camera-whip-pan", "camera-punch-zoom", "camera-cut") and its "during" a move while the shot holds ("camera-ken-burns", "camera-crash-zoom"): an id, or {move, ms?, preset?, values?} like {"move": "camera-whip-pan", "values": {"motionBlur": 3}}. find_camera_moves lists the moves with their controls.',
+            'Full Scene object with name, stage and shots. ' + SHOT_GUIDE + ' A shot camera frames a box {x, y, width, height} or elements {frame: [ids]}, and may add tilt, turn, roll (degrees, tilt/turn up to 75) and perspective (default 1.2); angles persist until changed. Its "in" is the camera move into the shot ("camera-glide" by default; "camera-whip-pan", "camera-punch-zoom", "camera-cut") and its "during" a move while the shot holds ("camera-ken-burns", "camera-crash-zoom"): an id, or {move, ms?, preset?, values?} like {"move": "camera-whip-pan", "values": {"motionBlur": 3}}. find_camera_moves lists the moves with their controls.',
         },
       },
       required: ['scene'],
@@ -55,7 +61,7 @@ export const FLAIR_AGENT_TOOLS: AgentToolDefinition[] = [
         shot: { type: 'integer', minimum: 1, description: '1-based index of the shot to update.' },
         set: {
           type: 'object',
-          description: 'Fields to set or replace on this shot: caption, title, camera, hold (ms), run, effects, stopEffects, behaviors.',
+          description: 'Fields to set or replace on this shot: caption, title, camera, hold (ms), run, layers, transition, behaviors. ' + SHOT_GUIDE,
         },
         remove: {
           type: 'array',
@@ -105,19 +111,20 @@ export const FLAIR_AGENT_TOOLS: AgentToolDefinition[] = [
     },
   },
   {
-    name: 'set_media',
-    description: 'Adds, updates, or removes embedded media (e.g. bespoke WebGL shaders) by ID.',
+    name: 'find_layer_effects',
+    description:
+      'Searches the catalog for effects a shot can use as layers (shader and vector effects) or as its transition, with what each takes as a subject, its controls (name, type, range, default) and presets. Results are limited; "total" says how many match, and "offset" pages through them.',
     input_schema: {
       type: 'object',
       properties: {
-        id: { type: 'string', description: 'Media identifier.' },
-        media: {
-          type: ['object', 'null'],
-          description:
-            'SceneMedia object, or null to remove. A shader is { type: "shader", source } with a GLSL ES 3.00 Shadertoy-style void mainImage(out vec4 fragColor, in vec2 fragCoord); it is only compiled when the scene is rendered on a GPU.',
-        },
+        text: { type: 'string', description: 'Words to look for in the id, name, description, category and tags (all must match).' },
+        accepts: { type: 'array', items: { type: 'string', enum: ['image', 'video', 'svg', 'text'] }, description: 'Only effects that take all of these as a subject.' },
+        kind: { type: 'string', enum: ['shader', 'vector'], description: 'Only shaders (WebGL) or only vector (animated SVG) effects.' },
+        transition: { type: 'boolean', description: 'true: only transitions (for a shot\'s "transition"); false: only effects for "layers".' },
+        transparent: { type: 'boolean', description: 'true: only shaders that draw over what is under them (overlays).' },
+        limit: { type: 'integer', minimum: 1, description: 'How many to return (default 10, at most 50).' },
+        offset: { type: 'integer', minimum: 0, description: 'How many matches to skip, to page through them (default 0).' },
       },
-      required: ['id', 'media'],
       additionalProperties: false,
     },
   },
@@ -186,6 +193,19 @@ export const FLAIR_AGENT_TOOLS: AgentToolDefinition[] = [
   },
 ];
 
+/** A layer as the outline lists it: what it draws, where, and when. */
+export interface SceneOutlineLayer {
+  /** Its id, or `shot<N>.layer<M>`. */
+  layer: string;
+  /** Its effect's id, `shader` for a custom source, or `picture`. */
+  draws: string;
+  role: string;
+  /** The slot its subject comes from, when the host fills it. */
+  slot?: string;
+  from?: LayerTime;
+  until?: LayerTime;
+}
+
 export interface SceneOutlineShot {
   shot: number;
   caption?: string;
@@ -193,7 +213,9 @@ export interface SceneOutlineShot {
   hold?: number;
   camera?: Shot['camera'];
   commandCount: number;
-  effects?: string[];
+  layers?: SceneOutlineLayer[];
+  /** The transition into it, by id. */
+  transition?: string;
 }
 
 export interface SceneOutline {
@@ -202,7 +224,8 @@ export interface SceneOutline {
   description?: string;
   stage?: Scene['stage'];
   target?: Scene['target'];
-  mediaIds: string[];
+  /** The slots the host fills, by name. */
+  slots: string[];
   shots: SceneOutlineShot[];
 }
 
@@ -233,9 +256,16 @@ function fail(error: string, failedStep?: number): SceneToolResult {
   return { ok: false, error, ...(failedStep !== undefined && { failedStep }), output: { ok: false, error } };
 }
 
-/** An edited scene, with its issues and a one-line summary for the model. */
-function edited(scene: Scene, summary: string): SceneToolResult {
+/** A scene's issues: its shape (`validateScene`), then its layers' presets and values against the catalog (`checkSceneLayers`). */
+async function sceneIssues(scene: Scene): Promise<SceneIssue[]> {
   const issues = validateScene(scene);
+  for (const issue of await checkSceneLayers(scene)) if (!issues.some((i) => i.shot === issue.shot && i.message === issue.message)) issues.push(issue);
+  return issues;
+}
+
+/** An edited scene, with its issues and a one-line summary for the model. */
+async function edited(scene: Scene, summary: string): Promise<SceneToolResult> {
+  const issues = await sceneIssues(scene);
   return { ok: true, scene, issues, output: { ok: true, summary, shotCount: scene.shots.length, issues } };
 }
 
@@ -248,7 +278,7 @@ export function outlineScene(scene: Scene): SceneOutline {
     description: scene.description,
     stage: scene.stage,
     target: scene.target,
-    mediaIds: Object.keys(scene.media || {}),
+    slots: [...new Set(scene.shots.flatMap((s) => (Array.isArray(s.layers) ? s.layers : []).map((l) => (isSlot(l?.subject) ? l.subject.slot : undefined)).filter((x): x is string => !!x)))],
     shots: scene.shots.map((s, i) => ({
       shot: i + 1,
       caption: s.caption,
@@ -256,7 +286,19 @@ export function outlineScene(scene: Scene): SceneOutline {
       hold: s.hold,
       camera: s.camera,
       commandCount: Array.isArray(s.run) ? s.run.length : 0,
-      effects: Array.isArray(s.effects) ? s.effects.map((e) => e.type) : undefined,
+      ...(Array.isArray(s.layers) && s.layers.length
+        ? {
+            layers: s.layers.map((l, j) => ({
+              layer: layerKey(l ?? {}, i, j),
+              draws: layerWhat(l ?? {}),
+              role: layerRole(l ?? {}),
+              ...(isSlot(l?.subject) ? { slot: l.subject.slot } : {}),
+              ...(l?.from !== undefined ? { from: l.from } : {}),
+              ...(l?.until !== undefined ? { until: l.until } : {}),
+            })),
+          }
+        : {}),
+      ...(s.transition && typeof s.transition.effect === 'string' ? { transition: s.transition.effect } : {}),
     })),
   };
 }
@@ -283,7 +325,7 @@ export async function applySceneTool(
 
   switch (toolName) {
     case 'get_scene': {
-      const issues = validateScene(scene);
+      const issues = await sceneIssues(scene);
       if (input.view === 'outline') {
         const outline = outlineScene(scene);
         return { ok: true, scene, outline, issues, output: { ok: true, outline, issues } };
@@ -338,20 +380,39 @@ export async function applySceneTool(
       return edited({ ...scene, shots }, `Deleted ${shotsWord(toDelete.size)}; the scene has ${shotsWord(shots.length)} now.`);
     }
 
-    case 'set_media': {
-      const media = { ...(scene.media || {}) };
-      if (input.media === null) {
-        if (!(input.id in media)) {
-          const ids = Object.keys(media);
-          return fail(`There is no media "${input.id}" to remove; ${ids.length ? `the media are ${ids.join(', ')}` : 'the scene has no media'}.`);
-        }
-        delete media[input.id];
-        return edited({ ...scene, media }, `Removed media "${input.id}".`);
-      }
-      if (typeof input.media.type !== 'string') return fail('Media needs a string type, e.g. { type: "shader", source: "..." }.');
-      const existed = input.id in media;
-      media[input.id] = input.media as SceneMedia;
-      return edited({ ...scene, media }, `${existed ? 'Replaced' : 'Added'} ${input.media.type} media "${input.id}".`);
+    case 'find_layer_effects': {
+      const { EFFECT_META } = await import('../catalog/lazy.js');
+      const words = String(input.text ?? '').toLowerCase().split(/\s+/).filter(Boolean);
+      const accepts: string[] = input.accepts ?? [];
+      const limit = Math.min(50, input.limit ?? 10);
+      const offset = input.offset ?? 0;
+      const matches = EFFECT_META.filter((m) => m.kind !== 'camera')
+        .filter((m) => !input.kind || m.kind === input.kind)
+        .filter((m) => input.transition === undefined || (m.video === 'transition') === input.transition)
+        .filter((m) => input.transparent === undefined || !!m.transparent === input.transparent)
+        .filter((m) => accepts.every((a) => m.inputs.accepts.includes(a as never) || (a === 'text' && m.inputs.accepts.includes('mask'))))
+        .filter((m) => words.every((w) => [m.id, m.name, m.description, m.category, ...m.tags].join(' ').toLowerCase().includes(w)));
+      const player = ['uFrom', 'uTo', 'uProgress', 'uAnimate'];
+      const effects = matches.slice(offset, offset + limit).map((m) => {
+        const transition = m.video === 'transition';
+        return {
+          id: m.id,
+          name: m.name,
+          kind: m.kind,
+          goesIn: transition ? 'transition' : 'layers',
+          description: m.description,
+          accepts: m.inputs.accepts.filter((a) => ['image', 'video', 'svg', 'text', 'mask'].includes(a)),
+          ...(m.transparent ? { transparent: true } : {}),
+          controls: m.controls
+            .filter((c) => !(transition && player.includes(c.name)) && !m.inputs.images.some((x) => x.name === c.name))
+            .map((c) => ({ name: c.name, type: c.type, ...(c.type === 'float' || c.type === 'int' ? { min: c.min, max: c.max } : {}), default: c.default })),
+          presets: m.presets,
+        };
+      });
+      const output: SceneToolOutput = { ok: true, total: matches.length, effects };
+      if (matches.length > offset + effects.length) output.more = `${matches.length - offset - effects.length} more match; ask again with offset ${offset + effects.length}, or narrow with text, accepts or kind.`;
+      if (!matches.length) output.note = `No layer effect matches${words.length ? ` "${words.join(' ')}"` : ''}${accepts.length ? ` taking ${accepts.join(' and ')}` : ''}; try fewer words, or leave out a filter.`;
+      return { ok: true, scene, issues: [], output };
     }
 
     case 'find_camera_moves': {
@@ -375,7 +436,7 @@ export async function applySceneTool(
 
     case 'preview_scene': {
       const { review } = await simulateScene(scene);
-      const issues = validateScene(scene);
+      const issues = await sceneIssues(scene);
       const { markdown: _markdown, ...summary } = review;
       return { ok: true, scene, issues, review, output: { ok: true, issues, review: summary } };
     }
@@ -397,7 +458,7 @@ export async function applySceneTool(
     case 'batch_scene': {
       const batch = await applySceneBatch(scene, input.steps);
       if (!batch.ok) return fail(`${batch.error} No steps were applied.`, batch.failedStep);
-      const issues = validateScene(batch.scene);
+      const issues = await sceneIssues(batch.scene);
       return {
         ok: true,
         scene: batch.scene,

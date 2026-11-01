@@ -9,7 +9,10 @@
 import type { Scene } from '../scene/types.js';
 import { DEFAULT_STAGE, DEFAULT_PERSPECTIVE, boardHeight, centreOf, isAngled, type View } from '../scene/camera.js';
 import { cameraSamples, shotMoveMs, sceneStage } from '../scene/cameratrack.js';
-import { isElementCommand, isUpdateCommand } from '../scene/types.js';
+import { isElementCommand, isReplicateCommand, isUpdateCommand, type ElementCommand, type SceneCommand } from '../scene/types.js';
+import { replicateCommands } from '../scene/replicator.js';
+import { layerOpacityAt, sceneTimeline } from '../scene/timeline.js';
+import { lottiePicture, sceneExportNotes } from './notes.js';
 import type { KeyframeEase } from '../time/keyframe.js';
 
 export interface LottieExportOptions {
@@ -70,6 +73,8 @@ export interface LottieLayer {
   sw?: number;
   sh?: number;
   sc?: string;
+  /** Image layers: the asset's id. */
+  refId?: string;
 }
 
 export interface LottieAnimation {
@@ -83,6 +88,15 @@ export interface LottieAnimation {
   ddd: 0 | 1;
   assets: unknown[];
   layers: LottieLayer[];
+  /** Named points in time: each shot's transition, where the shots cut. */
+  markers?: { tm: number; cm: string; dr: number }[];
+  /** Who made it, and (`d`) what it leaves out of the scene (see `sceneExportNotes`). */
+  meta?: { g: string; d?: string };
+}
+
+/** A shot's commands with each `replicate` drawn out as its copies. */
+function drawnCommands(run: readonly SceneCommand[] | undefined): SceneCommand[] {
+  return (run ?? []).flatMap((cmd): SceneCommand[] => (isReplicateCommand(cmd) ? replicateCommands(cmd).map((c): ElementCommand => c.command) : [cmd]));
 }
 
 /**
@@ -247,7 +261,7 @@ export function exportLottie(scene: Scene, options: LottieExportOptions = {}): L
     const shot = timing.shot;
     if (!shot.run) continue;
 
-    for (const cmd of shot.run) {
+    for (const cmd of drawnCommands(shot.run)) {
       if (isElementCommand(cmd)) {
         const el = cmd.element;
         if (!tracks.has(el.id)) {
@@ -383,6 +397,50 @@ export function exportLottie(scene: Scene, options: LottieExportOptions = {}): L
     });
   }
 
+  // Pictures among the layers: image layers, on the board under the camera rig or over the whole screen.
+  const timeline = sceneTimeline(scene);
+  const frameOf = (ms: number) => Math.round((ms / 1000) * fr);
+  const assets: { id: string; w: number; h: number; u: string; p: string; e: 0 | 1 }[] = [];
+  const above: LottieLayer[] = [];
+  const below: LottieLayer[] = [];
+  for (const t of timeline.layers) {
+    const picture = lottiePicture(t.layer);
+    const box = t.layer.rect;
+    if (!picture || (!box && t.layer.ids)) continue;
+    const id = `image_${assets.length}`;
+    const w = box?.width ?? width;
+    const h = box?.height ?? height;
+    assets.push({ id, w, h, u: '', p: picture.url, e: picture.url.startsWith('data:') ? 1 : 0 });
+    const ip = frameOf(t.startMs);
+    const op = Math.max(ip + 1, frameOf(t.endMs));
+    const fade = t.layer.fade ?? 0;
+    const at = (ms: number) => Math.round(layerOpacityAt(t, Math.min(Math.max(ms, t.startMs), t.endMs - 0.001)) * 100);
+    const o: LottieAnimatable<number, [number]> =
+      fade > 0
+        ? { a: 1, k: [t.startMs, t.startMs + fade, t.endMs - fade, t.endMs - 0.001].map((ms) => ({ t: frameOf(ms), s: [at(ms)] })) }
+        : { a: 0, k: at(t.startMs) };
+    (t.role === 'background' ? below : above).push({
+      ddd: camera?.ddd ?? 0,
+      ind: layerIndex++,
+      ...(camera && box ? { parent: camera.rig } : {}),
+      ty: 2,
+      nm: t.key,
+      refId: id,
+      sr: 1,
+      ks: { p: { a: 0, k: [(box?.x ?? 0) + w / 2, (box?.y ?? 0) + h / 2, 0] }, a: { a: 0, k: [w / 2, h / 2, 0] }, s: { a: 0, k: [100, 100, 100] }, r: { a: 0, k: 0 }, o },
+      ao: 0,
+      ip,
+      op,
+      st: ip,
+      bm: 0,
+    });
+  }
+  // Lottie draws its first layer on top: overlays and pictures on the board over the elements, backgrounds under them.
+  layers.splice(camera?.layers.length ?? 0, 0, ...above.reverse());
+  layers.push(...below.reverse());
+  const notes = sceneExportNotes(scene, 'lottie');
+  const markers = timeline.transitions.map((t) => ({ tm: frameOf(t.startMs), cm: `transition: ${t.transition.effect}`, dr: frameOf(t.ms) }));
+
   return {
     v: '5.5.2',
     fr,
@@ -392,7 +450,9 @@ export function exportLottie(scene: Scene, options: LottieExportOptions = {}): L
     h: height,
     nm: scene.name || 'Flair Animation',
     ddd: camera?.ddd ?? 0,
-    assets: [],
+    assets,
     layers,
+    ...(markers.length ? { markers } : {}),
+    meta: { g: 'Flair', ...(notes.length ? { d: notes.join(' ') } : {}) },
   };
 }

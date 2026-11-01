@@ -2,7 +2,12 @@ import type { Scene, Shot } from '../scene/types.js';
 import { DEFAULT_STAGE, DEFAULT_PERSPECTIVE, centreOf, isAngled, type View } from '../scene/camera.js';
 import { cameraSamples, cameraTrack, shotMoveMs, sceneStage, type CameraSample } from '../scene/cameratrack.js';
 import { DEFAULT_CAMERA_MOVE } from '../scene/moves.js';
-import { isElementCommand } from '../scene/types.js';
+import { isElementCommand, isReplicateCommand, type SceneCommand } from '../scene/types.js';
+import { replicateCommands } from '../scene/replicator.js';
+import { layerWhat } from '../scene/layers.js';
+import { sceneTimeline, type TimedLayer } from '../scene/timeline.js';
+import { layerBoard, sceneExportNotes } from './notes.js';
+import type { Rect } from '../scene/geometry.js';
 
 export interface MotnExportOptions {
   frameRate?: number;
@@ -18,6 +23,43 @@ function escapeXml(unsafe: string): string {
 }
 
 const r3 = (n: number) => Math.round(n * 1000) / 1000;
+
+/**
+ * A layer as a placeholder rectangle named after its effect, at its place
+ * (a box on the board, or the whole screen) and for its time, with its
+ * opacity: the look itself is rendered elsewhere and swapped in.
+ */
+function layerPlaceholder(t: TimedLayer, box: Rect | undefined, frameOf: (ms: number) => number, id: number, width: number, height: number, indent: string): string[] {
+  const inFrame = frameOf(t.startMs);
+  const outFrame = Math.max(inFrame, frameOf(t.endMs) - 1);
+  const x = box ? box.x + box.width / 2 : width / 2;
+  const y = box ? box.y + box.height / 2 : height / 2;
+  const lines = [
+    `${indent}<scenenode name="Layer ${escapeXml(t.key)}: ${escapeXml(layerWhat(t.layer))}" id="${id}" factoryID="3" version="1">`,
+    `${indent}  <!-- ${escapeXml(t.role)} layer, ${t.layer.ids ? `over ${escapeXml(t.layer.ids.join(', '))}` : box ? 'on the board' : 'over the screen'}${t.layer.fade ? `, fading over ${t.layer.fade} ms` : ''} -->`,
+    `${indent}  <timing in="${inFrame}" out="${outFrame}" offset="${inFrame}"/>`,
+    `${indent}  <parameter name="Properties" id="1">`,
+    `${indent}    <parameter name="Transform" id="100">`,
+    `${indent}      <parameter name="Position" id="101">`,
+    `${indent}        <parameter name="X" id="1" value="${r3(x)}"/>`,
+    `${indent}        <parameter name="Y" id="2" value="${r3(-y)}"/>`,
+    `${indent}      </parameter>`,
+    `${indent}      <parameter name="Scale" id="102">`,
+    `${indent}        <parameter name="X" id="1" value="${box?.width ?? width}"/>`,
+    `${indent}        <parameter name="Y" id="2" value="${box?.height ?? height}"/>`,
+    `${indent}      </parameter>`,
+    `${indent}    </parameter>`,
+    `${indent}    <parameter name="Opacity" id="4" value="${r3(typeof t.layer.opacity === 'number' ? t.layer.opacity : 1)}"/>`,
+    `${indent}  </parameter>`,
+    `${indent}</scenenode>`,
+  ];
+  return lines;
+}
+
+/** A shot's commands with each `replicate` drawn out as its copies. */
+function drawnCommands(run: readonly SceneCommand[] | undefined): SceneCommand[] {
+  return (run ?? []).flatMap((cmd): SceneCommand[] => (isReplicateCommand(cmd) ? replicateCommands(cmd).map((c) => c.command) : [cmd]));
+}
 
 /** A parameter, keyframed (linear, at frames) when the samples change and static when they do not. */
 function curveParameter(name: string, id: number, samples: readonly CameraSample[], value: (v: View) => number, indent: string): string[] {
@@ -124,6 +166,7 @@ export function exportMotn(scene: Scene, options: MotnExportOptions = {}): strin
   if (scene.name) {
     lines.push(`  <!-- Scene: ${escapeXml(scene.name)} -->`);
   }
+  for (const note of sceneExportNotes(scene, 'motn')) lines.push(`  <!-- ${note.replace(/--/g, '- -')} -->`);
   lines.push('');
   lines.push('  <displayversion>5.0</displayversion>');
   lines.push('');
@@ -184,6 +227,20 @@ export function exportMotn(scene: Scene, options: MotnExportOptions = {}): strin
     lines.push('    </scenenode>');
   }
 
+  // Layers over the screen sit outside the camera: backgrounds under the shots, overlays over them.
+  const timeline = sceneTimeline(scene);
+  const frameOf = (ms: number) => Math.round((ms / 1000) * frameRate);
+  const onScreen = timeline.layers.filter((t) => !t.layer.rect && !t.layer.ids);
+  const screenGroup = (role: 'background' | 'overlay', name: string) => {
+    const these = onScreen.filter((t) => (role === 'background' ? t.role === 'background' : t.role !== 'background'));
+    if (!these.length) return;
+    lines.push(`    <group name="${name}" id="${nodeId++}">`);
+    lines.push(`      <timing in="0" out="${totalFrames - 1}" offset="0"/>`);
+    for (const t of these) lines.push(...layerPlaceholder(t, layerBoard(t, timeline), frameOf, nodeId++, width, height, '      '));
+    lines.push('    </group>');
+  };
+  screenGroup('background', 'Background layers');
+
   // Groups and element nodes per shot, inside the camera group when there is one.
   const hasCamera = scene.shots.some((s) => s.camera);
   if (hasCamera) lines.push(...cameraGroupOpen(scene, frameRate, totalFrames, nodeId++));
@@ -193,9 +250,12 @@ export function exportMotn(scene: Scene, options: MotnExportOptions = {}): strin
       : `Shot ${idx + 1}`;
     lines.push(`    <group name="${shotLabel}" id="${nodeId++}">`);
     lines.push(`      <timing in="${item.startFrame}" out="${item.endFrame}" offset="${item.startFrame}"/>`);
+    const into = timeline.transitions.find((t) => t.shot === idx);
+    if (into) lines.push(`      <!-- transition in: ${escapeXml(into.transition.effect)}, ${into.ms} ms -->`);
+    for (const t of timeline.layers.filter((l) => l.shot === idx && (l.layer.rect || l.layer.ids))) lines.push(...layerPlaceholder(t, layerBoard(t, timeline), frameOf, nodeId++, width, height, '      '));
 
     if (item.shot.run) {
-      for (const cmd of item.shot.run) {
+      for (const cmd of drawnCommands(item.shot.run)) {
         if (isElementCommand(cmd) && cmd.element) {
           const el = cmd.element;
           const isText = el.type === 'text';
@@ -228,6 +288,7 @@ export function exportMotn(scene: Scene, options: MotnExportOptions = {}): strin
     lines.push('    </group>');
   }
   if (hasCamera) lines.push('    </group>');
+  screenGroup('overlay', 'Overlay layers');
 
   lines.push('  </scene>');
   lines.push('</ozml>');

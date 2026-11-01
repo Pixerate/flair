@@ -51,27 +51,6 @@ describe('applySceneTool', () => {
     }
   });
 
-  it('sets and removes media', async () => {
-    const resAdd = await applySceneTool(initialScene, 'set_media', {
-      id: 'shaderBg',
-      media: { type: 'shader', source: 'void mainImage(...) {}' },
-    });
-
-    expect(resAdd.ok).toBe(true);
-    if (resAdd.ok) {
-      expect(resAdd.scene.media?.shaderBg).toBeDefined();
-
-      const resRemove = await applySceneTool(resAdd.scene, 'set_media', {
-        id: 'shaderBg',
-        media: null,
-      });
-      expect(resRemove.ok).toBe(true);
-      if (resRemove.ok) {
-        expect(resRemove.scene.media?.shaderBg).toBeUndefined();
-      }
-    }
-  });
-
   it('previews scene and returns structured review', async () => {
     const res = await applySceneTool(initialScene, 'preview_scene');
     expect(res.ok).toBe(true);
@@ -84,14 +63,14 @@ describe('applySceneTool', () => {
   it('returns outline view with structural summary', async () => {
     const sceneWithCommands: Scene = {
       ...initialScene,
-      media: { bg: { type: 'shader', source: '// heavy source code' } },
       shots: [
         {
           caption: 'Shot 1',
           hold: 500,
           run: [{ type: 'clear' }, { type: 'delete', id: 'old' }],
-          effects: [{ type: 'glow', id: 'glow1', ids: ['item1'] }],
+          layers: [{ id: 'bg', source: '// heavy source code' }, { effect: 'image-duotone', subject: { slot: 'hero' }, role: 'overlay', until: { shots: 1 } }],
         },
+        { transition: { effect: 'transition-wipe' } },
       ],
     };
     const res = await applySceneTool(sceneWithCommands, 'get_scene', { view: 'outline' });
@@ -99,11 +78,16 @@ describe('applySceneTool', () => {
     if (res.ok) {
       expect(res.outline).toBeDefined();
       expect(res.outline?.name).toBe('test-flow');
-      expect(res.outline?.mediaIds).toEqual(['bg']);
-      expect(res.outline?.shots).toHaveLength(1);
+      expect(res.outline?.slots).toEqual(['hero']);
+      expect(res.outline?.shots).toHaveLength(2);
       expect(res.outline?.shots[0]?.shot).toBe(1);
       expect(res.outline?.shots[0]?.commandCount).toBe(2);
-      expect(res.outline?.shots[0]?.effects).toEqual(['glow']);
+      expect(res.outline?.shots[0]?.layers).toEqual([
+        { layer: 'bg', draws: 'shader', role: 'background' },
+        { layer: 'shot1.layer2', draws: 'image-duotone', role: 'overlay', slot: 'hero', until: { shots: 1 } },
+      ]);
+      expect(res.outline?.shots[1]?.transition).toBe('transition-wipe');
+      expect(JSON.stringify(res.output)).not.toContain('heavy source code');
     }
   });
 
@@ -119,8 +103,9 @@ describe('applySceneTool', () => {
       ['insert_shots', { after: 5, shots: [{}] }, /"after" is 0 to 2/],
       ['insert_shots', { after: 0, shots: [3] }, /shots\[0\] must be an object/],
       ['write_scene', { scene: { foo: 1 } }, /shots array/],
-      ['set_media', { id: 'nope', media: null }, /no media "nope"/],
-      ['set_media', { id: 'x', media: { source: 'a' } }, /string type/],
+      ['set_media', { id: 'x', media: null }, /no tool "set_media"; the tools are .*find_layer_effects/],
+      ['find_layer_effects', { accepts: ['gif'] }, /accepts\[0\] must be one of "image", "video", "svg", "text"/],
+      ['find_layer_effects', { limit: 0 }, /limit must be at least 1/],
       ['get_scene', { view: 'brief' }, /one of "full", "outline"/],
       ['make_coffee', {}, /no tool "make_coffee"; the tools are get_scene/],
     ];
@@ -134,7 +119,7 @@ describe('applySceneTool', () => {
     }
   });
 
-  it('reports what is wrong inside shots and shader media as issues', async () => {
+  it('reports what is wrong inside shots and their layers as issues', async () => {
     const res = await applySceneTool(initialScene, 'insert_shots', {
       after: 0,
       shots: [{ nonsense: true, hold: 'long', run: [{}] }],
@@ -145,8 +130,8 @@ describe('applySceneTool', () => {
     expect(messages).toMatch(/hold must be a number/);
     expect(messages).toMatch(/Command 1 in run needs a string type/);
 
-    const media = await applySceneTool(initialScene, 'set_media', { id: 'bg', media: { type: 'shader', source: 'not glsl' } });
-    expect(media.ok && media.issues.map((i) => i.message)).toEqual([expect.stringMatching(/mainImage/)]);
+    const shader = await applySceneTool(initialScene, 'update_shot', { shot: 1, set: { layers: [{ source: 'not glsl' }] } });
+    expect(shader.ok && shader.issues.map((i) => i.message)).toEqual([expect.stringMatching(/mainImage/)]);
   });
 
   it('gives the model only what it asked for', async () => {
@@ -244,5 +229,88 @@ describe('camera moves through the scene tools', () => {
     expect(await issuesAfter({ in: { move: 'camera-glide', values: { motionBlur: 7 } } })).toEqual(['"camera-glide": motionBlur takes a number from 0 to 3, not 7.']);
     expect(await issuesAfter({ in: { move: 'camera-glide', values: { blur: 1 } } })).toEqual(['"camera-glide" has no control "blur"; its controls are motionBlur.']);
     expect((await issuesAfter({ transition: 'zoom' }))[0]).toMatch(/replaced by camera moves from the catalog; write \{ "in": "camera-punch-zoom" \}/);
+  });
+});
+
+describe('layers through the scene tools', () => {
+  const board: Scene = {
+    name: 'launch',
+    shots: [
+      { hold: 600, run: [{ type: 'element', element: { id: 'card', type: 'rectangle', x: 200, y: 200, width: 600, height: 340 } }] },
+      { hold: 600 },
+    ],
+  };
+  const issuesAfter = async (set: Record<string, unknown>, shot = 1) => {
+    const res = await applySceneTool(board, 'update_shot', { shot, set });
+    expect(res.ok).toBe(true);
+    return res.ok ? res.issues.map((i) => i.message) : [];
+  };
+
+  it('finds effects for layers and transitions, with what they take, a page at a time', async () => {
+    const pictures = await applySceneTool(board, 'find_layer_effects', { accepts: ['image'], text: 'duotone' });
+    expect(pictures.ok).toBe(true);
+    const found = pictures.output.effects as { id: string; goesIn: string; accepts: string[]; controls: { name: string }[]; presets: string[] }[];
+    expect(found[0]).toMatchObject({ id: 'image-duotone', goesIn: 'layers', kind: 'shader' });
+    expect(found[0]!.accepts).toContain('image');
+    expect(found[0]!.controls.some((c) => c.name === 'uImage')).toBe(false);
+    expect(found[0]!.presets).toContain('Spotify');
+
+    const transitions = await applySceneTool(board, 'find_layer_effects', { transition: true, limit: 5 });
+    expect(transitions.output.total).toBeGreaterThan(20);
+    expect((transitions.output.effects as unknown[]).length).toBe(5);
+    expect(transitions.output.more).toMatch(/more match; ask again with offset 5/);
+    for (const e of transitions.output.effects as { goesIn: string; controls: { name: string }[] }[]) {
+      expect(e.goesIn).toBe('transition');
+      expect(e.controls.map((c) => c.name)).not.toContain('uProgress');
+    }
+    const page2 = await applySceneTool(board, 'find_layer_effects', { transition: true, limit: 5, offset: 5 });
+    expect((page2.output.effects as { id: string }[])[0]!.id).not.toBe((transitions.output.effects as { id: string }[])[0]!.id);
+
+    const vector = await applySceneTool(board, 'find_layer_effects', { kind: 'vector', text: 'lower third' });
+    expect((vector.output.effects as { kind: string }[]).every((e) => e.kind === 'vector')).toBe(true);
+
+    const none = await applySceneTool(board, 'find_layer_effects', { text: 'zzzz' });
+    expect(none.output).toMatchObject({ total: 0, effects: [], note: expect.stringMatching(/No layer effect matches "zzzz"/) });
+  });
+
+  it('takes layers, a slot and a transition, and previews them', async () => {
+    const res = await applySceneTool(board, 'batch_scene', {
+      steps: [
+        { tool: 'update_shot', params: { shot: 1, set: { layers: [{ id: 'bg', effect: 'aurora', until: { shots: 2 } }, { effect: 'image-duotone', preset: 'Spotify', subject: { slot: 'product' }, ids: ['card'] }] } } },
+        { tool: 'update_shot', params: { shot: 2, set: { transition: { effect: 'transition-wipe', ms: 500 }, layers: [{ effect: 'lower-third', role: 'overlay', from: 200 }] } } },
+        { tool: 'preview_scene' },
+      ],
+    });
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      expect(res.issues).toEqual([]);
+      expect(res.scene.shots[1]!.transition).toEqual({ effect: 'transition-wipe', ms: 500 });
+    }
+  });
+
+  it('says what is wrong with a layer and what to use instead', async () => {
+    expect((await issuesAfter({ layers: [{ effect: 'aurara' }] }))[0]).toMatch(/no catalog effect "aurara".*Did you mean "aurora".*find_layer_effects/);
+    expect((await issuesAfter({ layers: [{ effect: 'transition-wipe' }] }))[0]).toMatch(/is a transition: .*"transition": \{ "effect": "transition-wipe" \}/);
+    expect((await issuesAfter({ layers: [{ effect: 'aurora', subject: { image: 'a.png' } }] }))[0]).toMatch(/takes no subject.*find_layer_effects with \{ "accepts": \["image"\] \}/);
+    expect((await issuesAfter({ layers: [{ effect: 'aurora', ids: ['crad'] }] }))[0]).toMatch(/placed over "crad".*the elements are "card"/);
+    expect(await issuesAfter({ layers: [{ effect: 'image-duotone', preset: 'Spotfy', values: { uStrength: 'lots' } }] })).toEqual([
+      expect.stringMatching(/"image-duotone" has no preset "Spotfy"; its presets are "Spotify"/),
+      expect.stringMatching(/"image-duotone"/),
+    ]);
+    expect((await issuesAfter({ transition: { effect: 'transition-wipe' } }))[0]).toMatch(/first shot has nothing to come from/);
+    expect((await issuesAfter({ transition: { effect: 'aurora' } }, 2))[0]).toMatch(/"aurora" is not a transition.*The transitions are/);
+    expect((await issuesAfter({ effects: [{ type: 'glow', id: 'g', ids: ['card'] }] }))[0]).toMatch(/"effects" were replaced by "layers".*glow → \{ "effect": "glow-ring-pulse"/);
+  });
+
+  it('takes replicate commands and path behaviors, and says what is wrong with them', async () => {
+    expect(
+      await issuesAfter({
+        run: [{ type: 'replicate', element: { id: 'dot', type: 'ellipse', x: 100, y: 100, width: 20, height: 20 }, pattern: 'grid', count: 9, columns: 3 }],
+        behaviors: [{ type: 'path', target: 'dot_4', waypoints: [{ point: [0, 0] }, { point: [400, 300] }], orient: true }],
+      }),
+    ).toEqual([]);
+    const bad = await issuesAfter({ run: [{ type: 'replicate', element: { id: 'dot', x: 0, y: 0, width: 1, height: 1 }, pattern: 'hexagon', count: 9 }], behaviors: [{ type: 'path', target: 'dot', waypoints: [] }] });
+    expect(bad).toContainEqual(expect.stringMatching(/pattern is one of "grid", "line", "circle", "spiral", not "hexagon"/));
+    expect(bad).toContainEqual(expect.stringMatching(/"waypoints" are at least two/));
   });
 });

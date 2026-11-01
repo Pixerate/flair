@@ -3,6 +3,9 @@ import { applyRig, setRigWidget, type SceneRig } from './rig.js';
 import { applySceneTool } from '../agent/tools.js';
 import type { Scene } from './types.js';
 
+const SHADER = 'uniform float speed; // @control\nvoid mainImage(out vec4 fragColor, in vec2 fragCoord) { fragColor = vec4(speed); }';
+const bgValues = (scene: Scene) => scene.shots[0]!.layers![0]!.values as Record<string, number>;
+
 describe('Scene Rigs & Macro Parameters', () => {
   it('interpolates slider values across snapshots', () => {
     const rig: SceneRig = {
@@ -12,8 +15,8 @@ describe('Scene Rigs & Macro Parameters', () => {
           name: 'intensity',
           value: 0.5,
           snapshots: [
-            { at: 0.0, values: { 'media.bg.speed': 1.0, 'media.bg.glow': 0.2 } },
-            { at: 1.0, values: { 'media.bg.speed': 5.0, 'media.bg.glow': 1.0 } },
+            { at: 0.0, values: { 'layers.bg.speed': 1.0, 'layers.bg.glow': 0.2 } },
+            { at: 1.0, values: { 'layers.bg.speed': 5.0, 'layers.bg.glow': 1.0 } },
           ],
         },
       },
@@ -21,21 +24,18 @@ describe('Scene Rigs & Macro Parameters', () => {
 
     const scene: Scene = {
       name: 'rig-demo',
-      media: {
-        bg: { type: 'shader', source: '// shader', values: { speed: 1.0, glow: 0.2 } },
-      },
-      shots: [{ hold: 500 }],
+      shots: [{ hold: 500, layers: [{ id: 'bg', source: SHADER, values: { speed: 1.0, glow: 0.2 } }] }],
     };
 
     const applied = applyRig(rig, scene);
-    expect(applied.media?.bg.values?.speed).toBeCloseTo(3.0);
-    expect(applied.media?.bg.values?.glow).toBeCloseTo(0.6);
+    expect(bgValues(applied).speed).toBeCloseTo(3.0);
+    expect(bgValues(applied).glow).toBeCloseTo(0.6);
 
     // Update slider to 0.75
     const updatedRig = setRigWidget(rig, 'intensity', 0.75);
     const applied2 = applyRig(updatedRig, scene);
-    expect(applied2.media?.bg.values?.speed).toBeCloseTo(4.0);
-    expect(applied2.media?.bg.values?.glow).toBeCloseTo(0.8);
+    expect(bgValues(applied2).speed).toBeCloseTo(4.0);
+    expect(bgValues(applied2).glow).toBeCloseTo(0.8);
   });
 
   it('selects option states from popup widgets', () => {
@@ -46,8 +46,8 @@ describe('Scene Rigs & Macro Parameters', () => {
           name: 'colorway',
           selected: 'neon',
           options: {
-            monochrome: { 'media.bg.saturation': 0.0, 'media.bg.contrast': 1.2 },
-            neon: { 'media.bg.saturation': 1.8, 'media.bg.contrast': 1.5 },
+            monochrome: { 'layers.bg.saturation': 0.0, 'layers.bg.contrast': 1.2 },
+            neon: { 'layers.bg.saturation': 1.8, 'layers.bg.contrast': 1.5 },
           },
         },
       },
@@ -55,20 +55,17 @@ describe('Scene Rigs & Macro Parameters', () => {
 
     const scene: Scene = {
       name: 'popup-demo',
-      media: {
-        bg: { type: 'shader', source: '// shader', values: { saturation: 1.0, contrast: 1.0 } },
-      },
-      shots: [{ hold: 500 }],
+      shots: [{ hold: 500, layers: [{ id: 'bg', source: SHADER, values: { saturation: 1.0, contrast: 1.0 } }] }],
     };
 
     const applied = applyRig(rig, scene);
-    expect(applied.media?.bg.values?.saturation).toBe(1.8);
-    expect(applied.media?.bg.values?.contrast).toBe(1.5);
+    expect(bgValues(applied).saturation).toBe(1.8);
+    expect(bgValues(applied).contrast).toBe(1.5);
 
     const switchedRig = setRigWidget(rig, 'colorway', 'monochrome');
     const appliedSwitched = applyRig(switchedRig, scene);
-    expect(appliedSwitched.media?.bg.values?.saturation).toBe(0.0);
-    expect(appliedSwitched.media?.bg.values?.contrast).toBe(1.2);
+    expect(bgValues(appliedSwitched).saturation).toBe(0.0);
+    expect(bgValues(appliedSwitched).contrast).toBe(1.2);
   });
 
   it('toggles parameters on and off', () => {
@@ -78,26 +75,23 @@ describe('Scene Rigs & Macro Parameters', () => {
           type: 'toggle',
           name: 'filmGrain',
           enabled: true,
-          on: { 'media.bg.grain': 0.35 },
-          off: { 'media.bg.grain': 0.0 },
+          on: { 'layers.bg.grain': 0.35 },
+          off: { 'layers.bg.grain': 0.0 },
         },
       },
     };
 
     const scene: Scene = {
       name: 'toggle-demo',
-      media: {
-        bg: { type: 'shader', source: '// shader', values: { grain: 0.0 } },
-      },
-      shots: [{ hold: 500 }],
+      shots: [{ hold: 500, layers: [{ id: 'bg', source: SHADER, values: { grain: 0.0 } }] }],
     };
 
     const applied = applyRig(rig, scene);
-    expect(applied.media?.bg.values?.grain).toBe(0.35);
+    expect(bgValues(applied).grain).toBe(0.35);
 
     const disabledRig = setRigWidget(rig, 'filmGrain', false);
     const appliedDisabled = applyRig(disabledRig, scene);
-    expect(appliedDisabled.media?.bg.values?.grain).toBe(0.0);
+    expect(bgValues(appliedDisabled).grain).toBe(0.0);
   });
 
   it('targets element properties', () => {
@@ -135,9 +129,6 @@ describe('Scene Rigs & Macro Parameters', () => {
   it('integrates with applySceneTool agent loop', async () => {
     const scene: Scene = {
       name: 'agent-rig-demo',
-      media: {
-        bg: { type: 'shader', source: '// shader', values: { speed: 1.0 } },
-      },
       rig: {
         widgets: {
           tempo: {
@@ -145,13 +136,13 @@ describe('Scene Rigs & Macro Parameters', () => {
             name: 'tempo',
             value: 0.0,
             snapshots: [
-              { at: 0.0, values: { 'media.bg.speed': 1.0 } },
-              { at: 1.0, values: { 'media.bg.speed': 10.0 } },
+              { at: 0.0, values: { 'layers.bg.speed': 1.0 } },
+              { at: 1.0, values: { 'layers.bg.speed': 10.0 } },
             ],
           },
         },
       },
-      shots: [{ hold: 500 }],
+      shots: [{ hold: 500, layers: [{ id: 'bg', source: SHADER, values: { speed: 1.0 } }] }],
     };
 
     const res = await applySceneTool(scene, 'set_rig_widget', {
@@ -161,8 +152,20 @@ describe('Scene Rigs & Macro Parameters', () => {
 
     expect(res.ok).toBe(true);
     if (res.ok) {
-      expect(res.scene.media?.bg.values?.speed).toBeCloseTo(5.5);
+      expect(bgValues(res.scene).speed).toBeCloseTo(5.5);
       expect((res.scene.rig?.widgets.tempo as any).value).toBe(0.5);
     }
+  });
+
+  it('sets a bare control on the layers that have it, and leaves the scene given alone', () => {
+    const scene: Scene = {
+      name: 'bare-demo',
+      shots: [{ layers: [{ id: 'bg', source: SHADER }, { id: 'aura', effect: 'aurora' }] }],
+    };
+    const rig: SceneRig = { widgets: { pace: { type: 'toggle', name: 'pace', enabled: true, on: { speed: 2 }, off: { speed: 1 } } } };
+    const applied = applyRig(rig, scene);
+    expect(applied.shots[0]!.layers![0]!.values).toEqual({ speed: 2 });
+    expect(applied.shots[0]!.layers![1]!.values).toEqual({});
+    expect(scene.shots[0]!.layers![0]!.values).toBeUndefined();
   });
 });
