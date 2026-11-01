@@ -15,13 +15,13 @@
   const place = (elements: SceneElement[]) => elements.map((element) => ({ type: "element" as const, element }));
   const WIDE = { x: 0, y: 0, width: 1920, height: 1080 };
 
-  /** The same moves the GitHub Pages gallery shows. */
+  /** One tab per kind of catalog camera move: into a shot (`camera.in`) and while it holds (`camera.during`). */
   const MOVES: { name: string; about: string; scene: Scene }[] = [
     {
-      name: "Swoop",
-      about: "Leans the dashboard back and swings it round as it dives onto the graph, blurring on the way.",
+      name: "Glide",
+      about: "camera-glide leans the dashboard back and swings it round as it dives onto the graph, blurring on the way.",
       scene: {
-        name: "swoop",
+        name: "glide",
         shots: [
           { title: "Dashboard", camera: WIDE, hold: 900, run: place(DASHBOARD) },
           { title: "Tilt in", camera: { frame: ["graph"], tilt: 32, turn: -16, in: { move: "camera-glide", values: { motionBlur: 1.5 } } }, hold: 1600 },
@@ -31,27 +31,39 @@
       },
     },
     {
-      name: "Whip pans",
-      about: "Fast flat pans between the cards: the blur streaks along each move and is gone when the camera lands.",
+      name: "Whip pan",
+      about: "camera-whip-pan whips off each card in a streak of blur and cuts onto the next at the blurriest moment.",
       scene: {
         name: "whip",
         shots: [
           { title: "To do", camera: { frame: ["todo"], padding: 0.3 }, hold: 900, run: place(DASHBOARD) },
-          { title: "In progress", camera: { frame: ["doing"], padding: 0.3, in: { move: "camera-glide", values: { motionBlur: 3 } } }, hold: 900 },
-          { title: "Done", camera: { frame: ["done"], padding: 0.3, in: { move: "camera-glide", values: { motionBlur: 3 } } }, hold: 900 },
-          { title: "Velocity", camera: { frame: ["velocity"], padding: 0.2, in: { move: "camera-glide", values: { motionBlur: 3 } } }, hold: 900 },
+          { title: "In progress", camera: { frame: ["doing"], padding: 0.3, in: "camera-whip-pan" }, hold: 900 },
+          { title: "Done", camera: { frame: ["done"], padding: 0.3, in: "camera-whip-pan" }, hold: 900 },
+          { title: "Velocity", camera: { frame: ["velocity"], padding: 0.2, in: { move: "camera-whip-pan", preset: "Hard" } }, hold: 900 },
         ],
       },
     },
     {
-      name: "Rolling reveal",
-      about: "Starts close, tipped and rolled with a short lens, then rolls level as it pulls back to the whole board.",
+      name: "Punch & crash",
+      about: "camera-punch-zoom punches through onto the graph, then camera-crash-zoom crashes in on it in sudden steps while the shot holds.",
       scene: {
-        name: "roll",
+        name: "punch",
         shots: [
-          { title: "Close", camera: { frame: ["graph"], padding: 0.05, tilt: 40, roll: -14, perspective: 0.7 }, hold: 1100, run: place(DASHBOARD) },
-          { title: "Pull back", camera: { ...WIDE, tilt: 12, roll: 0, perspective: 1.2, in: { move: "camera-glide", values: { motionBlur: 1 } } }, hold: 1100 },
-          { title: "Level", camera: { ...WIDE, tilt: 0, in: { move: "camera-glide", values: { motionBlur: 0.5 } } }, hold: 900 },
+          { title: "Dashboard", camera: WIDE, hold: 700, run: place(DASHBOARD) },
+          { title: "Punch in", camera: { frame: ["graph"], padding: 0.1, in: "camera-punch-zoom", during: { move: "camera-crash-zoom", values: { zoom: 2.4, target: [0.5, 0.5] } } }, hold: 2200 },
+          { title: "Back out", camera: { ...WIDE, in: "camera-glide" }, hold: 700 },
+        ],
+      },
+    },
+    {
+      name: "Ken Burns",
+      about: "camera-ken-burns drifts slowly in while each shot holds, and camera-cut jumps straight to the next.",
+      scene: {
+        name: "drift",
+        shots: [
+          { title: "Graph", camera: { frame: ["graph"], padding: 0.08, during: "camera-ken-burns" }, hold: 2400, run: place(DASHBOARD) },
+          { title: "Velocity", camera: { frame: ["velocity"], padding: 0.1, in: "camera-cut", during: "camera-ken-burns" }, hold: 2400 },
+          { title: "Board", camera: { ...WIDE, in: "camera-cut", during: "camera-ken-burns" }, hold: 2400 },
         ],
       },
     },
@@ -145,9 +157,9 @@
   <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
     <div>
       <h2 class="m-0 text-3xl font-semibold tracking-tight text-ink md:text-4xl">Camera moves</h2>
-      <p class="mt-2 max-w-xl text-sm text-muted">Scene shots tilt, turn and roll the camera in 3D, and blur while it moves.</p>
+      <p class="mt-2 max-w-xl text-sm text-muted">Camera moves are catalog effects, with controls and presets. A shot names one to move in with (<code>camera.in</code>) and one to play while it holds (<code>camera.during</code>), and can tilt, turn and roll the camera in 3D.</p>
     </div>
-    <div class="glass flex rounded-full p-1" role="group" aria-label="Camera moves">
+    <div class="glass flex flex-wrap rounded-full p-1" role="group" aria-label="Camera moves">
       {#each MOVES as m, i}
         <button
           on:click={() => (selected = i)}
