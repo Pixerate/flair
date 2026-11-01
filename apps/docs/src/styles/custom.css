@@ -13,6 +13,7 @@
   --sl-color-accent: #a78bfa;
   --sl-color-accent-high: #e4dcff;
   --sl-color-black: #07070b;
+  --sl-color-bg: var(--flair-page);
 
   /* Glass surfaces, dark by default. */
   --flair-page: #07070b;
@@ -34,6 +35,8 @@
   --sl-color-accent-low: #ede9fe;
   --sl-color-accent: #7c3aed;
   --sl-color-accent-high: #3b1d84;
+  --sl-color-black: #fff;
+  --sl-color-bg: var(--flair-page);
 
   --flair-page: #f6f6f9;
   --flair-ink: #0c0c14;
@@ -49,8 +52,9 @@
   --flair-hero-centre: 0.45;
 }
 
-:root[data-theme='dark'] body {
+body {
   background: var(--flair-page);
+  color: var(--flair-ink);
 }
 
 /* Starlight's header as glass over the page. */
