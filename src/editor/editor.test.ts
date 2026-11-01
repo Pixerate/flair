@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { getEffect } from "../catalog/index.js";
+import { getEffect, textImage } from "../catalog/index.js";
 import { ManualClock } from "../time/clock.js";
 import { svgDuration } from "../vector/svg.js";
 import { callTool, createEffectToolProvider, EFFECT_AGENT_INSTRUCTIONS, toolDefinitions } from "./agent.js";
@@ -352,6 +352,49 @@ describe("commands and agent tools", () => {
     // Vector controls declared with a range are held to it as well.
     const vector = createEffectEditor({ from: "swatch-reveal" });
     expect(vector.commands.execute("values.set", { values: { count: 9 } })).toMatchObject({ ok: false, message: expect.stringMatching(/count takes a number from 1 to 5, not 9/) });
+  });
+
+  it("lets agents find the second batch of meme shaders, load one by its kind and set its words and levels", async () => {
+    const editor = createEffectEditor({ from: "aurora" });
+    const provider = createEffectToolProvider(editor);
+    type Search = { total: number; effects: { id: string; category: string }[] };
+    const BATCH = ["needs-more-jpeg", "triggered", "vaporwave-grade", "galaxy-brain", "sad-mode", "game-over-banner"];
+    const all = await callTool(provider, "run_command", { id: "catalog.search", params: { category: "meme", limit: 50 } });
+    expect((all.structuredContent as { result: Search }).result.effects.map((e) => e.id)).toEqual(expect.arrayContaining(BATCH));
+    const endings = await callTool(provider, "run_command", { id: "catalog.search", params: { category: "meme", tags: ["ending"], limit: 50 } });
+    expect((endings.structuredContent as { result: Search }).result.effects.map((e) => e.id).sort()).toEqual(["game-over-banner", "to-be-continued"]);
+
+    // Every one loads, and every preset applies within its controls.
+    for (const id of BATCH) {
+      expect(editor.commands.execute("effect.load", { id }), id).toMatchObject({ ok: true });
+      for (const preset of getEffect(id)!.presets ?? []) {
+        expect(editor.commands.execute("preset.apply", { name: preset.name }), `${id}: ${preset.name}`).toMatchObject({ ok: true });
+      }
+    }
+
+    // A banner's words go in as a text image; the level and head point are set and checked like any control.
+    const run = await callTool(provider, "run_commands", {
+      steps: [
+        { id: "effect.load", params: { id: "game-over-banner" } },
+        { id: "values.set", params: { values: { uText: textImage("CONTINUE?", { font: "Georgia, serif", weight: 400 }), uPlay: 0.8 } } },
+      ],
+    });
+    expect(run.isError).toBeFalsy();
+    expect(editor.document.values).toMatchObject({ uText: expect.stringContaining("CONTINUE%3F"), uPlay: 0.8 });
+
+    editor.commands.execute("effect.load", { id: "galaxy-brain" });
+    expect(editor.commands.execute("values.set", { values: { uLevel: 2, uHead: [0.42, 0.8] } })).toMatchObject({ ok: true });
+    expect(editor.document.values).toMatchObject({ uLevel: 2, uHead: [0.42, 0.8] });
+    // Out of range or mistyped, it is refused with the valid range, and nothing changes.
+    expect(editor.commands.execute("values.set", { values: { uLevel: 5 } })).toMatchObject({ ok: false, message: "uLevel takes a number from 1 to 4, not 5." });
+    expect(editor.commands.execute("values.set", { values: { uHead: [0.5, 1.4] } })).toMatchObject({ ok: false, message: expect.stringMatching(/uHead takes 2 numbers, each from 0 to 1/) });
+    expect(editor.document.values).toMatchObject({ uLevel: 2, uHead: [0.42, 0.8] });
+
+    // The jitter can't be pushed past its cap.
+    editor.commands.execute("effect.load", { id: "triggered" });
+    expect(editor.commands.execute("values.set", { values: { uShake: 3 } })).toMatchObject({ ok: false, message: "uShake takes a number from 0 to 1, not 3." });
+    expect(editor.commands.execute("values.set", { values: { uShake: "max" } })).toMatchObject({ ok: false, message: expect.stringMatching(/uShake takes a number/) });
+    expect(editor.document.values.uShake).toBeUndefined();
   });
 
   it("lets agents edit vector pictures and see shader compiles", async () => {
