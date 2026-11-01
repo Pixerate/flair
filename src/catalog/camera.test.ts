@@ -193,6 +193,8 @@ describe("camera moves", () => {
   it("a crash zoom rests, steps in on its target and ends on it", () => {
     const rest = at("camera-crash-zoom", 0.1, {}, 2000);
     expect(rest.zoom).toBeCloseTo(to.zoom, 6);
+    // Before the first step it rests where the framing is (no kick, so no NaN from it).
+    expect(at("camera-crash-zoom", 0, {}, 2000)).toMatchObject({ scrollX: to.scrollX, scrollY: to.scrollY });
     const end = at("camera-crash-zoom", 1, { shake: 0 }, 2000);
     expect(end.zoom / to.zoom).toBeCloseTo(3.4, 3);
     // It zooms in about the target, which stays where it was on screen.

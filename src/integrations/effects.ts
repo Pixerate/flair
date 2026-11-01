@@ -9,11 +9,17 @@
 import {
   applyEffectMask,
   EffectDisposedError,
+  isCameraView,
+  sampleCameraViews,
   EffectUnsupportedError,
   isEffectPixels,
   resolveEffectValues,
   searchEffectSummaries,
   UnknownEffectError,
+  type CameraMoveContext,
+  type CameraMoveSample,
+  type CameraMoveSampleRequest,
+  type CameraView,
   type EffectAuthoringSession,
   type EffectAuthoringSource,
   type EffectDescription,
@@ -34,6 +40,7 @@ import {
   type EffectVectorMotion,
   type EffectVectorTarget,
 } from "@pixerate/editor/effects";
+import { cameraMoveControls, getCameraMove } from "../catalog/camera.js";
 import { EFFECT_META, loadEffect, type EffectMeta } from "../catalog/lazy.js";
 import { renderVectorEffect, type EffectDefinition, type ShaderEffect, type VectorEffect } from "../catalog/types.js";
 import { applyPrimitive } from "../motion/apply.js";
@@ -52,7 +59,11 @@ import { svgDuration, svgView } from "../vector/svg.js";
 export type SvgRasterizer = (motion: SvgMotion, timeMs: number, size: { width: number; height: number }) => Promise<EffectPixels>;
 
 export interface FlairEffectsOptions {
-  /** The kinds of effect to offer (default all): `shader`, `vector` (animated SVGs) and `motion` (primitives applied to vector art). */
+  /**
+   * The kinds of effect to offer (default all): `shader`, `vector` (animated SVGs), `motion`
+   * (primitives applied to vector art) and `camera` (camera moves for a scene's shots, which
+   * need `@pixerate/editor` 0.224 or later; leave it out for an older editor).
+   */
   kinds?: readonly EffectKind[];
   /**
    * Draws vector effects as pixels for `createRenderer`. On a page Flair
@@ -100,6 +111,9 @@ function wantsText(wants: string): string {
 }
 
 function planOf(meta: EffectMeta): Plan {
+  // A camera move draws no picture: it has no inputs (its preview picture is Flair's own) and only the use "camera".
+  const move = meta.kind === "camera" ? getCameraMove(meta.id) : undefined;
+  if (move) return { meta, uses: ["camera"], inputs: [], controls: cameraMoveControls(move), transition: false };
   const transition = meta.video === "transition";
   const uses = new Set<EffectUse>();
   const images = meta.inputs.images;
@@ -152,12 +166,12 @@ function playOf(meta: EffectMeta): number | undefined {
 export function summaryOf(plan: Plan): EffectSummary {
   const { meta } = plan;
   const duration = playOf(meta);
+  const move = meta.kind === "camera" ? getCameraMove(meta.id) : undefined;
   const background = plan.controls.find((c) => c.name === BACKGROUND_OPACITY_CONTROL && c.type === "float");
   return {
     id: meta.id,
     name: meta.name,
-    // flairEffects leaves camera moves out, so a plan's effect is a shader or a vector effect.
-    kind: meta.kind as EffectKind,
+    kind: meta.kind,
     category: meta.category,
     uses: plan.uses,
     description: meta.description,
@@ -166,6 +180,7 @@ export function summaryOf(plan: Plan): EffectSummary {
     loop: meta.kind === "vector" ? !meta.trigger : meta.loop !== undefined,
     ...(duration !== undefined && { duration }),
     ...(background && { backgroundOpacity: background.name }),
+    ...(move && { camera: { role: move.motion.role, durationMs: move.motion.duration, ...(move.motion.cut !== undefined && { cut: move.motion.cut }) } }),
   };
 }
 
@@ -602,13 +617,17 @@ class VectorRenderer extends BaseRenderer {
  *   document saved with `exportDocument`) in Flair's `EffectEditor`, for
  *   the editor's Effect Authoring tab and its agent tools. Shaders edit
  *   their GLSL, with compile errors on the source's lines; vector effects
- *   edit their controls (`sourceLanguage` null). Motion primitives cannot
- *   be authored.
+ *   edit their controls (`sourceLanguage` null). Motion primitives and
+ *   camera moves cannot be authored.
+ * - **Camera:** the catalog's camera moves are `camera` effects (use
+ *   `camera`, with their role, length and cut). `cameraView` gives where a
+ *   move puts a scene's camera part-way through it, as Flair's scene player
+ *   moves it, and `sampleCameraMove` keys it for an editor to bake. They
+ *   draw no picture, so `createRenderer` refuses them.
  */
 export function flairEffects(options: FlairEffectsOptions = {}): EffectProvider {
-  const kinds = new Set<EffectKind>(options.kinds ?? ["shader", "vector", "motion"]);
-  // Camera moves move a scene's camera rather than drawing a picture, so the editor's effect contract has no kind for them.
-  const plans = new Map(EFFECT_META.filter((m) => m.kind !== "camera" && kinds.has(m.kind)).map((m) => [m.id, planOf(m)]));
+  const kinds = new Set<EffectKind>(options.kinds ?? ["shader", "vector", "motion", "camera"]);
+  const plans = new Map(EFFECT_META.filter((m) => kinds.has(m.kind)).map((m) => [m.id, planOf(m)]));
   const primitives = kinds.has("motion") ? PRIMITIVES : [];
   const summaries: EffectSummary[] = [...[...plans.values()].map(summaryOf), ...primitives.map(primitiveSummary)];
   const descriptions = new Map<string, Promise<EffectDescription>>();
@@ -622,6 +641,7 @@ export function flairEffects(options: FlairEffectsOptions = {}): EffectProvider 
     supportsHostImages: true,
     supportsVector: kinds.has("vector") || kinds.has("motion"),
     supportsAuthoring: kinds.has("shader") || kinds.has("vector"),
+    supportsCamera: kinds.has("camera"),
   };
 
   const unknown = (id: string) => new UnknownEffectError(String(id), "Flair");
@@ -636,6 +656,36 @@ export function flairEffects(options: FlairEffectsOptions = {}): EffectProvider 
 
   async function describeCatalog(plan: Plan): Promise<EffectDescription> {
     return describePlan(plan, (await loadEffect(plan.meta.id)).presets ?? []);
+  }
+
+  // Camera moves are described synchronously (they are few, and cameraView must not wait), once each.
+  const cameraDescriptions = new Map<string, EffectDescription>();
+
+  /** A camera move with its plan and description, or the refusal `cameraView` makes. */
+  function cameraMove(id: string, u?: number) {
+    const plan = plans.get(id);
+    const move = plan && getCameraMove(id);
+    if (!plan || !move) {
+      if (!plan && !(kinds.has("motion") && getPrimitive(id))) throw unknown(id);
+      throw new EffectUnsupportedError(`"${id}" is not a camera move, so it has no camera view; list the camera moves with list({ kind: "camera" }).`, id);
+    }
+    if (u !== undefined && !(u >= 0 && u <= 1)) throw new EffectUnsupportedError(`u is how far through the move, 0 to 1; got ${u}.`, id);
+    let description = cameraDescriptions.get(id);
+    if (!description) cameraDescriptions.set(id, (description = describePlan(plan, move.presets ?? [])));
+    return { plan, move, description };
+  }
+
+  /** Where camera move `id` puts the camera `ctx.u` of the way through it. */
+  function cameraView(id: string, ctx: CameraMoveContext, values?: EffectValues): CameraView {
+    const { plan, move, description } = cameraMove(id, ctx?.u);
+    for (const [name, view] of [["from", ctx.from], ["to", ctx.to]] as const) {
+      if (!isCameraView(view)) throw new EffectUnsupportedError(`ctx.${name} is not a camera view: it needs a zoom above 0 and finite scrollX and scrollY.`, id);
+    }
+    const stage = ctx.stage;
+    if (!(stage?.width > 0 && stage?.height > 0)) throw new EffectUnsupportedError(`ctx.stage needs a width and height above 0 (the stage in pixels).`, id);
+    const resolved = flairValues(plan.controls, resolveEffectValues(description, values));
+    const ms = Number.isFinite(ctx.ms) && ctx.ms >= 0 ? ctx.ms : move.motion.duration;
+    return { ...move.motion.view({ from: ctx.from, to: ctx.to, u: ctx.u, ms, stage: { width: stage.width, height: stage.height } }, resolved) };
   }
 
   function describe(id: string): Promise<EffectDescription> {
@@ -674,7 +724,7 @@ export function flairEffects(options: FlairEffectsOptions = {}): EffectProvider 
       const { width, height, depth } = rendererSize(id, rendererOptions);
       const { plan, effect, description } = await catalogEffect(id);
       if (effect.kind === "shader") return new ShaderRenderer(plan, description, effect, width, height, depth);
-      if (effect.kind === "camera") throw new EffectUnsupportedError(`"${id}" is a camera move, which moves a scene's camera rather than drawing a picture; Flair's scene tools use it (a shot's camera.in or camera.during).`, id);
+      if (effect.kind === "camera") throw new EffectUnsupportedError(`"${id}" is a camera move, which moves a scene's camera rather than drawing a picture: use cameraView (or sampleCameraMove) for where it puts the camera.`, id);
       if (!rasterize) {
         throw new EffectUnsupportedError(
           `"${id}" is a vector effect, and a Worker has no DOM to draw SVG in: render it on the page, pass rasterizeSvg to flairEffects, or use applyVectorEffect for the animated SVG.`,
@@ -682,6 +732,21 @@ export function flairEffects(options: FlairEffectsOptions = {}): EffectProvider 
         );
       }
       return new VectorRenderer(plan, description, effect, width, height, rasterize, depth);
+    },
+
+    cameraView,
+
+    async sampleCameraMove(id: string, request: CameraMoveSampleRequest): Promise<CameraMoveSample> {
+      const { move } = cameraMove(id);
+      if (!(Number.isFinite(request?.ms) && request.ms >= 0)) throw new EffectUnsupportedError(`ms is the move's length in ms, 0 or more; got ${request?.ms}.`, id);
+      if (!(request.fps > 0)) throw new EffectUnsupportedError(`fps is keys per second, above 0; got ${request.fps}.`, id);
+      // Check the values once, so a bad one is refused before any key is made.
+      cameraView(id, { from: request.from, to: request.to, u: 0, ms: request.ms, stage: request.stage }, request.values);
+      return sampleCameraViews((u) => cameraView(id, { from: request.from, to: request.to, u, ms: request.ms, stage: request.stage }, request.values), {
+        ms: request.ms,
+        fps: request.fps,
+        ...(move.motion.cut !== undefined && { cut: move.motion.cut }),
+      });
     },
 
     async openAuthoring(source: EffectAuthoringSource): Promise<EffectAuthoringSession> {
