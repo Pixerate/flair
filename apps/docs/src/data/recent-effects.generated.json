@@ -1,20 +1,185 @@
 [
   {
-    "id": "game-over-banner",
-    "name": "Game over banner",
+    "id": "image-led-wall",
+    "name": "LED wall",
     "kind": "shader",
-    "category": "meme",
-    "description": "A picture that slows to stuttering frames and drains to grey, then a dark band fades in across it with big serif words on it, growing a little as it holds, before it starts over.",
+    "category": "retro",
+    "description": "An image on a stadium LED board: round diodes on a black grid with stepped brightness, soft bloom, sun louvres, the odd dead diode and a rolling scan band.",
     "tags": [
-      "meme",
-      "ending",
+      "pixel",
+      "led",
       "image",
-      "game-over",
-      "banner",
-      "serif",
-      "slow-motion",
-      "desaturate",
-      "game"
+      "screen",
+      "billboard",
+      "stadium",
+      "display"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "city"
+        },
+        "line": 2,
+        "x": {
+          "filter": "nearest",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uPitch",
+        "t": "float",
+        "d": 12,
+        "l": "LED pitch (px)",
+        "min": 4,
+        "max": 40,
+        "s": 1,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 0.7,
+        "l": "Diode size",
+        "min": 0.2,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uLevels",
+        "t": "float",
+        "d": 12,
+        "l": "Brightness levels",
+        "min": 2,
+        "max": 32,
+        "s": 1,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uBloom",
+        "t": "float",
+        "d": 0.6,
+        "max": 1.5,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uBrightness",
+        "t": "float",
+        "d": 1.2,
+        "min": 0.5,
+        "max": 2,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uDead",
+        "t": "float",
+        "d": 0.01,
+        "l": "Dead diodes",
+        "max": 0.1,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uFlicker",
+        "t": "float",
+        "d": 0.3,
+        "l": "Scan band",
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uLouvres",
+        "t": "bool",
+        "d": true,
+        "l": "Sun louvres",
+        "line": 10
+      },
+      {
+        "n": "uBoard",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            10,
+            10,
+            12
+          ]
+        },
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 12
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 13
+      }
+    ],
+    "presets": [
+      "Fine pitch",
+      "Old scoreboard"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "filter",
+    "loop": 5,
+    "animated": true,
+    "duration": 5000,
+    "module": "shaders/pixel",
+    "addedAt": "2026-11-01T09:09:04.569Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "image-subpixel",
+    "name": "Subpixel zoom",
+    "kind": "shader",
+    "category": "retro",
+    "description": "A macro zoom in and out of a screen: the picture breaks into its pixels and then into glowing red, green and blue subpixels, as LCD stripes, PenTile diamonds or CRT phosphor triads.",
+    "tags": [
+      "pixel",
+      "subpixel",
+      "image",
+      "lcd",
+      "screen",
+      "macro",
+      "zoom",
+      "rgb"
     ],
     "controls": [
       {
@@ -25,94 +190,77 @@
         },
         "line": 2,
         "x": {
-          "filter": "linear",
+          "filter": "nearest",
           "wrap": "clamp"
         }
       },
       {
-        "n": "uText",
-        "t": "sampler2D",
-        "d": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201024%20256%22%20width%3D%221024%22%20height%3D%22256%22%3E%3Ctext%20x%3D%22512%22%20y%3D%22128%22%20dy%3D%220.35em%22%20text-anchor%3D%22middle%22%20textLength%3D%22921.6%22%20lengthAdjust%3D%22spacingAndGlyphs%22%20font-family%3D%22Georgia%2C%20%26%2339%3BTimes%20New%20Roman%26%2339%3B%2C%20Times%2C%20serif%22%20font-weight%3D%22400%22%20font-size%3D%22141.3%22%20fill%3D%22%23fff%22%3EGAME%20OVER%3C%2Ftext%3E%3C%2Fsvg%3E",
-        "line": 3,
-        "x": {
-          "filter": "mipmap",
-          "wrap": "clamp"
-        }
+        "n": "uLayout",
+        "t": "int",
+        "d": 0,
+        "l": "Layout (0 LCD stripes, 1 PenTile, 2 CRT triads)",
+        "max": 2,
+        "b": 3,
+        "line": 3
       },
       {
-        "n": "uInk",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            192,
-            32,
-            26
-          ]
-        },
-        "l": "Words",
-        "c": 1,
+        "n": "uCell",
+        "t": "float",
+        "d": 4,
+        "l": "Screen pixel (px)",
+        "min": 2,
+        "max": 12,
+        "s": 1,
+        "b": 3,
         "line": 4
       },
       {
-        "n": "uBand",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            0,
-            0,
-            0
-          ]
-        },
-        "c": 1,
+        "n": "uAnimate",
+        "t": "bool",
+        "d": true,
+        "l": "Animate zoom",
         "line": 5
       },
       {
-        "n": "uPlay",
+        "n": "uProgress",
         "t": "float",
-        "d": 1.5,
-        "l": "Before it ends (s)",
-        "min": 0.3,
-        "max": 6,
+        "d": 1,
+        "l": "Zoom (when still)",
         "b": 3,
         "line": 6
       },
       {
-        "n": "uStutter",
+        "n": "uMaxZoom",
         "t": "float",
-        "d": 6,
-        "l": "Stutter frames a second",
+        "d": 24,
+        "l": "Deepest zoom",
         "min": 2,
-        "max": 15,
+        "max": 60,
         "b": 3,
         "line": 7
       },
       {
-        "n": "uFade",
+        "n": "uCenterX",
         "t": "float",
-        "d": 1.4,
-        "l": "Fade (s)",
-        "min": 0.3,
-        "max": 4,
+        "d": 0.5,
+        "l": "Zoom centre x",
         "b": 3,
         "line": 8
       },
       {
-        "n": "uHold",
+        "n": "uCenterY",
         "t": "float",
-        "d": 3,
-        "l": "Hold (s)",
-        "min": 0.5,
-        "max": 8,
+        "d": 0.6,
+        "l": "Zoom centre y",
         "b": 3,
         "line": 9
       },
       {
-        "n": "uSize",
+        "n": "uGap",
         "t": "float",
-        "d": 0.12,
-        "l": "Words height",
-        "min": 0.06,
-        "max": 0.25,
+        "d": 0.25,
+        "l": "Gap between subpixels",
+        "max": 0.6,
         "b": 3,
         "line": 10
       },
@@ -139,10 +287,1414 @@
       }
     ],
     "presets": [
-      "You lose",
-      "Gold on black",
-      "Sudden",
-      "Long goodbye"
+      "LCD",
+      "Phone OLED",
+      "CRT"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "filter",
+    "loop": 8,
+    "animated": true,
+    "duration": 8000,
+    "module": "shaders/pixel",
+    "addedAt": "2026-11-01T09:09:04.569Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "image-bricks",
+    "name": "Brick mosaic",
+    "kind": "shader",
+    "category": "retro",
+    "description": "An image rebuilt from toy bricks with studs, ironed fuse beads or cross-stitch on cloth, in a few flat colours, built up row by row from the bottom.",
+    "tags": [
+      "pixel",
+      "image",
+      "mosaic",
+      "bricks",
+      "beads",
+      "cross-stitch",
+      "craft",
+      "toy"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "line": 2,
+        "x": {
+          "filter": "nearest",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uStyle",
+        "t": "int",
+        "d": 0,
+        "l": "Style (0 bricks, 1 beads, 2 cross-stitch)",
+        "max": 2,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "uCell",
+        "t": "float",
+        "d": 18,
+        "l": "Cell size (px)",
+        "min": 6,
+        "max": 48,
+        "s": 1,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uLevels",
+        "t": "float",
+        "d": 4,
+        "l": "Colour levels",
+        "min": 2,
+        "max": 8,
+        "s": 1,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uBuild",
+        "t": "bool",
+        "d": true,
+        "l": "Build up",
+        "line": 6
+      },
+      {
+        "n": "uProgress",
+        "t": "float",
+        "d": 1,
+        "l": "Built (when still)",
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uBase",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            47,
+            143,
+            63
+          ]
+        },
+        "l": "Baseplate / board / cloth",
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 9
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 10
+      }
+    ],
+    "presets": [
+      "Bricks",
+      "Beads",
+      "Cross-stitch"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "filter",
+    "loop": 6,
+    "animated": true,
+    "duration": 6000,
+    "module": "shaders/pixel",
+    "addedAt": "2026-11-01T09:09:04.569Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "pixel-sprites",
+    "name": "Pixel sprites",
+    "kind": "shader",
+    "category": "retro",
+    "description": "A field of little procedurally generated pixel creatures, each mirror-symmetric with an outline and blinking eyes, bobbing in place and swapping for new ones now and then.",
+    "tags": [
+      "pixel",
+      "retro",
+      "sprite",
+      "creature",
+      "procedural",
+      "8-bit",
+      "pattern",
+      "background"
+    ],
+    "controls": [
+      {
+        "n": "uPixel",
+        "t": "float",
+        "d": 5,
+        "l": "Pixel size",
+        "min": 2,
+        "max": 12,
+        "s": 1,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "uDensity",
+        "t": "float",
+        "d": 0.75,
+        "min": 0.1,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "uPalette",
+        "t": "int",
+        "d": 0,
+        "l": "Palette (0 PICO-8, 1 NES, 2 C64)",
+        "max": 2,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uChange",
+        "t": "float",
+        "d": 0.25,
+        "l": "New sprites per second (per slot)",
+        "max": 2,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uBob",
+        "t": "bool",
+        "d": true,
+        "line": 6
+      },
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            29,
+            43,
+            83
+          ]
+        },
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "uOutline",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            0,
+            0,
+            0
+          ]
+        },
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Background opacity",
+        "b": 3,
+        "line": 138
+      }
+    ],
+    "presets": [
+      "Arcade",
+      "Crowd",
+      "Commodore"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "shaders/pixel",
+    "addedAt": "2026-11-01T09:09:04.569Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "pixel-city",
+    "name": "Pixel city",
+    "kind": "shader",
+    "category": "retro",
+    "description": "A night-time pixel skyline in parallax: three rows of towers with windows flicking on and off, blinking aerials, stars, a crescent moon and car lights along the street.",
+    "tags": [
+      "pixel",
+      "retro",
+      "city",
+      "skyline",
+      "night",
+      "parallax",
+      "background",
+      "16-bit"
+    ],
+    "controls": [
+      {
+        "n": "uPixel",
+        "t": "float",
+        "d": 4,
+        "l": "Pixel size",
+        "min": 2,
+        "max": 12,
+        "s": 1,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "uSpeed",
+        "t": "float",
+        "d": 1,
+        "l": "Scroll speed",
+        "max": 4,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "uLit",
+        "t": "float",
+        "d": 0.45,
+        "l": "Lit windows",
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uStars",
+        "t": "float",
+        "d": 0.6,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uTraffic",
+        "t": "bool",
+        "d": true,
+        "line": 6
+      },
+      {
+        "n": "uSkyTop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            11,
+            10,
+            36
+          ]
+        },
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "uSkyBottom",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            74,
+            36,
+            102
+          ]
+        },
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "uFar",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            42,
+            30,
+            78
+          ]
+        },
+        "l": "Far towers",
+        "c": 1,
+        "line": 9
+      },
+      {
+        "n": "uMid",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            26,
+            20,
+            52
+          ]
+        },
+        "l": "Middle towers",
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "uNear",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            13,
+            10,
+            28
+          ]
+        },
+        "l": "Near towers",
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "uWindow",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            210,
+            122
+          ]
+        },
+        "l": "Windows",
+        "c": 1,
+        "line": 12
+      }
+    ],
+    "presets": [
+      "Neon",
+      "Dusk"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "shaders/pixel",
+    "addedAt": "2026-11-01T09:09:04.569Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "rpg-dialog",
+    "name": "RPG dialog",
+    "kind": "vector",
+    "category": "retro",
+    "description": "A role-playing game's text box: a pixel-bordered panel with a speaker's name tab slides up, the line types out letter by letter in a pixel font, and a continue arrow blinks.",
+    "tags": [
+      "pixel",
+      "retro",
+      "dialog",
+      "text",
+      "rpg",
+      "game",
+      "typewriter",
+      "8-bit",
+      "caption"
+    ],
+    "controls": [
+      {
+        "n": "text",
+        "t": "text",
+        "d": "WELCOME, TRAVELLER! THE ROAD AHEAD IS DANGEROUS. TAKE THIS.",
+        "line": 1
+      },
+      {
+        "n": "speaker",
+        "t": "text",
+        "d": "SAGE",
+        "line": 2
+      },
+      {
+        "n": "panel",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            26,
+            42,
+            108
+          ]
+        },
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "border",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "ink",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "l": "Text colour",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "nameInk",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            26,
+            42,
+            108
+          ]
+        },
+        "l": "Name colour",
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "pace",
+        "t": "float",
+        "d": 45,
+        "l": "Ms per letter",
+        "min": 15,
+        "max": 200,
+        "s": 5,
+        "b": 3,
+        "line": 7
+      }
+    ],
+    "presets": [
+      "Classic blue",
+      "Handheld",
+      "Parchment"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "text",
+          "label": "Text",
+          "holds": "copy",
+          "default": "WELCOME, TRAVELLER! THE ROAD AHEAD IS DANGEROUS. TAKE THIS."
+        },
+        {
+          "name": "speaker",
+          "label": "Speaker",
+          "holds": "copy",
+          "default": "SAGE"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 400,
+    "animated": true,
+    "duration": 5805,
+    "module": "pixel",
+    "addedAt": "2026-11-01T09:09:04.569Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "led-ticker",
+    "name": "LED ticker",
+    "kind": "vector",
+    "category": "retro",
+    "description": "A dot-matrix LED sign with any text marching across it a column at a time, its lit dots glowing over the dim unlit ones, in a seamless loop.",
+    "tags": [
+      "pixel",
+      "retro",
+      "led",
+      "dot-matrix",
+      "ticker",
+      "marquee",
+      "sign",
+      "text",
+      "loop"
+    ],
+    "controls": [
+      {
+        "n": "text",
+        "t": "text",
+        "d": "NOW BOARDING  GATE 12  ",
+        "line": 1
+      },
+      {
+        "n": "led",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            176,
+            0
+          ]
+        },
+        "l": "Lit LEDs",
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "off",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            36,
+            25,
+            10
+          ]
+        },
+        "l": "Unlit LEDs",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "board",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            11,
+            11,
+            11
+          ]
+        },
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "frame",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            43,
+            43,
+            43
+          ]
+        },
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "speed",
+        "t": "float",
+        "d": 20,
+        "l": "Columns per second",
+        "min": 4,
+        "max": 60,
+        "s": 1,
+        "b": 3,
+        "line": 6
+      }
+    ],
+    "presets": [
+      "Amber",
+      "Red",
+      "Green",
+      "Ice"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "text",
+          "label": "Text",
+          "holds": "copy",
+          "default": "NOW BOARDING  GATE 12  "
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 0,
+    "animated": true,
+    "duration": 9200,
+    "module": "pixel",
+    "addedAt": "2026-11-01T09:09:04.569Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "pixel-explosion",
+    "name": "Pixel explosion",
+    "kind": "vector",
+    "category": "impact",
+    "description": "An 8-bit explosion: a white-hot pixel fireball swelling through yellow, orange and red into a ring of smoke, sparks flying out, frame by frame.",
+    "tags": [
+      "pixel",
+      "retro",
+      "explosion",
+      "impact",
+      "game",
+      "sprite",
+      "8-bit",
+      "loop"
+    ],
+    "controls": [
+      {
+        "n": "core",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 1
+      },
+      {
+        "n": "hot",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            228,
+            92
+          ]
+        },
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "flame",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            138,
+            31
+          ]
+        },
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "ember",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            217,
+            40,
+            28
+          ]
+        },
+        "l": "Embers",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "smoke",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            74,
+            59,
+            63
+          ]
+        },
+        "c": 1,
+        "line": 5
+      }
+    ],
+    "presets": [
+      "Plasma",
+      "Toxic"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 700,
+    "animated": true,
+    "duration": 1260,
+    "module": "pixel",
+    "addedAt": "2026-11-01T09:09:04.569Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "deep-fried",
+    "name": "Deep fried",
+    "kind": "shader",
+    "category": "meme",
+    "description": "A picture fried to a crisp: saturation and contrast blown out, posterised colour, oversharpened halos, JPEG blocking and grain, with red glints flaring from two points such as the eyes.",
+    "tags": [
+      "meme",
+      "treatment",
+      "image",
+      "deep-fried",
+      "jpeg",
+      "saturated",
+      "glint",
+      "lens-flare"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "line": 2,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uFry",
+        "t": "float",
+        "d": 0.8,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "uBlocks",
+        "t": "float",
+        "d": 0.5,
+        "l": "JPEG blocks",
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uGrain",
+        "t": "float",
+        "d": 0.1,
+        "max": 0.3,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uGlint",
+        "t": "float",
+        "d": 1,
+        "l": "Glints",
+        "max": 2,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uGlintColor",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            42,
+            18
+          ]
+        },
+        "l": "Glint colour",
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "uGlintA",
+        "t": "vec2",
+        "d": [
+          0.461,
+          0.583
+        ],
+        "l": "Glint A",
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uGlintB",
+        "t": "vec2",
+        "d": [
+          0.539,
+          0.583
+        ],
+        "l": "Glint B",
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uGlintSize",
+        "t": "float",
+        "d": 0.22,
+        "min": 0.05,
+        "max": 0.6,
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 12
+      }
+    ],
+    "presets": [
+      "Extra crispy",
+      "Lightly toasted",
+      "No glints"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "stills",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "stills",
+    "animated": true,
+    "module": "shaders/meme",
+    "addedAt": "2026-11-01T09:09:04.569Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "dramatic-zoom",
+    "name": "Dramatic zoom",
+    "kind": "shader",
+    "category": "meme",
+    "description": "A crash zoom onto a point (a face, a stare, a detail) in a few sudden steps, each landing with a kick while a vignette closes in, then a hold and a snap back to the whole picture.",
+    "tags": [
+      "meme",
+      "reaction",
+      "image",
+      "zoom",
+      "crash-zoom",
+      "dramatic",
+      "shake",
+      "vignette"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "line": 2,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uTarget",
+        "t": "vec2",
+        "d": [
+          0.5,
+          0.583
+        ],
+        "l": "Zoom onto",
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "uZoom",
+        "t": "float",
+        "d": 3.4,
+        "min": 1.2,
+        "max": 8,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uSteps",
+        "t": "int",
+        "d": 3,
+        "min": 1,
+        "max": 4,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uStepTime",
+        "t": "float",
+        "d": 0.4,
+        "l": "Seconds per step",
+        "min": 0.15,
+        "max": 1.5,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uHold",
+        "t": "float",
+        "d": 1.6,
+        "l": "Hold (s)",
+        "min": 0.3,
+        "max": 5,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uShake",
+        "t": "float",
+        "d": 0.5,
+        "l": "Kick",
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uVignette",
+        "t": "float",
+        "d": 0.65,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 11
+      }
+    ],
+    "presets": [
+      "One crash",
+      "Slow dread",
+      "Extreme close-up"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "stills",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "stills",
+    "animated": true,
+    "module": "shaders/meme",
+    "addedAt": "2026-11-01T09:09:04.569Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "laser-eyes",
+    "name": "Laser eyes",
+    "kind": "shader",
+    "category": "meme",
+    "description": "Laser beams firing from two eyes over a picture: a white-hot core in a red glow, flaring at each eye and flickering, aimed at any angle and spread, with the picture darkened behind them.",
+    "tags": [
+      "meme",
+      "reaction",
+      "image",
+      "laser",
+      "eyes",
+      "glow",
+      "beam",
+      "lens-flare"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "line": 2,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uEyeA",
+        "t": "vec2",
+        "d": [
+          0.461,
+          0.583
+        ],
+        "l": "Left eye",
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "uEyeB",
+        "t": "vec2",
+        "d": [
+          0.539,
+          0.583
+        ],
+        "l": "Right eye",
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uColor",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            30,
+            30
+          ]
+        },
+        "l": "Beam",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uAngle",
+        "t": "float",
+        "d": -15,
+        "l": "Angle (degrees)",
+        "min": -180,
+        "max": 180,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uSpread",
+        "t": "float",
+        "d": 0,
+        "l": "Spread (degrees)",
+        "max": 120,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uLength",
+        "t": "float",
+        "d": 1.4,
+        "max": 2,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uWidth",
+        "t": "float",
+        "d": 0.012,
+        "min": 0.002,
+        "max": 0.05,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uFlare",
+        "t": "float",
+        "d": 1,
+        "l": "Eye flare",
+        "max": 2,
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uDarken",
+        "t": "float",
+        "d": 0.35,
+        "l": "Darken picture",
+        "b": 3,
+        "line": 11
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 12
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 13
+      }
+    ],
+    "presets": [
+      "Straight ahead",
+      "Fanned out",
+      "Glowing eyes",
+      "Blue"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "stills",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "stills",
+    "animated": true,
+    "module": "shaders/meme",
+    "addedAt": "2026-11-01T09:09:04.569Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "to-be-continued",
+    "name": "To be continued",
+    "kind": "shader",
+    "category": "meme",
+    "description": "A picture that freezes on a sudden sepia grade with a little punch-in, then a left-pointing arrow slides in at the bottom with its words on it, holds, and it starts over.",
+    "tags": [
+      "meme",
+      "ending",
+      "image",
+      "freeze-frame",
+      "sepia",
+      "arrow",
+      "cliffhanger"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "line": 2,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uText",
+        "t": "sampler2D",
+        "d": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201024%20256%22%20width%3D%221024%22%20height%3D%22256%22%3E%3Ctext%20x%3D%22512%22%20y%3D%22128%22%20dy%3D%220.35em%22%20text-anchor%3D%22middle%22%20textLength%3D%22921.6%22%20lengthAdjust%3D%22spacingAndGlyphs%22%20font-family%3D%22%26%2339%3BArial%20Black%26%2339%3B%2C%20%26%2339%3BHelvetica%20Neue%26%2339%3B%2C%20Helvetica%2C%20Arial%2C%20system-ui%2C%20sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%2292.3%22%20fill%3D%22%23fff%22%3ETO%20BE%20CONTINUED%3C%2Ftext%3E%3C%2Fsvg%3E",
+        "line": 3,
+        "x": {
+          "filter": "mipmap",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uTint",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            200,
+            160,
+            96
+          ]
+        },
+        "l": "Freeze tint",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uArrow",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            58,
+            56,
+            32
+          ]
+        },
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uInk",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            240,
+            223,
+            160
+          ]
+        },
+        "l": "Words and border",
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "uPlay",
+        "t": "float",
+        "d": 1.4,
+        "l": "Before the freeze (s)",
+        "min": 0.2,
+        "max": 6,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uHold",
+        "t": "float",
+        "d": 2.6,
+        "l": "Hold (s)",
+        "min": 0.5,
+        "max": 8,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 0.11,
+        "l": "Arrow size",
+        "min": 0.06,
+        "max": 0.2,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 11
+      }
+    ],
+    "presets": [
+      "Coming soon",
+      "Black and white",
+      "Quick cut"
     ],
     "inputs": {
       "accepts": [
@@ -172,26 +1724,25 @@
     "video": "stills",
     "animated": true,
     "module": "shaders/meme",
-    "addedAt": "2026-11-01T07:28:10Z",
-    "commitHash": "b3e462a142e9a4ae85e64692e24176dc5c40c4de",
-    "order": 590
+    "addedAt": "2026-11-01T09:09:04.569Z",
+    "commitHash": "",
+    "order": 0
   },
   {
-    "id": "sad-mode",
-    "name": "Sad mode",
+    "id": "needs-more-jpeg",
+    "name": "Needs more JPEG",
     "kind": "shader",
     "category": "meme",
-    "description": "A picture drained to a cool blue-grey with rain streaking down over it, the camera slowly pulling back and a heavy vignette closing in.",
+    "description": "A picture saved again and again at lower quality: 8 × 8 blocks, smeared blocky colour and mosquito noise around its edges grow with each step down, then it snaps back clean and starts over.",
     "tags": [
       "meme",
-      "mood",
+      "treatment",
       "image",
-      "sad",
-      "rain",
-      "blue",
-      "desaturate",
-      "vignette",
-      "melancholy"
+      "jpeg",
+      "compression",
+      "artifacts",
+      "low-quality",
+      "blocks"
     ],
     "controls": [
       {
@@ -207,66 +1758,66 @@
         }
       },
       {
-        "n": "uTint",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            124,
-            143,
-            168
-          ]
-        },
-        "l": "Mood",
-        "c": 1,
+        "n": "uCrunch",
+        "t": "float",
+        "d": 0.85,
+        "l": "Worst quality",
+        "min": 0.1,
+        "b": 3,
         "line": 3
       },
       {
-        "n": "uDrain",
-        "t": "float",
-        "d": 0.85,
+        "n": "uSteps",
+        "t": "int",
+        "d": 5,
+        "min": 1,
+        "max": 8,
         "b": 3,
         "line": 4
       },
       {
-        "n": "uRain",
+        "n": "uStepTime",
         "t": "float",
         "d": 0.6,
+        "l": "Seconds per step",
+        "min": 0.15,
+        "max": 2,
         "b": 3,
         "line": 5
       },
       {
-        "n": "uAngle",
+        "n": "uHold",
         "t": "float",
-        "d": 10,
-        "l": "Rain angle (degrees)",
-        "min": -30,
-        "max": 30,
+        "d": 1.2,
+        "l": "Hold (s)",
+        "min": 0.2,
+        "max": 5,
         "b": 3,
         "line": 6
       },
       {
-        "n": "uPush",
+        "n": "uBlock",
         "t": "float",
-        "d": 0.15,
-        "l": "Push out",
-        "max": 0.4,
+        "d": 8,
+        "l": "Block size (px)",
+        "min": 4,
+        "max": 32,
         "b": 3,
         "line": 7
       },
       {
-        "n": "uPushTime",
+        "n": "uChroma",
         "t": "float",
-        "d": 8,
-        "l": "Push time (s)",
-        "min": 2,
-        "max": 20,
+        "d": 0.7,
+        "l": "Chroma bleed",
         "b": 3,
         "line": 8
       },
       {
-        "n": "uVignette",
+        "n": "uMosquito",
         "t": "float",
-        "d": 0.75,
+        "d": 0.6,
+        "l": "Mosquito noise",
         "b": 3,
         "line": 9
       },
@@ -293,10 +1844,9 @@
       }
     ],
     "presets": [
-      "Downpour",
-      "Dry tears",
-      "Sepia sorrow",
-      "Still"
+      "One bad save",
+      "Potato quality",
+      "Slow decline"
     ],
     "inputs": {
       "accepts": [
@@ -312,33 +1862,32 @@
         }
       ],
       "texts": [],
-      "video": "stills",
+      "video": "filter",
       "interactions": [],
       "transparent": false
     },
-    "video": "stills",
+    "video": "filter",
     "animated": true,
     "module": "shaders/meme",
-    "addedAt": "2026-11-01T07:28:10Z",
-    "commitHash": "b3e462a142e9a4ae85e64692e24176dc5c40c4de",
-    "order": 589
+    "addedAt": "2026-11-01T09:09:04.569Z",
+    "commitHash": "",
+    "order": 0
   },
   {
-    "id": "galaxy-brain",
-    "name": "Galaxy brain",
+    "id": "triggered",
+    "name": "Triggered",
     "kind": "shader",
     "category": "meme",
-    "description": "Cosmic light radiating from a head that climbs through four levels of enlightenment: a soft halo, then rays, then a nebula full of stars, then a starburst over the whole picture, before it settles and starts again.",
+    "description": "A picture tinted red and jittering fast in place, with a banner bar along the bottom carrying its word; the jitter is capped and nothing flashes.",
     "tags": [
       "meme",
       "reaction",
       "image",
-      "galaxy",
-      "cosmic",
-      "glow",
-      "rays",
-      "stars",
-      "enlightened"
+      "shake",
+      "jitter",
+      "red",
+      "angry",
+      "banner"
     ],
     "controls": [
       {
@@ -354,85 +1903,89 @@
         }
       },
       {
-        "n": "uHead",
-        "t": "vec2",
-        "d": [
-          0.5,
-          0.78
-        ],
-        "b": 3,
-        "line": 3
+        "n": "uText",
+        "t": "sampler2D",
+        "d": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201024%20256%22%20width%3D%221024%22%20height%3D%22256%22%3E%3Ctext%20x%3D%22512%22%20y%3D%22128%22%20dy%3D%220.35em%22%20text-anchor%3D%22middle%22%20textLength%3D%22921.6%22%20lengthAdjust%3D%22spacingAndGlyphs%22%20font-family%3D%22%26%2339%3BArial%20Black%26%2339%3B%2C%20%26%2339%3BHelvetica%20Neue%26%2339%3B%2C%20Helvetica%2C%20Arial%2C%20system-ui%2C%20sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%22148.2%22%20fill%3D%22%23fff%22%3ETRIGGERED%3C%2Ftext%3E%3C%2Fsvg%3E",
+        "line": 3,
+        "x": {
+          "filter": "mipmap",
+          "wrap": "clamp"
+        }
       },
       {
-        "n": "uLevel",
-        "t": "int",
-        "d": 4,
-        "l": "Highest level",
-        "min": 1,
-        "max": 4,
-        "b": 3,
+        "n": "uTint",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            26,
+            26
+          ]
+        },
+        "c": 1,
         "line": 4
       },
       {
-        "n": "uStepTime",
+        "n": "uRed",
         "t": "float",
-        "d": 1.4,
-        "l": "Seconds per level",
-        "min": 0.4,
-        "max": 4,
+        "d": 0.6,
+        "l": "Red tint",
         "b": 3,
         "line": 5
       },
       {
-        "n": "uHold",
+        "n": "uShake",
         "t": "float",
-        "d": 2,
-        "l": "Hold (s)",
-        "min": 0.5,
-        "max": 6,
+        "d": 0.7,
+        "l": "Jitter",
         "b": 3,
         "line": 6
       },
       {
-        "n": "uSize",
+        "n": "uRate",
         "t": "float",
-        "d": 0.3,
-        "l": "Glow size",
-        "min": 0.1,
+        "d": 20,
+        "l": "Jolts a second",
+        "min": 4,
+        "max": 30,
         "b": 3,
         "line": 7
       },
       {
-        "n": "uGlow",
+        "n": "uBar",
         "t": "vec3",
         "d": {
           "c255": [
-            143,
-            227,
+            255,
+            255,
             255
           ]
         },
+        "l": "Banner",
         "c": 1,
         "line": 8
       },
       {
-        "n": "uNebula",
+        "n": "uInk",
         "t": "vec3",
         "d": {
           "c255": [
-            176,
-            84,
-            255
+            17,
+            17,
+            17
           ]
         },
+        "l": "Words",
         "c": 1,
         "line": 9
       },
       {
-        "n": "uDarken",
+        "n": "uBarHeight",
         "t": "float",
-        "d": 0.5,
-        "l": "Darken picture",
+        "d": 0.17,
+        "l": "Banner height",
+        "min": 0.08,
+        "max": 0.3,
         "b": 3,
         "line": 10
       },
@@ -459,22 +2012,29 @@
       }
     ],
     "presets": [
-      "Just a halo",
-      "Quick ascent",
-      "Golden",
-      "Big brain"
+      "Red banner",
+      "Simmering",
+      "Furious",
+      "Custom word"
     ],
     "inputs": {
       "accepts": [
         "image",
         "video",
-        "svg"
+        "svg",
+        "text",
+        "mask"
       ],
       "images": [
         {
           "name": "uImage",
           "label": "Image",
           "wants": "picture"
+        },
+        {
+          "name": "uText",
+          "label": "Text",
+          "wants": "text"
         }
       ],
       "texts": [],
@@ -485,9 +2045,9 @@
     "video": "stills",
     "animated": true,
     "module": "shaders/meme",
-    "addedAt": "2026-11-01T07:28:10Z",
-    "commitHash": "b3e462a142e9a4ae85e64692e24176dc5c40c4de",
-    "order": 588
+    "addedAt": "2026-11-01T09:09:04.569Z",
+    "commitHash": "",
+    "order": 0
   },
   {
     "id": "vaporwave-grade",
@@ -678,25 +2238,26 @@
     "video": "filter",
     "animated": true,
     "module": "shaders/meme",
-    "addedAt": "2026-11-01T07:28:10Z",
-    "commitHash": "b3e462a142e9a4ae85e64692e24176dc5c40c4de",
-    "order": 587
+    "addedAt": "2026-11-01T09:09:04.569Z",
+    "commitHash": "",
+    "order": 0
   },
   {
-    "id": "triggered",
-    "name": "Triggered",
+    "id": "galaxy-brain",
+    "name": "Galaxy brain",
     "kind": "shader",
     "category": "meme",
-    "description": "A picture tinted red and jittering fast in place, with a banner bar along the bottom carrying its word; the jitter is capped and nothing flashes.",
+    "description": "Cosmic light radiating from a head that climbs through four levels of enlightenment: a soft halo, then rays, then a nebula full of stars, then a starburst over the whole picture, before it settles and starts again.",
     "tags": [
       "meme",
       "reaction",
       "image",
-      "shake",
-      "jitter",
-      "red",
-      "angry",
-      "banner"
+      "galaxy",
+      "cosmic",
+      "glow",
+      "rays",
+      "stars",
+      "enlightened"
     ],
     "controls": [
       {
@@ -712,89 +2273,85 @@
         }
       },
       {
-        "n": "uText",
-        "t": "sampler2D",
-        "d": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201024%20256%22%20width%3D%221024%22%20height%3D%22256%22%3E%3Ctext%20x%3D%22512%22%20y%3D%22128%22%20dy%3D%220.35em%22%20text-anchor%3D%22middle%22%20textLength%3D%22921.6%22%20lengthAdjust%3D%22spacingAndGlyphs%22%20font-family%3D%22%26%2339%3BArial%20Black%26%2339%3B%2C%20%26%2339%3BHelvetica%20Neue%26%2339%3B%2C%20Helvetica%2C%20Arial%2C%20system-ui%2C%20sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%22148.2%22%20fill%3D%22%23fff%22%3ETRIGGERED%3C%2Ftext%3E%3C%2Fsvg%3E",
-        "line": 3,
-        "x": {
-          "filter": "mipmap",
-          "wrap": "clamp"
-        }
+        "n": "uHead",
+        "t": "vec2",
+        "d": [
+          0.5,
+          0.78
+        ],
+        "b": 3,
+        "line": 3
       },
       {
-        "n": "uTint",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            26,
-            26
-          ]
-        },
-        "c": 1,
+        "n": "uLevel",
+        "t": "int",
+        "d": 4,
+        "l": "Highest level",
+        "min": 1,
+        "max": 4,
+        "b": 3,
         "line": 4
       },
       {
-        "n": "uRed",
+        "n": "uStepTime",
         "t": "float",
-        "d": 0.6,
-        "l": "Red tint",
+        "d": 1.4,
+        "l": "Seconds per level",
+        "min": 0.4,
+        "max": 4,
         "b": 3,
         "line": 5
       },
       {
-        "n": "uShake",
+        "n": "uHold",
         "t": "float",
-        "d": 0.7,
-        "l": "Jitter",
+        "d": 2,
+        "l": "Hold (s)",
+        "min": 0.5,
+        "max": 6,
         "b": 3,
         "line": 6
       },
       {
-        "n": "uRate",
+        "n": "uSize",
         "t": "float",
-        "d": 20,
-        "l": "Jolts a second",
-        "min": 4,
-        "max": 30,
+        "d": 0.3,
+        "l": "Glow size",
+        "min": 0.1,
         "b": 3,
         "line": 7
       },
       {
-        "n": "uBar",
+        "n": "uGlow",
         "t": "vec3",
         "d": {
           "c255": [
-            255,
-            255,
+            143,
+            227,
             255
           ]
         },
-        "l": "Banner",
         "c": 1,
         "line": 8
       },
       {
-        "n": "uInk",
+        "n": "uNebula",
         "t": "vec3",
         "d": {
           "c255": [
-            17,
-            17,
-            17
+            176,
+            84,
+            255
           ]
         },
-        "l": "Words",
         "c": 1,
         "line": 9
       },
       {
-        "n": "uBarHeight",
+        "n": "uDarken",
         "t": "float",
-        "d": 0.17,
-        "l": "Banner height",
-        "min": 0.08,
-        "max": 0.3,
+        "d": 0.5,
+        "l": "Darken picture",
         "b": 3,
         "line": 10
       },
@@ -821,10 +2378,327 @@
       }
     ],
     "presets": [
-      "Red banner",
-      "Simmering",
-      "Furious",
-      "Custom word"
+      "Just a halo",
+      "Quick ascent",
+      "Golden",
+      "Big brain"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "stills",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "stills",
+    "animated": true,
+    "module": "shaders/meme",
+    "addedAt": "2026-11-01T09:09:04.569Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "sad-mode",
+    "name": "Sad mode",
+    "kind": "shader",
+    "category": "meme",
+    "description": "A picture drained to a cool blue-grey with rain streaking down over it, the camera slowly pulling back and a heavy vignette closing in.",
+    "tags": [
+      "meme",
+      "mood",
+      "image",
+      "sad",
+      "rain",
+      "blue",
+      "desaturate",
+      "vignette",
+      "melancholy"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "line": 2,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uTint",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            124,
+            143,
+            168
+          ]
+        },
+        "l": "Mood",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uDrain",
+        "t": "float",
+        "d": 0.85,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uRain",
+        "t": "float",
+        "d": 0.6,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uAngle",
+        "t": "float",
+        "d": 10,
+        "l": "Rain angle (degrees)",
+        "min": -30,
+        "max": 30,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uPush",
+        "t": "float",
+        "d": 0.15,
+        "l": "Push out",
+        "max": 0.4,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uPushTime",
+        "t": "float",
+        "d": 8,
+        "l": "Push time (s)",
+        "min": 2,
+        "max": 20,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uVignette",
+        "t": "float",
+        "d": 0.75,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 11
+      }
+    ],
+    "presets": [
+      "Downpour",
+      "Dry tears",
+      "Sepia sorrow",
+      "Still"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "stills",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "stills",
+    "animated": true,
+    "module": "shaders/meme",
+    "addedAt": "2026-11-01T09:09:04.569Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "game-over-banner",
+    "name": "Game over banner",
+    "kind": "shader",
+    "category": "meme",
+    "description": "A picture that slows to stuttering frames and drains to grey, then a dark band fades in across it with big serif words on it, growing a little as it holds, before it starts over.",
+    "tags": [
+      "meme",
+      "ending",
+      "image",
+      "game-over",
+      "banner",
+      "serif",
+      "slow-motion",
+      "desaturate",
+      "game"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "line": 2,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uText",
+        "t": "sampler2D",
+        "d": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201024%20256%22%20width%3D%221024%22%20height%3D%22256%22%3E%3Ctext%20x%3D%22512%22%20y%3D%22128%22%20dy%3D%220.35em%22%20text-anchor%3D%22middle%22%20textLength%3D%22921.6%22%20lengthAdjust%3D%22spacingAndGlyphs%22%20font-family%3D%22Georgia%2C%20%26%2339%3BTimes%20New%20Roman%26%2339%3B%2C%20Times%2C%20serif%22%20font-weight%3D%22400%22%20font-size%3D%22141.3%22%20fill%3D%22%23fff%22%3EGAME%20OVER%3C%2Ftext%3E%3C%2Fsvg%3E",
+        "line": 3,
+        "x": {
+          "filter": "mipmap",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uInk",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            192,
+            32,
+            26
+          ]
+        },
+        "l": "Words",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uBand",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            0,
+            0,
+            0
+          ]
+        },
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uPlay",
+        "t": "float",
+        "d": 1.5,
+        "l": "Before it ends (s)",
+        "min": 0.3,
+        "max": 6,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uStutter",
+        "t": "float",
+        "d": 6,
+        "l": "Stutter frames a second",
+        "min": 2,
+        "max": 15,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uFade",
+        "t": "float",
+        "d": 1.4,
+        "l": "Fade (s)",
+        "min": 0.3,
+        "max": 4,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uHold",
+        "t": "float",
+        "d": 3,
+        "l": "Hold (s)",
+        "min": 0.5,
+        "max": 8,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 0.12,
+        "l": "Words height",
+        "min": 0.06,
+        "max": 0.25,
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 12
+      }
+    ],
+    "presets": [
+      "You lose",
+      "Gold on black",
+      "Sudden",
+      "Long goodbye"
     ],
     "inputs": {
       "accepts": [
@@ -854,338 +2728,109 @@
     "video": "stills",
     "animated": true,
     "module": "shaders/meme",
-    "addedAt": "2026-11-01T07:28:10Z",
-    "commitHash": "b3e462a142e9a4ae85e64692e24176dc5c40c4de",
-    "order": 586
+    "addedAt": "2026-11-01T09:09:04.569Z",
+    "commitHash": "",
+    "order": 0
   },
   {
-    "id": "needs-more-jpeg",
-    "name": "Needs more JPEG",
-    "kind": "shader",
-    "category": "meme",
-    "description": "A picture saved again and again at lower quality: 8 × 8 blocks, smeared blocky colour and mosquito noise around its edges grow with each step down, then it snaps back clean and starts over.",
-    "tags": [
-      "meme",
-      "treatment",
-      "image",
-      "jpeg",
-      "compression",
-      "artifacts",
-      "low-quality",
-      "blocks"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "portrait"
-        },
-        "line": 2,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uCrunch",
-        "t": "float",
-        "d": 0.85,
-        "l": "Worst quality",
-        "min": 0.1,
-        "b": 3,
-        "line": 3
-      },
-      {
-        "n": "uSteps",
-        "t": "int",
-        "d": 5,
-        "min": 1,
-        "max": 8,
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "uStepTime",
-        "t": "float",
-        "d": 0.6,
-        "l": "Seconds per step",
-        "min": 0.15,
-        "max": 2,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uHold",
-        "t": "float",
-        "d": 1.2,
-        "l": "Hold (s)",
-        "min": 0.2,
-        "max": 5,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uBlock",
-        "t": "float",
-        "d": 8,
-        "l": "Block size (px)",
-        "min": 4,
-        "max": 32,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uChroma",
-        "t": "float",
-        "d": 0.7,
-        "l": "Chroma bleed",
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uMosquito",
-        "t": "float",
-        "d": 0.6,
-        "l": "Mosquito noise",
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "b": 3,
-        "line": 11
-      }
-    ],
-    "presets": [
-      "One bad save",
-      "Potato quality",
-      "Slow decline"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "filter",
-    "animated": true,
-    "module": "shaders/meme",
-    "addedAt": "2026-11-01T07:28:10Z",
-    "commitHash": "b3e462a142e9a4ae85e64692e24176dc5c40c4de",
-    "order": 585
-  },
-  {
-    "id": "wordart-text",
-    "name": "Word art",
+    "id": "impact-caption",
+    "name": "Impact caption",
     "kind": "vector",
     "category": "meme",
-    "description": "90s word art: chunky letters in a rainbow gradient that flows along them, skewed, with a deep 3D extrude growing out behind, set on a wave or an arch, spinning in with a bounce.",
+    "description": "The classic meme caption: white Impact capitals with a heavy black outline across the top and bottom of the frame, each fitted to the width, popping on with the punchline a beat after the setup.",
     "tags": [
       "meme",
       "caption",
-      "retro",
-      "word-art",
-      "rainbow",
-      "3d",
-      "extrude",
-      "90s",
-      "text"
+      "text",
+      "impact",
+      "top-text",
+      "bottom-text",
+      "overlay",
+      "pop"
     ],
     "controls": [
       {
-        "n": "text",
+        "n": "top",
         "t": "text",
-        "d": "TOTALLY RAD",
+        "d": "TOP TEXT",
+        "l": "Top text",
         "line": 1
       },
       {
-        "n": "wave",
-        "t": "float",
-        "d": 0.5,
-        "min": -1,
-        "s": 0.05,
-        "b": 3,
+        "n": "bottom",
+        "t": "text",
+        "d": "BOTTOM TEXT",
+        "l": "Bottom text",
         "line": 2
       },
       {
-        "n": "arch",
-        "t": "float",
-        "d": 0,
-        "min": -1,
-        "s": 0.05,
-        "b": 3,
+        "n": "ink",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "l": "Text colour",
+        "c": 1,
         "line": 3
-      },
-      {
-        "n": "skew",
-        "t": "float",
-        "d": -12,
-        "l": "Skew (°)",
-        "min": -30,
-        "max": 30,
-        "s": 1,
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "depth",
-        "t": "float",
-        "d": 1,
-        "l": "Extrude depth",
-        "max": 2,
-        "s": 0.05,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "thickness",
-        "t": "float",
-        "d": 1,
-        "l": "Outline",
-        "max": 3,
-        "s": 0.1,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "flow",
-        "t": "bool",
-        "d": true,
-        "l": "Flowing colours",
-        "line": 7
-      },
-      {
-        "n": "c1",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            45,
-            45
-          ]
-        },
-        "l": "Colour 1",
-        "c": 1,
-        "line": 8
-      },
-      {
-        "n": "c2",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            196,
-            0
-          ]
-        },
-        "l": "Colour 2",
-        "c": 1,
-        "line": 9
-      },
-      {
-        "n": "c3",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            39,
-            216,
-            69
-          ]
-        },
-        "l": "Colour 3",
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "c4",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            45,
-            123,
-            255
-          ]
-        },
-        "l": "Colour 4",
-        "c": 1,
-        "line": 11
-      },
-      {
-        "n": "c5",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            176,
-            61,
-            255
-          ]
-        },
-        "l": "Colour 5",
-        "c": 1,
-        "line": 12
-      },
-      {
-        "n": "side",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            58,
-            29,
-            110
-          ]
-        },
-        "l": "Extrude",
-        "c": 1,
-        "line": 13
       },
       {
         "n": "outline",
         "t": "vec3",
         "d": {
           "c255": [
-            20,
-            16,
-            42
+            0,
+            0,
+            0
           ]
         },
-        "l": "Outline colour",
         "c": 1,
-        "line": 14
+        "line": 4
+      },
+      {
+        "n": "thickness",
+        "t": "float",
+        "d": 0.09,
+        "l": "Outline width (em)",
+        "max": 0.2,
+        "s": 0.01,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "upper",
+        "t": "bool",
+        "d": true,
+        "l": "Capitals",
+        "line": 6
+      },
+      {
+        "n": "pop",
+        "t": "float",
+        "d": 1,
+        "l": "Pop-in",
+        "s": 0.1,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "beat",
+        "t": "float",
+        "d": 0.8,
+        "l": "Punchline delay (s)",
+        "max": 3,
+        "s": 0.1,
+        "b": 3,
+        "line": 8
       },
       {
         "n": "font",
         "t": "text",
-        "d": "'Arial Black', 'Arial Bold', Impact, 'Helvetica Neue', sans-serif",
-        "line": 15
+        "d": "Impact, Anton, 'Haettenschweiler', 'Arial Narrow Bold', 'Arial Black', sans-serif",
+        "line": 9
       },
       {
         "n": "background",
@@ -1198,7 +2843,7 @@
           ]
         },
         "c": 1,
-        "line": 16
+        "line": 10
       },
       {
         "n": "backdrop",
@@ -1207,15 +2852,14 @@
         "l": "Background opacity",
         "s": 0.05,
         "b": 3,
-        "line": 17
+        "line": 11
       }
     ],
     "presets": [
       "Overlay",
-      "Arch",
-      "Big wave",
-      "Chrome",
-      "Flat"
+      "Bottom only",
+      "No pop",
+      "Yellow subtitle"
     ],
     "inputs": {
       "accepts": [
@@ -1224,16 +2868,22 @@
       "images": [],
       "texts": [
         {
-          "name": "text",
-          "label": "Text",
+          "name": "top",
+          "label": "Top text",
           "holds": "copy",
-          "default": "TOTALLY RAD"
+          "default": "TOP TEXT"
+        },
+        {
+          "name": "bottom",
+          "label": "Bottom text",
+          "holds": "copy",
+          "default": "BOTTOM TEXT"
         },
         {
           "name": "font",
           "label": "Font",
           "holds": "font",
-          "default": "'Arial Black', 'Arial Bold', Impact, 'Helvetica Neue', sans-serif"
+          "default": "Impact, Anton, 'Haettenschweiler', 'Arial Narrow Bold', 'Arial Black', sans-serif"
         }
       ],
       "interactions": [],
@@ -1241,974 +2891,11 @@
     },
     "hold": 1800,
     "animated": true,
-    "duration": 4640,
+    "duration": 3400,
     "module": "meme",
-    "addedAt": "2026-11-01T07:26:36Z",
-    "commitHash": "097fe892afd2b3031a493c9a7a3463ee48679757",
-    "order": 584
-  },
-  {
-    "id": "reaction-rain",
-    "name": "Reaction rain",
-    "kind": "vector",
-    "category": "meme",
-    "description": "Live-stream reactions floating up the side of the frame: emoji (or any glyphs or words) popping in at the bottom, wobbling as they rise and fading out near the top.",
-    "tags": [
-      "meme",
-      "reaction",
-      "emoji",
-      "live",
-      "stream",
-      "heart",
-      "float",
-      "social",
-      "overlay"
-    ],
-    "controls": [
-      {
-        "n": "glyphs",
-        "t": "text",
-        "d": "😂🔥💀",
-        "l": "Reactions",
-        "line": 1
-      },
-      {
-        "n": "count",
-        "t": "int",
-        "d": 14,
-        "l": "How many",
-        "min": 1,
-        "max": 18,
-        "b": 3,
-        "line": 2
-      },
-      {
-        "n": "rate",
-        "t": "float",
-        "d": 5,
-        "l": "A second",
-        "min": 0.5,
-        "max": 12,
-        "s": 0.5,
-        "b": 3,
-        "line": 3
-      },
-      {
-        "n": "speed",
-        "t": "float",
-        "d": 1,
-        "l": "Rise speed",
-        "min": 0.4,
-        "max": 2.5,
-        "s": 0.1,
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "side",
-        "t": "float",
-        "d": 0.86,
-        "l": "Column across",
-        "s": 0.01,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "spread",
-        "t": "float",
-        "d": 0.08,
-        "l": "Column width",
-        "max": 0.5,
-        "s": 0.01,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "scale",
-        "t": "float",
-        "d": 1,
-        "l": "Size",
-        "min": 0.5,
-        "max": 2.5,
-        "s": 0.05,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "font",
-        "t": "text",
-        "d": "'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Twemoji Mozilla', sans-serif",
-        "line": 8
-      },
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            59,
-            66,
-            82
-          ]
-        },
-        "c": 1,
-        "line": 9
-      },
-      {
-        "n": "backdrop",
-        "t": "float",
-        "d": 1,
-        "l": "Background opacity",
-        "s": 0.05,
-        "b": 3,
-        "line": 10
-      }
-    ],
-    "presets": [
-      "Overlay",
-      "Left side",
-      "Hearts",
-      "Flood"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [
-        {
-          "name": "glyphs",
-          "label": "Reactions",
-          "holds": "glyphs",
-          "default": "😂🔥💀"
-        },
-        {
-          "name": "font",
-          "label": "Font",
-          "holds": "font",
-          "default": "'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Twemoji Mozilla', sans-serif"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 300,
-    "animated": true,
-    "duration": 6704,
-    "module": "meme",
-    "addedAt": "2026-11-01T07:26:36Z",
-    "commitHash": "097fe892afd2b3031a493c9a7a3463ee48679757",
-    "order": 583
-  },
-  {
-    "id": "hitmarker-montage",
-    "name": "Hitmarker montage",
-    "kind": "vector",
-    "category": "meme",
-    "description": "A montage-parody volley: hit markers slamming down one after another at points across the frame, a score popping up and floating off each, the frame jolting with every hit and the last one in red.",
-    "tags": [
-      "meme",
-      "reaction",
-      "hitmarker",
-      "montage",
-      "game",
-      "fps",
-      "score",
-      "shake",
-      "overlay"
-    ],
-    "controls": [
-      {
-        "n": "points",
-        "t": "text",
-        "d": "0.32,0.62 0.6,0.45 0.44,0.3 0.72,0.68 0.5,0.52",
-        "l": "Hits (x,y 0–1, y up)",
-        "line": 1
-      },
-      {
-        "n": "score",
-        "t": "text",
-        "d": "+100",
-        "line": 2
-      },
-      {
-        "n": "pace",
-        "t": "float",
-        "d": 0.32,
-        "l": "Seconds between hits",
-        "min": 0.08,
-        "max": 1.5,
-        "s": 0.01,
-        "b": 3,
-        "line": 3
-      },
-      {
-        "n": "size",
-        "t": "float",
-        "d": 1.25,
-        "min": 0.5,
-        "max": 2.5,
-        "s": 0.05,
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "weight",
-        "t": "float",
-        "d": 4.5,
-        "l": "Tick weight",
-        "min": 2,
-        "max": 9,
-        "s": 0.5,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "shake",
-        "t": "float",
-        "d": 4,
-        "max": 12,
-        "s": 0.5,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "marker",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 7
-      },
-      {
-        "n": "finale",
-        "t": "bool",
-        "d": true,
-        "l": "Last hit in red",
-        "line": 8
-      },
-      {
-        "n": "kill",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            42,
-            42
-          ]
-        },
-        "l": "Last hit",
-        "c": 1,
-        "line": 9
-      },
-      {
-        "n": "scoreInk",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            214,
-            10
-          ]
-        },
-        "l": "Score colour",
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "font",
-        "t": "text",
-        "d": "Impact, Anton, 'Haettenschweiler', 'Arial Narrow Bold', 'Arial Black', sans-serif",
-        "line": 11
-      },
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            59,
-            66,
-            82
-          ]
-        },
-        "c": 1,
-        "line": 12
-      },
-      {
-        "n": "backdrop",
-        "t": "float",
-        "d": 1,
-        "l": "Background opacity",
-        "s": 0.05,
-        "b": 3,
-        "line": 13
-      }
-    ],
-    "presets": [
-      "Overlay",
-      "Headshots",
-      "Rapid fire",
-      "Steady"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "points",
-          "label": "Hits (x,y 0–1, y up)",
-          "holds": "copy",
-          "default": "0.32,0.62 0.6,0.45 0.44,0.3 0.72,0.68 0.5,0.52"
-        },
-        {
-          "name": "score",
-          "label": "Score",
-          "holds": "copy",
-          "default": "+100"
-        },
-        {
-          "name": "font",
-          "label": "Font",
-          "holds": "font",
-          "default": "Impact, Anton, 'Haettenschweiler', 'Arial Narrow Bold', 'Arial Black', sans-serif"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 900,
-    "animated": true,
-    "duration": 3410,
-    "module": "meme",
-    "addedAt": "2026-11-01T07:26:36Z",
-    "commitHash": "097fe892afd2b3031a493c9a7a3463ee48679757",
-    "order": 582
-  },
-  {
-    "id": "bonk",
-    "name": "Bonk",
-    "kind": "vector",
-    "category": "meme",
-    "description": "A cartoon mallet winds up and swings down onto a point, the head under it squashes and springs back, and a comic impact star pops with the word BONK, the frame shaking from the hit.",
-    "tags": [
-      "meme",
-      "reaction",
-      "comic",
-      "bonk",
-      "mallet",
-      "hammer",
-      "hit",
-      "cartoon",
-      "overlay"
-    ],
-    "controls": [
-      {
-        "n": "word",
-        "t": "text",
-        "d": "BONK",
-        "line": 1
-      },
-      {
-        "n": "x",
-        "t": "float",
-        "d": 0.5,
-        "l": "Hit across",
-        "b": 3,
-        "line": 2
-      },
-      {
-        "n": "y",
-        "t": "float",
-        "d": 0.775,
-        "l": "Hit up",
-        "b": 3,
-        "line": 3
-      },
-      {
-        "n": "size",
-        "t": "float",
-        "d": 0.75,
-        "min": 0.4,
-        "max": 2,
-        "s": 0.05,
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "head",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            181,
-            118,
-            60
-          ]
-        },
-        "l": "Mallet head",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "handle",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            138,
-            84,
-            39
-          ]
-        },
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "burst",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            214,
-            10
-          ]
-        },
-        "l": "Star",
-        "c": 1,
-        "line": 7
-      },
-      {
-        "n": "letters",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            59,
-            48
-          ]
-        },
-        "c": 1,
-        "line": 8
-      },
-      {
-        "n": "ink",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            17,
-            17,
-            17
-          ]
-        },
-        "c": 1,
-        "line": 9
-      },
-      {
-        "n": "face",
-        "t": "bool",
-        "d": true,
-        "l": "Sample face",
-        "line": 10
-      },
-      {
-        "n": "font",
-        "t": "text",
-        "d": "'Bangers', 'Luckiest Guy', Impact, 'Arial Black', sans-serif",
-        "line": 11
-      },
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            59,
-            66,
-            82
-          ]
-        },
-        "c": 1,
-        "line": 12
-      },
-      {
-        "n": "backdrop",
-        "t": "float",
-        "d": 1,
-        "l": "Background opacity",
-        "s": 0.05,
-        "b": 3,
-        "line": 13
-      }
-    ],
-    "presets": [
-      "Overlay",
-      "Toy hammer",
-      "Big bonk"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "word",
-          "label": "Word",
-          "holds": "copy",
-          "default": "BONK"
-        },
-        {
-          "name": "font",
-          "label": "Font",
-          "holds": "font",
-          "default": "'Bangers', 'Luckiest Guy', Impact, 'Arial Black', sans-serif"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 500,
-    "animated": true,
-    "duration": 2250,
-    "module": "meme",
-    "addedAt": "2026-11-01T07:26:36Z",
-    "commitHash": "097fe892afd2b3031a493c9a7a3463ee48679757",
-    "order": 581
-  },
-  {
-    "id": "error-cascade",
-    "name": "Error cascade",
-    "kind": "vector",
-    "category": "meme",
-    "description": "Retro error dialogs popping up one after another, cascading down the screen or dragging a trail across it like a frozen computer, each with an editable title, message and button and no real system's branding.",
-    "tags": [
-      "meme",
-      "retro",
-      "error",
-      "dialog",
-      "window",
-      "crash",
-      "glitch",
-      "90s",
-      "overlay"
-    ],
-    "controls": [
-      {
-        "n": "title",
-        "t": "text",
-        "d": "Error",
-        "line": 1
-      },
-      {
-        "n": "message",
-        "t": "text",
-        "d": "Something went horribly wrong.",
-        "line": 2
-      },
-      {
-        "n": "button",
-        "t": "text",
-        "d": "OK",
-        "line": 3
-      },
-      {
-        "n": "count",
-        "t": "int",
-        "d": 10,
-        "l": "Dialogs",
-        "min": 1,
-        "max": 16,
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "pace",
-        "t": "float",
-        "d": 0.18,
-        "l": "Seconds between",
-        "min": 0.03,
-        "s": 0.01,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "trail",
-        "t": "bool",
-        "d": false,
-        "l": "Drag a trail",
-        "line": 6
-      },
-      {
-        "n": "face",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            192,
-            192,
-            192
-          ]
-        },
-        "l": "Window",
-        "c": 1,
-        "line": 7
-      },
-      {
-        "n": "bar",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            0,
-            0,
-            128
-          ]
-        },
-        "l": "Title bar",
-        "c": 1,
-        "line": 8
-      },
-      {
-        "n": "bar2",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            16,
-            132,
-            208
-          ]
-        },
-        "l": "Title bar fade",
-        "c": 1,
-        "line": 9
-      },
-      {
-        "n": "titleInk",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "l": "Title colour",
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "ink",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            0,
-            0,
-            0
-          ]
-        },
-        "l": "Text colour",
-        "c": 1,
-        "line": 11
-      },
-      {
-        "n": "icon",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            232,
-            17,
-            35
-          ]
-        },
-        "c": 1,
-        "line": 12
-      },
-      {
-        "n": "font",
-        "t": "text",
-        "d": "Tahoma, Verdana, 'DejaVu Sans', Geneva, sans-serif",
-        "line": 13
-      },
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            59,
-            66,
-            82
-          ]
-        },
-        "c": 1,
-        "line": 14
-      },
-      {
-        "n": "backdrop",
-        "t": "float",
-        "d": 1,
-        "l": "Background opacity",
-        "s": 0.05,
-        "b": 3,
-        "line": 15
-      }
-    ],
-    "presets": [
-      "Overlay",
-      "Trail",
-      "Warning",
-      "Dark"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "title",
-          "label": "Title",
-          "holds": "copy",
-          "default": "Error"
-        },
-        {
-          "name": "message",
-          "label": "Message",
-          "holds": "copy",
-          "default": "Something went horribly wrong."
-        },
-        {
-          "name": "button",
-          "label": "Button",
-          "holds": "copy",
-          "default": "OK"
-        },
-        {
-          "name": "font",
-          "label": "Font",
-          "holds": "font",
-          "default": "Tahoma, Verdana, 'DejaVu Sans', Geneva, sans-serif"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 1500,
-    "animated": true,
-    "duration": 3450,
-    "module": "meme",
-    "addedAt": "2026-11-01T07:26:36Z",
-    "commitHash": "097fe892afd2b3031a493c9a7a3463ee48679757",
-    "order": 580
-  },
-  {
-    "id": "stonks-chart",
-    "name": "Stonks chart",
-    "kind": "vector",
-    "category": "meme",
-    "description": "The stonks trope: a jagged line chart rocketing up to a fat arrow head (or crashing down, by a switch), its value ticking up as it draws and a bold label above, laid over a picture or on its own.",
-    "tags": [
-      "meme",
-      "chart",
-      "stonks",
-      "line-chart",
-      "arrow",
-      "counter",
-      "finance",
-      "overlay"
-    ],
-    "controls": [
-      {
-        "n": "label",
-        "t": "text",
-        "d": "STONKS",
-        "line": 1
-      },
-      {
-        "n": "value",
-        "t": "float",
-        "d": 420,
-        "max": 1000000,
-        "s": 1,
-        "b": 3,
-        "line": 2
-      },
-      {
-        "n": "decimals",
-        "t": "int",
-        "d": 0,
-        "max": 2,
-        "b": 3,
-        "line": 3
-      },
-      {
-        "n": "prefix",
-        "t": "text",
-        "d": "",
-        "l": "Before the value",
-        "line": 4
-      },
-      {
-        "n": "suffix",
-        "t": "text",
-        "d": "%",
-        "l": "After the value",
-        "line": 5
-      },
-      {
-        "n": "crash",
-        "t": "bool",
-        "d": false,
-        "line": 6
-      },
-      {
-        "n": "rise",
-        "t": "float",
-        "d": 1.8,
-        "l": "Draw time (s)",
-        "min": 0.5,
-        "max": 6,
-        "s": 0.1,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "jag",
-        "t": "float",
-        "d": 1,
-        "l": "Jaggedness",
-        "max": 1.5,
-        "s": 0.05,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "line",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            34,
-            197,
-            94
-          ]
-        },
-        "c": 1,
-        "line": 9
-      },
-      {
-        "n": "grid",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            148,
-            163,
-            184
-          ]
-        },
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "ink",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "l": "Text colour",
-        "c": 1,
-        "line": 11
-      },
-      {
-        "n": "outline",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            0,
-            0,
-            0
-          ]
-        },
-        "c": 1,
-        "line": 12
-      },
-      {
-        "n": "font",
-        "t": "text",
-        "d": "Impact, Anton, 'Haettenschweiler', 'Arial Narrow Bold', 'Arial Black', sans-serif",
-        "line": 13
-      },
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            59,
-            66,
-            82
-          ]
-        },
-        "c": 1,
-        "line": 14
-      },
-      {
-        "n": "backdrop",
-        "t": "float",
-        "d": 1,
-        "l": "Background opacity",
-        "s": 0.05,
-        "b": 3,
-        "line": 15
-      }
-    ],
-    "presets": [
-      "Overlay",
-      "Not stonks",
-      "Dollars",
-      "Slow burn"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "label",
-          "label": "Label",
-          "holds": "copy",
-          "default": "STONKS"
-        },
-        {
-          "name": "prefix",
-          "label": "Before the value",
-          "holds": "copy",
-          "default": ""
-        },
-        {
-          "name": "suffix",
-          "label": "After the value",
-          "holds": "copy",
-          "default": "%"
-        },
-        {
-          "name": "font",
-          "label": "Font",
-          "holds": "font",
-          "default": "Impact, Anton, 'Haettenschweiler', 'Arial Narrow Bold', 'Arial Black', sans-serif"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 1400,
-    "animated": true,
-    "duration": 4100,
-    "module": "meme",
-    "addedAt": "2026-11-01T07:26:36Z",
-    "commitHash": "097fe892afd2b3031a493c9a7a3463ee48679757",
-    "order": 579
+    "addedAt": "2026-11-01T09:09:04.569Z",
+    "commitHash": "",
+    "order": 0
   },
   {
     "id": "deal-with-it",
@@ -2394,1009 +3081,8 @@
     "animated": true,
     "duration": 3560,
     "module": "meme",
-    "addedAt": "2026-10-31T23:57:07Z",
-    "commitHash": "86d553c6fb2d6c584b89febf9a38d72ed4abb119",
-    "order": 578
-  },
-  {
-    "id": "impact-caption",
-    "name": "Impact caption",
-    "kind": "vector",
-    "category": "meme",
-    "description": "The classic meme caption: white Impact capitals with a heavy black outline across the top and bottom of the frame, each fitted to the width, popping on with the punchline a beat after the setup.",
-    "tags": [
-      "meme",
-      "caption",
-      "text",
-      "impact",
-      "top-text",
-      "bottom-text",
-      "overlay",
-      "pop"
-    ],
-    "controls": [
-      {
-        "n": "top",
-        "t": "text",
-        "d": "TOP TEXT",
-        "l": "Top text",
-        "line": 1
-      },
-      {
-        "n": "bottom",
-        "t": "text",
-        "d": "BOTTOM TEXT",
-        "l": "Bottom text",
-        "line": 2
-      },
-      {
-        "n": "ink",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "l": "Text colour",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "outline",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            0,
-            0,
-            0
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "thickness",
-        "t": "float",
-        "d": 0.09,
-        "l": "Outline width (em)",
-        "max": 0.2,
-        "s": 0.01,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "upper",
-        "t": "bool",
-        "d": true,
-        "l": "Capitals",
-        "line": 6
-      },
-      {
-        "n": "pop",
-        "t": "float",
-        "d": 1,
-        "l": "Pop-in",
-        "s": 0.1,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "beat",
-        "t": "float",
-        "d": 0.8,
-        "l": "Punchline delay (s)",
-        "max": 3,
-        "s": 0.1,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "font",
-        "t": "text",
-        "d": "Impact, Anton, 'Haettenschweiler', 'Arial Narrow Bold', 'Arial Black', sans-serif",
-        "line": 9
-      },
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            59,
-            66,
-            82
-          ]
-        },
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "backdrop",
-        "t": "float",
-        "d": 1,
-        "l": "Background opacity",
-        "s": 0.05,
-        "b": 3,
-        "line": 11
-      }
-    ],
-    "presets": [
-      "Overlay",
-      "Bottom only",
-      "No pop",
-      "Yellow subtitle"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "top",
-          "label": "Top text",
-          "holds": "copy",
-          "default": "TOP TEXT"
-        },
-        {
-          "name": "bottom",
-          "label": "Bottom text",
-          "holds": "copy",
-          "default": "BOTTOM TEXT"
-        },
-        {
-          "name": "font",
-          "label": "Font",
-          "holds": "font",
-          "default": "Impact, Anton, 'Haettenschweiler', 'Arial Narrow Bold', 'Arial Black', sans-serif"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 1800,
-    "animated": true,
-    "duration": 3400,
-    "module": "meme",
-    "addedAt": "2026-10-31T23:57:07Z",
-    "commitHash": "86d553c6fb2d6c584b89febf9a38d72ed4abb119",
-    "order": 577
-  },
-  {
-    "id": "to-be-continued",
-    "name": "To be continued",
-    "kind": "shader",
-    "category": "meme",
-    "description": "A picture that freezes on a sudden sepia grade with a little punch-in, then a left-pointing arrow slides in at the bottom with its words on it, holds, and it starts over.",
-    "tags": [
-      "meme",
-      "ending",
-      "image",
-      "freeze-frame",
-      "sepia",
-      "arrow",
-      "cliffhanger"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "portrait"
-        },
-        "line": 2,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uText",
-        "t": "sampler2D",
-        "d": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201024%20256%22%20width%3D%221024%22%20height%3D%22256%22%3E%3Ctext%20x%3D%22512%22%20y%3D%22128%22%20dy%3D%220.35em%22%20text-anchor%3D%22middle%22%20textLength%3D%22921.6%22%20lengthAdjust%3D%22spacingAndGlyphs%22%20font-family%3D%22%26%2339%3BArial%20Black%26%2339%3B%2C%20%26%2339%3BHelvetica%20Neue%26%2339%3B%2C%20Helvetica%2C%20Arial%2C%20system-ui%2C%20sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%2292.3%22%20fill%3D%22%23fff%22%3ETO%20BE%20CONTINUED%3C%2Ftext%3E%3C%2Fsvg%3E",
-        "line": 3,
-        "x": {
-          "filter": "mipmap",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uTint",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            200,
-            160,
-            96
-          ]
-        },
-        "l": "Freeze tint",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uArrow",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            58,
-            56,
-            32
-          ]
-        },
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uInk",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            240,
-            223,
-            160
-          ]
-        },
-        "l": "Words and border",
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "uPlay",
-        "t": "float",
-        "d": 1.4,
-        "l": "Before the freeze (s)",
-        "min": 0.2,
-        "max": 6,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uHold",
-        "t": "float",
-        "d": 2.6,
-        "l": "Hold (s)",
-        "min": 0.5,
-        "max": 8,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uSize",
-        "t": "float",
-        "d": 0.11,
-        "l": "Arrow size",
-        "min": 0.06,
-        "max": 0.2,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "b": 3,
-        "line": 11
-      }
-    ],
-    "presets": [
-      "Coming soon",
-      "Black and white",
-      "Quick cut"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg",
-        "text",
-        "mask"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        },
-        {
-          "name": "uText",
-          "label": "Text",
-          "wants": "text"
-        }
-      ],
-      "texts": [],
-      "video": "stills",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "stills",
-    "animated": true,
-    "module": "shaders/meme",
-    "addedAt": "2026-10-31T23:57:07Z",
-    "commitHash": "86d553c6fb2d6c584b89febf9a38d72ed4abb119",
-    "order": 576
-  },
-  {
-    "id": "laser-eyes",
-    "name": "Laser eyes",
-    "kind": "shader",
-    "category": "meme",
-    "description": "Laser beams firing from two eyes over a picture: a white-hot core in a red glow, flaring at each eye and flickering, aimed at any angle and spread, with the picture darkened behind them.",
-    "tags": [
-      "meme",
-      "reaction",
-      "image",
-      "laser",
-      "eyes",
-      "glow",
-      "beam",
-      "lens-flare"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "portrait"
-        },
-        "line": 2,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uEyeA",
-        "t": "vec2",
-        "d": [
-          0.461,
-          0.583
-        ],
-        "l": "Left eye",
-        "b": 3,
-        "line": 3
-      },
-      {
-        "n": "uEyeB",
-        "t": "vec2",
-        "d": [
-          0.539,
-          0.583
-        ],
-        "l": "Right eye",
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "uColor",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            30,
-            30
-          ]
-        },
-        "l": "Beam",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uAngle",
-        "t": "float",
-        "d": -15,
-        "l": "Angle (degrees)",
-        "min": -180,
-        "max": 180,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uSpread",
-        "t": "float",
-        "d": 0,
-        "l": "Spread (degrees)",
-        "max": 120,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uLength",
-        "t": "float",
-        "d": 1.4,
-        "max": 2,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uWidth",
-        "t": "float",
-        "d": 0.012,
-        "min": 0.002,
-        "max": 0.05,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uFlare",
-        "t": "float",
-        "d": 1,
-        "l": "Eye flare",
-        "max": 2,
-        "b": 3,
-        "line": 10
-      },
-      {
-        "n": "uDarken",
-        "t": "float",
-        "d": 0.35,
-        "l": "Darken picture",
-        "b": 3,
-        "line": 11
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 12
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "b": 3,
-        "line": 13
-      }
-    ],
-    "presets": [
-      "Straight ahead",
-      "Fanned out",
-      "Glowing eyes",
-      "Blue"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "stills",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "stills",
-    "animated": true,
-    "module": "shaders/meme",
-    "addedAt": "2026-10-31T23:57:07Z",
-    "commitHash": "86d553c6fb2d6c584b89febf9a38d72ed4abb119",
-    "order": 575
-  },
-  {
-    "id": "dramatic-zoom",
-    "name": "Dramatic zoom",
-    "kind": "shader",
-    "category": "meme",
-    "description": "A crash zoom onto a point (a face, a stare, a detail) in a few sudden steps, each landing with a kick while a vignette closes in, then a hold and a snap back to the whole picture.",
-    "tags": [
-      "meme",
-      "reaction",
-      "image",
-      "zoom",
-      "crash-zoom",
-      "dramatic",
-      "shake",
-      "vignette"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "portrait"
-        },
-        "line": 2,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uTarget",
-        "t": "vec2",
-        "d": [
-          0.5,
-          0.583
-        ],
-        "l": "Zoom onto",
-        "b": 3,
-        "line": 3
-      },
-      {
-        "n": "uZoom",
-        "t": "float",
-        "d": 3.4,
-        "min": 1.2,
-        "max": 8,
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "uSteps",
-        "t": "int",
-        "d": 3,
-        "min": 1,
-        "max": 4,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uStepTime",
-        "t": "float",
-        "d": 0.4,
-        "l": "Seconds per step",
-        "min": 0.15,
-        "max": 1.5,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uHold",
-        "t": "float",
-        "d": 1.6,
-        "l": "Hold (s)",
-        "min": 0.3,
-        "max": 5,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uShake",
-        "t": "float",
-        "d": 0.5,
-        "l": "Kick",
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uVignette",
-        "t": "float",
-        "d": 0.65,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "b": 3,
-        "line": 11
-      }
-    ],
-    "presets": [
-      "One crash",
-      "Slow dread",
-      "Extreme close-up"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "stills",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "stills",
-    "animated": true,
-    "module": "shaders/meme",
-    "addedAt": "2026-10-31T23:57:07Z",
-    "commitHash": "86d553c6fb2d6c584b89febf9a38d72ed4abb119",
-    "order": 574
-  },
-  {
-    "id": "deep-fried",
-    "name": "Deep fried",
-    "kind": "shader",
-    "category": "meme",
-    "description": "A picture fried to a crisp: saturation and contrast blown out, posterised colour, oversharpened halos, JPEG blocking and grain, with red glints flaring from two points such as the eyes.",
-    "tags": [
-      "meme",
-      "treatment",
-      "image",
-      "deep-fried",
-      "jpeg",
-      "saturated",
-      "glint",
-      "lens-flare"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "portrait"
-        },
-        "line": 2,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uFry",
-        "t": "float",
-        "d": 0.8,
-        "b": 3,
-        "line": 3
-      },
-      {
-        "n": "uBlocks",
-        "t": "float",
-        "d": 0.5,
-        "l": "JPEG blocks",
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "uGrain",
-        "t": "float",
-        "d": 0.1,
-        "max": 0.3,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uGlint",
-        "t": "float",
-        "d": 1,
-        "l": "Glints",
-        "max": 2,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uGlintColor",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            42,
-            18
-          ]
-        },
-        "l": "Glint colour",
-        "c": 1,
-        "line": 7
-      },
-      {
-        "n": "uGlintA",
-        "t": "vec2",
-        "d": [
-          0.461,
-          0.583
-        ],
-        "l": "Glint A",
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uGlintB",
-        "t": "vec2",
-        "d": [
-          0.539,
-          0.583
-        ],
-        "l": "Glint B",
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uGlintSize",
-        "t": "float",
-        "d": 0.22,
-        "min": 0.05,
-        "max": 0.6,
-        "b": 3,
-        "line": 10
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 11
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "b": 3,
-        "line": 12
-      }
-    ],
-    "presets": [
-      "Extra crispy",
-      "Lightly toasted",
-      "No glints"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "stills",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "stills",
-    "animated": true,
-    "module": "shaders/meme",
-    "addedAt": "2026-10-31T23:57:07Z",
-    "commitHash": "86d553c6fb2d6c584b89febf9a38d72ed4abb119",
-    "order": 573
-  },
-  {
-    "id": "pixel-weather",
-    "name": "Pixel weather",
-    "kind": "vector",
-    "category": "icon",
-    "description": "A 16 × 16 pixel-art weather icon: a sun flicking its rays, partly cloudy, a bobbing cloud, rain or snow falling in steps, or a thunderbolt flashing under a dark cloud.",
-    "tags": [
-      "pixel",
-      "retro",
-      "icon",
-      "weather",
-      "forecast",
-      "sun",
-      "rain",
-      "snow",
-      "8-bit",
-      "loop"
-    ],
-    "controls": [
-      {
-        "n": "kind",
-        "t": "int",
-        "d": 0,
-        "l": "Weather (sun, partly cloudy, cloudy, rain, thunder, snow)",
-        "max": 5,
-        "b": 3,
-        "line": 1
-      },
-      {
-        "n": "sun",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            201,
-            60
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "cloud",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            233,
-            238,
-            245
-          ]
-        },
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "accent",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            77,
-            171,
-            247
-          ]
-        },
-        "l": "Rain and snow",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "bolt",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            224,
-            102
-          ]
-        },
-        "l": "Lightning",
-        "c": 1,
-        "line": 5
-      }
-    ],
-    "presets": [
-      "Rain",
-      "Thunder",
-      "Snow"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 0,
-    "animated": true,
-    "duration": 1840,
-    "module": "pixel",
-    "addedAt": "2026-10-31T23:29:14Z",
-    "commitHash": "0c8f3a60814ea939e16f1a2d92c9bf13487d9cc5",
-    "order": 572
-  },
-  {
-    "id": "pixel-snake-loader",
-    "name": "Snake loader",
-    "kind": "vector",
-    "category": "loader",
-    "description": "A pixel snake running laps round the edge of a phone-LCD board a cell at a time, eating the food in its path, as a looping loader.",
-    "tags": [
-      "pixel",
-      "retro",
-      "loader",
-      "snake",
-      "game",
-      "lcd",
-      "8-bit",
-      "loop"
-    ],
-    "controls": [
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            199,
-            215,
-            166
-          ]
-        },
-        "l": "Screen",
-        "c": 1,
-        "line": 1
-      },
-      {
-        "n": "body",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            46,
-            59,
-            31
-          ]
-        },
-        "l": "Snake",
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "head",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            20,
-            28,
-            12
-          ]
-        },
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "food",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            46,
-            59,
-            31
-          ]
-        },
-        "c": 1,
-        "line": 4
-      }
-    ],
-    "presets": [
-      "Neon",
-      "Light"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 100,
-    "animated": true,
-    "duration": 2600,
-    "module": "pixel",
-    "addedAt": "2026-10-31T23:29:14Z",
-    "commitHash": "0c8f3a60814ea939e16f1a2d92c9bf13487d9cc5",
-    "order": 571
+    "addedAt": "2026-11-01T09:09:04.569Z",
+    "commitHash": "",
+    "order": 0
   }
 ]

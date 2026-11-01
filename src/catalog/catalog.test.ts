@@ -4,6 +4,7 @@ import { svgFrame, svgMotionIssues } from "../vector/motion.js";
 import { svgInlineLayout } from "../vector/static.js";
 import { svgDuration } from "../vector/svg.js";
 import type { EffectCategory, ShaderEffect, VectorEffect } from "./types.js";
+import { CREDIT_SLOTS, parseCredits } from "./cinematic.js";
 import {
   EFFECT_CATEGORIES,
   EFFECT_CATEGORY_GROUPS,
@@ -1498,6 +1499,61 @@ describe("censor effects", () => {
     expect(bars).toMatchObject({ loop: 5 });
     expect(effectControls(bars).find((c) => c.name === "uLines")).toMatchObject({ type: "int", min: 1, max: 8 });
     expect(names("redaction-bars")).toEqual(expect.arrayContaining(["uAnimate", "uProgress", "uInk", "uRough"]));
+  });
+});
+
+describe("cinematic effects", () => {
+  const shaders = ["anamorphic-lens", "rack-focus", "bleach-bypass"];
+
+  it("browse under Pictures, are tagged cinematic and are found by the words people use", () => {
+    expect(categoryGroup("cinematic").name).toBe("Pictures");
+    expect(findEffects({ category: "cinematic" }).map((e) => e.id).sort()).toEqual(["anamorphic-lens", "bleach-bypass", "end-credits-roll", "letterbox", "rack-focus"]);
+    expect(findEffects({ tags: ["cinematic"] }).map((e) => e.id)).toEqual(expect.arrayContaining(["transition-focus-pull", "film-look", "vignette-grain"]));
+    for (const id of shaders) {
+      expect(getEffect(id), id).toMatchObject({ kind: "shader", category: "cinematic", video: "filter" });
+      expect(effectInputs(getEffect(id)!).accepts, id).toContain("video");
+    }
+    for (const word of ["anamorphic", "focus", "bokeh", "letterbox", "credits", "grade"]) expect(findEffects({ text: word, tags: ["cinematic"] }).length, word).toBeGreaterThan(0);
+  });
+
+  it("loop their focus pulls and bars seamlessly", () => {
+    expect(getEffect("rack-focus")).toMatchObject({ loop: 6 });
+    expect(getEffect("letterbox")).toMatchObject({ loop: 5, transparent: true });
+    expect(getEffect("transition-focus-pull")).toMatchObject({ category: "transition", video: "transition", loop: 4 });
+    // Letterbox bars stand still unless asked to slide.
+    expect(effectDefaults(getEffect("letterbox")!)).toMatchObject({ uAnimate: false, uProgress: 1, uAspect: 2.39 });
+  });
+
+  it("blur through a lens: a disc of taps whose highlights weigh more", () => {
+    for (const id of ["rack-focus", "transition-focus-pull"]) expect((getEffect(id) as ShaderEffect).source, id).toMatch(/vec3 lensBlur\(sampler2D tex, vec2 uv, float radius, float bloom, float oval\)/);
+    const names = effectControls(getEffect("transition-focus-pull")!).map((c) => c.name);
+    expect(names).toEqual(expect.arrayContaining(["uFrom", "uTo", "uAnimate", "uProgress", "uAperture", "uBloom", "uOval"]));
+  });
+
+  it("reads credits as roles and names, headings and lines on their own", () => {
+    expect(parseCredits("Directed by: Ada; # Cast\nThe Pilot: Amelia: Earhart;; Filmed on location")).toEqual([
+      { kind: "credit", role: "Directed by", name: "Ada" },
+      { kind: "heading", role: "Cast", name: "" },
+      { kind: "credit", role: "The Pilot", name: "Amelia: Earhart" },
+      { kind: "line", role: "", name: "Filmed on location" },
+    ]);
+    expect(parseCredits(Array.from({ length: 30 }, (_, k) => `Role ${k}: Name ${k}`).join(";"))).toHaveLength(CREDIT_SLOTS);
+    expect(parseCredits("  ; \n ")).toEqual([]);
+  });
+
+  it("rolls its credits up off the frame, longer and slower for more of them", () => {
+    const effect = getEffect("end-credits-roll") as VectorEffect;
+    const roll = (values: Record<string, unknown>) => renderVectorEffect(effect, values as never);
+    const short = roll({ credits: "Directed by: Ada Lovelace" });
+    const long = roll({});
+    expect(svgMotionIssues(long)).toEqual([]);
+    expect(long.svg).toContain("Katherine Johnson");
+    expect(long.svg).toContain(">CAST<");
+    expect(svgDuration(long)).toBeGreaterThan(svgDuration(short));
+    expect(svgDuration(roll({ speed: 300 }))).toBeLessThan(svgDuration(long));
+    // Text is escaped, and unused slots stay hidden.
+    expect(roll({ credits: "Music: <b>Delia</b>" }).svg).toContain("&lt;b&gt;Delia");
+    expect(short.svg.match(/ opacity="1"/g)?.length).toBe(2);
   });
 });
 

@@ -80,6 +80,8 @@ import { imageTreatments } from "./shaders/treatments.js";
 import { censorShaders } from "./shaders/censor.js";
 import { beautyShaders } from "./shaders/beauty.js";
 import { beautyEffects } from "./beauty.js";
+import { cinematicShaders } from "./shaders/cinematic.js";
+import { cinematicEffects } from "./cinematic.js";
 import { sketchShaders } from "./shaders/sketch.js";
 import { trailShaders } from "./shaders/trail.js";
 import { particlesShaders } from "./shaders/particles.js";
@@ -197,6 +199,7 @@ export const SHADER_EFFECTS: readonly ShaderEffect[] = [
   imagePixelate,
   ...imageTreatments,
   ...censorShaders,
+  ...cinematicShaders,
   ...beautyShaders,
   ...sketchShaders,
   crt,
@@ -250,7 +253,7 @@ export const SHADER_EFFECTS: readonly ShaderEffect[] = [
 ];
 
 /** Every effect in the catalog, shaders first, grouped by category. */
-export const EFFECTS: readonly EffectDefinition[] = [...SHADER_EFFECTS, ...vectorEffects, ...textEffects, ...morphEffects, ...interactionEffects, ...pyroEffects, ...timewarpEffects, ...meltEffects, ...electricEffects, ...fireEffects, ...hologramEffects, ...pixelEffects, ...splatterEffects, ...bubbleEffects, ...stickerEffects, ...trailEffects, ...impactEffects, ...comicEffects, ...glowEffects, ...shadowEffects, ...lightingEffects, ...scrollEffects, ...broadcastEffects, ...annotationEffects, ...uiEffects, ...loaderEffects, ...dataEffects, ...iconEffects, ...webEffects, ...promoEffects, ...horrorEffects, ...beautyEffects, ...memeEffects].sort(
+export const EFFECTS: readonly EffectDefinition[] = [...SHADER_EFFECTS, ...vectorEffects, ...textEffects, ...morphEffects, ...interactionEffects, ...pyroEffects, ...timewarpEffects, ...meltEffects, ...electricEffects, ...fireEffects, ...hologramEffects, ...pixelEffects, ...splatterEffects, ...bubbleEffects, ...stickerEffects, ...trailEffects, ...impactEffects, ...comicEffects, ...glowEffects, ...shadowEffects, ...lightingEffects, ...scrollEffects, ...broadcastEffects, ...annotationEffects, ...uiEffects, ...loaderEffects, ...dataEffects, ...iconEffects, ...webEffects, ...promoEffects, ...horrorEffects, ...beautyEffects, ...memeEffects, ...cinematicEffects].sort(
   (a, b) => EFFECT_CATEGORIES.indexOf(a.category) - EFFECT_CATEGORIES.indexOf(b.category),
 );
 
