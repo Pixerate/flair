@@ -1,0 +1,51 @@
+---
+import DefaultSiteTitle from '@astrojs/starlight/components/SiteTitle.astro';
+import packageJson from '../../../../package.json';
+
+const version = packageJson.version;
+---
+
+<div class="site-title-wrap">
+  <DefaultSiteTitle {...Astro.props}><slot /></DefaultSiteTitle>
+  <a
+    href="https://github.com/Pixerate/flair/releases"
+    target="_blank"
+    rel="noopener noreferrer"
+    class="flair-version"
+    title={`Flair v${version}`}
+  >
+    v{version}
+  </a>
+</div>
+
+<style>
+  .site-title-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
+  .flair-version {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.6875rem;
+    font-family: var(--sl-font-mono, monospace);
+    line-height: 1;
+    padding: 0.1875rem 0.4375rem;
+    border-radius: 9999px;
+    background: var(--flair-glass);
+    border: 1px solid var(--flair-line);
+    color: var(--flair-muted);
+    text-decoration: none;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    user-select: none;
+  }
+
+  .flair-version:hover {
+    color: var(--flair-ink);
+    border-color: var(--flair-line-strong);
+    background: var(--flair-glass-hover);
+  }
+</style>
