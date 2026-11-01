@@ -100,9 +100,9 @@
     "animated": true,
     "duration": 4000,
     "module": "camera",
-    "addedAt": "2026-11-01T11:42:47.670Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-11-01T11:43:49Z",
+    "commitHash": "3c91b2fca102f4b381603a364d2573b6c1aacae0",
+    "order": 611
   },
   {
     "id": "dolly-zoom",
@@ -236,9 +236,9 @@
     "animated": true,
     "duration": 5000,
     "module": "shaders/cinematic",
-    "addedAt": "2026-11-01T11:42:47.669Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-11-01T11:43:49Z",
+    "commitHash": "3c91b2fca102f4b381603a364d2573b6c1aacae0",
+    "order": 610
   },
   {
     "id": "camera-crash-zoom",
