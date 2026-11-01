@@ -214,10 +214,15 @@ describe("commands and agent tools", () => {
     type Search = { total: number; effects: { id: string; category: string }[] };
     const found = await callTool(provider, "run_command", { id: "catalog.search", params: { category: "cinematic", limit: 50 } });
     const result = (found.structuredContent as { result: Search }).result;
-    expect(result.total).toBe(5);
-    expect(result.effects.map((e) => e.id)).toEqual(expect.arrayContaining(["anamorphic-lens", "end-credits-roll"]));
+    expect(result.total).toBe(11);
+    expect(result.effects.map((e) => e.id)).toEqual(expect.arrayContaining(["anamorphic-lens", "end-credits-roll", "academy-leader", "opening-credits"]));
     const pulls = editor.commands.execute<Search>("catalog.search", { group: "Transitions", text: "focus", limit: 50 });
     expect(pulls.ok && pulls.result.effects.map((e) => e.id)).toContain("transition-focus-pull");
+    const flares = editor.commands.execute<Search>("catalog.search", { group: "Transitions", text: "flare", limit: 50 });
+    expect(flares.ok && flares.result.effects.map((e) => e.id)).toContain("transition-flare-wipe");
+    expect(editor.commands.execute("effect.load", { id: "opening-credits" })).toMatchObject({ ok: true });
+    expect(editor.commands.execute("values.set", { values: { credits: "Directed by: Ada Lovelace; # Night Train", place: 1 } })).toMatchObject({ ok: true });
+    expect(editor.commands.execute("values.set", { values: { place: "left" } })).toMatchObject({ ok: false, message: expect.stringMatching(/place/) });
     expect(editor.commands.execute("effect.load", { id: "letterbox" })).toMatchObject({ ok: true });
     expect(editor.commands.execute("values.set", { values: { uAspect: 1.85, uAnimate: true } })).toMatchObject({ ok: true });
     expect(editor.commands.execute("values.set", { values: { uAspect: "wide" } })).toMatchObject({ ok: false, message: expect.stringMatching(/uAspect/) });

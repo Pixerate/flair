@@ -1,9 +1,9 @@
-import type { SvgMotion } from "../vector/motion.js";
-import { fit, n, r1, SANS } from "./broadcast.js";
+import type { SvgAnimation, SvgMotion } from "../vector/motion.js";
+import { fit, ms, n, r1, SANS } from "./broadcast.js";
 import type { VectorEffect } from "./types.js";
 
 /*
- * Cinematic vector effects: an end-credits roll. Like the broadcast
+ * Cinematic vector effects: opening credits and an end-credits roll. Like the broadcast
  * graphics it is a 1920 × 1080 frame whose text is fitted from its length,
  * so any names fit in any font.
  */
@@ -109,5 +109,77 @@ export const endCreditsRoll: VectorEffect = {
   motion: endCreditsMotion,
 };
 
+// ── Opening credits ────────────────────────────────────────────────────
+
+/** The most cards the opening credits show; cards past it are left out. */
+export const CARD_SLOTS = 6;
+
+const CARD_FADE = 700;
+const CARD_GAP = 300;
+
+const card = (k: number) =>
+  `<g id="openingCreditsCard${k}" opacity="0" transform="translate({{gx}} {{gy}}) scale(0.97)"><text x="0" y="{{ly${k}}}" text-anchor="{{anchor}}" font-family="{{font}}" font-size="{{ls${k}}}" font-weight="500" textLength="{{lw${k}}}" lengthAdjust="spacingAndGlyphs" fill="{{muted}}">{{lead${k}}}</text><text x="0" y="{{ny${k}}}" text-anchor="{{anchor}}" font-family="{{font}}" font-size="{{ns${k}}}" font-weight="{{nweight${k}}}" textLength="{{nw${k}}}" lengthAdjust="spacingAndGlyphs" fill="{{ink}}">{{name${k}}}</text></g>`;
+
+const cardMotion = (k: number): SvgAnimation[] => [
+  { id: `openingCreditsCard${k}`, attrs: { opacity: [0, n(`peak${k}`)] }, delay: n(`in${k}`), ms: CARD_FADE, ease: "out" },
+  { id: `openingCreditsCard${k}`, attrs: { transform: ["translate({{gx}} {{gy}}) scale(0.97)", "translate({{gx}} {{gy}}) scale(1)"] }, delay: n(`in${k}`), ms: n("drift"), ease: "out" },
+  { id: `openingCreditsCard${k}`, attrs: { opacity: [n(`peak${k}`), 0] }, delay: n(`out${k}`), ms: CARD_FADE, ease: "in-out" },
+];
+
+const openingCreditsMotion: SvgMotion = {
+  svg: `<svg viewBox="0 0 1920 1080"><!-- {{credits: text default='A film by: Ada Lovelace; Starring: Grace Hopper; With: Alan Turing; Music by: Delia Derbyshire; # The Long Way Home' label='Cards (Lead: Name; # Title; a name on its own)'}} {{background: color default=#000000 label='Background'}} {{backgroundOpacity: float min=0 max=1 default=1 step=0.05 label='Background opacity'}} {{ink: color default=#F5F5F4 label='Name colour'}} {{muted: color default=#A8A29E label='Lead colour'}} {{place: int min=0 max=2 default=0 label='Place (0 centre, 1 lower left, 2 lower right)'}} {{hold: float min=0.5 max=10 default=2 step=0.5 label='Hold each card (s)'}} {{font: text default="${SANS}" label='Font'}} --><rect width="1920" height="1080" fill="{{background}}" fill-opacity="{{backgroundOpacity}}"/>${Array.from({ length: CARD_SLOTS }, (_, k) => card(k)).join("")}</svg>`,
+  animate: Array.from({ length: CARD_SLOTS }, (_, k) => cardMotion(k)).flat(),
+};
+
+export const openingCredits: VectorEffect = {
+  kind: "vector",
+  id: "opening-credits",
+  name: "Opening credits",
+  description: "A film's opening credits: one card at a time, a small tracked lead over a name, each fading in while it eases larger and fading out, ending on the film's title.",
+  category: "cinematic",
+  tags: ["cinematic", "film", "credits", "intro", "title"],
+  hold: 400,
+  presets: [
+    { name: "Over video", values: { backgroundOpacity: 0, place: 1 } },
+    { name: "Gold", values: { background: [0.04, 0.03, 0.02], ink: [0.97, 0.93, 0.84], muted: [0.91, 0.76, 0.42] } },
+    { name: "Quick", values: { hold: 1 } },
+  ],
+  derived: (v) => {
+    const lines = parseCredits(v.credits).slice(0, CARD_SLOTS);
+    const place = Math.round(Number(v.place) || 0);
+    const hold = ms(v.hold);
+    const per = CARD_FADE * 2 + hold + CARD_GAP;
+    const out: Record<string, string | number> = {
+      gx: place === 1 ? 192 : place === 2 ? 1728 : 960,
+      gy: place === 0 ? 540 : 860,
+      anchor: place === 1 ? "start" : place === 2 ? "end" : "middle",
+      drift: CARD_FADE * 2 + hold,
+    };
+    for (let k = 0; k < CARD_SLOTS; k++) {
+      const line = lines[k];
+      const title = line?.kind === "heading";
+      const lead = fit(line?.kind === "credit" ? line.role.toUpperCase() : "", 1200, 30);
+      const name = fit(line ? (title ? line.role : line.name) : "", 1500, title ? 120 : 76);
+      const hasLead = line?.kind === "credit";
+      Object.assign(out, {
+        [`lead${k}`]: hasLead ? line.role.toUpperCase() : "",
+        [`ls${k}`]: lead.size,
+        [`lw${k}`]: lead.width,
+        [`ly${k}`]: hasLead ? -r1(name.size * 0.45) : 0,
+        [`name${k}`]: line ? (title ? line.role : line.name) : "",
+        [`ns${k}`]: name.size,
+        [`nw${k}`]: name.width,
+        [`ny${k}`]: r1(name.size * (hasLead ? 0.55 : 0.35)),
+        [`nweight${k}`]: title ? 800 : 600,
+        [`peak${k}`]: line ? 1 : 0,
+        [`in${k}`]: line ? k * per : 0,
+        [`out${k}`]: line ? k * per + CARD_FADE + hold : 0,
+      });
+    }
+    return out;
+  },
+  motion: openingCreditsMotion,
+};
+
 /** Cinematic vector effects. */
-export const cinematicEffects: VectorEffect[] = [endCreditsRoll];
+export const cinematicEffects: VectorEffect[] = [openingCredits, endCreditsRoll];
