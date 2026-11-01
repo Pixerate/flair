@@ -6,6 +6,7 @@ import { simulateScene } from '../scene/player.js';
 import type { Review } from '../scene/report.js';
 import { applyRig, setRigWidget } from '../scene/rig.js';
 import { cameraEffects, cameraMoveControls } from '../catalog/camera.js';
+import { describeTemplateSlots, instantiateTemplate, templateSlotSummary, type SceneTemplate } from '../scene/template.js';
 import { applySceneBatch } from './batch.js';
 import { checkSchema } from './schema.js';
 
@@ -38,7 +39,7 @@ export const FLAIR_AGENT_TOOLS: AgentToolDefinition[] = [
   },
   {
     name: 'write_scene',
-    description: 'Overwrites the entire scene with a new specification and validates it. Prefer update_shot, insert_shots and delete_shots for smaller changes.',
+    description: 'Overwrites the entire scene with a new specification and validates it. Prefer update_shot, insert_shots and delete_shots for smaller changes, and use_template to start from a ready-made scene (find_templates lists them).',
     input_schema: {
       type: 'object',
       properties: {
@@ -138,6 +139,46 @@ export const FLAIR_AGENT_TOOLS: AgentToolDefinition[] = [
         role: { type: 'string', enum: ['transition', 'hold'], description: 'Only moves for camera "in" (transition) or camera "during" (hold).' },
         text: { type: 'string', description: 'Words to look for in the id, name, description and tags (all must match).' },
       },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'find_templates',
+    description:
+      'Lists sequence templates: finished scenes (a product reveal, a before and after, a stat countdown, a title card into a feature tour…) with slots to fill (pictures, words, colours, numbers). Start a new scene from one with use_template. Results are limited; "total" says how many match, and "offset" pages through them.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        text: { type: 'string', description: 'Words to look for in the id, name, description and tags (all must match).' },
+        limit: { type: 'integer', minimum: 1, description: 'How many to return (default 10, at most 20).' },
+        offset: { type: 'integer', minimum: 0, description: 'How many matches to skip, to page through them (default 0).' },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'describe_template',
+    description:
+      'Describes one template: each slot\'s name, type ("image", "video", "svg", "text", "color" or "number"), label, default and range or length, and an outline of its shots. Read it before use_template.',
+    input_schema: {
+      type: 'object',
+      properties: { template: { type: 'string', description: 'The template\'s id, from find_templates.' } },
+      required: ['template'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'use_template',
+    description:
+      'Replaces the scene with a template filled with values, and validates it. Slots left out take their defaults (subject slots show a placeholder picture). Values: words for text, "#RRGGBB" for a colour, a number within the slot\'s range, and for an image, video or svg slot a URL, a data: URL or <svg> markup, or {"slot": name} to leave it for the host to fill at play time. A value that does not fit is refused and the scene is left as it was. Edit the result with update_shot and the other tools.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        template: { type: 'string', description: 'The template\'s id, from find_templates.' },
+        values: { type: 'object', description: 'Values by slot name, as describe_template lists them: {"headline": "Meet Nova", "accent": "#FF5A36", "product": "https://…/product.png"}.' },
+        name: { type: 'string', description: 'The new scene\'s name, lowercase words and dashes (default the template\'s id).' },
+      },
+      required: ['template'],
       additionalProperties: false,
     },
   },
@@ -303,6 +344,17 @@ export function outlineScene(scene: Scene): SceneOutline {
   };
 }
 
+/** The catalog's templates, loaded on demand so the root entry carries none of them. */
+async function catalogTemplates(): Promise<readonly SceneTemplate[]> {
+  return (await import('../catalog/templates.js')).SCENE_TEMPLATES;
+}
+
+/** A catalog template by id, or a refusal listing the ids there are. */
+async function findTemplate(id: string): Promise<SceneTemplate | string> {
+  const templates = await catalogTemplates();
+  return templates.find((t) => t.id === id) ?? `There is no template "${id}"; the templates are ${templates.map((t) => t.id).join(', ')} (find_templates describes them).`;
+}
+
 /**
  * Pure state machine that applies tool operations to a Scene. Arguments are
  * checked against the tool's `input_schema` first; a refusal (`ok: false`)
@@ -432,6 +484,69 @@ export async function applySceneTool(
         }));
       const note = moves.length ? undefined : `No camera move matches; there are ${cameraEffects.length}: ${cameraEffects.map((m) => m.id).join(', ')}.`;
       return { ok: true, scene, issues: [], output: { ok: true, total: moves.length, moves, ...(note && { note }) } };
+    }
+
+    case 'find_templates': {
+      const words = String(input.text ?? '').toLowerCase().split(/\s+/).filter(Boolean);
+      const limit = Math.min(20, input.limit ?? 10);
+      const offset = input.offset ?? 0;
+      const all = await catalogTemplates();
+      const matches = all.filter((t) => words.every((w) => [t.id, t.name, t.description, ...(t.tags ?? [])].join(' ').toLowerCase().includes(w)));
+      const templates = matches.slice(offset, offset + limit).map((t) => ({
+        id: t.id,
+        name: t.name,
+        description: t.description,
+        tags: t.tags ?? [],
+        shots: t.scene.shots.length,
+        slots: t.slots.map((s) => `${s.name} (${s.type})`),
+      }));
+      const output: SceneToolOutput = { ok: true, total: matches.length, templates };
+      if (matches.length > offset + templates.length) output.more = `${matches.length - offset - templates.length} more match; ask again with offset ${offset + templates.length}, or narrow with text.`;
+      if (!matches.length) output.note = `No template matches "${words.join(' ')}"; there are ${all.length}: ${all.map((t) => t.id).join(', ')}.`;
+      return { ok: true, scene, issues: [], output };
+    }
+
+    case 'describe_template': {
+      const template = await findTemplate(input.template);
+      if (typeof template === 'string') return fail(template);
+      const outline = outlineScene(template.scene as unknown as Scene).shots.map(({ shot, title, caption, layers, transition }) => ({
+        shot,
+        ...(title !== undefined && { title }),
+        ...(caption !== undefined && { caption }),
+        ...(layers && { layers: layers.map((l) => `${l.draws}${l.slot ? ` showing slot ${l.slot}` : ''}`) }),
+        ...(transition && { transition }),
+      }));
+      return {
+        ok: true,
+        scene,
+        issues: [],
+        output: { ok: true, id: template.id, name: template.name, description: template.description, slots: describeTemplateSlots(template), summary: template.slots.map(templateSlotSummary), shots: outline },
+      };
+    }
+
+    case 'use_template': {
+      const template = await findTemplate(input.template);
+      if (typeof template === 'string') return fail(template);
+      const result = instantiateTemplate(template, input.values ?? {}, input.name !== undefined ? { name: input.name } : {});
+      if (!result.ok) return fail(`${result.errors.join(' ')} Nothing was changed.`);
+      const issues = await sceneIssues(result.scene);
+      const given = Object.keys(input.values ?? {});
+      const defaults = template.slots.map((s) => s.name).filter((n) => !given.includes(n));
+      const summary =
+        `Started the scene "${result.scene.name}" from the template "${template.id}" with ${shotsWord(result.scene.shots.length)}` +
+        `${given.length ? `, filling ${given.join(', ')}` : ''}${defaults.length ? `; ${defaults.join(', ')} took their defaults` : ''}.`;
+      return {
+        ok: true,
+        scene: result.scene,
+        issues,
+        output: {
+          ok: true,
+          summary,
+          shotCount: result.scene.shots.length,
+          ...(result.openSlots.length && { openSlots: result.openSlots, note: `The host fills ${result.openSlots.map((s) => `"${s}"`).join(', ')} at play time.` }),
+          issues,
+        },
+      };
     }
 
     case 'preview_scene': {

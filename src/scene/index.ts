@@ -18,3 +18,4 @@ export * from './motionpath.js';
 
 export * from './plan.js';
 export * from './plan-schema.js';
+export * from './template.js';

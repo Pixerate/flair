@@ -166,6 +166,7 @@ export {
   screenToScene,
 } from "./camera.js";
 export { controlSchema, controlsSchema, controlUnit, type JsonSchema, type SchemaOptions } from "../shader/schema.js";
+export { SCENE_TEMPLATES, sceneTemplate } from "./templates.js";
 export { FBM, glsl, HASH, NOISE, OKLAB_MIX, PALETTE, ROTATE, SPECTRUM } from "./glsl.js";
 
 /** The catalog's shader effects. */

@@ -619,7 +619,7 @@ if (result.ok) scene = result.scene; // keep the new state
 reply(call.id, result.output); // send the model only `output`
 ```
 
-The tools are `get_scene` (the scene, or with `view: "outline"` just its structure: each shot's layers, transition and the slots the host fills), `write_scene`, `update_shot`, `insert_shots`, `delete_shots`, `set_rig_widget`, `find_layer_effects` (catalog effects for a shot's layers or its transition, with what each takes as a subject, its controls and presets, a page at a time), `find_camera_moves` (the camera moves a shot can use, with their controls), `preview_scene` (a headless run: length, warnings, notes) and `batch_scene`, which runs several of them as one all-or-nothing change and lets a step use an earlier step's result (`"$1.output.outline.shots[0].hold"`).
+The tools are `get_scene` (the scene, or with `view: "outline"` just its structure: each shot's layers, transition and the slots the host fills), `write_scene`, `update_shot`, `insert_shots`, `delete_shots`, `set_rig_widget`, `find_layer_effects` (catalog effects for a shot's layers or its transition, with what each takes as a subject, its controls and presets, a page at a time), `find_camera_moves` (the camera moves a shot can use, with their controls), `find_templates`, `describe_template` and `use_template` (start the scene from a [sequence template](#-sequence-templates), filling its slots), `preview_scene` (a headless run: length, warnings, notes) and `batch_scene`, which runs several of them as one all-or-nothing change and lets a step use an earlier step's result (`"$1.output.outline.shots[0].hold"`).
 
 Arguments are checked against each tool's schema, and a call that cannot apply (a shot that does not exist, an unresolved reference) is refused with `ok: false` and a sentence saying what to fix, leaving the scene as it was. Edits that apply return the scene's validation issues (unknown shot fields, an unknown effect with the nearest ids, a subject an effect does not take, a transition used as a layer, presets and control values checked against the catalog) so the model can correct them. `output` keeps replies small: an edit returns a one-line summary and the issues, not the whole scene.
 
@@ -671,6 +671,45 @@ A shot arranges **catalog effects as layers** over its board, and can name a **c
 | rig target `media.plasma.speed` | `layers.plasma.speed` |
 | `standaloneSceneHtml(scene)` | `await standaloneSceneHtml(scene)` |
 | the `set_media` scene tool | `update_shot` with `layers` |
+
+---
+
+## 🧩 Sequence templates
+
+A template is a scene with declared **slots** that a person or an agent fills to get a finished scene. Slots are typed (`image`, `video`, `svg`, `text`, `color`, `number`), each with a label, a default and, where it makes sense, a range (`min`/`max`, `integer`) or a `maxLength`. Subject slots are the layer slots scenes already have (`"subject": { "slot": "product" }`); the others fill `{{name}}` placeholders in any of the scene's strings (titles, captions, layer and transition `values`, element text), the way vector effects fill `{{control}}`. A string that is just `"{{holdMs}}"` takes the slot's typed value, so `"hold": "{{holdMs}}"` is a number.
+
+```ts
+import { instantiateTemplate } from "@pixerate/flair";
+import { sceneTemplate } from "@pixerate/flair/catalog";
+
+const result = instantiateTemplate(sceneTemplate("product-reveal")!, {
+  product: "https://example.com/mug.png", // or <svg> markup, a data: URL, or { slot: "product" } to leave it for the host
+  productName: "Orbit Mug",
+  accent: "#2266FF",
+  holdMs: 2600,
+});
+if (result.ok) play(result.scene);       // result.issues: validateScene's; result.openSlots: slots the host still fills
+else console.warn(result.errors);         // e.g. 'Slot "holdMs" takes a whole number from 1200 to 6000; 99 is out of range.'
+```
+
+`instantiateTemplate` is pure and never changes the template. It refuses an unknown slot, a value of the wrong type and one out of range, all at once, each with what the slot takes. Slots left out take their defaults; the catalog's subject slots default to a labelled placeholder picture, so every template plays as it is. `checkTemplate(template)` checks one of your own: its slots and defaults, placeholders and layer slots it does not declare, slots it never uses, and its scene with the defaults filled in.
+
+The catalog's templates (`SCENE_TEMPLATES` in `@pixerate/flair/catalog`; the root loads them on demand) are built only from catalog effects, camera moves and transitions:
+
+| Template | What it does |
+| --- | --- |
+| `product-reveal` | A product shot drifts in over a gradient, the camera punches in to a lower third with its name and price, and a flare wipes to a closing title card. |
+| `before-after` | The before picture, a wipe to the after picture, then both side by side under a headline. |
+| `stat-countdown` | A countdown, a counter running up to the number that matters, and a kinetic closing line. |
+| `title-into-tour` | A title card focus-pulls into a tour of three features, the camera gliding and whip-panning between screenshots. |
+
+Agents use `find_templates` (a page at a time, with a `total`), `describe_template` (each slot's type, label, default and range) and `use_template` (`{ template, values, name? }`, which replaces the working scene and returns its issues and open slots). From the command line:
+
+```bash
+npx flair template list
+npx flair template show product-reveal
+npx flair template fill product-reveal --values values.json --set accent=#2266FF --set product=./mug.png -o launch.scene.json --html launch.html
+```
 
 ---
 
@@ -842,6 +881,7 @@ npx flair scene validate ./scene.json        # layout, framing and timing checks
 npx flair scene review ./scene.json          # fast headless simulation + review
 npx flair scene html ./scene.json --subject logo=./logo.svg  # a standalone player, its slots filled
 npx flair scene lottie ./scene.json out.json # also: fcp7, edl, motn
+npx flair template fill stat-countdown --set value=4200 --html stats.html  # a template filled into a scene (list, show)
 
 # Catalog effects to files
 npx flair effects --accepts video            # pick an effect: what each takes (--interaction click, --category image, --kind, --search, --tag glass, --transparent, --json)
