@@ -1,9 +1,12 @@
 ---
 // apps/docs/src/components/FooterSection.astro
+import packageJson from '../../../../package.json';
+
+const version = packageJson.version;
 ---
 
 <footer class="mx-auto mt-8 flex max-w-7xl flex-wrap items-center justify-between gap-4 border-t border-[var(--flair-line)] px-4 py-10 text-sm text-faint">
-  <span>Flair · MIT</span>
+  <span>Flair v{version} · MIT</span>
   <nav class="flex gap-6">
     <a href="https://github.com/Pixerate/flair" class="text-faint no-underline hover:text-[var(--flair-ink)]">GitHub</a>
     <a href="https://www.npmjs.com/package/@pixerate/flair" class="text-faint no-underline hover:text-[var(--flair-ink)]">npm</a>

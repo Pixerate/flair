@@ -22,6 +22,7 @@ export default defineConfig({
         Hero: './src/components/StarlightHeroOverride.astro',
         ThemeSelect: './src/components/ThemeSelectOverride.astro',
         ThemeProvider: './src/components/ThemeProviderOverride.astro',
+        SiteTitle: './src/components/SiteTitleOverride.astro',
       },
       sidebar: [
         {
