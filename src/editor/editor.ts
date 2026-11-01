@@ -9,7 +9,7 @@ import { createCommandRegistry, createHistoryCommands, type CommandRegistry } fr
 import { createHistoryManager, HistoryManager, type HistoryState } from "@pixerate/editor/history";
 import type { EffectDefinition } from "../catalog/types.js";
 import type { CompileError } from "../shader/program.js";
-import { checkControlValue, type ControlDef, type ControlValue } from "../shader/controls.js";
+import type { ControlDef, ControlValue } from "../shader/controls.js";
 import { realClock, type Clock } from "../time/clock.js";
 import type { SvgAnimation, SvgMotion } from "../vector/motion.js";
 import { renderVectorEffect } from "../catalog/types.js";
@@ -24,6 +24,7 @@ import {
   valuesAt,
   type EffectDocument,
 } from "./document.js";
+import { checkEditorValue } from "./textmask.js";
 import { evaluateTrack, isEasing, normalizeKeyframes, type Easing, type Keyframe } from "./timeline.js";
 
 /** What an edit did: `ok`, or why it was refused (in a sentence an agent can act on). */
@@ -262,7 +263,7 @@ export class EffectEditor {
   setValue(name: string, value: unknown, options: ValueEditOptions = {}): EditResult {
     const control = this.control(name);
     if (!control) return this.unknownControl(name);
-    const check = checkControlValue(control, value);
+    const check = checkEditorValue(control, value);
     if (!check.ok) return fail(check.message);
     if (this.recording || this.doc.tracks[name]) return this.setKeyframe(name, this.time, check.value, undefined, `value:${name}`, options.gesture);
     this.commit(`Set ${control.label}`, { ...this.doc, values: { ...this.doc.values, [name]: check.value } }, `value:${name}`, options.gesture);
@@ -276,7 +277,7 @@ export class EffectEditor {
     for (const [name, value] of Object.entries(values)) {
       const control = this.control(name);
       if (!control) return this.unknownControl(name);
-      const check = checkControlValue(control, value);
+      const check = checkEditorValue(control, value);
       if (!check.ok) return fail(check.message);
       if (this.recording || tracks[name]) {
         const keyframes = [...(tracks[name]?.keyframes ?? []), { time: this.time, value: check.value }];
@@ -350,7 +351,7 @@ export class EffectEditor {
     let v: ControlValue;
     if (value === undefined) v = valuesAt(this.doc, time, [control])[name]!;
     else {
-      const check = checkControlValue(control, value);
+      const check = checkEditorValue(control, value);
       if (!check.ok) return fail(check.message);
       v = check.value;
     }
@@ -413,7 +414,7 @@ export class EffectEditor {
     for (const k of track.keyframes) {
       if (!(k.time >= 0)) return fail("A keyframe's time is 0 ms or more.");
       if (k.easing !== undefined && !isEasing(k.easing)) return fail(`Unknown easing ${JSON.stringify(k.easing)}.`);
-      const check = checkControlValue(control, k.value);
+      const check = checkEditorValue(control, k.value);
       if (!check.ok) return fail(`At ${k.time} ms: ${check.message}`);
       keyframes.push({ time: k.time, value: check.value, ...(k.easing !== undefined && { easing: k.easing as Easing }) });
     }

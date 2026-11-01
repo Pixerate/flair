@@ -11,6 +11,7 @@ import { getPrimitive, listPrimitives, PRIMITIVE_KINDS, PRIMITIVES, primitiveTag
 import { didYouMean } from "../motion/params.js";
 import { EFFECT_INPUTS, EFFECT_INTERACTIONS, effectInputs, effectTags, findEffects, normaliseTag, type EffectInput, type EffectInteraction, type EffectQuery } from "../catalog/index.js";
 import type { EditResult, EffectEditor } from "./editor.js";
+import { editorControlSchema, isTextMask } from "./textmask.js";
 import { EASING_PRESETS, type Easing } from "./timeline.js";
 import { controlsSchema } from "../shader/schema.js";
 
@@ -26,7 +27,7 @@ const easingSchema = {
 
 const valueSchema = {
   description:
-    'A control value: a number (float, int), true/false (bool), an array of numbers (vec2–vec4; colours 0–1), a "#RRGGBB" colour, an image URL (sampler2D), or a string (text).',
+    'A control value: a number (float, int), true/false (bool), an array of numbers (vec2–vec4; colours 0–1), a "#RRGGBB" colour, an image URL (sampler2D), {"text": "…", "font"?, "weight"?} for a text mask (an image control drawing words, textMask in effect.describe), or a string (text).',
 } as const;
 
 const easeSchema = {
@@ -122,6 +123,7 @@ export function describeEditor(editor: EffectEditor) {
       type: c.type,
       label: c.label,
       ...(c.color && { color: true }),
+      ...(isTextMask(c) && { textMask: true }),
       ...(c.type !== "bool" && c.type !== "sampler2D" && c.type !== "text" && { min: c.min, max: c.max, step: c.step }),
       default: c.default,
     })),
@@ -151,11 +153,15 @@ export function effectCommands(): CommandSpec<EffectEditor>[] {
       label: "Values schema",
       group: "Values",
       description:
-        "The JSON Schema of the effect's control values, for checking values before values.set or preset.save: each control with its type, range, unit, default and what it takes (colours as sRGB 0–1 or a CSS colour, images as URLs). Unknown names are refused.",
+        "The JSON Schema of the effect's control values, for checking values before values.set or preset.save: each control with its type, range, unit, default and what it takes (colours as sRGB 0–1 or a CSS colour, images as URLs, text masks as {\"text\": \"…\"}). Unknown names are refused.",
       readOnly: true,
       run: (editor) => {
         const { document: doc, controls } = editor.getState();
-        return controlsSchema(controls, { title: `${doc.name} controls`, currentColor: doc.effect.kind === "vector" });
+        const schema = controlsSchema(controls, { title: `${doc.name} controls`, currentColor: doc.effect.kind === "vector" });
+        // Text masks take words as well as a URL.
+        const properties = schema.properties as Record<string, unknown>;
+        for (const c of controls) if (isTextMask(c)) properties[c.name] = editorControlSchema(c);
+        return schema;
       },
     },
     {

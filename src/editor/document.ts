@@ -7,9 +7,10 @@
 
 import { effectDefaults, getEffect, renderVectorEffect, vectorControlIssues, vectorEffectControls } from "../catalog/index.js";
 import type { EffectDefinition, EffectPreset, VectorControl } from "../catalog/types.js";
-import { checkControlValue, controlValue, parseControls, type ControlDef, type ControlValue } from "../shader/controls.js";
+import { controlValue, parseControls, type ControlDef, type ControlValue } from "../shader/controls.js";
 import { svgMotionIssues, type SvgMotion } from "../vector/motion.js";
 import { svgDuration } from "../vector/svg.js";
+import { checkEditorValue } from "./textmask.js";
 import { evaluateTrack, isEasing, normalizeKeyframes, type Track } from "./timeline.js";
 
 /**
@@ -133,7 +134,7 @@ export function documentIssues(doc: EffectDocument): string[] {
   const check = (where: string, name: string, value: unknown) => {
     const control = controls.get(name);
     if (!control) return void issues.push(`${where}: there is no control "${name}"`);
-    const result = checkControlValue(control, value);
+    const result = checkEditorValue(control, value, { words: false });
     if (!result.ok) issues.push(`${where}: ${result.message}`);
   };
   for (const [name, value] of Object.entries(doc.values)) check("values", name, value);

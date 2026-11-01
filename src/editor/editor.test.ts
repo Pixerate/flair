@@ -354,6 +354,47 @@ describe("commands and agent tools", () => {
     expect(vector.commands.execute("values.set", { values: { count: 9 } })).toMatchObject({ ok: false, message: expect.stringMatching(/count takes a number from 1 to 5, not 9/) });
   });
 
+  it("lets agents set a text mask's words, in its own font or another, and refuses bare words", async () => {
+    const editor = createEffectEditor({ from: "to-be-continued" });
+    const provider = createEffectToolProvider(editor);
+    // effect.describe marks the control, and values.schema says what it takes.
+    const described = await callTool(provider, "run_command", { id: "effect.describe" });
+    const controls = (described.structuredContent as { result: { controls: { name: string; textMask?: boolean }[] } }).result.controls;
+    expect(controls.find((c) => c.name === "uText")).toMatchObject({ textMask: true });
+    expect(controls.find((c) => c.name === "uImage")!.textMask).toBeUndefined();
+    const schema = await callTool(provider, "run_command", { id: "values.schema" });
+    const uText = (schema.structuredContent as { result: { properties: Record<string, { anyOf?: { type: string; required?: string[] }[] }> } }).result.properties.uText!;
+    expect(uText.anyOf!.map((s) => s.type)).toEqual(["object", "string"]);
+    expect(uText.anyOf![0]!.required).toEqual(["text"]);
+
+    // Words become a text image in the default's font; a font and weight can be named.
+    const set = await callTool(provider, "run_command", { id: "values.set", params: { values: { uText: { text: "COMING SOON" } } } });
+    expect(set.isError).toBeFalsy();
+    expect(editor.document.values.uText).toBe(textImage("COMING SOON"));
+    expect(editor.commands.execute("values.set", { values: { uText: { text: "FIN", font: "Georgia, serif", weight: 400 } } })).toMatchObject({ ok: true });
+    expect(editor.document.values.uText).toBe(textImage("FIN", { font: "Georgia, serif", weight: 400 }));
+    expect(editor.commands.execute("keyframe.set", { name: "uText", time: 500, value: { text: "LATER" } })).toMatchObject({ ok: true });
+    expect(editor.document.tracks.uText!.keyframes[0]!.value).toBe(textImage("LATER"));
+    editor.commands.execute("history.undo", {});
+
+    // Bare words, empty words, unknown keys and a bad weight are refused, saying what to pass, and nothing changes.
+    expect(editor.commands.execute("values.set", { values: { uText: "ANGRY" } })).toMatchObject({
+      ok: false,
+      message: 'uText draws words from a text image, so "ANGRY" would be read as a file path: pass its words as {"text": "…"} (with "font" and "weight" if you like), or a text image\'s URL.',
+    });
+    expect(editor.commands.execute("values.set", { values: { uText: { text: " " } } })).toMatchObject({ ok: false, message: expect.stringMatching(/uText needs some words/) });
+    expect(editor.commands.execute("values.set", { values: { uText: { text: "HI", size: 40 } } })).toMatchObject({ ok: false, message: 'uText takes {"text", "font", "weight"}, not "size".' });
+    expect(editor.commands.execute("values.set", { values: { uText: { text: "HI", weight: "heavy" } } })).toMatchObject({ ok: false, message: expect.stringMatching(/"weight" is a font weight/) });
+    expect(editor.document.values.uText).toBe(textImage("FIN", { font: "Georgia, serif", weight: 400 }));
+    // A URL or a relative image path still works, and a picture control still takes any relative path.
+    expect(editor.commands.execute("values.set", { values: { uText: "words/fin.png" } })).toMatchObject({ ok: true });
+    expect(editor.commands.execute("values.set", { values: { uImage: "photo" } })).toMatchObject({ ok: true });
+    // A document stores the text image itself, so words there are an issue.
+    expect(documentIssues({ ...editor.document, values: { uText: { text: "HI" } } } as never)).toEqual([
+      'values: uText stores a text image\'s URL; words as {"text": …} are only taken by values.set and keyframe.set.',
+    ]);
+  });
+
   it("lets agents find the second batch of meme shaders, load one by its kind and set its words and levels", async () => {
     const editor = createEffectEditor({ from: "aurora" });
     const provider = createEffectToolProvider(editor);
@@ -372,15 +413,17 @@ describe("commands and agent tools", () => {
       }
     }
 
-    // A banner's words go in as a text image; the level and head point are set and checked like any control.
+    // A banner's words go in as words; the level and head point are set and checked like any control.
     const run = await callTool(provider, "run_commands", {
       steps: [
         { id: "effect.load", params: { id: "game-over-banner" } },
-        { id: "values.set", params: { values: { uText: textImage("CONTINUE?", { font: "Georgia, serif", weight: 400 }), uPlay: 0.8 } } },
+        { id: "values.set", params: { values: { uText: { text: "CONTINUE?" }, uPlay: 0.8 } } },
       ],
     });
     expect(run.isError).toBeFalsy();
     expect(editor.document.values).toMatchObject({ uText: expect.stringContaining("CONTINUE%3F"), uPlay: 0.8 });
+    // In the banner's own serif, since no font was named.
+    expect(decodeURIComponent(editor.document.values.uText as string)).toMatch(/font-family="Georgia[^"]*serif"/);
 
     editor.commands.execute("effect.load", { id: "galaxy-brain" });
     expect(editor.commands.execute("values.set", { values: { uLevel: 2, uHead: [0.42, 0.8] } })).toMatchObject({ ok: true });
