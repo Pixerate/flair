@@ -15,7 +15,7 @@ describe("camera moves", () => {
   it("are in the catalog as their own kind, in the camera category", () => {
     expect(findEffects({ kind: "camera" }).map((e) => e.id)).toEqual(cameraEffects.map((e) => e.id));
     expect(findEffects({ category: "camera" })).toHaveLength(cameraEffects.length);
-    expect(findEffects({ kind: "camera", role: "hold" }).map((e) => e.id)).toEqual(["camera-ken-burns", "camera-crash-zoom"]);
+    expect(findEffects({ kind: "camera", role: "hold" }).map((e) => e.id)).toEqual(["camera-ken-burns", "camera-crash-zoom", "camera-handheld"]);
     expect(findEffects({ text: "whip" }).map((e) => e.id)).toContain("camera-whip-pan");
   });
 
@@ -201,6 +201,46 @@ describe("camera moves", () => {
     const target = [900 + 0.5 * 800, 300 + 0.42 * 450] as const;
     const flat = (v: View): View => ({ ...v, tilt: 0 });
     expect(projectPoint(flat(end), stage, target)![1]).toBeCloseTo(projectPoint(flat(to), stage, target)![1], 6);
+  });
+});
+
+describe("handheld camera", () => {
+  const views = (values: Record<string, number> = {}) => Array.from({ length: 41 }, (_, i) => at("camera-handheld", i / 40, values, 4000));
+  // The framing `to` shows, 900–1700 across and 300–750 down; the shake is checked level, without the tilt.
+  const corners = [[900, 300], [1700, 750]] as const;
+  const level = (v: View): View => ({ ...v, tilt: 0 });
+
+  it("starts on the framing it arrived at, then wanders round it and keeps its angle", () => {
+    expect(at("camera-handheld", 0, {}, 4000)).toMatchObject({ zoom: to.zoom, scrollX: to.scrollX, scrollY: to.scrollY, tilt: 20 });
+    const moving = views().slice(10);
+    expect(Math.max(...moving.map((v) => v.scrollX)) - Math.min(...moving.map((v) => v.scrollX))).toBeGreaterThan(4);
+    expect(new Set(moving.map((v) => v.scrollY)).size).toBe(moving.length);
+    expect(moving.every((v) => v.tilt === 20 && v.roll !== undefined && Math.abs(v.roll) <= 0.8)).toBe(true);
+  });
+
+  it("never shows past the edges of its framing, even at its shakiest", () => {
+    for (const values of [{}, { amount: 1, roll: 3, footsteps: 1, speed: 3 }] as Record<string, number>[]) {
+      for (const view of views(values)) {
+        // Every corner of the screen still lands inside the framing.
+        const h = screenToScene(level(view), stage);
+        for (const s of [[0, 0], [1920, 0], [0, 1080], [1920, 1080]]) {
+          const v = [0, 1, 2].map((i) => h[i]![0] * s[0]! + h[i]![1] * s[1]! + h[i]![2]);
+          const [x, y] = [v[0]! / v[2]!, v[1]! / v[2]!];
+          expect(x).toBeGreaterThanOrEqual(corners[0][0] - 1e-6);
+          expect(x).toBeLessThanOrEqual(corners[1][0] + 1e-6);
+          expect(y).toBeGreaterThanOrEqual(corners[0][1] - 1e-6);
+          expect(y).toBeLessThanOrEqual(corners[1][1] + 1e-6);
+        }
+      }
+    }
+  });
+
+  it("shakes more, and differently, as its controls say", () => {
+    const spread = (vs: View[]) => Math.max(...vs.map((v) => v.scrollX)) - Math.min(...vs.map((v) => v.scrollX));
+    expect(spread(views({ amount: 1 }))).toBeGreaterThan(spread(views({ amount: 0.2 })) * 2);
+    expect(views({ seed: 2 })[20]!.scrollX).not.toBeCloseTo(views()[20]!.scrollX, 2);
+    expect(views({ amount: 0, roll: 0, footsteps: 0 }).every((v) => v.zoom === to.zoom && v.roll === undefined)).toBe(true);
+    expect(views({ motionBlur: 1, amount: 1, speed: 3 }).some((v) => (v.blur ?? 0) > 0)).toBe(true);
   });
 });
 

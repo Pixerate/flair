@@ -1,5 +1,19 @@
 # @pixerate/flair
 
+## 0.87.0
+
+### Minor Changes
+
+- 3c91b2f: Adds two camera effects. `camera-handheld` is a camera move a shot plays while it holds (`camera.during`): the camera drifts, sways and rolls round its framing as if held by hand, with `amount`, `speed`, `roll`, `footsteps`, `seed` and `motionBlur` controls and Subtle, Walking, Shaky cam and Found footage presets. It settles in from the framing it arrived at and zooms in just enough that the shake never shows past the framing's edges. `dolly-zoom` is a cinematic shader for pictures and video: the vertigo shot, the subject holding its size while the background behind it rushes in or falls away.
+
+## 0.86.0
+
+### Minor Changes
+
+- 5b2ad55: `flairEffects()` now offers the catalog's camera moves to `@pixerate/editor`'s editors as `camera` effects (`capabilities.supportsCamera`). `cameraView` gives where a move puts a scene's camera part-way through it, exactly as Flair's scene player moves it, and `sampleCameraMove` keys it for an editor to bake. This needs `@pixerate/editor` 0.224 or later; with an older editor, pass `kinds: ["shader", "vector", "motion"]` to leave camera moves out.
+
+  Fixes `camera-crash-zoom`, which gave the camera a NaN position before its first step (the first 300 ms of the hold by default).
+
 ## 0.85.0
 
 ### Minor Changes

@@ -1503,7 +1503,7 @@ describe("censor effects", () => {
 });
 
 describe("cinematic effects", () => {
-  const shaders = ["anamorphic-lens", "rack-focus", "bleach-bypass", "technicolor", "day-for-night", "cinema-projector"];
+  const shaders = ["anamorphic-lens", "rack-focus", "bleach-bypass", "technicolor", "day-for-night", "cinema-projector", "dolly-zoom"];
 
   it("browse under Pictures, are tagged cinematic and are found by the words people use", () => {
     expect(categoryGroup("cinematic").name).toBe("Pictures");
@@ -1513,6 +1513,7 @@ describe("cinematic effects", () => {
       "bleach-bypass",
       "cinema-projector",
       "day-for-night",
+      "dolly-zoom",
       "end-credits-roll",
       "letterbox",
       "opening-credits",
@@ -1520,12 +1521,12 @@ describe("cinematic effects", () => {
       "technicolor",
       "trailer-title-slam",
     ]);
-    expect(findEffects({ tags: ["cinematic"] }).map((e) => e.id)).toEqual(expect.arrayContaining(["transition-focus-pull", "transition-flare-wipe", "film-look", "vignette-grain"]));
+    expect(findEffects({ tags: ["cinematic"] }).map((e) => e.id)).toEqual(expect.arrayContaining(["transition-focus-pull", "transition-flare-wipe", "film-look", "vignette-grain", "camera-handheld"]));
     for (const id of shaders) {
       expect(getEffect(id), id).toMatchObject({ kind: "shader", category: "cinematic", video: "filter" });
       expect(effectInputs(getEffect(id)!).accepts, id).toContain("video");
     }
-    for (const word of ["anamorphic", "focus", "bokeh", "letterbox", "credits", "grade", "countdown", "trailer", "moonlight", "projector"]) expect(findEffects({ text: word, tags: ["cinematic"] }).length, word).toBeGreaterThan(0);
+    for (const word of ["anamorphic", "focus", "bokeh", "letterbox", "credits", "grade", "countdown", "trailer", "moonlight", "projector", "vertigo", "handheld"]) expect(findEffects({ text: word, tags: ["cinematic"] }).length, word).toBeGreaterThan(0);
   });
 
   it("loop their focus pulls, bars, countdown, title and flare seamlessly", () => {
@@ -1535,6 +1536,9 @@ describe("cinematic effects", () => {
     expect(getEffect("transition-flare-wipe")).toMatchObject({ category: "transition", video: "transition", loop: 4 });
     expect(getEffect("letterbox")).toMatchObject({ loop: 5, transparent: true });
     expect(getEffect("transition-focus-pull")).toMatchObject({ category: "transition", video: "transition", loop: 4 });
+    expect(getEffect("dolly-zoom")).toMatchObject({ loop: 5, video: "filter" });
+    // Falling away starts from a grown background and ends as the picture is, so it never samples past its edges.
+    expect((getEffect("dolly-zoom") as ShaderEffect).source).toContain("p - step(uStretch, 0.0)");
     // Letterbox bars stand still unless asked to slide.
     expect(effectDefaults(getEffect("letterbox")!)).toMatchObject({ uAnimate: false, uProgress: 1, uAspect: 2.39 });
   });

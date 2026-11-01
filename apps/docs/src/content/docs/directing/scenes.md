@@ -78,7 +78,7 @@ const mp4 = await recordScene(scene, { subjects: { productShot: { image: "/shot.
 Camera moves are catalog effects of their own kind (`kind: "camera"`), with controls and presets:
 
 - **Into a shot** (`camera.in`, role `transition`): `camera-glide` (the default), `camera-whip-pan`, `camera-punch-zoom` and `camera-cut`.
-- **While a shot holds** (`camera.during`, role `hold`): `camera-ken-burns` and `camera-crash-zoom`. The move plays across the shot's `hold`, and the next shot's move starts where it ends.
+- **While a shot holds** (`camera.during`, role `hold`): `camera-ken-burns`, `camera-crash-zoom` and `camera-handheld`. The move plays across the shot's `hold`, and the next shot's move starts where it ends.
 
 Name a move by its id, or give `{ move, ms?, preset?, values? }`. `findEffects({ kind: "camera", role: "hold" })` lists them, and so does the scene tool `find_camera_moves`. On its own, `mountEffect(el, "camera-whip-pan", { subject: { image } })` previews a move on a picture.
 

@@ -197,16 +197,17 @@ describe('camera moves through the scene tools', () => {
 
   it('lists the moves for camera "in" and "during", with their controls', async () => {
     const all = await applySceneTool(cards, 'find_camera_moves', {});
-    expect(all.output.total).toBe(6);
+    expect(all.output.total).toBe(7);
     const hold = await applySceneTool(cards, 'find_camera_moves', { role: 'hold' });
     expect((hold.output.moves as { id: string; field: string }[]).map((m) => [m.id, m.field])).toEqual([
       ['camera-ken-burns', 'during'],
       ['camera-crash-zoom', 'during'],
+      ['camera-handheld', 'during'],
     ]);
     const whip = await applySceneTool(cards, 'find_camera_moves', { text: 'whip' });
     expect(whip.output.moves).toEqual([expect.objectContaining({ id: 'camera-whip-pan', ms: 600, controls: [expect.objectContaining({ name: 'motionBlur', min: 0, max: 3, default: 2 })], presets: ['Soft', 'Hard'] })]);
     const none = await applySceneTool(cards, 'find_camera_moves', { text: 'dolly' });
-    expect(none.output.note).toMatch(/^No camera move matches; there are 6: camera-glide/);
+    expect(none.output.note).toMatch(/^No camera move matches; there are 7: camera-glide/);
     const bad = await applySceneTool(cards, 'find_camera_moves', { role: 'sideways' });
     expect(bad.ok).toBe(false);
   });
