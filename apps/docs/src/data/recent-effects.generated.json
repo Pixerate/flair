@@ -1,665 +1,5 @@
 [
   {
-    "id": "day-for-night",
-    "name": "Day for night",
-    "kind": "shader",
-    "category": "cinematic",
-    "description": "A daylight picture graded into moonlit night, the way films shot night scenes by day: underexposed, drained of colour, tinted moonlight blue, with the bright sky darkened and the shadows lifted a touch.",
-    "tags": [
-      "cinematic",
-      "film",
-      "grade",
-      "colour-grade",
-      "night",
-      "moonlight",
-      "blue",
-      "image"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "landscape"
-        },
-        "line": 3,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uExposure",
-        "t": "float",
-        "d": 0.6,
-        "min": 0.1,
-        "max": 1.5,
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "uMoon",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            111,
-            143,
-            208
-          ]
-        },
-        "l": "Moonlight",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uSaturation",
-        "t": "float",
-        "d": 0.3,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uSkyDarken",
-        "t": "float",
-        "d": 0.55,
-        "l": "Darken the sky",
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uContrast",
-        "t": "float",
-        "d": 0.35,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uLift",
-        "t": "float",
-        "d": 0.03,
-        "l": "Shadow lift",
-        "max": 0.2,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "b": 3,
-        "line": 11
-      }
-    ],
-    "presets": [
-      "Deep night",
-      "Silver moon",
-      "Dusk"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "filter",
-    "animated": false,
-    "module": "shaders/cinematic",
-    "addedAt": "2026-11-01T09:25:09.013Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "academy-leader",
-    "name": "Academy leader",
-    "kind": "shader",
-    "category": "cinematic",
-    "description": "The countdown at the head of a film reel: 8 down to 3 in a ringed circle under crosshairs, a sweep going round each second, worn with dust, scratches and flicker; the 2 flashes for a frame and the screen goes black.",
-    "tags": [
-      "cinematic",
-      "film",
-      "countdown",
-      "leader",
-      "vintage",
-      "intro",
-      "projector"
-    ],
-    "controls": [
-      {
-        "n": "uLight",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            184,
-            184,
-            180
-          ]
-        },
-        "l": "Frame",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uShade",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            110,
-            110,
-            106
-          ]
-        },
-        "l": "Sweep",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uInk",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            17,
-            17,
-            17
-          ]
-        },
-        "l": "Numerals and rings",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uWear",
-        "t": "float",
-        "d": 0.5,
-        "l": "Wear (dust, scratches, flicker)",
-        "b": 3,
-        "line": 6
-      }
-    ],
-    "presets": [
-      "Clean",
-      "Battered",
-      "Sepia"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "loop": 7,
-    "animated": true,
-    "duration": 7000,
-    "module": "shaders/cinematic",
-    "addedAt": "2026-11-01T09:25:09.013Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "cinema-projector",
-    "name": "Cinema projector",
-    "kind": "shader",
-    "category": "cinematic",
-    "description": "A picture showing on a cinema screen in a dark auditorium: it flickers and weaves in the gate, a dusty projector beam fans down onto it, its light spills onto the curtains, and a row of heads sits silhouetted in front.",
-    "tags": [
-      "cinematic",
-      "film",
-      "cinema",
-      "projector",
-      "screen",
-      "audience",
-      "vintage",
-      "image"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "landscape"
-        },
-        "line": 4,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uScreen",
-        "t": "float",
-        "d": 0.56,
-        "l": "Screen width",
-        "min": 0.4,
-        "max": 0.95,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uAspect",
-        "t": "float",
-        "d": 1.85,
-        "l": "Screen aspect ratio",
-        "min": 1.33,
-        "max": 2.4,
-        "s": 0.01,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uBeam",
-        "t": "float",
-        "d": 0.55,
-        "l": "Projector beam",
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uDust",
-        "t": "float",
-        "d": 0.5,
-        "l": "Dust in the beam",
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uFlicker",
-        "t": "float",
-        "d": 0.4,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uAudience",
-        "t": "float",
-        "d": 1,
-        "b": 3,
-        "line": 10
-      },
-      {
-        "n": "uRoom",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            11,
-            10,
-            14
-          ]
-        },
-        "c": 1,
-        "line": 11
-      },
-      {
-        "n": "uCurtain",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            90,
-            20,
-            32
-          ]
-        },
-        "l": "Curtains",
-        "c": 1,
-        "line": 12
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 13
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "b": 3,
-        "line": 14
-      }
-    ],
-    "presets": [
-      "Scope screen",
-      "Old picture house",
-      "Empty house"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "filter",
-    "animated": true,
-    "module": "shaders/cinematic",
-    "addedAt": "2026-11-01T09:25:09.013Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "trailer-title-slam",
-    "name": "Trailer title slam",
-    "kind": "shader",
-    "category": "cinematic",
-    "description": "A film-trailer title hit: brushed-metal letters slam down out of the dark with a flash, a shake and a burst of dust, a lens flare glints across them, they hold and fade back to black.",
-    "tags": [
-      "cinematic",
-      "film",
-      "trailer",
-      "title",
-      "metal",
-      "flare",
-      "impact",
-      "text"
-    ],
-    "controls": [
-      {
-        "n": "uText",
-        "t": "sampler2D",
-        "d": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201024%20256%22%20width%3D%221024%22%20height%3D%22256%22%3E%3Ctext%20x%3D%22512%22%20y%3D%22128%22%20dy%3D%220.35em%22%20text-anchor%3D%22middle%22%20textLength%3D%22921.6%22%20lengthAdjust%3D%22spacingAndGlyphs%22%20font-family%3D%22%26%2339%3BCinzel%26%2339%3B%2C%20%26%2339%3BTrajan%20Pro%26%2339%3B%2C%20Georgia%2C%20%26%2339%3BTimes%20New%20Roman%26%2339%3B%2C%20serif%22%20font-weight%3D%22700%22%20font-size%3D%2277.1%22%20fill%3D%22%23fff%22%3ETHE%20LONG%20WAY%20HOME%3C%2Ftext%3E%3C%2Fsvg%3E",
-        "line": 3,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            5,
-            6,
-            8
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uMetal",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            201,
-            206,
-            214
-          ]
-        },
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uFlare",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            125,
-            183,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "uSize",
-        "t": "float",
-        "d": 0.8,
-        "l": "Text size",
-        "min": 0.3,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uDust",
-        "t": "float",
-        "d": 0.6,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uShake",
-        "t": "float",
-        "d": 0.5,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uAnimate",
-        "t": "bool",
-        "d": true,
-        "line": 10
-      },
-      {
-        "n": "uMoment",
-        "t": "float",
-        "d": 1.1,
-        "l": "Moment (s, when still)",
-        "max": 4,
-        "b": 3,
-        "line": 11
-      },
-      {
-        "n": "uBackgroundAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Background opacity",
-        "b": 3,
-        "line": 121
-      }
-    ],
-    "presets": [
-      "Gold",
-      "Blood red",
-      "No dust",
-      "Held title"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "svg",
-        "text",
-        "mask"
-      ],
-      "images": [
-        {
-          "name": "uText",
-          "label": "Text",
-          "wants": "text"
-        }
-      ],
-      "texts": [],
-      "video": "none",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "none",
-    "loop": 4,
-    "animated": true,
-    "duration": 4000,
-    "module": "shaders/cinematic",
-    "addedAt": "2026-11-01T09:25:09.013Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "opening-credits",
-    "name": "Opening credits",
-    "kind": "vector",
-    "category": "cinematic",
-    "description": "A film's opening credits: one card at a time, a small tracked lead over a name, each fading in while it eases larger and fading out, ending on the film's title.",
-    "tags": [
-      "cinematic",
-      "film",
-      "credits",
-      "intro",
-      "title"
-    ],
-    "controls": [
-      {
-        "n": "credits",
-        "t": "text",
-        "d": "A film by: Ada Lovelace; Starring: Grace Hopper; With: Alan Turing; Music by: Delia Derbyshire; # The Long Way Home",
-        "l": "Cards (Lead: Name; # Title; a name on its own)",
-        "line": 1
-      },
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            0,
-            0,
-            0
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "backgroundOpacity",
-        "t": "float",
-        "d": 1,
-        "s": 0.05,
-        "b": 3,
-        "line": 3
-      },
-      {
-        "n": "ink",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            245,
-            245,
-            244
-          ]
-        },
-        "l": "Name colour",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "muted",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            168,
-            162,
-            158
-          ]
-        },
-        "l": "Lead colour",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "place",
-        "t": "int",
-        "d": 0,
-        "l": "Place (0 centre, 1 lower left, 2 lower right)",
-        "max": 2,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "hold",
-        "t": "float",
-        "d": 2,
-        "l": "Hold each card (s)",
-        "min": 0.5,
-        "max": 10,
-        "s": 0.5,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "font",
-        "t": "text",
-        "d": "'Inter', 'Helvetica Neue', Arial, system-ui, sans-serif",
-        "line": 8
-      }
-    ],
-    "presets": [
-      "Over video",
-      "Gold",
-      "Quick"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "credits",
-          "label": "Cards (Lead: Name; # Title; a name on its own)",
-          "holds": "copy",
-          "default": "A film by: Ada Lovelace; Starring: Grace Hopper; With: Alan Turing; Music by: Delia Derbyshire; # The Long Way Home"
-        },
-        {
-          "name": "font",
-          "label": "Font",
-          "holds": "font",
-          "default": "'Inter', 'Helvetica Neue', Arial, system-ui, sans-serif"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 400,
-    "animated": true,
-    "duration": 18600,
-    "module": "cinematic",
-    "addedAt": "2026-11-01T09:25:09.013Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
     "id": "transition-flare-wipe",
     "name": "Flare wipe",
     "kind": "shader",
@@ -817,9 +157,669 @@
     "animated": true,
     "duration": 4000,
     "module": "shaders/cinematic",
-    "addedAt": "2026-11-01T09:25:09.013Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-11-01T09:26:14Z",
+    "commitHash": "b9c02b2f1aa308d20fcc980ffdc315de4b002c54",
+    "order": 603
+  },
+  {
+    "id": "opening-credits",
+    "name": "Opening credits",
+    "kind": "vector",
+    "category": "cinematic",
+    "description": "A film's opening credits: one card at a time, a small tracked lead over a name, each fading in while it eases larger and fading out, ending on the film's title.",
+    "tags": [
+      "cinematic",
+      "film",
+      "credits",
+      "intro",
+      "title"
+    ],
+    "controls": [
+      {
+        "n": "credits",
+        "t": "text",
+        "d": "A film by: Ada Lovelace; Starring: Grace Hopper; With: Alan Turing; Music by: Delia Derbyshire; # The Long Way Home",
+        "l": "Cards (Lead: Name; # Title; a name on its own)",
+        "line": 1
+      },
+      {
+        "n": "background",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            0,
+            0,
+            0
+          ]
+        },
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "backgroundOpacity",
+        "t": "float",
+        "d": 1,
+        "s": 0.05,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "ink",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            245,
+            245,
+            244
+          ]
+        },
+        "l": "Name colour",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "muted",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            168,
+            162,
+            158
+          ]
+        },
+        "l": "Lead colour",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "place",
+        "t": "int",
+        "d": 0,
+        "l": "Place (0 centre, 1 lower left, 2 lower right)",
+        "max": 2,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "hold",
+        "t": "float",
+        "d": 2,
+        "l": "Hold each card (s)",
+        "min": 0.5,
+        "max": 10,
+        "s": 0.5,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "font",
+        "t": "text",
+        "d": "'Inter', 'Helvetica Neue', Arial, system-ui, sans-serif",
+        "line": 8
+      }
+    ],
+    "presets": [
+      "Over video",
+      "Gold",
+      "Quick"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "credits",
+          "label": "Cards (Lead: Name; # Title; a name on its own)",
+          "holds": "copy",
+          "default": "A film by: Ada Lovelace; Starring: Grace Hopper; With: Alan Turing; Music by: Delia Derbyshire; # The Long Way Home"
+        },
+        {
+          "name": "font",
+          "label": "Font",
+          "holds": "font",
+          "default": "'Inter', 'Helvetica Neue', Arial, system-ui, sans-serif"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 400,
+    "animated": true,
+    "duration": 18600,
+    "module": "cinematic",
+    "addedAt": "2026-11-01T09:26:14Z",
+    "commitHash": "b9c02b2f1aa308d20fcc980ffdc315de4b002c54",
+    "order": 602
+  },
+  {
+    "id": "trailer-title-slam",
+    "name": "Trailer title slam",
+    "kind": "shader",
+    "category": "cinematic",
+    "description": "A film-trailer title hit: brushed-metal letters slam down out of the dark with a flash, a shake and a burst of dust, a lens flare glints across them, they hold and fade back to black.",
+    "tags": [
+      "cinematic",
+      "film",
+      "trailer",
+      "title",
+      "metal",
+      "flare",
+      "impact",
+      "text"
+    ],
+    "controls": [
+      {
+        "n": "uText",
+        "t": "sampler2D",
+        "d": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201024%20256%22%20width%3D%221024%22%20height%3D%22256%22%3E%3Ctext%20x%3D%22512%22%20y%3D%22128%22%20dy%3D%220.35em%22%20text-anchor%3D%22middle%22%20textLength%3D%22921.6%22%20lengthAdjust%3D%22spacingAndGlyphs%22%20font-family%3D%22%26%2339%3BCinzel%26%2339%3B%2C%20%26%2339%3BTrajan%20Pro%26%2339%3B%2C%20Georgia%2C%20%26%2339%3BTimes%20New%20Roman%26%2339%3B%2C%20serif%22%20font-weight%3D%22700%22%20font-size%3D%2277.1%22%20fill%3D%22%23fff%22%3ETHE%20LONG%20WAY%20HOME%3C%2Ftext%3E%3C%2Fsvg%3E",
+        "line": 3,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            5,
+            6,
+            8
+          ]
+        },
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uMetal",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            201,
+            206,
+            214
+          ]
+        },
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uFlare",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            125,
+            183,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 0.8,
+        "l": "Text size",
+        "min": 0.3,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uDust",
+        "t": "float",
+        "d": 0.6,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uShake",
+        "t": "float",
+        "d": 0.5,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uAnimate",
+        "t": "bool",
+        "d": true,
+        "line": 10
+      },
+      {
+        "n": "uMoment",
+        "t": "float",
+        "d": 1.1,
+        "l": "Moment (s, when still)",
+        "max": 4,
+        "b": 3,
+        "line": 11
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Background opacity",
+        "b": 3,
+        "line": 121
+      }
+    ],
+    "presets": [
+      "Gold",
+      "Blood red",
+      "No dust",
+      "Held title"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "svg",
+        "text",
+        "mask"
+      ],
+      "images": [
+        {
+          "name": "uText",
+          "label": "Text",
+          "wants": "text"
+        }
+      ],
+      "texts": [],
+      "video": "none",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "none",
+    "loop": 4,
+    "animated": true,
+    "duration": 4000,
+    "module": "shaders/cinematic",
+    "addedAt": "2026-11-01T09:26:14Z",
+    "commitHash": "b9c02b2f1aa308d20fcc980ffdc315de4b002c54",
+    "order": 601
+  },
+  {
+    "id": "cinema-projector",
+    "name": "Cinema projector",
+    "kind": "shader",
+    "category": "cinematic",
+    "description": "A picture showing on a cinema screen in a dark auditorium: it flickers and weaves in the gate, a dusty projector beam fans down onto it, its light spills onto the curtains, and a row of heads sits silhouetted in front.",
+    "tags": [
+      "cinematic",
+      "film",
+      "cinema",
+      "projector",
+      "screen",
+      "audience",
+      "vintage",
+      "image"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "landscape"
+        },
+        "line": 4,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uScreen",
+        "t": "float",
+        "d": 0.56,
+        "l": "Screen width",
+        "min": 0.4,
+        "max": 0.95,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uAspect",
+        "t": "float",
+        "d": 1.85,
+        "l": "Screen aspect ratio",
+        "min": 1.33,
+        "max": 2.4,
+        "s": 0.01,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uBeam",
+        "t": "float",
+        "d": 0.55,
+        "l": "Projector beam",
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uDust",
+        "t": "float",
+        "d": 0.5,
+        "l": "Dust in the beam",
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uFlicker",
+        "t": "float",
+        "d": 0.4,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uAudience",
+        "t": "float",
+        "d": 1,
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uRoom",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            11,
+            10,
+            14
+          ]
+        },
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "uCurtain",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            90,
+            20,
+            32
+          ]
+        },
+        "l": "Curtains",
+        "c": 1,
+        "line": 12
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 13
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 14
+      }
+    ],
+    "presets": [
+      "Scope screen",
+      "Old picture house",
+      "Empty house"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "filter",
+    "animated": true,
+    "module": "shaders/cinematic",
+    "addedAt": "2026-11-01T09:26:14Z",
+    "commitHash": "b9c02b2f1aa308d20fcc980ffdc315de4b002c54",
+    "order": 600
+  },
+  {
+    "id": "academy-leader",
+    "name": "Academy leader",
+    "kind": "shader",
+    "category": "cinematic",
+    "description": "The countdown at the head of a film reel: 8 down to 3 in a ringed circle under crosshairs, a sweep going round each second, worn with dust, scratches and flicker; the 2 flashes for a frame and the screen goes black.",
+    "tags": [
+      "cinematic",
+      "film",
+      "countdown",
+      "leader",
+      "vintage",
+      "intro",
+      "projector"
+    ],
+    "controls": [
+      {
+        "n": "uLight",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            184,
+            184,
+            180
+          ]
+        },
+        "l": "Frame",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uShade",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            110,
+            110,
+            106
+          ]
+        },
+        "l": "Sweep",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uInk",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            17,
+            17,
+            17
+          ]
+        },
+        "l": "Numerals and rings",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uWear",
+        "t": "float",
+        "d": 0.5,
+        "l": "Wear (dust, scratches, flicker)",
+        "b": 3,
+        "line": 6
+      }
+    ],
+    "presets": [
+      "Clean",
+      "Battered",
+      "Sepia"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "loop": 7,
+    "animated": true,
+    "duration": 7000,
+    "module": "shaders/cinematic",
+    "addedAt": "2026-11-01T09:26:14Z",
+    "commitHash": "b9c02b2f1aa308d20fcc980ffdc315de4b002c54",
+    "order": 599
+  },
+  {
+    "id": "day-for-night",
+    "name": "Day for night",
+    "kind": "shader",
+    "category": "cinematic",
+    "description": "A daylight picture graded into moonlit night, the way films shot night scenes by day: underexposed, drained of colour, tinted moonlight blue, with the bright sky darkened and the shadows lifted a touch.",
+    "tags": [
+      "cinematic",
+      "film",
+      "grade",
+      "colour-grade",
+      "night",
+      "moonlight",
+      "blue",
+      "image"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "landscape"
+        },
+        "line": 3,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uExposure",
+        "t": "float",
+        "d": 0.6,
+        "min": 0.1,
+        "max": 1.5,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uMoon",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            111,
+            143,
+            208
+          ]
+        },
+        "l": "Moonlight",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uSaturation",
+        "t": "float",
+        "d": 0.3,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uSkyDarken",
+        "t": "float",
+        "d": 0.55,
+        "l": "Darken the sky",
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uContrast",
+        "t": "float",
+        "d": 0.35,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uLift",
+        "t": "float",
+        "d": 0.03,
+        "l": "Shadow lift",
+        "max": 0.2,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 11
+      }
+    ],
+    "presets": [
+      "Deep night",
+      "Silver moon",
+      "Dusk"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "filter",
+    "animated": false,
+    "module": "shaders/cinematic",
+    "addedAt": "2026-11-01T09:26:14Z",
+    "commitHash": "b9c02b2f1aa308d20fcc980ffdc315de4b002c54",
+    "order": 598
   },
   {
     "id": "technicolor",
@@ -947,9 +947,9 @@
     "video": "filter",
     "animated": false,
     "module": "shaders/cinematic",
-    "addedAt": "2026-11-01T09:25:09.012Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-11-01T09:26:14Z",
+    "commitHash": "b9c02b2f1aa308d20fcc980ffdc315de4b002c54",
+    "order": 597
   },
   {
     "id": "transition-focus-pull",
