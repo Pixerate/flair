@@ -1,5 +1,1000 @@
 [
   {
+    "id": "deal-with-it",
+    "name": "Deal with it",
+    "kind": "vector",
+    "category": "meme",
+    "description": "Pixel sunglasses sliding slowly down from the top of the frame onto a pair of eyes, landing with a little bounce, then a caption snapping on underneath.",
+    "tags": [
+      "meme",
+      "reaction",
+      "pixel",
+      "sunglasses",
+      "caption",
+      "overlay",
+      "cool"
+    ],
+    "controls": [
+      {
+        "n": "text",
+        "t": "text",
+        "d": "DEAL WITH IT",
+        "l": "Caption",
+        "line": 1
+      },
+      {
+        "n": "x",
+        "t": "float",
+        "d": 0.5,
+        "l": "Eyes across",
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "y",
+        "t": "float",
+        "d": 0.583,
+        "l": "Eyes up",
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "width",
+        "t": "float",
+        "d": 0.16,
+        "l": "Glasses width",
+        "min": 0.05,
+        "max": 0.8,
+        "s": 0.01,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "drop",
+        "t": "float",
+        "d": 1.4,
+        "l": "Drop (s)",
+        "min": 0.2,
+        "max": 4,
+        "s": 0.1,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "lens",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            0,
+            0,
+            0
+          ]
+        },
+        "l": "Glasses",
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "shine",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "l": "Glint",
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "ink",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "l": "Caption colour",
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "outline",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            0,
+            0,
+            0
+          ]
+        },
+        "l": "Caption outline",
+        "c": 1,
+        "line": 9
+      },
+      {
+        "n": "face",
+        "t": "bool",
+        "d": true,
+        "l": "Sample face",
+        "line": 10
+      },
+      {
+        "n": "font",
+        "t": "text",
+        "d": "Impact, Anton, 'Haettenschweiler', 'Arial Narrow Bold', 'Arial Black', sans-serif",
+        "line": 11
+      },
+      {
+        "n": "background",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            59,
+            66,
+            82
+          ]
+        },
+        "c": 1,
+        "line": 12
+      },
+      {
+        "n": "backdrop",
+        "t": "float",
+        "d": 1,
+        "l": "Background opacity",
+        "s": 0.05,
+        "b": 3,
+        "line": 13
+      }
+    ],
+    "presets": [
+      "Overlay",
+      "Quick",
+      "Gold frames"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "text",
+          "label": "Caption",
+          "holds": "copy",
+          "default": "DEAL WITH IT"
+        },
+        {
+          "name": "font",
+          "label": "Font",
+          "holds": "font",
+          "default": "Impact, Anton, 'Haettenschweiler', 'Arial Narrow Bold', 'Arial Black', sans-serif"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 1600,
+    "animated": true,
+    "duration": 3560,
+    "module": "meme",
+    "addedAt": "2026-10-31T23:57:07Z",
+    "commitHash": "86d553c6fb2d6c584b89febf9a38d72ed4abb119",
+    "order": 578
+  },
+  {
+    "id": "impact-caption",
+    "name": "Impact caption",
+    "kind": "vector",
+    "category": "meme",
+    "description": "The classic meme caption: white Impact capitals with a heavy black outline across the top and bottom of the frame, each fitted to the width, popping on with the punchline a beat after the setup.",
+    "tags": [
+      "meme",
+      "caption",
+      "text",
+      "impact",
+      "top-text",
+      "bottom-text",
+      "overlay",
+      "pop"
+    ],
+    "controls": [
+      {
+        "n": "top",
+        "t": "text",
+        "d": "TOP TEXT",
+        "l": "Top text",
+        "line": 1
+      },
+      {
+        "n": "bottom",
+        "t": "text",
+        "d": "BOTTOM TEXT",
+        "l": "Bottom text",
+        "line": 2
+      },
+      {
+        "n": "ink",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "l": "Text colour",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "outline",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            0,
+            0,
+            0
+          ]
+        },
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "thickness",
+        "t": "float",
+        "d": 0.09,
+        "l": "Outline width (em)",
+        "max": 0.2,
+        "s": 0.01,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "upper",
+        "t": "bool",
+        "d": true,
+        "l": "Capitals",
+        "line": 6
+      },
+      {
+        "n": "pop",
+        "t": "float",
+        "d": 1,
+        "l": "Pop-in",
+        "s": 0.1,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "beat",
+        "t": "float",
+        "d": 0.8,
+        "l": "Punchline delay (s)",
+        "max": 3,
+        "s": 0.1,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "font",
+        "t": "text",
+        "d": "Impact, Anton, 'Haettenschweiler', 'Arial Narrow Bold', 'Arial Black', sans-serif",
+        "line": 9
+      },
+      {
+        "n": "background",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            59,
+            66,
+            82
+          ]
+        },
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "backdrop",
+        "t": "float",
+        "d": 1,
+        "l": "Background opacity",
+        "s": 0.05,
+        "b": 3,
+        "line": 11
+      }
+    ],
+    "presets": [
+      "Overlay",
+      "Bottom only",
+      "No pop",
+      "Yellow subtitle"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "top",
+          "label": "Top text",
+          "holds": "copy",
+          "default": "TOP TEXT"
+        },
+        {
+          "name": "bottom",
+          "label": "Bottom text",
+          "holds": "copy",
+          "default": "BOTTOM TEXT"
+        },
+        {
+          "name": "font",
+          "label": "Font",
+          "holds": "font",
+          "default": "Impact, Anton, 'Haettenschweiler', 'Arial Narrow Bold', 'Arial Black', sans-serif"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 1800,
+    "animated": true,
+    "duration": 3400,
+    "module": "meme",
+    "addedAt": "2026-10-31T23:57:07Z",
+    "commitHash": "86d553c6fb2d6c584b89febf9a38d72ed4abb119",
+    "order": 577
+  },
+  {
+    "id": "to-be-continued",
+    "name": "To be continued",
+    "kind": "shader",
+    "category": "meme",
+    "description": "A picture that freezes on a sudden sepia grade with a little punch-in, then a left-pointing arrow slides in at the bottom with its words on it, holds, and it starts over.",
+    "tags": [
+      "meme",
+      "ending",
+      "image",
+      "freeze-frame",
+      "sepia",
+      "arrow",
+      "cliffhanger"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "line": 2,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uText",
+        "t": "sampler2D",
+        "d": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201024%20256%22%20width%3D%221024%22%20height%3D%22256%22%3E%3Ctext%20x%3D%22512%22%20y%3D%22128%22%20dy%3D%220.35em%22%20text-anchor%3D%22middle%22%20textLength%3D%22921.6%22%20lengthAdjust%3D%22spacingAndGlyphs%22%20font-family%3D%22%26%2339%3BArial%20Black%26%2339%3B%2C%20%26%2339%3BHelvetica%20Neue%26%2339%3B%2C%20Helvetica%2C%20Arial%2C%20system-ui%2C%20sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%2292.3%22%20fill%3D%22%23fff%22%3ETO%20BE%20CONTINUED%3C%2Ftext%3E%3C%2Fsvg%3E",
+        "line": 3,
+        "x": {
+          "filter": "mipmap",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uTint",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            200,
+            160,
+            96
+          ]
+        },
+        "l": "Freeze tint",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uArrow",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            58,
+            56,
+            32
+          ]
+        },
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uInk",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            240,
+            223,
+            160
+          ]
+        },
+        "l": "Words and border",
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "uPlay",
+        "t": "float",
+        "d": 1.4,
+        "l": "Before the freeze (s)",
+        "min": 0.2,
+        "max": 6,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uHold",
+        "t": "float",
+        "d": 2.6,
+        "l": "Hold (s)",
+        "min": 0.5,
+        "max": 8,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 0.11,
+        "l": "Arrow size",
+        "min": 0.06,
+        "max": 0.2,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 11
+      }
+    ],
+    "presets": [
+      "Coming soon",
+      "Black and white",
+      "Quick cut"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg",
+        "text",
+        "mask"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        },
+        {
+          "name": "uText",
+          "label": "Text",
+          "wants": "text"
+        }
+      ],
+      "texts": [],
+      "video": "stills",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "stills",
+    "animated": true,
+    "module": "shaders/meme",
+    "addedAt": "2026-10-31T23:57:07Z",
+    "commitHash": "86d553c6fb2d6c584b89febf9a38d72ed4abb119",
+    "order": 576
+  },
+  {
+    "id": "laser-eyes",
+    "name": "Laser eyes",
+    "kind": "shader",
+    "category": "meme",
+    "description": "Laser beams firing from two eyes over a picture: a white-hot core in a red glow, flaring at each eye and flickering, aimed at any angle and spread, with the picture darkened behind them.",
+    "tags": [
+      "meme",
+      "reaction",
+      "image",
+      "laser",
+      "eyes",
+      "glow",
+      "beam",
+      "lens-flare"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "line": 2,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uEyeA",
+        "t": "vec2",
+        "d": [
+          0.461,
+          0.583
+        ],
+        "l": "Left eye",
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "uEyeB",
+        "t": "vec2",
+        "d": [
+          0.539,
+          0.583
+        ],
+        "l": "Right eye",
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uColor",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            30,
+            30
+          ]
+        },
+        "l": "Beam",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uAngle",
+        "t": "float",
+        "d": -15,
+        "l": "Angle (degrees)",
+        "min": -180,
+        "max": 180,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uSpread",
+        "t": "float",
+        "d": 0,
+        "l": "Spread (degrees)",
+        "max": 120,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uLength",
+        "t": "float",
+        "d": 1.4,
+        "max": 2,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uWidth",
+        "t": "float",
+        "d": 0.012,
+        "min": 0.002,
+        "max": 0.05,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uFlare",
+        "t": "float",
+        "d": 1,
+        "l": "Eye flare",
+        "max": 2,
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uDarken",
+        "t": "float",
+        "d": 0.35,
+        "l": "Darken picture",
+        "b": 3,
+        "line": 11
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 12
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 13
+      }
+    ],
+    "presets": [
+      "Straight ahead",
+      "Fanned out",
+      "Glowing eyes",
+      "Blue"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "stills",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "stills",
+    "animated": true,
+    "module": "shaders/meme",
+    "addedAt": "2026-10-31T23:57:07Z",
+    "commitHash": "86d553c6fb2d6c584b89febf9a38d72ed4abb119",
+    "order": 575
+  },
+  {
+    "id": "dramatic-zoom",
+    "name": "Dramatic zoom",
+    "kind": "shader",
+    "category": "meme",
+    "description": "A crash zoom onto a point (a face, a stare, a detail) in a few sudden steps, each landing with a kick while a vignette closes in, then a hold and a snap back to the whole picture.",
+    "tags": [
+      "meme",
+      "reaction",
+      "image",
+      "zoom",
+      "crash-zoom",
+      "dramatic",
+      "shake",
+      "vignette"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "line": 2,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uTarget",
+        "t": "vec2",
+        "d": [
+          0.5,
+          0.583
+        ],
+        "l": "Zoom onto",
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "uZoom",
+        "t": "float",
+        "d": 3.4,
+        "min": 1.2,
+        "max": 8,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uSteps",
+        "t": "int",
+        "d": 3,
+        "min": 1,
+        "max": 4,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uStepTime",
+        "t": "float",
+        "d": 0.4,
+        "l": "Seconds per step",
+        "min": 0.15,
+        "max": 1.5,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uHold",
+        "t": "float",
+        "d": 1.6,
+        "l": "Hold (s)",
+        "min": 0.3,
+        "max": 5,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uShake",
+        "t": "float",
+        "d": 0.5,
+        "l": "Kick",
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uVignette",
+        "t": "float",
+        "d": 0.65,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 11
+      }
+    ],
+    "presets": [
+      "One crash",
+      "Slow dread",
+      "Extreme close-up"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "stills",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "stills",
+    "animated": true,
+    "module": "shaders/meme",
+    "addedAt": "2026-10-31T23:57:07Z",
+    "commitHash": "86d553c6fb2d6c584b89febf9a38d72ed4abb119",
+    "order": 574
+  },
+  {
+    "id": "deep-fried",
+    "name": "Deep fried",
+    "kind": "shader",
+    "category": "meme",
+    "description": "A picture fried to a crisp: saturation and contrast blown out, posterised colour, oversharpened halos, JPEG blocking and grain, with red glints flaring from two points such as the eyes.",
+    "tags": [
+      "meme",
+      "treatment",
+      "image",
+      "deep-fried",
+      "jpeg",
+      "saturated",
+      "glint",
+      "lens-flare"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "line": 2,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uFry",
+        "t": "float",
+        "d": 0.8,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "uBlocks",
+        "t": "float",
+        "d": 0.5,
+        "l": "JPEG blocks",
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uGrain",
+        "t": "float",
+        "d": 0.1,
+        "max": 0.3,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uGlint",
+        "t": "float",
+        "d": 1,
+        "l": "Glints",
+        "max": 2,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uGlintColor",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            42,
+            18
+          ]
+        },
+        "l": "Glint colour",
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "uGlintA",
+        "t": "vec2",
+        "d": [
+          0.461,
+          0.583
+        ],
+        "l": "Glint A",
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uGlintB",
+        "t": "vec2",
+        "d": [
+          0.539,
+          0.583
+        ],
+        "l": "Glint B",
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uGlintSize",
+        "t": "float",
+        "d": 0.22,
+        "min": 0.05,
+        "max": 0.6,
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 12
+      }
+    ],
+    "presets": [
+      "Extra crispy",
+      "Lightly toasted",
+      "No glints"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "stills",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "stills",
+    "animated": true,
+    "module": "shaders/meme",
+    "addedAt": "2026-10-31T23:57:07Z",
+    "commitHash": "86d553c6fb2d6c584b89febf9a38d72ed4abb119",
+    "order": 573
+  },
+  {
     "id": "pixel-weather",
     "name": "Pixel weather",
     "kind": "vector",
@@ -2017,1019 +3012,5 @@
     "addedAt": "2026-10-31T20:48:56Z",
     "commitHash": "67989bebcdbea3247177921ad46615b2ac43f8c5",
     "order": 559
-  },
-  {
-    "id": "lipstick-swipe",
-    "name": "Lipstick swipe",
-    "kind": "vector",
-    "category": "beauty",
-    "description": "A creamy lipstick swatch swiped across the frame with a glossy streak along it, then the shade's name fading in beneath.",
-    "tags": [
-      "beauty",
-      "makeup",
-      "cosmetics",
-      "lipstick",
-      "swatch",
-      "shade",
-      "product",
-      "ad",
-      "draw-on"
-    ],
-    "controls": [
-      {
-        "n": "x",
-        "t": "float",
-        "d": 50,
-        "l": "Swatch x (%)",
-        "max": 100,
-        "b": 3,
-        "line": 1
-      },
-      {
-        "n": "y",
-        "t": "float",
-        "d": 44,
-        "l": "Swatch y (%)",
-        "max": 100,
-        "b": 3,
-        "line": 2
-      },
-      {
-        "n": "length",
-        "t": "float",
-        "d": 44,
-        "l": "Length (%)",
-        "min": 10,
-        "max": 90,
-        "s": 0.5,
-        "b": 3,
-        "line": 3
-      },
-      {
-        "n": "thickness",
-        "t": "float",
-        "d": 120,
-        "min": 20,
-        "max": 300,
-        "s": 1,
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "angle",
-        "t": "float",
-        "d": -8,
-        "min": -45,
-        "max": 45,
-        "s": 0.5,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "color",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            176,
-            18,
-            58
-          ]
-        },
-        "l": "Shade",
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "gloss",
-        "t": "float",
-        "d": 0.45,
-        "s": 0.05,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "cream",
-        "t": "float",
-        "d": 12,
-        "l": "Creamy edges",
-        "max": 30,
-        "s": 1,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "label",
-        "t": "text",
-        "d": "Ruby Kiss",
-        "l": "Shade name",
-        "line": 9
-      },
-      {
-        "n": "sub",
-        "t": "text",
-        "d": "Satin lipstick",
-        "l": "Small print",
-        "line": 10
-      },
-      {
-        "n": "ink",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            31,
-            26,
-            28
-          ]
-        },
-        "l": "Text colour",
-        "c": 1,
-        "line": 11
-      },
-      {
-        "n": "hold",
-        "t": "float",
-        "d": 2.5,
-        "l": "Hold (s)",
-        "min": 0.5,
-        "max": 20,
-        "s": 0.5,
-        "b": 3,
-        "line": 12
-      },
-      {
-        "n": "font",
-        "t": "text",
-        "d": "'Playfair Display', 'Didot', 'Bodoni 72', Georgia, serif",
-        "line": 13
-      },
-      {
-        "n": "subFont",
-        "t": "text",
-        "d": "'Inter', 'Helvetica Neue', Arial, system-ui, sans-serif",
-        "l": "Small print font",
-        "line": 14
-      }
-    ],
-    "presets": [
-      "Nude",
-      "Berry gloss",
-      "Bold stroke"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "label",
-          "label": "Shade name",
-          "holds": "copy",
-          "default": "Ruby Kiss"
-        },
-        {
-          "name": "sub",
-          "label": "Small print",
-          "holds": "copy",
-          "default": "Satin lipstick"
-        },
-        {
-          "name": "font",
-          "label": "Font",
-          "holds": "font",
-          "default": "'Playfair Display', 'Didot', 'Bodoni 72', Georgia, serif"
-        },
-        {
-          "name": "subFont",
-          "label": "Small print font",
-          "holds": "font",
-          "default": "'Inter', 'Helvetica Neue', Arial, system-ui, sans-serif"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 300,
-    "animated": true,
-    "duration": 4300,
-    "module": "beauty",
-    "addedAt": "2026-10-31T20:48:56Z",
-    "commitHash": "67989bebcdbea3247177921ad46615b2ac43f8c5",
-    "order": 558
-  },
-  {
-    "id": "beauty-product-shine",
-    "name": "Product shine",
-    "kind": "shader",
-    "category": "beauty",
-    "description": "A bright glint sweeping across a product shot, then four-point sparkles twinkling on it in turn, as in a cosmetics ad.",
-    "tags": [
-      "beauty",
-      "product",
-      "shine",
-      "glint",
-      "sparkle",
-      "packshot",
-      "ad",
-      "promo",
-      "cosmetics"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "cutout"
-        },
-        "l": "Product",
-        "line": 2,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uGlint",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "l": "Shine colour",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uStrength",
-        "t": "float",
-        "d": 0.7,
-        "l": "Glint strength",
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "uWidth",
-        "t": "float",
-        "d": 0.1,
-        "l": "Glint width",
-        "min": 0.02,
-        "max": 0.4,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uAngle",
-        "t": "float",
-        "d": 30,
-        "l": "Glint angle (°)",
-        "min": -90,
-        "max": 90,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uSparkles",
-        "t": "int",
-        "d": 4,
-        "max": 8,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uSparkleSize",
-        "t": "float",
-        "d": 26,
-        "l": "Sparkle size (px)",
-        "min": 4,
-        "max": 80,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 9
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "b": 3,
-        "line": 10
-      }
-    ],
-    "presets": [
-      "Gold",
-      "Glint only",
-      "Transparent"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Product",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "filter",
-    "loop": 3,
-    "animated": true,
-    "duration": 3000,
-    "module": "shaders/beauty",
-    "addedAt": "2026-10-31T20:48:56Z",
-    "commitHash": "67989bebcdbea3247177921ad46615b2ac43f8c5",
-    "order": 557
-  },
-  {
-    "id": "beauty-retouch-reveal",
-    "name": "Retouch reveal",
-    "kind": "shader",
-    "category": "beauty",
-    "description": "A portrait split by a sweeping divider: as it was on one side, retouched on the other, skin smoothed, glowing and warmed.",
-    "tags": [
-      "beauty",
-      "retouch",
-      "compare",
-      "before-after",
-      "reveal",
-      "skin",
-      "promo",
-      "ad",
-      "slider"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "portrait"
-        },
-        "line": 2,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uSmooth",
-        "t": "float",
-        "d": 0.85,
-        "l": "Smoothing",
-        "b": 3,
-        "line": 3
-      },
-      {
-        "n": "uGlow",
-        "t": "float",
-        "d": 0.35,
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "uWarmth",
-        "t": "float",
-        "d": 0.3,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uSkinOnly",
-        "t": "float",
-        "d": 1,
-        "l": "Retouch skin only",
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uSweep",
-        "t": "bool",
-        "d": true,
-        "line": 7
-      },
-      {
-        "n": "uSplit",
-        "t": "float",
-        "d": 0.5,
-        "l": "Split (when still)",
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uLine",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "l": "Divider",
-        "c": 1,
-        "line": 9
-      },
-      {
-        "n": "uLineWidth",
-        "t": "float",
-        "d": 3,
-        "l": "Divider width",
-        "max": 12,
-        "b": 3,
-        "line": 10
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 11
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "b": 3,
-        "line": 12
-      }
-    ],
-    "presets": [
-      "Still",
-      "Strong",
-      "No divider"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "filter",
-    "loop": 6,
-    "animated": true,
-    "duration": 6000,
-    "module": "shaders/beauty",
-    "addedAt": "2026-10-31T20:48:56Z",
-    "commitHash": "67989bebcdbea3247177921ad46615b2ac43f8c5",
-    "order": 556
-  },
-  {
-    "id": "beauty-highlighter",
-    "name": "Highlighter",
-    "kind": "shader",
-    "category": "beauty",
-    "description": "A luminous sheen on both cheekbones, its finely milled glitter twinkling as the light catches it.",
-    "tags": [
-      "beauty",
-      "makeup",
-      "cosmetics",
-      "highlighter",
-      "glow",
-      "glitter",
-      "shimmer",
-      "cheekbones",
-      "sparkle"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "portrait"
-        },
-        "line": 2,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uColour",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            241,
-            214
-          ]
-        },
-        "l": "Highlight colour",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uSheen",
-        "t": "float",
-        "d": 0.4,
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "uGlitter",
-        "t": "float",
-        "d": 0.6,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uGrain",
-        "t": "float",
-        "d": 2.5,
-        "l": "Glitter size (px)",
-        "min": 1,
-        "max": 8,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uDensity",
-        "t": "float",
-        "d": 0.25,
-        "l": "Glitter density",
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uSkinOnly",
-        "t": "float",
-        "d": 1,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uCentre",
-        "t": "vec2",
-        "d": [
-          0.5,
-          0.561
-        ],
-        "l": "Highlight centre (between the two)",
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uSpacing",
-        "t": "float",
-        "d": 0.055,
-        "l": "Highlight spacing (from the centre)",
-        "max": 0.5,
-        "b": 3,
-        "line": 10
-      },
-      {
-        "n": "uSize",
-        "t": "vec2",
-        "d": [
-          0.06,
-          0.05
-        ],
-        "l": "Highlight size (each)",
-        "b": 3,
-        "line": 11
-      },
-      {
-        "n": "uFeather",
-        "t": "float",
-        "d": 20,
-        "l": "Edge softness (px)",
-        "max": 120,
-        "b": 3,
-        "line": 12
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 13
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "b": 3,
-        "line": 14
-      }
-    ],
-    "presets": [
-      "Champagne",
-      "Rose gold",
-      "Wet look"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "filter",
-    "loop": 4,
-    "animated": true,
-    "duration": 4000,
-    "module": "shaders/beauty",
-    "addedAt": "2026-10-31T20:48:56Z",
-    "commitHash": "67989bebcdbea3247177921ad46615b2ac43f8c5",
-    "order": 555
-  },
-  {
-    "id": "beauty-eyeshadow",
-    "name": "Eyeshadow",
-    "kind": "shader",
-    "category": "beauty",
-    "description": "Two-tone eyeshadow on both lids, deepest at the lash line and outer corners and blended up to the crease, with an optional twinkling shimmer.",
-    "tags": [
-      "beauty",
-      "makeup",
-      "cosmetics",
-      "eyeshadow",
-      "eyes",
-      "smokey",
-      "shimmer",
-      "try-on",
-      "portrait"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "portrait"
-        },
-        "line": 2,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uLid",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            123,
-            74,
-            140
-          ]
-        },
-        "l": "Lid colour",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uCrease",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            217,
-            162,
-            184
-          ]
-        },
-        "l": "Crease colour",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uAmount",
-        "t": "float",
-        "d": 0.7,
-        "l": "Strength",
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uDepth",
-        "t": "float",
-        "d": 0.4,
-        "l": "Colour depth",
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uShimmer",
-        "t": "float",
-        "d": 0.3,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uSkinOnly",
-        "t": "float",
-        "d": 0.8,
-        "l": "Skin only (keeps eyes and lashes bare)",
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uCentre",
-        "t": "vec2",
-        "d": [
-          0.5,
-          0.606
-        ],
-        "l": "Lid centre (between the two)",
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uSpacing",
-        "t": "float",
-        "d": 0.039,
-        "l": "Lid spacing (from the centre)",
-        "max": 0.5,
-        "b": 3,
-        "line": 10
-      },
-      {
-        "n": "uSize",
-        "t": "vec2",
-        "d": [
-          0.055,
-          0.045
-        ],
-        "l": "Lid size (each)",
-        "b": 3,
-        "line": 11
-      },
-      {
-        "n": "uFeather",
-        "t": "float",
-        "d": 8,
-        "l": "Edge softness (px)",
-        "max": 120,
-        "b": 3,
-        "line": 12
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 13
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "b": 3,
-        "line": 14
-      }
-    ],
-    "presets": [
-      "Smokey",
-      "Golden",
-      "Sheer pink"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "filter",
-    "loop": 4,
-    "animated": true,
-    "duration": 4000,
-    "module": "shaders/beauty",
-    "addedAt": "2026-10-31T20:48:56Z",
-    "commitHash": "67989bebcdbea3247177921ad46615b2ac43f8c5",
-    "order": 554
-  },
-  {
-    "id": "beauty-blush",
-    "name": "Blush",
-    "kind": "shader",
-    "category": "beauty",
-    "description": "A soft flush of colour on both cheeks, fading out at the edges, any shade, the skin's texture showing through.",
-    "tags": [
-      "beauty",
-      "makeup",
-      "cosmetics",
-      "blush",
-      "cheeks",
-      "rosy",
-      "flush",
-      "try-on",
-      "portrait"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "portrait"
-        },
-        "line": 2,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uColour",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            232,
-            100,
-            122
-          ]
-        },
-        "l": "Blush colour",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uAmount",
-        "t": "float",
-        "d": 0.45,
-        "l": "Strength",
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "uDepth",
-        "t": "float",
-        "d": 0.2,
-        "l": "Colour depth",
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uSkinOnly",
-        "t": "float",
-        "d": 1,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uCentre",
-        "t": "vec2",
-        "d": [
-          0.5,
-          0.525
-        ],
-        "l": "Cheek centre (between the two)",
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uSpacing",
-        "t": "float",
-        "d": 0.047,
-        "l": "Cheek spacing (from the centre)",
-        "max": 0.5,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uSize",
-        "t": "vec2",
-        "d": [
-          0.07,
-          0.09
-        ],
-        "l": "Cheek size (each)",
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uFeather",
-        "t": "float",
-        "d": 30,
-        "l": "Edge softness (px)",
-        "max": 120,
-        "b": 3,
-        "line": 10
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 11
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "b": 3,
-        "line": 12
-      }
-    ],
-    "presets": [
-      "Peach",
-      "Doll",
-      "Sun-kissed"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "filter",
-    "animated": false,
-    "module": "shaders/beauty",
-    "addedAt": "2026-10-31T20:48:56Z",
-    "commitHash": "67989bebcdbea3247177921ad46615b2ac43f8c5",
-    "order": 553
   }
 ]
