@@ -41,6 +41,7 @@
 
 - [Effect Editor](https://flair.pixerate.com/editor-and-agents/effect-editor/): Headless command-based effect authoring and keyframe editing.
 - [MCP & Agent Tools](https://flair.pixerate.com/editor-and-agents/mcp-tools/): Declarative tool schemas for autonomous AI coding agents.
+- [Agent Skills & Claude Code Plugin](https://flair.pixerate.com/editor-and-agents/agent-skills/): Skills that teach coding agents (Claude Code, Cursor and others) to find, wire up and author Flair effects, as a Claude Code plugin or copied into your project.
 
 ## Frameworks
 

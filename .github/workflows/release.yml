@@ -94,8 +94,8 @@ jobs:
 
       # Push the version commit before publishing, so a version is only ever
       # published once main records it. If another merge landed meanwhile, rebase
-      # onto it (the version commit only touches package.json, the changelog and
-      # the changesets it used); a push that still fails stops before publishing,
+      # onto it (the version commit only touches package.json, the Claude Code
+      # plugin's version, the changelog and the changesets it used); a push that still fails stops before publishing,
       # and the next run (or a manual run) releases from main as it is.
       - name: Commit version bumps & changelogs
         if: steps.changeset_check.outputs.should_release == 'true'

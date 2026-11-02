@@ -1,0 +1,15 @@
+{
+  "name": "pixerate",
+  "description": "Pixerate's plugins for Claude Code.",
+  "owner": {
+    "name": "Pixerate",
+    "url": "https://github.com/Pixerate"
+  },
+  "plugins": [
+    {
+      "name": "flair",
+      "source": "./",
+      "description": "Find, wire up and author @pixerate/flair effects: the flair-use and flair-author skills."
+    }
+  ]
+}

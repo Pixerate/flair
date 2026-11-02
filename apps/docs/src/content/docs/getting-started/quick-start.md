@@ -20,6 +20,10 @@ npm install @pixerate/flair
 yarn add @pixerate/flair
 ```
 
+:::tip[Using a coding agent?]
+Give it Flair's skills, so it finds the right effect and wires it up for you. In Claude Code, run `/plugin marketplace add Pixerate/flair`, then `/plugin install flair@pixerate`. For other agents, run `npx flair skills install`. See [Agent Skills & Claude Code Plugin](/editor-and-agents/agent-skills/).
+:::
+
 ## Basic Example: Mounting an Effect
 
 Mounting a ready-made effect onto any HTML container:

@@ -9,3 +9,4 @@ test-spec.json
 apps/demo/dist/
 .astro/
 .apphosting/
+.DS_Store
