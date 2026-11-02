@@ -557,6 +557,7 @@ export const lightStrandText: ShaderEffect = {
   video: "none",
   tags: ["text", "title", "light", "streak", "line", "fibre", "glow", "hero", "tech", "overlay"],
   transparent: true,
+  build: 3,
   source: glsl(
     `// Light strand text: the letters, stretched tall, are filled with layers of thin strands whose light slides down them;
 // near the outline they are drawn along it, bunching at the sides and bending round curves. They build up by falling

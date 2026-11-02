@@ -53,7 +53,8 @@
       if (!visible) return cleanup();
       if (effect.kind === "shader") {
         const values = effectDefaults(effect);
-        shaderHandle = poolFor(effect.transparent).register(canvasEl, effect.source, { ...values, ...abPictures(effect, values) }, (ok) => (webglFailed = !ok));
+        // Effects that build up (a path drawing on) replay it rather than sit settled.
+        shaderHandle = poolFor(effect.transparent).register(canvasEl, effect.source, { ...values, ...abPictures(effect, values) }, (ok) => (webglFailed = !ok), { build: effect.build });
         shaderHandle.setHovered(hovered);
       } else if (effect.kind === "camera") {
         // A camera move previews on the sample landscape, its view worked out each frame.

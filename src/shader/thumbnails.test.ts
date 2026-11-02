@@ -203,6 +203,36 @@ describe("ThumbnailPool", () => {
     expect(webgl.contexts[0]!.uniform("iFrame")).toEqual([2]);
   });
 
+  it("plays one that builds up from the start each time it comes into view, resting built between plays", () => {
+    const { webgl, raf, pool, observer } = setup({ fps: 10 });
+    const canvas = card();
+    pool.register(canvas, shaderSource(), undefined, undefined, { build: 1 });
+    const times = () =>
+      webgl.contexts[0]!.named("uniform1f")
+        .filter((c) => (c.args[0] as { name: string }).name === "iTime")
+        .map((c) => c.args[1]);
+    // The pool's clock starts here, long before the card shows.
+    raf.frame(1000);
+    observer().show(canvas);
+    raf.frame(5000);
+    raf.frame(5500);
+    raf.frame(8000);
+    expect(times()).toEqual([0, 0.5, 0]);
+    observer().show(canvas, false);
+    observer().show(canvas);
+    raf.frame(8600);
+    expect(times().at(-1)).toBe(0);
+  });
+
+  it("holds one that builds up on its built frame when still", () => {
+    const { webgl, raf, pool, observer } = setup({ reducedMotion: true });
+    const canvas = card();
+    pool.register(canvas, shaderSource(), undefined, undefined, { build: 2.5 });
+    observer().show(canvas);
+    raf.frame(1000);
+    expect(webgl.contexts[0]!.uniform("iTime")).toEqual([2.5]);
+  });
+
   it("compiles a source once, and reports one that does not compile without retrying it", () => {
     const { webgl, raf, pool, observer } = setup();
     const canvas = card();

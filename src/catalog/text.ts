@@ -655,7 +655,7 @@ export const textOnPath: VectorEffect = {
   id: "text-on-path",
   name: "Text on a path",
   description: "Words gliding along a curve, in at its start and out at its end; give it any SVG path to follow.",
-  category: "text",
+  category: "path",
   tags: ["text", "path", "curve", "type", "title", "motion", "marquee"],
   hold: 0,
   presets: [

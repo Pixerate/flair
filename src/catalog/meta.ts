@@ -32,6 +32,8 @@ export interface EffectMeta {
   transparent?: boolean;
   /** Seconds after which a shader repeats exactly. */
   loop?: number;
+  /** Seconds a shader takes to build up when it starts, before it settles. */
+  build?: number;
   /** Ms a vector effect rests on its last frame before it loops. */
   hold?: number;
   /** What makes a vector effect play, when not a loop. */
@@ -61,7 +63,7 @@ export function metaOf(effect: EffectDefinition, controls: readonly ControlDef[]
     presets: (effect.presets ?? []).map((p) => p.name),
     inputs,
     ...(effect.kind === "shader"
-      ? { ...(effect.video && { video: effect.video }), ...(effect.transparent && { transparent: true }), ...(effect.loop !== undefined && { loop: effect.loop }) }
+      ? { ...(effect.video && { video: effect.video }), ...(effect.transparent && { transparent: true }), ...(effect.loop !== undefined && { loop: effect.loop }), ...(effect.build !== undefined && { build: effect.build }) }
       : effect.kind === "vector"
         ? { ...(effect.hold !== undefined && { hold: effect.hold }), ...(effect.trigger && { trigger: effect.trigger }) }
         : { role: effect.motion.role }),

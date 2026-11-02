@@ -153,8 +153,8 @@ export const cometTrail: ShaderEffect = {
   id: "comet-trail",
   name: "Comet trail",
   description: "A bright comet head on the pointer with a glowing tail that tapers and fades through where it has just been, shading from head to tail colour.",
-  category: "trail",
-  tags: ["trail", "interactive", "hover", "cursor", "overlay", "glow", "comet"],
+  category: "path",
+  tags: ["trail", "interactive", "hover", "cursor", "overlay", "glow", "comet", "path"],
   transparent: true,
   source: glsl(
     `// Comet trail: a glowing head on the newest trail point and a tail along the rest, thinning and fading with age.
@@ -226,8 +226,8 @@ export const ribbonTrail: ShaderEffect = {
   id: "ribbon-trail",
   name: "Ribbon trail",
   description: "A shiny two-tone ribbon flowing smoothly after the pointer, twisting over to show its other side as it goes.",
-  category: "trail",
-  tags: ["trail", "interactive", "hover", "cursor", "overlay", "ribbon", "spline"],
+  category: "path",
+  tags: ["trail", "interactive", "hover", "cursor", "overlay", "ribbon", "spline", "path"],
   transparent: true,
   source: glsl(
     `// Ribbon trail: a Catmull-Rom ribbon through the trail points; its width swells and pinches to fake a twist.
@@ -324,8 +324,8 @@ export const sparkleTrail: ShaderEffect = {
   id: "sparkle-trail",
   name: "Sparkle trail",
   description: "Twinkling sparkles and four-point stars shed along the pointer's path, each drifting down a little as it fades out.",
-  category: "trail",
-  tags: ["trail", "interactive", "hover", "cursor", "overlay", "sparkle", "magic", "particles"],
+  category: "path",
+  tags: ["trail", "interactive", "hover", "cursor", "overlay", "sparkle", "magic", "particles", "path"],
   transparent: true,
   source: glsl(
     `// Sparkle trail: stars shed at each trail point, twinkling and drifting down as they fade.
@@ -399,8 +399,8 @@ export const brushTrail: ShaderEffect = {
   id: "brush-trail",
   name: "Brush trail",
   description: "An ink brush stroke following the pointer, bristle-streaked and breaking up dry at its tail, thinner where it moves faster.",
-  category: "trail",
-  tags: ["trail", "interactive", "hover", "cursor", "overlay", "brush", "ink", "paint"],
+  category: "path",
+  tags: ["trail", "interactive", "hover", "cursor", "overlay", "brush", "ink", "paint", "path"],
   transparent: true,
   source: glsl(
     `// Brush trail: a stroke along the trail, its width from speed (pressure), bristle streaks across it, dry at the tail.
@@ -502,8 +502,8 @@ export const ghostTrail: ShaderEffect = {
   id: "ghost-trail",
   name: "Ghost trail",
   description: "Afterimages of a circle, ring or star stamped along the pointer's path, each fainter, smaller and shifted in hue than the one before.",
-  category: "trail",
-  tags: ["trail", "interactive", "hover", "cursor", "overlay", "afterimage", "echo"],
+  category: "path",
+  tags: ["trail", "interactive", "hover", "cursor", "overlay", "afterimage", "echo", "path"],
   transparent: true,
   source: glsl(
     `// Ghost trail: a shape stamped at the trail points, fading, shrinking and shifting hue with age.
@@ -588,8 +588,8 @@ export const lightPainting: ShaderEffect = {
   id: "light-painting",
   name: "Light painting",
   description: "Long-exposure light painting in the dark: the pointer leaves neon tubes with white-hot cores that cycle through colour along the stroke and fade slowly.",
-  category: "trail",
-  tags: ["trail", "interactive", "hover", "cursor", "neon", "glow", "long-exposure", "light"],
+  category: "path",
+  tags: ["trail", "interactive", "hover", "cursor", "neon", "glow", "long-exposure", "light", "path"],
   source: glsl(
     `// Light painting: a smooth glowing tube through the trail on a dark ground, coloured by when each part was painted.
 uniform vec3 uBackground; // @control color default=#05060C label="Background"

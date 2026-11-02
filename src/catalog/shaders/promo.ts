@@ -247,7 +247,7 @@ export const swooshUnderline: ShaderEffect = {
   name: "Swoosh underline",
   description:
     "A glowing curved stroke sweeping on under a subtitle with a bright head and a thinner second stroke chasing it, then wiping away from its tail, along its own curve or any path; a transparent overlay.",
-  category: "light",
+  category: "path",
   transparent: true,
   tags: ["overlay", "promo", "underline", "swoosh", "title", "accent", "neon", "path"],
   source: glsl(

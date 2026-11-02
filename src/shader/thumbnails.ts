@@ -36,6 +36,20 @@ export interface ThumbnailPoolOptions {
   alpha?: boolean;
 }
 
+/** How one thumbnail plays. */
+export interface ThumbnailOptions {
+  /**
+   * Seconds the shader takes to build up before it settles (a catalog
+   * effect's `build`). The thumbnail plays it from the start each time it
+   * comes into view, rests built for a moment, then plays it again, and its
+   * still frame is the built picture.
+   */
+  build?: number;
+}
+
+/** Seconds a thumbnail that builds up rests built before it plays again. */
+const BUILT_REST = 2;
+
 interface Entry {
   canvas: HTMLCanvasElement;
   ctx: CanvasRenderingContext2D;
@@ -47,6 +61,9 @@ interface Entry {
   dirty: boolean;
   visible: boolean;
   hovered: boolean;
+  build?: number;
+  /** When its own clock started (`performance.now()` ms), for a thumbnail that builds up; null until it next shows. */
+  since: number | null;
   onStatus?: (ok: boolean) => void;
 }
 
@@ -106,6 +123,7 @@ export class ThumbnailPool {
     source: string,
     values?: Record<string, ControlValue>,
     onStatus?: (ok: boolean) => void,
+    options: ThumbnailOptions = {},
   ): ThumbnailHandle {
     const observer = this.intersection();
     const entry: Entry = {
@@ -119,6 +137,8 @@ export class ThumbnailPool {
       dirty: true,
       visible: observer === null,
       hovered: false,
+      build: options.build && options.build > 0 ? options.build : undefined,
+      since: null,
       onStatus,
     };
     this.entries.add(entry);
@@ -139,6 +159,8 @@ export class ThumbnailPool {
         this.schedule();
       },
       setHovered: (hovered) => {
+        // With reduced motion, a hovered thumbnail that builds up plays from the start.
+        if (hovered && !entry.hovered && this.reducedMotion) entry.since = null;
         entry.hovered = hovered;
         entry.dirty = true;
         this.schedule();
@@ -170,6 +192,8 @@ export class ThumbnailPool {
                 if (!entry) continue;
                 entry.visible = r.isIntersecting;
                 if (entry.visible) entry.dirty = true;
+                // One that builds up starts over each time it comes into view.
+                else entry.since = null;
               }
               this.schedule();
             },
@@ -300,13 +324,20 @@ export class ThumbnailPool {
       }
       const moving = !this.reducedMotion || entry.hovered;
       if (entry.dirty || (moving && animate)) {
-        this.renderEntry(entry, gl, moving ? time : this.stillTime);
+        this.renderEntry(entry, gl, moving ? this.timeOf(entry, now, time) : (entry.build ?? this.stillTime));
       }
       if (moving && entry.shader) keepGoing = true;
     }
     if (animate) this.last = now;
     if (keepGoing) this.schedule();
   };
+
+  /** The `iTime` to draw an entry at: the pool's clock, or for one that builds up its own, replaying. */
+  private timeOf(entry: Entry, now: number, time: number): number {
+    if (entry.build === undefined) return time;
+    entry.since ??= now;
+    return ((now - entry.since) / 1000) % (entry.build + BUILT_REST);
+  }
 }
 
 function sizeCanvas(canvas: HTMLCanvasElement) {
@@ -334,6 +365,7 @@ export function registerThumbnail(
   source: string,
   values?: Record<string, ControlValue>,
   onStatus?: (ok: boolean) => void,
+  options?: ThumbnailOptions,
 ): ThumbnailHandle {
-  return sharedThumbnailPool().register(canvas, source, values, onStatus);
+  return sharedThumbnailPool().register(canvas, source, values, onStatus, options);
 }

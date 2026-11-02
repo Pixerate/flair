@@ -439,6 +439,7 @@ export const isometricCity: ShaderEffect = {
   description: "An isometric block city whose buildings rise out of the ground, drifting through day and night as windows, street lights and traffic come on.",
   category: "3d",
   tags: ["3d", "city", "isometric", "buildings", "day", "night", "urban", "background"],
+  build: 3,
   source: glsl(
     `// Isometric city: an orthographic camera walks the city's grid cell by cell (48 cells at most), meeting each
 // cell's building box or the street analytically. A sun circles for the day, windows light up at dusk.

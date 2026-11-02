@@ -291,6 +291,7 @@ export const windGust: ShaderEffect = {
   category: "weather",
   tags: ["weather", "wind", "leaves", "autumn", "overlay", "particles"],
   transparent: true,
+  build: 3.5,
   source: glsl(
     `// Wind gust: wind lines (curving segments sliding along rows), leaves (tumbling ellipses with a vein) and
 // dust carried in cells by the wind's integrated push, all swelling with each gust.

@@ -27,7 +27,8 @@ function ShaderThumb({ effect, hovered }: { effect: Extract<EffectDefinition, { 
   const handle = useRef<ThumbnailHandle | undefined>(undefined);
   const [failed, setFailed] = useState(false);
   useEffect(() => {
-    handle.current = poolFor(effect).register(canvas.current!, effect.source, effectDefaults(effect), (ok) => setFailed(!ok));
+    // Effects that build up (a path drawing on) replay it rather than sit settled.
+    handle.current = poolFor(effect).register(canvas.current!, effect.source, effectDefaults(effect), (ok) => setFailed(!ok), { build: effect.build });
     return () => handle.current!.dispose();
   }, [effect]);
   // Interactive shaders see a hovered card as the pointer over its middle.
