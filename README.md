@@ -106,6 +106,12 @@ npm install @pixerate/flair @pixerate/editor
 npm install @pixerate/editor-react
 ```
 
+Using a coding agent (Claude Code, Cursor and others)? Give it Flair's skills, so it finds effects and wires them up without reading this whole README (see [Agent skills](#agent-skills)):
+
+```bash
+npx flair skills install
+```
+
 ### 1. Drop in a catalog effect
 
 ```ts
@@ -553,6 +559,8 @@ const { controller, dispose } = bindEffectParameters(editor);
 
 ### 4. Let an agent drive it
 
+This section is for agents running *inside* your app. For a coding agent writing your app's code, install Flair's [agent skills](#agent-skills) instead.
+
 ```ts
 import { createEffectToolProvider, createEffectToolRegistry, toolDefinitions, callTool, EFFECT_AGENT_INSTRUCTIONS } from "@pixerate/flair/editor";
 
@@ -919,6 +927,11 @@ npx flair render neon-warp --shutter-angle 180 -o warp.mp4   # motion blur: 8 su
 
 # A shader file of your own
 npx flair export ./effect.frag -o out.mp4 -w 1280 -h 720 -d 5 --values '{"speed":2}'
+npx flair controls ./headline.svg            # a vector effect's {{control}} declarations, and what keeps it from drawing (also .json)
+
+# Agent skills for coding agents
+npx flair skills install                     # into .claude/skills (--dir for another folder, --skill to pick one)
+npx flair skills list
 ```
 
 #### Rendering in Node
@@ -961,6 +974,17 @@ await exportMotionGraphic({ source, values: { speed: 2 }, outputPath: "out.gif",
 ```
 
 Limits: vector frames are drawn with `svgFrameMarkup`, so a change `along` a path and a `view` that frames an element by id stay where the markup puts them; GIF frame delays are whole hundredths of a second (30 fps plays at 33.3).
+
+#### Agent skills
+
+Flair ships two [agent skills](https://docs.claude.com/en/docs/claude-code/skills) in the package's `skills/` folder, for coding agents (Claude Code, Cursor and others) writing code that uses Flair:
+
+- **`flair-use`**: finding an effect (a generated index of every effect, one line each, by group), choosing an entry point (React, Svelte, embed, the lazy catalog, Node), controls, presets, camera moves, scenes, and checking the result.
+- **`flair-author`**: writing custom shader and vector effects, with `flair controls` as the check.
+
+`npx flair skills install` copies them into `.claude/skills` (`--dir` for another folder, such as one your agent reads; `--skill flair-use` for one of them). Run it again after upgrading Flair: it brings changed files up to date and leaves files of your own alone. From code, `installSkills({ dir, skills })` from `@pixerate/flair/node` does the same.
+
+The skills are plain Markdown and name only what exists: a test checks every entry point, export, CLI command and flag, effect id, preset, template, motion primitive and agent tool they mention, and `pnpm catalog:meta` regenerates the effect index.
 
 ---
 
