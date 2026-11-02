@@ -1,5 +1,13 @@
 # @pixerate/flair
 
+## 0.93.0
+
+### Minor Changes
+
+- ccb6368: New effect: `led-net`, a picture shown through a net of tiny LEDs draped in folds like fabric. Each light glows with a star-filter cross, mostly in one cool tint with drifting rainbow patches, and dark parts of the picture switch the lights off so shapes read as silhouettes.
+- 0e80eed: Two new light effects: `light-waves`, a glossy sheet of fine parallel ridges folding in slow waves with an iridescent sheen across the folds, and `light-strand-text`, tall letters filled with strands of light that follow the letters' edges, squeezing into corners and curving round counters, trail off the corners, and brighten and fade as light slides down them, with a few warm threads and a glow along the lower edges.
+- 3c9b08d: New effect: `wireframe-reveal`, a picture first seen as a schematic wireframe on black (pale hatched panels, outlines and coloured circuit traces along their edges) that builds up to the real picture block by block behind a glitching front, then folds back. It has a still-frame progress control and can reveal from the top.
+
 ## 0.92.0
 
 ### Minor Changes
