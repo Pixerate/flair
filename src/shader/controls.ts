@@ -9,18 +9,23 @@
  *   uniform vec3 uTint;    // @control color default=#77C16A label="Tint"
  *   uniform sampler2D uPhoto; // @control filter=linear wrap=clamp label="Photo"
  *   uniform float uAngle;  // @control min=0 max=360 default=45 unit=degrees
+ *   uniform sampler2D uPath; // @control path default="M 0 0 C 50 100 …" fit=contain
  *
  * The source is the single source of truth for which controls exist and
  * their defaults; values someone picks are stored next to it.
  */
 
+import { PATH_FITS, pathProblem, type PathFit } from "./path.js";
+
 /** The uniform types a control can have. */
-export type ControlType = "float" | "int" | "bool" | "vec2" | "vec3" | "vec4" | "sampler2D" | "text";
+export type ControlType = "float" | "int" | "bool" | "vec2" | "vec3" | "vec4" | "sampler2D" | "text" | "path";
 
 /**
  * A control's value: a number (`float`, `int`), a boolean (`bool`), the
- * components of a vector, an image URL (`sampler2D`; "" for none), or a
- * string (`text`, vector effects only: shaders cannot take text).
+ * components of a vector, an image URL (`sampler2D`; "" for none), a
+ * string (`text`, vector effects only: shaders cannot take text), or a path
+ * (`path`: SVG path data, or points in frame pixels `[x0, y0, x1, y1, …]`;
+ * see `shader/path.ts`).
  */
 export type ControlValue = number | boolean | number[] | string;
 
@@ -50,6 +55,12 @@ export interface ControlDef {
   line: number;
   /** Sampling settings, for `sampler2D` controls only. */
   texture?: TextureSettings;
+  /**
+   * How a `path` control's SVG path data sits in the frame (`fit=…`, default
+   * `contain`) and the margin kept clear round it, as a fraction of the
+   * frame's shorter side (`margin=…`, default 0.1). Points are always pixels.
+   */
+  path?: { fit: PathFit; margin: number };
   /** `unit="…"`: what the number is measured in ("pixels", "degrees"), when the label does not say. */
   unit?: string;
   /**
@@ -73,9 +84,10 @@ const COMPONENTS: Record<ControlType, number> = {
   vec4: 4,
   sampler2D: 1,
   text: 1,
+  path: 1,
 };
 
-/** The number of components a control type has: 1 for scalars, `bool`, `sampler2D` and `text`, else the vector size. */
+/** The number of components a control type has: 1 for scalars, `bool`, `sampler2D`, `text` and `path`, else the vector size. */
 export function componentCount(type: ControlType): number {
   return COMPONENTS[type];
 }
@@ -172,7 +184,7 @@ export function rgbToHex(rgb: number[]): string {
 function parseDefault(raw: string | undefined, type: ControlType, color: boolean): ControlValue {
   const n = COMPONENTS[type];
   if (type === "bool") return raw === "true" || raw === "1";
-  if (type === "sampler2D" || type === "text") return raw ?? "";
+  if (type === "sampler2D" || type === "text" || type === "path") return raw ?? "";
   // Without a default, numbers start at 0 and colours at white.
   if (raw === undefined) return n === 1 ? 0 : Array.from({ length: n }, () => (color ? 1 : 0));
   if (color && raw.startsWith("#")) {
@@ -190,8 +202,8 @@ function parseDefault(raw: string | undefined, type: ControlType, color: boolean
 
 /**
  * A control from its declaration's attributes (the text after `@control`):
- * `min`, `max`, `step`, `default`, `label`, `color`, and for images `filter`
- * and `wrap`. Values with spaces are quoted, in double or single quotes.
+ * `min`, `max`, `step`, `default`, `label`, `color`, for images `filter`
+ * and `wrap`, and for paths `fit` and `margin`. Values with spaces are quoted, in double or single quotes.
  * Shared by shader sources and vector effects' `{{name: type …}}` placeholders.
  */
 export function controlFromDeclaration(name: string, type: ControlType, attributes: string, line: number): ControlDef {
@@ -221,6 +233,10 @@ export function controlFromDeclaration(name: string, type: ControlType, attribut
   if (declared(attrs.min) || declared(attrs.max)) {
     control.limits = { ...(declared(attrs.min) && { min }), ...(declared(attrs.max) && { max }) };
   }
+  if (type === "path") {
+    const fit = PATH_FITS.find((f) => f === attrs.fit?.toLowerCase()) ?? "contain";
+    control.path = { fit, margin: Math.min(0.45, Math.max(0, num(attrs.margin, 0.1))) };
+  }
   if (type === "sampler2D") {
     const pick = <T extends string>(v: string | undefined, options: readonly T[]): T =>
       options.find((o) => o === v?.toLowerCase()) ?? options[0]!;
@@ -245,7 +261,9 @@ export function parseControls(source: string): ControlDef[] {
     const m = DECLARATION.exec(text);
     if (!m || seen.has(m[2]!)) return;
     seen.add(m[2]!);
-    controls.push(controlFromDeclaration(m[2]!, m[1] as ControlType, m[3]!, index + 1));
+    // `uniform sampler2D uPath; // @control path …`: a path, packed into a texture (see shader/path.ts).
+    const type = m[1] === "sampler2D" && /^\s*path\b/.test(m[3]!) ? "path" : (m[1] as ControlType);
+    controls.push(controlFromDeclaration(m[2]!, type, type === "path" ? m[3]!.replace(/^\s*path\b/, "") : m[3]!, index + 1));
   });
   return controls;
 }
@@ -259,6 +277,7 @@ export function controlValue(
   if (v === undefined) return control.default;
   if (control.type === "bool") return typeof v === "boolean" ? v : control.default;
   if (control.type === "sampler2D" || control.type === "text") return typeof v === "string" ? v : control.default;
+  if (control.type === "path") return pathProblem(v) ? control.default : v;
   const n = COMPONENTS[control.type];
   if (n === 1) return typeof v === "number" ? v : control.default;
   if (control.color && typeof v === "string") {
@@ -296,6 +315,10 @@ export function checkControlValue(control: ControlDef, raw: unknown, options: { 
   }
   if (control.type === "text") {
     return typeof raw === "string" ? { ok: true, value: raw } : fail(`${control.name} takes text.`);
+  }
+  if (control.type === "path") {
+    const problem = pathProblem(raw);
+    return problem ? fail(`${control.name} ${problem}.`) : { ok: true, value: Array.isArray(raw) ? [...raw] : (raw as string) };
   }
   if (control.color && typeof raw === "string") {
     const rgb = parseColor(raw);
@@ -367,6 +390,10 @@ export function describeValue(control: ControlDef, value: ControlValue): unknown
     return `${value.slice(0, value.indexOf(",") + 1)}… (about ${kb} kB)`;
   }
   if (control.color && Array.isArray(value)) return rgbToHex(value);
+  if (control.type === "path" && Array.isArray(value) && value.length > 16) {
+    const r = (v: number) => Math.round(v * 10) / 10;
+    return `${value.length / 2} points, from (${r(value[0]!)}, ${r(value[1]!)}) to (${r(value[value.length - 2]!)}, ${r(value[value.length - 1]!)})`;
+  }
   if (Array.isArray(value)) return value.map((v) => Math.round(v * 1000) / 1000);
   if (typeof value === "number") return Math.round(value * 1000) / 1000;
   return value;

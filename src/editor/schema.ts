@@ -177,7 +177,7 @@ const vectorControl: JsonSchema = {
   description: "A control declared outside the picture, for pictures written before controls were declared inline.",
   properties: {
     name: { type: "string" },
-    type: { enum: ["float", "int", "bool", "vec2", "vec3", "vec4", "sampler2D", "text"] },
+    type: { enum: ["float", "int", "bool", "vec2", "vec3", "vec4", "sampler2D", "text", "path"] },
     default: { $ref: "#/$defs/controlValue" },
     label: { type: "string" },
     color: { type: "boolean" },

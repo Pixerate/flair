@@ -7,7 +7,7 @@
 type Point = [number, number];
 
 /** One piece of a path: its outline as points, and whether it closes. */
-interface Ring {
+export interface Ring {
   points: Point[];
   closed: boolean;
 }
@@ -28,10 +28,10 @@ const TOKEN = /[MmLlHhVvCcSsQqTtAaZz]|-?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?/gi;
 const ARGS: Record<string, number> = { m: 2, l: 2, h: 1, v: 1, c: 6, s: 4, q: 4, t: 2, a: 7, z: 0 };
 
 /**
- * The pieces of a path's `d` as outlines: lines kept, curves and arcs split
- * into short lines. Throws on a command it does not know.
+ * @internal The pieces of a path's `d` as outlines: lines kept, curves and
+ * arcs split into short lines. Throws on a command it does not know.
  */
-function flatten(d: string): Ring[] {
+export function flatten(d: string): Ring[] {
   const stray = d.replace(TOKEN, "").replace(/[\s,]+/g, "");
   if (stray) throw new Error(`"${stray[0]}" is not a path command`);
   const tokens = d.match(TOKEN) ?? [];
