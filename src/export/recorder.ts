@@ -10,6 +10,7 @@ import zlib from 'node:zlib';
 import { controlValue, parseControls, type ControlValue, type TextureSettings } from '../shader/controls.js';
 import { MAX_CLICKS, MAX_TRAIL, PointerTracker, TRAIL_SECONDS } from '../shader/pointer.js';
 import { VERTEX_SOURCE, wrapSource } from '../shader/program.js';
+import { PAGE_PATH_TEXTURE, pathPageData, type PathValue } from '../shader/path.js';
 import { SVG_EDGE } from '../shader/textures.js';
 import { checkShutter, FrameAverager, shutterTimes, type Shutter, type ShutterOptions } from './shutter.js';
 import { crc32 } from './zip.js';
@@ -287,6 +288,8 @@ export interface PageControl {
   type: string;
   value: ControlValue;
   texture?: TextureSettings;
+  /** A path control's texture (see `pathPageData`). */
+  path?: { width: number; data: number[] } | null;
 }
 
 /**
@@ -470,12 +473,20 @@ function upload(name, img) {
   gl.generateMipmap(gl.TEXTURE_2D);
 }
 
+${PAGE_PATH_TEXTURE}
+
 async function setControls() {
   let unit = 0;
   const loads = [];
   for (const c of CONFIG.shader.controls) {
     const loc = u(c.name);
     const v = c.value;
+    if (c.type === "path") {
+      pathTexture(gl, unit, c.path);
+      if (loc) gl.uniform1i(loc, unit);
+      unit++;
+      continue;
+    }
     if (c.type === "sampler2D") {
       textures[c.name] = makeTexture(unit, c.texture);
       if (loc) gl.uniform1i(loc, unit);
@@ -1064,7 +1075,8 @@ export async function pageControls(source: string, values: Record<string, Contro
     parseControls(source).map(async (c) => {
       let value = controlValue(c, values);
       if (c.type === 'sampler2D' && typeof value === 'string') value = await imageDataUrl(value);
-      return { name: c.name, type: c.type, value, ...(c.texture ? { texture: c.texture } : {}) };
+      const path = c.type === 'path' ? { path: pathPageData(value as PathValue, c.path?.fit ?? 'contain', c.path?.margin ?? 0.1) } : {};
+      return { name: c.name, type: c.type, value, ...(c.texture ? { texture: c.texture } : {}), ...path };
     }),
   );
 }

@@ -1,8 +1,11 @@
 import { Ajv2020 } from "ajv/dist/2020.js";
 import { checkControlValue } from "../shader/controls.js";
+import { pathProblem } from "../shader/path.js";
 import { EFFECTS, effectControls, effectControlSchema, getEffect } from "./index.js";
 
 const ajv = new Ajv2020({ strict: true, allErrors: true });
+// Path controls mark their SVG path data with this format (see controlSchema).
+ajv.addFormat("svg-path", (d: string) => pathProblem(d) === null);
 
 describe("effectControlSchema", () => {
   it("is undefined for an unknown effect", () => {

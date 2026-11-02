@@ -5,6 +5,7 @@
  * name that is not a control is refused (`additionalProperties: false`).
  */
 
+import { MAX_PATH_POINTS } from "./path.js";
 import { componentCount, rgbToHex, type ControlDef, type ControlValue } from "./controls.js";
 
 /** The JSON Schema keywords these schemas use (a plain object, ready for `JSON.stringify`). */
@@ -28,6 +29,7 @@ export interface JsonSchema {
   exclusiveMinimum?: number;
   minLength?: number;
   pattern?: string;
+  format?: string;
   enum?: readonly unknown[];
   const?: unknown;
   anyOf?: readonly JsonSchema[];
@@ -58,7 +60,7 @@ const LABEL_UNITS: Record<string, string> = {
  */
 export function controlUnit(control: ControlDef): string | undefined {
   if (control.unit) return control.unit;
-  if (control.color || control.type === "bool" || control.type === "sampler2D" || control.type === "text") return undefined;
+  if (control.color || control.type === "bool" || control.type === "sampler2D" || control.type === "text" || control.type === "path") return undefined;
   const bracket = /\(([^)]+)\)\s*$/.exec(control.label)?.[1]?.trim().toLowerCase();
   return bracket ? LABEL_UNITS[bracket] : undefined;
 }
@@ -103,6 +105,8 @@ export interface SchemaOptions {
  * - A colour (`vec3`/`vec4` marked `color`) → sRGB channels 0–1 as an
  *   array, or a CSS colour string (hex, `rgb()`, `hsl()`).
  * - `sampler2D` → an image URL, or "" for none.
+ * - `path` → SVG path data (a string with `format: "svg-path"`), or an
+ *   even list of at least 4 numbers: points in frame pixels from the top left.
  */
 export function controlSchema(control: ControlDef, options: SchemaOptions = {}): JsonSchema {
   const title = bareLabel(control);
@@ -116,6 +120,21 @@ export function controlSchema(control: ControlDef, options: SchemaOptions = {}):
       return { type: "boolean", title, description: `${title}: on or off (default ${def}).`, default: def };
     case "text":
       return { type: "string", title, description: `${title}: text (default ${show(def)}).`, default: def };
+    case "path": {
+      const fit = control.path?.fit ?? "contain";
+      const placed = fit === "none" ? "read in frame pixels from the top left" : `fitted into the frame (${fit}, keeping ${round((control.path?.margin ?? 0.1) * 100)}% of the shorter side clear)`;
+      const d = String(def);
+      return {
+        title,
+        description: `${title}: SVG path data like "M 10 80 C 40 10 65 10 95 80" (${placed}), or points [x0, y0, x1, y1, …] in frame pixels from the top left, or "" for none. Resampled to at most ${MAX_PATH_POINTS} points (default ${d.length > 80 ? `${JSON.stringify(d.slice(0, 79) + "…")}` : JSON.stringify(d)}).`,
+        anyOf: [
+          { type: "string", format: "svg-path", pattern: "^\\s*[Mm]" },
+          { const: "" },
+          { type: "array", items: { type: "number" }, minItems: 4 },
+        ],
+        default: def,
+      };
+    }
     case "sampler2D":
       return {
         type: "string",

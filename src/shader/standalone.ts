@@ -1,6 +1,7 @@
 import { controlValue, parseControls, type ControlValue } from "./controls.js";
 import { HOVER_SECONDS, MAX_CLICKS, MAX_TRAIL, TRAIL_SECONDS } from "./pointer.js";
 import { VERTEX_SOURCE, wrapSource } from "./program.js";
+import { PAGE_PATH_TEXTURE, pathPageData, type PathValue } from "./path.js";
 import { SVG_EDGE } from "./textures.js";
 
 const escapeHtml = (s: string) =>
@@ -108,6 +109,7 @@ export function standaloneHtml(
     type: c.type,
     value: controlValue(c, values),
     ...(c.texture ? { texture: c.texture } : {}),
+    ...(c.type === "path" ? { path: pathPageData(controlValue(c, values) as PathValue, c.path?.fit ?? "contain", c.path?.margin ?? 0.1) } : {}),
   }));
   const credit = (options.credit ?? "Exported with Flair.").replace(/\n/g, " ");
   const corner = "position:fixed;left:12px;bottom:12px;z-index:1";
@@ -164,6 +166,7 @@ async function sizedSvg(url) {
   svg.setAttribute("height", Math.max(1, Math.round(h * scale)));
   return URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(svg)], { type: "image/svg+xml" }));
 }
+${PAGE_PATH_TEXTURE}
 function image(loc, url, texture) {
   const i = unit++, t = gl.createTexture();
   const bind = () => { gl.activeTexture(gl.TEXTURE0 + i); gl.bindTexture(gl.TEXTURE_2D, t); };
@@ -195,6 +198,7 @@ for (const c of CONTROLS) {
   if (c.type === "float") gl.uniform1f(loc, v);
   else if (c.type === "int" || c.type === "bool") gl.uniform1i(loc, Number(v));
   else if (c.type === "sampler2D") image(loc, v, c.texture);
+  else if (c.type === "path") { pathTexture(gl, unit, c.path); gl.uniform1i(loc, unit++); }
   else gl["uniform" + v.length + "fv"](loc, v);
 }
 let mouse = [0, 0, 0, 0];

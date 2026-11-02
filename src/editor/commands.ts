@@ -11,7 +11,7 @@ import { getPrimitive, listPrimitives, PRIMITIVE_KINDS, PRIMITIVES, primitiveTag
 import { didYouMean } from "../motion/params.js";
 import { EFFECT_INPUTS, EFFECT_INTERACTIONS, effectInputs, effectTags, findEffects, normaliseTag, type EffectInput, type EffectInteraction, type EffectQuery } from "../catalog/index.js";
 import type { EditResult, EffectEditor } from "./editor.js";
-import { editorControlSchema, isTextMask } from "./textmask.js";
+import { editorControlSchema, holdsPath, isTextMask } from "./textmask.js";
 import { EASING_PRESETS, type Easing } from "./timeline.js";
 import { controlsSchema } from "../shader/schema.js";
 
@@ -27,7 +27,7 @@ const easingSchema = {
 
 const valueSchema = {
   description:
-    'A control value: a number (float, int), true/false (bool), an array of numbers (vec2–vec4; colours 0–1), a "#RRGGBB" colour, an image URL (sampler2D), {"text": "…", "font"?, "weight"?} for a text mask (an image control drawing words, textMask in effect.describe), or a string (text).',
+    'A control value: a number (float, int), true/false (bool), an array of numbers (vec2–vec4; colours 0–1), a "#RRGGBB" colour, an image URL (sampler2D), {"text": "…", "font"?, "weight"?} for a text mask (an image control drawing words, textMask in effect.describe), a string (text), or SVG path data like "M 10 80 C 40 10 65 10 95 80" or points [x0, y0, x1, y1, …] in frame pixels (path).',
 } as const;
 
 const easeSchema = {
@@ -128,7 +128,7 @@ export function describeEditor(editor: EffectEditor) {
       label: c.label,
       ...(c.color && { color: true }),
       ...(isTextMask(c) && { textMask: true }),
-      ...(c.type !== "bool" && c.type !== "sampler2D" && c.type !== "text" && { min: c.min, max: c.max, step: c.step }),
+      ...(c.type !== "bool" && c.type !== "sampler2D" && c.type !== "text" && c.type !== "path" && { min: c.min, max: c.max, step: c.step }),
       default: c.default,
     })),
     values: state.values,
@@ -164,7 +164,7 @@ export function effectCommands(): CommandSpec<EffectEditor>[] {
         const schema = controlsSchema(controls, { title: `${doc.name} controls`, currentColor: doc.effect.kind === "vector" });
         // Text masks take words as well as a URL.
         const properties = schema.properties as Record<string, unknown>;
-        for (const c of controls) if (isTextMask(c)) properties[c.name] = editorControlSchema(c);
+        for (const c of controls) if (isTextMask(c) || holdsPath(c)) properties[c.name] = editorControlSchema(c);
         return schema;
       },
     },

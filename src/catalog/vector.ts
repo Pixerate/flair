@@ -1,4 +1,5 @@
 import type { SvgAnimation, SvgMotion } from "../vector/motion.js";
+import { pathBounds, pathPointAt } from "../vector/morph.js";
 import { textWidthEm } from "./images.js";
 import type { VectorEffect } from "./types.js";
 
@@ -226,17 +227,26 @@ export const route: VectorEffect = {
   kind: "vector",
   id: "route",
   name: "Route",
-  description: "A dashed journey drawing between two pins, with a traveller following it.",
+  description: "A journey drawing itself between two pins along any path, with a traveller following it.",
   category: "data",
-  tags: ["map", "travel", "delivery", "journey"],
+  tags: ["map", "travel", "delivery", "journey", "path"],
   hold: 1200,
   motion: {
-    svg: `<svg viewBox="0 0 240 150"><!-- {{accent: color default=#8B5CF6 label='Route'}} {{pin: color default=#0F172A label='Pins'}} --><path id="path" d="M30 120 C60 40 120 140 150 70 S210 30 210 30" fill="none" stroke="{{accent}}" stroke-width="4" stroke-linecap="round"/><circle cx="30" cy="120" r="7" fill="{{pin}}"/><g id="end" opacity="0"><circle cx="210" cy="30" r="9" fill="{{pin}}"/><circle cx="210" cy="30" r="3.5" fill="#fff"/></g><g id="traveller"><circle r="7" fill="{{accent}}"/><circle r="3" fill="#fff"/></g></svg>`,
+    svg: `<svg viewBox="{{box}}"><!-- {{accent: color default=#8B5CF6 label='Route'}} {{pin: color default=#0F172A label='Pins'}} {{route: text default='M30 120 C60 40 120 140 150 70 S210 30 210 30' label='Path'}} --><path id="path" d="{{route}}" fill="none" stroke="{{accent}}" stroke-width="4" stroke-linecap="round"/><circle cx="{{sx}}" cy="{{sy}}" r="7" fill="{{pin}}"/><g id="end" opacity="0"><circle cx="{{ex}}" cy="{{ey}}" r="9" fill="{{pin}}"/><circle cx="{{ex}}" cy="{{ey}}" r="3.5" fill="#fff"/></g><g id="traveller"><circle r="7" fill="{{accent}}"/><circle r="3" fill="#fff"/></g></svg>`,
     animate: [
       { id: "path", draw: true, ms: 1800, ease: "in-out" },
       { id: "traveller", along: "path", ms: 1800, ease: "in-out" },
       { id: "end", attrs: { opacity: [0, 1] }, delay: 1600, ms: 300 },
     ],
+  },
+  // Pins at the path's ends, and the picture round it with room for them.
+  derived: (v) => {
+    const d = String(v.route);
+    const [x, y, w, h] = pathBounds(d) ?? [30, 30, 180, 90];
+    const [sx, sy] = pathPointAt(d, 0) ?? [x, y + h];
+    const [ex, ey] = pathPointAt(d, 1) ?? [x + w, y];
+    const r = (n: number) => Math.round(n * 10) / 10;
+    return { box: `${r(x - 30)} ${r(y - 30)} ${r(w + 60)} ${r(h + 60)}`, sx: r(sx), sy: r(sy), ex: r(ex), ey: r(ey) };
   },
 };
 
@@ -272,16 +282,27 @@ export const signature: VectorEffect = {
   kind: "vector",
   id: "signature",
   name: "Signature",
-  description: "A handwritten flourish drawing itself as if by pen.",
+  description: "A handwritten flourish drawing itself as if by pen, then underlined; give it any path, or words to write as {\"text\": …}.",
   category: "icon",
-  tags: ["handwriting", "draw-on", "personal", "reveal"],
+  tags: ["handwriting", "draw-on", "personal", "reveal", "path"],
   hold: 1500,
   motion: {
-    svg: `<svg viewBox="0 0 260 120"><!-- {{ink: color default=#1E293B label='Ink'}} {{width: float min=1 max=8 default=3 step=0.5 label='Pen width'}} --><path id="sig" d="M20 80 C40 20 60 20 55 70 C52 95 70 95 85 60 C95 40 100 75 110 70 C120 65 125 40 135 55 C145 70 150 75 165 50 C175 35 185 60 190 65 C200 75 215 40 240 45" fill="none" stroke="{{ink}}" stroke-width="{{width}}" stroke-linecap="round" stroke-linejoin="round"/><path id="dash" d="M70 100 Q140 92 220 98" fill="none" stroke="{{ink}}" stroke-width="{{width}}" stroke-linecap="round"/></svg>`,
+    svg: `<svg viewBox="{{box}}"><!-- {{ink: color default=#1E293B label='Ink'}} {{width: float min=1 max=8 default=3 step=0.5 label='Pen width'}} {{path: text default='M20 80 C40 20 60 20 55 70 C52 95 70 95 85 60 C95 40 100 75 110 70 C120 65 125 40 135 55 C145 70 150 75 165 50 C175 35 185 60 190 65 C200 75 215 40 240 45' label='Path'}} --><path id="sig" d="{{path}}" fill="none" stroke="{{ink}}" stroke-width="{{width}}" stroke-linecap="round" stroke-linejoin="round"/><path id="dash" d="{{underline}}" fill="none" stroke="{{ink}}" stroke-width="{{width}}" stroke-linecap="round"/></svg>`,
     animate: [
       { id: "sig", draw: true, ms: 1800, ease: "in-out" },
       { id: "dash", draw: true, delay: 1700, ms: 400, ease: "out" },
     ],
+  },
+  // The picture fits the path, with room for the underline beneath it.
+  derived: (v) => {
+    const [x, y, w, h] = pathBounds(String(v.path)) ?? [20, 20, 220, 60];
+    const pad = 12 + Number(v.width);
+    const r = (n: number) => Math.round(n * 10) / 10;
+    const base = y + h + 12;
+    return {
+      box: `${r(x - pad)} ${r(y - pad)} ${r(w + 2 * pad)} ${r(h + 2 * pad + 14)}`,
+      underline: `M${r(x + w * 0.2)} ${r(base + 2)} Q${r(x + w * 0.5)} ${r(base - 6)} ${r(x + w * 0.85)} ${r(base)}`,
+    };
   },
 };
 

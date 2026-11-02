@@ -16,7 +16,8 @@ import type { EffectDefinition, VideoUse } from "./types.js";
  * - `svg`: an SVG file or `data:` URL for an image control (drawn as a picture, keeping its transparency).
  * - `text`: words, for a text control, or for a text mask through `textImage`.
  * - `mask`: a shape with transparency (an icon, a logo, `textImage`) whose silhouette the effect uses.
- * - `path`: SVG path data (`d`), for a shape control.
+ * - `path`: SVG path data (`d`), for a shape control or a shader's `path`
+ *   control (which also takes points in frame pixels).
  * - `audio`: sound (a playing `<audio>` or `<video>`, a microphone, a Web
  *   Audio node, or an `AudioBuffer` for recordings) that it reacts to
  *   through `iAudio`, `iSpectrum` or `iBeat`.
@@ -54,9 +55,9 @@ export interface ImageSlot {
   wants: "picture" | "mask" | "text";
 }
 
-/** A vector effect's text control and what it holds. */
+/** A vector effect's text control, or a shader's `path` control, and what it holds. */
 export interface TextSlot {
-  /** The control's name: set it with `renderVectorEffect(effect, { [name]: … })`. */
+  /** The control's name: set it with `renderVectorEffect(effect, { [name]: … })` (or the shader's values). */
   name: string;
   label: string;
   /** `copy` (words shown), `font` (a CSS font family), `path` (SVG path data) or `glyphs` (characters to draw from). */
@@ -158,6 +159,9 @@ export function inputsOf(effect: EffectDefinition, controls: readonly ControlDef
       texts.push(slot);
       if (slot.holds === "copy") accepts.add("text");
       if (slot.holds === "path") accepts.add("path");
+    } else if (control.type === "path") {
+      texts.push({ name: control.name, label: control.label, holds: "path", default: typeof control.default === "string" ? control.default : JSON.stringify(control.default) });
+      accepts.add("path");
     }
   }
   if (effect.kind === "shader" && /\bi(Audio|Spectrum|Beat)\b/.test(codeOf(effect.source))) accepts.add("audio");

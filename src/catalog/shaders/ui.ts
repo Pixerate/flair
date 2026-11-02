@@ -1,4 +1,4 @@
-import { glsl, HASH, NOISE, OKLAB_MIX } from "../glsl.js";
+import { glsl, HASH, NOISE, OKLAB_MIX, PATH } from "../glsl.js";
 import { SAMPLE_IMAGES } from "../images.js";
 import type { ShaderEffect } from "../types.js";
 import { BACKDROP_CONTROLS, PICTURE } from "./image.js";
@@ -49,9 +49,9 @@ export const borderBeam: ShaderEffect = {
   kind: "shader",
   id: "border-beam",
   name: "Border beam",
-  description: "A bright beam of light travelling round a card's rounded border, trailing a gradient tail.",
+  description: "A bright beam of light travelling round a card's rounded border, or along any path (a logo's outline, a route), trailing a gradient tail.",
   category: "ui",
-  tags: ["ui", "border", "card", "button", "frame", "overlay", "glow", "saas"],
+  tags: ["ui", "border", "card", "button", "frame", "overlay", "glow", "saas", "path"],
   transparent: true,
   loop: 5,
   source: glsl(
@@ -64,9 +64,11 @@ ${FRAME_CONTROLS}
 uniform float uLength;     // @control min=0.05 max=0.9 default=0.25 label="Tail length"
 uniform float uLaps;       // @control min=0 max=3 default=1 step=1 label="Laps per loop"
 uniform int uBeams;        // @control min=1 max=4 default=1 label="Beams"
-uniform float uGlow;       // @control min=0 max=1 default=0.6 label="Glow"`,
+uniform float uGlow;       // @control min=0 max=1 default=0.6 label="Glow"
+uniform sampler2D uPath;   // @control path default="" label="Path (instead of the border)"`,
     BOX,
     OVER,
+    PATH,
     `// How far round the frame q is, as arc length from the bottom of its right side, anticlockwise.
 float framePos(vec2 q, vec2 c, float r) {
   float lc = 1.5707963 * r;
@@ -93,7 +95,10 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 box = max(0.5 * iResolution.xy * px - uInset, vec2(0.02));
   float rad = min(uRadius, min(box.x, box.y));
   vec2 c = box - rad;
-  float sd = boxSdf(p, box, rad);
+  // Along uPath when one is set (Inset and Corner radius then have nothing to shape), else round the frame.
+  bool onPath = pathLength(uPath) > 0.0;
+  vec4 near = onPath ? pathNearest(uPath, fragCoord) : vec4(0.0);
+  float sd = onPath ? near.x * px : boxSdf(p, box, rad);
   float w = max(uThickness, px);
   float core = clamp(1.0 - (abs(sd) - 0.5 * w) / px, 0.0, 1.0);
   float halo = exp(-abs(sd) / (w + 0.012));
@@ -104,7 +109,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     return;
   }
   float perim = 4.0 * (c.x + c.y) + 6.2831853 * rad;
-  float s = framePos(p, c, rad) / perim;
+  float s = onPath ? near.y / pathLength(uPath) : framePos(p, c, rad) / perim;
   // Behind the head, as a fraction of the way round: the brightest of the beams.
   float beam = 0.0;
   float behind = 1.0;

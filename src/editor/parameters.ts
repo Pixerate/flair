@@ -42,6 +42,9 @@ export function parameterFieldFor(control: ControlDef, options: EffectParameterO
       return { ...base, type: "image", default: String(control.default), ...(options.images && { options: options.images }) };
     case "text":
       return { ...base, type: "text", default: String(control.default) };
+    case "path":
+      // SVG path data, edited as text (a list of points shows as its JSON).
+      return { ...base, type: "text", default: typeof control.default === "string" ? control.default : JSON.stringify(control.default) };
     default: {
       const value = control.default as number[];
       if (control.color) {
