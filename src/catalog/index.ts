@@ -104,6 +104,7 @@ import { waterShaders } from "./shaders/water.js";
 import { glassShaders } from "./shaders/glass.js";
 import { mirrorShaders } from "./shaders/mirror.js";
 import { iridescentShaders } from "./shaders/iridescent.js";
+import { pathShaders } from "./shaders/paths.js";
 import { webShaders } from "./shaders/web.js";
 import { webEffects } from "./web.js";
 import { promoShaders } from "./shaders/promo.js";
@@ -167,7 +168,7 @@ export {
 } from "./camera.js";
 export { controlSchema, controlsSchema, controlUnit, type JsonSchema, type SchemaOptions } from "../shader/schema.js";
 export { SCENE_TEMPLATES, sceneTemplate } from "./templates.js";
-export { FBM, glsl, HASH, NOISE, OKLAB_MIX, PALETTE, ROTATE, SPECTRUM } from "./glsl.js";
+export { FBM, glsl, HASH, NOISE, OKLAB_MIX, PALETTE, PATH, ROTATE, SPECTRUM } from "./glsl.js";
 
 /** The catalog's shader effects. */
 export const SHADER_EFFECTS: readonly ShaderEffect[] = [
@@ -255,6 +256,7 @@ export const SHADER_EFFECTS: readonly ShaderEffect[] = [
   ...glassShaders,
   ...mirrorShaders,
   ...iridescentShaders,
+  ...pathShaders,
   ...webShaders,
   ...promoShaders,
   ...horrorShaders,

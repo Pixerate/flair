@@ -65,6 +65,7 @@ export const EFFECT_MODULES: Record<string, () => Promise<Record<string, unknown
   "shaders/organic": () => import("./shaders/organic.js"),
   "shaders/overlay": () => import("./shaders/overlay.js"),
   "shaders/particles": () => import("./shaders/particles.js"),
+  "shaders/paths": () => import("./shaders/paths.js"),
   "shaders/patterns": () => import("./shaders/patterns.js"),
   "shaders/pixel": () => import("./shaders/pixel.js"),
   "shaders/promo": () => import("./shaders/promo.js"),

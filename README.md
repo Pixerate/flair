@@ -487,6 +487,18 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 }
 ```
 
+#### Paths
+
+A `sampler2D` marked `path` is a path control: the effect draws along a path given at run time.
+
+```glsl
+uniform sampler2D uPath; // @control path default="M 10 80 C 40 10 65 10 95 80" fit=contain margin=0.1 label="Path"
+```
+
+Its value is SVG path data (`d`) or a list of points `[x0, y0, x1, y1, …]` in frame pixels from the top left (a painted stroke, a pointer's route). Path data is placed by `fit`: `contain` (the default) fits its bounds inside the frame, keeping `margin` (a fraction of the shorter side) clear; `cover` fills the frame; `none` reads it in frame pixels. Points are always pixels. The path is flattened, resampled evenly along its length (at most `MAX_PATH_POINTS`, 1024, points; longer paths are spaced further apart rather than refused) and packed into a small float texture, uploaded once per value. The fit happens in the shader, so the path follows resizes. `checkControlValue` refuses a value that is not a path, saying why, and `pathTexture(value)` / `pathPlacement(packed, width, height)` give the packed path and where it lands, for checking it without a GPU.
+
+The catalog's GLSL helpers read it (`PATH` in `src/catalog/glsl.ts`, inlined into the effects that use it): `pathLength(path)`, `pathNearest(path, p)` (distance to the nearest point, how far along it is, which side `p` is on), `pathAt(path, along)` (the point and direction that far along) and `pathHits(path, p, radius, gap, from, to, hits)` (each pass of the path near `p`, for paths that cross themselves). `glass-tube` is built on them. In a control schema a path is a string with `format: "svg-path"` or an array of numbers; strict validators (Ajv's `strict: true`) need that format registered, for example with `pathProblem(d) === null`.
+
 A declared `min=` or `max=` is a limit: `checkControlValue`, the editor's `values.set` and keyframes, and the CLI's `--set` refuse a number beyond it, naming the range. A control that declares neither keeps the default range (0 to 1, or 0 to 10 for `int`) for its slider, and takes any number.
 
 ```ts

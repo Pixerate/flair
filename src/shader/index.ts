@@ -117,6 +117,16 @@ export {
   type ShaderClick,
 } from "./pointer.js";
 export {
+  MAX_PATH_POINTS,
+  PATH_FITS,
+  pathPlacement,
+  pathProblem,
+  pathTexture,
+  type PathFit,
+  type PathTexture,
+  type PathValue,
+} from "./path.js";
+export {
   analyseAudioBuffer,
   AUDIO_BANDS,
   AudioAnalysis,

@@ -1,6 +1,7 @@
 import { controlValue, type ControlDef, type ControlValue } from "./controls.js";
 import { SPECTRUM_BINS } from "./audio.js";
 import { MAX_CLICKS, MAX_TRAIL } from "./pointer.js";
+import { bindPathTexture, type PathValue } from "./path.js";
 import { applyTextureSettings, type TextureSource } from "./textures.js";
 
 /**
@@ -356,6 +357,12 @@ export function drawFrame(
         const texture = (live === undefined ? textures?.texture(v as string) : live) ?? null;
         gl.bindTexture(gl.TEXTURE_2D, texture);
         if (texture && control.texture) applyTextureSettings(gl, control.texture);
+        gl.uniform1i(loc, unit++);
+        break;
+      }
+      case "path": {
+        gl.activeTexture(gl.TEXTURE0 + unit);
+        bindPathTexture(gl, v as PathValue, control.path?.fit ?? "contain", control.path?.margin ?? 0.1);
         gl.uniform1i(loc, unit++);
         break;
       }
