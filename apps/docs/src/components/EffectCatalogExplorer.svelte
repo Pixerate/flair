@@ -4,6 +4,7 @@
   import recentEffects from "../data/recent-effects.generated.json";
   import EffectPreviewCard from "./EffectPreviewCard.svelte";
   import EffectDetail from "./EffectDetail.svelte";
+  import ScrollRow from "./ScrollRow.svelte";
 
   /** Show the section heading (off where the page has its own). */
   export let heading = true;
@@ -207,7 +208,7 @@
 
   <!-- The tags searched by, then tags for what is typed. -->
   {#if tags.length || suggestions.length}
-    <div class="-mx-4 mt-3 flex items-center gap-1.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none]" role="group" aria-label="Tags">
+    <ScrollRow class="mt-3" label="Tags">
       {#each tags as tag (tag)}
         <button class="{chip(true)} !py-1 !text-xs" aria-label="Remove tag {tag}" on:click={() => removeTag(tag)}>
           #{tag} <span class="ml-1 opacity-60" aria-hidden="true">✕</span>
@@ -218,25 +219,25 @@
           #{tag} <span class="ml-0.5 opacity-50">{count}</span>
         </button>
       {/each}
-    </div>
+    </ScrollRow>
   {/if}
 
   <!-- Groups, then the categories of the chosen group. -->
-  <div class="-mx-4 mt-4 flex gap-1.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none]" role="group" aria-label="Groups">
+  <ScrollRow class="mt-4" label="Groups">
     {#each groups as g}
       <button class={chip(group === g)} aria-pressed={group === g} on:click={() => pickGroup(g)}>
         {g} <span class="ml-0.5 opacity-50">{counts[g]}</span>
       </button>
     {/each}
-  </div>
+  </ScrollRow>
   {#if categories.length > 1}
-    <div class="-mx-4 mt-2 flex gap-1.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none]" role="group" aria-label="{group} categories">
+    <ScrollRow class="mt-2" label="{group} categories">
       {#each ["all" as const, ...categories] as c}
         <button class="{chip(category === c)} !py-1 !text-xs" aria-pressed={category === c} on:click={() => (category = c)}>
           {c === "all" ? `All ${group.toLowerCase()}` : c}
         </button>
       {/each}
-    </div>
+    </ScrollRow>
   {/if}
 
   {#if results.length === 0}

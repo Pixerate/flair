@@ -3,6 +3,7 @@
   import { sharedThumbnailPool, SvgPlayer, ThumbnailPool, type ThumbnailHandle } from "@pixerate/flair";
   import { CAMERA_PREVIEW_SOURCE, cameraPreviewValues, effectDefaults, renderVectorEffect, SAMPLE_IMAGES } from "@pixerate/flair/catalog";
   import { loadEffect, type EffectMeta } from "@pixerate/flair/catalog/lazy";
+  import { abPictures } from "../lib/abPictures";
   import { showsOverPicture } from "../lib/overPicture";
 
   export let effectMeta: EffectMeta;
@@ -51,7 +52,8 @@
       const effect = await loadEffect(effectMeta.id);
       if (!visible) return cleanup();
       if (effect.kind === "shader") {
-        shaderHandle = poolFor(effect.transparent).register(canvasEl, effect.source, effectDefaults(effect), (ok) => (webglFailed = !ok));
+        const values = effectDefaults(effect);
+        shaderHandle = poolFor(effect.transparent).register(canvasEl, effect.source, { ...values, ...abPictures(effect, values) }, (ok) => (webglFailed = !ok));
         shaderHandle.setHovered(hovered);
       } else if (effect.kind === "camera") {
         // A camera move previews on the sample landscape, its view worked out each frame.
