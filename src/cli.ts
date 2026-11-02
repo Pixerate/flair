@@ -34,9 +34,9 @@ program
 // ==========================================
 program
   .command('controls <shaderPath>')
-  .description('Inspect and parse @control declarations in a WebGL shader file')
+  .description('Inspect and parse @control declarations in a WebGL shader file, or the {{control}} placeholders of a vector effect (.svg, or .json holding an SvgMotion)')
   .option('--json', 'Output controls as JSON', false)
-  .action((shaderPath, options) => {
+  .action(async (shaderPath, options) => {
     const fullPath = path.resolve(process.cwd(), shaderPath);
     if (!fs.existsSync(fullPath)) {
       console.error(`Error: Shader file not found at: ${fullPath}`);
@@ -44,6 +44,8 @@ program
     }
 
     const source = fs.readFileSync(fullPath, 'utf-8');
+    const ext = path.extname(fullPath).toLowerCase();
+    if (ext === '.svg' || ext === '.json') return vectorControlsReport(shaderPath, source, ext, options.json);
     const controls = parseControls(source);
 
     if (options.json) {
@@ -64,6 +66,47 @@ program
       );
     }
   });
+
+/**
+ * `flair controls` for a vector effect: its declared controls, and what keeps
+ * it from drawing (bad declarations, and the picture checked with its
+ * defaults filled in). Exits 1 when there is anything to fix.
+ */
+async function vectorControlsReport(file: string, text: string, ext: string, json: boolean) {
+  const { renderVectorEffect, vectorControlIssues, vectorControls } = await import('./catalog/index.js');
+  const { svgMotionIssues } = await import('./vector/index.js');
+  let motion: any;
+  try {
+    const parsed = ext === '.svg' ? { svg: text } : JSON.parse(text);
+    motion = parsed && typeof parsed === 'object' && parsed.motion ? parsed.motion : parsed;
+  } catch (err: any) {
+    console.error(`Error: ${path.basename(file)} is not JSON (${err.message}); give an SvgMotion ({ "svg": "<svg …>", "animate": [...] }) or an .svg file.`);
+    process.exit(1);
+  }
+  const drawable = !!motion && typeof motion === 'object' && typeof motion.svg === 'string';
+  const controls = drawable ? vectorControls(motion) : [];
+  // The picture is checked with its defaults filled in, as it is drawn.
+  const filled = drawable ? renderVectorEffect({ motion } as any, {}) : undefined;
+  const undeclared = [...new Set([...JSON.stringify(filled ?? {}).matchAll(/\{\{\s*([A-Za-z_]\w*)\s*\}\}/g)].map((m) => m[1]))];
+  const issues = filled
+    ? [
+        ...vectorControlIssues(motion),
+        ...undeclared.map((name) => `{{${name}}} is never declared: declare it once, like {{${name}: float default=1}} (or color, int, bool, text)`),
+        ...svgMotionIssues(filled),
+      ]
+    : svgMotionIssues(motion);
+  if (json) console.log(JSON.stringify({ controls, issues }, null, 2));
+  else {
+    if (!controls.length) console.log(`No {{control}} declarations found in ${path.basename(file)}.`);
+    else console.log(`Controls in ${path.basename(file)} (${controls.length}):`);
+    for (const c of controls) {
+      const defVal = Array.isArray(c.default) ? `[${c.default.join(', ')}]` : JSON.stringify(c.default);
+      console.log(`  • ${c.name} (${c.color ? 'color' : c.type}): "${c.label}" | default=${defVal}${c.type === 'float' || c.type === 'int' ? ` | range=[${c.min}, ${c.max}]` : ''}`);
+    }
+    if (issues.length) console.error(`\nTo fix (${issues.length}):\n${issues.map((i) => `  • ${i}`).join('\n')}`);
+  }
+  if (issues.length) process.exit(1);
+}
 
 program
   .command('html <shaderPath>')
@@ -716,6 +759,39 @@ templateCmd
       }
     } catch (err: any) {
       console.error(`Error filling template: ${err.message}`);
+      process.exit(1);
+    }
+  });
+
+// ==========================================
+// Agent Skills
+// ==========================================
+const skillsCmd = program
+  .command('skills')
+  .description('The agent skills Flair ships, for coding agents (Claude Code, Cursor…) writing code that uses Flair');
+
+skillsCmd
+  .command('list')
+  .description('List the skills and what each is for')
+  .action(async () => {
+    const { FLAIR_SKILLS, DEFAULT_SKILLS_DIR } = await import('./skills.js');
+    for (const s of FLAIR_SKILLS) console.log(`  • ${s.name}: ${s.description}`);
+    console.log(`\nCopy them into this project with: flair skills install (into ${DEFAULT_SKILLS_DIR}; --dir for another folder)`);
+  });
+
+skillsCmd
+  .command('install')
+  .description('Copy the skills into this project, so a coding agent finds them (default .claude/skills; run it again after upgrading Flair)')
+  .option('--dir <dir>', 'Folder to copy them into, relative to here', '.claude/skills')
+  .option('--skill <name>', 'Only this skill (repeatable): flair-use or flair-author', collect, [])
+  .action(async (options) => {
+    try {
+      const { installSkills } = await import('./skills.js');
+      const result = installSkills({ dir: options.dir, skills: options.skill });
+      const count = (status: string) => result.files.filter((f) => f.status === status).length;
+      console.log(`Installed ${result.skills.join(' and ')} into ${result.dir}: ${count('added')} added, ${count('updated')} updated, ${count('unchanged')} unchanged.`);
+    } catch (err: any) {
+      console.error(`Error installing skills: ${err.message}`);
       process.exit(1);
     }
   });
