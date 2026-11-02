@@ -606,16 +606,17 @@ vec2 strandDrop(float fall, float y) {
   float head = smoothstep(0.0, 0.01, below) * exp(-below * 30.0) * (1.0 - smoothstep(0.8, 1.0, fall));
   return vec2(lit, head);
 }
-// One layer of strands: a column of light per cell across, its brightness drifting slowly along it.
-// x its brightness, y how much of the cell it covers so far.
+// One layer of strands: a thin line of light per cell across, its brightness drifting slowly along it.
+// x its brightness, y how much of the cell it covers so far: just the line, until the letter fills in.
 vec2 strandLayer(vec2 m, float count, float seed, float t, float stage) {
   float u = m.x * count;
   float id = floor(u) + seed;
-  float across = pow(sin(3.14159 * fract(u)), 0.6);
+  float profile = sin(3.14159 * fract(u));
+  float line = profile * profile * profile;
   float along = vnoise(vec2(id * 7.31, m.y * (2.0 + 3.0 * hash12(vec2(id, seed))) - t * (0.6 + hash12(vec2(seed, id)))));
   vec2 drop = strandDrop(strandFall(id, stage), m.y);
-  float light = along * (0.35 + 0.65 * across) * (0.3 + 0.7 * hash12(vec2(id, 3.7)));
-  return vec2(light * drop.x + 1.5 * drop.y * across, drop.x * (0.35 + 0.65 * across));
+  float light = along * (0.2 + 0.8 * profile * sqrt(profile)) * (0.3 + 0.7 * hash12(vec2(id, 3.7)));
+  return vec2(light * drop.x + 1.5 * drop.y * line, drop.x * line);
 }
 
 // The strands' colour at strand coordinate s (across) and height y, both in text-picture units, and in
@@ -625,8 +626,11 @@ vec3 strandColor(float s, float y, float n, float t, float stage, out float cove
   vec2 a = strandLayer(m, n, 0.0, t, stage);
   vec2 b = strandLayer(m, n * 2.3, 17.0, t * 1.3, stage);
   vec2 c = strandLayer(m, n * 5.1, 41.0, t * 0.8, stage);
-  float strands = 0.45 * a.x + 0.35 * b.x + 0.3 * c.x;
-  cover = 1.0 - (1.0 - a.y) * (1.0 - b.y) * (1.0 - c.y);
+  // The strands show alone, a little brighter, while they fall; once every strand here has landed, the
+  // letter fills in behind them.
+  float settled = smoothstep(0.7, 1.0, stage);
+  float strands = (0.58 * a.x + 0.45 * b.x + 0.39 * c.x) * (1.5 - 0.5 * settled);
+  cover = max(1.0 - (1.0 - a.y) * (1.0 - b.y) * (1.0 - c.y), settled);
   // Broad bright and dark zones, so whole runs of strands dim together down the letters.
   float zone = vnoise(vec2(s * 9.0, y * 1.6 - t * 0.35)) * 0.7 + 0.3 * vnoise(vec2(s * 23.0 + 5.0, y * 2.4 + t * 0.2));
   zone = smoothstep(0.2, 0.8, zone);
