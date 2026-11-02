@@ -37,7 +37,7 @@ import {
   imageRipple,
   transitions,
 } from "./shaders/image.js";
-import { blackHole, bokeh, godRays, lightRibbons, lightStrandText, lightWaves, nebula, neonRipple, sparkles, starfield, tarotReveal } from "./shaders/light.js";
+import { blackHole, bokeh, godRays, ledNet, lightRibbons, lightStrandText, lightWaves, nebula, neonRipple, sparkles, starfield, tarotReveal } from "./shaders/light.js";
 import { caustics, flames, lavaLamp, marble, plasma, smoke } from "./shaders/organic.js";
 import { barberStripes, chevronTunnel, dotWave, hexPulse, kaleidoscope, memphisPattern, moire, neonCircuit, truchet, voronoi } from "./shaders/patterns.js";
 import { interactionEffects } from "./interaction.js";
@@ -201,6 +201,7 @@ export const SHADER_EFFECTS: readonly ShaderEffect[] = [
   lightRibbons,
   lightWaves,
   lightStrandText,
+  ledNet,
   tarotReveal,
   ...lightingShaders,
   starfield,

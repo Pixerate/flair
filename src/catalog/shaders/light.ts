@@ -658,3 +658,97 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     { name: "Fine", values: { uStrands: 2, uContrast: 1.3 } },
   ],
 };
+
+export const ledNet: ShaderEffect = {
+  kind: "shader",
+  id: "led-net",
+  name: "LED net",
+  description:
+    "A picture shown through a net of tiny LEDs draped in folds like fabric: each light glows with a cross-shaped star flare, mostly in one cool tint with drifting patches of rainbow colour, dark parts of the picture leaving the lights off so shapes stand out as silhouettes.",
+  category: "image",
+  video: "filter",
+  tags: ["image", "led", "light", "grid", "sparkle", "stars", "fabric", "glow", "neon", "display"],
+  source: glsl(
+    `// LED net: a grid of point lights on folded fabric, each lit by the picture under it, with star-filter flares.
+uniform sampler2D uImage;   // @control wrap=clamp default=${SAMPLE_IMAGES.portrait} label="Image"
+uniform vec3 uTint;         // @control color default=#2A8CFF label="Tint"
+uniform float uImageColour; // @control min=0 max=1 default=0.2 label="Picture colour"
+uniform float uRainbow;     // @control min=0 max=1 default=0.5 label="Rainbow patches"
+uniform float uPitch;       // @control min=6 max=48 default=26 label="Light spacing (px)"
+uniform float uLightSize;   // @control min=0.3 max=2 default=1 label="Light size"
+uniform float uFlare;       // @control min=0 max=2 default=1 label="Star flare"
+uniform float uDrape;       // @control min=0 max=1 default=0.6 label="Folds"
+uniform float uThreshold;   // @control min=0 max=0.8 default=0.12 label="Cut-off"
+uniform float uBacklight;   // @control min=0 max=1 default=0.06 label="Picture behind"
+uniform float uTwinkle;     // @control min=0 max=1 default=0.4 label="Twinkle"
+uniform float uSpeed;       // @control min=0 max=1 default=0.2 label="Speed"
+${BACKDROP_CONTROLS}`,
+    HASH,
+    NOISE,
+    PICTURE,
+    `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  float t = iTime * uSpeed;
+  vec2 uv0 = fragCoord / iResolution.xy;
+  // The fabric: vertical folds swaying slowly, and rows sagging between them. The grid lives on the
+  // fabric (q); where a fold turns away the lights crowd together and dim.
+  float y = fragCoord.y / iResolution.y;
+  float k = 9.0 / iResolution.y;
+  float phase = fragCoord.x * k + 1.2 * sin(y * 2.3 + t * 1.3) + 0.6 * sin(y * 5.1 - t);
+  float amp = uDrape * 0.85 / k;
+  vec2 q = fragCoord + vec2(amp * sin(phase), uPitch * 0.8 * uDrape * sin(fragCoord.x * k * 0.6 + y * 1.7 + t));
+  float facing = 1.0 + uDrape * 0.85 * cos(phase);
+  float shade = clamp(0.25 + 0.75 * facing, 0.15, 1.6);
+
+  vec2 g = q / uPitch;
+  vec2 cell = floor(g);
+  float r = uLightSize * uPitch * 0.08 + 0.6;
+  float len = uFlare * uPitch * 0.4;
+  vec3 light = vec3(0.0);
+  // This light and its eight neighbours: a flare reaches less than a cell.
+  for (int j = -1; j <= 1; j++) {
+    for (int i = -1; i <= 1; i++) {
+      vec2 c = cell + vec2(float(i), float(j));
+      vec2 centre = c + 0.5 + 0.08 * (hash22(c) - 0.5);
+      vec2 dq = (g - centre) * uPitch;
+      vec2 d = vec2(dq.x / max(facing, 0.15), dq.y);
+      // Lit by the picture where the light sits; dark parts of the picture switch it off.
+      vec3 pic = pictureCover(uImage, (fragCoord - d) / iResolution.xy);
+      float lum = dot(pic, vec3(0.299, 0.587, 0.114));
+      float on = smoothstep(uThreshold, uThreshold + 0.2, lum) * (0.35 + 0.9 * lum);
+      if (on < 0.01) continue;
+      float tw = 1.0 - uTwinkle * 0.6 * (0.5 + 0.5 * sin(t * 9.0 + hash12(c + 4.1) * 40.0));
+      vec3 col = mix(uTint * (0.7 + 0.6 * lum), pic * 1.4, uImageColour);
+      // Patches of the net running rainbow colours, drifting across it.
+      float rainbow = smoothstep(0.58, 0.78, vnoise(c * 0.11 + vec2(t * 0.6, -t * 0.3))) * uRainbow;
+      vec3 hue = 0.5 + 0.5 * cos(6.28318 * (hash12(c + 7.7) + vec3(0.0, 0.33, 0.67)));
+      col = mix(col, hue * 1.2, rainbow);
+      float energy = on * tw * shade;
+      // A bright core, a soft halo, and the star filter's diagonal cross.
+      float dd = dot(d, d);
+      float core = exp(-dd / (r * r));
+      float halo = exp(-dd / (r * r * 6.0)) * 0.3;
+      vec2 a = vec2(d.x + d.y, d.y - d.x) * 0.7071;
+      float star = 0.0;
+      if (len > 0.0) {
+        star = exp(-abs(a.y) / 0.7) * exp(-abs(a.x) / len) + exp(-abs(a.x) / 0.7) * exp(-abs(a.y) / len);
+      }
+      light += energy * (col * (1.8 * core + halo + 0.7 * star) + vec3(1.0) * 1.1 * exp(-dd / (r * r * 0.2)));
+    }
+  }
+  // The scene behind the net, faintly lit in the tint.
+  vec4 back = pictureCoverRGBA(uImage, uv0);
+  vec3 col = back.rgb * uBacklight * mix(vec3(1.0), uTint * 1.5, 0.75) + light * (1.0 - 0.2 * exp(-length(light)));
+  // Tone-mapped on the brightest channel, so bright blue stays blue and only the hearts go white.
+  float peak = max(col.r, max(col.g, col.b));
+  col *= (1.0 - exp(-peak * 2.2)) / max(peak, 1e-4);
+  fragColor = vec4(col, max(back.a, clamp(length(light), 0.0, 1.0)));
+}`,
+  ),
+  presets: [
+    { name: "Full colour", values: { uImageColour: 1, uRainbow: 0.15 } },
+    { name: "Rainbow", values: { uRainbow: 1, uTint: [0.55, 0.3, 1] } },
+    { name: "Flat grid", values: { uDrape: 0, uTwinkle: 0.2 } },
+    { name: "Fine", values: { uPitch: 10, uLightSize: 0.8, uFlare: 0.7 } },
+    { name: "Warm", values: { uTint: [1, 0.55, 0.2], uRainbow: 0.2 } },
+  ],
+};
