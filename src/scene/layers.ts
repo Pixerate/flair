@@ -18,8 +18,28 @@ export interface SubjectSlot {
   slot: string;
 }
 
-/** A layer's subject: written in the scene, or a slot the host fills. */
-export type LayerSubject = SceneSubject | SubjectSlot;
+/**
+ * Artwork from the host's library, by reference: `{ "asset": "pixerate:cat-heart" }`.
+ * The host's {@link SubjectResolver} turns the reference into an SVG or a
+ * picture when the scene is planned, played or recorded; Flair knows nothing
+ * of the library it comes from.
+ */
+export interface SubjectAsset {
+  asset: string;
+}
+
+/** What a {@link SubjectResolver} gives for an asset: an SVG (markup or a URL) or a picture's URL. */
+export type ResolvedAsset = { svg: string } | { image: string };
+
+/**
+ * The host's way of turning an asset reference (`provider:id`, by
+ * convention) into artwork. It returns `undefined` (or throws) for a
+ * reference it does not know; Flair reports that rather than drawing nothing.
+ */
+export type SubjectResolver = (ref: string) => ResolvedAsset | undefined | Promise<ResolvedAsset | undefined>;
+
+/** A layer's subject: written in the scene, a slot the host fills, or an asset the host resolves. */
+export type LayerSubject = SceneSubject | SubjectSlot | SubjectAsset;
 
 /**
  * What a host fills a slot with: anything a scene could have written, or a
@@ -113,6 +133,12 @@ export const TRANSITION_CONTROLS = { from: 'uFrom', to: 'uTo', progress: 'uProgr
 
 export const isSlot = (subject: unknown): subject is SubjectSlot =>
   !!subject && typeof subject === 'object' && typeof (subject as SubjectSlot).slot === 'string';
+
+export const isAsset = (subject: unknown): subject is SubjectAsset =>
+  !!subject && typeof subject === 'object' && typeof (subject as SubjectAsset).asset === 'string';
+
+/** What an asset reference looks like: no spaces, at most 200 characters (`provider:id` by convention). */
+export const ASSET_REF = /^\S{1,200}$/;
 
 /** The kind of a scene subject (`image`, `video`, `svg`, `text`), or undefined when it is none of them. */
 export function subjectKind(subject: unknown): (typeof SUBJECT_KINDS)[number] | undefined {

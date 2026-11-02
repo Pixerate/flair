@@ -208,6 +208,41 @@ const PRIMITIVE_LIST: Primitive[] = [
   },
   {
     descriptor: {
+      id: "entrance.slap",
+      name: "Slap on",
+      kind: "entrance",
+      description:
+        "Slaps down like a sticker: starts `from` times its size and turned `turn` degrees, comes down past full size with a counter-twist over the first 48%, bounces up a touch and settles straight, fading in over the first 25%.",
+      appliesTo: ANY,
+      params: [
+        { name: "from", type: "float", label: "Starting scale", default: 2.2, min: 1, max: 4, step: 0.1, unit: "×" },
+        { name: "turn", type: "float", label: "Starting turn", default: 14, min: -45, max: 45, step: 1, unit: "°" },
+      ],
+      ms: 600,
+      ease: ENTRANCE_EASE,
+      needsBox: true,
+    },
+    expand(ctx) {
+      const c = ctx.centre();
+      const w = ctx.wrap("slap");
+      const turn = ctx.values.turn as number;
+      // [share of the time, scale, turn]: down past its size, a small bounce, then still.
+      const keys: readonly (readonly [number, number, number])[] = [
+        [0, ctx.values.from as number, turn],
+        [0.48, 0.9, -turn * 0.4],
+        [0.65, 1.06, -turn * 0.15],
+        [1, 1, 0],
+      ];
+      const pose = (s: number, a: number) => `${rotateAbout(c, a)} ${scaleAbout(c, s)}`;
+      ctx.add({ id: w, ...ctx.timing(0, 0.25, ENTRANCE_EASE), attrs: { opacity: [0, 1] } });
+      keys.slice(1).forEach(([at, s, a], i) => {
+        const [was, ws, wa] = keys[i]!;
+        ctx.add({ id: w, ...ctx.timing(was, at, i === 0 ? EXIT_EASE : MOVE_EASE), attrs: { transform: [pose(ws, wa), pose(s, a)] } });
+      });
+    },
+  },
+  {
+    descriptor: {
       id: "entrance.grow",
       name: "Grow in",
       kind: "entrance",

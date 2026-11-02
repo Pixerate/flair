@@ -48,6 +48,7 @@ A shot's `layers` are drawn over (and under) its board:
 
 - **What:** a catalog shader or vector effect (`effect`, with `preset` and `values`), a custom shader (`source`, GLSL with `mainImage` and `// @control` uniforms), or a bare picture (only a `subject`).
 - **On what:** `subject` is `{ image }`, `{ video }` (a URL), `{ svg }`, `{ text }`, or `{ slot: "name" }` for the host to fill at play or record time.
+- **Artwork from a library:** `subject` can be `{ asset: "provider:id" }`, resolved by the host's `resolveAsset(ref)` (returning `{ svg }` or `{ image }`), passed to `scenePlan`, `mountScene`, `recordScene`, `standaloneSceneHtml`, `mountEffect` and `applySceneTool`. Flair knows no library itself; an asset it cannot resolve is reported and draws nothing.
 - **Where:** without `rect` or `ids` it fills the screen; with a `rect` (board units) or `ids` (elements, with `padding`) it sits on the board and moves with the camera. `role` stacks it: `background` under the elements, `subject` over them on the board (the default when placed), `overlay` over everything but the title and caption.
 - **When:** `from` and `until` are ms after the shot starts, or `{ shots: n }` for the start of a later shot; a layer lasts until the next shot by default. `opacity` and `fade` (ms) soften it.
 

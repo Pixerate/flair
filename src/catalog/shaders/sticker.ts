@@ -153,6 +153,97 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   ],
 };
 
+export const stickerCutout: ShaderEffect = {
+  kind: "shader",
+  id: "sticker-cutout",
+  name: "Sticker cutout",
+  description: "Any picture or SVG with transparency turned into a still die-cut sticker: its own colours inside a white border grown from its outline, a soft drop shadow, a gloss band and, if wanted, a touch of holographic foil. Made for dropping artwork into a page or scene.",
+  category: "sticker",
+  video: "none",
+  tags: ["sticker", "die-cut", "static", "cutout", "border", "shadow", "gloss", "artwork", "svg", "logo"],
+  transparent: true,
+  source: glsl(
+    `// Sticker cutout: the picture's own colours, a white die-cut border grown from its alpha, a soft shadow and gloss.
+uniform sampler2D uMask;         // @control filter=mipmap wrap=clamp default=${SAMPLE_IMAGES.heart} label="Artwork (with transparency)"
+uniform vec3 uBorderColor;       // @control color default=#FFFFFF label="Border"
+uniform float uBorder;           // @control min=0 max=0.08 default=0.03 label="Border width"
+uniform float uSize;             // @control min=0.3 max=1 default=0.78 label="Size"
+uniform float uTurn;             // @control min=-30 max=30 default=-6 label="Turn (degrees)"
+uniform float uShadow;           // @control min=0 max=1 default=0.4 label="Shadow"
+uniform float uGloss;            // @control min=0 max=1 default=0.5 label="Gloss"
+uniform float uFoil;             // @control min=0 max=1 default=0 label="Holo foil"
+uniform vec3 uBackground;        // @control color default=#EEF0F6 label="Background"
+uniform float uBackgroundAlpha;  // @control min=0 max=1 default=0 label="Background opacity"`,
+    OVER,
+    `// The artwork's alpha at uv, nothing outside the picture (so an opaque edge does not smear).
+float maskAt(vec2 uv, float lod) {
+  vec2 inside = step(vec2(0.0), uv) * step(uv, vec2(1.0));
+  return textureLod(uMask, uv, lod).a * inside.x * inside.y;
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec2 res = iResolution.xy;
+  float px = min(res.x, res.y);
+  vec2 ts = vec2(textureSize(uMask, 0));
+  float ia = ts.x / max(ts.y, 1.0);
+  // The picture's box, fitted to the frame with room round it for the border and shadow, turned uTurn degrees.
+  float w = min(res.x * uSize, res.y * uSize * ia);
+  vec2 hs = vec2(w, w / ia) * 0.5;
+  float a = radians(uTurn);
+  mat2 turn = mat2(cos(a), sin(a), -sin(a), cos(a));
+  vec2 p = turn * (fragCoord - 0.5 * res);
+  vec2 uv = p / (2.0 * hs) + 0.5;
+  vec2 rb = uBorder * px / (2.0 * hs);
+
+  // Die cut: the shape grown by the border width (its furthest reach in 16 directions, at two radii,
+  // the outer read blurrier so the cut comes out round rather than scalloped).
+  float a0 = maskAt(uv, 0.0);
+  float reach = a0;
+  for (int i = 0; i < 16; i++) {
+    float ang = float(i) * 0.392699;
+    vec2 d = vec2(cos(ang), sin(ang)) * rb;
+    reach = max(reach, maskAt(uv + d * 0.85, 2.0));
+    reach = max(reach, maskAt(uv + d * 0.45, 1.0));
+  }
+  float cut = smoothstep(0.2, 0.5, reach);
+
+  // Shadow: the grown shape blurred (a coarse mip level), dropped down the page.
+  vec2 drop = turn * vec2(0.0, -0.028 * px) / (2.0 * hs);
+  float sh = 0.0;
+  for (int i = 0; i < 8; i++) {
+    float ang = float(i) * 0.785398 + 0.39;
+    sh += maskAt(uv + drop + vec2(cos(ang), sin(ang)) * rb * 1.3, 3.5);
+  }
+  sh = smoothstep(0.0, 0.45, sh / 8.0) * uShadow;
+
+  // The face: the artwork's own colour, unpremultiplied, laid on the border.
+  vec4 tex = textureLod(uMask, clamp(uv, 0.0, 1.0), 0.0);
+  vec3 art = tex.rgb / max(tex.a, 1e-3);
+  vec2 sn = p / max(hs.x, hs.y);
+  // Foil: a soft rainbow across the face, blended by overlay so the art keeps its darks.
+  vec3 holo = 0.5 + 0.5 * cos(6.28318 * (dot(sn, vec2(0.35, 0.6)) + vec3(0.0, 0.33, 0.67)));
+  vec3 lit = mix(2.0 * art * holo, 1.0 - 2.0 * (1.0 - art) * (1.0 - holo), step(0.5, art));
+  art = mix(art, lit, uFoil * 0.7);
+  // The border: vinyl, a little darker at its cut edge and faintly foiled.
+  vec3 border = uBorderColor * (1.0 - 0.1 * (1.0 - smoothstep(0.22, 0.6, reach))) * mix(vec3(1.0), 0.92 + 0.08 * holo, uFoil);
+  vec3 sticker = mix(border, art, tex.a);
+  // Gloss: light from the top left that stops short, as on vinyl.
+  float band = smoothstep(-0.15, 0.55, dot(sn, normalize(vec2(-0.55, 1.0)))) * (1.0 - smoothstep(0.55, 0.62, dot(sn, normalize(vec2(-0.55, 1.0)))));
+  sticker += uGloss * (0.32 * band + 0.05);
+
+  vec4 acc = vec4(uBackground * uBackgroundAlpha, uBackgroundAlpha);
+  acc = over(acc, vec3(0.0), sh * (1.0 - cut));
+  acc = over(acc, clamp(sticker, 0.0, 1.0), cut);
+  fragColor = unpremultiply(acc);
+}`,
+  ),
+  presets: [
+    { name: "Logo", values: { uMask: SAMPLE_IMAGES.logo, uTurn: 4, uBorder: 0.025 } },
+    { name: "Holo heart", values: { uMask: SAMPLE_IMAGES.heart, uFoil: 0.8, uTurn: -10 } },
+    { name: "Word on a card", values: { uMask: textImage("NICE!"), uBackgroundAlpha: 1, uBackground: [0.13, 0.14, 0.18], uTurn: 3, uBorder: 0.04 } },
+  ],
+};
+
 export const stickerPeelReveal: ShaderEffect = {
   kind: "shader",
   id: "sticker-peel-reveal",
@@ -227,4 +318,4 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 };
 
 /** Stickers in shaders: holographic foil and peeling. */
-export const stickerShaders: ShaderEffect[] = [holoFoilSticker, stickerPeelReveal];
+export const stickerShaders: ShaderEffect[] = [holoFoilSticker, stickerCutout, stickerPeelReveal];

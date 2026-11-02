@@ -1,4 +1,4 @@
-import type { SceneSubject } from './layers.js';
+import type { SceneSubject, SubjectResolver } from './layers.js';
 import { scenePlan } from './plan.js';
 import type { Scene } from './types.js';
 
@@ -10,6 +10,8 @@ export interface StandaloneSceneOptions {
   subjects?: Record<string, SceneSubject>;
   /** The rate the camera is keyed at (default 30). */
   fps?: number;
+  /** The host's asset library: `{ "asset": ref }` subjects are written into the page as the artwork it gives. */
+  resolveAsset?: SubjectResolver;
 }
 
 /** JSON that is safe inside a `<script>`: a `</script>` or `<!--` in a value cannot end it. */
@@ -25,7 +27,7 @@ const scriptJson = (value: unknown) => JSON.stringify(value).replace(/</g, '\\u0
  * CORS, from another site).
  */
 export async function standaloneSceneHtml(scene: Scene, options: StandaloneSceneOptions = {}): Promise<string> {
-  const plan = await scenePlan(scene, { ...(options.subjects ? { subjects: options.subjects } : {}), ...(options.fps ? { fps: options.fps } : {}) });
+  const plan = await scenePlan(scene, { ...(options.subjects ? { subjects: options.subjects } : {}), ...(options.fps ? { fps: options.fps } : {}), ...(options.resolveAsset ? { resolveAsset: options.resolveAsset } : {}) });
   const { SCENE_RUNTIME } = await import('./runtime.generated.js');
   const { stage } = plan;
   const title = scene.title || scene.name;

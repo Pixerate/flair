@@ -1,4 +1,5 @@
 import type { SvgAnimation } from "../vector/motion.js";
+import { pathBounds } from "../vector/morph.js";
 import { textWidthEm } from "./images.js";
 import type { VectorEffect } from "./types.js";
 
@@ -75,13 +76,25 @@ function bolt(cx: number, cy: number, size: number): string {
   return outline(pts.map(([x, y]) => [cx + x * k, cy + y * k] as const));
 }
 
+/** A pill `w` wide and `h` high, centred on (`cx`, `cy`). */
+function pill(cx: number, cy: number, w: number, h: number): string {
+  const r = h / 2;
+  const x0 = r1(cx - w / 2 + r);
+  const x1 = r1(cx + w / 2 - r);
+  return `M${x0} ${r1(cy - r)} H${x1} A${r1(r)} ${r1(r)} 0 0 1 ${x1} ${r1(cy + r)} H${x0} A${r1(r)} ${r1(r)} 0 0 1 ${x0} ${r1(cy - r)} Z`;
+}
+
 /**
  * The shapes a sticker control picks between (0 burst, 1 heart, 2 star, 3
- * circle), centred on (`cx`, `cy`) about `r` in radius, with where and how
- * wide its label goes.
+ * circle, 4 pill, 5 bolt), centred on (`cx`, `cy`) about `r` in radius, with
+ * where and how wide its label goes.
  */
 function stickerShape(shape: unknown, cx: number, cy: number, r: number) {
   switch (Math.round(Number(shape))) {
+    case 4:
+      return { d: pill(cx, cy, r * 2.3, r * 1.1), labelY: cy, labelW: r * 1.85 };
+    case 5:
+      return { d: bolt(cx, cy, r * 2.2), labelY: cy + r * 0.05, labelW: r * 0.6 };
     case 1:
       return { d: heart(cx, cy, r * 2.15), labelY: cy - r * 0.08, labelW: r * 1.25 };
     case 2:
@@ -531,5 +544,137 @@ export const sealBadge: VectorEffect = {
   },
 };
 
-/** Stickers: slapped on, peeled, holographic, stamped and sealed. */
-export const stickerEffects: VectorEffect[] = [stickerSlap, stickerPeel, holoSticker, stickerSheet, stampBadge, washiTape, sealBadge];
+// ── Still stickers ─────────────────────────────────────────────────────
+
+/*
+ * Stickers that sit still, to drop into a page or a scene: no animation and
+ * no trigger, so a player shows one frame and `svgFrameMarkup` gives the
+ * same picture. Each is turned by `tilt` round its centre, its shadow with it.
+ */
+
+const ALL_SHAPES = `{{shape: int min=0 max=5 default=0 label='Shape (0 burst, 1 heart, 2 star, 3 circle, 4 pill, 5 bolt)'}}`;
+const TILT = `{{tilt: float min=-30 max=30 default=-6 step=1 label='Tilt (degrees)'}}`;
+const SHADOW = `{{shadow: float min=0 max=0.6 default=0.3 step=0.05 label='Shadow'}}`;
+
+/** The drop shadow the still stickers share. */
+const softDrop = (id: string) => `<filter id="${id}" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#000000" flood-opacity="{{shadow}}"/></filter>`;
+
+export const dieCutSticker: VectorEffect = {
+  kind: "vector",
+  id: "die-cut-sticker",
+  name: "Die-cut sticker",
+  description: "A still die-cut sticker with a label: a burst, heart, star, circle, pill or bolt in a thick white border, with a glossy face and a soft shadow, tilted a little. Drops into a page or a scene as it is.",
+  category: "sticker",
+  tags: ["sticker", "static", "die-cut", "badge", "label", "gloss"],
+  presets: [
+    { name: "Hello heart", values: { shape: 1, label: "HI!", sticker: [0.98, 0.33, 0.52], tilt: 8 } },
+    { name: "Ship it pill", values: { shape: 4, label: "SHIP IT", sticker: [0.2, 0.83, 0.6], ink: [0.04, 0.2, 0.15], tilt: -4 } },
+    { name: "Power bolt", values: { shape: 5, label: "", sticker: [1, 0.82, 0.18], tilt: 12, background: [0.13, 0.14, 0.18] } },
+  ],
+  derived: (v) => {
+    const { d, labelY, labelW } = stickerShape(v.shape, 120, 120, 80);
+    const { size, length } = fit(String(v.label).trim() || " ", labelW, 42);
+    return { d, size, length, base: r1(labelY + size * 0.36), turn: `rotate(${r1(Number(v.tilt))} 120 120)` };
+  },
+  motion: {
+    svg: `<svg viewBox="0 0 240 240"><!-- {{label: text default='NEW!' label='Label'}} ${ALL_SHAPES} {{background: color default=#EDE8DF label='Background'}} {{sticker: color default=#FF5A36 label='Sticker'}} {{ink: color default=#FFFFFF label='Label colour'}} {{border: color default=#FFFFFF label='Border'}} ${TILT} ${SHADOW} ${FONT} --><defs>${softDrop("dieCutDrop")}${gloss("dieCutGloss")}</defs><rect width="240" height="240" fill="{{background}}"/><g transform="{{turn}}"><path d="{{d}}" fill="{{border}}" stroke="{{border}}" stroke-width="16" stroke-linejoin="round" filter="url(#dieCutDrop)"/><path d="{{d}}" fill="{{sticker}}"/><text x="120" y="{{base}}" text-anchor="middle" textLength="{{length}}" lengthAdjust="spacingAndGlyphs" font-family="{{font}}" font-size="{{size}}" font-weight="900" fill="{{ink}}">{{label}}</text><path d="{{d}}" fill="url(#dieCutGloss)" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="16" stroke-linejoin="round"/></g></svg>`,
+  },
+};
+
+export const stickerLabel: VectorEffect = {
+  kind: "vector",
+  id: "sticker-label",
+  name: "Sticker label",
+  description: "A still rounded-rectangle label sticker, like one on a laptop lid: a bold title over a small line, in a white border with a glossy face and a soft shadow, tilted a little.",
+  category: "sticker",
+  tags: ["sticker", "static", "label", "laptop", "die-cut", "title", "gloss"],
+  presets: [
+    { name: "Laptop lid", values: { title: "SHIP IT", sub: "SINCE 2024", sticker: [0.2, 0.83, 0.6], ink: [0.04, 0.2, 0.15], background: [0.75, 0.77, 0.8] } },
+    { name: "Midnight", values: { title: "NIGHT OWL", sub: "BUILT AFTER DARK", sticker: [0.16, 0.13, 0.42], ink: [1, 0.84, 0.4], background: [0.07, 0.08, 0.11], tilt: 5 } },
+    { name: "Pill", values: { title: "BETA", sub: "", round: 1, sticker: [1, 0.36, 0.2] } },
+  ],
+  derived: (v) => {
+    const two = String(v.sub).trim() !== "";
+    const title = fit(v.title, 196, two ? 44 : 56);
+    const sub = two ? fit(v.sub, 160, 15) : { size: 1, length: 1 };
+    const gap = two ? 8 : 0;
+    const height = title.size + gap + (two ? sub.size : 0);
+    const titleMid = 110 - height / 2 + title.size / 2;
+    const radius = r1(Math.max(0, Math.min(1, Number(v.round))) * 54);
+    return {
+      titleSize: title.size,
+      titleLength: title.length,
+      titleBase: r1(titleMid + title.size * 0.36),
+      subSize: sub.size,
+      subLength: sub.length,
+      subBase: r1(titleMid + title.size / 2 + gap + sub.size * 0.8),
+      radius,
+      turn: `rotate(${r1(Number(v.tilt))} 160 110)`,
+    };
+  },
+  motion: {
+    svg: `<svg viewBox="0 0 320 220"><!-- {{title: text default='SHIP IT' label='Title'}} {{sub: text default='FLAIR STUDIO' label='Small line (may be empty)'}} {{round: float min=0 max=1 default=0.3 step=0.05 label='Roundness'}} {{background: color default=#E7E5E4 label='Background'}} {{sticker: color default=#6366F1 label='Sticker'}} {{ink: color default=#FFFFFF label='Text colour'}} {{border: color default=#FFFFFF label='Border'}} {{tilt: float min=-30 max=30 default=-4 step=1 label='Tilt (degrees)'}} ${SHADOW} ${FONT} --><defs>${softDrop("labelDrop")}${gloss("labelGloss")}</defs><rect width="320" height="220" fill="{{background}}"/><g transform="{{turn}}"><rect x="52" y="56" width="216" height="108" rx="{{radius}}" fill="{{border}}" stroke="{{border}}" stroke-width="16" stroke-linejoin="round" filter="url(#labelDrop)"/><rect x="52" y="56" width="216" height="108" rx="{{radius}}" fill="{{sticker}}"/><g font-family="{{font}}" font-weight="900" fill="{{ink}}" text-anchor="middle"><text x="160" y="{{titleBase}}" textLength="{{titleLength}}" lengthAdjust="spacingAndGlyphs" font-size="{{titleSize}}">{{title}}</text><text x="160" y="{{subBase}}" textLength="{{subLength}}" lengthAdjust="spacingAndGlyphs" font-size="{{subSize}}" opacity="0.8">{{sub}}</text></g><rect x="52" y="56" width="216" height="108" rx="{{radius}}" fill="url(#labelGloss)"/></g></svg>`,
+  },
+};
+
+/** A speech bubble with its tail at the bottom left, round (`cx`, `cy`), `w` by `h`. */
+function bubble(cx: number, cy: number, w: number, h: number): string {
+  const r = Math.min(h / 2, 34);
+  const [x0, y0, x1, y1] = [cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2];
+  const tail = x0 + w * 0.22;
+  return `M${r1(x0 + r)} ${r1(y0)} H${r1(x1 - r)} Q${r1(x1)} ${r1(y0)} ${r1(x1)} ${r1(y0 + r)} V${r1(y1 - r)} Q${r1(x1)} ${r1(y1)} ${r1(x1 - r)} ${r1(y1)} H${r1(tail + 30)} L${r1(tail - 14)} ${r1(y1 + 34)} L${r1(tail + 4)} ${r1(y1)} H${r1(x0 + r)} Q${r1(x0)} ${r1(y1)} ${r1(x0)} ${r1(y1 - r)} V${r1(y0 + r)} Q${r1(x0)} ${r1(y0)} ${r1(x0 + r)} ${r1(y0)} Z`;
+}
+
+export const speechSticker: VectorEffect = {
+  kind: "vector",
+  id: "speech-sticker",
+  name: "Speech sticker",
+  description: "A still die-cut speech bubble sticker saying a few words, in a white border with a glossy face and a soft shadow, tilted a little.",
+  category: "sticker",
+  tags: ["sticker", "static", "speech", "bubble", "comic", "die-cut", "label"],
+  presets: [
+    { name: "Hey!", values: { words: "HEY!", sticker: [1, 0.86, 0.2], ink: [0.2, 0.12, 0.02] } },
+    { name: "Wow", values: { words: "WOW", sticker: [0.98, 0.33, 0.52], tilt: 8 } },
+    { name: "Night chat", values: { words: "LET'S GO", sticker: [0.24, 0.52, 1], background: [0.08, 0.09, 0.13], tilt: -9 } },
+  ],
+  derived: (v) => {
+    const { size, length } = fit(v.words, 168, 48);
+    return { d: bubble(150, 96, 212, 116), size, length, base: r1(96 + size * 0.36), turn: `rotate(${r1(Number(v.tilt))} 150 110)` };
+  },
+  motion: {
+    svg: `<svg viewBox="0 0 300 220"><!-- {{words: text default='HELLO!' label='Words'}} {{background: color default=#EDE8DF label='Background'}} {{sticker: color default=#FFFFFF label='Bubble'}} {{ink: color default=#111827 label='Words colour'}} {{border: color default=#FFFFFF label='Border'}} {{outline: color default=#111827 label='Bubble outline'}} {{tilt: float min=-30 max=30 default=-5 step=1 label='Tilt (degrees)'}} ${SHADOW} ${FONT} --><defs>${softDrop("speechDrop")}${gloss("speechGloss")}</defs><rect width="300" height="220" fill="{{background}}"/><g transform="{{turn}}"><path d="{{d}}" fill="{{border}}" stroke="{{border}}" stroke-width="18" stroke-linejoin="round" filter="url(#speechDrop)"/><path d="{{d}}" fill="{{sticker}}" stroke="{{outline}}" stroke-width="4" stroke-linejoin="round"/><text x="150" y="{{base}}" text-anchor="middle" textLength="{{length}}" lengthAdjust="spacingAndGlyphs" font-family="{{font}}" font-size="{{size}}" font-weight="900" fill="{{ink}}">{{words}}</text><path d="{{d}}" fill="url(#speechGloss)"/></g></svg>`,
+  },
+};
+
+// ── Sticker wrap ───────────────────────────────────────────────────────
+
+/** The silhouette `sticker-wrap` shows when given none: the heart, 24 units across. */
+const WRAP_DEFAULT = HEART;
+
+export const stickerWrap: VectorEffect = {
+  kind: "vector",
+  id: "sticker-wrap",
+  name: "Sticker wrap",
+  description: "Any outline (SVG path data) made into a still die-cut sticker: fitted to the frame, given a thick white border, a coloured glossy face and a soft shadow, and tilted a little. Give it a logo's or an asset's silhouette.",
+  category: "sticker",
+  tags: ["sticker", "static", "die-cut", "path", "silhouette", "logo", "outline", "gloss"],
+  presets: [
+    { name: "Star", values: { silhouette: star(0, 0, 50, 22), sticker: [1, 0.78, 0.18], tilt: 10 } },
+    { name: "Bolt on dark", values: { silhouette: bolt(0, 0, 100), sticker: [0.42, 0.36, 1], background: [0.08, 0.09, 0.13] } },
+    { name: "Thin cut", values: { cut: 8, sticker: [0.2, 0.83, 0.6], tilt: -2 } },
+  ],
+  derived: (v) => {
+    // Fit the outline's box into the middle of the frame, keeping its shape; the border keeps its width whatever the scale,
+    // and the shadow is cast outside the fitted group so it is not scaled with it.
+    const [x, y, w, h] = pathBounds(String(v.silhouette)) ?? [0, 0, 24, 24];
+    const k = 156 / Math.max(w, h, 1e-6);
+    const place = `translate(${r1(120 - (x + w / 2) * k)} ${r1(120 - (y + h / 2) * k)}) scale(${Math.round(k * 10000) / 10000})`;
+    return { place, stroke: Math.round((Number(v.cut) * 2 * 10000) / k) / 10000, turn: `rotate(${r1(Number(v.tilt))} 120 120)` };
+  },
+  motion: {
+    svg: `<svg viewBox="0 0 240 240"><!-- {{silhouette: text default='${WRAP_DEFAULT}' label='Silhouette (SVG path data)'}} {{background: color default=#EDE8DF label='Background'}} {{sticker: color default=#FF5A36 label='Face'}} {{border: color default=#FFFFFF label='Border'}} {{cut: float min=2 max=20 default=10 step=1 label='Border width'}} ${TILT} ${SHADOW} --><defs>${softDrop("wrapDrop")}${gloss("wrapGloss")}</defs><rect width="240" height="240" fill="{{background}}"/><g transform="{{turn}}"><g filter="url(#wrapDrop)"><path d="{{silhouette}}" transform="{{place}}" fill="{{border}}" stroke="{{border}}" stroke-width="{{stroke}}" stroke-linejoin="round"/></g><g transform="{{place}}"><path d="{{silhouette}}" fill="{{sticker}}"/><path d="{{silhouette}}" fill="url(#wrapGloss)"/></g></g></svg>`,
+  },
+};
+
+/** Stickers: slapped on, peeled, holographic, stamped and sealed, and still ones to drop in. */
+export const stickerEffects: VectorEffect[] = [stickerSlap, stickerPeel, holoSticker, stickerSheet, stampBadge, washiTape, sealBadge, dieCutSticker, stickerLabel, speechSticker, stickerWrap];

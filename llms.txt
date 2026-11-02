@@ -29,7 +29,7 @@
 ## Vector & Motion
 
 - [SVG Motion](https://flair.pixerate.com/vector-motion/svg-motion/): Deterministic vector frame evaluation and playback.
-- [Motion Primitives](https://flair.pixerate.com/vector-motion/motion-primitives/): 23 reusable animation primitives for SVG elements.
+- [Motion Primitives](https://flair.pixerate.com/vector-motion/motion-primitives/): 25 reusable animation primitives for SVG elements.
 
 ## Directing & Scenes
 

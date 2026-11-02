@@ -4,7 +4,7 @@
  */
 
 import { scenePlan, type ScenePlan } from "../scene/plan.js";
-import type { SceneSubject } from "../scene/layers.js";
+import type { SceneSubject, SubjectResolver } from "../scene/layers.js";
 import type { Scene } from "../scene/types.js";
 import { parseColor } from "../shader/controls.js";
 import { checkShutter, type ShutterOptions } from "../export/shutter.js";
@@ -20,16 +20,18 @@ function writtenSubjects(subjects: SceneSlotSubjects | undefined): Record<string
 }
 
 /** A plan from a scene, or the plan itself. */
-async function planOf(scene: Scene | ScenePlan, subjects?: SceneSlotSubjects): Promise<ScenePlan> {
+async function planOf(scene: Scene | ScenePlan, subjects?: SceneSlotSubjects, resolveAsset?: SubjectResolver): Promise<ScenePlan> {
   if ((scene as ScenePlan).version !== undefined && Array.isArray((scene as ScenePlan).layers)) return scene as ScenePlan;
   const given = writtenSubjects(subjects);
-  return scenePlan(scene as Scene, given ? { subjects: given } : {});
+  return scenePlan(scene as Scene, { ...(given ? { subjects: given } : {}), ...(resolveAsset ? { resolveAsset } : {}) });
 }
 
 /** How {@link recordScene} records: like `recordEffect`, with the scene's slots filled by `subjects`. */
 export interface SceneRecordOptions extends ShutterOptions, Pick<RecordOptions, "format" | "fps" | "bitrate" | "alpha" | "background" | "onProgress" | "signal"> {
   /** What fills the scene's slots: `{ productShot: { video: videoEl } }`. */
   subjects?: SceneSlotSubjects;
+  /** The host's asset library, for `{ "asset": ref }` subjects (see `ScenePlanOptions.resolveAsset`). */
+  resolveAsset?: SubjectResolver;
   /** Pixels (default the scene's stage, rounded up to even numbers for videos). */
   width?: number;
   height?: number;
@@ -52,7 +54,7 @@ export interface SceneRecordingPlan extends OutputPlan {
  * is out of range or the browser cannot make the format.
  */
 export async function sceneRecordingPlan(scene: Scene | ScenePlan, options: SceneRecordOptions = {}): Promise<SceneRecordingPlan> {
-  const plan = await planOf(scene, options.subjects);
+  const plan = await planOf(scene, options.subjects, options.resolveAsset);
   const fps = options.fps ?? 30;
   if (!(fps > 0)) throw new Error(`fps must be a number above 0 (it was ${String(options.fps)}).`);
   const start = options.start ?? 0;
@@ -118,6 +120,8 @@ export interface MountSceneOptions extends Omit<SceneCompositorOptions, "canvas"
   autoplay?: boolean;
   /** Start again at the end (default false: rest on the last frame). */
   loop?: boolean;
+  /** The host's asset library, for `{ "asset": ref }` subjects (see `ScenePlanOptions.resolveAsset`). */
+  resolveAsset?: SubjectResolver;
 }
 
 /**
@@ -132,8 +136,9 @@ export interface MountSceneOptions extends Omit<SceneCompositorOptions, "canvas"
  * ```
  */
 export async function mountScene(host: HTMLElement, scene: Scene | ScenePlan, options: MountSceneOptions = {}): Promise<MountedScene> {
-  const plan = await planOf(scene, options.subjects);
-  const compositor = new SceneCompositor(plan, { ...options, exact: false });
+  const { resolveAsset, ...rest } = options;
+  const plan = await planOf(scene, options.subjects, resolveAsset);
+  const compositor = new SceneCompositor(plan, { ...rest, exact: false });
   compositor.canvas.style.cssText = "display:block;width:100%;height:100%;object-fit:contain;";
   host.appendChild(compositor.canvas);
   await compositor.ready();

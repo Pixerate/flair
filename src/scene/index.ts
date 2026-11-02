@@ -3,6 +3,7 @@ export * from './geometry.js';
 export * from './camera.js';
 export * from './cameratrack.js';
 export * from './layers.js';
+export * from './assets.js';
 export * from './timeline.js';
 export * from './moves.js';
 export * from './check.js';

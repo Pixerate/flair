@@ -1,6 +1,6 @@
 ---
 title: Motion Primitives
-description: 23 reusable animation primitives for SVG elements.
+description: 25 reusable animation primitives for SVG elements.
 ---
 
 # Motion Primitives

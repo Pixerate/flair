@@ -7,7 +7,7 @@
  */
 
 import type { Scene } from '../scene/types.js';
-import { applySceneTool, type SceneToolResult } from './tools.js';
+import { applySceneTool, type SceneToolOptions, type SceneToolResult } from './tools.js';
 
 export interface BatchCommand {
   /** Name of the tool to execute (e.g. 'update_shot', 'insert_shots', 'set_rig_widget'; not 'batch_scene'). */
@@ -105,6 +105,7 @@ export function substituteVariables(
 export async function applySceneBatch(
   scene: Scene,
   commands: BatchCommand[],
+  options: SceneToolOptions = {},
 ): Promise<BatchExecutionResult> {
   let currentScene = scene;
   const stepResults = new Map<number, SceneToolResult>();
@@ -139,7 +140,7 @@ export async function applySceneBatch(
       };
     }
 
-    const stepResult = await applySceneTool(currentScene, cmd.tool, resolvedParams);
+    const stepResult = await applySceneTool(currentScene, cmd.tool, resolvedParams, options);
     stepResults.set(stepNumber, stepResult);
     executedSteps.push({
       step: stepNumber,
