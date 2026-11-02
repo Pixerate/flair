@@ -1,10 +1,13 @@
-import { checkEffectProvider, isEffectError, type EffectPixels, type EffectProvider } from "@pixerate/editor/effects";
+import { checkEffectProvider, checkEffectSequence, isEffectError, type EffectPixels, type EffectProvider } from "@pixerate/editor/effects";
 import { getCameraMove } from "../catalog/camera.js";
 import { EFFECTS } from "../catalog/index.js";
+import { SCENE_TEMPLATES } from "../catalog/templates.js";
+import type { Scene } from "../scene/types.js";
 import { EFFECT_META } from "../catalog/lazy.js";
 import { PRIMITIVES } from "../motion/library.js";
 import { installFakeImages, installFakeWebGl, type FakeGl } from "../shader/test-utils.js";
 import { ENDLESS_PLAY_MS } from "./effects.js";
+import { sequenceOf } from "./templates.js";
 import { flairEffects, type SvgRasterizer } from "./index.js";
 
 /** Draws a vector frame as a solid picture: jsdom has no SVG layout. */
@@ -320,6 +323,91 @@ describe("camera moves", () => {
     expect(without.capabilities.supportsCamera).toBe(false);
     expect((await without.list()).some((e) => e.kind === "camera")).toBe(false);
     expect(await failure(() => without.cameraView!("camera-glide", { from: wide, to: close, u: 0.5, ms: 600, stage }))).toMatchObject({ code: "unknown_effect" });
+  });
+});
+
+describe("sequence templates", () => {
+  let provider: EffectProvider;
+  beforeEach(() => {
+    provider = setup().provider;
+  });
+
+  it("lists the catalog's templates with their shots and length, and searches them", async () => {
+    expect(provider.capabilities.supportsTemplates).toBe(true);
+    const list = await provider.listTemplates!();
+    expect(list.map((t) => t.id)).toEqual(SCENE_TEMPLATES.map((t) => t.id));
+    expect(list.find((t) => t.id === "product-reveal")).toMatchObject({ name: "Product reveal", shots: 3, durationMs: expect.any(Number) });
+    expect((await provider.listTemplates!({ query: "before after" })).map((t) => t.id)).toEqual(["before-after"]);
+    expect(await provider.listTemplates!({ limit: 1 })).toHaveLength(1);
+  });
+
+  it("describes slots for a form, without subject defaults", async () => {
+    const reveal = await provider.describeTemplate!("product-reveal");
+    expect(reveal.slots.find((s) => s.name === "product")).toEqual(expect.objectContaining({ type: "image", hasDefault: true }));
+    expect(reveal.slots.find((s) => s.name === "product")).not.toHaveProperty("default");
+    expect(reveal.slots.find((s) => s.name === "holdMs")).toMatchObject({ type: "number", default: 2200, min: 1200, max: 6000, integer: true });
+    expect(await failure(() => provider.describeTemplate!("no-such-template"))).toMatchObject({ code: "unknown_template" });
+  });
+
+  it("fills a template to a sequence of offered effects, camera moves and transitions", async () => {
+    const result = await provider.instantiateTemplate!("product-reveal", { productName: "Orbit", holdMs: 3000, product: { slot: "hero" } }, { name: "orbit-launch" });
+    if (!result.ok) throw new Error(result.errors.join(" "));
+    const { sequence } = result;
+    expect(sequence).toMatchObject({ name: "orbit-launch", title: "Orbit", stage: { width: 1920, height: 1080 } });
+    expect(result.openSlots).toEqual(["hero"]);
+    expect(result.notes).toEqual([]);
+    expect(checkEffectSequence(sequence, await provider.list())).toEqual([]);
+    const [first, second, third] = sequence.shots;
+    expect(first).toMatchObject({ hold: 3000, camera: { framing: { x: 0, y: 0, width: 1920, height: 1080 }, during: "camera-ken-burns" } });
+    expect(first!.layers.map((l) => l.effect)).toEqual(["mesh-gradient", "image-ken-burns"]);
+    expect(first!.layers[1]!.subject).toEqual({ slot: "hero" });
+    expect(second).toMatchObject({ camera: { framing: { x: 520, y: 200, width: 880, height: 495 }, in: "camera-punch-zoom" } });
+    expect(second!.layers[0]!.values).toMatchObject({ name: "Orbit" });
+    expect(third!.transition).toEqual({ effect: "transition-flare-wipe", ms: 900, values: { uColor: "#FF5A36" } });
+  });
+
+  it("refuses values that do not fit, all at once, naming each slot", async () => {
+    const result = await provider.instantiateTemplate!("product-reveal", { holdMs: 99, mystery: 1, accent: "orange" });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.errors).toHaveLength(3);
+    expect(result.errors.join(" ")).toMatch(/holdMs/);
+    expect(result.errors.join(" ")).toMatch(/no slot "mystery"/);
+    expect(await failure(() => provider.instantiateTemplate!("no-such-template"))).toMatchObject({ code: "unknown_template" });
+  });
+
+  it("leaves out what the provider does not offer, saying so in notes", async () => {
+    const without = setup({ kinds: ["shader", "vector", "motion"] }).provider;
+    const result = await without.instantiateTemplate!("product-reveal");
+    if (!result.ok) throw new Error(result.errors.join(" "));
+    expect(result.sequence.shots[0]!.camera).not.toHaveProperty("during");
+    expect(result.notes).toContainEqual(expect.stringContaining('"camera-ken-burns"'));
+    expect(checkEffectSequence(result.sequence, await without.list())).toEqual([]);
+  });
+});
+
+describe("a scene as a sequence", () => {
+  it("frames dynamic framings, places layers by elements, and notes what a sequence cannot carry", () => {
+    const scene: Scene = {
+      name: "notes",
+      shots: [
+        {
+          camera: { frame: ["card"], tilt: 20 },
+          run: [{ type: "element", element: { id: "card", type: "rectangle", x: 100, y: 100, width: 400, height: 200 } }],
+          layers: [
+            { effect: "image-duotone", ids: ["card"], padding: 10, subject: { image: "a.png" } },
+            { source: "void mainImage(out vec4 c, in vec2 p) { c = vec4(1.0); }" },
+          ],
+        },
+        { camera: { x: 0, y: 0, width: 1920, height: 1080 }, transition: { effect: "transition-wipe" } },
+      ],
+    };
+    const { sequence, notes } = sequenceOf(scene, (id) => id !== "transition-wipe");
+    expect(sequence.shots[0]!.layers).toEqual([{ effect: "image-duotone", subject: { image: "a.png" }, rect: { x: 90, y: 90, width: 420, height: 220 } }]);
+    expect(sequence.shots[0]!.camera!.framing!.width).toBeGreaterThan(400);
+    expect(sequence.shots[1]!.camera).toMatchObject({ in: "camera-glide" });
+    expect(sequence.shots[1]).not.toHaveProperty("transition");
+    for (const said of ["camera angle", "element command", "placed by elements", "custom shader", '"transition-wipe"']) expect(notes.join(" ")).toContain(said);
   });
 });
 

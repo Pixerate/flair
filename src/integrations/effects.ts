@@ -15,7 +15,9 @@ import {
   isEffectPixels,
   resolveEffectValues,
   searchEffectSummaries,
+  searchTemplateSummaries,
   UnknownEffectError,
+  UnknownTemplateError,
   type CameraMoveContext,
   type CameraMoveSample,
   type CameraMoveSampleRequest,
@@ -35,6 +37,12 @@ import {
   type EffectRenderRequest,
   type EffectSearchOptions,
   type EffectSummary,
+  type EffectTemplateDescription,
+  type EffectTemplateOptions,
+  type EffectTemplateResult,
+  type EffectTemplateSearchOptions,
+  type EffectTemplateSummary,
+  type EffectTemplateValues,
   type EffectUse,
   type EffectValues,
   type EffectVectorMotion,
@@ -54,6 +62,8 @@ import { controlsSchema, JSON_SCHEMA_DIALECT, type JsonSchema } from "../shader/
 import type { LiveSource } from "../shader/textures.js";
 import type { SvgMotion } from "../vector/motion.js";
 import { svgDuration, svgView } from "../vector/svg.js";
+import { instantiateTemplate as fillTemplate, type SceneTemplate, type TemplateValues } from "../scene/template.js";
+import { sequenceOf, templateDescriptionOf, templateSummaryOf } from "./templates.js";
 
 /** Draws one frame of an animated SVG as pixels (see {@link FlairEffectsOptions.rasterizeSvg}). */
 export type SvgRasterizer = (motion: SvgMotion, timeMs: number, size: { width: number; height: number }) => Promise<EffectPixels>;
@@ -624,6 +634,13 @@ class VectorRenderer extends BaseRenderer {
  *   move puts a scene's camera part-way through it, as Flair's scene player
  *   moves it, and `sampleCameraMove` keys it for an editor to bake. They
  *   draw no picture, so `createRenderer` refuses them.
+ * - **Templates:** `listTemplates`, `describeTemplate` and
+ *   `instantiateTemplate` offer Flair's sequence templates. A filled
+ *   template comes back as an `EffectSequence`: each shot's framing where
+ *   Flair's camera settles, its camera moves, catalog effect layers and
+ *   transition. What a sequence cannot carry (custom shaders, element
+ *   commands, camera angles, effects not offered under `kinds`) is left
+ *   out and named in `notes`, with `validateScene`'s issues.
  */
 export function flairEffects(options: FlairEffectsOptions = {}): EffectProvider {
   const kinds = new Set<EffectKind>(options.kinds ?? ["shader", "vector", "motion", "camera"]);
@@ -642,7 +659,24 @@ export function flairEffects(options: FlairEffectsOptions = {}): EffectProvider 
     supportsVector: kinds.has("vector") || kinds.has("motion"),
     supportsAuthoring: kinds.has("shader") || kinds.has("vector"),
     supportsCamera: kinds.has("camera"),
+    supportsTemplates: true,
   };
+
+  // Templates (and their summaries, which fill each one to time it) load with the first call that needs them.
+  let templates: Promise<{ byId: Map<string, SceneTemplate>; summaries: EffectTemplateSummary[] }> | undefined;
+  function loadTemplates() {
+    templates ??= import("../catalog/templates.js").then(({ SCENE_TEMPLATES }) => ({
+      byId: new Map(SCENE_TEMPLATES.map((t) => [t.id, t])),
+      summaries: SCENE_TEMPLATES.map(templateSummaryOf),
+    }));
+    return templates;
+  }
+  async function template(id: string): Promise<SceneTemplate> {
+    const found = (await loadTemplates()).byId.get(id);
+    if (!found) throw new UnknownTemplateError(String(id), "Flair");
+    return found;
+  }
+  const offered = (id: string) => plans.has(id);
 
   const unknown = (id: string) => new UnknownEffectError(String(id), "Flair");
 
@@ -735,6 +769,22 @@ export function flairEffects(options: FlairEffectsOptions = {}): EffectProvider 
     },
 
     cameraView,
+
+    async listTemplates(searchOptions?: EffectTemplateSearchOptions): Promise<readonly EffectTemplateSummary[]> {
+      return searchTemplateSummaries((await loadTemplates()).summaries, searchOptions);
+    },
+
+    async describeTemplate(id: string): Promise<EffectTemplateDescription> {
+      return templateDescriptionOf(await template(id));
+    },
+
+    async instantiateTemplate(id: string, values?: EffectTemplateValues, templateOptions?: EffectTemplateOptions): Promise<EffectTemplateResult> {
+      const filled = fillTemplate(await template(id), (values ?? {}) as TemplateValues, templateOptions ?? {});
+      if (!filled.ok) return { ok: false, errors: filled.errors };
+      const { sequence, notes } = sequenceOf(filled.scene, offered);
+      const issues = filled.issues.map((issue) => `${issue.shot ? `Shot ${issue.shot}` : "The scene"}: ${issue.message}`);
+      return { ok: true, sequence, openSlots: filled.openSlots, notes: [...notes, ...issues] };
+    },
 
     async sampleCameraMove(id: string, request: CameraMoveSampleRequest): Promise<CameraMoveSample> {
       const { move } = cameraMove(id);
