@@ -92,7 +92,7 @@ if (!status.ok) console.error(status.errors);
 renderer.setValues({ uSpeed: 2 });
 ```
 
-Every field but `presets` is required (`transparent`, `loop` and `video` are optional extras). `id` is your own kebab-case id; `category` is one of `EFFECT_CATEGORIES` (from `@pixerate/flair/catalog`), such as `gradient`, `image`, `overlay` or `text`, and only sorts it.
+Every field but `presets` is required (`transparent`, `loop`, `build` and `video` are optional extras; `build` is the seconds a shader takes to build up once before it settles, such as a path drawing on, so previews replay it). `id` is your own kebab-case id; `category` is one of `EFFECT_CATEGORIES` (from `@pixerate/flair/catalog`), such as `gradient`, `image`, `overlay` or `text`, and only sorts it.
 
 ### Getting the source into app code
 

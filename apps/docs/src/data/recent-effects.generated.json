@@ -381,7 +381,7 @@
     "id": "glass-writing",
     "name": "Glass writing",
     "kind": "shader",
-    "category": "text",
+    "category": "path",
     "description": "Words written on in one glowing glass stroke, letter by letter as a pen would, in joined-up script or print; give the path words as {\"text\": …} or any path.",
     "tags": [
       "title",
@@ -560,6 +560,7 @@
       "interactions": [],
       "transparent": false
     },
+    "build": 3,
     "animated": true,
     "module": "shaders/paths",
     "addedAt": "2026-11-02T16:24:28Z",
@@ -794,6 +795,7 @@
     },
     "video": "none",
     "transparent": true,
+    "build": 3,
     "animated": true,
     "module": "shaders/light",
     "addedAt": "2026-11-02T16:20:46Z",
@@ -977,7 +979,7 @@
     "id": "glass-tube",
     "name": "Glass tube",
     "kind": "shader",
-    "category": "light",
+    "category": "path",
     "description": "A thick, see-through tube of glowing glass drawing itself along any path, with bright edges, a soft core and overlaps that show through each other, coloured from one end to the other.",
     "tags": [
       "background",
@@ -1156,6 +1158,7 @@
       "interactions": [],
       "transparent": false
     },
+    "build": 2.5,
     "animated": true,
     "module": "shaders/paths",
     "addedAt": "2026-11-02T16:08:33Z",

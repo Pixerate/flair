@@ -77,6 +77,7 @@ export {
   sharedThumbnailPool,
   ThumbnailPool,
   type ThumbnailHandle,
+  type ThumbnailOptions,
   type ThumbnailPoolOptions,
 } from "./thumbnails.js";
 export {

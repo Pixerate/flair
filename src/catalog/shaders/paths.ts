@@ -90,8 +90,9 @@ export const glassTube: ShaderEffect = {
   name: "Glass tube",
   description:
     "A thick, see-through tube of glowing glass drawing itself along any path, with bright edges, a soft core and overlaps that show through each other, coloured from one end to the other.",
-  category: "light",
+  category: "path",
   tags: ["background", "path", "line", "draw", "tube", "glass", "glow", "squiggle", "ribbon", "wallpaper"],
+  build: 2.5,
   source: tubeSource("Glass tube", { path: SQUIGGLE, pathLabel: "Path", thickness: 13, drawOn: 2.5, opacity: 0.45, glow: 0.6 }),
   presets: [
     { name: "Neon", values: { uColorA: [0.1, 0.9, 1], uColorB: [0.55, 0.3, 1], uColorC: [1, 0.25, 0.75], uBackground: [0.02, 0.01, 0.06], uOpacity: 0.25, uGlow: 1.2 } },
@@ -107,8 +108,9 @@ export const glassWriting: ShaderEffect = {
   name: "Glass writing",
   description:
     "Words written on in one glowing glass stroke, letter by letter as a pen would, in joined-up script or print; give the path words as {\"text\": …} or any path.",
-  category: "text",
+  category: "path",
   tags: ["title", "path", "handwriting", "signature", "writing", "draw", "tube", "glass", "glow", "neon"],
+  build: 3,
   source: tubeSource("Glass writing", { path: textPath("Hello"), pathLabel: "Words (path)", thickness: 3.5, drawOn: 3, opacity: 0.8, glow: 0.8 }),
   presets: [
     { name: "Neon sign", values: { uColorA: [1, 0.2, 0.6], uColorB: [1, 0.35, 0.8], uColorC: [0.6, 0.4, 1], uBackground: [0.03, 0.01, 0.05], uOpacity: 0.85, uGlow: 1.4 } },

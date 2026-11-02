@@ -228,7 +228,7 @@ export const route: VectorEffect = {
   id: "route",
   name: "Route",
   description: "A journey drawing itself between two pins along any path, with a traveller following it.",
-  category: "data",
+  category: "path",
   tags: ["map", "travel", "delivery", "journey", "path"],
   hold: 1200,
   motion: {
@@ -283,7 +283,7 @@ export const signature: VectorEffect = {
   id: "signature",
   name: "Signature",
   description: "A handwritten flourish drawing itself as if by pen, then underlined; give it any path, or words to write as {\"text\": …}.",
-  category: "icon",
+  category: "path",
   tags: ["handwriting", "draw-on", "personal", "reveal", "path"],
   hold: 1500,
   motion: {

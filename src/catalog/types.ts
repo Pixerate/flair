@@ -37,6 +37,7 @@ export type EffectCategory =
   | "bubble"
   | "sticker"
   | "trail"
+  | "path"
   | "particles"
   | "debris"
   | "impact"
@@ -87,6 +88,7 @@ export const EFFECT_CATEGORIES: readonly EffectCategory[] = [
   "bubble",
   "sticker",
   "trail",
+  "path",
   "particles",
   "debris",
   "impact",
@@ -125,6 +127,7 @@ export const EFFECT_CATEGORY_GROUPS: readonly EffectCategoryGroup[] = [
   { name: "Pictures", categories: ["image", "cinematic", "beauty", "distortion", "retro", "comic", "horror", "meme", "timewarp", "melt"] },
   { name: "Particles & FX", categories: ["overlay", "splatter", "bubble", "particles", "trail", "debris", "impact", "pyrotechnics"] },
   { name: "Type & titles", categories: ["text", "morph", "broadcast", "annotation", "sticker"] },
+  { name: "Paths", categories: ["path"] },
   { name: "Inputs", categories: ["interaction", "audio", "scroll"] },
   { name: "Interface", categories: ["ui", "icon", "data"] },
   { name: "Loaders", categories: ["loader"] },
@@ -180,6 +183,12 @@ export interface ShaderEffect extends EffectBase {
   source: string;
   /** Seconds after which it repeats exactly, when it loops seamlessly. */
   loop?: number;
+  /**
+   * Seconds it takes to build up when it starts (a path drawing on, a
+   * fade-in) before it settles, at its default values: previews replay it
+   * from the start rather than show it settled.
+   */
+  build?: number;
   /**
    * Draws over other content: `fragColor.a` is coverage (0 where there is
    * nothing to draw), so render it on a transparent canvas

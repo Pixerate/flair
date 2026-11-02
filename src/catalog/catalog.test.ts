@@ -1252,13 +1252,14 @@ describe("particle effects", () => {
 });
 
 describe("trail effects", () => {
-  const trails = findEffects({ category: "trail" });
+  const trails = findEffects({ tags: ["trail"] });
   const shaders = ["comet-trail", "ribbon-trail", "sparkle-trail", "brush-trail", "ghost-trail", "light-painting"];
 
-  it("has the comet, ribbon, sparkle, brush, ghost, light painting, streak and dotted trails, all tagged", () => {
+  it("has the comet, ribbon, sparkle, brush, ghost, light painting, streak and dotted trails, the ones taking a path under paths", () => {
     const ids = trails.map((e) => e.id);
     for (const id of [...shaders, "motion-streak", "dotted-trail"]) expect(ids).toContain(id);
-    for (const effect of trails) expect(effect.tags).toContain("trail");
+    for (const id of shaders) expect(getEffect(id)!.category, id).toBe("path");
+    for (const effect of findEffects({ category: "trail" })) expect(effect.tags).toContain("trail");
   });
 
   it("follow iTrail with an idle demo, draw over the page (light painting opaque) and take no pictures", () => {
@@ -1960,7 +1961,8 @@ describe("ui effects", () => {
   };
 
   it("has the frames, backgrounds, glass and the marquee, ticker and badge, all tagged and with presets", () => {
-    expect(ui.map((e) => e.id).sort()).toEqual([...shaders, ...vectors].sort());
+    // The border beam runs round any path, so it is browsed under paths.
+    expect(ui.map((e) => e.id).sort()).toEqual([...shaders, ...vectors].filter((id) => id !== "border-beam").sort());
     for (const effect of ui) {
       expect(effect.tags, effect.id).toContain("ui");
       expect(effect.presets?.length ?? 0, effect.id).toBeGreaterThan(1);
@@ -2267,6 +2269,36 @@ describe("loaders", () => {
     const ids = findEffects({ group: "loaders" }).map((e) => e.id);
     for (const id of ["spinner", "progress-bar", "chomp-loader", "bubble-pop-loader", "progress-ring", "battery-charge", ...SHADERS, "hourglass", "infinity-loader", "orbit-loader", "shape-morph-loader"]) expect(ids, id).toContain(id);
     for (const id of ids) expect(getEffect(id)!.category, id).toBe("loader");
+  });
+});
+
+describe("path effects", () => {
+  const along = ["glass-tube", "glass-writing", "swoosh-underline", "border-beam", "text-on-path", "route", "signature"];
+
+  it("gather every effect that moves along a path it is given under paths, tagged path (scroll draw stays with the scroll effects)", () => {
+    const paths = findEffects({ category: "path" });
+    for (const effect of findEffects()) {
+      if (effect.kind === "shader" && effectControls(effect).some((c) => c.type === "path")) expect(effect.category, effect.id).toBe("path");
+    }
+    for (const id of along) expect(getEffect(id)!.category, id).toBe("path");
+    for (const effect of paths) {
+      expect(effect.tags, effect.id).toContain("path");
+      expect(effectInputs(effect).accepts, effect.id).toContain("path");
+    }
+    expect(categoryGroup("path").name).toBe("Paths");
+  });
+});
+
+describe("effects that build up", () => {
+  it("say how long they take, so previews replay it", () => {
+    const built = findEffects().filter((e) => e.kind === "shader" && e.build !== undefined);
+    expect(built.map((e) => e.id)).toEqual(expect.arrayContaining(["glass-tube", "glass-writing", "light-strand-text", "wind-gust", "isometric-city"]));
+    for (const effect of built) {
+      if (effect.kind !== "shader") continue;
+      expect(effect.build, effect.id).toBeGreaterThan(0);
+      expect(effect.loop, effect.id).toBeUndefined();
+      expect(effect.source, effect.id).toMatch(/\biTime\b/);
+    }
   });
 });
 

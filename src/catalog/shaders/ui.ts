@@ -50,7 +50,7 @@ export const borderBeam: ShaderEffect = {
   id: "border-beam",
   name: "Border beam",
   description: "A bright beam of light travelling round a card's rounded border, or along any path (a logo's outline, a route), trailing a gradient tail.",
-  category: "ui",
+  category: "path",
   tags: ["ui", "border", "card", "button", "frame", "overlay", "glow", "saas", "path"],
   transparent: true,
   loop: 5,
