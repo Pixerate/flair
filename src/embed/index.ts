@@ -14,6 +14,8 @@
 import { CAMERA_PREVIEW_SOURCE, cameraPreviewLength, cameraPreviewValues } from "../catalog/camera.js";
 import { drawsAlpha, effectDefaults, effectInputs, getEffect, SAMPLE_IMAGES, textImage, type CameraEffect, type EffectDefinition, type ImageSlot, type TextSlot } from "../catalog/index.js";
 import { renderVectorEffect } from "../catalog/types.js";
+import { resolveAsset as resolveOne } from "../scene/assets.js";
+import type { SubjectResolver } from "../scene/layers.js";
 import type { AudioSource } from "../shader/audio.js";
 import type { ControlValue } from "../shader/controls.js";
 import { ShaderRenderer } from "../shader/renderer.js";
@@ -31,6 +33,9 @@ export { checkShutter, FrameAverager, shutterTimes, DEFAULT_SHUTTER_SAMPLES, typ
  * - `{ svg }`: an SVG, as markup (`"<svg …>"`) or a URL; drawn as a picture, keeping its transparency.
  * - `{ text }`: words, for a vector effect's text, or drawn with `textImage` for a shader's text or mask.
  * - `{ path }`: SVG path data (`d`), for a shape control.
+ * - `{ asset }`: artwork from the host's library by reference
+ *   (`"pixerate:cat-heart"`), which `MountOptions.resolveAsset` turns into
+ *   an `{ svg }` or `{ image }`.
  * - `{ audio }`: sound for an audio-reactive shader (`iAudio`, `iSpectrum`,
  *   `iBeat`): a playing `<audio>` or `<video>` (still heard), a microphone's
  *   `MediaStream` (not played back) or a Web Audio node. See
@@ -42,6 +47,7 @@ export type EffectSubject =
   | { svg: string }
   | { text: string; font?: string; weight?: number | string }
   | { path: string }
+  | { asset: string }
   | { audio: AudioSource };
 
 /** What a subject becomes for an effect: control values, live sources by image control, and the sound it hears. */
@@ -52,7 +58,7 @@ export interface SubjectValues {
   audio?: AudioSource;
 }
 
-const kindOf = (subject: EffectSubject) => Object.keys(subject).find((k) => k !== "font" && k !== "weight") as "image" | "video" | "svg" | "text" | "path" | "audio";
+const kindOf = (subject: EffectSubject) => Object.keys(subject).find((k) => k !== "font" && k !== "weight") as "image" | "video" | "svg" | "text" | "path" | "asset" | "audio";
 
 /** An SVG as a URL: markup becomes a UTF-8 `data:` URL; a URL stays as it is. */
 function svgUrl(svg: string): string {
@@ -90,6 +96,8 @@ export function subjectValues(effect: EffectDefinition, subject: EffectSubject |
   const used = new Set<string>();
   for (const s of Array.isArray(subject) ? subject : [subject as EffectSubject]) {
     const kind = kindOf(s);
+    if (kind === "asset")
+      throw new Error(`The subject is the asset "${(s as { asset: string }).asset}", which only the host's library can turn into artwork; pass resolveAsset to mountEffect, or resolve it first with resolveSubject().`);
     const free = <T extends { name: string }>(slots: T[]) => slots.filter((x) => !used.has(x.name));
     if (kind === "audio") {
       if (!inputs.accepts.includes("audio"))
@@ -124,6 +132,12 @@ export function subjectValues(effect: EffectDefinition, subject: EffectSubject |
 export interface MountOptions {
   /** What to apply the effect to (see {@link EffectSubject}); several fill several controls in order. */
   subject?: EffectSubject | readonly EffectSubject[];
+  /**
+   * The host's asset library, for `{ asset }` subjects: each is resolved
+   * (asynchronously; `ready()` waits for it) and applied as the `{ svg }` or
+   * `{ image }` it gives. `ready()` rejects with a sentence when one cannot be resolved.
+   */
+  resolveAsset?: SubjectResolver;
   /** A preset by name, then these values, over the effect's defaults. */
   preset?: string;
   values?: Record<string, ControlValue>;
@@ -167,6 +181,49 @@ export interface MountedEffect {
   transitionTo?(nextSubject: EffectSubject, options?: { duration?: number; easing?: (t: number) => number }): Promise<void>;
 }
 
+const asList = (subject: EffectSubject | readonly EffectSubject[]) => (Array.isArray(subject) ? subject : [subject as EffectSubject]);
+const hasAsset = (subject: EffectSubject | readonly EffectSubject[] | undefined) => !!subject && asList(subject).some((s) => "asset" in s);
+
+/**
+ * `subject` with every `{ asset }` in it turned into the `{ svg }` or
+ * `{ image }` that `resolve` gives. Rejects with a sentence naming an asset
+ * the library does not have.
+ */
+export async function resolveSubject<S extends EffectSubject | readonly EffectSubject[]>(subject: S, resolve: SubjectResolver): Promise<S> {
+  const out: EffectSubject[] = [];
+  for (const s of asList(subject)) {
+    if (!("asset" in s)) {
+      out.push(s);
+      continue;
+    }
+    const found = await resolveOne(s.asset, resolve);
+    if (typeof found === "string") throw new Error(found);
+    out.push(found);
+  }
+  return (Array.isArray(subject) ? out : out[0]) as S;
+}
+
+/** A mounted effect that resolves `{ asset }` subjects through `resolve` before applying them. */
+function resolvingAssets(mounted: MountedEffect, resolve: SubjectResolver, first: EffectSubject | readonly EffectSubject[] | undefined): MountedEffect {
+  const set = mounted.setSubject.bind(mounted);
+  const ready = mounted.ready.bind(mounted);
+  const transition = mounted.transitionTo?.bind(mounted);
+  let pending: Promise<void> = Promise.resolve();
+  const take = (subject: EffectSubject | readonly EffectSubject[]) => {
+    pending = resolveSubject(subject, resolve).then(set);
+    // Seen through ready(); kept from being an unhandled rejection meanwhile.
+    pending.catch(() => undefined);
+  };
+  if (first) take(first);
+  mounted.setSubject = (subject) => (hasAsset(subject) ? take(subject) : set(subject));
+  mounted.ready = async () => {
+    await pending;
+    await ready();
+  };
+  if (transition) mounted.transitionTo = async (next, options) => transition("asset" in next ? await resolveSubject(next, resolve) : next, options);
+  return mounted;
+}
+
 /**
  * Runs a catalog effect (by id or definition) in `host`, applied to
  * `subject`: a shader on a canvas (transparent for overlays, so it lays over
@@ -183,11 +240,19 @@ export interface MountedEffect {
  * mountEffect(el, "typewriter", { subject: { text: "Hello there" } });
  * mountEffect(el, "neon-outline", { subject: { svg: logoMarkup } });
  * mountEffect(el, "spectrum-bars", { subject: { audio: audioElement } });
+ * mountEffect(el, "sticker-cutout", { subject: { asset: "pixerate:cat-heart" }, resolveAsset: library.resolve });
  * ```
  */
 export function mountEffect(host: HTMLElement, effect: EffectDefinition | string, options: MountOptions = {}): MountedEffect {
   const def = typeof effect === "string" ? getEffect(effect) : effect;
   if (!def) throw new Error(`There is no effect "${String(effect)}" in the catalog; findEffects() lists them.`);
+  if (options.resolveAsset) {
+    const { resolveAsset, subject, ...rest } = options;
+    // Mounted without the assets; they arrive as they resolve.
+    const first = hasAsset(subject) ? subject : undefined;
+    const mounted = mountEffect(host, def, first ? rest : { ...rest, ...(subject ? { subject } : {}) });
+    return resolvingAssets(mounted, resolveAsset, first);
+  }
   let values: Record<string, ControlValue> = { ...effectDefaults(def, { ...(options.preset ? { preset: options.preset } : {}), ...(options.values ? { values: options.values } : {}) }) };
   let live: Record<string, LiveSource> = {};
   let audio: AudioSource | undefined;

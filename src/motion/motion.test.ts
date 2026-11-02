@@ -40,7 +40,7 @@ describe("the primitives as data", () => {
     for (const p of PRIMITIVES) expect(p.id.startsWith(`${p.kind}.`)).toBe(true);
     expect(new Set(PRIMITIVES.map((p) => p.id)).size).toBe(PRIMITIVES.length);
     expect(listPrimitives("exit").map((p) => p.id)).toEqual(["exit.fade", "exit.shrink", "exit.slide", "exit.wipe", "exit.undraw"]);
-    expect(listPrimitives("entrance")).toHaveLength(10);
+    expect(listPrimitives("entrance")).toHaveLength(11);
     expect(getPrimitive("emphasis.wiggle")?.kind).toBe("emphasis");
     expect(getPrimitive("nope")).toBeUndefined();
   });
@@ -138,6 +138,21 @@ describe("applyPrimitive", () => {
     const draw = apply(MOTION, { primitive: "entrance.draw", target: "card" });
     expect(frameAt(draw.motion, 0).card).toMatchObject({ draw: 0, attrs: { "fill-opacity": "0" } });
     expect(frameAt(draw.motion, 600).card).toMatchObject({ draw: 1, attrs: { "fill-opacity": "1" } });
+  });
+
+  it("slaps on big and turned, and settles straight at full size", () => {
+    const slap = apply(MOTION, { primitive: "entrance.slap", target: "card", params: { from: 3, turn: 20 } });
+    const start = frameAt(slap.motion, 0)["card--slap"].attrs;
+    expect(start.opacity).toBe("0");
+    expect(start.transform).toBe("rotate(20 30 20) translate(30 20) scale(3) translate(-30 -20)");
+    // Past its size and twisted the other way when it lands.
+    expect(frameAt(slap.motion, 288)["card--slap"].attrs.transform).toBe("rotate(-8 30 20) translate(30 20) scale(0.9) translate(-30 -20)");
+    expect(frameAt(slap.motion, 900)["card--slap"].attrs).toEqual({ opacity: "1", transform: "rotate(0 30 20) translate(30 20) scale(1) translate(-30 -20)" });
+  });
+
+  it("refuses a slap out of range, naming the range", () => {
+    expect(applyPrimitive(MOTION, { primitive: "entrance.slap", target: "card", params: { from: 9 } })).toMatchObject({ ok: false, message: expect.stringMatching(/from.*1.*4/) });
+    expect(applyPrimitive(MOTION, { primitive: "entrance.slap", target: "card", params: { turn: "lots" } })).toMatchObject({ ok: false, message: expect.stringContaining("turn") });
   });
 
   it("slides in from the other side of its direction, and out the way it says", () => {

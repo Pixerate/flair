@@ -1,7 +1,8 @@
 import type { Scene, Shot } from '../scene/types.js';
 import { validateScene, type SceneIssue } from '../scene/validate.js';
 import { checkSceneLayers } from '../scene/layercheck.js';
-import { layerKey, layerRole, layerWhat, isSlot, type LayerTime } from '../scene/layers.js';
+import { layerKey, layerRole, layerWhat, isAsset, isSlot, type LayerTime, type SubjectResolver } from '../scene/layers.js';
+import { resolveSceneAssets, sceneAssets } from '../scene/assets.js';
 import { simulateScene } from '../scene/player.js';
 import type { Review } from '../scene/report.js';
 import { applyRig, setRigWidget } from '../scene/rig.js';
@@ -18,7 +19,7 @@ export interface AgentToolDefinition {
 
 /** How a shot arranges layers, a transition, copies and paths, for the tools' descriptions. */
 const SHOT_GUIDE =
-  'A shot\'s "layers" are catalog effects ({"effect": id, "preset"?, "values"?}), custom shaders ({"source": GLSL with void mainImage}) or bare pictures, each with an optional "subject" ({"image": url}, {"video": url}, {"svg": markup}, {"text": words}, or {"slot": name} that the host fills when it plays or records), a "role" ("background", "subject" or "overlay"), a place on the board ("rect" {x, y, width, height} or "ids" of elements; without either it fills the screen), "from"/"until" (ms after the shot starts, or {"shots": n}; by default it lasts until the next shot), "opacity" and "fade" (ms). find_layer_effects finds effects and what they take. A shot\'s "transition" is a catalog transition from the last shot ({"effect": "transition-wipe", "ms"?, "preset"?, "values"?}); without a camera "in" the camera cuts and the transition does the move. A run command {"type": "replicate", "element": {...}, "pattern": "grid"|"line"|"circle"|"spiral", "count"} draws copies <id>_0…, and a behavior {"type": "path", "target": id, "waypoints": [{"point": [x, y]}, ...], "orient"?} moves an element along a curve while the shot holds.';
+  'A shot\'s "layers" are catalog effects ({"effect": id, "preset"?, "values"?}), custom shaders ({"source": GLSL with void mainImage}) or bare pictures, each with an optional "subject" ({"image": url}, {"video": url}, {"svg": markup}, {"text": words}, {"slot": name} that the host fills when it plays or records, or {"asset": "provider:id"} for artwork from the host\'s asset library, when it has one), a "role" ("background", "subject" or "overlay"), a place on the board ("rect" {x, y, width, height} or "ids" of elements; without either it fills the screen), "from"/"until" (ms after the shot starts, or {"shots": n}; by default it lasts until the next shot), "opacity" and "fade" (ms). find_layer_effects finds effects and what they take. A shot\'s "transition" is a catalog transition from the last shot ({"effect": "transition-wipe", "ms"?, "preset"?, "values"?}); without a camera "in" the camera cuts and the transition does the move. A run command {"type": "replicate", "element": {...}, "pattern": "grid"|"line"|"circle"|"spiral", "count"} draws copies <id>_0…, and a behavior {"type": "path", "target": id, "waypoints": [{"point": [x, y]}, ...], "orient"?} moves an element along a curve while the shot holds.';
 
 export const FLAIR_AGENT_TOOLS: AgentToolDefinition[] = [
   {
@@ -243,6 +244,8 @@ export interface SceneOutlineLayer {
   role: string;
   /** The slot its subject comes from, when the host fills it. */
   slot?: string;
+  /** The asset its subject is, when the host's library resolves it. */
+  asset?: string;
   from?: LayerTime;
   until?: LayerTime;
 }
@@ -334,6 +337,7 @@ export function outlineScene(scene: Scene): SceneOutline {
               draws: layerWhat(l ?? {}),
               role: layerRole(l ?? {}),
               ...(isSlot(l?.subject) ? { slot: l.subject.slot } : {}),
+              ...(isAsset(l?.subject) ? { asset: l.subject.asset } : {}),
               ...(l?.from !== undefined ? { from: l.from } : {}),
               ...(l?.until !== undefined ? { until: l.until } : {}),
             })),
@@ -355,6 +359,16 @@ async function findTemplate(id: string): Promise<SceneTemplate | string> {
   return templates.find((t) => t.id === id) ?? `There is no template "${id}"; the templates are ${templates.map((t) => t.id).join(', ')} (find_templates describes them).`;
 }
 
+/** What the host gives the scene tools beyond the scene. */
+export interface SceneToolOptions {
+  /**
+   * The host's asset library. With it, layers can show `{ "asset": ref }`
+   * subjects and a reference it cannot resolve comes back as an issue;
+   * without it, an edit that adds an asset is refused.
+   */
+  resolveAsset?: SubjectResolver;
+}
+
 /**
  * Pure state machine that applies tool operations to a Scene. Arguments are
  * checked against the tool's `input_schema` first; a refusal (`ok: false`)
@@ -365,7 +379,25 @@ export async function applySceneTool(
   scene: Scene,
   toolName: string,
   input: Record<string, any> = {},
+  options: SceneToolOptions = {},
 ): Promise<SceneToolResult> {
+  const result = await runSceneTool(scene, toolName, input, options);
+  if (!result.ok) return result;
+  const assets = sceneAssets(result.scene);
+  if (!assets.size) return result;
+  const before = sceneAssets(scene);
+  const added = [...assets.keys()].filter((ref) => !before.has(ref));
+  if (added.length && !options.resolveAsset)
+    return fail(`This host has no asset library, so a layer cannot show ${added.map((r) => `{ "asset": "${r}" }`).join(', ')}; use an { "image" }, { "svg" } or { "slot" } subject instead. Nothing was changed.`);
+  // Assets the library cannot resolve are issues, like any other.
+  const { issues } = await resolveSceneAssets(result.scene, options.resolveAsset);
+  const fresh = issues.filter((i) => !result.issues.some((r) => r.shot === i.shot && r.message === i.message));
+  if (!fresh.length) return result;
+  const all = [...result.issues, ...fresh];
+  return { ...result, issues: all, output: { ...result.output, ...('issues' in result.output ? { issues: all } : {}) } };
+}
+
+async function runSceneTool(scene: Scene, toolName: string, input: Record<string, any>, options: SceneToolOptions): Promise<SceneToolResult> {
   const definition = FLAIR_AGENT_TOOLS.find((t) => t.name === toolName);
   if (!definition) {
     return fail(`There is no tool "${toolName}"; the tools are ${TOOL_NAMES.join(', ')}.`);
@@ -571,7 +603,7 @@ export async function applySceneTool(
     }
 
     case 'batch_scene': {
-      const batch = await applySceneBatch(scene, input.steps);
+      const batch = await applySceneBatch(scene, input.steps, options);
       if (!batch.ok) return fail(`${batch.error} No steps were applied.`, batch.failedStep);
       const issues = await sceneIssues(batch.scene);
       return {

@@ -1,9 +1,42 @@
 import { describe, expect, it } from "vitest";
 import { getEffect, textImage } from "../catalog/index.js";
-import { mountEffect, subjectValues } from "./index.js";
+import { mountEffect, resolveSubject, subjectValues } from "./index.js";
 import { installFakeWebGl } from "../shader/test-utils.js";
 
 const effect = (id: string) => getEffect(id)!;
+
+describe("asset subjects", () => {
+  const HEART = '<svg viewBox="0 0 10 10"><circle cx="5" cy="5" r="4"/></svg>';
+  const library = async (ref: string) => (ref === "acme:heart" ? { svg: HEART } : undefined);
+
+  it("resolve through the host's library, leaving other subjects alone", async () => {
+    expect(await resolveSubject({ asset: "acme:heart" }, library)).toEqual({ svg: HEART });
+    expect(await resolveSubject([{ asset: "acme:heart" }, { image: "/b.png" }], library)).toEqual([{ svg: HEART }, { image: "/b.png" }]);
+    await expect(resolveSubject({ asset: "acme:nope" }, library)).rejects.toThrow(/no asset "acme:nope"/);
+  });
+
+  it("need a resolver: subjectValues says how to give one", () => {
+    expect(() => subjectValues(effect("sticker-cutout"), { asset: "acme:heart" })).toThrow(/pass resolveAsset to mountEffect/);
+  });
+
+  it("are applied once resolved, and ready() waits for them", async () => {
+    installFakeWebGl();
+    const host = document.createElement("div");
+    const mounted = mountEffect(host, "sticker-cutout", { subject: { asset: "acme:heart" }, resolveAsset: library, autoplay: false });
+    const renderer = mounted.renderer!;
+    const set = renderer.setValues.bind(renderer);
+    const seen: Record<string, unknown>[] = [];
+    renderer.setValues = (values) => {
+      seen.push({ ...values });
+      set(values);
+    };
+    await mounted.ready().catch(() => undefined);
+    expect(String(seen.at(-1)?.uMask)).toMatch(/^data:image\/svg\+xml/);
+    mounted.setSubject({ asset: "acme:nope" });
+    await expect(mounted.ready()).rejects.toThrow(/no asset "acme:nope"/);
+    mounted.dispose();
+  });
+});
 
 describe("subjectValues", () => {
   it("puts a picture or an SVG into the effect's image control", () => {

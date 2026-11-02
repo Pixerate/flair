@@ -303,8 +303,8 @@ describe("the animation editor's commands and Flair's primitives", () => {
         "path.follow",
       ].sort(),
     );
-    // Flair's own, with no animation-editor command yet: words set along a path.
-    const flairOnly = ["path.text"];
+    // Flair's own, with no animation-editor command yet: words set along a path, and a sticker's slap.
+    const flairOnly = ["path.text", "entrance.slap"];
     expect([...named].sort()).toEqual(PRIMITIVES.map((p) => p.id).filter((id) => !flairOnly.includes(id)).sort());
     // Commands that are the editor's own have none.
     for (const c of [

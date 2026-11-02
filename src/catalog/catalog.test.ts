@@ -1088,6 +1088,47 @@ describe("sticker effects", () => {
     }
   });
 
+  it("still stickers have no animation or trigger, so they show as they are", () => {
+    for (const id of ["die-cut-sticker", "sticker-label", "speech-sticker", "sticker-wrap"]) {
+      const effect = getEffect(id)!;
+      expect(effect.kind, id).toBe("vector");
+      expect(effect.kind === "vector" && effect.trigger, id).toBeFalsy();
+      expect(effect.tags, id).toContain("static");
+      const motion = render(effect);
+      expect(motion.animate ?? [], id).toEqual([]);
+      expect(svgMotionIssues(motion), id).toEqual([]);
+      for (const preset of effect.presets ?? []) expect(svgMotionIssues(render(effect, preset.values)), `${id} ${preset.name}`).toEqual([]);
+    }
+  });
+
+  it("die-cut sticker draws every shape, the pill and bolt among them", () => {
+    const effect = getEffect("die-cut-sticker")!;
+    const paths = [0, 1, 2, 3, 4, 5].map((shape) => /<path d="([^"]+)"/.exec(render(effect, { shape }).svg)![1]);
+    expect(new Set(paths).size).toBe(6);
+    expect(paths[4]).toContain("A");
+  });
+
+  it("sticker wrap fits any silhouette into the frame, with the border the same width at any scale", () => {
+    const effect = getEffect("sticker-wrap")!;
+    expect(effectInputs(effect).texts).toEqual([expect.objectContaining({ name: "silhouette", holds: "path" })]);
+    expect(effectInputs(effect).accepts).toContain("path");
+    const small = render(effect, { silhouette: "M0 0 L10 0 L10 10 Z", cut: 10 }).svg;
+    const big = render(effect, { silhouette: "M0 0 L1000 0 L1000 1000 Z", cut: 10 }).svg;
+    expect(small).toContain('d="M0 0 L10 0 L10 10 Z"');
+    expect(small).toContain('transform="translate(42 42) scale(15.6)"');
+    expect(big).toContain('transform="translate(42 42) scale(0.156)"');
+    const stroke = (svg: string) => Number(/stroke-width="([\d.]+)" stroke-linejoin/.exec(svg)![1]);
+    expect(stroke(small) * 15.6).toBeCloseTo(20, 2);
+    expect(stroke(big) * 0.156).toBeCloseTo(20, 2);
+  });
+
+  it("sticker cutout takes any artwork with transparency and draws a transparent sticker", () => {
+    const inputs = effectInputs(getEffect("sticker-cutout")!);
+    expect(inputs.images).toEqual([expect.objectContaining({ name: "uMask", wants: "mask" })]);
+    expect(inputs.accepts).toEqual(expect.arrayContaining(["image", "svg", "mask"]));
+    expect((getEffect("sticker-cutout") as ShaderEffect).transparent).toBe(true);
+  });
+
   it("peels on hover to a different end", () => {
     const effect = getEffect("sticker-peel")!;
     expect(effect.kind === "vector" && effect.trigger).toBe("hover");

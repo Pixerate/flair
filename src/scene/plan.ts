@@ -2,7 +2,8 @@ import { controlValue, parseControls, type ControlDef, type ControlValue } from 
 import { ManualClock } from '../time/clock.js';
 import { cameraSamples, sceneStage } from './cameratrack.js';
 import type { SceneElement } from './geometry.js';
-import { isSlot, subjectKind, TRANSITION_CONTROLS, type SceneSubject, type SubjectSlot } from './layers.js';
+import { resolveSceneAssets } from './assets.js';
+import { isAsset, isSlot, subjectKind, TRANSITION_CONTROLS, type SceneSubject, type SubjectResolver, type SubjectSlot } from './layers.js';
 import { MemorySceneBoard, playScene, type ActiveLayer } from './player.js';
 import { SCENE_PLAN_VERSION, type PlanDraw, type PlanLayer, type PlanPlacement, type PlanShot, type PlanTransition, type ScenePlan } from './plan-types.js';
 import { sceneTimeline } from './timeline.js';
@@ -15,6 +16,12 @@ export interface ScenePlanOptions {
   subjects?: Record<string, SceneSubject>;
   /** The rate the camera is keyed at (default 30). */
   fps?: number;
+  /**
+   * The host's asset library: turns each `{ "asset": ref }` subject into an
+   * SVG or a picture. An asset it cannot resolve (or any asset, without
+   * one) is left out of the plan with a note.
+   */
+  resolveAsset?: SubjectResolver;
 }
 
 /** Records the elements' and layers' state at every step `playScene` takes. */
@@ -68,11 +75,13 @@ function resolved(controls: readonly ControlDef[], preset: Record<string, Contro
  * catalog effects its layers and transitions use (on demand, from the lazy
  * catalog), resolving their presets and values.
  */
-export async function scenePlan(scene: Scene, options: ScenePlanOptions = {}): Promise<ScenePlan> {
+export async function scenePlan(given: Scene, options: ScenePlanOptions = {}): Promise<ScenePlan> {
+  const assets = await resolveSceneAssets(given, options.resolveAsset);
+  const scene = assets.scene;
   const fps = options.fps ?? 30;
   const stage = sceneStage(scene);
   const timeline = sceneTimeline(scene);
-  const notes: string[] = [];
+  const notes: string[] = assets.issues.map((i) => `Shot ${i.shot}: ${i.message}`);
 
   // Play it to see where everything is at each step.
   const board = new RecordingBoard(stage);
@@ -101,6 +110,8 @@ export async function scenePlan(scene: Scene, options: ScenePlanOptions = {}): P
 
   const fill = (subject: unknown): SceneSubject | SubjectSlot | undefined => {
     if (isSlot(subject)) return options.subjects?.[subject.slot] ?? subject;
+    // An asset left unresolved (noted above) shows nothing.
+    if (isAsset(subject)) return undefined;
     return subject as SceneSubject | undefined;
   };
 

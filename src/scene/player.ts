@@ -19,7 +19,7 @@ import { checkShot } from './check.js';
 import { moveView, resolveCameraMove, shotHoldMove, shotInMove } from './moves.js';
 import { behaviorProps, type Behavior } from './behavior.js';
 import type { Rect, SceneElement } from './geometry.js';
-import { isSlot, type LayerRole, type SceneLayer, type SceneSubjects, type ShotTransition, type SlotSubject, type SubjectSlot } from './layers.js';
+import { isSlot, type LayerRole, type SceneLayer, type SceneSubjects, type ShotTransition, type SlotSubject, type SubjectAsset, type SubjectSlot } from './layers.js';
 import { replicateCommands } from './replicator.js';
 import { reviewScene, type Review, type ShotLog } from './report.js';
 import { layerOpacityAt, layersAt, sceneTimeline, type SceneTimeline, type TimedLayer } from './timeline.js';
@@ -46,7 +46,7 @@ export interface ActiveLayer {
   shot: number;
   layer: SceneLayer;
   role: LayerRole;
-  subject?: SlotSubject | SubjectSlot;
+  subject?: SlotSubject | SubjectSlot | SubjectAsset;
   values: Record<string, ControlValue>;
   opacity: number;
   /** Ms since it started: the time its effect is drawn at. */

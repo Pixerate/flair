@@ -2,7 +2,7 @@ import { getCameraMove } from '../catalog/camera.js';
 import { layerEffect, layerEffectIds } from '../catalog/layer-index.js';
 import { didYouMean } from '../motion/params.js';
 import { checkControlValue, parseControls, type ControlDef } from '../shader/controls.js';
-import { DEFAULT_TRANSITION_MS, isSlot, LAYER_ROLES, subjectKind, SUBJECT_KINDS, type SceneLayer } from './layers.js';
+import { ASSET_REF, DEFAULT_TRANSITION_MS, isAsset, isSlot, LAYER_ROLES, subjectKind, SUBJECT_KINDS, type SceneLayer } from './layers.js';
 import type { Scene } from './types.js';
 
 const list = (names: readonly string[]) => names.map((n) => `"${n}"`).join(', ');
@@ -133,11 +133,18 @@ export function checkLayer(layer: unknown, ctx: LayerContext): string[] {
     if (isSlot(subject)) {
       if (!/^[A-Za-z][\w-]*$/.test(subject.slot) || Object.keys(subject).length !== 1)
         issues.push(`${named} "subject" { "slot": name } names a slot the host fills at play time: letters, digits, "-" and "_", starting with a letter.`);
+    } else if (isAsset(subject)) {
+      if (!ASSET_REF.test(subject.asset) || Object.keys(subject).length !== 1)
+        issues.push(`${named} "subject" { "asset": ref } names artwork in the host's library, like "pixerate:cat-heart": no spaces, at most 200 characters.`);
+      else if (accepts && !accepts.includes('image') && !accepts.includes('svg'))
+        issues.push(
+          `"${layer.effect}" takes ${accepts.length ? list(accepts.filter((a) => (SUBJECT_KINDS as readonly string[]).includes(a) || a === 'mask')) : 'no subject'}, but an asset is an SVG or a picture; find_layer_effects with { "accepts": ["svg"] } finds effects that take one.`,
+        );
     } else {
       const kind = subjectKind(subject);
       const value = kind ? (subject as Record<string, unknown>)[kind] : undefined;
       if (!kind || typeof value !== 'string' || !value) {
-        issues.push(`${named} "subject" is one of { "image": url }, { "video": url }, { "svg": markup or url }, { "text": words } or { "slot": name } for the host to fill.`);
+        issues.push(`${named} "subject" is one of { "image": url }, { "video": url }, { "svg": markup or url }, { "text": words }, { "slot": name } for the host to fill, or { "asset": ref } for the host's library to resolve.`);
       } else if (accepts) {
         const takes = kind === 'text' ? accepts.includes('text') || accepts.includes('mask') : accepts.includes(kind);
         if (!takes) {

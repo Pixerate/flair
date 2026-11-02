@@ -233,7 +233,9 @@ describe("svgAnimatedMarkup", () => {
         if (changed.has(el.id)) continue;
         expect(attrs(first.querySelector(`[id="${el.id}"]`)!), `${effect.id} #${el.id}`).toEqual(attrs(el));
       }
-      expect(svg.querySelectorAll(ANIMATIONS).length, effect.id).toBeGreaterThan(0);
+      // Still pictures (the still stickers) have nothing to animate.
+      if (motion.animate?.length) expect(svg.querySelectorAll(ANIMATIONS).length, effect.id).toBeGreaterThan(0);
+      else expect(svg.querySelectorAll(ANIMATIONS).length, effect.id).toBe(0);
     }
     sizes.sort((a, b) => b[1] - a[1]);
     console.info("largest animated SVGs:", sizes.slice(0, 5).map(([id, n]) => `${id} ${(n / 1024).toFixed(1)} KB`).join(", "));
