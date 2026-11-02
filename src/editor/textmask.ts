@@ -4,12 +4,30 @@
  * them with words, `{ text, font?, weight? }`, which become a text image in the
  * default's font unless they name another; an image URL still works. Bare
  * words are refused, since an image control would take them for a path.
+ *
+ * Path controls take words too, `{ text, font?, align? }`, written as
+ * single-stroke path data (`textPath`), so a path effect writes them on.
  */
 
 import { textImage } from "../catalog/images.js";
 import { isTextImage } from "../catalog/inputs.js";
 import { checkControlValue, type ControlCheck, type ControlDef } from "../shader/controls.js";
 import { controlSchema, type JsonSchema } from "../shader/schema.js";
+import { HANDWRITING_FONTS, textPath, textPathProblem, type HandwritingFont } from "../vector/handwriting.js";
+
+const ALIGNS = ["left", "center", "right"] as const;
+
+/** Words for a path control, written as path data, or the refusal. */
+function pathWords(control: ControlDef, raw: Record<string, unknown>): ControlCheck {
+  const { text, font, align, ...rest } = raw;
+  const extra = Object.keys(rest);
+  if (extra.length) return { ok: false, message: `${control.name} takes words as {"text", "font", "align"}, not ${extra.map((k) => JSON.stringify(k)).join(", ")}.` };
+  const problem = textPathProblem(text);
+  if (problem) return { ok: false, message: `${control.name} ${problem}: pass {"text": "…"}.` };
+  if (font !== undefined && !HANDWRITING_FONTS.includes(font as HandwritingFont)) return { ok: false, message: `${control.name}'s "font" is ${HANDWRITING_FONTS.map((f) => JSON.stringify(f)).join(" or ")}, not ${JSON.stringify(font)}.` };
+  if (align !== undefined && !ALIGNS.includes(align as (typeof ALIGNS)[number])) return { ok: false, message: `${control.name}'s "align" is "left", "center" or "right", not ${JSON.stringify(align)}.` };
+  return { ok: true, value: textPath(text as string, { ...(font !== undefined && { font: font as HandwritingFont }), ...(align !== undefined && { align: align as (typeof ALIGNS)[number] }) }) };
+}
 
 /** Words for a text mask, as an agent passes them. */
 export interface TextMaskWords {
@@ -47,10 +65,15 @@ const PATH_LIKE = /^\s*(?:\.{0,2}\/|[^\s]*\/)|\.(?:png|jpe?g|gif|webp|avif|svg|b
 /**
  * Checks a value for a control as the editor stores it (see `checkControlValue`),
  * with words for text masks: `{ text, font?, weight? }` becomes a text image,
+ * and for path controls `{ text, font?, align? }` becomes handwritten path data,
  * and bare words are refused with what to pass instead. Pass `words: false`
  * where only stored values belong (a document's), so `{ text }` is refused there too.
  */
 export function checkEditorValue(control: ControlDef, raw: unknown, options: { words?: boolean } = {}): ControlCheck {
+  if (control.type === "path" && raw !== null && typeof raw === "object" && !Array.isArray(raw)) {
+    if (options.words === false) return { ok: false, message: `${control.name} stores path data or points; words as {"text": …} are only taken by values.set and keyframe.set.` };
+    return pathWords(control, raw as Record<string, unknown>);
+  }
   if (!isTextMask(control)) return checkControlValue(control, raw);
   const how = `pass its words as {"text": "…"} (with "font" and "weight" if you like), or a text image's URL`;
   if (raw !== null && typeof raw === "object" && !Array.isArray(raw)) {
@@ -78,6 +101,25 @@ export function checkEditorValue(control: ControlDef, raw: unknown, options: { w
  */
 export function editorControlSchema(control: ControlDef): JsonSchema {
   const schema = controlSchema(control);
+  if (control.type === "path") {
+    return {
+      ...schema,
+      description: `${schema.description} Or words to write, as {"text": "…"}: single-stroke handwriting in "script" (joined up, the default) or "sans", lines split by "\\n".`,
+      anyOf: [
+        ...(schema.anyOf ?? []),
+        {
+          type: "object",
+          properties: {
+            text: { type: "string", minLength: 1, description: "The words, printable ASCII; \"\\n\" starts a new line." },
+            font: { enum: HANDWRITING_FONTS, description: 'The hand: "script" (joined up, the default) or "sans" (printed).' },
+            align: { enum: ALIGNS, description: 'How lines line up: "left" (the default), "center" or "right".' },
+          },
+          required: ["text"],
+          additionalProperties: false,
+        },
+      ],
+    };
+  }
   if (!isTextMask(control)) return schema;
   const { font, weight } = textImageFont(String(control.default));
   const title = schema.title as string;

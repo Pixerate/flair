@@ -16,6 +16,7 @@
  */
 
 export { morphPaths, morphSequence, type MorphOptions } from "./morph.js";
+export { HANDWRITING_FONTS, textPath, textPathProblem, type HandwritingFont, type TextPathOptions } from "./handwriting.js";
 export {
   behaviorProgress,
   changeCycles,
