@@ -17,6 +17,7 @@
     "dist",
     "README.md",
     "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
     "CHANGELOG.md"
   ],
   "main": "./dist/index.js",

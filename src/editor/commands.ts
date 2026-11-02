@@ -164,7 +164,7 @@ export function effectCommands(): CommandSpec<EffectEditor>[] {
         const schema = controlsSchema(controls, { title: `${doc.name} controls`, currentColor: doc.effect.kind === "vector" });
         // Text masks take words as well as a URL.
         const properties = schema.properties as Record<string, unknown>;
-        for (const c of controls) if (isTextMask(c)) properties[c.name] = editorControlSchema(c);
+        for (const c of controls) if (isTextMask(c) || c.type === "path") properties[c.name] = editorControlSchema(c);
         return schema;
       },
     },

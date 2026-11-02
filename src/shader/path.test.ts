@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { effectInputs, getEffect } from "../catalog/index.js";
 import { createEffectEditor } from "../editor/editor.js";
+import { textPath, textPathProblem } from "../vector/handwriting.js";
 import { asGl, FakeGl } from "../testing/fake-gl.js";
 import { checkControlValue, controlValue, describeValue, parseControls } from "./controls.js";
 import { MAX_PATH_POINTS, PATH_CHUNK, pathPageData, pathPlacement, pathProblem, pathTexture } from "./path.js";
@@ -138,5 +139,38 @@ describe("path effects, from an agent's side", () => {
     expect(refused).toMatchObject({ ok: false, message: expect.stringMatching(/uPath takes SVG path data/) });
     // Refused: nothing changed.
     expect(editor.document.values.uPath).toEqual([20, 20, 300, 200]);
+  });
+});
+
+describe("handwriting", () => {
+  it("writes words as path data in pen order, joined up in script", () => {
+    const script = textPath("Hello");
+    expect(pathProblem(script)).toBeNull();
+    // Joined up: one stroke for the whole word, bar the H's crossbar and lifts within letters.
+    expect(script.match(/M/g)!.length).toBeLessThan(5);
+    const sans = textPath("Hi", { font: "sans" });
+    expect(sans.match(/M/g)!.length).toBe(5); // H: three strokes; i: stem and dot.
+    expect(textPath("Hi", { font: "sans", smooth: false })).toMatch(/^M [\d.]+ [\d.]+ L/);
+    // Capitals' tops at y = 0 for the size asked.
+    const box = pathTexture(textPath("I", { font: "sans", size: 100 }), "none")!.bounds;
+    expect(box[1]).toBeCloseTo(0);
+    expect(box[3]).toBeCloseTo(100);
+  });
+
+  it("refuses words it cannot write, saying which letters", () => {
+    expect(textPathProblem("")).toBe("needs some words to write");
+    expect(textPathProblem("café ☕")).toBe('can only write printable ASCII letters, digits and punctuation (and line breaks), not "é", "☕"');
+    expect(() => textPath("naïve")).toThrow(RangeError);
+  });
+
+  it("are taken as words by path controls in values.set, and refused with what to pass", () => {
+    const editor = createEffectEditor({ from: "glass-writing" });
+    expect(editor.commands.execute("values.set", { values: { uPath: { text: "Hi there", font: "sans", align: "center" } } })).toMatchObject({ ok: true });
+    expect(editor.document.values.uPath).toBe(textPath("Hi there", { font: "sans", align: "center" }));
+    expect(editor.commands.execute("values.set", { values: { uPath: { text: "Hi", font: "Comic Sans" } } })).toMatchObject({ ok: false, message: `uPath's "font" is "script" or "sans", not "Comic Sans".` });
+    expect(editor.commands.execute("values.set", { values: { uPath: { text: "", font: "sans" } } })).toMatchObject({ ok: false, message: 'uPath needs some words to write: pass {"text": "…"}.' });
+    expect(editor.commands.execute("values.set", { values: { uPath: { words: "Hi" } } })).toMatchObject({ ok: false, message: 'uPath takes words as {"text", "font", "align"}, not "words".' });
+    const schema = editor.commands.execute("values.schema", {}) as { ok: boolean; schema?: { properties: Record<string, { anyOf: unknown[] }> } };
+    expect(JSON.stringify(schema)).toContain('"enum":["script","sans"]');
   });
 });
