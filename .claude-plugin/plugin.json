@@ -1,7 +1,7 @@
 {
   "name": "flair",
   "displayName": "Flair",
-  "version": "0.95.0",
+  "version": "0.96.0",
   "description": "Skills for coding agents writing code with @pixerate/flair: finding and wiring up catalog effects (React, Svelte, embed, scenes, recordings) and authoring custom shader and vector effects, each with a way to check the result.",
   "author": {
     "name": "Pixerate",
