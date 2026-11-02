@@ -1,5 +1,13 @@
 # @pixerate/flair
 
+## 0.92.0
+
+### Minor Changes
+
+- c9301c5: More effects take a path. `border-beam` runs round any outline, `swoosh-underline` sweeps along any curve, and the pointer trails (`comet-trail`, `ribbon-trail`, `sparkle-trail`, `brush-trail`, `ghost-trail`, `light-painting`) follow a path while idle; each keeps its own shape until given one (`""` is no path). `signature` and `route` expose their path and fit their picture to it, and vector path controls take words (`{"text": …}`) in the editor too.
+- b059356: Words as paths: `textPath(text, { font, size, align })` writes single-stroke handwriting (Hershey Script Simplex, joined up, or Simplex Roman) as SVG path data in pen order, smoothed into curves, refusing letters it cannot write with `textPathProblem`. Path controls take words in the editor's `values.set` as `{"text", "font"?, "align"?}`. New effect: `glass-writing`, words written on in one glowing glass stroke.
+- 4f2dcd0: Shaders can draw along a path given at run time. A `sampler2D` marked `path` (`uniform sampler2D uPath; // @control path default="M …" fit=contain`) takes SVG path data, fitted into the frame, or points `[x0, y0, x1, y1, …]` in frame pixels; it is resampled (up to `MAX_PATH_POINTS`) into a small float texture that follows resizes, travels with standalone pages and exports, and is checked with a sentence saying what to pass. The catalog's `PATH` GLSL helpers (`pathNearest`, `pathAt`, `pathHits`, `pathLength`) read it, path controls report the `path` input, and their schema marks path data with `format: "svg-path"`. New effect: `glass-tube`, a see-through glowing tube that draws itself along any path, overlaps showing through each other.
+
 ## 0.91.0
 
 ### Minor Changes
