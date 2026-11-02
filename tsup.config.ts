@@ -6,9 +6,11 @@ import { defineConfig } from "tsup";
 
 const { version } = JSON.parse(readFileSync("package.json", "utf8")) as { version: string };
 
+const skipDts = Boolean(process.env.FIREBASE_APP_HOSTING || process.env.NO_DTS);
+
 const shared = {
   format: ["esm"] as const,
-  dts: true,
+  dts: !skipDts,
   sourcemap: true,
   // Shared modules go in chunks, so classes are one copy across entries (instanceof keeps working).
   splitting: true,
