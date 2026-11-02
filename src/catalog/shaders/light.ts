@@ -552,14 +552,15 @@ export const lightStrandText: ShaderEffect = {
   id: "light-strand-text",
   name: "Light strand text",
   description:
-    "Tall, heavy letters filled with hundreds of fine vertical strands of light, steel blue to white, brightening and fading as light slides down them, with a few warm threads running through and a glow along the lower edges.",
+    "Tall, heavy letters filled with hundreds of fine strands of light, steel blue to white, that curve along the letters' edges and trail out past their corners, brightening and fading as light slides down them, with a few warm threads running through and a glow along the lower edges.",
   category: "text",
   video: "none",
   tags: ["text", "title", "light", "streak", "line", "fibre", "glow", "hero", "tech", "overlay"],
   transparent: true,
   source: glsl(
-    `// Light strand text: the letters, stretched tall, are filled with layers of thin vertical strands whose light slides down them.
-uniform sampler2D uText;        // @control filter=linear wrap=clamp default=${textImage("PRO", { width: 1280, height: 512 })} label="Text"
+    `// Light strand text: the letters, stretched tall, are filled with layers of thin strands whose light slides down them;
+// near the outline they are drawn along it, bunching at the sides and bending round curves, and trail off the corners.
+uniform sampler2D uText;        // @control wrap=clamp default=${textImage("PRO", { width: 1280, height: 512 })} label="Text"
 uniform vec3 uBackground;       // @control color default=#000000 label="Background"
 uniform float uBackgroundAlpha; // @control min=0 max=1 default=0 label="Background opacity"
 uniform vec3 uDark;             // @control color default=#060B1A label="Dark"
@@ -571,6 +572,8 @@ uniform float uStretch;         // @control min=1 max=4 default=2.2 label="Stret
 uniform float uStrands;         // @control min=0.3 max=3 default=1 label="Strand density"
 uniform float uContrast;        // @control min=0.5 max=2 default=1.1 label="Contrast"
 uniform float uWarmth;          // @control min=0 max=2 default=1 label="Warm threads"
+uniform float uBend;            // @control min=0 max=1 default=1 label="Follow edges"
+uniform float uTrail;           // @control min=0 max=2 default=1 label="Trails"
 uniform float uEdge;            // @control min=0 max=2 default=1 label="Edge glow"
 uniform float uSpeed;           // @control min=0 max=1 default=0.15 label="Flow speed"`,
     HASH,
@@ -596,6 +599,24 @@ float strandLayer(vec2 m, float count, float seed, float t) {
   return along * (0.35 + 0.65 * pow(sin(3.14159 * across), 0.6)) * (0.3 + 0.7 * hash12(vec2(id, 3.7)));
 }
 
+// The strands' colour at strand coordinate s (across) and height y, both in text-picture units.
+vec3 strandColor(float s, float y, float n, float t) {
+  vec2 m = vec2(s, y);
+  float strands = 0.45 * strandLayer(m, n, 0.0, t) + 0.35 * strandLayer(m, n * 2.3, 17.0, t * 1.3) + 0.3 * strandLayer(m, n * 5.1, 41.0, t * 0.8);
+  // Broad bright and dark zones, so whole runs of strands dim together down the letters.
+  float zone = vnoise(vec2(s * 9.0, y * 1.6 - t * 0.35)) * 0.7 + 0.3 * vnoise(vec2(s * 23.0 + 5.0, y * 2.4 + t * 0.2));
+  zone = smoothstep(0.2, 0.8, zone);
+  float tone = clamp(pow(strands * (0.15 + 2.2 * zone), uContrast * 1.4), 0.0, 1.0);
+  vec3 col = mix(uDark, uMid, smoothstep(0.0, 0.5, tone));
+  col = mix(col, uLight, smoothstep(0.42, 0.95, tone));
+  // A few hairline warm threads, red at the top turning gold lower down.
+  float wu = s * n * 7.0;
+  float wid = floor(wu);
+  float thread = step(hash12(vec2(wid, 9.1)), 0.012 * uWarmth) * smoothstep(0.5, 0.15, abs(fract(wu) - 0.5));
+  thread *= smoothstep(0.3, 0.7, vnoise(vec2(wid, y * 3.0 - t)));
+  return mix(col, mix(vec3(1.0, 0.82, 0.4), uWarm, y) * 1.2, clamp(thread, 0.0, 1.0));
+}
+
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   float px = 1.0 / iResolution.y;
   vec2 p = (fragCoord - 0.5 * iResolution.xy) * px;
@@ -603,26 +624,30 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   float mask = strandMask(p, 1.5 * px);
   vec2 m = strandPlace(p).xy;
   float n = uStrands * 60.0;
-  float strands = 0.45 * strandLayer(m, n, 0.0, t) + 0.35 * strandLayer(m, n * 2.3, 17.0, t * 1.3) + 0.3 * strandLayer(m, n * 5.1, 41.0, t * 0.8);
-  // Broad bright and dark zones, so whole runs of strands dim together down the letters.
-  float zone = vnoise(vec2(m.x * 9.0, m.y * 1.6 - t * 0.35)) * 0.7 + 0.3 * vnoise(vec2(m.x * 23.0 + 5.0, m.y * 2.4 + t * 0.2));
-  zone = smoothstep(0.2, 0.8, zone);
-  float tone = clamp(pow(strands * (0.15 + 2.2 * zone), uContrast * 1.4), 0.0, 1.0);
-  vec3 col = mix(uDark, uMid, smoothstep(0.0, 0.5, tone));
-  col = mix(col, uLight, smoothstep(0.42, 0.95, tone));
-  // A few hairline warm threads, red at the top turning gold lower down.
-  float wu = m.x * n * 7.0;
-  float wid = floor(wu);
-  float thread = step(hash12(vec2(wid, 9.1)), 0.012 * uWarmth) * smoothstep(0.5, 0.15, abs(fract(wu) - 0.5));
-  thread *= smoothstep(0.3, 0.7, vnoise(vec2(wid, m.y * 3.0 - t)));
-  col = mix(col, mix(vec3(1.0, 0.82, 0.4), uWarm, m.y) * 1.2, clamp(thread, 0.0, 1.0));
+  // Follow the outline: the strand coordinate is pulled along the outline's normal, more the nearer
+  // the edge. Beside an edge that only squeezes the strands together; round a curve or a corner it
+  // bends them along it. It never folds a strand back, whatever the strength.
+  const float R = 0.07;
+  float soft = strandMask(p, R);
+  vec2 g = vec2(strandMask(p + vec2(R * 0.5, 0.0), R) - strandMask(p - vec2(R * 0.5, 0.0), R),
+                strandMask(p + vec2(0.0, R * 0.5), R) - strandMask(p - vec2(0.0, R * 0.5), R));
+  vec2 normal = g / (length(g) + 0.03);
+  float s = m.x - 0.13 * uBend * (1.0 - soft) * normal.x;
+  vec3 col = strandColor(s, m.y, n, t);
+  // Trails: past the corners, strands run on out of the letter, each to its own length.
+  float corner = clamp(4.0 * abs(normal.x * normal.y) - 0.6, 0.0, 1.0);
+  float halo = strandMask(p, 0.06);
+  float id = floor(s * n * 2.3);
+  float cut = 0.5 - 0.47 * uTrail * pow(hash12(vec2(id, 5.3)), 3.0) * corner;
+  float trail = (1.0 - mask) * smoothstep(cut, cut + 0.03, halo) * smoothstep(0.0, 0.3, corner);
   // Light gathering at the letters' edges: white along the sides, warm along the bottoms.
   float inner = strandMask(p, 0.02);
   float edge = clamp(mask - inner, 0.0, 1.0) * 1.6;
   float below = clamp(mask - strandMask(p - vec2(0.0, 0.006), 0.004), 0.0, 1.0) * smoothstep(0.35, 0.0, m.y);
   col += uEdge * (uLight * 0.3 * edge + mix(uWarm, vec3(1.0, 0.85, 0.5), 0.7) * 0.5 * below);
-  float a = mask + uBackgroundAlpha * (1.0 - mask);
-  vec3 rgb = col * mask + uBackground * uBackgroundAlpha * (1.0 - mask);
+  float shape = mask + trail * smoothstep(0.05, 0.4, dot(col, vec3(0.3, 0.5, 0.2)));
+  float a = shape + uBackgroundAlpha * (1.0 - shape);
+  vec3 rgb = col * shape + uBackground * uBackgroundAlpha * (1.0 - shape);
   fragColor = vec4(rgb / max(a, 1e-4), a);
 }`,
   ),
