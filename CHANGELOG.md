@@ -1,5 +1,27 @@
 # @pixerate/flair
 
+## 0.94.0
+
+### Minor Changes
+
+- b0d3e52: Agent skills for coding agents writing code that uses Flair: `flair-use` (finding an effect from a generated index of the whole catalog, choosing an entry point, controls, presets, camera moves, scenes and checking the result) and `flair-author` (custom shader and vector effects). They ship in the package's `skills/` folder; `npx flair skills install [--dir .claude/skills] [--skill <name>]` copies them into a project (`installSkills` from `@pixerate/flair/node`), and `flair skills list` lists them. `flair controls` now also reads vector effects (`.svg`, or `.json` holding an `SvgMotion`): it lists their `{{control}}` declarations and what keeps them from drawing, exiting 1 until they are fixed.
+
+## 0.93.0
+
+### Minor Changes
+
+- ccb6368: New effect: `led-net`, a picture shown through a net of tiny LEDs draped in folds like fabric. Each light glows with a star-filter cross, mostly in one cool tint with drifting rainbow patches, and dark parts of the picture switch the lights off so shapes read as silhouettes.
+- 0e80eed: Two new light effects: `light-waves`, a glossy sheet of fine parallel ridges folding in slow waves with an iridescent sheen across the folds, and `light-strand-text`, tall letters filled with strands of light that follow the letters' edges, squeezing into corners and curving round counters, trail off the corners, and brighten and fade as light slides down them, with a few warm threads and a glow along the lower edges.
+- 3c9b08d: New effect: `wireframe-reveal`, a picture first seen as a schematic wireframe on black (pale hatched panels, outlines and coloured circuit traces along their edges) that builds up to the real picture block by block behind a glitching front, then folds back. It has a still-frame progress control and can reveal from the top.
+
+## 0.92.0
+
+### Minor Changes
+
+- c9301c5: More effects take a path. `border-beam` runs round any outline, `swoosh-underline` sweeps along any curve, and the pointer trails (`comet-trail`, `ribbon-trail`, `sparkle-trail`, `brush-trail`, `ghost-trail`, `light-painting`) follow a path while idle; each keeps its own shape until given one (`""` is no path). `signature` and `route` expose their path and fit their picture to it, and vector path controls take words (`{"text": …}`) in the editor too.
+- b059356: Words as paths: `textPath(text, { font, size, align })` writes single-stroke handwriting (Hershey Script Simplex, joined up, or Simplex Roman) as SVG path data in pen order, smoothed into curves, refusing letters it cannot write with `textPathProblem`. Path controls take words in the editor's `values.set` as `{"text", "font"?, "align"?}`. New effect: `glass-writing`, words written on in one glowing glass stroke.
+- 4f2dcd0: Shaders can draw along a path given at run time. A `sampler2D` marked `path` (`uniform sampler2D uPath; // @control path default="M …" fit=contain`) takes SVG path data, fitted into the frame, or points `[x0, y0, x1, y1, …]` in frame pixels; it is resampled (up to `MAX_PATH_POINTS`) into a small float texture that follows resizes, travels with standalone pages and exports, and is checked with a sentence saying what to pass. The catalog's `PATH` GLSL helpers (`pathNearest`, `pathAt`, `pathHits`, `pathLength`) read it, path controls report the `path` input, and their schema marks path data with `format: "svg-path"`. New effect: `glass-tube`, a see-through glowing tube that draws itself along any path, overlaps showing through each other.
+
 ## 0.91.0
 
 ### Minor Changes
