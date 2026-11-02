@@ -654,7 +654,7 @@ if (result.ok) scene = result.scene; // keep the new state
 reply(call.id, result.output); // send the model only `output`
 ```
 
-The tools are `get_scene` (the scene, or with `view: "outline"` just its structure: each shot's layers, transition and the slots the host fills), `write_scene`, `update_shot`, `insert_shots`, `delete_shots`, `set_rig_widget`, `find_layer_effects` (catalog effects for a shot's layers or its transition, with what each takes as a subject, its controls and presets, a page at a time), `find_camera_moves` (the camera moves a shot can use, with their controls), `find_templates`, `describe_template` and `use_template` (start the scene from a [sequence template](#-sequence-templates), filling its slots), `preview_scene` (a headless run: length, warnings, notes) and `batch_scene`, which runs several of them as one all-or-nothing change and lets a step use an earlier step's result (`"$1.output.outline.shots[0].hold"`).
+The tools are `get_scene` (the scene, or with `view: "outline"` just its structure: each shot's layers, transition and the slots the host fills), `write_scene`, `update_shot`, `insert_shots`, `delete_shots`, `set_rig_widget`, `find_layer_effects` (catalog effects for a shot's layers or its transition, with what each takes as a subject, its controls and presets, a page at a time), `find_camera_moves` (the camera moves a shot can use, with their controls), `find_templates`, `describe_template` and `use_template` (start the scene from a [sequence template](#-sequence-templates), filling its slots), `preview_scene` (a headless run: length, warnings, notes), `export_scene` (the scene as a text template, Lottie, Motion, FCP7 XML or an EDL: the model gets a summary, its notes and the template's editable fields; the file is in the result's `export` for the host to keep) and `batch_scene`, which runs several of them as one all-or-nothing change and lets a step use an earlier step's result (`"$1.output.outline.shots[0].hold"`).
 
 Arguments are checked against each tool's schema, and a call that cannot apply (a shot that does not exist, an unresolved reference) is refused with `ok: false` and a sentence saying what to fix, leaving the scene as it was. Edits that apply return the scene's validation issues (unknown shot fields, an unknown effect with the nearest ids, a subject an effect does not take, a transition used as a layer, presets and control values checked against the catalog) so the model can correct them. `output` keeps replies small: an edit returns a one-line summary and the issues, not the whole scene.
 
@@ -695,7 +695,13 @@ A shot arranges **catalog effects as layers** over its board, and can name a **c
 
 `standaloneSceneHtml(scene, options)` (async) is a page with the plan and the compositor in it, carrying only the effects the scene uses.
 
-**Exporting.** The exporters carry what their formats can and name the rest (`sceneExportNotes(scene, format)`, written into each file and printed by `flair export`): Lottie takes picture layers as image layers and transitions as markers; Motion and FCP7 XML take every layer as a placeholder with its place and time (FCP7 on tracks above the shots, with each transition a cross dissolve); the EDL takes transitions as dissolve events and layers as comments.
+**Exporting.** The exporters carry what their formats can and name the rest (`sceneExportNotes(scene, format)`, written into each file and printed by `flair export`): Lottie takes picture layers as image layers and transitions as markers; Motion and FCP7 XML take every layer as a placeholder with its place and time (FCP7 on tracks above the shots, with each transition a cross dissolve); the EDL takes transitions as dissolve events and layers as comments. `await exportScene(scene, format, { frameRate })` exports to any of them by name (`SCENE_EXPORT_FORMATS`), as `flair scene export --format` and the `export_scene` agent tool do.
+
+**Text templates.** `await exportTextTemplate(scene, { frameRate })` exports the scene's words as an animated title template for video editors: the Lottie animation with an editable text layer (`ty: 5`) for each shot title and caption (styled and placed as the player draws them), each element's text (hanging off its shape layer) and each layer with words (a text subject, or a vector effect's text controls, from a slot, its values, its preset or its defaults), and alongside it `fonts` (also the animation's `fonts.list`), `texts` (each one's font family, weight, size, tracking and line height, fill, alignment, an estimated box in stage px, in and out frames, and `segments`: its words' timings) and `fields`, what a template user fills. Each text document has a `sid` naming its Lottie slot in the animation's `slots` (Lottie 5.12), and a scene slot (`{ "slot": "headline" }`) is one field however many layers show it. Effects paced by a "Ms per word" or "Ms per letter" control get a timing a word, revealed in turn by a word range selector; their own look, lead-in and easing are not carried, and the notes say so. Boxes come from a width estimate, not measured fonts, and effect layers' words are fitted to the layer's box.
+
+```bash
+npx flair scene export ./scene.json --format text-template -o title.json
+```
 
 **Moving from scene media and effects:** `Scene.media`, `Shot.effects` and `Shot.stopEffects` were replaced by layers, and `validateScene` says what to write for each:
 
@@ -918,6 +924,7 @@ npx flair scene validate ./scene.json        # layout, framing and timing checks
 npx flair scene review ./scene.json          # fast headless simulation + review
 npx flair scene html ./scene.json --subject logo=./logo.svg  # a standalone player, its slots filled
 npx flair scene lottie ./scene.json out.json # also: fcp7, edl, motn
+npx flair scene export ./scene.json --format text-template  # any export format by name: editable Lottie title template
 npx flair template fill stat-countdown --set value=4200 --html stats.html  # a template filled into a scene (list, show)
 
 # Catalog effects to files

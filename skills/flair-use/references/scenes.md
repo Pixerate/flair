@@ -60,7 +60,8 @@ In code: `validateScene(scene)` returns issues (`[{ shot, message }]`; none mean
 - Recording in the browser: `recordScene(scene, { subjects, format: "mp4" })`.
 - A standalone page: `npx flair scene html launch.scene.json --subject productShot=./mug.png`.
 - Editors: `npx flair scene lottie launch.scene.json out.json` (also `fcp7`, `edl`, `motn`).
+- Editable title templates for video editors: `npx flair scene export launch.scene.json --format text-template -o title.json`, or `await exportTextTemplate(scene)`: Lottie text layers for titles, captions and text effects, with fonts, boxes, slots and word timings.
 
 ## Agents directing scenes at runtime
 
-If the app itself lets a model edit scenes, give the model `FLAIR_AGENT_TOOLS` and apply each call with `applySceneTool(scene, name, input)` (from `@pixerate/flair`); its tools include `find_layer_effects`, `find_camera_moves`, `use_template` and `preview_scene`. That is the app's agent surface, separate from this skill.
+If the app itself lets a model edit scenes, give the model `FLAIR_AGENT_TOOLS` and apply each call with `applySceneTool(scene, name, input)` (from `@pixerate/flair`); its tools include `find_layer_effects`, `find_camera_moves`, `use_template`, `preview_scene` and `export_scene`. That is the app's agent surface, separate from this skill.

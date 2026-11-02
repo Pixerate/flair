@@ -9,6 +9,7 @@ import { applyRig, setRigWidget } from '../scene/rig.js';
 import { cameraEffects, cameraMoveControls } from '../catalog/camera.js';
 import { describeTemplateSlots, instantiateTemplate, templateSlotSummary, type SceneTemplate } from '../scene/template.js';
 import { applySceneBatch } from './batch.js';
+import { exportScene, type SceneExport } from '../export/scene-export.js';
 import { checkSchema } from './schema.js';
 
 export interface AgentToolDefinition {
@@ -193,6 +194,21 @@ export const FLAIR_AGENT_TOOLS: AgentToolDefinition[] = [
     },
   },
   {
+    name: 'export_scene',
+    description:
+      'Exports the scene for another tool and returns a summary: its notes (what the format leaves out) and, for "text-template", the editable text fields. The host keeps the file. Formats: "text-template" (an animated Lottie title template for video editors: editable text layers for titles, captions, element text and text effects, with fonts, boxes, Lottie slots and word timings), "lottie" (Lottie JSON), "motn" (Apple Motion), "fcp7" (Final Cut Pro 7 XML), "edl" (CMX 3600). The scene is not changed.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        format: { type: 'string', enum: ['text-template', 'lottie', 'motn', 'fcp7', 'edl'], description: 'The format to export to.' },
+        frameRate: { type: 'number', minimum: 1, maximum: 240, description: 'Frames per second (default 30).' },
+        reel: { type: 'string', description: 'For "edl": the reel name, up to 8 characters (default "AX").' },
+      },
+      required: ['format'],
+      additionalProperties: false,
+    },
+  },
+  {
     name: 'set_rig_widget',
     description: 'Adjusts a high-level creative rig widget (slider, popup, or toggle) and propagates parameters to shaders and elements.',
     input_schema: {
@@ -281,6 +297,8 @@ export type SceneToolResult =
       outline?: SceneOutline;
       issues: SceneIssue[];
       review?: Review;
+      /** For `export_scene`: the exported file, for the host to keep (only a summary goes to the model). */
+      export?: SceneExport;
       /**
        * What to send back to the model as the tool's result: only what the
        * call asked for (the outline without the full scene, a summary of an
@@ -586,6 +604,38 @@ async function runSceneTool(scene: Scene, toolName: string, input: Record<string
       const issues = await sceneIssues(scene);
       const { markdown: _markdown, ...summary } = review;
       return { ok: true, scene, issues, review, output: { ok: true, issues, review: summary } };
+    }
+
+    case 'export_scene': {
+      if (input.reel !== undefined && input.format !== 'edl') return fail(`"reel" is only for the "edl" format, not "${input.format}"; leave it out.`);
+      let result: SceneExport;
+      try {
+        result = await exportScene(scene, input.format, { ...(input.frameRate !== undefined ? { frameRate: input.frameRate } : {}), ...(input.reel !== undefined ? { reel: input.reel } : {}) });
+      } catch (err: any) {
+        return fail(`Could not export the scene to ${input.format}: ${err.message || String(err)}. Check it with get_scene, whose issues say what to fix.`);
+      }
+      const NOTES = 10;
+      const FIELDS = 20;
+      const template = result.template;
+      const output: SceneToolOutput = {
+        ok: true,
+        format: result.format,
+        extension: result.extension,
+        characters: result.content.length,
+        summary: template
+          ? `Exported a text template: ${template.texts.length} text layer${template.texts.length === 1 ? '' : 's'} and ${template.fields.length} editable field${template.fields.length === 1 ? '' : 's'}, ${(template.durationMs / 1000).toFixed(1)} s at ${template.frameRate} fps.`
+          : `Exported the scene to ${result.format} (${result.content.length} characters).`,
+        ...(template
+          ? {
+              fields: template.fields.slice(0, FIELDS).map((f) => ({ id: f.id, label: f.label, default: f.default.length > 80 ? `${f.default.slice(0, 79)}…` : f.default, texts: f.texts.length })),
+              fieldCount: template.fields.length,
+              ...(template.fields.length > FIELDS ? { moreFields: `Showing ${FIELDS} of ${template.fields.length} fields.` } : {}),
+            }
+          : {}),
+        notes: result.notes.slice(0, NOTES),
+        ...(result.notes.length > NOTES ? { moreNotes: `Showing ${NOTES} of ${result.notes.length} notes.` } : {}),
+      };
+      return { ok: true, scene, issues: [], export: result, output };
     }
 
     case 'set_rig_widget': {

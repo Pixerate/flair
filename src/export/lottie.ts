@@ -75,6 +75,8 @@ export interface LottieLayer {
   sc?: string;
   /** Image layers: the asset's id. */
   refId?: string;
+  /** Text layers: the text document (`d`), path options (`p`), more options (`m`) and animators (`a`). */
+  t?: { d: unknown; p: Record<string, unknown>; m: Record<string, unknown>; a: unknown[] };
 }
 
 export interface LottieAnimation {
