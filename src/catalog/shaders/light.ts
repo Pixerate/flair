@@ -552,14 +552,15 @@ export const lightStrandText: ShaderEffect = {
   id: "light-strand-text",
   name: "Light strand text",
   description:
-    "Tall, heavy letters filled with hundreds of fine strands of light, steel blue to white, that curve along the letters' edges and trail out past their corners, brightening and fading as light slides down them, with a few warm threads running through and a glow along the lower edges.",
+    "Tall, heavy letters built from hundreds of fine strands of light, steel blue to white, that fall into place from top to bottom, the letters' cores first and their edges last, then curve along the edges, brightening and fading as light slides down them, with a few warm threads running through and a glow along the lower edges.",
   category: "text",
   video: "none",
   tags: ["text", "title", "light", "streak", "line", "fibre", "glow", "hero", "tech", "overlay"],
   transparent: true,
   source: glsl(
     `// Light strand text: the letters, stretched tall, are filled with layers of thin strands whose light slides down them;
-// near the outline they are drawn along it, bunching at the sides and bending round curves, and trail off the corners.
+// near the outline they are drawn along it, bunching at the sides and bending round curves. They build up by falling
+// in from the top, strand by strand, from the middle of each stroke out to its edges.
 uniform sampler2D uText;        // @control wrap=clamp default=${textImage("PRO", { width: 1280, height: 512 })} label="Text"
 uniform vec3 uBackground;       // @control color default=#000000 label="Background"
 uniform float uBackgroundAlpha; // @control min=0 max=1 default=0 label="Background opacity"
@@ -573,9 +574,11 @@ uniform float uStrands;         // @control min=0.3 max=3 default=1 label="Stran
 uniform float uContrast;        // @control min=0.5 max=2 default=1.1 label="Contrast"
 uniform float uWarmth;          // @control min=0 max=2 default=1 label="Warm threads"
 uniform float uBend;            // @control min=0 max=1 default=1 label="Follow edges"
-uniform float uTrail;           // @control min=0 max=2 default=1 label="Trails"
 uniform float uEdge;            // @control min=0 max=2 default=1 label="Edge glow"
-uniform float uSpeed;           // @control min=0 max=1 default=0.15 label="Flow speed"`,
+uniform float uSpeed;           // @control min=0 max=1 default=0.15 label="Flow speed"
+uniform bool uAnimate;          // @control default=true label="Build up"
+uniform float uBuildTime;       // @control min=0.5 max=10 default=3 label="Build time (s)"
+uniform float uProgress;        // @control min=0 max=1 default=1 label="Built (when still)"`,
     HASH,
     NOISE,
     `// Where p falls on the text picture, stretched vertically: xy the picture's 0-1 coordinates, z its texels per frame unit.
@@ -590,19 +593,39 @@ float strandMask(vec2 p, float blur) {
   if (m.x < 0.0 || m.x > 1.0 || m.y < 0.0 || m.y > 1.0) return 0.0;
   return textureLod(uText, m.xy, log2(max(blur * m.z, 1.0))).a;
 }
+// How far a strand has fallen, from 0 (not started) to 1 (reached the bottom), at build stage 'stage'.
+// Each strand waits its own short while before it drops.
+float strandFall(float id, float stage) {
+  return (stage - 0.3 * hash12(vec2(id, 1.9))) / 0.4;
+}
+// How much of a falling strand is lit at height y, plus a bright head while it is still dropping.
+vec2 strandDrop(float fall, float y) {
+  float below = fall * 1.1 - (1.0 - y);
+  float lit = smoothstep(0.0, 0.03, below);
+  float head = smoothstep(0.0, 0.01, below) * exp(-below * 30.0) * (1.0 - smoothstep(0.8, 1.0, fall));
+  return vec2(lit, head);
+}
 // One layer of strands: a column of light per cell across, its brightness drifting slowly along it.
-float strandLayer(vec2 m, float count, float seed, float t) {
+// x its brightness, y how much of the cell it covers so far.
+vec2 strandLayer(vec2 m, float count, float seed, float t, float stage) {
   float u = m.x * count;
   float id = floor(u) + seed;
-  float across = fract(u);
+  float across = pow(sin(3.14159 * fract(u)), 0.6);
   float along = vnoise(vec2(id * 7.31, m.y * (2.0 + 3.0 * hash12(vec2(id, seed))) - t * (0.6 + hash12(vec2(seed, id)))));
-  return along * (0.35 + 0.65 * pow(sin(3.14159 * across), 0.6)) * (0.3 + 0.7 * hash12(vec2(id, 3.7)));
+  vec2 drop = strandDrop(strandFall(id, stage), m.y);
+  float light = along * (0.35 + 0.65 * across) * (0.3 + 0.7 * hash12(vec2(id, 3.7)));
+  return vec2(light * drop.x + 1.5 * drop.y * across, drop.x * (0.35 + 0.65 * across));
 }
 
-// The strands' colour at strand coordinate s (across) and height y, both in text-picture units.
-vec3 strandColor(float s, float y, float n, float t) {
+// The strands' colour at strand coordinate s (across) and height y, both in text-picture units, and in
+// 'cover' how much of the letter the strands that have fallen so far fill.
+vec3 strandColor(float s, float y, float n, float t, float stage, out float cover) {
   vec2 m = vec2(s, y);
-  float strands = 0.45 * strandLayer(m, n, 0.0, t) + 0.35 * strandLayer(m, n * 2.3, 17.0, t * 1.3) + 0.3 * strandLayer(m, n * 5.1, 41.0, t * 0.8);
+  vec2 a = strandLayer(m, n, 0.0, t, stage);
+  vec2 b = strandLayer(m, n * 2.3, 17.0, t * 1.3, stage);
+  vec2 c = strandLayer(m, n * 5.1, 41.0, t * 0.8, stage);
+  float strands = 0.45 * a.x + 0.35 * b.x + 0.3 * c.x;
+  cover = 1.0 - (1.0 - a.y) * (1.0 - b.y) * (1.0 - c.y);
   // Broad bright and dark zones, so whole runs of strands dim together down the letters.
   float zone = vnoise(vec2(s * 9.0, y * 1.6 - t * 0.35)) * 0.7 + 0.3 * vnoise(vec2(s * 23.0 + 5.0, y * 2.4 + t * 0.2));
   zone = smoothstep(0.2, 0.8, zone);
@@ -613,7 +636,7 @@ vec3 strandColor(float s, float y, float n, float t) {
   float wu = s * n * 7.0;
   float wid = floor(wu);
   float thread = step(hash12(vec2(wid, 9.1)), 0.012 * uWarmth) * smoothstep(0.5, 0.15, abs(fract(wu) - 0.5));
-  thread *= smoothstep(0.3, 0.7, vnoise(vec2(wid, y * 3.0 - t)));
+  thread *= smoothstep(0.3, 0.7, vnoise(vec2(wid, y * 3.0 - t))) * strandDrop(strandFall(wid + 9.1, stage), y).x;
   return mix(col, mix(vec3(1.0, 0.82, 0.4), uWarm, y) * 1.2, clamp(thread, 0.0, 1.0));
 }
 
@@ -633,19 +656,22 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
                 strandMask(p + vec2(0.0, R * 0.5), R) - strandMask(p - vec2(0.0, R * 0.5), R));
   vec2 normal = g / (length(g) + 0.03);
   float s = m.x - 0.13 * uBend * (1.0 - soft) * normal.x;
-  vec3 col = strandColor(s, m.y, n, t);
-  // Trails: past the corners, strands run on out of the letter, each to its own length.
-  float corner = clamp(4.0 * abs(normal.x * normal.y) - 0.6, 0.0, 1.0);
-  float halo = strandMask(p, 0.06);
-  float id = floor(s * n * 2.3);
-  float cut = 0.5 - 0.47 * uTrail * pow(hash12(vec2(id, 5.3)), 3.0) * corner;
-  float trail = (1.0 - mask) * smoothstep(cut, cut + 0.03, halo) * smoothstep(0.0, 0.3, corner);
+  // Build up: strands deep in a stroke start falling first, those at its edges last.
+  float built = uAnimate ? clamp(iTime / uBuildTime, 0.0, 1.0) : uProgress;
+  // How far in from the outline, from 0 at the edge to 1 in the middle of a stroke: the letter
+  // blurred over growing radii stays solid only as far in as each radius. The blur is measured down
+  // the picture, which the stretch squeezes across, so the radii grow with it.
+  float depth = (smoothstep(0.5, 0.8, strandMask(p, 0.045 * uStretch)) + smoothstep(0.5, 0.8, strandMask(p, 0.09 * uStretch))
+               + smoothstep(0.5, 0.75, strandMask(p, 0.18 * uStretch))) / 3.0;
+  float stage = built * 1.6 - 0.6 * (1.0 - depth);
+  float cover;
+  vec3 col = strandColor(s, m.y, n, t, stage, cover);
   // Light gathering at the letters' edges: white along the sides, warm along the bottoms.
   float inner = strandMask(p, 0.02);
   float edge = clamp(mask - inner, 0.0, 1.0) * 1.6;
   float below = clamp(mask - strandMask(p - vec2(0.0, 0.006), 0.004), 0.0, 1.0) * smoothstep(0.35, 0.0, m.y);
-  col += uEdge * (uLight * 0.3 * edge + mix(uWarm, vec3(1.0, 0.85, 0.5), 0.7) * 0.5 * below);
-  float shape = mask + trail * smoothstep(0.05, 0.4, dot(col, vec3(0.3, 0.5, 0.2)));
+  col += uEdge * (uLight * 0.3 * edge + mix(uWarm, vec3(1.0, 0.85, 0.5), 0.7) * 0.5 * below) * cover;
+  float shape = mask * cover;
   float a = shape + uBackgroundAlpha * (1.0 - shape);
   vec3 rgb = col * shape + uBackground * uBackgroundAlpha * (1.0 - shape);
   fragColor = vec4(rgb / max(a, 1e-4), a);
