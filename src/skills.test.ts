@@ -217,6 +217,17 @@ describe("the skills", () => {
     expect(pkg.files).toContain("skills");
   });
 
+  it("ship as the Claude Code plugin `flair`, from the repo's marketplace, at the package's version", () => {
+    const plugin = JSON.parse(readFileSync(".claude-plugin/plugin.json", "utf8")) as { name: string; version: string; homepage: string };
+    const marketplace = JSON.parse(readFileSync(".claude-plugin/marketplace.json", "utf8")) as { name: string; plugins: { name: string; source: string }[] };
+    // The entry name is the install id (flair@pixerate) and the manifest name the skills' prefix: keep them the same.
+    expect(marketplace.plugins).toEqual([expect.objectContaining({ name: plugin.name, source: "./" })]);
+    // `pnpm version-packages` keeps it in step, so the plugin updates with each release.
+    expect(plugin.version, "Run the sync in `pnpm version-packages`: the plugin's version is not the package's.").toBe((pkg as unknown as { version: string }).version);
+    const page = /^https:\/\/flair\.pixerate\.com\/(.+)\/$/.exec(plugin.homepage)![1];
+    expect(existsSync(`apps/docs/src/content/docs/${page}.md`), `the plugin's homepage is a docs page (${page})`).toBe(true);
+  });
+
   it.each(DOCS.map((d) => [d.file, d.text]))("%s links only to files that exist", (file, text) => {
     for (const [, target] of text.matchAll(/\]\(([^)#]+)(?:#[^)]*)?\)/g)) {
       if (/^[a-z]+:/.test(target!)) continue;

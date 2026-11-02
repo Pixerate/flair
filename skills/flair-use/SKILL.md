@@ -47,6 +47,7 @@ Every change ends with a check. See [checking.md](references/checking.md):
 
 ## Rules
 
+- The project needs `@pixerate/flair` installed (`npm install @pixerate/flair`): the `npx flair` commands here run the project's own copy, so they match its version.
 - Browser code imports only browser-safe entry points; `@pixerate/flair/node` (rendering with headless Chrome) is for Node scripts and servers.
 - Image URLs from another origin need CORS; videos need `crossOrigin = "anonymous"`.
 - Writing a new effect (GLSL or animated SVG): use the flair-author skill.

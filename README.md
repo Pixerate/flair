@@ -106,11 +106,14 @@ npm install @pixerate/flair @pixerate/editor
 npm install @pixerate/editor-react
 ```
 
-Using a coding agent (Claude Code, Cursor and others)? Give it Flair's skills, so it finds effects and wires them up without reading this whole README (see [Agent skills](#agent-skills)):
+Using a coding agent? Give it Flair's skills, so it finds effects and wires them up without reading this whole README (see [Agent skills](#agent-skills)). In Claude Code, install the plugin:
 
-```bash
-npx flair skills install
+```text
+/plugin marketplace add Pixerate/flair
+/plugin install flair@pixerate
 ```
+
+For other agents (Cursor and others), copy the skills into the project: `npx flair skills install`.
 
 ### 1. Drop in a catalog effect
 
@@ -986,9 +989,18 @@ Flair ships two [agent skills](https://docs.claude.com/en/docs/claude-code/skill
 - **`flair-use`**: finding an effect (a generated index of every effect, one line each, by group), choosing an entry point (React, Svelte, embed, the lazy catalog, Node), controls, presets, camera moves, scenes, and checking the result.
 - **`flair-author`**: writing custom shader and vector effects, with `flair controls` as the check.
 
-`npx flair skills install` copies them into `.claude/skills` (`--dir` for another folder, such as one your agent reads; `--skill flair-use` for one of them). Run it again after upgrading Flair: it brings changed files up to date and leaves files of your own alone. From code, `installSkills({ dir, skills })` from `@pixerate/flair/node` does the same.
+**Claude Code plugin.** This repository is a Claude Code plugin marketplace (`pixerate`) with one plugin, `flair`, holding both skills:
 
-The skills are plain Markdown and name only what exists: a test checks every entry point, export, CLI command and flag, effect id, preset, template, motion primitive and agent tool they mention, and `pnpm catalog:meta` regenerates the effect index.
+```text
+/plugin marketplace add Pixerate/flair
+/plugin install flair@pixerate
+```
+
+Claude uses them by itself when a task involves Flair, or call them as `/flair:flair-use` and `/flair:flair-author`. Add `--scope project` to both (`claude plugin marketplace add Pixerate/flair --scope project`, `claude plugin install flair@pixerate --scope project`) and commit `.claude/settings.json` to give a whole repository the plugin. The plugin's version follows the package's, so it updates with each release. The skills run the project's own CLI, so install `@pixerate/flair` in the project too.
+
+**Copying them into a project** (any agent): `npx flair skills install` copies them into `.claude/skills` (`--dir` for another folder, such as one your agent reads; `--skill flair-use` for one of them). Run it again after upgrading Flair: it brings changed files up to date and leaves files of your own alone. From code, `installSkills({ dir, skills })` from `@pixerate/flair/node` does the same.
+
+See [Agent Skills & Claude Code Plugin](https://flair.pixerate.com/editor-and-agents/agent-skills/) on the docs site. The skills are plain Markdown and name only what exists: a test checks every entry point, export, CLI command and flag, effect id, preset, template, motion primitive and agent tool they mention, and `pnpm catalog:meta` regenerates the effect index.
 
 ---
 
