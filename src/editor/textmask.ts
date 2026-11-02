@@ -17,6 +17,11 @@ import { HANDWRITING_FONTS, textPath, textPathProblem, type HandwritingFont } fr
 
 const ALIGNS = ["left", "center", "right"] as const;
 
+/** A shader's path control, or a vector effect's text control holding SVG path data (its default starts with a move). */
+export function holdsPath(control: ControlDef): boolean {
+  return control.type === "path" || (control.type === "text" && /^\s*[Mm]\s*[-+.\d]/.test(String(control.default)));
+}
+
 /** Words for a path control, written as path data, or the refusal. */
 function pathWords(control: ControlDef, raw: Record<string, unknown>): ControlCheck {
   const { text, font, align, ...rest } = raw;
@@ -70,7 +75,7 @@ const PATH_LIKE = /^\s*(?:\.{0,2}\/|[^\s]*\/)|\.(?:png|jpe?g|gif|webp|avif|svg|b
  * where only stored values belong (a document's), so `{ text }` is refused there too.
  */
 export function checkEditorValue(control: ControlDef, raw: unknown, options: { words?: boolean } = {}): ControlCheck {
-  if (control.type === "path" && raw !== null && typeof raw === "object" && !Array.isArray(raw)) {
+  if (holdsPath(control) && raw !== null && typeof raw === "object" && !Array.isArray(raw)) {
     if (options.words === false) return { ok: false, message: `${control.name} stores path data or points; words as {"text": …} are only taken by values.set and keyframe.set.` };
     return pathWords(control, raw as Record<string, unknown>);
   }
@@ -101,12 +106,15 @@ export function checkEditorValue(control: ControlDef, raw: unknown, options: { w
  */
 export function editorControlSchema(control: ControlDef): JsonSchema {
   const schema = controlSchema(control);
-  if (control.type === "path") {
+  if (holdsPath(control)) {
+    // A vector effect's text control is a bare string: it becomes one choice of several.
+    const { type, ...rest } = schema;
+    const choices = schema.anyOf ?? [{ type, ...(schema.pattern !== undefined && { pattern: schema.pattern }) }];
     return {
-      ...schema,
+      ...rest,
       description: `${schema.description} Or words to write, as {"text": "…"}: single-stroke handwriting in "script" (joined up, the default) or "sans", lines split by "\\n".`,
       anyOf: [
-        ...(schema.anyOf ?? []),
+        ...choices,
         {
           type: "object",
           properties: {

@@ -49,6 +49,7 @@ describe("path controls", () => {
     const schema = controlSchema(parseControls(SOURCE)[0]!);
     expect(schema.anyOf).toEqual([
       { type: "string", format: "svg-path", pattern: "^\\s*[Mm]" },
+      { const: "" },
       { type: "array", items: { type: "number" }, minItems: 4 },
     ]);
     expect(schema.description).toMatch(/fitted into the frame \(cover, keeping 20% of the shorter side clear\)/);
@@ -172,5 +173,30 @@ describe("handwriting", () => {
     expect(editor.commands.execute("values.set", { values: { uPath: { words: "Hi" } } })).toMatchObject({ ok: false, message: 'uPath takes words as {"text", "font", "align"}, not "words".' });
     const schema = editor.commands.execute("values.schema", {}) as { ok: boolean; schema?: { properties: Record<string, { anyOf: unknown[] }> } };
     expect(JSON.stringify(schema)).toContain('"enum":["script","sans"]');
+  });
+});
+
+describe("effects that take a path as well as their own shape", () => {
+  it("default to no path (\"\"), keep their look, and take one or go back with \"\"", () => {
+    for (const id of ["border-beam", "swoosh-underline", "comet-trail", "ribbon-trail", "sparkle-trail", "brush-trail", "ghost-trail", "light-painting"]) {
+      const effect = getEffect(id)!;
+      expect(effectInputs(effect).accepts, id).toContain("path");
+      const control = parseControls((effect as { source: string }).source).find((c) => c.type === "path");
+      expect(control?.default, id).toBe("");
+    }
+    const editor = createEffectEditor({ from: "border-beam" });
+    expect(editor.commands.execute("values.set", { values: { uPath: "M 0 0 L 100 0 L 50 80 Z" } })).toMatchObject({ ok: true });
+    expect(editor.commands.execute("values.set", { values: { uPath: "" } })).toMatchObject({ ok: true });
+    expect(editor.document.values.uPath).toBe("");
+  });
+
+  it("vector paths fit their picture to the path, and take words", () => {
+    const route = getEffect("route")!;
+    expect(route.kind === "vector" && route.derived?.({ route: "M 10 20 L 110 70" })).toMatchObject({ sx: 10, sy: 20, ex: 110, ey: 70, box: "-20 -10 160 110" });
+    const editor = createEffectEditor({ from: "signature" });
+    expect(effectInputs(getEffect("signature")!).accepts).toContain("path");
+    expect(editor.commands.execute("values.set", { values: { path: { text: "Jack" } } })).toMatchObject({ ok: true });
+    expect(editor.document.values.path).toBe(textPath("Jack"));
+    expect(editor.commands.execute("values.set", { values: { path: { text: "Zoë" } } })).toMatchObject({ ok: false, message: expect.stringMatching(/not "ë"/) });
   });
 });

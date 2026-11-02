@@ -277,7 +277,7 @@ export function controlValue(
   if (v === undefined) return control.default;
   if (control.type === "bool") return typeof v === "boolean" ? v : control.default;
   if (control.type === "sampler2D" || control.type === "text") return typeof v === "string" ? v : control.default;
-  if (control.type === "path") return pathProblem(v) ? control.default : v;
+  if (control.type === "path") return v === "" || !pathProblem(v) ? v : control.default;
   const n = COMPONENTS[control.type];
   if (n === 1) return typeof v === "number" ? v : control.default;
   if (control.color && typeof v === "string") {
@@ -317,6 +317,8 @@ export function checkControlValue(control: ControlDef, raw: unknown, options: { 
     return typeof raw === "string" ? { ok: true, value: raw } : fail(`${control.name} takes text.`);
   }
   if (control.type === "path") {
+    // "" is no path, as it is no picture for an image: an effect with an optional path goes back to its own.
+    if (raw === "") return { ok: true, value: "" };
     const problem = pathProblem(raw);
     return problem ? fail(`${control.name} ${problem}.`) : { ok: true, value: Array.isArray(raw) ? [...raw] : (raw as string) };
   }

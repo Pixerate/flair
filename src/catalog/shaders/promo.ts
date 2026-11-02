@@ -1,4 +1,4 @@
-import { glsl, HASH } from "../glsl.js";
+import { glsl, HASH, PATH } from "../glsl.js";
 import { SAMPLE_IMAGES } from "../images.js";
 import type { ShaderEffect } from "../types.js";
 import { BACKDROP_CONTROLS, PICTURE } from "./image.js";
@@ -246,10 +246,10 @@ export const swooshUnderline: ShaderEffect = {
   id: "swoosh-underline",
   name: "Swoosh underline",
   description:
-    "A glowing curved stroke sweeping on under a subtitle with a bright head and a thinner second stroke chasing it, then wiping away from its tail; a transparent overlay.",
+    "A glowing curved stroke sweeping on under a subtitle with a bright head and a thinner second stroke chasing it, then wiping away from its tail, along its own curve or any path; a transparent overlay.",
   category: "light",
   transparent: true,
-  tags: ["overlay", "promo", "underline", "swoosh", "title", "accent", "neon"],
+  tags: ["overlay", "promo", "underline", "swoosh", "title", "accent", "neon", "path"],
   source: glsl(
     `// Swoosh underline: a tapered curve (a parabola with a rise) drawn on from the left, its head a bright point,
 // then wiped away from its tail. Distance to the curve is to first order (the height error over the slope).
@@ -264,8 +264,10 @@ uniform float uGlow;   // @control min=0 max=2 default=1 label="Glow"
 uniform bool uSecond;  // @control default=true label="Second stroke"
 uniform bool uAnimate; // @control default=true label="Animate"
 uniform float uCycle;  // @control min=1 max=8 default=2.5 label="Cycle (s)"
+uniform sampler2D uPath; // @control path default="" margin=0.1 label="Path (instead of the curve)"
 ${BACKGROUND_CONTROLS}`,
     OVER,
+    PATH,
     `float easeOut(float x) { return 1.0 - pow(1.0 - clamp(x, 0.0, 1.0), 3.0); }
 float easeInOut(float x) { x = clamp(x, 0.0, 1.0); return x * x * (3.0 - 2.0 * x); }
 
@@ -296,17 +298,39 @@ vec2 stroke(vec2 p, float drop, float scale, float tail, float head) {
   return vec2(halo, core);
 }
 
+// The same stroke along uPath (fitted into the frame, then moved by Height), as stroke() draws it along the curve.
+vec2 pathStroke(vec2 fc, float drop, float scale, float tail, float head) {
+  float len = pathLength(uPath);
+  vec2 q = fc + vec2(0.0, (drop - uY) * iResolution.y);
+  vec4 n = pathNearest(uPath, q, tail * len, head * len);
+  float u = n.y / len;
+  float d = n.x / iResolution.y;
+  float shown = n.w * step(0.001, head - tail);
+  float hw = 0.0005 * uWidth * scale * pow(sin(3.14159 * u), 0.5) * (0.45 + 0.55 * smoothstep(head, head - 0.2, u));
+  float px = 1.0 / iResolution.y;
+  float core = (1.0 - smoothstep(hw, hw + 1.5 * px, d)) * shown;
+  float halo = exp(-d / (0.003 * uWidth * scale)) * shown * uGlow;
+  if (head > 0.0 && head < 1.0) {
+    float dh = length(q - pathAt(uPath, head * len).xy) / iResolution.y;
+    float lit = smoothstep(0.0, 0.05, head);
+    core = max(core, 1.6 * exp(-dh / (0.0012 * uWidth * scale)) * lit);
+    halo += exp(-dh / (0.005 * uWidth * scale)) * uGlow * lit;
+  }
+  return vec2(halo, core);
+}
+
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 p = (fragCoord - 0.5 * iResolution.xy) / iResolution.y;
+  bool onPath = pathLength(uPath) > 0.0;
   float t = fract(iTime / uCycle);
   float head = uAnimate ? easeOut(t / 0.4) : 1.0;
   float tail = uAnimate ? easeInOut((t - 0.6) / 0.3) : 0.0;
-  vec2 s = stroke(p, 0.0, 1.0, tail, head);
+  vec2 s = onPath ? pathStroke(fragCoord, 0.0, 1.0, tail, head) : stroke(p, 0.0, 1.0, tail, head);
   if (uSecond) {
     // A thinner stroke under it, starting a beat later and finishing short.
     float head2 = uAnimate ? 0.92 * easeOut((t - 0.06) / 0.4) : 0.92;
     float tail2 = uAnimate ? max(0.12, 0.92 * easeInOut((t - 0.62) / 0.3)) : 0.12;
-    s = max(s, 0.8 * stroke(p, 0.0026 * uWidth, 0.45, tail2, head2));
+    s = max(s, 0.8 * (onPath ? pathStroke(fragCoord, 0.0026 * uWidth, 0.45, tail2, head2) : stroke(p, 0.0026 * uWidth, 0.45, tail2, head2)));
   }
   // Painted rather than added, so it shows on a light ground as well as a dark one: a tinted halo, then the core.
   vec4 acc = vec4(uBackground * uBackgroundAlpha, uBackgroundAlpha);

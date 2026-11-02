@@ -184,9 +184,9 @@
     },
     "animated": true,
     "module": "shaders/paths",
-    "addedAt": "2026-11-02T16:25:35.373Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-11-02T16:24:28Z",
+    "commitHash": "b059356d44c28170b10c944550a6e7b4d807ea30",
+    "order": 618
   },
   {
     "id": "glass-tube",

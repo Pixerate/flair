@@ -126,9 +126,10 @@ export function controlSchema(control: ControlDef, options: SchemaOptions = {}):
       const d = String(def);
       return {
         title,
-        description: `${title}: SVG path data like "M 10 80 C 40 10 65 10 95 80" (${placed}), or points [x0, y0, x1, y1, …] in frame pixels from the top left. Resampled to at most ${MAX_PATH_POINTS} points (default ${d.length > 80 ? `${JSON.stringify(d.slice(0, 79) + "…")}` : JSON.stringify(d)}).`,
+        description: `${title}: SVG path data like "M 10 80 C 40 10 65 10 95 80" (${placed}), or points [x0, y0, x1, y1, …] in frame pixels from the top left, or "" for none. Resampled to at most ${MAX_PATH_POINTS} points (default ${d.length > 80 ? `${JSON.stringify(d.slice(0, 79) + "…")}` : JSON.stringify(d)}).`,
         anyOf: [
           { type: "string", format: "svg-path", pattern: "^\\s*[Mm]" },
+          { const: "" },
           { type: "array", items: { type: "number" }, minItems: 4 },
         ],
         default: def,
