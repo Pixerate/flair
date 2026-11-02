@@ -420,5 +420,120 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   ],
 };
 
+export const wireframeReveal: ShaderEffect = {
+  kind: "shader",
+  id: "wireframe-reveal",
+  name: "Wireframe reveal",
+  description:
+    "A picture first seen as a schematic wireframe on black: pale panels with fine hatching, outlines and coloured circuit traces running along their edges. Then the real picture builds up block by block behind a glitching front, holds, and folds back into the wireframe.",
+  category: "image",
+  video: "filter",
+  tags: ["image", "wireframe", "blueprint", "schematic", "reveal", "intro", "glitch", "tech", "circuit", "cyberpunk"],
+  loop: 6,
+  source: glsl(
+    `// Wireframe reveal: the picture as panels, outlines and circuit traces on black, swept away block by block to the picture.
+uniform sampler2D uImage;  // @control wrap=clamp default=${SAMPLE_IMAGES.city} label="Image"
+uniform bool uAnimate;     // @control default=true label="Animate"
+uniform float uProgress;   // @control min=0 max=1 default=0.5 label="Progress (when still)"
+uniform bool uFromTop;     // @control default=false label="Reveal from the top"
+uniform float uPanel;      // @control min=12 max=200 default=90 label="Panel size (px)"
+uniform float uCut;        // @control min=0 max=0.6 default=0.16 label="Background cut-off"
+uniform float uTraces;     // @control min=0 max=1 default=0.45 label="Circuit traces"
+uniform float uGlitch;     // @control min=0 max=1 default=0.7 label="Glitch at the front"
+uniform vec3 uWire;        // @control color default=#E4DCE2 label="Wire"
+uniform vec3 uTraceA;      // @control color default=#3FE3EC label="Trace 1"
+uniform vec3 uTraceB;      // @control color default=#2D5BFF label="Trace 2"
+uniform vec3 uTraceC;      // @control color default=#F08CCB label="Trace 3"
+${BACKDROP_CONTROLS}`,
+    HASH,
+    PICTURE,
+    INK_EDGE,
+    `float luma(vec3 c) {
+  return dot(c, vec3(0.2126, 0.7152, 0.0722));
+}
+
+// The panel a pixel falls in: each grid cell split up to four times, across or down.
+// xy the panel's centre and zw its half-size, in pixels.
+vec4 panelAt(vec2 p, float size) {
+  vec2 cell = floor(p / size);
+  vec2 lo = cell * size;
+  vec2 hi = lo + size;
+  for (int k = 0; k < 4; k++) {
+    float h = hash12(lo * 0.37 + hi * 0.11 + float(k) * 13.1);
+    if (k > 0 && h < 0.25) break;
+    float at = mix(0.25, 0.75, hash12(lo + hi + float(k)));
+    if ((hi.x - lo.x) * (0.6 + h) > (hi.y - lo.y)) {
+      float x = mix(lo.x, hi.x, at);
+      if (p.x < x) hi.x = x; else lo.x = x;
+    } else {
+      float y = mix(lo.y, hi.y, at);
+      if (p.y < y) hi.y = y; else lo.y = y;
+    }
+  }
+  return vec4(0.5 * (lo + hi), 0.5 * (hi - lo));
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec2 uv = fitCoverUV(uImage, fragCoord / iResolution.xy);
+  vec4 pic = pictureRGBA(uImage, uv);
+  float lum = luma(pic.rgb);
+  // Over a 6 s loop: wireframe, built up to the picture, held, then swept back.
+  float cycle = fract(iTime / 6.0);
+  float t = uAnimate ? smoothstep(0.1, 0.5, cycle) * (1.0 - smoothstep(0.7, 0.95, cycle)) : uProgress;
+
+  // The wireframe: panels lit where the picture is, outlined, hatched, a few carrying circuit traces.
+  vec4 panel = panelAt(fragCoord, uPanel);
+  vec2 local = fragCoord - panel.xy;
+  float id = hash12(panel.xy);
+  float there = luma(pictureCover(uImage, panel.xy / iResolution.xy));
+  // Brighter parts of the picture make more of their panels pale; the background stays black.
+  float solid = smoothstep(uCut * 0.4, uCut, there);
+  float chance = 0.35 + 0.65 * smoothstep(uCut, uCut + 0.35, there);
+  float lit = solid * smoothstep(-0.04, 0.04, chance - hash12(panel.xy + 21.7));
+  float border = min(panel.z - abs(local.x), panel.w - abs(local.y));
+  float wire = 1.0 - smoothstep(0.5, 1.3, border);
+  float hatch = id > 0.5 ? fract(fragCoord.x / 4.0) : fract(fragCoord.y / 4.0);
+  float stripes = id < 0.08 ? step(0.55, fract((fragCoord.x + fragCoord.y) / 14.0)) : 0.0;
+  vec3 fill = uWire * (0.62 + 0.3 * there) * (1.0 - 0.25 * step(0.6, hatch)) * (1.0 - 0.75 * stripes);
+  vec3 col = mix(vec3(0.0), vec3(0.09, 0.09, 0.1), solid);
+  col = mix(col, fill, lit);
+  // Borders: pale, or a circuit trace in one of three colours, a little heavier.
+  // A trace runs along one side of a panel only, so traces read as broken runs rather than boxes.
+  float traceId = hash12(panel.xy + 3.3);
+  float side = hash12(panel.xy + 9.9);
+  float sideDist = side < 0.25 ? panel.z + local.x : side < 0.5 ? panel.z - local.x : side < 0.75 ? panel.w + local.y : panel.w - local.y;
+  bool traced = traceId < uTraces && sideDist < 5.0;
+  float tw = traced ? 1.0 - smoothstep(1.8, 3.2, sideDist) : wire;
+  vec3 trace = traceId < uTraces * 0.4 ? uTraceA : traceId < uTraces * 0.75 ? uTraceB : uTraceC;
+  col = mix(col, traced ? trace : uWire, tw * solid);
+  // The picture's own outlines on top.
+  float edge = smoothstep(0.25, 0.6, inkEdge(uImage, uv, 1.0 / iResolution.xy));
+  col = mix(col, uWire, edge * solid * 0.8);
+
+  // The reveal: block by block, along the frame with some blocks jumping ahead.
+  vec2 block = floor(fragCoord / (uPanel * 2.0));
+  float along = (block.y + 0.5) * uPanel * 2.0 / iResolution.y;
+  float order = 0.75 * (uFromTop ? 1.0 - along : along) + 0.25 * hash12(block + 7.1);
+  float gap = t * 1.3 - order;
+  float shown = step(0.0, gap);
+  // At the front, blocks break into colour noise for a moment before the picture settles.
+  float front = shown * (1.0 - step(0.08, gap)) * uGlitch;
+  vec2 bit = floor(fragCoord / vec2(6.0, 3.0));
+  float n = hash12(bit + floor(iTime * 14.0));
+  vec3 noisy = floor(pic.rgb * 4.0 + 0.5) / 4.0;
+  noisy = n > 0.75 ? vec3(1.0, 0.3, 0.85) : n > 0.6 ? vec3(0.3, 1.0, 0.95) : n > 0.45 ? vec3(1.0) : noisy * 1.4;
+  vec3 out_ = mix(col, pic.rgb, shown);
+  out_ = mix(out_, noisy, front * step(0.35, hash12(block + floor(iTime * 6.0))));
+  fragColor = vec4(out_, max(pic.a, solid * (1.0 - shown)));
+}`,
+  ),
+  presets: [
+    { name: "Blueprint", values: { uWire: [0.75, 0.88, 1], uTraceA: [1, 1, 1], uTraceB: [0.5, 0.8, 1], uTraceC: [0.3, 0.6, 1], uTraces: 0.2 } },
+    { name: "Dense", values: { uPanel: 40, uTraces: 0.5 } },
+    { name: "Clean sweep", values: { uGlitch: 0 } },
+    { name: "Wireframe only", values: { uAnimate: false, uProgress: 0 } },
+  ],
+};
+
 /** Artist's media: pencil, watercolour, pen and ink, charcoal and a sketch-to-colour reveal. */
-export const sketchShaders: ShaderEffect[] = [imagePencilSketch, imageWatercolor, imageCrosshatch, imageCharcoal, sketchReveal];
+export const sketchShaders: ShaderEffect[] = [imagePencilSketch, imageWatercolor, imageCrosshatch, imageCharcoal, sketchReveal, wireframeReveal];

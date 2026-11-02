@@ -1,5 +1,5 @@
 import { FBM, glsl, HASH, NOISE, ROTATE } from "../glsl.js";
-import { SAMPLE_IMAGES } from "../images.js";
+import { SAMPLE_IMAGES, textImage } from "../images.js";
 import type { ShaderEffect } from "../types.js";
 import { BACKDROP_CONTROLS, PICTURE } from "./image.js";
 
@@ -463,5 +463,292 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   presets: [
     { name: "Silver moon", values: { uGold: [0.85, 0.88, 0.95], uCardBack: [0.06, 0.09, 0.18], uBackground: [0.02, 0.03, 0.07] } },
     { name: "Crimson", values: { uGold: [0.95, 0.75, 0.4], uCardBack: [0.38, 0.05, 0.1], uBackground: [0.1, 0.02, 0.03], uGlow: 0.8 } },
+  ],
+};
+
+export const lightWaves: ShaderEffect = {
+  kind: "shader",
+  id: "light-waves",
+  name: "Light waves",
+  description:
+    "A glossy sheet of fine parallel ridges folding in slow, deep waves, each ridge catching the light so the lines shimmer and bunch where the sheet turns, with an iridescent sheen sliding across the folds.",
+  category: "light",
+  tags: ["background", "hero", "wave", "line", "ribbed", "iridescent", "gloss", "fold", "flow", "wallpaper"],
+  source: glsl(
+    `// Light waves: a slowly folding sheet with fine parallel ridges pressed into it, lit as glossy plastic.
+uniform vec3 uShadow;       // @control color default=#032417 label="Shadow"
+uniform vec3 uBase;         // @control color default=#22B356 label="Base"
+uniform vec3 uHighlight;    // @control color default=#D8FFE2 label="Highlight"
+uniform vec3 uSheen;        // @control color default=#F27AD9 label="Sheen"
+uniform float uScale;       // @control min=0.3 max=4 default=1.2 label="Fold size"
+uniform float uDensity;     // @control min=10 max=300 default=110 step=1 label="Lines"
+uniform float uBend;        // @control min=0 max=3 default=1.4 label="Bend"
+uniform float uRidge;       // @control min=0 max=2 default=1 label="Ridge depth"
+uniform float uRelief;      // @control min=0 max=2 default=1 label="Fold depth"
+uniform float uGloss;       // @control min=0 max=2 default=1 label="Gloss"
+uniform float uIridescence; // @control min=0 max=2 default=1 label="Sheen"
+uniform float uSpeed;       // @control min=0 max=1 default=0.12 label="Speed"
+uniform float uAngle;       // @control min=-180 max=180 default=-25 label="Angle (°)"`,
+    ROTATE,
+    `// The sheet's folds: warped sines, so everything bends in long smooth curves.
+float waveHeight(vec2 p, float t) {
+  p += 0.45 * vec2(sin(p.y * 1.3 + t), sin(p.x * 1.1 - t * 0.8));
+  return sin(p.x * 1.4 + 1.6 * sin(p.y * 0.9 + t * 0.7))
+    + 0.6 * sin(p.y * 1.8 - p.x * 0.7 + t * 0.5)
+    + 0.25 * sin(sqrt(dot(p - vec2(0.8, -0.4), p - vec2(0.8, -0.4)) + 0.3) * 3.2 - t * 1.2);
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  mat2 turn = rot(radians(uAngle));
+  vec2 p = turn * (fragCoord - 0.5 * iResolution.xy) / iResolution.y * 2.0 / uScale;
+  float t = iTime * uSpeed * 2.0;
+  float h = waveHeight(p, t);
+  float e = 0.004;
+  vec2 g = vec2(waveHeight(p + vec2(e, 0.0), t) - h, waveHeight(p + vec2(0.0, e), t) - h) / e;
+
+  // Parallel lines running across the sheet, pushed about by its folds; where they crowd
+  // below a pixel the ridges fade out and the sheet reads as a smooth band.
+  float s = p.y + 0.35 * uBend * h;
+  vec2 across = normalize(vec2(0.0, 1.0) + 0.35 * uBend * g);
+  float f = s * uDensity * 0.25;
+  float resolved = smoothstep(0.55, 0.3, fwidth(f));
+  float tilt = sin(6.28318 * f) * 0.9 * uRidge * resolved;
+  vec3 n = normalize(vec3(-g * 0.55 * uRelief + across * tilt, 1.0));
+  vec3 fold = normalize(vec3(-g * 0.55 * uRelief, 1.0));
+
+  vec3 light = normalize(vec3(turn * vec2(-0.5, 0.6), 0.6));
+  vec3 halfway = normalize(light + vec3(0.0, 0.0, 1.0));
+  float diffuse = dot(n, light);
+  float spec = pow(max(dot(n, halfway), 0.0), 40.0) * uGloss;
+  float broad = pow(max(dot(fold, halfway), 0.0), 12.0) * uGloss;
+
+  // Iridescent sheen in bands across the turned folds, drifting along them.
+  // Mixed in only where the sheet is lit, so it stays a clear colour rather than greying the shadows.
+  float steep = smoothstep(0.98, 0.7, fold.z);
+  float band = smoothstep(0.25, 0.8, 0.5 + 0.5 * sin(h * 1.3 + p.x * 0.5 - t * 0.6));
+  float sheen = clamp(uIridescence * (0.3 + 0.7 * steep) * band, 0.0, 1.0);
+  float lit = smoothstep(-0.1, 0.7, dot(fold, light));
+
+  vec3 body = mix(uShadow, uBase, smoothstep(-0.55, 0.85, diffuse));
+  body = mix(body, uSheen * (0.35 + 0.8 * max(diffuse, 0.0)), sheen * lit * 0.75);
+  vec3 shine = mix(uHighlight, uSheen * 1.3, sheen);
+  vec3 col = body + shine * (0.9 * spec + 0.3 * broad);
+  vec2 uv = fragCoord / iResolution.xy - 0.5;
+  col *= 1.0 - 0.4 * dot(uv, uv);
+  fragColor = vec4(col, 1.0);
+}`,
+  ),
+  presets: [
+    { name: "Ultraviolet", values: { uShadow: [0.05, 0.02, 0.13], uBase: [0.38, 0.17, 0.8], uHighlight: [0.88, 0.84, 1], uSheen: [0.25, 0.9, 1] } },
+    { name: "Chrome", values: { uShadow: [0.04, 0.05, 0.07], uBase: [0.48, 0.51, 0.56], uHighlight: [1, 1, 1], uSheen: [0.75, 0.85, 1], uIridescence: 0.4, uGloss: 1.4 } },
+    { name: "Sunset", values: { uShadow: [0.2, 0.03, 0.05], uBase: [0.95, 0.38, 0.2], uHighlight: [1, 0.9, 0.7], uSheen: [1, 0.35, 0.65] } },
+    { name: "Bold", values: { uDensity: 45, uScale: 1.6, uRidge: 1.3 } },
+    { name: "Still", values: { uSpeed: 0 } },
+  ],
+};
+
+export const lightStrandText: ShaderEffect = {
+  kind: "shader",
+  id: "light-strand-text",
+  name: "Light strand text",
+  description:
+    "Tall, heavy letters filled with hundreds of fine strands of light, steel blue to white, that curve along the letters' edges and trail out past their corners, brightening and fading as light slides down them, with a few warm threads running through and a glow along the lower edges.",
+  category: "text",
+  video: "none",
+  tags: ["text", "title", "light", "streak", "line", "fibre", "glow", "hero", "tech", "overlay"],
+  transparent: true,
+  source: glsl(
+    `// Light strand text: the letters, stretched tall, are filled with layers of thin strands whose light slides down them;
+// near the outline they are drawn along it, bunching at the sides and bending round curves, and trail off the corners.
+uniform sampler2D uText;        // @control wrap=clamp default=${textImage("PRO", { width: 1280, height: 512 })} label="Text"
+uniform vec3 uBackground;       // @control color default=#000000 label="Background"
+uniform float uBackgroundAlpha; // @control min=0 max=1 default=0 label="Background opacity"
+uniform vec3 uDark;             // @control color default=#060B1A label="Dark"
+uniform vec3 uMid;              // @control color default=#4E6C9A label="Mid"
+uniform vec3 uLight;            // @control color default=#EEF4FF label="Light"
+uniform vec3 uWarm;             // @control color default=#FF5A1F label="Warm threads"
+uniform float uSize;            // @control min=0.3 max=2 default=1.45 label="Text size"
+uniform float uStretch;         // @control min=1 max=4 default=2.2 label="Stretch"
+uniform float uStrands;         // @control min=0.3 max=3 default=1 label="Strand density"
+uniform float uContrast;        // @control min=0.5 max=2 default=1.1 label="Contrast"
+uniform float uWarmth;          // @control min=0 max=2 default=1 label="Warm threads"
+uniform float uBend;            // @control min=0 max=1 default=1 label="Follow edges"
+uniform float uTrail;           // @control min=0 max=2 default=1 label="Trails"
+uniform float uEdge;            // @control min=0 max=2 default=1 label="Edge glow"
+uniform float uSpeed;           // @control min=0 max=1 default=0.15 label="Flow speed"`,
+    HASH,
+    NOISE,
+    `// Where p falls on the text picture, stretched vertically: xy the picture's 0-1 coordinates, z its texels per frame unit.
+vec3 strandPlace(vec2 p) {
+  vec2 size = vec2(textureSize(uText, 0));
+  float aspect = size.x / max(size.y, 1.0);
+  float h = min(uSize, iResolution.x / iResolution.y * uSize * uStretch / aspect);
+  return vec3(p / vec2(h * aspect / uStretch, h) + 0.5, size.y / h);
+}
+float strandMask(vec2 p, float blur) {
+  vec3 m = strandPlace(p);
+  if (m.x < 0.0 || m.x > 1.0 || m.y < 0.0 || m.y > 1.0) return 0.0;
+  return textureLod(uText, m.xy, log2(max(blur * m.z, 1.0))).a;
+}
+// One layer of strands: a column of light per cell across, its brightness drifting slowly along it.
+float strandLayer(vec2 m, float count, float seed, float t) {
+  float u = m.x * count;
+  float id = floor(u) + seed;
+  float across = fract(u);
+  float along = vnoise(vec2(id * 7.31, m.y * (2.0 + 3.0 * hash12(vec2(id, seed))) - t * (0.6 + hash12(vec2(seed, id)))));
+  return along * (0.35 + 0.65 * pow(sin(3.14159 * across), 0.6)) * (0.3 + 0.7 * hash12(vec2(id, 3.7)));
+}
+
+// The strands' colour at strand coordinate s (across) and height y, both in text-picture units.
+vec3 strandColor(float s, float y, float n, float t) {
+  vec2 m = vec2(s, y);
+  float strands = 0.45 * strandLayer(m, n, 0.0, t) + 0.35 * strandLayer(m, n * 2.3, 17.0, t * 1.3) + 0.3 * strandLayer(m, n * 5.1, 41.0, t * 0.8);
+  // Broad bright and dark zones, so whole runs of strands dim together down the letters.
+  float zone = vnoise(vec2(s * 9.0, y * 1.6 - t * 0.35)) * 0.7 + 0.3 * vnoise(vec2(s * 23.0 + 5.0, y * 2.4 + t * 0.2));
+  zone = smoothstep(0.2, 0.8, zone);
+  float tone = clamp(pow(strands * (0.15 + 2.2 * zone), uContrast * 1.4), 0.0, 1.0);
+  vec3 col = mix(uDark, uMid, smoothstep(0.0, 0.5, tone));
+  col = mix(col, uLight, smoothstep(0.42, 0.95, tone));
+  // A few hairline warm threads, red at the top turning gold lower down.
+  float wu = s * n * 7.0;
+  float wid = floor(wu);
+  float thread = step(hash12(vec2(wid, 9.1)), 0.012 * uWarmth) * smoothstep(0.5, 0.15, abs(fract(wu) - 0.5));
+  thread *= smoothstep(0.3, 0.7, vnoise(vec2(wid, y * 3.0 - t)));
+  return mix(col, mix(vec3(1.0, 0.82, 0.4), uWarm, y) * 1.2, clamp(thread, 0.0, 1.0));
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  float px = 1.0 / iResolution.y;
+  vec2 p = (fragCoord - 0.5 * iResolution.xy) * px;
+  float t = iTime * uSpeed * 2.0;
+  float mask = strandMask(p, 1.5 * px);
+  vec2 m = strandPlace(p).xy;
+  float n = uStrands * 60.0;
+  // Follow the outline: the strand coordinate is pulled along the outline's normal, more the nearer
+  // the edge. Beside an edge that only squeezes the strands together; round a curve or a corner it
+  // bends them along it. It never folds a strand back, whatever the strength.
+  const float R = 0.07;
+  float soft = strandMask(p, R);
+  vec2 g = vec2(strandMask(p + vec2(R * 0.5, 0.0), R) - strandMask(p - vec2(R * 0.5, 0.0), R),
+                strandMask(p + vec2(0.0, R * 0.5), R) - strandMask(p - vec2(0.0, R * 0.5), R));
+  vec2 normal = g / (length(g) + 0.03);
+  float s = m.x - 0.13 * uBend * (1.0 - soft) * normal.x;
+  vec3 col = strandColor(s, m.y, n, t);
+  // Trails: past the corners, strands run on out of the letter, each to its own length.
+  float corner = clamp(4.0 * abs(normal.x * normal.y) - 0.6, 0.0, 1.0);
+  float halo = strandMask(p, 0.06);
+  float id = floor(s * n * 2.3);
+  float cut = 0.5 - 0.47 * uTrail * pow(hash12(vec2(id, 5.3)), 3.0) * corner;
+  float trail = (1.0 - mask) * smoothstep(cut, cut + 0.03, halo) * smoothstep(0.0, 0.3, corner);
+  // Light gathering at the letters' edges: white along the sides, warm along the bottoms.
+  float inner = strandMask(p, 0.02);
+  float edge = clamp(mask - inner, 0.0, 1.0) * 1.6;
+  float below = clamp(mask - strandMask(p - vec2(0.0, 0.006), 0.004), 0.0, 1.0) * smoothstep(0.35, 0.0, m.y);
+  col += uEdge * (uLight * 0.3 * edge + mix(uWarm, vec3(1.0, 0.85, 0.5), 0.7) * 0.5 * below);
+  float shape = mask + trail * smoothstep(0.05, 0.4, dot(col, vec3(0.3, 0.5, 0.2)));
+  float a = shape + uBackgroundAlpha * (1.0 - shape);
+  vec3 rgb = col * shape + uBackground * uBackgroundAlpha * (1.0 - shape);
+  fragColor = vec4(rgb / max(a, 1e-4), a);
+}`,
+  ),
+  presets: [
+    { name: "On black", values: { uBackgroundAlpha: 1 } },
+    { name: "Gold", values: { uDark: [0.08, 0.04, 0.01], uMid: [0.7, 0.45, 0.15], uLight: [1, 0.95, 0.8], uWarm: [1, 0.3, 0.1], uBackgroundAlpha: 1 } },
+    { name: "Emerald", values: { uDark: [0.01, 0.07, 0.04], uMid: [0.1, 0.6, 0.35], uLight: [0.85, 1, 0.9], uWarm: [1, 0.4, 0.8], uBackgroundAlpha: 1 } },
+    { name: "Fine", values: { uStrands: 2, uContrast: 1.3 } },
+  ],
+};
+
+export const ledNet: ShaderEffect = {
+  kind: "shader",
+  id: "led-net",
+  name: "LED net",
+  description:
+    "A picture shown through a net of tiny LEDs draped in folds like fabric: each light glows with a cross-shaped star flare, mostly in one cool tint with drifting patches of rainbow colour, dark parts of the picture leaving the lights off so shapes stand out as silhouettes.",
+  category: "image",
+  video: "filter",
+  tags: ["image", "led", "light", "grid", "sparkle", "stars", "fabric", "glow", "neon", "display"],
+  source: glsl(
+    `// LED net: a grid of point lights on folded fabric, each lit by the picture under it, with star-filter flares.
+uniform sampler2D uImage;   // @control wrap=clamp default=${SAMPLE_IMAGES.portrait} label="Image"
+uniform vec3 uTint;         // @control color default=#2A8CFF label="Tint"
+uniform float uImageColour; // @control min=0 max=1 default=0.2 label="Picture colour"
+uniform float uRainbow;     // @control min=0 max=1 default=0.5 label="Rainbow patches"
+uniform float uPitch;       // @control min=6 max=48 default=26 label="Light spacing (px)"
+uniform float uLightSize;   // @control min=0.3 max=2 default=1 label="Light size"
+uniform float uFlare;       // @control min=0 max=2 default=1 label="Star flare"
+uniform float uDrape;       // @control min=0 max=1 default=0.6 label="Folds"
+uniform float uThreshold;   // @control min=0 max=0.8 default=0.12 label="Cut-off"
+uniform float uBacklight;   // @control min=0 max=1 default=0.06 label="Picture behind"
+uniform float uTwinkle;     // @control min=0 max=1 default=0.4 label="Twinkle"
+uniform float uSpeed;       // @control min=0 max=1 default=0.2 label="Speed"
+${BACKDROP_CONTROLS}`,
+    HASH,
+    NOISE,
+    PICTURE,
+    `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  float t = iTime * uSpeed;
+  vec2 uv0 = fragCoord / iResolution.xy;
+  // The fabric: vertical folds swaying slowly, and rows sagging between them. The grid lives on the
+  // fabric (q); where a fold turns away the lights crowd together and dim.
+  float y = fragCoord.y / iResolution.y;
+  float k = 9.0 / iResolution.y;
+  float phase = fragCoord.x * k + 1.2 * sin(y * 2.3 + t * 1.3) + 0.6 * sin(y * 5.1 - t);
+  float amp = uDrape * 0.85 / k;
+  vec2 q = fragCoord + vec2(amp * sin(phase), uPitch * 0.8 * uDrape * sin(fragCoord.x * k * 0.6 + y * 1.7 + t));
+  float facing = 1.0 + uDrape * 0.85 * cos(phase);
+  float shade = clamp(0.25 + 0.75 * facing, 0.15, 1.6);
+
+  vec2 g = q / uPitch;
+  vec2 cell = floor(g);
+  float r = uLightSize * uPitch * 0.08 + 0.6;
+  float len = uFlare * uPitch * 0.4;
+  vec3 light = vec3(0.0);
+  // This light and its eight neighbours: a flare reaches less than a cell.
+  for (int j = -1; j <= 1; j++) {
+    for (int i = -1; i <= 1; i++) {
+      vec2 c = cell + vec2(float(i), float(j));
+      vec2 centre = c + 0.5 + 0.08 * (hash22(c) - 0.5);
+      vec2 dq = (g - centre) * uPitch;
+      vec2 d = vec2(dq.x / max(facing, 0.15), dq.y);
+      // Lit by the picture where the light sits; dark parts of the picture switch it off.
+      vec3 pic = pictureCover(uImage, (fragCoord - d) / iResolution.xy);
+      float lum = dot(pic, vec3(0.299, 0.587, 0.114));
+      float on = smoothstep(uThreshold, uThreshold + 0.2, lum) * (0.35 + 0.9 * lum);
+      if (on < 0.01) continue;
+      float tw = 1.0 - uTwinkle * 0.6 * (0.5 + 0.5 * sin(t * 9.0 + hash12(c + 4.1) * 40.0));
+      vec3 col = mix(uTint * (0.7 + 0.6 * lum), pic * 1.4, uImageColour);
+      // Patches of the net running rainbow colours, drifting across it.
+      float rainbow = smoothstep(0.58, 0.78, vnoise(c * 0.11 + vec2(t * 0.6, -t * 0.3))) * uRainbow;
+      vec3 hue = 0.5 + 0.5 * cos(6.28318 * (hash12(c + 7.7) + vec3(0.0, 0.33, 0.67)));
+      col = mix(col, hue * 1.2, rainbow);
+      float energy = on * tw * shade;
+      // A bright core, a soft halo, and the star filter's diagonal cross.
+      float dd = dot(d, d);
+      float core = exp(-dd / (r * r));
+      float halo = exp(-dd / (r * r * 6.0)) * 0.3;
+      vec2 a = vec2(d.x + d.y, d.y - d.x) * 0.7071;
+      float star = 0.0;
+      if (len > 0.0) {
+        star = exp(-abs(a.y) / 0.7) * exp(-abs(a.x) / len) + exp(-abs(a.x) / 0.7) * exp(-abs(a.y) / len);
+      }
+      light += energy * (col * (1.8 * core + halo + 0.7 * star) + vec3(1.0) * 1.1 * exp(-dd / (r * r * 0.2)));
+    }
+  }
+  // The scene behind the net, faintly lit in the tint.
+  vec4 back = pictureCoverRGBA(uImage, uv0);
+  vec3 col = back.rgb * uBacklight * mix(vec3(1.0), uTint * 1.5, 0.75) + light * (1.0 - 0.2 * exp(-length(light)));
+  // Tone-mapped on the brightest channel, so bright blue stays blue and only the hearts go white.
+  float peak = max(col.r, max(col.g, col.b));
+  col *= (1.0 - exp(-peak * 2.2)) / max(peak, 1e-4);
+  fragColor = vec4(col, max(back.a, clamp(length(light), 0.0, 1.0)));
+}`,
+  ),
+  presets: [
+    { name: "Full colour", values: { uImageColour: 1, uRainbow: 0.15 } },
+    { name: "Rainbow", values: { uRainbow: 1, uTint: [0.55, 0.3, 1] } },
+    { name: "Flat grid", values: { uDrape: 0, uTwinkle: 0.2 } },
+    { name: "Fine", values: { uPitch: 10, uLightSize: 0.8, uFlare: 0.7 } },
+    { name: "Warm", values: { uTint: [1, 0.55, 0.2], uRainbow: 0.2 } },
   ],
 };
