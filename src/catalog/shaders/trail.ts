@@ -1,4 +1,4 @@
-import { FBM, glsl, HASH, NOISE } from "../glsl.js";
+import { FBM, glsl, HASH, NOISE, PATH } from "../glsl.js";
 import type { ShaderEffect } from "../types.js";
 
 /*
@@ -7,7 +7,9 @@ import type { ShaderEffect } from "../types.js";
  * a point, 0 for an empty slot), about one point a frame. Thumbnails and
  * recordings have no pointer, so while the canvas is not hovered (or nothing
  * has moved over it yet) each one, with its `uDemo` control on, makes up a
- * trail of its own along a smooth looping path.
+ * trail of its own along a smooth looping path, or along `uPath` when one is
+ * set (round a closed path, back and forth along an open one), so a recording
+ * can trace a route, a logo's outline or handwritten words.
  */
 
 /**
@@ -22,9 +24,19 @@ import type { ShaderEffect } from "../types.js";
  */
 function trailHelper(dt: number, speed: number, walk = false): string {
   return `
+uniform sampler2D uPath; // @control path default="" label="Path when idle"
+${PATH}
 const int TRAIL_POINTS = 32;
+// The demo's way at time t: along uPath when one is set, at an even pace (round a closed path, back and forth
+// along an open one), else a looping curve.
 vec2 demoPath(float t) {
   float s = t * ${speed.toFixed(3)};
+  float len = pathLength(uPath);
+  if (len > 0.0) {
+    float lap = s / 6.2831853;
+    bool closed = length(pathAt(uPath, 0.0).xy - pathAt(uPath, len).xy) < 2.0;
+    return pathAt(uPath, closed ? fract(lap) * len : (0.5 - 0.5 * cos(3.1415927 * lap)) * len).xy;
+  }
   vec2 q = vec2(0.34 * sin(s) + 0.05 * sin(s * 2.3 + 1.0), 0.27 * sin(s * 2.0 + 0.4) + 0.04 * cos(s * 3.1));
   return iResolution.xy * (0.5 + q);
 }
@@ -63,6 +75,7 @@ vec4 trailAt(int i, bool live) {
   return vec4(demoPath(t), t, 1.0);
 }
 int gWalkI;
+bool gWalkPath;
 float gWalkBase;
 vec4 gWalkCos;
 vec4 gWalkSin;
@@ -72,6 +85,7 @@ void trailFrom(int i, bool live) {
   if (live) return;
   const float dt = ${dt.toFixed(5)};
   gWalkBase = floor(iTime / dt) + 1.0;
+  gWalkPath = pathLength(uPath) > 0.0;
   float s = (gWalkBase - float(i)) * dt * ${speed.toFixed(3)};
   vec4 phase = vec4(s, s * 2.3 + 1.0, s * 2.0 + 0.4, s * 3.1);
   gWalkCos = cos(phase);
@@ -83,6 +97,7 @@ vec4 trailNext(bool live) {
   gWalkI++;
   if (live) return iTrail[min(i, TRAIL_POINTS - 1)];
   const float dt = ${dt.toFixed(5)};
+  if (gWalkPath) return vec4(demoPath((gWalkBase - float(i)) * dt), (gWalkBase - float(i)) * dt, 1.0);
   vec2 q = vec2(0.34 * gWalkSin.x + 0.05 * gWalkSin.y, 0.27 * gWalkSin.z + 0.04 * gWalkCos.w);
   vec4 point = vec4(iResolution.xy * (0.5 + q), (gWalkBase - float(i)) * dt, 1.0);
   const vec4 turnCos = ${vec(Math.cos)};

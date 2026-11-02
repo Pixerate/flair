@@ -11,7 +11,7 @@ import { getPrimitive, listPrimitives, PRIMITIVE_KINDS, PRIMITIVES, primitiveTag
 import { didYouMean } from "../motion/params.js";
 import { EFFECT_INPUTS, EFFECT_INTERACTIONS, effectInputs, effectTags, findEffects, normaliseTag, type EffectInput, type EffectInteraction, type EffectQuery } from "../catalog/index.js";
 import type { EditResult, EffectEditor } from "./editor.js";
-import { editorControlSchema, isTextMask } from "./textmask.js";
+import { editorControlSchema, holdsPath, isTextMask } from "./textmask.js";
 import { EASING_PRESETS, type Easing } from "./timeline.js";
 import { controlsSchema } from "../shader/schema.js";
 
@@ -164,7 +164,7 @@ export function effectCommands(): CommandSpec<EffectEditor>[] {
         const schema = controlsSchema(controls, { title: `${doc.name} controls`, currentColor: doc.effect.kind === "vector" });
         // Text masks take words as well as a URL.
         const properties = schema.properties as Record<string, unknown>;
-        for (const c of controls) if (isTextMask(c) || c.type === "path") properties[c.name] = editorControlSchema(c);
+        for (const c of controls) if (isTextMask(c) || holdsPath(c)) properties[c.name] = editorControlSchema(c);
         return schema;
       },
     },

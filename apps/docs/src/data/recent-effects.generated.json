@@ -1,5 +1,383 @@
 [
   {
+    "id": "wireframe-reveal",
+    "name": "Wireframe reveal",
+    "kind": "shader",
+    "category": "image",
+    "description": "A picture first seen as a schematic wireframe on black: pale panels with fine hatching, outlines and coloured circuit traces running along their edges. Then the real picture builds up block by block behind a glitching front, holds, and folds back into the wireframe.",
+    "tags": [
+      "image",
+      "wireframe",
+      "blueprint",
+      "schematic",
+      "reveal",
+      "intro",
+      "glitch",
+      "tech",
+      "circuit",
+      "cyberpunk"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "city"
+        },
+        "line": 2,
+        "x": {
+          "filter": "mipmap",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uAnimate",
+        "t": "bool",
+        "d": true,
+        "line": 3
+      },
+      {
+        "n": "uProgress",
+        "t": "float",
+        "d": 0.5,
+        "l": "Progress (when still)",
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uFromTop",
+        "t": "bool",
+        "d": false,
+        "l": "Reveal from the top",
+        "line": 5
+      },
+      {
+        "n": "uPanel",
+        "t": "float",
+        "d": 90,
+        "l": "Panel size (px)",
+        "min": 12,
+        "max": 200,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uCut",
+        "t": "float",
+        "d": 0.16,
+        "l": "Background cut-off",
+        "max": 0.6,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uTraces",
+        "t": "float",
+        "d": 0.45,
+        "l": "Circuit traces",
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uGlitch",
+        "t": "float",
+        "d": 0.7,
+        "l": "Glitch at the front",
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uWire",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            228,
+            220,
+            226
+          ]
+        },
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "uTraceA",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            63,
+            227,
+            236
+          ]
+        },
+        "l": "Trace 1",
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "uTraceB",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            45,
+            91,
+            255
+          ]
+        },
+        "l": "Trace 2",
+        "c": 1,
+        "line": 12
+      },
+      {
+        "n": "uTraceC",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            240,
+            140,
+            203
+          ]
+        },
+        "l": "Trace 3",
+        "c": 1,
+        "line": 13
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 14
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 15
+      }
+    ],
+    "presets": [
+      "Blueprint",
+      "Dense",
+      "Clean sweep",
+      "Wireframe only"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "filter",
+    "loop": 6,
+    "animated": true,
+    "duration": 6000,
+    "module": "shaders/sketch",
+    "addedAt": "2026-11-02T16:40:25Z",
+    "commitHash": "3c9b08d85dcf665c90110068915da8a4424802ee",
+    "order": 622
+  },
+  {
+    "id": "led-net",
+    "name": "LED net",
+    "kind": "shader",
+    "category": "image",
+    "description": "A picture shown through a net of tiny LEDs draped in folds like fabric: each light glows with a cross-shaped star flare, mostly in one cool tint with drifting patches of rainbow colour, dark parts of the picture leaving the lights off so shapes stand out as silhouettes.",
+    "tags": [
+      "image",
+      "led",
+      "light",
+      "grid",
+      "sparkle",
+      "stars",
+      "fabric",
+      "glow",
+      "neon",
+      "display"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "line": 2,
+        "x": {
+          "filter": "mipmap",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uTint",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            42,
+            140,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uImageColour",
+        "t": "float",
+        "d": 0.2,
+        "l": "Picture colour",
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uRainbow",
+        "t": "float",
+        "d": 0.5,
+        "l": "Rainbow patches",
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uPitch",
+        "t": "float",
+        "d": 26,
+        "l": "Light spacing (px)",
+        "min": 6,
+        "max": 48,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uLightSize",
+        "t": "float",
+        "d": 1,
+        "min": 0.3,
+        "max": 2,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uFlare",
+        "t": "float",
+        "d": 1,
+        "l": "Star flare",
+        "max": 2,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uDrape",
+        "t": "float",
+        "d": 0.6,
+        "l": "Folds",
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uThreshold",
+        "t": "float",
+        "d": 0.12,
+        "l": "Cut-off",
+        "max": 0.8,
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uBacklight",
+        "t": "float",
+        "d": 0.06,
+        "l": "Picture behind",
+        "b": 3,
+        "line": 11
+      },
+      {
+        "n": "uTwinkle",
+        "t": "float",
+        "d": 0.4,
+        "b": 3,
+        "line": 12
+      },
+      {
+        "n": "uSpeed",
+        "t": "float",
+        "d": 0.2,
+        "b": 3,
+        "line": 13
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 14
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 15
+      }
+    ],
+    "presets": [
+      "Full colour",
+      "Rainbow",
+      "Flat grid",
+      "Fine",
+      "Warm"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "filter",
+    "animated": true,
+    "module": "shaders/light",
+    "addedAt": "2026-11-02T16:36:05Z",
+    "commitHash": "ccb6368550fa7e0b3d29e7fd6ebd9c32cc020854",
+    "order": 621
+  },
+  {
     "id": "glass-writing",
     "name": "Glass writing",
     "kind": "shader",
@@ -184,16 +562,16 @@
     },
     "animated": true,
     "module": "shaders/paths",
-    "addedAt": "2026-11-02T16:23:53.238Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-11-02T16:24:28Z",
+    "commitHash": "1bb3f3fff93749a6847c7486b4d5aef96d8d9bbf",
+    "order": 620
   },
   {
     "id": "light-strand-text",
     "name": "Light strand text",
     "kind": "shader",
     "category": "text",
-    "description": "Tall, heavy letters filled with hundreds of fine vertical strands of light, steel blue to white, brightening and fading as light slides down them, with a few warm threads running through and a glow along the lower edges.",
+    "description": "Tall, heavy letters filled with hundreds of fine strands of light, steel blue to white, that curve along the letters' edges and trail out past their corners, brightening and fading as light slides down them, with a few warm threads running through and a glow along the lower edges.",
     "tags": [
       "text",
       "title",
@@ -211,9 +589,9 @@
         "n": "uText",
         "t": "sampler2D",
         "d": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201280%20512%22%20width%3D%221280%22%20height%3D%22512%22%3E%3Ctext%20x%3D%22640%22%20y%3D%22256%22%20dy%3D%220.35em%22%20text-anchor%3D%22middle%22%20textLength%3D%22886.6%22%20lengthAdjust%3D%22spacingAndGlyphs%22%20font-family%3D%22%26%2339%3BArial%20Black%26%2339%3B%2C%20%26%2339%3BHelvetica%20Neue%26%2339%3B%2C%20Helvetica%2C%20Arial%2C%20system-ui%2C%20sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%22399.4%22%20fill%3D%22%23fff%22%3EPRO%3C%2Ftext%3E%3C%2Fsvg%3E",
-        "line": 2,
+        "line": 3,
         "x": {
-          "filter": "linear",
+          "filter": "mipmap",
           "wrap": "clamp"
         }
       },
@@ -228,7 +606,7 @@
           ]
         },
         "c": 1,
-        "line": 3
+        "line": 4
       },
       {
         "n": "uBackgroundAlpha",
@@ -236,7 +614,7 @@
         "d": 0,
         "l": "Background opacity",
         "b": 3,
-        "line": 4
+        "line": 5
       },
       {
         "n": "uDark",
@@ -249,7 +627,7 @@
           ]
         },
         "c": 1,
-        "line": 5
+        "line": 6
       },
       {
         "n": "uMid",
@@ -262,7 +640,7 @@
           ]
         },
         "c": 1,
-        "line": 6
+        "line": 7
       },
       {
         "n": "uLight",
@@ -275,7 +653,7 @@
           ]
         },
         "c": 1,
-        "line": 7
+        "line": 8
       },
       {
         "n": "uWarm",
@@ -289,7 +667,7 @@
         },
         "l": "Warm threads",
         "c": 1,
-        "line": 8
+        "line": 9
       },
       {
         "n": "uSize",
@@ -299,7 +677,7 @@
         "min": 0.3,
         "max": 2,
         "b": 3,
-        "line": 9
+        "line": 10
       },
       {
         "n": "uStretch",
@@ -308,7 +686,7 @@
         "min": 1,
         "max": 4,
         "b": 3,
-        "line": 10
+        "line": 11
       },
       {
         "n": "uStrands",
@@ -318,7 +696,7 @@
         "min": 0.3,
         "max": 3,
         "b": 3,
-        "line": 11
+        "line": 12
       },
       {
         "n": "uContrast",
@@ -327,7 +705,7 @@
         "min": 0.5,
         "max": 2,
         "b": 3,
-        "line": 12
+        "line": 13
       },
       {
         "n": "uWarmth",
@@ -336,7 +714,24 @@
         "l": "Warm threads",
         "max": 2,
         "b": 3,
-        "line": 13
+        "line": 14
+      },
+      {
+        "n": "uBend",
+        "t": "float",
+        "d": 1,
+        "l": "Follow edges",
+        "b": 3,
+        "line": 15
+      },
+      {
+        "n": "uTrail",
+        "t": "float",
+        "d": 1,
+        "l": "Trails",
+        "max": 2,
+        "b": 3,
+        "line": 16
       },
       {
         "n": "uEdge",
@@ -345,7 +740,7 @@
         "l": "Edge glow",
         "max": 2,
         "b": 3,
-        "line": 14
+        "line": 17
       },
       {
         "n": "uSpeed",
@@ -353,7 +748,7 @@
         "d": 0.15,
         "l": "Flow speed",
         "b": 3,
-        "line": 15
+        "line": 18
       }
     ],
     "presets": [
@@ -2294,284 +2689,5 @@
     "addedAt": "2026-11-01T09:26:14Z",
     "commitHash": "b9c02b2f1aa308d20fcc980ffdc315de4b002c54",
     "order": 603
-  },
-  {
-    "id": "opening-credits",
-    "name": "Opening credits",
-    "kind": "vector",
-    "category": "cinematic",
-    "description": "A film's opening credits: one card at a time, a small tracked lead over a name, each fading in while it eases larger and fading out, ending on the film's title.",
-    "tags": [
-      "cinematic",
-      "film",
-      "credits",
-      "intro",
-      "title"
-    ],
-    "controls": [
-      {
-        "n": "credits",
-        "t": "text",
-        "d": "A film by: Ada Lovelace; Starring: Grace Hopper; With: Alan Turing; Music by: Delia Derbyshire; # The Long Way Home",
-        "l": "Cards (Lead: Name; # Title; a name on its own)",
-        "line": 1
-      },
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            0,
-            0,
-            0
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "backgroundOpacity",
-        "t": "float",
-        "d": 1,
-        "s": 0.05,
-        "b": 3,
-        "line": 3
-      },
-      {
-        "n": "ink",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            245,
-            245,
-            244
-          ]
-        },
-        "l": "Name colour",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "muted",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            168,
-            162,
-            158
-          ]
-        },
-        "l": "Lead colour",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "place",
-        "t": "int",
-        "d": 0,
-        "l": "Place (0 centre, 1 lower left, 2 lower right)",
-        "max": 2,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "hold",
-        "t": "float",
-        "d": 2,
-        "l": "Hold each card (s)",
-        "min": 0.5,
-        "max": 10,
-        "s": 0.5,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "font",
-        "t": "text",
-        "d": "'Inter', 'Helvetica Neue', Arial, system-ui, sans-serif",
-        "line": 8
-      }
-    ],
-    "presets": [
-      "Over video",
-      "Gold",
-      "Quick"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "credits",
-          "label": "Cards (Lead: Name; # Title; a name on its own)",
-          "holds": "copy",
-          "default": "A film by: Ada Lovelace; Starring: Grace Hopper; With: Alan Turing; Music by: Delia Derbyshire; # The Long Way Home"
-        },
-        {
-          "name": "font",
-          "label": "Font",
-          "holds": "font",
-          "default": "'Inter', 'Helvetica Neue', Arial, system-ui, sans-serif"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 400,
-    "animated": true,
-    "duration": 18600,
-    "module": "cinematic",
-    "addedAt": "2026-11-01T09:26:14Z",
-    "commitHash": "b9c02b2f1aa308d20fcc980ffdc315de4b002c54",
-    "order": 602
-  },
-  {
-    "id": "trailer-title-slam",
-    "name": "Trailer title slam",
-    "kind": "shader",
-    "category": "cinematic",
-    "description": "A film-trailer title hit: brushed-metal letters slam down out of the dark with a flash, a shake and a burst of dust, a lens flare glints across them, they hold and fade back to black.",
-    "tags": [
-      "cinematic",
-      "film",
-      "trailer",
-      "title",
-      "metal",
-      "flare",
-      "impact",
-      "text"
-    ],
-    "controls": [
-      {
-        "n": "uText",
-        "t": "sampler2D",
-        "d": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201024%20256%22%20width%3D%221024%22%20height%3D%22256%22%3E%3Ctext%20x%3D%22512%22%20y%3D%22128%22%20dy%3D%220.35em%22%20text-anchor%3D%22middle%22%20textLength%3D%22921.6%22%20lengthAdjust%3D%22spacingAndGlyphs%22%20font-family%3D%22%26%2339%3BCinzel%26%2339%3B%2C%20%26%2339%3BTrajan%20Pro%26%2339%3B%2C%20Georgia%2C%20%26%2339%3BTimes%20New%20Roman%26%2339%3B%2C%20serif%22%20font-weight%3D%22700%22%20font-size%3D%2277.1%22%20fill%3D%22%23fff%22%3ETHE%20LONG%20WAY%20HOME%3C%2Ftext%3E%3C%2Fsvg%3E",
-        "line": 3,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            5,
-            6,
-            8
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uMetal",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            201,
-            206,
-            214
-          ]
-        },
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uFlare",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            125,
-            183,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "uSize",
-        "t": "float",
-        "d": 0.8,
-        "l": "Text size",
-        "min": 0.3,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uDust",
-        "t": "float",
-        "d": 0.6,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uShake",
-        "t": "float",
-        "d": 0.5,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uAnimate",
-        "t": "bool",
-        "d": true,
-        "line": 10
-      },
-      {
-        "n": "uMoment",
-        "t": "float",
-        "d": 1.1,
-        "l": "Moment (s, when still)",
-        "max": 4,
-        "b": 3,
-        "line": 11
-      },
-      {
-        "n": "uBackgroundAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Background opacity",
-        "b": 3,
-        "line": 121
-      }
-    ],
-    "presets": [
-      "Gold",
-      "Blood red",
-      "No dust",
-      "Held title"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "svg",
-        "text",
-        "mask"
-      ],
-      "images": [
-        {
-          "name": "uText",
-          "label": "Text",
-          "wants": "text"
-        }
-      ],
-      "texts": [],
-      "video": "none",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "none",
-    "loop": 4,
-    "animated": true,
-    "duration": 4000,
-    "module": "shaders/cinematic",
-    "addedAt": "2026-11-01T09:26:14Z",
-    "commitHash": "b9c02b2f1aa308d20fcc980ffdc315de4b002c54",
-    "order": 601
   }
 ]
