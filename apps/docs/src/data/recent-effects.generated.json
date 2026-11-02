@@ -1,33 +1,27 @@
 [
   {
-    "id": "die-cut-sticker",
-    "name": "Die-cut sticker",
+    "id": "sticker-wrap",
+    "name": "Sticker wrap",
     "kind": "vector",
     "category": "sticker",
-    "description": "A still die-cut sticker with a label: a burst, heart, star, circle, pill or bolt in a thick white border, with a glossy face and a soft shadow, tilted a little. Drops into a page or a scene as it is.",
+    "description": "Any outline (SVG path data) made into a still die-cut sticker: fitted to the frame, given a thick white border, a coloured glossy face and a soft shadow, and tilted a little. Give it a logo's or an asset's silhouette.",
     "tags": [
       "sticker",
       "static",
       "die-cut",
-      "badge",
-      "label",
+      "path",
+      "silhouette",
+      "logo",
+      "outline",
       "gloss"
     ],
     "controls": [
       {
-        "n": "label",
+        "n": "silhouette",
         "t": "text",
-        "d": "NEW!",
+        "d": "M12 21 C12 21 2.5 15 2.5 8.6 C2.5 5.6 4.9 3.3 7.9 3.3 C9.7 3.3 11.2 4.3 12 5.8 C12.8 4.3 14.3 3.3 16.1 3.3 C19.1 3.3 21.5 5.6 21.5 8.6 C21.5 15 12 21 12 21 Z",
+        "l": "Silhouette (SVG path data)",
         "line": 1
-      },
-      {
-        "n": "shape",
-        "t": "int",
-        "d": 0,
-        "l": "Shape (0 burst, 1 heart, 2 star, 3 circle, 4 pill, 5 bolt)",
-        "max": 5,
-        "b": 3,
-        "line": 2
       },
       {
         "n": "background",
@@ -40,7 +34,7 @@
           ]
         },
         "c": 1,
-        "line": 3
+        "line": 2
       },
       {
         "n": "sticker",
@@ -52,22 +46,9 @@
             54
           ]
         },
+        "l": "Face",
         "c": 1,
-        "line": 4
-      },
-      {
-        "n": "ink",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "l": "Label colour",
-        "c": 1,
-        "line": 5
+        "line": 3
       },
       {
         "n": "border",
@@ -80,12 +61,162 @@
           ]
         },
         "c": 1,
-        "line": 6
+        "line": 4
+      },
+      {
+        "n": "cut",
+        "t": "float",
+        "d": 10,
+        "l": "Border width",
+        "min": 2,
+        "max": 20,
+        "s": 1,
+        "b": 3,
+        "line": 5
       },
       {
         "n": "tilt",
         "t": "float",
         "d": -6,
+        "l": "Tilt (degrees)",
+        "min": -30,
+        "max": 30,
+        "s": 1,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "shadow",
+        "t": "float",
+        "d": 0.3,
+        "max": 0.6,
+        "s": 0.05,
+        "b": 3,
+        "line": 7
+      }
+    ],
+    "presets": [
+      "Star",
+      "Bolt on dark",
+      "Thin cut"
+    ],
+    "inputs": {
+      "accepts": [
+        "path"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "silhouette",
+          "label": "Silhouette (SVG path data)",
+          "holds": "path",
+          "default": "M12 21 C12 21 2.5 15 2.5 8.6 C2.5 5.6 4.9 3.3 7.9 3.3 C9.7 3.3 11.2 4.3 12 5.8 C12.8 4.3 14.3 3.3 16.1 3.3 C19.1 3.3 21.5 5.6 21.5 8.6 C21.5 15 12 21 12 21 Z"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "duration": 601,
+    "module": "sticker",
+    "addedAt": "2026-11-02T12:44:53Z",
+    "commitHash": "359d8593cdbb9abfd2f45d6b22180a15fcf43b9e",
+    "order": 616
+  },
+  {
+    "id": "speech-sticker",
+    "name": "Speech sticker",
+    "kind": "vector",
+    "category": "sticker",
+    "description": "A still die-cut speech bubble sticker saying a few words, in a white border with a glossy face and a soft shadow, tilted a little.",
+    "tags": [
+      "sticker",
+      "static",
+      "speech",
+      "bubble",
+      "comic",
+      "die-cut",
+      "label"
+    ],
+    "controls": [
+      {
+        "n": "words",
+        "t": "text",
+        "d": "HELLO!",
+        "line": 1
+      },
+      {
+        "n": "background",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            237,
+            232,
+            223
+          ]
+        },
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "sticker",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "l": "Bubble",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "ink",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            17,
+            24,
+            39
+          ]
+        },
+        "l": "Words colour",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "border",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "outline",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            17,
+            24,
+            39
+          ]
+        },
+        "l": "Bubble outline",
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "tilt",
+        "t": "float",
+        "d": -5,
         "l": "Tilt (degrees)",
         "min": -30,
         "max": 30,
@@ -110,9 +241,9 @@
       }
     ],
     "presets": [
-      "Hello heart",
-      "Ship it pill",
-      "Power bolt"
+      "Hey!",
+      "Wow",
+      "Night chat"
     ],
     "inputs": {
       "accepts": [
@@ -121,10 +252,10 @@
       "images": [],
       "texts": [
         {
-          "name": "label",
-          "label": "Label",
+          "name": "words",
+          "label": "Words",
           "holds": "copy",
-          "default": "NEW!"
+          "default": "HELLO!"
         },
         {
           "name": "font",
@@ -139,9 +270,9 @@
     "animated": true,
     "duration": 601,
     "module": "sticker",
-    "addedAt": "2026-11-02T12:41:55.211Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-11-02T12:44:53Z",
+    "commitHash": "359d8593cdbb9abfd2f45d6b22180a15fcf43b9e",
+    "order": 615
   },
   {
     "id": "sticker-label",
@@ -297,31 +428,39 @@
     "animated": true,
     "duration": 601,
     "module": "sticker",
-    "addedAt": "2026-11-02T12:41:55.211Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-11-02T12:44:53Z",
+    "commitHash": "359d8593cdbb9abfd2f45d6b22180a15fcf43b9e",
+    "order": 614
   },
   {
-    "id": "speech-sticker",
-    "name": "Speech sticker",
+    "id": "die-cut-sticker",
+    "name": "Die-cut sticker",
     "kind": "vector",
     "category": "sticker",
-    "description": "A still die-cut speech bubble sticker saying a few words, in a white border with a glossy face and a soft shadow, tilted a little.",
+    "description": "A still die-cut sticker with a label: a burst, heart, star, circle, pill or bolt in a thick white border, with a glossy face and a soft shadow, tilted a little. Drops into a page or a scene as it is.",
     "tags": [
       "sticker",
       "static",
-      "speech",
-      "bubble",
-      "comic",
       "die-cut",
-      "label"
+      "badge",
+      "label",
+      "gloss"
     ],
     "controls": [
       {
-        "n": "words",
+        "n": "label",
         "t": "text",
-        "d": "HELLO!",
+        "d": "NEW!",
         "line": 1
+      },
+      {
+        "n": "shape",
+        "t": "int",
+        "d": 0,
+        "l": "Shape (0 burst, 1 heart, 2 star, 3 circle, 4 pill, 5 bolt)",
+        "max": 5,
+        "b": 3,
+        "line": 2
       },
       {
         "n": "background",
@@ -334,10 +473,23 @@
           ]
         },
         "c": 1,
-        "line": 2
+        "line": 3
       },
       {
         "n": "sticker",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            90,
+            54
+          ]
+        },
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "ink",
         "t": "vec3",
         "d": {
           "c255": [
@@ -346,23 +498,9 @@
             255
           ]
         },
-        "l": "Bubble",
+        "l": "Label colour",
         "c": 1,
-        "line": 3
-      },
-      {
-        "n": "ink",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            17,
-            24,
-            39
-          ]
-        },
-        "l": "Words colour",
-        "c": 1,
-        "line": 4
+        "line": 5
       },
       {
         "n": "border",
@@ -375,26 +513,12 @@
           ]
         },
         "c": 1,
-        "line": 5
-      },
-      {
-        "n": "outline",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            17,
-            24,
-            39
-          ]
-        },
-        "l": "Bubble outline",
-        "c": 1,
         "line": 6
       },
       {
         "n": "tilt",
         "t": "float",
-        "d": -5,
+        "d": -6,
         "l": "Tilt (degrees)",
         "min": -30,
         "max": 30,
@@ -419,9 +543,9 @@
       }
     ],
     "presets": [
-      "Hey!",
-      "Wow",
-      "Night chat"
+      "Hello heart",
+      "Ship it pill",
+      "Power bolt"
     ],
     "inputs": {
       "accepts": [
@@ -430,10 +554,10 @@
       "images": [],
       "texts": [
         {
-          "name": "words",
-          "label": "Words",
+          "name": "label",
+          "label": "Label",
           "holds": "copy",
-          "default": "HELLO!"
+          "default": "NEW!"
         },
         {
           "name": "font",
@@ -448,133 +572,9 @@
     "animated": true,
     "duration": 601,
     "module": "sticker",
-    "addedAt": "2026-11-02T12:41:55.211Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "sticker-wrap",
-    "name": "Sticker wrap",
-    "kind": "vector",
-    "category": "sticker",
-    "description": "Any outline (SVG path data) made into a still die-cut sticker: fitted to the frame, given a thick white border, a coloured glossy face and a soft shadow, and tilted a little. Give it a logo's or an asset's silhouette.",
-    "tags": [
-      "sticker",
-      "static",
-      "die-cut",
-      "path",
-      "silhouette",
-      "logo",
-      "outline",
-      "gloss"
-    ],
-    "controls": [
-      {
-        "n": "silhouette",
-        "t": "text",
-        "d": "M12 21 C12 21 2.5 15 2.5 8.6 C2.5 5.6 4.9 3.3 7.9 3.3 C9.7 3.3 11.2 4.3 12 5.8 C12.8 4.3 14.3 3.3 16.1 3.3 C19.1 3.3 21.5 5.6 21.5 8.6 C21.5 15 12 21 12 21 Z",
-        "l": "Silhouette (SVG path data)",
-        "line": 1
-      },
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            237,
-            232,
-            223
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "sticker",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            90,
-            54
-          ]
-        },
-        "l": "Face",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "border",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "cut",
-        "t": "float",
-        "d": 10,
-        "l": "Border width",
-        "min": 2,
-        "max": 20,
-        "s": 1,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "tilt",
-        "t": "float",
-        "d": -6,
-        "l": "Tilt (degrees)",
-        "min": -30,
-        "max": 30,
-        "s": 1,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "shadow",
-        "t": "float",
-        "d": 0.3,
-        "max": 0.6,
-        "s": 0.05,
-        "b": 3,
-        "line": 7
-      }
-    ],
-    "presets": [
-      "Star",
-      "Bolt on dark",
-      "Thin cut"
-    ],
-    "inputs": {
-      "accepts": [
-        "path"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "silhouette",
-          "label": "Silhouette (SVG path data)",
-          "holds": "path",
-          "default": "M12 21 C12 21 2.5 15 2.5 8.6 C2.5 5.6 4.9 3.3 7.9 3.3 C9.7 3.3 11.2 4.3 12 5.8 C12.8 4.3 14.3 3.3 16.1 3.3 C19.1 3.3 21.5 5.6 21.5 8.6 C21.5 15 12 21 12 21 Z"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "duration": 601,
-    "module": "sticker",
-    "addedAt": "2026-11-02T12:41:55.211Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-11-02T12:44:53Z",
+    "commitHash": "359d8593cdbb9abfd2f45d6b22180a15fcf43b9e",
+    "order": 613
   },
   {
     "id": "sticker-cutout",
@@ -721,9 +721,9 @@
     "transparent": true,
     "animated": false,
     "module": "shaders/sticker",
-    "addedAt": "2026-11-02T12:41:55.210Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-11-02T12:44:53Z",
+    "commitHash": "359d8593cdbb9abfd2f45d6b22180a15fcf43b9e",
+    "order": 612
   },
   {
     "id": "camera-handheld",
