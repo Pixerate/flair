@@ -69,6 +69,25 @@ export const SUBJECT_KINDS = ['image', 'video', 'svg', 'text'] as const;
 export type LayerTime = number | { shots: number };
 
 /**
+ * A timing effect that retimes a layer's video: its id
+ * (`"retime-speed"`), or the id with a preset and values
+ * (`{ "effect": "long-exposure", "values": { "exposure": 2 } }`). The video
+ * is retimed before the layer's effect is applied, and loops over the
+ * retimed clip's length.
+ */
+export type LayerTiming = string | { effect: string; preset?: string; values?: Record<string, ControlValue> };
+
+/** The fields a layer's `timing` takes as an object. */
+export const LAYER_TIMING_FIELDS = ['effect', 'preset', 'values'] as const;
+
+/** A layer's `timing` as an object (an id alone becomes `{ effect: id }`), or undefined when it has none. */
+export function layerTiming(layer: Pick<SceneLayer, 'timing'>): Exclude<LayerTiming, string> | undefined {
+  const t = layer.timing;
+  if (t === undefined) return undefined;
+  return typeof t === 'string' ? { effect: t } : t;
+}
+
+/**
  * One layer of a shot: a catalog effect (`effect`, with `preset` and
  * `values`), a custom shader (`source`), or a bare picture (only a
  * `subject`), placed on the screen or on the board, for a stretch of time.
@@ -77,6 +96,7 @@ export type LayerTime = number | { shots: number };
  * { "effect": "aurora", "role": "background", "until": { "shots": 3 } }
  * { "effect": "image-duotone", "subject": { "slot": "productShot" }, "rect": { "x": 200, "y": 300, "width": 640, "height": 360 } }
  * { "effect": "lower-third", "role": "overlay", "values": { "title": "Ada Lovelace" }, "from": 400 }
+ * { "subject": { "video": "https://example.com/surf.mp4" }, "timing": { "effect": "retime-speed", "preset": "Slow motion" } }
  * ```
  */
 export interface SceneLayer {
@@ -92,6 +112,8 @@ export interface SceneLayer {
   values?: Record<string, ControlValue>;
   /** What the effect is applied to, or the picture itself for a bare picture. */
   subject?: LayerSubject;
+  /** A timing effect that retimes the subject's video (see {@link LayerTiming}): it needs a `{ "video": url }` or `{ "slot": name }` subject. */
+  timing?: LayerTiming;
   /** Where it sits in the stack (default `subject` when placed with `rect` or `ids`, else `background`). */
   role?: LayerRole;
   /** A box on the board in scene units: the layer moves with the camera. Without `rect` or `ids` it fills the screen. */

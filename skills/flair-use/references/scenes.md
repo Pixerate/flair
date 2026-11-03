@@ -29,7 +29,7 @@ A scene is plain JSON: a board (`stage`, 1920 × 1080 by default) and `shots`. E
 }
 ```
 
-- **Layers**: `effect` (a catalog id, with `preset` and `values`) or `source` (your own GLSL, see the flair-author skill). `subject` is `{ image }`, `{ video }`, `{ svg }`, `{ text }` or `{ slot: "name" }`, filled by the host when it plays or records. `role` is `background`, `subject` or `overlay`; `rect` or `ids` place it on the board; `from`, `until`, `fade` and `opacity` time it.
+- **Layers**: `effect` (a catalog id, with `preset` and `values`) or `source` (your own GLSL, see the flair-author skill). `subject` is `{ image }`, `{ video }`, `{ svg }`, `{ text }` or `{ slot: "name" }`, filled by the host when it plays or records. `role` is `background`, `subject` or `overlay`; `rect` or `ids` place it on the board; `from`, `until`, `fade` and `opacity` time it. A layer with a `{ video }` subject (or a slot filled with a video) can be retimed with a timing effect: `"timing": "retime-speed"` or `{ "timing": { "effect": "long-exposure", "preset": "Light trails" } }` (the timing effects are the `timing` category in [pictures.md](effects/pictures.md)).
 - **Transitions**: an effect from [transitions.md](effects/transitions.md), with `ms`.
 - **Camera**: `frame` (element ids) or a box, `in` and `during` camera moves ([camera.md](effects/camera.md)), and `tilt`, `turn`, `roll` for 3D.
 
@@ -64,4 +64,4 @@ In code: `validateScene(scene)` returns issues (`[{ shot, message }]`; none mean
 
 ## Agents directing scenes at runtime
 
-If the app itself lets a model edit scenes, give the model `FLAIR_AGENT_TOOLS` and apply each call with `applySceneTool(scene, name, input)` (from `@pixerate/flair`); its tools include `find_layer_effects`, `find_camera_moves`, `use_template`, `preview_scene` and `export_scene`. That is the app's agent surface, separate from this skill.
+If the app itself lets a model edit scenes, give the model `FLAIR_AGENT_TOOLS` and apply each call with `applySceneTool(scene, name, input)` (from `@pixerate/flair`); its tools include `find_layer_effects`, `retime_layer`, `find_camera_moves`, `use_template`, `preview_scene` and `export_scene`. That is the app's agent surface, separate from this skill.

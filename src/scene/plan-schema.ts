@@ -106,6 +106,12 @@ export const SCENE_PLAN_SCHEMA = {
             ],
           },
           subject,
+          timing: {
+            type: 'object',
+            description: 'A timing effect retiming the subject\'s video: draw the footage frames its sample names for each moment, blended, looping over its length.',
+            required: ['effect', 'values'],
+            properties: { effect: str, values: controlValues },
+          },
           tracks: { type: 'array', items: { type: 'object', required: ['ms', 'values'], properties: { ms: num, values: { type: 'object', additionalProperties: num } } } },
         },
       },

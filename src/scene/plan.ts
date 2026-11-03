@@ -3,9 +3,10 @@ import { ManualClock } from '../time/clock.js';
 import { cameraSamples, sceneStage } from './cameratrack.js';
 import type { SceneElement } from './geometry.js';
 import { resolveSceneAssets } from './assets.js';
-import { isAsset, isSlot, subjectKind, TRANSITION_CONTROLS, type SceneSubject, type SubjectResolver, type SubjectSlot } from './layers.js';
+import { getTimingEffect, timingValues } from '../catalog/timing.js';
+import { isAsset, isSlot, layerTiming, subjectKind, TRANSITION_CONTROLS, type SceneSubject, type SubjectResolver, type SubjectSlot } from './layers.js';
 import { MemorySceneBoard, playScene, type ActiveLayer } from './player.js';
-import { SCENE_PLAN_VERSION, type PlanDraw, type PlanLayer, type PlanPlacement, type PlanShot, type PlanTransition, type ScenePlan } from './plan-types.js';
+import { SCENE_PLAN_VERSION, type PlanDraw, type PlanLayer, type PlanPlacement, type PlanShot, type PlanTiming, type PlanTransition, type ScenePlan } from './plan-types.js';
 import { sceneTimeline } from './timeline.js';
 import type { Scene } from './types.js';
 
@@ -153,6 +154,18 @@ export async function scenePlan(given: Scene, options: ScenePlanOptions = {}): P
     }
     if (!draw) continue;
     if (isSlot(subject)) notes.push(`Layer "${t.key}" shows the slot "${subject.slot}", which the player fills (it was not given when the plan was made).`);
+    let timing: PlanTiming | undefined;
+    const retime = layerTiming(layer);
+    if (retime) {
+      const effect = getTimingEffect(retime.effect);
+      const checked = effect && timingValues(effect, { ...(retime.preset !== undefined ? { preset: retime.preset } : {}), ...(retime.values ? { values: retime.values } : {}) });
+      if (!effect) notes.push(`Layer "${t.key}" names "${retime.effect}" as its timing, which is not a timing effect; its video plays as it is.`);
+      else if (kind !== undefined && kind !== 'video') notes.push(`Layer "${t.key}" retimes its subject with "${effect.id}", but the subject is not a video; it is shown as it is.`);
+      else {
+        if (checked!.issues.length) notes.push(`Layer "${t.key}"'s timing: ${checked!.issues.join(' ')} Those values keep their defaults.`);
+        timing = { effect: effect.id, values: checked!.values };
+      }
+    }
     const place: PlanPlacement = layer.rect ? { rect: { ...layer.rect } } : layer.ids ? { ids: [...layer.ids], padding: layer.padding ?? 0 } : { screen: true };
     const tracks = board.layerTracks.get(t.key);
     layers.push({
@@ -166,6 +179,7 @@ export async function scenePlan(given: Scene, options: ScenePlanOptions = {}): P
       place,
       draw,
       ...(subject !== undefined ? { subject } : {}),
+      ...(timing ? { timing } : {}),
       ...(tracks?.length ? { tracks } : {}),
     });
   }

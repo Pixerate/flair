@@ -14,8 +14,9 @@ import {
   type View,
   viewAt,
 } from "../scene/camera.js";
-import { checkControlValue, controlValue, type ControlDef } from "../shader/controls.js";
-import { vectorControlDef, type CameraEffect, type CameraMoveContext } from "./types.js";
+import type { ControlDef } from "../shader/controls.js";
+import { listedControls, listedValues } from "./listed-controls.js";
+import type { CameraEffect, CameraMoveContext } from "./types.js";
 
 /*
  * Camera moves: how a scene's camera gets into a shot (`camera.in`) or moves
@@ -348,7 +349,7 @@ export function getCameraMove(id: string): CameraEffect | undefined {
 
 /** A camera move's controls, as `effectControls` gives them (a timing effect's too: its controls are listed the same way). */
 export function cameraMoveControls(move: Pick<CameraEffect, "controls">): ControlDef[] {
-  return move.controls.map((c, i) => vectorControlDef(c, i + 1));
+  return listedControls(move);
 }
 
 /**
@@ -361,29 +362,7 @@ export function cameraMoveValues(
   move: Pick<CameraEffect, "id" | "presets" | "controls">,
   options: { preset?: string; values?: Readonly<Record<string, unknown>> } = {},
 ): { values: Record<string, ControlValue>; issues: string[] } {
-  const issues: string[] = [];
-  const controls = cameraMoveControls(move);
-  let preset: Record<string, ControlValue> | undefined;
-  if (options.preset !== undefined) {
-    preset = move.presets?.find((p) => p.name === options.preset)?.values;
-    if (!preset) {
-      const names = (move.presets ?? []).map((p) => `"${p.name}"`).join(", ");
-      issues.push(`"${move.id}" has no preset "${options.preset}"; ${names ? `its presets are ${names}` : "it has none"}.`);
-    }
-  }
-  const given: Record<string, ControlValue> = {};
-  for (const [name, value] of Object.entries(options.values ?? {})) {
-    const control = controls.find((c) => c.name === name);
-    if (!control) {
-      issues.push(`"${move.id}" has no control "${name}"; ${controls.length ? `its controls are ${controls.map((c) => c.name).join(", ")}` : "it has none"}.`);
-      continue;
-    }
-    const check = checkControlValue(control, value as ControlValue);
-    if (check.ok) given[name] = check.value;
-    else issues.push(`"${move.id}": ${check.message}`);
-  }
-  const merged = { ...preset, ...given };
-  return { values: Object.fromEntries(controls.map((c) => [c.name, controlValue(c, merged)])), issues };
+  return listedValues(move, options);
 }
 
 /* ---------- Previewing a move on a picture ---------- */

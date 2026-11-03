@@ -448,3 +448,90 @@ describe('export_scene, as a model calls it', () => {
     expect(reel.output.error).toBe('"reel" is only for the "edl" format, not "lottie"; leave it out.');
   });
 });
+
+describe('retiming a layer\'s video through the scene tools', () => {
+  const clip: Scene = {
+    name: 'surf',
+    shots: [{ hold: 2000, layers: [{ id: 'wave', subject: { video: 'https://example.com/surf.mp4' } }, { id: 'sky', effect: 'aurora' }] }, { hold: 800 }],
+  };
+
+  it('finds the timing effects, with their controls and presets', async () => {
+    const res = await applySceneTool(clip, 'find_layer_effects', { kind: 'timing', limit: 20 });
+    expect(res.ok).toBe(true);
+    const found = res.output.effects as { id: string; goesIn: string; accepts: string[]; controls: { name: string }[]; presets: string[] }[];
+    expect(res.output.total).toBe(9);
+    expect(found.map((e) => e.id)).toContain('long-exposure');
+    for (const e of found) expect(e).toMatchObject({ goesIn: 'timing', accepts: ['video'] });
+    const speed = found.find((e) => e.id === 'retime-speed')!;
+    expect(speed.controls.map((c) => c.name)).toEqual(['speed', 'smooth']);
+    expect(speed.presets).toContain('Slow motion');
+
+    const search = await applySceneTool(clip, 'find_layer_effects', { text: 'slow motion', accepts: ['video'] });
+    expect((search.output.effects as { id: string; goesIn: string }[]).find((e) => e.id === 'retime-speed')?.goesIn).toBe('timing');
+    const layersOnly = await applySceneTool(clip, 'find_layer_effects', { transition: false, text: 'retime' });
+    expect(layersOnly.output.total).toBe(0);
+  });
+
+  it('retimes a layer by place or id, says what it set, and removes it again', async () => {
+    const slow = await applySceneTool(clip, 'retime_layer', { shot: 1, layer: 1, timing: { effect: 'retime-speed', preset: 'Slow motion' } });
+    expect(slow.ok).toBe(true);
+    if (!slow.ok) return;
+    expect(slow.scene.shots[0]!.layers![0]).toEqual({ id: 'wave', subject: { video: 'https://example.com/surf.mp4' }, timing: { effect: 'retime-speed', preset: 'Slow motion' } });
+    expect(slow.issues).toEqual([]);
+    expect(slow.output).toMatchObject({ ok: true, summary: expect.stringMatching(/Layer "wave" in shot 1 now plays its video through "retime-speed"/), timing: { effect: 'retime-speed', values: { speed: 0.25, smooth: true } } });
+    expect(JSON.stringify(slow.output)).not.toContain('surf.mp4');
+
+    const exposure = await applySceneTool(slow.scene, 'retime_layer', { shot: 1, layer: 'wave', timing: 'long-exposure' });
+    expect(exposure.ok && exposure.scene.shots[0]!.layers![0]!.timing).toBe('long-exposure');
+    const outline = await applySceneTool(exposure.ok ? exposure.scene : clip, 'get_scene', { view: 'outline' });
+    expect((outline.output.outline as { shots: { layers?: { layer: string; timing?: string }[] }[] }).shots[0]!.layers![0]).toMatchObject({ layer: 'wave', timing: 'long-exposure' });
+
+    const removed = await applySceneTool(exposure.ok ? exposure.scene : clip, 'retime_layer', { shot: 1, layer: 'wave', timing: null });
+    expect(removed.ok && removed.scene.shots[0]!.layers![0]).toEqual({ id: 'wave', subject: { video: 'https://example.com/surf.mp4' } });
+    expect(removed.output.summary).toMatch(/Removed the timing from layer "wave"/);
+  });
+
+  it('refuses what cannot be retimed, saying what to give, and leaves the scene alone', async () => {
+    const refused = async (input: Record<string, unknown>) => {
+      const res = await applySceneTool(clip, 'retime_layer', input);
+      expect(res.ok).toBe(false);
+      return res.ok ? '' : res.error;
+    };
+    expect(await refused({ shot: 1, layer: 1 })).toMatch(/arguments\.timing is required/);
+    expect(await refused({ shot: 1, layer: 1, timing: 5 })).toMatch(/arguments\.timing must be a string or an object or null/);
+    expect(await refused({ shot: 3, layer: 1, timing: 'retime-speed' })).toMatch(/There is no shot 3; the scene has 2 shots \(1 to 2\)/);
+    expect(await refused({ shot: 2, layer: 1, timing: 'retime-speed' })).toMatch(/Shot 2 has no layers to retime; add one with update_shot/);
+    expect(await refused({ shot: 1, layer: 4, timing: 'retime-speed' })).toMatch(/There is no layer 4 in shot 1; it has 2 \(1 to 2\): "wave", "sky"/);
+    expect(await refused({ shot: 1, layer: 'waves', timing: 'retime-speed' })).toMatch(/Shot 1 has no layer "waves"; its layers are "wave", "sky"/);
+    expect(await refused({ shot: 1, layer: 'wave', timing: 'retime-sped' })).toMatch(/There is no timing effect "retime-sped".*Did you mean "retime-speed".*The timing effects are/);
+    expect(await refused({ shot: 1, layer: 'wave', timing: 'aurora' })).toMatch(/"aurora", which is not a timing effect: it draws a picture, so it goes in the layer's "effect"/);
+    expect(await refused({ shot: 1, layer: 'wave', timing: 'camera-whip-pan' })).toMatch(/a camera move: it goes in the shot's camera "in" or "during"/);
+    expect(await refused({ shot: 1, layer: 'wave', timing: { effect: 'retime-speed', values: { speed: 50 } } })).toMatch(/"retime-speed".*speed.*Nothing was changed/);
+    expect(await refused({ shot: 1, layer: 'wave', timing: { effect: 'retime-speed', values: { sped: 2 } } })).toMatch(/"retime-speed" has no control "sped"; its controls are speed, smooth/);
+    expect(await refused({ shot: 1, layer: 'wave', timing: { effect: 'retime-speed', preset: 'Slowmo' } })).toMatch(/"retime-speed" has no preset "Slowmo"; its presets are "Slow motion"/);
+    expect(await refused({ shot: 1, layer: 'wave', timing: { effect: 'retime-speed', speed: 2 } })).toMatch(/"timing" has no field "speed"; it takes "effect", "preset", "values"/);
+    expect(await refused({ shot: 1, layer: 'sky', timing: 'retime-speed' })).toMatch(/retimes a video, but no subject; give it \{ "subject": \{ "video": url \} \}/);
+    expect(await refused({ shot: 1, layer: 'wave', timing: null })).toMatch(/has no timing to remove; nothing was changed/);
+  });
+
+  it('checks a timing written straight into the layers, as update_shot does', async () => {
+    const issues = async (layer: Record<string, unknown>) => {
+      const res = await applySceneTool(clip, 'update_shot', { shot: 1, set: { layers: [layer] } });
+      return res.ok ? res.issues.map((i) => i.message) : [res.error];
+    };
+    expect(await issues({ subject: { video: 'a.mp4' }, timing: 'retime-boomerang' })).toEqual([]);
+    expect(await issues({ effect: 'image-duotone', subject: { video: 'a.mp4' }, timing: { effect: 'frame-echo', values: { echoes: 3 } } })).toEqual([]);
+    expect(await issues({ subject: { slot: 'clip' }, timing: 'retime-freeze' })).toEqual([]);
+    expect((await issues({ subject: { image: 'a.png' }, timing: 'retime-speed' }))[0]).toMatch(/its subject is an image, with only the one frame; give it \{ "video": url \} or leave "timing" out/);
+    expect((await issues({ effect: 'long-exposure', subject: { video: 'a.mp4' } }))[0]).toMatch(/"long-exposure", a timing effect.*goes in the layer's "timing": "long-exposure"/);
+    expect((await issues({ subject: { video: 'a.mp4' }, timing: { effect: 'retime-step', values: { rate: 100 } } }))[0]).toMatch(/"timing": "retime-step"/);
+  });
+
+  it('previews a retimed scene', async () => {
+    const res = await applySceneTool(clip, 'batch_scene', {
+      steps: [{ tool: 'retime_layer', params: { shot: 1, layer: 'wave', timing: { effect: 'retime-ramp', preset: 'Sports replay' } } }, { tool: 'preview_scene' }],
+    });
+    expect(res.ok).toBe(true);
+    if (res.ok) expect(res.issues).toEqual([]);
+  });
+});
