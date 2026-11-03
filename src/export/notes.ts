@@ -4,10 +4,13 @@ import { namedElements } from '../scene/player.js';
 import type { Rect } from '../scene/geometry.js';
 import type { Scene } from '../scene/types.js';
 
-/** The formats a scene exports to (see `exportLottie`, `exportMotn`, `exportFcp7Xml`, `exportCmx3600Edl`). */
-export type SceneExportFormat = 'lottie' | 'motn' | 'fcp7' | 'edl';
+/** The formats a scene exports to (see `exportLottie`, `exportMotn`, `exportFcp7Xml`, `exportCmx3600Edl`, `exportTextTemplate`). */
+export type SceneExportFormat = 'lottie' | 'motn' | 'fcp7' | 'edl' | 'text-template';
 
-const FORMAT_NAMES: Record<SceneExportFormat, string> = { lottie: 'Lottie', motn: 'Motion', fcp7: 'FCP7 XML', edl: 'the EDL' };
+/** Every format a scene exports to, for listing them in refusals and help. */
+export const SCENE_EXPORT_FORMATS: readonly SceneExportFormat[] = ['lottie', 'motn', 'fcp7', 'edl', 'text-template'];
+
+const FORMAT_NAMES: Record<SceneExportFormat, string> = { lottie: 'Lottie', motn: 'Motion', fcp7: 'FCP7 XML', edl: 'the EDL', 'text-template': 'the text template' };
 
 /** Whether a layer is a picture Lottie can carry: no effect, an image or SVG written in the scene (not a slot). */
 export function lottiePicture(layer: SceneLayer): { url: string } | undefined {
@@ -40,17 +43,24 @@ const named = (t: TimedLayer) => `Layer "${t.key}" (${layerWhat(t.layer)})`;
  * sentences: layers it cannot draw, transitions it plays as something
  * simpler. Empty when it carries everything. Each exporter writes these
  * into its file (an XML comment, EDL `*` lines, Lottie's `meta`), and
- * `flair export` prints them.
+ * `flair export` prints them. For the text template, `textLayers` names the
+ * layers it carries as editable text (see `exportTextTemplate`).
  */
-export function sceneExportNotes(scene: Scene, format: SceneExportFormat): string[] {
+export function sceneExportNotes(scene: Scene, format: SceneExportFormat, textLayers: ReadonlySet<string> = new Set()): string[] {
   const timeline = sceneTimeline(scene);
   const notes: string[] = [];
   const name = FORMAT_NAMES[format];
+  const lottie = format === 'lottie' || format === 'text-template';
   for (const t of timeline.layers) {
-    if (format === 'lottie') {
+    if (textLayers.has(t.key)) {
+      if (t.layer.effect !== undefined || t.layer.source !== undefined)
+        notes.push(`${named(t)} is editable text in ${name}, with its words, font, box and word timings but not its look; record it with recordEffect and place it under the text.`);
+      continue;
+    }
+    if (lottie) {
       if (lottiePicture(t.layer)) continue;
       const why = t.layer.source !== undefined || t.layer.effect !== undefined ? 'Lottie cannot draw shaders or Flair\'s vector effects' : isSlot(t.layer.subject) ? 'its picture comes from a slot, filled only when it plays' : 'Lottie only takes pictures (images and SVGs)';
-      notes.push(`${named(t)} is left out of the Lottie file: ${why}. Record it with recordEffect and add it as a picture or video.`);
+      notes.push(`${named(t)} is left out of ${format === 'lottie' ? 'the Lottie file' : name}: ${why}. Record it with recordEffect and add it as a picture or video.`);
     } else if (format === 'edl') {
       notes.push(`${named(t)} is a comment in the EDL, which has one picture track; place it in your editor from its times.`);
     } else {
@@ -59,11 +69,11 @@ export function sceneExportNotes(scene: Scene, format: SceneExportFormat): strin
   }
   for (const t of timeline.transitions) {
     const where = `Shot ${t.shot + 1}'s transition "${t.transition.effect}"`;
-    if (format === 'lottie') notes.push(`${where} is a marker in the Lottie file, where the shots cut.`);
+    if (lottie) notes.push(`${where} is a marker in ${format === 'lottie' ? 'the Lottie file' : name}, where the shots cut.`);
     else if (format === 'motn') notes.push(`${where} is a comment in Motion, where the shots cut; add a transition there.`);
     else notes.push(`${where} is a cross dissolve in ${name}, ${t.ms} ms long.`);
   }
-  if (format === 'lottie' || format === 'motn') {
+  if (lottie || format === 'motn') {
     scene.shots.forEach((shot, i) => {
       if ((shot.behaviors ?? []).some((b) => b?.type === 'path')) notes.push(`Shot ${i + 1}'s path behaviors are left out of ${name}: elements stay where the shot drew them.`);
     });

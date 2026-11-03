@@ -391,3 +391,60 @@ describe('templates, as a model calls them', () => {
     expect(res.scene.shots[0]!.caption).toBe('Day one');
   });
 });
+
+describe('export_scene, as a model calls it', () => {
+  const scene: Scene = {
+    name: 'promo',
+    shots: [
+      { title: 'Launch day', hold: 1000 },
+      { hold: 1500, layers: [{ id: 'head', effect: 'caption-word-bounce', subject: { slot: 'headline' } }, { id: 'sky', effect: 'aurora' }] },
+    ],
+  };
+
+  it('exports a text template, giving the model a summary and the host the file', async () => {
+    const res = await applySceneTool(scene, 'export_scene', { format: 'text-template', frameRate: 25 });
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.scene).toBe(scene);
+    expect(res.export?.template?.frameRate).toBe(25);
+    expect(JSON.parse(res.export!.content).format).toBe('flair-text-template');
+    expect(res.output).toEqual({
+      ok: true,
+      format: 'text-template',
+      extension: 'json',
+      characters: res.export!.content.length,
+      summary: 'Exported a text template: 2 text layers and 2 editable fields, 2.5 s at 25 fps.',
+      fields: [
+        { id: 'shot1.title', label: 'Title', default: 'Launch day', texts: 1 },
+        { id: 'headline', label: 'Text', default: 'Words that bounce into place', texts: 1 },
+      ],
+      fieldCount: 2,
+      notes: [expect.stringMatching(/^Layer "head" \(caption-word-bounce\) is editable text/), expect.stringMatching(/^Layer "sky" \(aurora\) is left out of the text template/)],
+    });
+    // The file stays with the host.
+    expect(JSON.stringify(res.output)).not.toContain('"layers"');
+  });
+
+  it('exports the other formats, with their notes', async () => {
+    const edl = await applySceneTool(scene, 'export_scene', { format: 'edl', reel: 'B2' });
+    expect(edl.ok && edl.export?.content).toContain('B2');
+    expect(edl.ok && edl.output.summary).toMatch(/^Exported the scene to edl/);
+    for (const format of ['lottie', 'motn', 'fcp7']) expect((await applySceneTool(scene, 'export_scene', { format })).ok).toBe(true);
+  });
+
+  it('refuses bad arguments, saying what to give', async () => {
+    const missing = await applySceneTool(scene, 'export_scene', {});
+    expect(missing.ok).toBe(false);
+    expect(missing.output.error).toMatch(/Invalid arguments for export_scene/);
+    expect(missing.output.error).toMatch(/format/);
+    const unknown = await applySceneTool(scene, 'export_scene', { format: 'gif' });
+    expect(unknown.ok).toBe(false);
+    expect(unknown.output.error).toMatch(/text-template/);
+    const fps = await applySceneTool(scene, 'export_scene', { format: 'lottie', frameRate: 0 });
+    expect(fps.ok).toBe(false);
+    expect(fps.output.error).toMatch(/frameRate/);
+    const reel = await applySceneTool(scene, 'export_scene', { format: 'lottie', reel: 'A' });
+    expect(reel.ok).toBe(false);
+    expect(reel.output.error).toBe('"reel" is only for the "edl" format, not "lottie"; leave it out.');
+  });
+});

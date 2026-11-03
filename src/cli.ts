@@ -7,7 +7,7 @@ import { pathToFileURL } from 'url';
 import { parseControls, standaloneHtml, type ControlValue } from './shader/index.js';
 import { validateScene, simulateScene, standaloneSceneHtml, type Scene, type SceneSubject } from './scene/index.js';
 import { instantiateTemplate, isSubjectSlotType, templateSlotSummary, type SceneTemplate, type TemplateValue, type TemplateValues } from './scene/template.js';
-import { sceneExportNotes, type SceneExportFormat } from './export/notes.js';
+import { SCENE_EXPORT_FORMATS, sceneExportNotes, type SceneExportFormat } from './export/notes.js';
 
 const program = new Command();
 
@@ -156,7 +156,7 @@ program
 
 program
   .command('export <targetOrShader> [extraPath] [outputPath]')
-  .description('Export a shader file to video (.mp4/.webm/.mov), .gif or .png frames, or a scene to motn/lottie/fcp7/edl')
+  .description('Export a shader file to video (.mp4/.webm/.mov), .gif or .png frames, or a scene to motn/lottie/fcp7/edl/text-template')
   .option('-o, --out <outputPath>', 'Output file path')
   .option('-w, --width <width>', 'Canvas width', '720')
   .option('-h, --height <height>', 'Canvas height', '720')
@@ -171,50 +171,13 @@ program
   .option('--shutter-angle <degrees>', "Motion blur: the shutter angle, 0 to 360 (180 is a film camera's usual; default 0, off)")
   .option('--shutter-samples <n>', 'Sub-frames averaged into each blurred frame, 2 to 32 (default 8)')
   .action(async (targetOrShader, extraPath, outputPath, options) => {
-    if (targetOrShader === 'motn' || targetOrShader === 'lottie' || targetOrShader === 'fcp7' || targetOrShader === 'edl') {
+    if ((SCENE_EXPORT_FORMATS as readonly string[]).includes(targetOrShader)) {
       const sceneFile = extraPath;
       if (!sceneFile) {
         console.error(`Error: Please provide a scene JSON file to export: flair export ${targetOrShader} <scene.json> [output]`);
         process.exit(1);
       }
-      const fullPath = path.resolve(process.cwd(), sceneFile);
-      if (!fs.existsSync(fullPath)) {
-        console.error(`Error: Scene file not found at: ${fullPath}`);
-        process.exit(1);
-      }
-      try {
-        const scene: Scene = JSON.parse(fs.readFileSync(fullPath, 'utf-8'));
-        const { exportMotn, exportLottie, exportFcp7Xml, exportCmx3600Edl } = await import('./export/index.js');
-        const fps = parseInt(options.fps, 10);
-
-        let content: string;
-        let ext: string;
-        if (targetOrShader === 'motn') {
-          content = exportMotn(scene, { frameRate: fps });
-          ext = 'motn';
-        } else if (targetOrShader === 'lottie') {
-          content = JSON.stringify(exportLottie(scene, { frameRate: fps }), null, 2);
-          ext = 'json';
-        } else if (targetOrShader === 'fcp7') {
-          content = exportFcp7Xml(scene, { frameRate: fps });
-          ext = 'xml';
-        } else {
-          content = exportCmx3600Edl(scene, { frameRate: fps });
-          ext = 'edl';
-        }
-
-        const destination = path.resolve(
-          process.cwd(),
-          options.out || outputPath || `${scene.name || 'scene'}.${ext}`
-        );
-        fs.mkdirSync(path.dirname(destination), { recursive: true });
-        fs.writeFileSync(destination, content, 'utf-8');
-        console.log(`✅ Successfully exported ${targetOrShader.toUpperCase()} to: ${destination}`);
-        printExportNotes(scene, targetOrShader as SceneExportFormat);
-      } catch (err: any) {
-        console.error(`Error exporting scene to ${targetOrShader}: ${err.message}`);
-        process.exit(1);
-      }
+      await writeSceneExport(sceneFile, targetOrShader as SceneExportFormat, options.out || outputPath, { fps: options.fps });
       return;
     }
 
@@ -473,8 +436,34 @@ sceneCmd
 
 /** Prints what an export left out of the scene, or carries only in part. */
 function printExportNotes(scene: Scene, format: SceneExportFormat) {
-  const notes = sceneExportNotes(scene, format);
+  printNotes(sceneExportNotes(scene, format));
+}
+
+function printNotes(notes: readonly string[]) {
   if (notes.length) console.warn(`Not carried over in full:\n${notes.map((n) => `  • ${n}`).join('\n')}`);
+}
+
+/** Exports a scene file to `format` (see `exportScene`), writes it to `out` (default `<scene name>.<ext>`), and prints its notes. */
+async function writeSceneExport(sceneFile: string, format: SceneExportFormat, out: string | undefined, options: { fps?: string; reel?: string }) {
+  const fullPath = path.resolve(process.cwd(), sceneFile);
+  if (!fs.existsSync(fullPath)) {
+    console.error(`Error: Scene file not found at: ${fullPath}`);
+    process.exit(1);
+  }
+  try {
+    const scene: Scene = JSON.parse(fs.readFileSync(fullPath, 'utf-8'));
+    const { exportScene } = await import('./export/index.js');
+    const result = await exportScene(scene, format, { frameRate: options.fps === undefined ? 30 : Number(options.fps), ...(options.reel !== undefined ? { reel: options.reel } : {}) });
+    const destination = path.resolve(process.cwd(), out || `${scene.name || 'scene'}.${result.extension}`);
+    fs.mkdirSync(path.dirname(destination), { recursive: true });
+    fs.writeFileSync(destination, result.content, 'utf-8');
+    console.log(`✅ Successfully exported ${format === 'text-template' ? 'text template' : format.toUpperCase()} to: ${destination}`);
+    if (result.template) console.log(`   ${result.template.texts.length} text layer(s), ${result.template.fields.length} editable field(s): ${result.template.fields.map((f) => f.id).join(', ') || 'none'}`);
+    printNotes(result.notes);
+  } catch (err: any) {
+    console.error(`Error exporting scene to ${format}: ${err.message}`);
+    process.exit(1);
+  }
 }
 
 /**
@@ -537,6 +526,21 @@ sceneCmd
       console.error(`Error generating scene HTML: ${err.message}`);
       process.exit(1);
     }
+  });
+
+sceneCmd
+  .command('export <sceneFile> [outFile]')
+  .description(`Export a scene to another tool's format: ${SCENE_EXPORT_FORMATS.join(', ')} (text-template: editable Lottie text layers with fonts, boxes, slots and word timings)`)
+  .requiredOption('-f, --format <format>', `One of ${SCENE_EXPORT_FORMATS.join(', ')}`)
+  .option('-o, --out <outputPath>', 'Output file path (default <scene name>.<ext>)')
+  .option('--fps <fps>', 'Target frame rate', '30')
+  .option('--reel <reel>', 'Reel name identifier (edl)')
+  .action(async (sceneFile, outFile, options) => {
+    if (!(SCENE_EXPORT_FORMATS as readonly string[]).includes(options.format)) {
+      console.error(`Error: There is no export format "${options.format}"; the formats are ${SCENE_EXPORT_FORMATS.join(', ')}.`);
+      process.exit(1);
+    }
+    await writeSceneExport(sceneFile, options.format as SceneExportFormat, options.out || outFile, { fps: options.fps, ...(options.reel !== undefined ? { reel: options.reel } : {}) });
   });
 
 sceneCmd
