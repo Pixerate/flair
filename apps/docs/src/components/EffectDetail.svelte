@@ -26,7 +26,8 @@
 
   $: isOverlay = showsOverPicture(meta);
   $: lightGround = meta.kind === "vector" && !isOverlay;
-  $: snippet = `import { mountEffect } from "@pixerate/flair/embed";\n\nmountEffect(document.querySelector("#hero"), "${meta.id}"${preset ? `, { preset: "${preset}" }` : ""});`;
+  // A timing effect retimes a video; without one it plays Flair's preview clip.
+  $: snippet = `import { mountEffect } from "@pixerate/flair/embed";\n\nmountEffect(document.querySelector("#hero"), "${meta.id}"${meta.kind === "timing" ? `, { subject: { video: document.querySelector("video") }${preset ? `, preset: "${preset}"` : ""} }` : preset ? `, { preset: "${preset}" }` : ""});`;
   $: load(meta.id);
 
   async function load(id: string) {
