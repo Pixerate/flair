@@ -1,5 +1,5 @@
 import type { ControlDef, ControlValue } from "../shader/controls.js";
-import { cameraMoveControls, cameraMoveValues } from "./camera.js";
+import { listedControls, listedValues } from "./listed-controls.js";
 import type { TimingBlend, TimingContext, TimingEffect, TimingFrame, TimingSample } from "./types.js";
 
 /*
@@ -390,7 +390,7 @@ export function getTimingEffect(id: string): TimingEffect | undefined {
 
 /** A timing effect's controls, as `effectControls` gives them. */
 export function timingControls(effect: TimingEffect): ControlDef[] {
-  return cameraMoveControls(effect);
+  return listedControls(effect);
 }
 
 /**
@@ -402,7 +402,7 @@ export function timingValues(
   effect: TimingEffect,
   options: { preset?: string; values?: Readonly<Record<string, unknown>> } = {},
 ): { values: Record<string, ControlValue>; issues: string[] } {
-  return cameraMoveValues(effect, options);
+  return listedValues(effect, options);
 }
 
 /** Checks footage's length and frame rate, throwing a sentence naming the valid range. */

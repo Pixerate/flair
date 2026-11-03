@@ -48,11 +48,12 @@ A shot's `layers` are drawn over (and under) its board:
 
 - **What:** a catalog shader or vector effect (`effect`, with `preset` and `values`), a custom shader (`source`, GLSL with `mainImage` and `// @control` uniforms), or a bare picture (only a `subject`).
 - **On what:** `subject` is `{ image }`, `{ video }` (a URL), `{ svg }`, `{ text }`, or `{ slot: "name" }` for the host to fill at play or record time.
+- **Retimed video:** a layer with a video subject (`{ video }`, or a slot filled with one) takes a timing effect as its `timing`: `"timing": "retime-reverse"`, or `{ effect: "long-exposure", preset?, values? }`. The player draws the footage frames the effect picks, blended, and loops the retimed clip while the layer shows; the layer's `effect`, if it has one, treats the retimed picture.
 - **Artwork from a library:** `subject` can be `{ asset: "provider:id" }`, resolved by the host's `resolveAsset(ref)` (returning `{ svg }` or `{ image }`), passed to `scenePlan`, `mountScene`, `recordScene`, `standaloneSceneHtml`, `mountEffect` and `applySceneTool`. Flair knows no library itself; an asset it cannot resolve is reported and draws nothing.
 - **Where:** without `rect` or `ids` it fills the screen; with a `rect` (board units) or `ids` (elements, with `padding`) it sits on the board and moves with the camera. `role` stacks it: `background` under the elements, `subject` over them on the board (the default when placed), `overlay` over everything but the title and caption.
 - **When:** `from` and `until` are ms after the shot starts, or `{ shots: n }` for the start of a later shot; a layer lasts until the next shot by default. `opacity` and `fade` (ms) soften it.
 
-The scene tool `find_layer_effects` lists effects with what they take (`{ accepts: ["image"] }`, `{ kind: "vector" }`, `{ transparent: true }`), their controls and presets.
+The scene tool `find_layer_effects` lists effects with what they take (`{ accepts: ["image"] }`, `{ kind: "vector" }`, `{ kind: "timing" }`, `{ transparent: true }`), where each goes, their controls and presets; `retime_layer` sets or removes a layer's `timing`.
 
 ## Slots
 

@@ -1,7 +1,8 @@
 import type { Scene, Shot } from '../scene/types.js';
 import { validateScene, type SceneIssue } from '../scene/validate.js';
-import { checkSceneLayers } from '../scene/layercheck.js';
-import { layerKey, layerRole, layerWhat, isAsset, isSlot, type LayerTime, type SubjectResolver } from '../scene/layers.js';
+import { checkSceneLayers, timingIssues } from '../scene/layercheck.js';
+import { layerKey, layerRole, layerTiming, layerWhat, isAsset, isSlot, type LayerTime, type LayerTiming, type SceneLayer, type SubjectResolver } from '../scene/layers.js';
+import { getTimingEffect, timingValues } from '../catalog/timing.js';
 import { resolveSceneAssets, sceneAssets } from '../scene/assets.js';
 import { simulateScene } from '../scene/player.js';
 import type { Review } from '../scene/report.js';
@@ -20,7 +21,7 @@ export interface AgentToolDefinition {
 
 /** How a shot arranges layers, a transition, copies and paths, for the tools' descriptions. */
 const SHOT_GUIDE =
-  'A shot\'s "layers" are catalog effects ({"effect": id, "preset"?, "values"?}), custom shaders ({"source": GLSL with void mainImage}) or bare pictures, each with an optional "subject" ({"image": url}, {"video": url}, {"svg": markup}, {"text": words}, {"slot": name} that the host fills when it plays or records, or {"asset": "provider:id"} for artwork from the host\'s asset library, when it has one), a "role" ("background", "subject" or "overlay"), a place on the board ("rect" {x, y, width, height} or "ids" of elements; without either it fills the screen), "from"/"until" (ms after the shot starts, or {"shots": n}; by default it lasts until the next shot), "opacity" and "fade" (ms). find_layer_effects finds effects and what they take. A shot\'s "transition" is a catalog transition from the last shot ({"effect": "transition-wipe", "ms"?, "preset"?, "values"?}); without a camera "in" the camera cuts and the transition does the move. A run command {"type": "replicate", "element": {...}, "pattern": "grid"|"line"|"circle"|"spiral", "count"} draws copies <id>_0…, and a behavior {"type": "path", "target": id, "waypoints": [{"point": [x, y]}, ...], "orient"?} moves an element along a curve while the shot holds.';
+  'A shot\'s "layers" are catalog effects ({"effect": id, "preset"?, "values"?}), custom shaders ({"source": GLSL with void mainImage}) or bare pictures, each with an optional "subject" ({"image": url}, {"video": url}, {"svg": markup}, {"text": words}, {"slot": name} that the host fills when it plays or records, or {"asset": "provider:id"} for artwork from the host\'s asset library, when it has one), a "timing" that retimes a video subject ("retime-speed", or {"effect": "long-exposure", "preset"?, "values"?}; retime_layer sets it), a "role" ("background", "subject" or "overlay"), a place on the board ("rect" {x, y, width, height} or "ids" of elements; without either it fills the screen), "from"/"until" (ms after the shot starts, or {"shots": n}; by default it lasts until the next shot), "opacity" and "fade" (ms). find_layer_effects finds effects and what they take. A shot\'s "transition" is a catalog transition from the last shot ({"effect": "transition-wipe", "ms"?, "preset"?, "values"?}); without a camera "in" the camera cuts and the transition does the move. A run command {"type": "replicate", "element": {...}, "pattern": "grid"|"line"|"circle"|"spiral", "count"} draws copies <id>_0…, and a behavior {"type": "path", "target": id, "waypoints": [{"point": [x, y]}, ...], "orient"?} moves an element along a curve while the shot holds.';
 
 export const FLAIR_AGENT_TOOLS: AgentToolDefinition[] = [
   {
@@ -116,18 +117,36 @@ export const FLAIR_AGENT_TOOLS: AgentToolDefinition[] = [
   {
     name: 'find_layer_effects',
     description:
-      'Searches the catalog for effects a shot can use as layers (shader and vector effects) or as its transition, with what each takes as a subject, its controls (name, type, range, default) and presets. Results are limited; "total" says how many match, and "offset" pages through them.',
+      'Searches the catalog for effects a shot can use as layers (shader and vector effects), as a layer\'s "timing" (timing effects, which retime a video subject: speed changes, ramps, reverses, freezes, long exposures) or as its transition, with where each goes ("goesIn"), what it takes as a subject, its controls (name, type, range, default) and presets. Results are limited; "total" says how many match, and "offset" pages through them.',
     input_schema: {
       type: 'object',
       properties: {
         text: { type: 'string', description: 'Words to look for in the id, name, description, category and tags (all must match).' },
         accepts: { type: 'array', items: { type: 'string', enum: ['image', 'video', 'svg', 'text'] }, description: 'Only effects that take all of these as a subject.' },
-        kind: { type: 'string', enum: ['shader', 'vector'], description: 'Only shaders (WebGL) or only vector (animated SVG) effects.' },
+        kind: { type: 'string', enum: ['shader', 'vector', 'timing'], description: 'Only shaders (WebGL), only vector (animated SVG) effects, or only timing effects (for a layer\'s "timing").' },
         transition: { type: 'boolean', description: 'true: only transitions (for a shot\'s "transition"); false: only effects for "layers".' },
         transparent: { type: 'boolean', description: 'true: only shaders that draw over what is under them (overlays).' },
         limit: { type: 'integer', minimum: 1, description: 'How many to return (default 10, at most 50).' },
         offset: { type: 'integer', minimum: 0, description: 'How many matches to skip, to page through them (default 0).' },
       },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'retime_layer',
+    description:
+      'Retimes a layer\'s video with a timing effect, setting the layer\'s "timing" (or removing it with null): slow motion, a speed ramp, a reverse, a boomerang, a freeze frame, a stutter, step frames, frame echoes or a long exposure. The layer needs a {"video": url} subject (or a {"slot": name} the host fills with a video); any "effect" on the layer is applied to the retimed video. find_layer_effects with {"kind": "timing"} lists the timing effects with their controls and presets. A bad effect, preset or value is refused and the scene is left as it was.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        shot: { type: 'integer', minimum: 1, description: '1-based index of the layer\'s shot.' },
+        layer: { type: ['integer', 'string'], description: 'The layer: its 1-based place in the shot\'s "layers", or its id (get_scene with view "outline" lists them).' },
+        timing: {
+          type: ['string', 'object', 'null'],
+          description: 'A timing effect\'s id ("retime-speed"), or {"effect": id, "preset"?: name, "values"?: {control: value}} like {"effect": "long-exposure", "values": {"exposure": 2}}; null removes the layer\'s timing.',
+        },
+      },
+      required: ['shot', 'layer', 'timing'],
       additionalProperties: false,
     },
   },
@@ -262,6 +281,8 @@ export interface SceneOutlineLayer {
   slot?: string;
   /** The asset its subject is, when the host's library resolves it. */
   asset?: string;
+  /** The timing effect retiming its video, by id. */
+  timing?: string;
   from?: LayerTime;
   until?: LayerTime;
 }
@@ -356,6 +377,7 @@ export function outlineScene(scene: Scene): SceneOutline {
               role: layerRole(l ?? {}),
               ...(isSlot(l?.subject) ? { slot: l.subject.slot } : {}),
               ...(isAsset(l?.subject) ? { asset: l.subject.asset } : {}),
+              ...(l?.timing !== undefined ? { timing: layerTiming(l)?.effect ?? String(l.timing) } : {}),
               ...(l?.from !== undefined ? { from: l.from } : {}),
               ...(l?.until !== undefined ? { until: l.until } : {}),
             })),
@@ -488,9 +510,9 @@ async function runSceneTool(scene: Scene, toolName: string, input: Record<string
       const accepts: string[] = input.accepts ?? [];
       const limit = Math.min(50, input.limit ?? 10);
       const offset = input.offset ?? 0;
-      const matches = EFFECT_META.filter((m) => m.kind !== 'camera' && m.kind !== 'timing')
+      const matches = EFFECT_META.filter((m) => m.kind !== 'camera')
         .filter((m) => !input.kind || m.kind === input.kind)
-        .filter((m) => input.transition === undefined || (m.video === 'transition') === input.transition)
+        .filter((m) => input.transition === undefined || (input.transition ? m.video === 'transition' : m.video !== 'transition' && m.kind !== 'timing'))
         .filter((m) => input.transparent === undefined || !!m.transparent === input.transparent)
         .filter((m) => accepts.every((a) => m.inputs.accepts.includes(a as never) || (a === 'text' && m.inputs.accepts.includes('mask'))))
         .filter((m) => words.every((w) => [m.id, m.name, m.description, m.category, ...m.tags].join(' ').toLowerCase().includes(w)));
@@ -501,7 +523,7 @@ async function runSceneTool(scene: Scene, toolName: string, input: Record<string
           id: m.id,
           name: m.name,
           kind: m.kind,
-          goesIn: transition ? 'transition' : 'layers',
+          goesIn: transition ? 'transition' : m.kind === 'timing' ? 'timing' : 'layers',
           description: m.description,
           accepts: m.inputs.accepts.filter((a) => ['image', 'video', 'svg', 'text', 'mask'].includes(a)),
           ...(m.transparent ? { transparent: true } : {}),
@@ -515,6 +537,48 @@ async function runSceneTool(scene: Scene, toolName: string, input: Record<string
       if (matches.length > offset + effects.length) output.more = `${matches.length - offset - effects.length} more match; ask again with offset ${offset + effects.length}, or narrow with text, accepts or kind.`;
       if (!matches.length) output.note = `No layer effect matches${words.length ? ` "${words.join(' ')}"` : ''}${accepts.length ? ` taking ${accepts.join(' and ')}` : ''}; try fewer words, or leave out a filter.`;
       return { ok: true, scene, issues: [], output };
+    }
+
+    case 'retime_layer': {
+      const idx = input.shot - 1;
+      if (idx >= shotCount) return fail(`There is no shot ${input.shot}; ${shotRange}.`);
+      const layers: SceneLayer[] = Array.isArray(scene.shots[idx]!.layers) ? scene.shots[idx]!.layers! : [];
+      const keys = layers.map((l, j) => layerKey(l ?? {}, idx, j));
+      if (!layers.length)
+        return fail(`Shot ${input.shot} has no layers to retime; add one with update_shot, like { "set": { "layers": [{ "subject": { "video": url }, "timing": "retime-speed" }] } }.`);
+      const at = typeof input.layer === 'number' ? input.layer - 1 : keys.indexOf(input.layer);
+      if (at < 0 || at >= layers.length)
+        return fail(
+          typeof input.layer === 'number'
+            ? `There is no layer ${input.layer} in shot ${input.shot}; it has ${layers.length} (1 to ${layers.length}): ${keys.map((k) => `"${k}"`).join(', ')}.`
+            : `Shot ${input.shot} has no layer "${input.layer}"; its layers are ${keys.map((k) => `"${k}"`).join(', ')} (or 1 to ${layers.length} by place).`,
+        );
+      const key = keys[at]!;
+      const { timing: _old, ...rest } = layers[at]!;
+      let layer: SceneLayer = rest;
+      if (input.timing === null) {
+        if (layers[at]!.timing === undefined) return fail(`Layer "${key}" in shot ${input.shot} has no timing to remove; nothing was changed.`);
+      } else {
+        layer = { ...rest, timing: input.timing as LayerTiming };
+        const problems = timingIssues(layer as unknown as Record<string, unknown>, `Layer "${key}"`);
+        if (problems.length) return fail(`${problems.join(' ')} Nothing was changed.`);
+      }
+      const shots = [...scene.shots];
+      shots[idx] = { ...scene.shots[idx]!, layers: layers.map((l, j) => (j === at ? layer : l)) };
+      const result = await edited({ ...scene, shots }, '');
+      if (!result.ok) return result;
+      const spec = layerTiming(layer);
+      if (!spec) return { ...result, output: { ...result.output, summary: `Removed the timing from layer "${key}" in shot ${input.shot}; its video plays as it is.` } };
+      const effect = getTimingEffect(spec.effect)!;
+      const { values } = timingValues(effect, { ...(spec.preset !== undefined ? { preset: spec.preset } : {}), ...(spec.values ? { values: spec.values } : {}) });
+      return {
+        ...result,
+        output: {
+          ...result.output,
+          summary: `Layer "${key}" in shot ${input.shot} now plays its video through "${effect.id}" (${effect.name}), looping the retimed clip while the layer shows. How long the retimed clip runs depends on the video, which is only known when it plays or records.`,
+          timing: { effect: effect.id, values },
+        },
+      };
     }
 
     case 'find_camera_moves': {

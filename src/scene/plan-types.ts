@@ -40,6 +40,12 @@ export type PlanDraw =
     }
   | { kind: 'picture' };
 
+/** A layer's retime, resolved: a timing effect's id and every control's value. */
+export interface PlanTiming {
+  effect: string;
+  values: Record<string, ControlValue>;
+}
+
 /** Where a layer is drawn: over the whole screen, a box on the board, or the bounds of elements (with padding) on the board. */
 export type PlanPlacement = { screen: true } | { rect: Rect } | { ids: string[]; padding: number };
 
@@ -57,6 +63,14 @@ export interface PlanLayer {
   draw: PlanDraw;
   /** A picture, video URL, SVG or words; or the slot, when it was not filled when the plan was made. */
   subject?: SceneSubject | SubjectSlot;
+  /**
+   * The timing effect that retimes the subject's video, with every
+   * control's value worked out: the player draws the frames
+   * `timingSample(getTimingEffect(effect), { time, footage, fps }, values)`
+   * names (looping over `timingLength`), blended, where it would draw the
+   * video's frame at `time`.
+   */
+  timing?: PlanTiming;
   /** Control values that behaviors change over time, keyed by ms on the scene's timeline (hold the last key). */
   tracks?: { ms: number; values: Record<string, number> }[];
 }

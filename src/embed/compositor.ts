@@ -3,17 +3,20 @@
  * plan (no catalog), so the standalone scene page can carry it. Shader
  * layers render with `ShaderFrames`, vector layers with `svgView`, both on
  * the scene's clock, and a shot's transition blends the last shot's final
- * frame into the new one.
+ * frame into the new one. A layer with a `timing` shows its video retimed
+ * (`TimingRenderer`): the footage frames the timing effect picks, blended.
  */
 
+import { getTimingEffect, TimingRenderer } from "../catalog/timing.js";
 import { textImage } from "../catalog/images.js";
 import { boardHeight, projectPoint, type View } from "../scene/camera.js";
 import type { SceneElement, Rect } from "../scene/geometry.js";
 import { isSlot, type SceneSubject, type SlotSubject } from "../scene/layers.js";
-import { keyAt, planLayerOpacity, SCENE_PLAN_VERSION, type PlanDraw, type PlanLayer, type PlanTransition, type ScenePlan } from "../scene/plan-types.js";
+import { keyAt, planLayerOpacity, SCENE_PLAN_VERSION, type PlanDraw, type PlanLayer, type PlanTiming, type PlanTransition, type ScenePlan } from "../scene/plan-types.js";
 import { ShaderFrames } from "../shader/frames.js";
 import { seekVideo, type LiveSource } from "../shader/textures.js";
 import { svgDuration, svgView, type SvgView } from "../vector/svg.js";
+import { videoFootage } from "./timing.js";
 
 /** Subjects for a scene's slots: what a scene could write, or a live `<video>` or canvas. */
 export type SceneSlotSubjects = Record<string, SlotSubject>;
@@ -77,6 +80,18 @@ function videoFrom(url: string): HTMLVideoElement {
   return video;
 }
 
+/** Most pixels along a retimed video's longer side: its frames are blended on the CPU. */
+const TIMING_MAX_PIXELS = 1280;
+
+const isVideoElement = (v: unknown): v is HTMLVideoElement => typeof HTMLVideoElement !== "undefined" && v instanceof HTMLVideoElement;
+
+/** A video retimed by a timing effect, drawn onto its own canvas. */
+interface Retimed {
+  canvas: HTMLCanvasElement;
+  /** Draws the retimed clip at `localMs` into the layer (looping over its length); again at the same time draws nothing new. */
+  at(localMs: number): Promise<void>;
+}
+
 /** What one layer draws with, made ready once. */
 interface Drawer {
   /** Its pixels at `localMs` into the layer (`ms` on the scene's timeline), sized `w` × `h`. */
@@ -106,6 +121,8 @@ export class SceneCompositor {
   private readonly ctx: CanvasRenderingContext2D;
   private readonly options: SceneCompositorOptions;
   private readonly drawers = new Map<string, Drawer>();
+  /** Layers' retimed videos, by layer key. */
+  private readonly retimed = new Map<string, Retimed>();
   private readonly transitions = new Map<number, { frames: ShaderFrames; from: HTMLCanvasElement; to: HTMLCanvasElement; fromDrawn: boolean }>();
   private readonly host: HTMLDivElement;
   private readonly elements: { id: string; keys: { ms: number; element: SceneElement | null }[] }[];
@@ -172,11 +189,51 @@ export class SceneCompositor {
     if (Math.abs(video.currentTime - t) > 0.3) video.currentTime = t;
   }
 
+  /**
+   * A layer's video retimed by its timing effect at `size` (capped at
+   * {@link TIMING_MAX_PIXELS}), its footage read once the video knows its
+   * length. Throws a sentence for a timing effect this player does not know.
+   */
+  private retime(key: string, timing: PlanTiming, video: HTMLVideoElement, size: [number, number], waits: Promise<unknown>[]): Retimed {
+    const effect = getTimingEffect(timing.effect);
+    if (!effect) throw new Error(`Layer "${key}" retimes its video with "${timing.effect}", which is not a timing effect this player knows; make the plan again with scenePlan(scene).`);
+    const fit = Math.min(1, TIMING_MAX_PIXELS / Math.max(size[0], size[1]));
+    const canvas = newCanvas(size[0] * fit, size[1] * fit);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("This browser cannot draw on a canvas, so it cannot retime a video.");
+    const image = ctx.createImageData(canvas.width, canvas.height);
+    let last: number | undefined;
+    video.pause();
+    const renderer = videoFootage(video, canvas.width, canvas.height).then(
+      (footage) => new TimingRenderer(effect, footage, { values: timing.values }),
+      (e: Error) => {
+        throw new Error(`Layer "${key}" cannot retime its video with "${effect.id}": ${e.message}`, { cause: e });
+      },
+    );
+    waits.push(renderer);
+    renderer.catch(() => undefined);
+    const retimed: Retimed = {
+      canvas,
+      at: async (local) => {
+        if (local === last) return;
+        const r = await renderer;
+        const length = r.length;
+        await r.render(length > 0 ? local % length : 0, image.data);
+        ctx.putImageData(image, 0, 0);
+        last = local;
+      },
+    };
+    this.retimed.set(key, retimed);
+    return retimed;
+  }
+
   private drawerFor(layer: PlanLayer, waits: Promise<unknown>[]): Drawer | undefined {
     const subject = this.subjectOf(layer);
     const draw = layer.draw;
     const size = this.nominalSize(layer);
-    if (draw.kind === "shader") return this.shaderDrawer(layer.key, draw, subject, size, waits);
+    if (layer.timing && subject && !("video" in subject) && isSlot(layer.subject))
+      throw new Error(`Layer "${layer.key}" retimes the slot "${layer.subject.slot}" with "${layer.timing.effect}", which needs a video; fill the slot with { video }.`);
+    if (draw.kind === "shader") return this.shaderDrawer(layer, draw, subject, size, waits);
     if (draw.kind === "vector") return this.vectorDrawer(draw);
     if (!subject) return undefined;
     // A bare picture.
@@ -188,9 +245,14 @@ export class SceneCompositor {
     }
     if ("video" in subject) {
       const video = typeof subject.video === "string" ? videoFrom(subject.video) : (subject.video as LiveSource);
+      const retimed = layer.timing && isVideoElement(video) ? this.retime(layer.key, layer.timing, video, size, waits) : undefined;
       return {
         draw: async (local) => {
-          if (typeof HTMLVideoElement !== "undefined" && video instanceof HTMLVideoElement) await this.follow(video, local);
+          if (retimed) {
+            await retimed.at(local);
+            return retimed.canvas;
+          }
+          if (isVideoElement(video)) await this.follow(video, local);
           return video as CanvasImageSource;
         },
         dispose: () => {
@@ -204,10 +266,12 @@ export class SceneCompositor {
     return { draw: async () => img, dispose() {} };
   }
 
-  private shaderDrawer(key: string, draw: Extract<PlanDraw, { kind: "shader" }>, subject: ReturnType<SceneCompositor["subjectOf"]>, size: [number, number], waits: Promise<unknown>[]): Drawer {
+  private shaderDrawer(layer: PlanLayer, draw: Extract<PlanDraw, { kind: "shader" }>, subject: ReturnType<SceneCompositor["subjectOf"]>, size: [number, number], waits: Promise<unknown>[]): Drawer {
+    const key = layer.key;
     const values = { ...draw.values };
     let video: HTMLVideoElement | undefined;
     let live: LiveSource | undefined;
+    let retimed: Retimed | undefined;
     if (subject && draw.subjectControl) {
       if ("text" in subject) values[draw.subjectControl] = textImage(subject.text, { ...(subject.font ? { font: subject.font } : {}), ...(subject.weight !== undefined ? { weight: subject.weight } : {}) });
       else if ("svg" in subject) values[draw.subjectControl] = svgUrl(subject.svg);
@@ -215,7 +279,12 @@ export class SceneCompositor {
       else if (typeof subject.video === "string") live = video = videoFrom(subject.video);
       else if (isLive(subject.video)) {
         live = subject.video;
-        if (typeof HTMLVideoElement !== "undefined" && live instanceof HTMLVideoElement) video = live;
+        if (isVideoElement(live)) video = live;
+      }
+      if (video && layer.timing) {
+        retimed = this.retime(key, layer.timing, video, size, waits);
+        live = retimed.canvas;
+        video = undefined;
       }
       if (live) values[draw.subjectControl] = "";
     }
@@ -227,10 +296,10 @@ export class SceneCompositor {
     }
     if (live && draw.subjectControl) frames.setLiveSource(draw.subjectControl, live);
     waits.push(frames.ready());
-    const layer = this.plan.layers.find((l) => l.key === key)!;
     return {
       draw: async (local, ms) => {
         if (video) await this.follow(video, local);
+        if (retimed) await retimed.at(local);
         const track = layer.tracks ? keyAt(layer.tracks, ms) : undefined;
         if (track) frames.setValues({ ...values, ...track.values });
         frames.render(local / 1000, { delta: 1 / this.plan.fps });
@@ -423,6 +492,8 @@ export class SceneCompositor {
   /** Draws the frame at `ms` on the scene's timeline. */
   async draw(ms: number): Promise<void> {
     await this.ready();
+    // Retimed videos read their frames first, so a page never shows the canvas half drawn while they seek.
+    await Promise.all(this.plan.layers.filter((l) => ms >= l.startMs && ms < l.endMs).map((l) => this.retimed.get(l.key)?.at(ms - l.startMs)));
     const t = this.plan.transitions.find((x) => ms >= x.startMs && ms < x.startMs + x.ms);
     const ready = t && this.transitions.get(t.shot);
     if (t && ready) {
@@ -454,6 +525,7 @@ export class SceneCompositor {
     for (const d of this.drawers.values()) d.dispose();
     for (const t of this.transitions.values()) t.frames.dispose();
     this.drawers.clear();
+    this.retimed.clear();
     this.transitions.clear();
     this.host.remove();
   }

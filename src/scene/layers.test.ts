@@ -133,4 +133,31 @@ describe('scenePlan', () => {
       expect(validate(plan), JSON.stringify(validate.errors?.slice(0, 3))).toBe(true);
     }
   });
+
+  it('carries a layer\'s timing with every value worked out, and fits the schema', async () => {
+    const retimed: Scene = {
+      name: 'retimed',
+      shots: [
+        {
+          hold: 2000,
+          layers: [
+            { id: 'slow', subject: { video: 'surf.mp4' }, timing: 'retime-speed' },
+            { id: 'trails', effect: 'image-duotone', subject: { video: 'night.mp4' }, timing: { effect: 'long-exposure', preset: 'Light trails', values: { exposure: 2 } } },
+            { id: 'later', subject: { slot: 'clip' }, timing: { effect: 'retime-reverse' } },
+          ],
+        },
+      ],
+    };
+    const plan = await scenePlan(retimed);
+    expect(plan.layers.find((l) => l.key === 'slow')!.timing).toEqual({ effect: 'retime-speed', values: { speed: 0.5, smooth: true } });
+    expect(plan.layers.find((l) => l.key === 'trails')).toMatchObject({ draw: { kind: 'shader', effect: 'image-duotone' }, timing: { effect: 'long-exposure', values: { exposure: 2, lighten: true, fade: 0.5, build: false } } });
+    expect(plan.layers.find((l) => l.key === 'later')!.timing!.effect).toBe('retime-reverse');
+    const validate = new Ajv2020({ strict: false, allErrors: true }).compile(SCENE_PLAN_SCHEMA);
+    expect(validate(plan), JSON.stringify(validate.errors?.slice(0, 3))).toBe(true);
+
+    // A slot filled with a picture is shown as it is, and the plan says so.
+    const still = await scenePlan(retimed, { subjects: { clip: { image: 'still.png' } } });
+    expect(still.layers.find((l) => l.key === 'later')!.timing).toBeUndefined();
+    expect(still.notes).toContainEqual(expect.stringMatching(/Layer "later" retimes its subject with "retime-reverse", but the subject is not a video/));
+  });
 });

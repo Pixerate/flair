@@ -296,11 +296,13 @@ describe("the skills", () => {
     for (const line of text.split("\n")) {
       const found = [...line.matchAll(effectAt)].map((m) => ({ index: m.index!, id: (m[1] ?? m[2])! }));
       for (const m of found) expect(ids.has(m.id), `${file}: there is no effect "${m.id}" (${line.trim()})`).toBe(true);
-      for (const p of line.matchAll(/(?:\bpreset=|\bpreset: |"preset": |--preset )"?([^"]+?)"?(?=[,}\s]|$)/g)) {
+      // A quoted name is read whole ("Slow motion"); a bare one to the next space, comma or brace.
+      for (const p of line.matchAll(/(?:\bpreset=|\bpreset: |"preset": |--preset )(?:"([^"]+)"|([^"\s,}]+))/g)) {
         const owner = found.filter((m) => m.index < p.index!).at(-1);
         if (!owner) continue;
+        const name = (p[1] ?? p[2])!;
         const presets = getEffect(owner.id)?.presets?.map((x) => x.name) ?? [];
-        expect(presets, `${file}: ${owner.id} has no preset "${p[1]}"`).toContain(p[1]);
+        expect(presets, `${file}: ${owner.id} has no preset "${name}"`).toContain(name);
       }
     }
   });

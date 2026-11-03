@@ -7,6 +7,7 @@ import { EditorTab } from "./components/EditorTab";
 import { GalleryTab } from "./components/GalleryTab";
 import { PixelsPage } from "./components/PixelsPage";
 import { ProviderPage } from "./components/ProviderPage";
+import { ScenePage } from "./components/ScenePage";
 
 type Tab = "gallery" | "editor" | "agent";
 
@@ -36,6 +37,7 @@ export function App() {
   if (location.hash.split("?")[0] === "#bench") return <BenchPage />;
   if (location.hash.split("?")[0] === "#pixels") return <PixelsPage />;
   if (location.hash.split("?")[0] === "#provider") return <ProviderPage />;
+  if (location.hash.split("?")[0] === "#scene") return <ScenePage />;
 
   const go = (next: Tab) => {
     location.hash = `/${next}`;

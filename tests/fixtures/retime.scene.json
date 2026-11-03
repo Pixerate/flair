@@ -1,0 +1,24 @@
+{
+  "name": "retime",
+  "title": "Retimed footage",
+  "description": "One clip three ways: in slow motion, as a long exposure whose lights draw trails, and played backwards through a duotone. The host fills the \"footage\" slot with a video.",
+  "stage": { "width": 1280, "height": 720 },
+  "shots": [
+    {
+      "title": "Slow motion",
+      "hold": 3000,
+      "layers": [{ "id": "slow", "subject": { "slot": "footage" }, "timing": { "effect": "retime-speed", "preset": "Slow motion" } }]
+    },
+    {
+      "title": "Long exposure",
+      "hold": 3000,
+      "transition": { "effect": "transition-wipe", "ms": 600 },
+      "layers": [{ "id": "trails", "subject": { "slot": "footage" }, "timing": { "effect": "long-exposure", "preset": "Light trails" } }]
+    },
+    {
+      "title": "Reverse",
+      "hold": 3000,
+      "layers": [{ "id": "back", "effect": "image-duotone", "preset": "Spotify", "subject": { "slot": "footage" }, "timing": "retime-reverse" }]
+    }
+  ]
+}

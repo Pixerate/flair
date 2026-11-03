@@ -1,14 +1,14 @@
 import { getCameraMove } from '../catalog/camera.js';
-import { getTimingEffect } from '../catalog/timing.js';
+import { getTimingEffect, timingEffects, timingValues } from '../catalog/timing.js';
 import { layerEffect, layerEffectIds } from '../catalog/layer-index.js';
 import { didYouMean } from '../motion/params.js';
 import { checkControlValue, parseControls, type ControlDef } from '../shader/controls.js';
-import { ASSET_REF, DEFAULT_TRANSITION_MS, isAsset, isSlot, LAYER_ROLES, subjectKind, SUBJECT_KINDS, type SceneLayer } from './layers.js';
+import { ASSET_REF, DEFAULT_TRANSITION_MS, isAsset, isSlot, LAYER_ROLES, LAYER_TIMING_FIELDS, subjectKind, SUBJECT_KINDS, type SceneLayer } from './layers.js';
 import type { Scene } from './types.js';
 
 const list = (names: readonly string[]) => names.map((n) => `"${n}"`).join(', ');
 
-export const LAYER_FIELDS = ['id', 'effect', 'source', 'preset', 'values', 'subject', 'role', 'rect', 'ids', 'padding', 'from', 'until', 'opacity', 'fade'];
+export const LAYER_FIELDS = ['id', 'effect', 'source', 'preset', 'values', 'subject', 'timing', 'role', 'rect', 'ids', 'padding', 'from', 'until', 'opacity', 'fade'];
 export const TRANSITION_FIELDS = ['effect', 'ms', 'preset', 'values'];
 
 /** The longest transition, in ms. */
@@ -66,8 +66,50 @@ function effectIdIssue(id: unknown, where: string): string | undefined {
   if (typeof id !== 'string') return `${where} "effect" is a catalog effect's id, like "aurora"; find_layer_effects lists them.`;
   if (layerEffect(id)) return undefined;
   if (getCameraMove(id)) return `${where} names "${id}", a camera move: it goes in the shot's camera "in" or "during", not in layers.`;
-  if (getTimingEffect(id)) return `${where} names "${id}", a timing effect, which retimes video footage; scenes cannot retime a layer's video yet, so retime the clip first (recordEffect with { subject: { video } }) and use the result as the layer's { "video": url }.`;
+  if (getTimingEffect(id)) return `${where} names "${id}", a timing effect, which retimes the layer's video: it goes in the layer's "timing": "${id}" (with a { "video": url } subject), not in "effect".`;
   return `There is no catalog effect "${id}" for ${where.toLowerCase()}.${didYouMean(id, layerEffectIds())} find_layer_effects lists the effects a layer can use.`;
+}
+
+/** The timing effects' ids, for sentences that list them. */
+const timingIds = () => timingEffects.map((e) => e.id);
+
+/**
+ * What is wrong with a layer's `timing`: its shape, its effect (a timing
+ * effect, not a layer effect or a camera move), its preset and values, and
+ * its subject, which must be a video (or a slot the host fills with one).
+ */
+export function timingIssues(layer: Record<string, unknown>, named: string): string[] {
+  const timing = layer.timing;
+  const shape = `${named} "timing" is a timing effect's id, like "retime-speed", or { "effect": id, "preset"?, "values"? }; find_layer_effects with { "kind": "timing" } lists them.`;
+  let id: unknown;
+  let preset: unknown;
+  let values: unknown;
+  if (typeof timing === 'string') id = timing;
+  else if (isObject(timing)) {
+    const extra = Object.keys(timing).filter((k) => !(LAYER_TIMING_FIELDS as readonly string[]).includes(k));
+    if (extra.length) return [`${named} "timing" has no field ${list(extra)}; it takes ${list(LAYER_TIMING_FIELDS)}.`];
+    ({ effect: id, preset, values } = timing);
+  } else return [shape];
+  if (typeof id !== 'string') return [shape];
+  const issues: string[] = [];
+  const effect = getTimingEffect(id);
+  if (!effect) {
+    if (layerEffect(id)) issues.push(`${named} "timing" names "${id}", which is not a timing effect: it draws a picture, so it goes in the layer's "effect". The timing effects are ${list(timingIds())}.`);
+    else if (getCameraMove(id)) issues.push(`${named} "timing" names "${id}", a camera move: it goes in the shot's camera "in" or "during". The timing effects are ${list(timingIds())}.`);
+    else issues.push(`There is no timing effect "${id}" for ${named.toLowerCase()}.${didYouMean(id, timingIds())} The timing effects are ${list(timingIds())}.`);
+  } else {
+    if (preset !== undefined && typeof preset !== 'string') issues.push(`${named} "timing" "preset" is a preset's name; "${id}"'s presets are ${list((effect.presets ?? []).map((p) => p.name))}.`);
+    else if (values !== undefined && !isObject(values)) issues.push(`${named} "timing" "values" is an object of control values, like { "speed": 0.5 }.`);
+    else issues.push(...timingValues(effect, { ...(preset !== undefined ? { preset: preset as string } : {}), ...(values !== undefined ? { values: values as Record<string, unknown> } : {}) }).issues.map((m) => `${named} "timing": ${m}`));
+  }
+  const subject = layer.subject;
+  if (subject === undefined) issues.push(`${named} has a "timing", which retimes a video, but no subject; give it { "subject": { "video": url } } (or { "slot": name } for the host to fill with a video).`);
+  else if (isAsset(subject)) issues.push(`${named} has a "timing", which retimes a video, but its subject is an asset (an SVG or a picture, with only the one frame); give it { "video": url } or leave "timing" out.`);
+  else if (!isSlot(subject)) {
+    const kind = subjectKind(subject);
+    if (kind && kind !== 'video') issues.push(`${named} has a "timing", which retimes a video, but its subject is ${kind === 'text' ? 'text' : kind === 'svg' ? 'an SVG' : 'an image'}, with only the one frame; give it { "video": url } or leave "timing" out.`);
+  }
+  return issues;
 }
 
 /** A layer time (`from`/`until`): ms after its shot starts, or `{ "shots": n }`. */
@@ -87,7 +129,8 @@ function timeIssue(value: unknown, field: 'from' | 'until', where: string, ctx: 
  * What is wrong with one layer, as sentences that say what to write: its
  * fields, its effect (a shader or vector effect from the catalog, not a
  * camera move or a transition), its subject (one the effect takes), its
- * placement, role, times and opacity. Control values are checked against
+ * `timing` (a timing effect, with its values, on a video), its placement,
+ * role, times and opacity. Control values are checked against
  * the catalog by {@link checkSceneLayers}; a custom `source`'s here.
  */
 export function checkLayer(layer: unknown, ctx: LayerContext): string[] {
@@ -126,6 +169,7 @@ export function checkLayer(layer: unknown, ctx: LayerContext): string[] {
   } else if (layer.preset !== undefined || layer.values !== undefined) {
     issues.push(`${named} is a bare picture (no "effect" or "source"), so it has no preset or values; add an "effect" to treat the picture.`);
   }
+  if (layer.timing !== undefined) issues.push(...timingIssues(layer, named));
   if (layer.preset !== undefined && typeof layer.preset !== 'string') issues.push(`${named} "preset" is a preset's name.`);
   if (layer.values !== undefined && !isObject(layer.values)) issues.push(`${named} "values" is an object of control values, like { "uSpeed": 0.5 }.`);
 
