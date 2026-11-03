@@ -47,8 +47,11 @@ import {
   type EffectValues,
   type EffectVectorMotion,
   type EffectVectorTarget,
+  type TimingSample,
+  type TimingSampleRequest,
 } from "@pixerate/editor/effects";
 import { cameraMoveControls, getCameraMove } from "../catalog/camera.js";
+import { getTimingEffect, timingControls, timingSample as flairTimingSample, MAX_TIMING_FRAMES } from "../catalog/timing.js";
 import { EFFECT_META, loadEffect, type EffectMeta } from "../catalog/lazy.js";
 import { renderVectorEffect, type EffectDefinition, type ShaderEffect, type VectorEffect } from "../catalog/types.js";
 import { applyPrimitive } from "../motion/apply.js";
@@ -71,8 +74,9 @@ export type SvgRasterizer = (motion: SvgMotion, timeMs: number, size: { width: n
 export interface FlairEffectsOptions {
   /**
    * The kinds of effect to offer (default all): `shader`, `vector` (animated SVGs), `motion`
-   * (primitives applied to vector art) and `camera` (camera moves for a scene's shots, which
-   * need `@pixerate/editor` 0.224 or later; leave it out for an older editor).
+   * (primitives applied to vector art), `camera` (camera moves for a scene's shots, which
+   * need `@pixerate/editor` 0.224 or later) and `timing` (retimes of video footage, which need
+   * 0.254 or later). Leave out what an older editor does not know.
    */
   kinds?: readonly EffectKind[];
   /**
@@ -105,11 +109,8 @@ interface InputBinding extends EffectInputSpec {
 }
 
 /** What it takes to describe and render one catalog effect. */
-/** An effect the contract can carry: every kind but timing effects, which retime footage the contract has no way to give. */
-export type OfferedMeta = EffectMeta & { kind: Exclude<EffectMeta["kind"], "timing"> };
-
 export interface Plan {
-  meta: OfferedMeta;
+  meta: EffectMeta;
   uses: EffectUse[];
   inputs: InputBinding[];
   /** The controls the contract shows: the effect's, less its image inputs and what the contract drives. */
@@ -123,10 +124,13 @@ function wantsText(wants: string): string {
   return "a picture";
 }
 
-function planOf(meta: OfferedMeta): Plan {
+function planOf(meta: EffectMeta): Plan {
   // A camera move draws no picture: it has no inputs (its preview picture is Flair's own) and only the use "camera".
   const move = meta.kind === "camera" ? getCameraMove(meta.id) : undefined;
   if (move) return { meta, uses: ["camera"], inputs: [], controls: cameraMoveControls(move), transition: false };
+  // A timing effect retimes footage the host decodes: it has no inputs and only the use "timing".
+  const retime = meta.kind === "timing" ? getTimingEffect(meta.id) : undefined;
+  if (retime) return { meta, uses: ["timing"], inputs: [], controls: timingControls(retime), transition: false };
   const transition = meta.video === "transition";
   const uses = new Set<EffectUse>();
   const images = meta.inputs.images;
@@ -190,9 +194,11 @@ export function summaryOf(plan: Plan): EffectSummary {
     description: meta.description,
     tags: meta.tags,
     transparent: meta.kind === "vector" || Boolean(meta.transparent),
-    loop: meta.kind === "vector" ? !meta.trigger : meta.loop !== undefined,
+    loop: meta.kind === "vector" ? !meta.trigger : meta.kind !== "timing" && meta.loop !== undefined,
     ...(duration !== undefined && { duration }),
     ...(background && { backgroundOpacity: background.name }),
+    // Effects that draw along a path given at run time say so, for search.
+    ...(plan.controls.some((c) => c.type === "path") && { accepts: ["path"] as const }),
     ...(move && { camera: { role: move.motion.role, durationMs: move.motion.duration, ...(move.motion.cut !== undefined && { cut: move.motion.cut }) } }),
   };
 }
@@ -637,6 +643,11 @@ class VectorRenderer extends BaseRenderer {
  *   move puts a scene's camera part-way through it, as Flair's scene player
  *   moves it, and `sampleCameraMove` keys it for an editor to bake. They
  *   draw no picture, so `createRenderer` refuses them.
+ * - **Timing:** the catalog's retimes of video footage are `timing` effects
+ *   (use `timing`, no inputs, no duration). `timingLength` gives how long a
+ *   retime lasts for footage of a length, and `timingSample` the weighted
+ *   footage frames one moment shows, as Flair's own players draw them. The
+ *   editor decodes and blends the frames, so `createRenderer` refuses them.
  * - **Templates:** `listTemplates`, `describeTemplate` and
  *   `instantiateTemplate` offer Flair's sequence templates. A filled
  *   template comes back as an `EffectSequence`: each shot's framing where
@@ -646,11 +657,8 @@ class VectorRenderer extends BaseRenderer {
  *   out and named in `notes`, with `validateScene`'s issues.
  */
 export function flairEffects(options: FlairEffectsOptions = {}): EffectProvider {
-  const kinds = new Set<EffectKind>(options.kinds ?? ["shader", "vector", "motion", "camera"]);
-  // Timing effects are left out: a render request carries one picture, and a retime needs the footage's other frames.
-  const plans = new Map(
-    EFFECT_META.filter((m): m is OfferedMeta => m.kind !== "timing" && kinds.has(m.kind)).map((m) => [m.id, planOf(m)]),
-  );
+  const kinds = new Set<EffectKind>(options.kinds ?? ["shader", "vector", "motion", "camera", "timing"]);
+  const plans = new Map(EFFECT_META.filter((m) => kinds.has(m.kind)).map((m) => [m.id, planOf(m)]));
   const primitives = kinds.has("motion") ? PRIMITIVES : [];
   const summaries: EffectSummary[] = [...[...plans.values()].map(summaryOf), ...primitives.map(primitiveSummary)];
   const descriptions = new Map<string, Promise<EffectDescription>>();
@@ -665,6 +673,7 @@ export function flairEffects(options: FlairEffectsOptions = {}): EffectProvider 
     supportsVector: kinds.has("vector") || kinds.has("motion"),
     supportsAuthoring: kinds.has("shader") || kinds.has("vector"),
     supportsCamera: kinds.has("camera"),
+    supportsTiming: kinds.has("timing"),
     supportsTemplates: true,
   };
 
@@ -728,6 +737,48 @@ export function flairEffects(options: FlairEffectsOptions = {}): EffectProvider 
     return { ...move.motion.view({ from: ctx.from, to: ctx.to, u: ctx.u, ms, stage: { width: stage.width, height: stage.height } }, resolved) };
   }
 
+  // Timing effects are described synchronously too (timingLength and timingSample must not wait), once each.
+  const timingDescriptions = new Map<string, EffectDescription>();
+
+  /** A timing effect with its plan and description, or the refusal `timingLength` and `timingSample` make. */
+  function timingEffect(id: string) {
+    const plan = plans.get(id);
+    const retime = plan && getTimingEffect(id);
+    if (!plan || !retime) {
+      if (!plan && !(kinds.has("motion") && getPrimitive(id))) throw unknown(id);
+      throw new EffectUnsupportedError(`"${id}" is not a timing effect, so it retimes no footage; list the timing effects with list({ kind: "timing" }).`, id);
+    }
+    let description = timingDescriptions.get(id);
+    if (!description) timingDescriptions.set(id, (description = describePlan(plan, retime.presets ?? [])));
+    return { plan, retime, description };
+  }
+
+  /** The footage's length, checked: a refusal naming what it takes. */
+  function footageMs(id: string, footage: unknown): number {
+    if (typeof footage !== "number" || !Number.isFinite(footage) || footage <= 0) throw new EffectUnsupportedError(`The footage's length is a number of ms above 0; got ${String(footage)}.`, id);
+    return footage;
+  }
+
+  /** Ms timing effect `id`'s retime lasts for footage `footage` ms long. */
+  function timingLength(id: string, footage: number, values?: EffectValues): number {
+    const { plan, retime, description } = timingEffect(id);
+    const resolved = flairValues(plan.controls, resolveEffectValues(description, values));
+    return Math.max(0, retime.motion.length(footageMs(id, footage), resolved));
+  }
+
+  /** The footage frames retimed frame `request.time` of timing effect `id` shows. */
+  function timingSample(id: string, request: TimingSampleRequest, values?: EffectValues): TimingSample {
+    const { plan, retime, description } = timingEffect(id);
+    const resolved = flairValues(plan.controls, resolveEffectValues(description, values));
+    const footage = footageMs(id, request?.footage);
+    if (typeof request.time !== "number" || !Number.isFinite(request.time)) throw new EffectUnsupportedError(`request.time is ms into the retimed clip, a finite number; got ${String(request.time)}.`, id);
+    if (request.fps !== undefined && !(typeof request.fps === "number" && request.fps > 0 && request.fps <= 240)) {
+      throw new EffectUnsupportedError(`request.fps is the footage's frames per second, above 0 and at most 240; got ${String(request.fps)}.`, id);
+    }
+    const sample = flairTimingSample(retime, { time: request.time, footage, ...(request.fps !== undefined && { fps: request.fps }) }, resolved);
+    return { frames: sample.frames.slice(0, MAX_TIMING_FRAMES).map((f) => ({ time: f.time, weight: f.weight })), blend: sample.blend };
+  }
+
   function describe(id: string): Promise<EffectDescription> {
     let found = descriptions.get(id);
     if (!found) {
@@ -765,7 +816,7 @@ export function flairEffects(options: FlairEffectsOptions = {}): EffectProvider 
       const { plan, effect, description } = await catalogEffect(id);
       if (effect.kind === "shader") return new ShaderRenderer(plan, description, effect, width, height, depth);
       if (effect.kind === "camera") throw new EffectUnsupportedError(`"${id}" is a camera move, which moves a scene's camera rather than drawing a picture: use cameraView (or sampleCameraMove) for where it puts the camera.`, id);
-      if (effect.kind === "timing") throw new EffectUnsupportedError(`"${id}" is a timing effect, which retimes footage rather than drawing a picture; this provider does not offer it.`, id);
+      if (effect.kind === "timing") throw new EffectUnsupportedError(`"${id}" is a timing effect, which retimes footage rather than drawing a picture: use timingSample for the footage frames each moment shows (and timingLength for how long the retime lasts).`, id);
       if (!rasterize) {
         throw new EffectUnsupportedError(
           `"${id}" is a vector effect, and a Worker has no DOM to draw SVG in: render it on the page, pass rasterizeSvg to flairEffects, or use applyVectorEffect for the animated SVG.`,
@@ -776,6 +827,8 @@ export function flairEffects(options: FlairEffectsOptions = {}): EffectProvider 
     },
 
     cameraView,
+    timingLength,
+    timingSample,
 
     async listTemplates(searchOptions?: EffectTemplateSearchOptions): Promise<readonly EffectTemplateSummary[]> {
       return searchTemplateSummaries((await loadTemplates()).summaries, searchOptions);

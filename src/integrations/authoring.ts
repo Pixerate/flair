@@ -103,6 +103,9 @@ function planOf(env: AuthoringEnvironment, id: string): Plan {
   if (plan.meta.kind === "camera") {
     throw new EffectUnsupportedError(`"${id}" is a camera move: it has no picture or source to edit here. Set its controls where a shot uses it, and see where it puts the camera with cameraView.`, id);
   }
+  if (plan.meta.kind === "timing") {
+    throw new EffectUnsupportedError(`"${id}" is a timing effect: it has no picture or source to edit here. Set its controls where a clip uses it, and see which footage frames it shows with timingSample.`, id);
+  }
   return plan;
 }
 

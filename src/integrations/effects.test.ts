@@ -1,5 +1,6 @@
 import { checkEffectProvider, checkEffectSequence, isEffectError, type EffectPixels, type EffectProvider } from "@pixerate/editor/effects";
 import { getCameraMove } from "../catalog/camera.js";
+import { getTimingEffect, timingLength, timingSample } from "../catalog/timing.js";
 import { EFFECTS } from "../catalog/index.js";
 import { SCENE_TEMPLATES } from "../catalog/templates.js";
 import type { Scene } from "../scene/types.js";
@@ -40,10 +41,9 @@ describe("flairEffects conforms to @pixerate/editor/effects", () => {
   it("lists every effect and primitive once, with search('') the same as list()", async () => {
     const { provider } = setup();
     const list = await provider.list();
-    // Timing effects retime footage, which a render request has no way to give.
-    expect(list).toHaveLength(EFFECTS.filter((e) => e.kind !== "timing").length + PRIMITIVES.length);
+    expect(list).toHaveLength(EFFECTS.length + PRIMITIVES.length);
     expect(await provider.search("")).toEqual(list);
-    expect(provider).toMatchObject({ id: "flair", name: "Flair", capabilities: { supportsHostImages: true, supportsVector: true, supportsMask: true, supportsFloat: true, supportsCamera: true } });
+    expect(provider).toMatchObject({ id: "flair", name: "Flair", capabilities: { supportsHostImages: true, supportsVector: true, supportsMask: true, supportsFloat: true, supportsCamera: true, supportsTiming: true } });
   });
 });
 
@@ -324,6 +324,56 @@ describe("camera moves", () => {
     expect(without.capabilities.supportsCamera).toBe(false);
     expect((await without.list()).some((e) => e.kind === "camera")).toBe(false);
     expect(await failure(() => without.cameraView!("camera-glide", { from: wide, to: close, u: 0.5, ms: 600, stage }))).toMatchObject({ code: "unknown_effect" });
+  });
+});
+
+describe("timing effects", () => {
+  let provider: EffectProvider;
+  beforeEach(() => {
+    provider = setup().provider;
+  });
+
+  it("lists them as timing effects with no inputs and no duration", async () => {
+    const retimes = await provider.list({ kind: "timing" });
+    expect(retimes.map((m) => m.id)).toEqual(EFFECTS.filter((e) => e.kind === "timing").map((e) => e.id));
+    for (const r of retimes) {
+      expect(r).toMatchObject({ kind: "timing", uses: ["timing"], loop: false });
+      expect(r.duration).toBeUndefined();
+    }
+    const exposure = await provider.describe("long-exposure");
+    expect(exposure.inputs).toEqual([]);
+    expect(exposure.controls.properties.exposure).toMatchObject({ type: "number", minimum: 0.1, maximum: 10 });
+    expect(exposure.presets.map((p) => p.name)).toContain("Light trails");
+  });
+
+  it("gives the lengths and samples Flair's own players use", () => {
+    const speed = getTimingEffect("retime-speed")!;
+    expect(provider.timingLength!("retime-speed", 6000, { speed: 0.5 })).toBe(timingLength(speed, 6000, { speed: 0.5 }));
+    const exposure = getTimingEffect("long-exposure")!;
+    const request = { time: 2000, footage: 6000, fps: 25 };
+    const sample = provider.timingSample!("long-exposure", request, { exposure: 1, lighten: true });
+    expect(sample).toEqual(timingSample(exposure, request, { exposure: 1, lighten: true }));
+    expect(sample.blend).toBe("lighten");
+    expect(sample.frames).toHaveLength(26);
+  });
+
+  it("refuses what is not a timing effect, bad footage and bad values, saying what to do", async () => {
+    const request = { time: 0, footage: 1000 };
+    expect(await failure(() => provider.timingSample!("no-such-retime", request))).toMatchObject({ code: "unknown_effect" });
+    expect(await failure(() => provider.timingSample!("crt", request))).toMatchObject({ code: "unsupported", message: expect.stringContaining('list({ kind: "timing" })') });
+    expect(await failure(() => provider.timingLength!("retime-speed", 0))).toMatchObject({ code: "unsupported", message: expect.stringContaining("above 0") });
+    expect(await failure(() => provider.timingSample!("retime-speed", { ...request, fps: 0 }))).toMatchObject({ code: "unsupported", message: expect.stringContaining("fps") });
+    expect(await failure(() => provider.timingSample!("retime-speed", { ...request, time: Number.NaN }))).toMatchObject({ code: "unsupported", message: expect.stringContaining("request.time") });
+    expect(await failure(() => provider.timingLength!("retime-speed", 1000, { speed: 99 }))).toMatchObject({ code: "invalid_values" });
+    expect(await failure(() => provider.createRenderer("retime-speed", { width: 8, height: 8 }))).toMatchObject({ code: "unsupported", message: expect.stringContaining("timingSample") });
+    expect(await failure(() => provider.openAuthoring!({ effectId: "retime-speed" }))).toMatchObject({ code: "unsupported", message: expect.stringContaining("timingSample") });
+  });
+
+  it("leaves them out when the timing kind is not asked for", async () => {
+    const without = setup({ kinds: ["shader", "vector", "motion", "camera"] }).provider;
+    expect(without.capabilities.supportsTiming).toBe(false);
+    expect((await without.list()).some((e) => e.kind === "timing")).toBe(false);
+    expect(await failure(() => without.timingSample!("retime-speed", { time: 0, footage: 1000 }))).toMatchObject({ code: "unknown_effect" });
   });
 });
 
