@@ -54,7 +54,7 @@ mountEffect(el, "long-exposure", { subject: { video }, values: { exposure: 4, li
 const slowMo = await recordEffect("retime-speed", { subject: { video }, values: { speed: 0.25 } });
 ```
 
-Without a video they play on a preview clip of Flair's own. `timingLength(effect, footageMs, values)` gives how long the retimed clip is, and `timingSample(effect, { time, footage }, values)` gives the footage frames one moment shows. A speed change of 0.5 doubles the length; a freeze adds its hold. They are not editor documents (`createEffectDocument` refuses them). In a scene, a layer with a video subject takes one as its `timing`: `{ "subject": { "video": "surf.mp4" }, "timing": { "effect": "retime-speed", "preset": "Slow motion" } }` (see [scenes.md](scenes.md)).
+Without a video they play on a preview clip of Flair's own. In Node, `flair render long-exposure --video clip.mp4 -o out.mp4` (or `exportEffect` with `subject: { video: "clip.mp4" }`) retimes a video file with ffmpeg and no browser; the video's own sound is left out, and `--audio` muxes another track. `timingLength(effect, footageMs, values)` gives how long the retimed clip is, and `timingSample(effect, { time, footage }, values)` gives the footage frames one moment shows. A speed change of 0.5 doubles the length; a freeze adds its hold. They are not editor documents (`createEffectDocument` refuses them). In a scene, a layer with a video subject takes one as its `timing`: `{ "subject": { "video": "surf.mp4" }, "timing": { "effect": "retime-speed", "preset": "Slow motion" } }` (see [scenes.md](scenes.md)).
 
 ## Motion primitives (animating your own SVG)
 

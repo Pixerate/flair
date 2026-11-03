@@ -732,6 +732,31 @@ async function gifSink(plan: OutputPlan, width: number, height: number, fps: num
   };
 }
 
+/** Somewhere to write RGBA frames drawn in Node, in order: what `plan` names, at `width` × `height`. */
+export interface RgbaSink {
+  /** Writes frame `frame` (straight RGBA, rows top down). */
+  write(frame: number, rgba: Uint8Array | Uint8ClampedArray): Promise<void>;
+  finish(): Promise<void>;
+  /** Stops without finishing (an encoder is killed). */
+  abort(): void;
+}
+
+/**
+ * A sink for frames drawn in Node rather than in Chrome: piped raw into
+ * ffmpeg for MP4, WebM and MOV, encoded to PNG frames, or collected into a
+ * GIF. Throws a sentence for SVG, which takes no frames.
+ */
+export async function rgbaSink(plan: OutputPlan, fps: number, width: number, height: number): Promise<RgbaSink> {
+  if (plan.format === 'svg') throw new Error('An SVG holds no pictures drawn frame by frame; write .mp4, .webm, .mov, .gif or .png frames.');
+  const asBuffer = (rgba: Uint8Array | Uint8ClampedArray) => Buffer.from(rgba.buffer, rgba.byteOffset, rgba.byteLength);
+  if (plan.format === 'png') {
+    const sink = pngSink(plan);
+    return { write: (frame, rgba) => sink.write(frame, encodePng(asBuffer(rgba), width, height)), finish: () => sink.finish(), abort: () => sink.abort() };
+  }
+  const sink = plan.format === 'gif' ? await gifSink(plan, width, height, fps) : ffmpegSink(plan, fps, { width, height });
+  return { write: (frame, rgba) => sink.write(frame, asBuffer(rgba)), finish: () => sink.finish(), abort: () => sink.abort() };
+}
+
 function parseEnvChromeFlags(): string[] {
   const env = process.env.FLAIR_CHROME_FLAGS?.trim();
   if (!env) return [];

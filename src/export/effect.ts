@@ -42,6 +42,7 @@ import {
   imageDataUrl,
   pageControls,
   planOutput,
+  rgbaSink,
   runRender,
   type BackdropFit,
   type FrameState,
@@ -49,7 +50,10 @@ import {
   type PageConfig,
   type PointerMode,
 } from './recorder.js';
-import { checkShutter, type ShutterOptions } from './shutter.js';
+import { checkShutter, FrameAverager, shutterTimes, type Shutter, type ShutterOptions } from './shutter.js';
+import { decodeFootage, probeFootage } from './timing.js';
+import { TimingRenderer } from '../catalog/timing.js';
+import type { TimingEffect } from '../catalog/types.js';
 
 /**
  * What an effect is applied to, in Node:
@@ -581,12 +585,72 @@ async function resolveBackdrop(def: EffectDefinition, options: EffectExportOptio
 }
 
 /**
+ * A timing effect's retime of its video, drawn in Node: the video decoded
+ * once by ffmpeg, each frame's footage frames blended by `TimingRenderer`,
+ * and the frames encoded. No browser is needed. The frame is the video's own
+ * size and the frame rate its own, unless asked; the length is the retimed
+ * clip's. The video's own sound would not follow the retime, so it is left
+ * out (an `audio` file can be muxed instead).
+ */
+async function exportTiming(
+  def: TimingEffect,
+  options: EffectExportOptions,
+  values: Record<string, ControlValue>,
+  video: string | undefined,
+  shutter: Shutter | undefined,
+): Promise<string> {
+  if (!video) throw new Error(`"${def.id}" retimes video footage, so it needs a video: subject: { video: "clip.mp4" } (or --video clip.mp4).`);
+  if (options.backdrop) throw new Error(`"${def.id}" fills the frame with its footage, so a backdrop would be hidden under it; drop the backdrop.`);
+  if (options.region) throw new Error(`"${def.id}" retimes the whole frame, so it cannot be confined to a region; drop the region.`);
+  if (options.audio === true || options.audio === 'copy') {
+    throw new Error(`"${def.id}" changes the footage's timing, so the video's own sound would not follow it; leave audio out, or pass an audio file to mux (audio: "track.mp3", or --audio).`);
+  }
+  const probe = await probeFootage(video);
+  const { width, height } = effectFrameSize(def, options, probe.width && probe.height ? { width: probe.width, height: probe.height } : undefined);
+  const decoded = await decodeFootage(video, width, height, probe.fps ? { fps: probe.fps } : {});
+  try {
+    const retime = new TimingRenderer(def, decoded.footage, { values });
+    const fps = options.fps ?? decoded.footage.fps ?? 30;
+    const duration = options.duration ?? retime.length / 1000;
+    const frames = Math.max(1, Math.round(duration * fps));
+    const plan = planOutput(options.outputPath, { alpha: options.alpha, frames });
+    const sink = await rgbaSink(plan, fps, width, height);
+    const out = new Uint8ClampedArray(width * height * 4);
+    const sub = shutter ? new Uint8ClampedArray(out.length) : undefined;
+    const average = shutter ? new FrameAverager(width * height) : undefined;
+    try {
+      for (let i = 0; i < frames; i++) {
+        const time = i / fps;
+        if (shutter) {
+          for (const t of shutterTimes(time, fps, shutter)) {
+            await retime.render(t * 1000, sub!);
+            average!.add(sub!);
+          }
+          average!.result(out);
+        } else await retime.render(time * 1000, out);
+        await sink.write(i, out);
+        options.onProgress?.(i + 1, frames);
+      }
+      await sink.finish();
+    } catch (err) {
+      sink.abort();
+      throw err;
+    }
+    if (typeof options.audio === 'string' && options.audio !== 'mute') await muxAudio(plan.path, options.audio, plan.format, duration, true);
+    return plan.path;
+  } finally {
+    decoded.dispose();
+  }
+}
+
+/**
  * Renders a catalog effect (by id or definition), applied to `subject`, to
  * a file: a shader through WebGL2 in headless Chrome, a vector effect by
  * drawing each frame's SVG there, or (to `.svg`) a vector effect as one
  * animated SVG with no browser at all. MP4, WebM, MOV and video subjects
  * need ffmpeg. Throws a sentence when the effect is unknown, takes no such
- * subject, or cannot be written in that format. A `backdrop` draws a
+ * subject, or cannot be written in that format. A timing effect retimes
+ * its `{ video }` subject in Node (ffmpeg decodes it; no browser). A `backdrop` draws a
  * picture under an overlay in every frame (and `region` places the effect
  * in part of the frame).
  *
@@ -603,14 +667,11 @@ export async function exportEffect(effect: string | EffectDefinition, options: E
   if (def.kind === 'camera') {
     throw new Error(`"${def.id}" is a camera move, which moves a scene's camera rather than drawing a picture; use it in a scene shot's camera ("in" or "during") and export the scene (flair scene html, lottie, motn, fcp7 or edl), or record a preview of it on a picture in a browser with recordEffect.`);
   }
-  if (def.kind === 'timing') {
-    throw new Error(`"${def.id}" is a timing effect, which retimes video footage; export cannot retime footage yet, so record it on a video in a browser with recordEffect ({ subject: { video } }).`);
-  }
   if (options.preset && !def.presets?.some((p) => p.name === options.preset)) {
     const names = def.presets?.map((p) => `"${p.name}"`).join(', ');
     throw new Error(`"${def.id}" has no preset "${options.preset}"; ${names ? `its presets are ${names}` : 'it has no presets'}.`);
   }
-  const fromSubject = options.subject ? await nodeSubjectValues(def, options.subject) : { values: {}, video: {} };
+  const fromSubject = options.subject ? await nodeSubjectValues(def, options.subject) : { values: {}, video: {} as Record<string, string> };
   const explicit = await checkEffectValues(def, options.values ?? {}, { ignoreUnknownControls: options.ignoreUnknownControls });
   const values = { ...effectDefaults(def, options.preset ? { preset: options.preset } : {}), ...fromSubject.values, ...explicit };
   const fps = options.fps ?? 30;
@@ -623,6 +684,8 @@ export async function exportEffect(effect: string | EffectDefinition, options: E
   if (options.backdrop && options.alpha) {
     throw new Error('A backdrop fills the frame, so there is no transparency left to keep; drop alpha (--alpha) to render over the backdrop, or drop the backdrop to render the effect alone with alpha.');
   }
+
+  if (def.kind === 'timing') return exportTiming(def, options, values, fromSubject.video.footage, shutter);
 
   if (def.kind === 'vector') {
     const motion = renderVectorEffect(def, values);
@@ -1006,12 +1069,12 @@ export function effectQueryFromFlags(flags: { accepts?: readonly string[]; inter
   if (flags.category && !(EFFECT_CATEGORIES as readonly string[]).includes(flags.category)) {
     throw new Error(`--category takes one of ${EFFECT_CATEGORIES.join(', ')}; not "${flags.category}".`);
   }
-  if (flags.kind && flags.kind !== 'shader' && flags.kind !== 'vector') throw new Error(`--kind takes shader or vector; not "${flags.kind}".`);
+  if (flags.kind && !['shader', 'vector', 'camera', 'timing'].includes(flags.kind)) throw new Error(`--kind takes shader, vector, camera or timing; not "${flags.kind}".`);
   return {
     ...(accepts ? { accepts } : {}),
     ...(interaction ? { interaction } : {}),
     ...(flags.category ? { category: flags.category as EffectCategory } : {}),
-    ...(flags.kind ? { kind: flags.kind as 'shader' | 'vector' } : {}),
+    ...(flags.kind ? { kind: flags.kind as 'shader' | 'vector' | 'camera' | 'timing' } : {}),
     ...(flags.search ? { text: flags.search } : {}),
     ...(tags ? { tags } : {}),
     ...(flags.transparent !== undefined ? { transparent: flags.transparent } : {}),
