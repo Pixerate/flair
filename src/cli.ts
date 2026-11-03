@@ -254,7 +254,7 @@ program
   .option('--accepts <inputs>', 'Only effects that take all of these (image, video, svg, text, mask, path; comma-separated or repeated)', collect, [])
   .option('--interaction <ways>', 'Only effects that answer the pointer in one of these ways (hover, press, click, trail, pointer)', collect, [])
   .option('--category <category>', 'Only this category')
-  .option('--kind <kind>', 'shader or vector')
+  .option('--kind <kind>', 'shader, vector, camera or timing')
   .option('--search <words>', 'Words to look for in the id, name, description and tags')
   .option('--tag <tags>', 'Only effects with every one of these tags (comma-separated or repeated; `flair tags` lists them)', collect, [])
   .option('--transparent', 'Only overlays: effects that draw over what is under them (they take a --backdrop in render)')
@@ -284,7 +284,7 @@ program
   .command('tags')
   .description('List the tags of catalog effects, each with how many effects carry it, the most used first')
   .option('--category <category>', 'Only tags of effects in this category')
-  .option('--kind <kind>', 'shader or vector')
+  .option('--kind <kind>', 'shader, vector, camera or timing')
   .option('--search <words>', 'Only tags of effects matching these words')
   .option('--tag <tags>', 'Only tags of effects that have all of these tags too (comma-separated or repeated)', collect, [])
   .option('--limit <n>', 'Most tags to list (default all)')
@@ -326,7 +326,7 @@ program
   .option('--preset <name>', 'A preset by name')
   .option('--set <name=value>', 'A control value (repeatable): --set uSpeed=2 --set uTint=#ff0080', collect, [])
   .option('--size <WxH>', 'Pixels, like 1280x720')
-  .option('--fps <fps>', 'Frames per second', '30')
+  .option('--fps <fps>', "Frames per second (default 30, or a timing effect's video's own)")
   .option('--duration <seconds>', 'Seconds (default: the effect\'s loop or play-through)')
   .option('--alpha', 'Keep transparency (webm, mov, gif, png, svg)', false)
   .option('--background <css>', 'Colour under transparent pixels without --alpha')
@@ -335,6 +335,7 @@ program
   .option('--region <x,y,w,h>', 'Confine the effect to part of the frame, normalized 0-1 from the top left, like 0.5,0,0.5,1')
   .option('--no-pointer', 'Leave the pointer still (interactive effects otherwise get a scripted pointer)')
   .option('--software', 'Draw with software GL (SwiftShader) everywhere: the same frames on every machine, for golden-image tests', false)
+  .option('--audio <path>', "A sound file to mux into .mp4, .webm or .mov (a timing effect leaves its video's own sound out, as it would not follow the retime)")
   .option('--shutter-angle <degrees>', "Motion blur: the shutter angle, 0 to 360 (180 is a film camera's usual; default 0, off). Not for .svg")
   .option('--shutter-samples <n>', 'Sub-frames averaged into each blurred frame, 2 to 32 (default 8); the render draws this many per frame')
   .option('-o, --out <outputPath>', 'Output: .mp4, .webm, .mov, .gif, .svg, a .png pattern (out_%04d.png) or a folder')
@@ -345,8 +346,8 @@ program
       const effect = resolveEffect(effectId);
       const subjects = subjectsFromFlags(options);
       const size = options.size ? parseSize(options.size) : undefined;
-      const fps = Number(options.fps);
-      if (!(fps > 0)) throw new Error(`--fps takes a positive number, not "${options.fps}".`);
+      const fps = options.fps === undefined ? undefined : Number(options.fps);
+      if (fps !== undefined && !(fps > 0)) throw new Error(`--fps takes a positive number, not "${options.fps}".`);
       const duration = options.duration === undefined ? undefined : Number(options.duration);
       if (duration !== undefined && !(duration > 0)) throw new Error(`--duration takes seconds, more than 0, not "${options.duration}".`);
       console.log(`Rendering ${effect.id} to ${options.out}...`);
@@ -356,7 +357,7 @@ program
         values: parseSets(effect, options.set),
         outputPath: options.out,
         ...(size ?? {}),
-        fps,
+        ...(fps !== undefined ? { fps } : {}),
         ...(duration !== undefined ? { duration } : {}),
         alpha: options.alpha,
         ...(options.software ? { software: true } : {}),
@@ -364,6 +365,7 @@ program
         ...(options.backdrop ? { backdrop: options.backdrop } : {}),
         ...(options.backdropFit ? { backdropFit: options.backdropFit } : {}),
         ...(options.region ? { region: parseRegion(options.region) } : {}),
+        ...(options.audio ? { audio: options.audio } : {}),
         ...(options.pointer === false ? { pointer: 'none' as const } : {}),
         ...shutterFlags(options),
         onProgress: (frame, total) => {

@@ -323,7 +323,9 @@ timingSample(longExposure, { time: 2000, footage: 6000 }, { exposure: 1 });
 
 `timingSample` holds times within the footage, snaps them to its frames (`fps`, default 30), merges repeats, caps a moment at `MAX_TIMING_FRAMES` (128, about 4 s at 30 fps; longer exposures take evenly spaced frames) and makes the weights add up to 1. `TimingRenderer` draws a moment from any `TimingFootage`: a size, a length and a `frame(ms, out)` that writes RGBA. It keeps the frames it read, so the next moment of a long exposure reads only what is new. `videoFootage(video, width, height)` (in `/embed`) makes footage from a `<video>`, and `previewFootage` makes Flair's preview clip, which shows its own time so a retime reads plainly. Blending runs on the CPU, so `mountEffect` previews at up to 640 pixels across.
 
-For agents, `catalog.search` takes `kind: "timing"`, and the `catalog.timing` command gives a retime's length and the footage frames at given times. `effect.load` refuses timing effects. In a scene, a layer with a video subject takes one as its `timing` (see Layers and transitions, below). `exportEffect` and `flairEffects` (whose render requests carry one picture) do not take them.
+For agents, `catalog.search` takes `kind: "timing"`, and the `catalog.timing` command gives a retime's length and the footage frames at given times. `effect.load` refuses timing effects. In a scene, a layer with a video subject takes one as its `timing` (see Layers and transitions, below). `flairEffects` leaves them out, because its render requests carry one picture.
+
+In Node, `exportEffect` (and `flair render <id> --video clip.mp4 -o out.mp4`) retimes a video file with no browser. ffmpeg decodes the clip once to raw frames in a temporary folder (`width × height × 4` bytes a frame, deleted afterwards). The output takes the video's own size and frame rate unless you set them, and lasts as long as the retimed clip. The clip's own sound would not follow a retime, so it is left out; pass `audio` (`--audio`) to mux another track. `shutterAngle` adds motion blur as usual.
 
 #### Pixels in and out, and Web Workers
 
