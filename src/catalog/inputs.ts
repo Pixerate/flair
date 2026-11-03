@@ -138,6 +138,10 @@ export function inputsOf(effect: EffectDefinition, controls: readonly ControlDef
   if (effect.kind === "camera") {
     return { accepts: ["image", "video", "svg"], images: [{ name: "uImage", label: "Preview picture", wants: "picture" }], texts: [], video: "filter", interactions: [], transparent: false };
   }
+  // A timing effect retimes footage: it takes a video and nothing else.
+  if (effect.kind === "timing") {
+    return { accepts: ["video"], images: [{ name: "footage", label: "Footage", wants: "picture" }], texts: [], interactions: [], transparent: false };
+  }
   const accepts = new Set<EffectInput>();
   const images: ImageSlot[] = [];
   const texts: TextSlot[] = [];

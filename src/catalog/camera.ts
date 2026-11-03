@@ -346,8 +346,8 @@ export function getCameraMove(id: string): CameraEffect | undefined {
   return byId.get(id);
 }
 
-/** A camera move's controls, as `effectControls` gives them. */
-export function cameraMoveControls(move: CameraEffect): ControlDef[] {
+/** A camera move's controls, as `effectControls` gives them (a timing effect's too: its controls are listed the same way). */
+export function cameraMoveControls(move: Pick<CameraEffect, "controls">): ControlDef[] {
   return move.controls.map((c, i) => vectorControlDef(c, i + 1));
 }
 
@@ -358,7 +358,7 @@ export function cameraMoveControls(move: CameraEffect): ControlDef[] {
  * default).
  */
 export function cameraMoveValues(
-  move: CameraEffect,
+  move: Pick<CameraEffect, "id" | "presets" | "controls">,
   options: { preset?: string; values?: Readonly<Record<string, unknown>> } = {},
 ): { values: Record<string, ControlValue>; issues: string[] } {
   const issues: string[] = [];

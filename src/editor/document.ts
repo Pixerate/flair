@@ -64,6 +64,7 @@ export function createEffectDocument(from?: string | EffectDefinition | { source
   const effect = typeof from === "string" ? getEffect(from) : from;
   if (!effect) throw new Error(`There is no effect "${String(from)}" in the catalog.`);
   if (effect.kind === "camera") throw new Error(cameraMoveRefusal(effect.id));
+  if (effect.kind === "timing") throw new Error(timingRefusal(effect.id));
   return {
     version: 1,
     name: effect.name,
@@ -94,6 +95,11 @@ export function createEffectDocument(from?: string | EffectDefinition | { source
 /** Why a camera move cannot be opened as an effect, and what to do with it instead. */
 export function cameraMoveRefusal(id: string): string {
   return `"${id}" is a camera move, which moves a scene's camera rather than drawing a picture, so it cannot be opened as an effect. Use it in a scene shot's camera ({ "in": "${id}" } for a move into the shot, { "during": … } for a move while it holds) with write_scene or update_shot, or preview it on a picture with mountEffect.`;
+}
+
+/** Why a timing effect cannot be opened as an effect, and what to do with it instead. */
+export function timingRefusal(id: string): string {
+  return `"${id}" is a timing effect, which retimes video footage rather than drawing a picture, so it cannot be opened as an effect. See which footage frames it shows at any time with catalog.timing, and play it on a video with mountEffect or recordEffect ({ subject: { video } }).`;
 }
 
 function blankDocument(name: string, source: string): EffectDocument {

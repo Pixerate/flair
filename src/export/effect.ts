@@ -603,6 +603,9 @@ export async function exportEffect(effect: string | EffectDefinition, options: E
   if (def.kind === 'camera') {
     throw new Error(`"${def.id}" is a camera move, which moves a scene's camera rather than drawing a picture; use it in a scene shot's camera ("in" or "during") and export the scene (flair scene html, lottie, motn, fcp7 or edl), or record a preview of it on a picture in a browser with recordEffect.`);
   }
+  if (def.kind === 'timing') {
+    throw new Error(`"${def.id}" is a timing effect, which retimes video footage; export cannot retime footage yet, so record it on a video in a browser with recordEffect ({ subject: { video } }).`);
+  }
   if (options.preset && !def.presets?.some((p) => p.name === options.preset)) {
     const names = def.presets?.map((p) => `"${p.name}"`).join(', ');
     throw new Error(`"${def.id}" has no preset "${options.preset}"; ${names ? `its presets are ${names}` : 'it has no presets'}.`);

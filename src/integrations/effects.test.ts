@@ -40,7 +40,8 @@ describe("flairEffects conforms to @pixerate/editor/effects", () => {
   it("lists every effect and primitive once, with search('') the same as list()", async () => {
     const { provider } = setup();
     const list = await provider.list();
-    expect(list).toHaveLength(EFFECTS.length + PRIMITIVES.length);
+    // Timing effects retime footage, which a render request has no way to give.
+    expect(list).toHaveLength(EFFECTS.filter((e) => e.kind !== "timing").length + PRIMITIVES.length);
     expect(await provider.search("")).toEqual(list);
     expect(provider).toMatchObject({ id: "flair", name: "Flair", capabilities: { supportsHostImages: true, supportsVector: true, supportsMask: true, supportsFloat: true, supportsCamera: true } });
   });

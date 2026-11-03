@@ -285,12 +285,45 @@ Each shader with an image control has a `video` field that says how it suits vid
 - `filter`: treats each frame on its own, so it works as a live filter (CRT, film look, duotone, glitch, ASCII and others).
 - `transition`: blends two pictures, so it works between two clips (put one video in `uFrom` and one in `uTo`).
 - `interactive`: reacts to the pointer, and works over video too (magnifier, hover reveal and others).
-- `stills`: runs on video but is made for a still picture. Time-warp effects move the picture to fake motion of their own, and the morph effects need shapes in fixed places.
+- `stills`: runs on video but is made for a still picture. Time-warp effects move the picture to fake motion of their own, and the morph effects need shapes in fixed places. To retime real footage, use the timing effects (below).
 - `none`: its picture is rendered text or a silhouette mask.
 
 `findEffects({ video: ["filter", "transition"] })` lists the effects that suit video. The `catalog.search` command takes the same filter.
 
 A video from another site needs `crossOrigin = "anonymous"` and that site's CORS consent. Without it, the control shows black and `onImageError` explains why. For frame-exact output, step the video with `ShaderFrames`: pause the video, then for each frame `await seekVideo(video, t); frames.render(t)`. Both `ShaderRenderer.ready()` and `ShaderFrames.ready()` wait for each live video's first frame.
+
+#### Retiming video: timing effects
+
+Timing effects (`kind: "timing"`, category `timing`) retime footage. A shader sees one picture at one time, so these are not shaders. Each is a pure function that, for every moment of the result, names the footage frames to show, with weights, and how to blend them (`average`, or `lighten` where the brightest wins). Any frame can be drawn on its own, in any order, and only the footage it needs is decoded.
+
+| Effect | What it does |
+| --- | --- |
+| `retime-speed` | Slower or faster throughout. Slowed, it blends the frames either side; sped up, it averages the frames it passes over. |
+| `retime-ramp` | Eases from full speed into slow motion round one moment and back out, like a sports replay. |
+| `retime-reverse` | Plays backwards. |
+| `retime-boomerang` | Forwards then backwards, `loops` times, sped up. |
+| `retime-freeze` | Stops on one frame, holds it for `hold` seconds, and plays on. |
+| `retime-stutter` | Replays short snatches a few times before moving on. |
+| `retime-step` | Holds each frame at a low frame rate, for a stop-motion look. |
+| `frame-echo` | Each frame with fading copies of the frames just before it. |
+| `long-exposure` | A shutter held open for `exposure` seconds. Averaged, water turns silky and crowds melt away. With `lighten`, lights draw streaks. `build` keeps the shutter open from the start, and `fade` dims older frames. |
+
+```ts
+import { mountEffect, recordEffect } from "@pixerate/flair/embed";
+import { getTimingEffect, timingLength, timingSample } from "@pixerate/flair/catalog";
+
+mountEffect(host, "long-exposure", { subject: { video }, preset: "Light trails" }); // without a subject, a preview clip of Flair's own
+const mp4 = await recordEffect("retime-ramp", { subject: { video }, preset: "Sports replay" }); // as long as the retimed clip
+
+const longExposure = getTimingEffect("long-exposure")!;
+timingLength(longExposure, 6000); // ms of the result for 6 s of footage
+timingSample(longExposure, { time: 2000, footage: 6000 }, { exposure: 1 });
+// { frames: [{ time: 1000, weight: 1/31 }, …, { time: 2000, weight: 1/31 }], blend: "average" }
+```
+
+`timingSample` holds times within the footage, snaps them to its frames (`fps`, default 30), merges repeats, caps a moment at `MAX_TIMING_FRAMES` (128, about 4 s at 30 fps; longer exposures take evenly spaced frames) and makes the weights add up to 1. `TimingRenderer` draws a moment from any `TimingFootage`: a size, a length and a `frame(ms, out)` that writes RGBA. It keeps the frames it read, so the next moment of a long exposure reads only what is new. `videoFootage(video, width, height)` (in `/embed`) makes footage from a `<video>`, and `previewFootage` makes Flair's preview clip, which shows its own time so a retime reads plainly. Blending runs on the CPU, so `mountEffect` previews at up to 640 pixels across.
+
+For agents, `catalog.search` takes `kind: "timing"`, and the `catalog.timing` command gives a retime's length and the footage frames at given times. `effect.load` refuses timing effects. They are not scene layers yet, and `exportEffect` and `flairEffects` (whose render requests carry one picture) do not take them.
 
 #### Pixels in and out, and Web Workers
 
@@ -857,6 +890,7 @@ frames.render(t, { audio: track.at(t), scroll: [0.5, 0.5, 0, 0] });
 | interaction | click ripple, click burst, cursor glow, hover liquid, X-ray reveal, magnifier, holo card, press charge, hover swap, like button, toggle switch, checkbox, menu toggle, bookmark, copy button, send button, download button, link hover, button hover fill, tooltip pop, press button, toast notification, slider scrub, cursor-follow eyes, mirror mismatch, haunted hover |
 | pyrotechnics | fireworks, sparkler, explosion, spark fountain, roman candle, fuse burn, smoke bomb, light show, firework burst |
 | timewarp | time echo, chrono split, time slice, VHS rewind, bullet time, time tunnel, speed ramp, stutter freeze, time-lapse clock |
+| timing | retimes of real footage: speed change, speed ramp, reverse, boomerang, freeze frame, stutter, step frames, frame echo, long exposure |
 | melt | drip melt, heat haze, wax melt, melting text, liquify, melting clock, lava flow, ice cube melt, candle |
 | electric | lightning, Tesla arc, plasma ball, electric border, electric text, Jacob's ladder, short circuit, power surge, electric field, zap icon, power button |
 | fire | fire border, flaming text, burn away, ring of fire, fireball, campfire, flame icon, match strike |

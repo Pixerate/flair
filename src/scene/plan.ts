@@ -98,7 +98,7 @@ export async function scenePlan(given: Scene, options: ScenePlanOptions = {}): P
   const effects = new Map<string, { meta: Meta; def: import('../catalog/types.js').EffectDefinition }>();
   for (const id of ids) {
     const meta = lazy!.getEffectMeta(id);
-    if (!meta || meta.kind === 'camera') {
+    if (!meta || meta.kind === 'camera' || meta.kind === 'timing') {
       notes.push(`There is no catalog effect "${id}" for a layer; it is left out.`);
       continue;
     }

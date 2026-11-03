@@ -40,12 +40,13 @@ export interface EffectMeta {
   trigger?: SvgTrigger;
   /** What a camera move is for: getting into a shot (`transition`) or moving while it holds (`hold`). */
   role?: CameraRole;
-  /** Whether it moves over time (a shader reading `iTime`, or any vector effect or camera move), rather than a still treatment. */
+  /** Whether it moves over time (a shader reading `iTime`, or any vector effect, camera move or timing effect), rather than a still treatment. */
   animated: boolean;
   /**
    * Ms of one play: a shader's `loop`, a vector effect's picture (at its
    * default values) plus its `hold`, or a camera move's own length.
-   * Undefined for a shader with no loop.
+   * Undefined for a shader with no loop, and for a timing effect (its
+   * length is its footage's).
    */
   duration?: number;
 }
@@ -66,7 +67,9 @@ export function metaOf(effect: EffectDefinition, controls: readonly ControlDef[]
       ? { ...(effect.video && { video: effect.video }), ...(effect.transparent && { transparent: true }), ...(effect.loop !== undefined && { loop: effect.loop }), ...(effect.build !== undefined && { build: effect.build }) }
       : effect.kind === "vector"
         ? { ...(effect.hold !== undefined && { hold: effect.hold }), ...(effect.trigger && { trigger: effect.trigger }) }
-        : { role: effect.motion.role }),
+        : effect.kind === "camera"
+          ? { role: effect.motion.role }
+          : {}),
     animated: effect.kind !== "shader" || /\biTime\b/.test(effect.source),
     ...(duration !== undefined && { duration }),
   };

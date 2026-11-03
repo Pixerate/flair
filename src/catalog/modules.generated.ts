@@ -92,6 +92,7 @@ export const EFFECT_MODULES: Record<string, () => Promise<Record<string, unknown
   "sticker": () => import("./sticker.js"),
   "text": () => import("./text.js"),
   "timewarp": () => import("./timewarp.js"),
+  "timing": () => import("./timing.js"),
   "trail": () => import("./trail.js"),
   "ui": () => import("./ui.js"),
   "vector": () => import("./vector.js"),
