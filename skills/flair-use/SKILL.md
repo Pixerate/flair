@@ -1,6 +1,6 @@
 ---
 name: flair-use
-description: Use when writing app code with @pixerate/flair - finding a catalog effect (backgrounds, image filters, text animations, transitions, loaders, overlays, camera moves) and putting it on a page, in React or Svelte, in a scene or a recording, setting its controls and presets, and checking the result. For writing a new shader or vector effect, use flair-author.
+description: Use when writing app code with @pixerate/flair - finding a catalog effect (backgrounds, image filters, text animations, transitions, loaders, overlays, camera moves, video retiming) and putting it on a page, in React or Svelte, in a scene or a recording, setting its controls and presets, and checking the result. For writing a new shader or vector effect, use flair-author.
 ---
 
 # Using Flair
@@ -35,7 +35,7 @@ The effect fills its element: size the element with CSS (an `aspect-ratio`, a he
 
 ## 3. Set controls and presets
 
-Pass `preset` (a name from the index line) and `values` (control name → value). `effectControlSchema(id)` gives the controls' JSON Schema. A renderer quietly falls back to the default for a value it cannot use (a misspelt name, a wrong type), so check names and values against the schema rather than by eye. See [controls-and-presets.md](references/controls-and-presets.md), which also covers camera moves and motion primitives.
+Pass `preset` (a name from the index line) and `values` (control name → value). `effectControlSchema(id)` gives the controls' JSON Schema. A renderer quietly falls back to the default for a value it cannot use (a misspelt name, a wrong type), so check names and values against the schema rather than by eye. See [controls-and-presets.md](references/controls-and-presets.md), which also covers camera moves, timing effects and motion primitives.
 
 ## 4. Check the work
 

@@ -17,7 +17,8 @@
       "@pixerate/flair/catalog/lazy": ["../../src/catalog/lazy.ts"],
       "@pixerate/flair/integrations": ["../../src/integrations/index.ts"],
       "@pixerate/flair/editor": ["../../src/editor/index.ts"],
-      "@pixerate/flair/vector": ["../../src/vector/index.ts"]
+      "@pixerate/flair/vector": ["../../src/vector/index.ts"],
+      "@pixerate/flair/embed": ["../../src/embed/index.ts"]
     }
   },
   "include": ["src", "vite.config.ts"]

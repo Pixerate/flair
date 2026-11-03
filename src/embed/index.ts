@@ -21,9 +21,11 @@ import type { ControlValue } from "../shader/controls.js";
 import { ShaderRenderer } from "../shader/renderer.js";
 import { preloadImages, releaseImages, type LiveSource } from "../shader/textures.js";
 import { SvgPlayer } from "../vector/svg.js";
+import { mountTiming } from "./timing.js";
 
 export { preloadImages, releaseImages };
 export { recordEffect, recordingPlan, type RecordFormat, type RecordOptions, type RecordPointer, type RecordingPlan } from "./record.js";
+export { PREVIEW_FOOTAGE_MS, previewFootage, videoFootage } from "./timing.js";
 export { checkShutter, FrameAverager, shutterTimes, DEFAULT_SHUTTER_SAMPLES, type Shutter, type ShutterOptions } from "../export/shutter.js";
 
 /**
@@ -112,6 +114,8 @@ export function subjectValues(effect: EffectDefinition, subject: EffectSubject |
       used.add(text.name);
       continue;
     }
+    if (effect.kind === "timing" && kind !== "video")
+      throw new Error(`"${effect.id}" is a timing effect: it retimes video footage, so give it { video: videoElement }, not ${{ svg: "an SVG", image: "an image", text: "words" }[kind as "svg" | "image" | "text"]}.`);
     if (effect.kind === "vector")
       throw new Error(`"${effect.id}" is a vector effect: it draws its own picture and takes words or path data (${inputs.accepts.join(", ") || "nothing"}), not ${{ svg: "an SVG", image: "an image", video: "a video" }[kind as "svg" | "image" | "video"]}.`);
     const wanted = (x: ImageSlot) =>
@@ -230,13 +234,16 @@ function resolvingAssets(mounted: MountedEffect, resolve: SubjectResolver, first
  * the page), or a vector effect in an SVG player that answers its trigger
  * (hover, press, click, scroll), or a camera move previewed on the subject
  * (a picture standing in for a scene's board: a transition moves from the
- * whole picture to a detail, a hold plays across it). Shaders that read `iScroll` follow the
+ * whole picture to a detail, a hold plays across it), or a timing effect
+ * retiming a `{ video }` subject (paused and sought frame by frame, put back
+ * as it was on `dispose`; without one, a preview clip of Flair's own). Shaders that read `iScroll` follow the
  * page's scrolling, and audio-reactive shaders hear an `{ audio }` subject.
  * Throws a sentence when the effect is unknown or takes no such subject.
  *
  * ```ts
  * mountEffect(el, "image-duotone", { subject: { image: "/team.jpg" }, preset: "Spotify" });
  * mountEffect(el, "crt", { subject: { video: videoElement } });
+ * mountEffect(el, "long-exposure", { subject: { video: videoElement }, preset: "Light trails" });
  * mountEffect(el, "typewriter", { subject: { text: "Hello there" } });
  * mountEffect(el, "neon-outline", { subject: { svg: logoMarkup } });
  * mountEffect(el, "spectrum-bars", { subject: { audio: audioElement } });
@@ -266,6 +273,21 @@ export function mountEffect(host: HTMLElement, effect: EffectDefinition | string
   apply(options.subject);
 
   if (def.kind === "camera") return mountCameraMove(host, def, values, live, options);
+  if (def.kind === "timing") {
+    const timing = mountTiming(host, def, values, live, options);
+    return {
+      effect: def,
+      element: timing.element,
+      setSubject(subject) {
+        timing.setLive(subjectValues(def, subject).live);
+      },
+      setValues: (next) => timing.setValues(next),
+      play: () => timing.play(),
+      pause: () => timing.pause(),
+      dispose: () => timing.dispose(),
+      ready: () => timing.ready(),
+    };
+  }
 
   if (def.kind === "shader") {
     const isOneShot = options.loop === false && ("uProgress" in values || "uAnimate" in values);

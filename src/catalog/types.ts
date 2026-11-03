@@ -29,6 +29,7 @@ export type EffectCategory =
   | "interaction"
   | "pyrotechnics"
   | "timewarp"
+  | "timing"
   | "melt"
   | "electric"
   | "fire"
@@ -80,6 +81,7 @@ export const EFFECT_CATEGORIES: readonly EffectCategory[] = [
   "interaction",
   "pyrotechnics",
   "timewarp",
+  "timing",
   "melt",
   "electric",
   "fire",
@@ -124,7 +126,7 @@ export interface EffectCategoryGroup {
 export const EFFECT_CATEGORY_GROUPS: readonly EffectCategoryGroup[] = [
   { name: "Backgrounds", categories: ["gradient", "organic", "pattern", "space", "3d", "weather", "water", "atmosphere"] },
   { name: "Light", categories: ["light", "lighting", "glow", "shadow", "electric", "fire", "hologram"] },
-  { name: "Pictures", categories: ["image", "cinematic", "beauty", "distortion", "retro", "comic", "horror", "meme", "timewarp", "melt"] },
+  { name: "Pictures", categories: ["image", "cinematic", "beauty", "distortion", "retro", "comic", "horror", "meme", "timewarp", "timing", "melt"] },
   { name: "Particles & FX", categories: ["overlay", "splatter", "bubble", "particles", "trail", "debris", "impact", "pyrotechnics"] },
   { name: "Type & titles", categories: ["text", "morph", "broadcast", "annotation", "sticker"] },
   { name: "Paths", categories: ["path"] },
@@ -296,7 +298,70 @@ export interface CameraEffect extends EffectBase {
   motion: CameraMotion;
 }
 
-export type EffectDefinition = ShaderEffect | VectorEffect | CameraEffect;
+/** Where a retime is: how far into the retimed clip, and the footage it retimes. */
+export interface TimingContext {
+  /** Ms into the retimed clip, from 0 to the effect's `length` for this footage. */
+  time: number;
+  /** Ms of footage. */
+  footage: number;
+  /** The footage's frames per second: one frame lasts `1000 / fps` ms. */
+  fps: number;
+}
+
+/** One frame of footage a retimed frame shows, and how much of it. */
+export interface TimingFrame {
+  /** Ms into the footage. */
+  time: number;
+  /** Its share of the picture, 0 or more (shares are scaled to add up to 1). */
+  weight: number;
+}
+
+/**
+ * How a retimed frame's footage frames combine: `average` mixes them by
+ * weight (frame blending, a long exposure's silky water); `lighten` keeps
+ * each pixel's brightest, each frame dimmed by its weight against the
+ * heaviest (light trails, star trails).
+ */
+export type TimingBlend = "average" | "lighten";
+
+/** The footage frames one retimed frame is made of. */
+export interface TimingSample {
+  frames: readonly TimingFrame[];
+  /** Default `average`. */
+  blend?: TimingBlend;
+}
+
+/** How a timing effect retimes footage: how long the result is and which footage makes each frame of it. */
+export interface TimingMotion {
+  /** Ms the retimed clip lasts for footage `footage` ms long. Values are the effect's controls, filled in with their defaults. */
+  length(footage: number, values: Readonly<Record<string, ControlValue>>): number;
+  /**
+   * The footage frames retimed frame `ctx.time` shows: one frame for a speed
+   * change, a reverse or a freeze; many, weighted, for frame blending, echoes
+   * and long exposures. Pure: the same context and values give the same
+   * sample, so any frame can be drawn on its own, in any order. Times
+   * outside the footage are held at its ends (see `timingSample`).
+   */
+  sample(ctx: TimingContext, values: Readonly<Record<string, ControlValue>>): TimingSample;
+}
+
+/**
+ * A retime of video footage: a speed change, a ramp, a reverse, a freeze,
+ * frame blending or a long exposure. It draws nothing of its own: for each
+ * frame of the result it names the footage frames to show and how to blend
+ * them, so the host decodes the frames it needs. Its controls are declared in
+ * a list, as a camera move's are. `timingSample` checks its values and
+ * answers which frames; `TimingRenderer` draws them from `TimingFootage`;
+ * `mountEffect` and `recordEffect` play it on a `<video>` subject (or on a
+ * preview clip of their own).
+ */
+export interface TimingEffect extends EffectBase {
+  kind: "timing";
+  controls: readonly VectorControl[];
+  motion: TimingMotion;
+}
+
+export type EffectDefinition = ShaderEffect | VectorEffect | CameraEffect | TimingEffect;
 
 /** The types a vector effect's `{{name: type …}}` placeholder can declare. */
 export const VECTOR_CONTROL_TYPES = ["float", "int", "bool", "color", "text"] as const;

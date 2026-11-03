@@ -1,4 +1,4 @@
-# Controls, presets, camera moves and motion
+# Controls, presets, camera moves, timing and motion
 
 ## Controls
 
@@ -42,6 +42,19 @@ Camera moves are catalog effects of kind `camera` ([camera.md](effects/camera.md
 ```
 
 `validateScene` refuses a move in the wrong field and names the moves there are. On its own, `mountEffect(el, "camera-ken-burns", { subject: { image: "/photo.jpg" } })` previews a move on a picture.
+
+## Timing effects (retiming video)
+
+Timing effects are catalog effects of kind `timing` (the `timing` category in [pictures.md](effects/pictures.md)): a speed change, a speed ramp, a reverse, a boomerang, a freeze frame, a stutter, step frames, a frame echo and a long exposure. They draw nothing of their own. For each moment of the result, they name the frames of the footage to show and how to blend them. Give them a `<video>`:
+
+```ts
+import { mountEffect, recordEffect } from "@pixerate/flair/embed";
+
+mountEffect(el, "long-exposure", { subject: { video }, values: { exposure: 4, lighten: true } });
+const slowMo = await recordEffect("retime-speed", { subject: { video }, values: { speed: 0.25 } });
+```
+
+Without a video they play on a preview clip of Flair's own. `timingLength(effect, footageMs, values)` gives how long the retimed clip is, and `timingSample(effect, { time, footage }, values)` gives the footage frames one moment shows. A speed change of 0.5 doubles the length; a freeze adds its hold. They are not scene layers or editor documents (`createEffectDocument` refuses them).
 
 ## Motion primitives (animating your own SVG)
 

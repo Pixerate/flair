@@ -4,7 +4,7 @@
 /// <reference path="../shader/gifenc.d.ts" />
 import { CAMERA_PREVIEW_SOURCE, cameraPreviewLength, cameraPreviewValues } from "../catalog/camera.js";
 import { drawsAlpha, effectDefaults, effectInputs, getEffect, SAMPLE_IMAGES, type EffectDefinition } from "../catalog/index.js";
-import { renderVectorEffect, type ShaderEffect } from "../catalog/types.js";
+import { renderVectorEffect, type ShaderEffect, type TimingEffect } from "../catalog/types.js";
 import { muxMp4 } from "../export/mp4mux.js";
 import { muxWebm, type WebmFrame } from "../export/webmmux.js";
 import { checkShutter, FrameAverager, shutterTimes, type Shutter, type ShutterOptions } from "../export/shutter.js";
@@ -15,6 +15,8 @@ import { ShaderFrames, type RenderOptions } from "../shader/frames.js";
 import { seekVideo, type LiveSource } from "../shader/textures.js";
 import { svgDuration, svgView } from "../vector/svg.js";
 import { subjectValues, type EffectSubject } from "./index.js";
+import { footageVideo, timingFootage, timingPlayLength } from "./timing.js";
+import { TimingRenderer } from "../catalog/timing.js";
 
 /** What {@link recordEffect} makes: a video (`mp4`, `webm`), an animated `gif`, or `png` frames in a ZIP. */
 export type RecordFormat = "mp4" | "webm" | "gif" | "png";
@@ -227,7 +229,7 @@ export async function recordingPlan(effect: EffectDefinition | string, options: 
   const fps = positive("fps", options.fps, 30);
   const start = options.start ?? 0;
   if (!Number.isFinite(start) || start < 0) throw new Error(`start must be 0 or more seconds (it was ${String(options.start)}).`);
-  const duration = positive("duration", options.duration, defaultDuration(def, options));
+  const duration = positive("duration", options.duration, def.kind === "timing" ? await timingSeconds(def, options) : defaultDuration(def, options));
   const shutter = checkShutter(options);
   const alpha = options.alpha ?? drawsAlpha(def, effectDefaults(def, { ...(options.preset ? { preset: options.preset } : {}), ...(options.values ? { values: options.values } : {}) }));
   const output = await negotiateOutput(options, fps, alpha);
@@ -320,8 +322,15 @@ export async function negotiateOutput(options: OutputOptions, fps: number, drawn
 function defaultDuration(def: EffectDefinition, options: RecordOptions): number {
   if (def.kind === "shader") return def.loop ?? DEFAULT_SECONDS;
   if (def.kind === "camera") return cameraPreviewLength(def) / 1000;
+  if (def.kind === "timing") return DEFAULT_SECONDS;
   const motion = renderVectorEffect(def, effectValues(def, options).values);
   return (svgDuration(motion, options.steps ?? []) + (def.hold ?? 600)) / 1000;
+}
+
+/** Seconds a timing effect's retime lasts on its `{ video }` subject, or on the preview clip without one. */
+async function timingSeconds(def: TimingEffect, options: RecordOptions): Promise<number> {
+  const { values, live } = effectValues(def, options);
+  return (await timingPlayLength(def, values, footageVideo(def, live))) / 1000;
 }
 
 function effectValues(def: EffectDefinition, options: RecordOptions) {
@@ -379,6 +388,23 @@ function shaderSource(plan: RecordingPlan, values: Record<string, ControlValue>,
         video.currentTime = time;
         if (!paused) void video.play().catch(() => undefined);
       }
+    },
+  };
+}
+
+/** A timing effect's frames: its `{ video }` subject (or the preview clip) retimed, the video put back as it was afterwards. */
+function timingSource(plan: RecordingPlan, values: Record<string, ControlValue>, live: Record<string, LiveSource>, options: RecordOptions): FrameSource {
+  const def = plan.effect as TimingEffect;
+  const loaded = timingFootage(def, live, plan.width, plan.height).then(({ footage, restore }) => ({ renderer: new TimingRenderer(def, footage, { values }), restore }));
+  loaded.catch(() => undefined);
+  return {
+    async frame(time, index, out) {
+      const { renderer } = await loaded;
+      await options.beforeFrame?.(time, index);
+      await renderer.render(time * 1000, out);
+    },
+    dispose() {
+      void loaded.then(({ restore }) => restore()).catch(() => undefined);
     },
   };
 }
@@ -720,7 +746,8 @@ export async function recordEffect(effect: EffectDefinition | string, options: R
   // The sound track encodes alongside the frames.
   const track = buffer && plan.audioEncoder ? encodeSound(buffer, plan) : undefined;
   track?.catch(() => undefined);
-  const drawn = plan.effect.kind !== "vector" ? shaderSource(plan, values, live, options, sound) : vectorSource(plan, values, options);
+  const drawn =
+    plan.effect.kind === "timing" ? timingSource(plan, values, live, options) : plan.effect.kind !== "vector" ? shaderSource(plan, values, live, options, sound) : vectorSource(plan, values, options);
   return encodeFrames(plan, drawn, background, options, track);
 }
 

@@ -98,7 +98,7 @@ function generate() {
     "};",
     "",
   ].join("\n");
-  const layers = EFFECTS.filter((e) => e.kind !== "camera").map((e) => {
+  const layers = EFFECTS.filter((e) => e.kind !== "camera" && e.kind !== "timing").map((e) => {
     const inputs = effectInputs(e);
     return packLayerEntry({ id: e.id, kind: e.kind as "shader" | "vector", accepts: inputs.accepts, transition: inputs.video === "transition", transparent: e.kind === "shader" && !!e.transparent });
   });

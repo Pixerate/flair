@@ -9,7 +9,8 @@ import { EFFECT_CATEGORIES, EFFECT_CATEGORY_GROUPS, VIDEO_USES, type VectorContr
 import type { SvgEase, SvgMotion } from "../vector/motion.js";
 import { getPrimitive, listPrimitives, PRIMITIVE_KINDS, PRIMITIVES, primitiveTags, type PrimitiveKind } from "../motion/index.js";
 import { didYouMean } from "../motion/params.js";
-import { EFFECT_INPUTS, EFFECT_INTERACTIONS, effectInputs, effectTags, findEffects, normaliseTag, type EffectInput, type EffectInteraction, type EffectQuery } from "../catalog/index.js";
+import { EFFECT_INPUTS, EFFECT_INTERACTIONS, effectInputs, effectTags, findEffects, getEffect, normaliseTag, type EffectInput, type EffectInteraction, type EffectQuery } from "../catalog/index.js";
+import { DEFAULT_FOOTAGE_FPS, timingEffects, timingLength, timingSample, timingValues } from "../catalog/timing.js";
 import type { EditResult, EffectEditor } from "./editor.js";
 import { editorControlSchema, holdsPath, isTextMask } from "./textmask.js";
 import { EASING_PRESETS, type Easing } from "./timeline.js";
@@ -65,8 +66,9 @@ const catalogFilters = {
   },
   kind: {
     type: "string",
-    enum: ["shader", "vector", "camera"],
-    description: "shader (WebGL), vector (animated SVG) or camera (a move for a scene's camera, used in a shot's camera.in or camera.during rather than loaded here).",
+    enum: ["shader", "vector", "camera", "timing"],
+    description:
+      "shader (WebGL), vector (animated SVG), camera (a move for a scene's camera, used in a shot's camera.in or camera.during rather than loaded here) or timing (a retime of video footage: see what it does with catalog.timing rather than loading it here).",
   },
   tags: {
     type: "array",
@@ -104,6 +106,45 @@ function catalogQuery(filters: CatalogFilters): EffectQuery {
   const unknown = tags.find((t) => !knownTags!.has(t));
   if (unknown !== undefined) throw new Error(`No effect is tagged ${JSON.stringify(unknown)}.${didYouMean(unknown, [...knownTags])} catalog.tags lists the tags there are; text searches descriptions too.`);
   return { ...filters, tags };
+}
+
+/** Times `catalog.timing` answers for in one call. */
+export const TIMING_TIMES_LIMIT = 20;
+
+/** Footage frames `catalog.timing` lists for one time before it summarises them. */
+const TIMING_FRAMES_LISTED = 8;
+
+/** What a timing effect does to footage, for `catalog.timing`; refuses an id that is not a timing effect, or bad values. */
+function describeTiming(p: { id: string; footage: number; times?: number[]; fps?: number; preset?: string; values?: Record<string, unknown> }) {
+  const effect = getEffect(p.id);
+  const ids = timingEffects.map((e) => e.id);
+  if (!effect) throw new Error(`There is no effect ${JSON.stringify(p.id)}.${didYouMean(p.id, ids)} The timing effects are ${ids.join(", ")}.`);
+  if (effect.kind !== "timing") throw new Error(`"${effect.id}" is a ${effect.kind} effect, not a timing effect; the timing effects are ${ids.join(", ")} (catalog.search with kind "timing").`);
+  const checked = timingValues(effect, { ...(p.preset !== undefined && { preset: p.preset }), ...(p.values && { values: p.values }) });
+  if (checked.issues.length) throw new Error(checked.issues.join(" "));
+  const fps = p.fps ?? DEFAULT_FOOTAGE_FPS;
+  const length = timingLength(effect, p.footage, checked.values);
+  const times = p.times ?? [0, length / 2, Math.max(0, length - 1000 / fps)];
+  return {
+    id: effect.id,
+    values: checked.values,
+    footage: p.footage,
+    fps,
+    length: Math.round(length * 1000) / 1000,
+    samples: times.map((time) => {
+      const { frames, blend } = timingSample(effect, { time, footage: p.footage, fps }, checked.values);
+      const round = (n: number) => Math.round(n * 1000) / 1000;
+      const listed = frames.length <= TIMING_FRAMES_LISTED;
+      return {
+        time,
+        blend,
+        count: frames.length,
+        ...(listed
+          ? { frames: frames.map((f) => ({ time: round(f.time), weight: round(f.weight) })) }
+          : { from: round(frames[0]!.time), to: round(frames[frames.length - 1]!.time), note: `${frames.length} footage frames from ${round(frames[0]!.time)} to ${round(frames[frames.length - 1]!.time)} ms are blended; the list is left out.` }),
+      };
+    }),
+  };
 }
 
 /** What an agent should know about the compile: the report, or why there is none yet. */
@@ -210,6 +251,27 @@ export function effectCommands(): CommandSpec<EffectEditor>[] {
           ...(more > 0 && { more: `${more} more match; narrow the search, or pass offset ${offset + effects.length} for the next ones.` }),
         };
       },
+    },
+    {
+      id: "catalog.timing",
+      label: "Timing effect frames",
+      group: "Catalog",
+      description: `What a timing effect (kind "timing" in catalog.search: a speed change, ramp, reverse, boomerang, freeze frame, stutter, step frames, frame echo or long exposure) does to footage \`footage\` ms long, with its defaults, a preset and/or values: {length} the retimed clip's ms, and for each of \`times\` (ms into the retimed clip, at most ${TIMING_TIMES_LIMIT}; default its start, middle and last frame) the footage frames it shows, with their weights (which add up to 1) and how they blend (average, or lighten: brightest wins). Timing effects play on a video with mountEffect or recordEffect; effect.load refuses them.`,
+      readOnly: true,
+      params: {
+        type: "object",
+        properties: {
+          id: { type: "string", description: "A timing effect's id (catalog.search with kind \"timing\")." },
+          footage: { type: "number", exclusiveMinimum: 0, description: "Ms of footage it retimes." },
+          times: { type: "array", items: { type: "number" }, maxItems: TIMING_TIMES_LIMIT, description: "Ms into the retimed clip to show the footage frames for." },
+          fps: { type: "number", exclusiveMinimum: 0, maximum: 240, description: `The footage's frames per second (default ${DEFAULT_FOOTAGE_FPS}).` },
+          preset: { type: "string", description: "One of the effect's presets, by name." },
+          values: { type: "object", description: "Control values over the defaults (and the preset), by control name." },
+        },
+        required: ["id", "footage"],
+        additionalProperties: false,
+      },
+      run: (_, p: { id: string; footage: number; times?: number[]; fps?: number; preset?: string; values?: Record<string, unknown> }) => describeTiming(p),
     },
     {
       id: "catalog.tags",

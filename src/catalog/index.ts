@@ -126,6 +126,7 @@ import { vectorEffects } from "./vector.js";
 import { dataEffects } from "./data.js";
 import { iconEffects } from "./icons.js";
 import { cameraEffects } from "./camera.js";
+import { timingEffects } from "./timing.js";
 
 export {
   colorControl,
@@ -151,6 +152,12 @@ export {
   type EffectDefinition,
   type EffectPreset,
   type ShaderEffect,
+  type TimingBlend,
+  type TimingContext,
+  type TimingEffect,
+  type TimingFrame,
+  type TimingMotion,
+  type TimingSample,
   type VectorControl,
   type VectorEffect,
   type VideoUse,
@@ -166,6 +173,19 @@ export {
   previewStage,
   screenToScene,
 } from "./camera.js";
+export {
+  DEFAULT_FOOTAGE_FPS,
+  FrameBlender,
+  getTimingEffect,
+  MAX_TIMING_FRAMES,
+  timingControls,
+  timingEffects,
+  timingLength,
+  timingSample,
+  timingValues,
+  TimingRenderer,
+  type TimingFootage,
+} from "./timing.js";
 export { controlSchema, controlsSchema, controlUnit, type JsonSchema, type SchemaOptions } from "../shader/schema.js";
 export { SCENE_TEMPLATES, sceneTemplate } from "./templates.js";
 export { FBM, glsl, HASH, NOISE, OKLAB_MIX, PALETTE, PATH, ROTATE, SPECTRUM } from "./glsl.js";
@@ -274,7 +294,7 @@ export const SHADER_EFFECTS: readonly ShaderEffect[] = [
 ];
 
 /** Every effect in the catalog, shaders first, grouped by category. */
-export const EFFECTS: readonly EffectDefinition[] = [...SHADER_EFFECTS, ...vectorEffects, ...textEffects, ...morphEffects, ...interactionEffects, ...pyroEffects, ...timewarpEffects, ...meltEffects, ...electricEffects, ...fireEffects, ...hologramEffects, ...pixelEffects, ...splatterEffects, ...bubbleEffects, ...stickerEffects, ...trailEffects, ...impactEffects, ...comicEffects, ...glowEffects, ...shadowEffects, ...lightingEffects, ...scrollEffects, ...broadcastEffects, ...annotationEffects, ...uiEffects, ...loaderEffects, ...dataEffects, ...iconEffects, ...webEffects, ...promoEffects, ...horrorEffects, ...beautyEffects, ...memeEffects, ...cinematicEffects, ...cameraEffects].sort(
+export const EFFECTS: readonly EffectDefinition[] = [...SHADER_EFFECTS, ...vectorEffects, ...textEffects, ...morphEffects, ...interactionEffects, ...pyroEffects, ...timewarpEffects, ...meltEffects, ...electricEffects, ...fireEffects, ...hologramEffects, ...pixelEffects, ...splatterEffects, ...bubbleEffects, ...stickerEffects, ...trailEffects, ...impactEffects, ...comicEffects, ...glowEffects, ...shadowEffects, ...lightingEffects, ...scrollEffects, ...broadcastEffects, ...annotationEffects, ...uiEffects, ...loaderEffects, ...dataEffects, ...iconEffects, ...webEffects, ...promoEffects, ...horrorEffects, ...beautyEffects, ...memeEffects, ...cinematicEffects, ...cameraEffects, ...timingEffects].sort(
   (a, b) => EFFECT_CATEGORIES.indexOf(a.category) - EFFECT_CATEGORIES.indexOf(b.category),
 );
 
@@ -304,10 +324,12 @@ export function effectMeta(effect: EffectDefinition): EffectMeta {
 /**
  * Ms of one play of an effect: a shader's `loop`, a vector effect's
  * picture at its default values plus its `hold` (default 600), or a camera
- * move's own length (0 for a cut). Undefined for a shader with no loop.
+ * move's own length (0 for a cut). Undefined for a shader with no loop,
+ * and for a timing effect, whose length is its footage's (see `timingLength`).
  */
 export function effectDuration(effect: EffectDefinition): number | undefined {
   if (effect.kind === "shader") return effect.loop === undefined ? undefined : Math.round(effect.loop * 1000);
+  if (effect.kind === "timing") return undefined;
   if (effect.kind === "camera") return effect.motion.duration;
   return Math.round(svgDuration(renderVectorEffect(effect, effectDefaults(effect))) + (effect.hold ?? 600));
 }
@@ -401,7 +423,7 @@ export function canOutputVideo(effect: EffectDefinition): boolean {
 }
 
 /**
- * Returns whether an effect is animated over time (`iTime` uniform in shader source, a vector effect, or a camera move).
+ * Returns whether an effect is animated over time (`iTime` uniform in shader source, a vector effect, a camera move, or a timing effect).
  * Static image filters/treatments that do not reference `iTime` return `false`.
  */
 export function isMotionEffect(effect: EffectDefinition | undefined): boolean {
@@ -484,7 +506,7 @@ export function effectStack(layers: readonly StackLayer[], options: { source?: L
     const spec = typeof layer === "object" && "effect" in layer ? layer : { effect: layer };
     const effect = typeof spec.effect === "string" ? getEffect(spec.effect) : spec.effect;
     if (!effect) throw new Error(`There is no effect ${JSON.stringify(spec.effect)} in the catalog.${didYouMean(String(spec.effect), [...byId.keys()])}`);
-    if (effect.kind !== "shader") throw new Error(`"${effect.id}" is a vector effect; a stack is of shader effects (layer ${i}).`);
+    if (effect.kind !== "shader") throw new Error(`"${effect.id}" is a ${effect.kind} effect; a stack is of shader effects (layer ${i}).`);
     const picture = effectInputs(effect).images.find((slot) => slot.wants === "picture");
     const values = effectDefaults(effect, { preset: "preset" in spec ? spec.preset : undefined, values: "values" in spec ? spec.values : undefined });
     const pass: PipelinePass = { source: effect.source, values, name: effect.id };
@@ -495,9 +517,9 @@ export function effectStack(layers: readonly StackLayer[], options: { source?: L
   });
 }
 
-/** An effect's controls: a shader's `@control` uniforms, or a vector effect's or camera move's declared controls. */
+/** An effect's controls: a shader's `@control` uniforms, or a vector effect's, camera move's or timing effect's declared controls. */
 export function effectControls(effect: EffectDefinition): ControlDef[] {
-  if (effect.kind === "camera") return effect.controls.map((c, i) => vectorControlDef(c, i + 1));
+  if (effect.kind === "camera" || effect.kind === "timing") return effect.controls.map((c, i) => vectorControlDef(c, i + 1));
   return effect.kind === "shader" ? parseControls(effect.source) : vectorEffectControls(effect);
 }
 

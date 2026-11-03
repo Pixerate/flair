@@ -84,7 +84,7 @@ export function App() {
         {tab === "gallery" && (
           <GalleryTab
             onOpen={(id) => {
-              // Camera moves are for scenes, not the effect editor, which refuses them.
+              // Camera moves are for scenes and timing effects retime footage: the effect editor refuses both.
               if (editor.load(id).ok) go("editor");
             }}
           />

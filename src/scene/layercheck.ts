@@ -1,4 +1,5 @@
 import { getCameraMove } from '../catalog/camera.js';
+import { getTimingEffect } from '../catalog/timing.js';
 import { layerEffect, layerEffectIds } from '../catalog/layer-index.js';
 import { didYouMean } from '../motion/params.js';
 import { checkControlValue, parseControls, type ControlDef } from '../shader/controls.js';
@@ -65,6 +66,7 @@ function effectIdIssue(id: unknown, where: string): string | undefined {
   if (typeof id !== 'string') return `${where} "effect" is a catalog effect's id, like "aurora"; find_layer_effects lists them.`;
   if (layerEffect(id)) return undefined;
   if (getCameraMove(id)) return `${where} names "${id}", a camera move: it goes in the shot's camera "in" or "during", not in layers.`;
+  if (getTimingEffect(id)) return `${where} names "${id}", a timing effect, which retimes video footage; scenes cannot retime a layer's video yet, so retime the clip first (recordEffect with { subject: { video } }) and use the result as the layer's { "video": url }.`;
   return `There is no catalog effect "${id}" for ${where.toLowerCase()}.${didYouMean(id, layerEffectIds())} find_layer_effects lists the effects a layer can use.`;
 }
 
@@ -251,7 +253,7 @@ export async function checkSceneLayers(scene: Scene): Promise<{ shot: number; me
   const issues: { shot: number; message: string }[] = [];
   const check = (shot: number, id: string, preset: unknown, values: unknown, who: string, playerControls: readonly string[] = []) => {
     const meta = getEffectMeta(id);
-    if (!meta || meta.kind === 'camera') return;
+    if (!meta || meta.kind === 'camera' || meta.kind === 'timing') return;
     if (typeof preset === 'string' && !meta.presets.includes(preset))
       issues.push({ shot, message: `"${id}" has no preset "${preset}"; ${meta.presets.length ? `its presets are ${list(meta.presets)}` : 'it has none'}.` });
     if (isObject(values)) {

@@ -11,6 +11,7 @@ import {
   type EffectCategory,
   type EffectDefinition,
 } from "@pixerate/flair/catalog";
+import { mountEffect } from "@pixerate/flair/embed";
 import { showsOverPicture } from "../overPicture";
 import { CameraMoves } from "./CameraMoves";
 
@@ -71,6 +72,22 @@ function CameraThumb({ effect, hovered }: { effect: Extract<EffectDefinition, { 
       {failed && <span className="absolute inset-0 grid place-items-center text-sm text-slate-400">Needs WebGL2</span>}
     </>
   );
+}
+
+/** A timing effect retiming Flair's preview clip (whose clock shows the footage's own time); with reduced motion, only while hovered. */
+function TimingThumb({ effect, hovered }: { effect: Extract<EffectDefinition, { kind: "timing" }>; hovered: boolean }) {
+  const host = useRef<HTMLDivElement>(null);
+  const mounted = useRef<ReturnType<typeof mountEffect> | undefined>(undefined);
+  useEffect(() => {
+    mounted.current = mountEffect(host.current!, effect, { autoplay: !prefersReducedMotion() });
+    return () => mounted.current!.dispose();
+  }, [effect]);
+  useEffect(() => {
+    if (!prefersReducedMotion()) return;
+    if (hovered) mounted.current?.play();
+    else mounted.current?.pause();
+  }, [hovered]);
+  return <div ref={host} className="absolute inset-0" />;
 }
 
 const prefersReducedMotion = () => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -225,6 +242,8 @@ function EffectCard({ effect, onOpen }: { effect: EffectDefinition; onOpen: () =
           <ShaderThumb effect={effect} hovered={hovered} />
         ) : effect.kind === "camera" ? (
           <CameraThumb effect={effect} hovered={hovered} />
+        ) : effect.kind === "timing" ? (
+          <TimingThumb effect={effect} hovered={hovered} />
         ) : (
           <VectorThumb effect={effect} hovered={hovered} />
         )}

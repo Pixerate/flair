@@ -1,5 +1,653 @@
 [
   {
+    "id": "retime-ramp",
+    "name": "Speed ramp",
+    "kind": "timing",
+    "category": "timing",
+    "description": "Footage that eases from full speed into slow motion round one moment and back out again, like a sports replay.",
+    "tags": [
+      "timing",
+      "retime",
+      "speed",
+      "ramp",
+      "slow-motion",
+      "sport",
+      "replay",
+      "video"
+    ],
+    "controls": [
+      {
+        "n": "at",
+        "t": "float",
+        "d": 0.5,
+        "l": "Slow moment (share of the footage)",
+        "s": 0.01,
+        "b": 3,
+        "line": 1
+      },
+      {
+        "n": "slow",
+        "t": "float",
+        "d": 0.2,
+        "l": "Slow speed (×)",
+        "min": 0.05,
+        "s": 0.05,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "fast",
+        "t": "float",
+        "d": 1,
+        "l": "Speed either side (×)",
+        "min": 0.25,
+        "max": 4,
+        "s": 0.05,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "hold",
+        "t": "float",
+        "d": 0.6,
+        "l": "Slow stretch (s of footage)",
+        "max": 5,
+        "s": 0.05,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "ramp",
+        "t": "float",
+        "d": 0.4,
+        "l": "Ramp (s of footage)",
+        "min": 0.05,
+        "max": 2,
+        "s": 0.05,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "smooth",
+        "t": "bool",
+        "d": true,
+        "l": "Blend frames",
+        "s": 0.01,
+        "line": 6
+      }
+    ],
+    "presets": [
+      "Sports replay",
+      "Gentle",
+      "Snap"
+    ],
+    "inputs": {
+      "accepts": [
+        "video"
+      ],
+      "images": [
+        {
+          "name": "footage",
+          "label": "Footage",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "timing",
+    "addedAt": "2026-11-03T21:01:26.438Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "retime-reverse",
+    "name": "Reverse",
+    "kind": "timing",
+    "category": "timing",
+    "description": "Footage played backwards from its last frame to its first.",
+    "tags": [
+      "timing",
+      "retime",
+      "reverse",
+      "rewind",
+      "backwards",
+      "video"
+    ],
+    "controls": [
+      {
+        "n": "speed",
+        "t": "float",
+        "d": 1,
+        "l": "Speed (×)",
+        "min": 0.25,
+        "max": 4,
+        "s": 0.05,
+        "b": 3,
+        "line": 1
+      },
+      {
+        "n": "smooth",
+        "t": "bool",
+        "d": true,
+        "l": "Blend frames",
+        "s": 0.01,
+        "line": 2
+      }
+    ],
+    "presets": [
+      "Rewind",
+      "Slow reverse"
+    ],
+    "inputs": {
+      "accepts": [
+        "video"
+      ],
+      "images": [
+        {
+          "name": "footage",
+          "label": "Footage",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "timing",
+    "addedAt": "2026-11-03T21:01:26.438Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "retime-boomerang",
+    "name": "Boomerang",
+    "kind": "timing",
+    "category": "timing",
+    "description": "Footage played forwards then backwards, again and again, sped up like a social-media boomerang.",
+    "tags": [
+      "timing",
+      "retime",
+      "boomerang",
+      "loop",
+      "ping-pong",
+      "reverse",
+      "social",
+      "video"
+    ],
+    "controls": [
+      {
+        "n": "speed",
+        "t": "float",
+        "d": 1.5,
+        "l": "Speed (×)",
+        "min": 0.5,
+        "max": 4,
+        "s": 0.05,
+        "b": 3,
+        "line": 1
+      },
+      {
+        "n": "loops",
+        "t": "int",
+        "d": 2,
+        "l": "There and back",
+        "min": 1,
+        "max": 5,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "smooth",
+        "t": "bool",
+        "d": false,
+        "l": "Blend frames",
+        "s": 0.01,
+        "line": 3
+      }
+    ],
+    "presets": [
+      "Quick",
+      "Lazy"
+    ],
+    "inputs": {
+      "accepts": [
+        "video"
+      ],
+      "images": [
+        {
+          "name": "footage",
+          "label": "Footage",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "timing",
+    "addedAt": "2026-11-03T21:01:26.438Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "retime-freeze",
+    "name": "Freeze frame",
+    "kind": "timing",
+    "category": "timing",
+    "description": "Footage that stops dead on one frame, holds it, then plays on from where it stopped.",
+    "tags": [
+      "timing",
+      "retime",
+      "freeze",
+      "freeze-frame",
+      "hold",
+      "pause",
+      "video"
+    ],
+    "controls": [
+      {
+        "n": "at",
+        "t": "float",
+        "d": 0.5,
+        "l": "Freeze at (share of the footage)",
+        "s": 0.01,
+        "b": 3,
+        "line": 1
+      },
+      {
+        "n": "hold",
+        "t": "float",
+        "d": 1.5,
+        "l": "Hold (s)",
+        "min": 0.1,
+        "max": 10,
+        "s": 0.1,
+        "b": 3,
+        "line": 2
+      }
+    ],
+    "presets": [
+      "Beat",
+      "Long hold",
+      "Opening still"
+    ],
+    "inputs": {
+      "accepts": [
+        "video"
+      ],
+      "images": [
+        {
+          "name": "footage",
+          "label": "Footage",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "timing",
+    "addedAt": "2026-11-03T21:01:26.438Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "retime-stutter",
+    "name": "Stutter",
+    "kind": "timing",
+    "category": "timing",
+    "description": "Footage that catches on short snatches, replaying each a few times before it moves on, like a skipping record.",
+    "tags": [
+      "timing",
+      "retime",
+      "stutter",
+      "repeat",
+      "glitch",
+      "skip",
+      "music-video",
+      "video"
+    ],
+    "controls": [
+      {
+        "n": "chunk",
+        "t": "float",
+        "d": 0.16,
+        "l": "Snatch (s)",
+        "min": 0.04,
+        "s": 0.01,
+        "b": 3,
+        "line": 1
+      },
+      {
+        "n": "repeats",
+        "t": "int",
+        "d": 3,
+        "l": "Plays of each snatch",
+        "min": 2,
+        "max": 8,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "every",
+        "t": "int",
+        "d": 4,
+        "l": "Stutter every (snatches)",
+        "min": 1,
+        "max": 8,
+        "b": 3,
+        "line": 3
+      }
+    ],
+    "presets": [
+      "Glitch",
+      "Beat repeat"
+    ],
+    "inputs": {
+      "accepts": [
+        "video"
+      ],
+      "images": [
+        {
+          "name": "footage",
+          "label": "Footage",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "timing",
+    "addedAt": "2026-11-03T21:01:26.438Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "retime-step",
+    "name": "Step frames",
+    "kind": "timing",
+    "category": "timing",
+    "description": "Footage that holds each frame a while at a low frame rate, for a choppy stop-motion or animated-on-twos look.",
+    "tags": [
+      "timing",
+      "retime",
+      "frame-rate",
+      "stop-motion",
+      "choppy",
+      "on-twos",
+      "video"
+    ],
+    "controls": [
+      {
+        "n": "rate",
+        "t": "float",
+        "d": 8,
+        "l": "Frames per second",
+        "min": 2,
+        "max": 24,
+        "s": 1,
+        "b": 3,
+        "line": 1
+      }
+    ],
+    "presets": [
+      "On twos",
+      "Stop motion",
+      "Slideshow"
+    ],
+    "inputs": {
+      "accepts": [
+        "video"
+      ],
+      "images": [
+        {
+          "name": "footage",
+          "label": "Footage",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "timing",
+    "addedAt": "2026-11-03T21:01:26.438Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "frame-echo",
+    "name": "Frame echo",
+    "kind": "timing",
+    "category": "timing",
+    "description": "Each frame of footage with fading copies of the frames just before it, so moving things leave a trail of ghosts.",
+    "tags": [
+      "timing",
+      "echo",
+      "ghost",
+      "trail",
+      "onion-skin",
+      "video"
+    ],
+    "controls": [
+      {
+        "n": "echoes",
+        "t": "int",
+        "d": 4,
+        "min": 1,
+        "max": 8,
+        "b": 3,
+        "line": 1
+      },
+      {
+        "n": "spacing",
+        "t": "float",
+        "d": 0.1,
+        "l": "Spacing (s)",
+        "min": 0.02,
+        "max": 0.5,
+        "s": 0.01,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "decay",
+        "t": "float",
+        "d": 0.6,
+        "l": "Each echo's strength",
+        "min": 0.1,
+        "max": 0.95,
+        "s": 0.05,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "lighten",
+        "t": "bool",
+        "d": false,
+        "l": "Brightest wins",
+        "s": 0.01,
+        "line": 4
+      }
+    ],
+    "presets": [
+      "Onion skin",
+      "Light ghosts"
+    ],
+    "inputs": {
+      "accepts": [
+        "video"
+      ],
+      "images": [
+        {
+          "name": "footage",
+          "label": "Footage",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "timing",
+    "addedAt": "2026-11-03T21:01:26.438Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "long-exposure",
+    "name": "Long exposure",
+    "kind": "timing",
+    "category": "timing",
+    "description": "Footage seen through a shutter held open: moving water turns silky and crowds melt away, or the brightest lights draw streaks, while whatever stays still stays sharp.",
+    "tags": [
+      "timing",
+      "long-exposure",
+      "light-trails",
+      "motion-blur",
+      "photography",
+      "silky",
+      "night",
+      "video"
+    ],
+    "controls": [
+      {
+        "n": "exposure",
+        "t": "float",
+        "d": 1.5,
+        "l": "Exposure (s)",
+        "min": 0.1,
+        "max": 10,
+        "s": 0.1,
+        "b": 3,
+        "line": 1
+      },
+      {
+        "n": "lighten",
+        "t": "bool",
+        "d": false,
+        "l": "Light trails (brightest wins)",
+        "s": 0.01,
+        "line": 2
+      },
+      {
+        "n": "fade",
+        "t": "float",
+        "d": 0,
+        "l": "Fade older frames",
+        "s": 0.05,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "build",
+        "t": "bool",
+        "d": false,
+        "l": "Build from the start",
+        "s": 0.01,
+        "line": 4
+      }
+    ],
+    "presets": [
+      "Silky water",
+      "Light trails",
+      "Empty streets",
+      "Building trails"
+    ],
+    "inputs": {
+      "accepts": [
+        "video"
+      ],
+      "images": [
+        {
+          "name": "footage",
+          "label": "Footage",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "timing",
+    "addedAt": "2026-11-03T21:01:26.438Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "retime-speed",
+    "name": "Speed change",
+    "kind": "timing",
+    "category": "timing",
+    "description": "Footage played slower or faster throughout: slow motion with blended in-between frames, or a sped-up time-lapse with its motion blurred.",
+    "tags": [
+      "timing",
+      "retime",
+      "speed",
+      "slow-motion",
+      "time-lapse",
+      "video"
+    ],
+    "controls": [
+      {
+        "n": "speed",
+        "t": "float",
+        "d": 0.5,
+        "l": "Speed (×)",
+        "min": 0.1,
+        "max": 8,
+        "s": 0.05,
+        "b": 3,
+        "line": 1
+      },
+      {
+        "n": "smooth",
+        "t": "bool",
+        "d": true,
+        "l": "Blend frames",
+        "s": 0.01,
+        "line": 2
+      }
+    ],
+    "presets": [
+      "Slow motion",
+      "Double speed",
+      "Time-lapse",
+      "Choppy slow motion"
+    ],
+    "inputs": {
+      "accepts": [
+        "video"
+      ],
+      "images": [
+        {
+          "name": "footage",
+          "label": "Footage",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "timing",
+    "addedAt": "2026-11-03T21:01:26.437Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
     "id": "wireframe-reveal",
     "name": "Wireframe reveal",
     "kind": "shader",
@@ -1890,823 +2538,5 @@
     "addedAt": "2026-11-02T12:44:53Z",
     "commitHash": "359d8593cdbb9abfd2f45d6b22180a15fcf43b9e",
     "order": 612
-  },
-  {
-    "id": "camera-handheld",
-    "name": "Handheld",
-    "kind": "camera",
-    "category": "camera",
-    "description": "While the shot holds, the camera is held by hand: it drifts, sways and rolls a little around the framing, from a documentary's gentle float to found-footage shake, with footsteps if the operator walks.",
-    "tags": [
-      "camera",
-      "hold",
-      "handheld",
-      "shake",
-      "wobble",
-      "documentary",
-      "found-footage",
-      "cinematic"
-    ],
-    "controls": [
-      {
-        "n": "amount",
-        "t": "float",
-        "d": 0.4,
-        "l": "Shake",
-        "s": 0.01,
-        "b": 3,
-        "line": 1
-      },
-      {
-        "n": "speed",
-        "t": "float",
-        "d": 1,
-        "min": 0.2,
-        "max": 3,
-        "s": 0.05,
-        "b": 3,
-        "line": 2
-      },
-      {
-        "n": "roll",
-        "t": "float",
-        "d": 0.8,
-        "l": "Roll (°)",
-        "max": 3,
-        "s": 0.05,
-        "b": 3,
-        "line": 3
-      },
-      {
-        "n": "footsteps",
-        "t": "float",
-        "d": 0,
-        "s": 0.05,
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "seed",
-        "t": "int",
-        "d": 1,
-        "min": 1,
-        "max": 99,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "motionBlur",
-        "t": "float",
-        "d": 0,
-        "max": 3,
-        "s": 0.1,
-        "b": 3,
-        "line": 6
-      }
-    ],
-    "presets": [
-      "Subtle",
-      "Walking",
-      "Shaky cam",
-      "Found footage"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Preview picture",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "role": "hold",
-    "animated": true,
-    "duration": 4000,
-    "module": "camera",
-    "addedAt": "2026-11-01T11:43:49Z",
-    "commitHash": "3c91b2fca102f4b381603a364d2573b6c1aacae0",
-    "order": 611
-  },
-  {
-    "id": "dolly-zoom",
-    "name": "Dolly zoom",
-    "kind": "shader",
-    "category": "cinematic",
-    "description": "The vertigo shot: the subject holds its size in the middle of the frame while the background behind it stretches towards the camera or falls away, as when a camera dollies one way and zooms the other.",
-    "tags": [
-      "cinematic",
-      "film",
-      "camera",
-      "dolly",
-      "vertigo",
-      "zoom",
-      "warp",
-      "dramatic",
-      "image"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "city"
-        },
-        "line": 5,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uSubject",
-        "t": "vec2",
-        "d": [
-          0.5,
-          0.5
-        ],
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uSize",
-        "t": "float",
-        "d": 0.18,
-        "l": "Subject size (share of height)",
-        "min": 0.05,
-        "max": 0.6,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uStretch",
-        "t": "float",
-        "d": 0.7,
-        "l": "Background (+ rushes in, − falls away)",
-        "min": -1,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uBlur",
-        "t": "float",
-        "d": 0.5,
-        "l": "Motion blur",
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uAnimate",
-        "t": "bool",
-        "d": true,
-        "line": 10
-      },
-      {
-        "n": "uProgress",
-        "t": "float",
-        "d": 1,
-        "l": "Move (when still)",
-        "b": 3,
-        "line": 11
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 12
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "b": 3,
-        "line": 13
-      }
-    ],
-    "presets": [
-      "Vertigo",
-      "Falling away",
-      "Unease",
-      "Held"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "filter",
-    "loop": 5,
-    "animated": true,
-    "duration": 5000,
-    "module": "shaders/cinematic",
-    "addedAt": "2026-11-01T11:43:49Z",
-    "commitHash": "3c91b2fca102f4b381603a364d2573b6c1aacae0",
-    "order": 610
-  },
-  {
-    "id": "camera-crash-zoom",
-    "name": "Crash zoom",
-    "kind": "camera",
-    "category": "camera",
-    "description": "While the shot holds, the camera crashes in on a point (a face, a stare, a detail) in a few sudden steps, each landing with a kick, and stays there.",
-    "tags": [
-      "camera",
-      "hold",
-      "zoom",
-      "crash-zoom",
-      "dramatic",
-      "meme",
-      "shake"
-    ],
-    "controls": [
-      {
-        "n": "target",
-        "t": "vec2",
-        "d": [
-          0.5,
-          0.42
-        ],
-        "l": "Zoom onto (0–1 across the framing, y down)",
-        "s": 0.01,
-        "b": 3,
-        "line": 1
-      },
-      {
-        "n": "zoom",
-        "t": "float",
-        "d": 3.4,
-        "l": "Zoom (×)",
-        "min": 1.2,
-        "max": 8,
-        "s": 0.1,
-        "b": 3,
-        "line": 2
-      },
-      {
-        "n": "steps",
-        "t": "int",
-        "d": 3,
-        "min": 1,
-        "max": 4,
-        "b": 3,
-        "line": 3
-      },
-      {
-        "n": "stepTime",
-        "t": "float",
-        "d": 0.4,
-        "l": "Seconds per step",
-        "min": 0.15,
-        "max": 1.5,
-        "s": 0.05,
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "delay",
-        "t": "float",
-        "d": 0.3,
-        "l": "Seconds before the first step",
-        "max": 3,
-        "s": 0.05,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "shake",
-        "t": "float",
-        "d": 0.5,
-        "l": "Kick",
-        "s": 0.05,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "motionBlur",
-        "t": "float",
-        "d": 0.6,
-        "max": 3,
-        "s": 0.1,
-        "b": 3,
-        "line": 7
-      }
-    ],
-    "presets": [
-      "One crash",
-      "Slow dread",
-      "Extreme close-up"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Preview picture",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "role": "hold",
-    "animated": true,
-    "duration": 2000,
-    "module": "camera",
-    "addedAt": "2026-11-01T09:57:29Z",
-    "commitHash": "413fd519c80f38a52fe30a2206df14d5a1e045c8",
-    "order": 609
-  },
-  {
-    "id": "camera-ken-burns",
-    "name": "Ken Burns",
-    "kind": "camera",
-    "category": "camera",
-    "description": "While the shot holds, the camera drifts slowly across the framing, easing from one zoom to another as it pans.",
-    "tags": [
-      "camera",
-      "hold",
-      "ken-burns",
-      "drift",
-      "documentary",
-      "slideshow",
-      "push-in"
-    ],
-    "controls": [
-      {
-        "n": "zoomStart",
-        "t": "float",
-        "d": 1,
-        "l": "Start zoom (×)",
-        "min": 1,
-        "max": 3,
-        "b": 3,
-        "line": 1
-      },
-      {
-        "n": "zoomEnd",
-        "t": "float",
-        "d": 1.25,
-        "l": "End zoom (×)",
-        "min": 1,
-        "max": 3,
-        "b": 3,
-        "line": 2
-      },
-      {
-        "n": "angle",
-        "t": "float",
-        "d": 20,
-        "l": "Pan direction (°, 90 up)",
-        "max": 360,
-        "s": 1,
-        "b": 3,
-        "line": 3
-      }
-    ],
-    "presets": [
-      "Push in",
-      "Pull out",
-      "Slow drift"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Preview picture",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "role": "hold",
-    "animated": true,
-    "duration": 4000,
-    "module": "camera",
-    "addedAt": "2026-11-01T09:57:29Z",
-    "commitHash": "413fd519c80f38a52fe30a2206df14d5a1e045c8",
-    "order": 608
-  },
-  {
-    "id": "camera-cut",
-    "name": "Cut",
-    "kind": "camera",
-    "category": "camera",
-    "description": "The camera jumps straight to the next framing, taking no time.",
-    "tags": [
-      "camera",
-      "cut",
-      "jump",
-      "instant"
-    ],
-    "controls": [],
-    "presets": [],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Preview picture",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "role": "transition",
-    "animated": true,
-    "duration": 0,
-    "module": "camera",
-    "addedAt": "2026-11-01T09:57:29Z",
-    "commitHash": "413fd519c80f38a52fe30a2206df14d5a1e045c8",
-    "order": 607
-  },
-  {
-    "id": "camera-punch-zoom",
-    "name": "Punch zoom",
-    "kind": "camera",
-    "category": "camera",
-    "description": "The camera punches into the last framing, blurring every way, and cuts to the next one settling out of a punched-in view.",
-    "tags": [
-      "camera",
-      "move",
-      "zoom",
-      "punch",
-      "push-in",
-      "motion-blur",
-      "energetic"
-    ],
-    "controls": [
-      {
-        "n": "motionBlur",
-        "t": "float",
-        "d": 2,
-        "max": 3,
-        "s": 0.1,
-        "b": 3,
-        "line": 1
-      },
-      {
-        "n": "punch",
-        "t": "float",
-        "d": 3,
-        "l": "Punch (×)",
-        "min": 1.2,
-        "max": 6,
-        "s": 0.1,
-        "b": 3,
-        "line": 2
-      }
-    ],
-    "presets": [
-      "Gentle",
-      "Slam"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Preview picture",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "role": "transition",
-    "animated": true,
-    "duration": 600,
-    "module": "camera",
-    "addedAt": "2026-11-01T09:57:29Z",
-    "commitHash": "413fd519c80f38a52fe30a2206df14d5a1e045c8",
-    "order": 606
-  },
-  {
-    "id": "camera-whip-pan",
-    "name": "Whip pan",
-    "kind": "camera",
-    "category": "camera",
-    "description": "The camera whips off the last framing toward the next in a streak of motion blur and whips in onto it, cutting at the blurriest moment.",
-    "tags": [
-      "camera",
-      "move",
-      "whip",
-      "pan",
-      "swish",
-      "motion-blur",
-      "energetic"
-    ],
-    "controls": [
-      {
-        "n": "motionBlur",
-        "t": "float",
-        "d": 2,
-        "max": 3,
-        "s": 0.1,
-        "b": 3,
-        "line": 1
-      }
-    ],
-    "presets": [
-      "Soft",
-      "Hard"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Preview picture",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "role": "transition",
-    "animated": true,
-    "duration": 600,
-    "module": "camera",
-    "addedAt": "2026-11-01T09:57:29Z",
-    "commitHash": "413fd519c80f38a52fe30a2206df14d5a1e045c8",
-    "order": 605
-  },
-  {
-    "id": "camera-glide",
-    "name": "Glide",
-    "kind": "camera",
-    "category": "camera",
-    "description": "The camera eases across from the last framing to the next, zooming and turning smoothly on the way.",
-    "tags": [
-      "camera",
-      "move",
-      "pan",
-      "zoom",
-      "ease",
-      "glide"
-    ],
-    "controls": [
-      {
-        "n": "motionBlur",
-        "t": "float",
-        "d": 0,
-        "max": 3,
-        "s": 0.1,
-        "b": 3,
-        "line": 1
-      }
-    ],
-    "presets": [
-      "Natural blur",
-      "Swoop"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Preview picture",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "role": "transition",
-    "animated": true,
-    "duration": 600,
-    "module": "camera",
-    "addedAt": "2026-11-01T09:57:29Z",
-    "commitHash": "413fd519c80f38a52fe30a2206df14d5a1e045c8",
-    "order": 604
-  },
-  {
-    "id": "transition-flare-wipe",
-    "name": "Flare wipe",
-    "kind": "shader",
-    "category": "transition",
-    "description": "An anamorphic lens flare sweeps across the frame, its streak and bloom washing over the cut, and the next picture is left behind it. Loops back and forth; or turn Animate off and set Progress.",
-    "tags": [
-      "transition",
-      "cinematic",
-      "flare",
-      "lens",
-      "anamorphic",
-      "streak",
-      "wipe",
-      "image",
-      "slideshow"
-    ],
-    "controls": [
-      {
-        "n": "uFrom",
-        "t": "sampler2D",
-        "d": {
-          "sample": "landscape"
-        },
-        "l": "From image",
-        "line": 4,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uTo",
-        "t": "sampler2D",
-        "d": {
-          "sample": "city"
-        },
-        "l": "To image",
-        "line": 5,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uAnimate",
-        "t": "bool",
-        "d": true,
-        "line": 6
-      },
-      {
-        "n": "uProgress",
-        "t": "float",
-        "d": 0.5,
-        "l": "Progress (when still)",
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uColor",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            95,
-            168,
-            255
-          ]
-        },
-        "l": "Streak colour",
-        "c": 1,
-        "line": 8
-      },
-      {
-        "n": "uHeight",
-        "t": "float",
-        "d": 0.55,
-        "l": "Streak height",
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uStrength",
-        "t": "float",
-        "d": 1.2,
-        "l": "Flare strength",
-        "max": 2,
-        "b": 3,
-        "line": 10
-      },
-      {
-        "n": "uBloom",
-        "t": "float",
-        "d": 0.6,
-        "b": 3,
-        "line": 11
-      },
-      {
-        "n": "uReverse",
-        "t": "bool",
-        "d": false,
-        "l": "Right to left",
-        "line": 12
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 13
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "b": 3,
-        "line": 14
-      }
-    ],
-    "presets": [
-      "Amber",
-      "Low and fast",
-      "White out"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uFrom",
-          "label": "From image",
-          "wants": "picture"
-        },
-        {
-          "name": "uTo",
-          "label": "To image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "transition",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "transition",
-    "loop": 4,
-    "animated": true,
-    "duration": 4000,
-    "module": "shaders/cinematic",
-    "addedAt": "2026-11-01T09:26:14Z",
-    "commitHash": "b9c02b2f1aa308d20fcc980ffdc315de4b002c54",
-    "order": 603
   }
 ]

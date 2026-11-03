@@ -105,8 +105,11 @@ interface InputBinding extends EffectInputSpec {
 }
 
 /** What it takes to describe and render one catalog effect. */
+/** An effect the contract can carry: every kind but timing effects, which retime footage the contract has no way to give. */
+export type OfferedMeta = EffectMeta & { kind: Exclude<EffectMeta["kind"], "timing"> };
+
 export interface Plan {
-  meta: EffectMeta;
+  meta: OfferedMeta;
   uses: EffectUse[];
   inputs: InputBinding[];
   /** The controls the contract shows: the effect's, less its image inputs and what the contract drives. */
@@ -120,7 +123,7 @@ function wantsText(wants: string): string {
   return "a picture";
 }
 
-function planOf(meta: EffectMeta): Plan {
+function planOf(meta: OfferedMeta): Plan {
   // A camera move draws no picture: it has no inputs (its preview picture is Flair's own) and only the use "camera".
   const move = meta.kind === "camera" ? getCameraMove(meta.id) : undefined;
   if (move) return { meta, uses: ["camera"], inputs: [], controls: cameraMoveControls(move), transition: false };
@@ -644,7 +647,10 @@ class VectorRenderer extends BaseRenderer {
  */
 export function flairEffects(options: FlairEffectsOptions = {}): EffectProvider {
   const kinds = new Set<EffectKind>(options.kinds ?? ["shader", "vector", "motion", "camera"]);
-  const plans = new Map(EFFECT_META.filter((m) => kinds.has(m.kind)).map((m) => [m.id, planOf(m)]));
+  // Timing effects are left out: a render request carries one picture, and a retime needs the footage's other frames.
+  const plans = new Map(
+    EFFECT_META.filter((m): m is OfferedMeta => m.kind !== "timing" && kinds.has(m.kind)).map((m) => [m.id, planOf(m)]),
+  );
   const primitives = kinds.has("motion") ? PRIMITIVES : [];
   const summaries: EffectSummary[] = [...[...plans.values()].map(summaryOf), ...primitives.map(primitiveSummary)];
   const descriptions = new Map<string, Promise<EffectDescription>>();
@@ -759,6 +765,7 @@ export function flairEffects(options: FlairEffectsOptions = {}): EffectProvider 
       const { plan, effect, description } = await catalogEffect(id);
       if (effect.kind === "shader") return new ShaderRenderer(plan, description, effect, width, height, depth);
       if (effect.kind === "camera") throw new EffectUnsupportedError(`"${id}" is a camera move, which moves a scene's camera rather than drawing a picture: use cameraView (or sampleCameraMove) for where it puts the camera.`, id);
+      if (effect.kind === "timing") throw new EffectUnsupportedError(`"${id}" is a timing effect, which retimes footage rather than drawing a picture; this provider does not offer it.`, id);
       if (!rasterize) {
         throw new EffectUnsupportedError(
           `"${id}" is a vector effect, and a Worker has no DOM to draw SVG in: render it on the page, pass rasterizeSvg to flairEffects, or use applyVectorEffect for the animated SVG.`,
