@@ -1,5 +1,12 @@
 # @pixerate/flair
 
+## 0.99.0
+
+### Minor Changes
+
+- 215aa61: Add timing effects: a new `timing` kind and category that retimes real video footage. The kind includes a speed change, speed ramp, reverse, boomerang, freeze frame, stutter, step frames, frame echo and long exposure. Each effect is a pure function from a moment of the result to the weighted footage frames it shows (`timingSample`, `timingLength`). `TimingRenderer` and `FrameBlender` draw those frames from any `TimingFootage`. `mountEffect` and `recordEffect` play timing effects on a `{ video }` subject, or on Flair's own preview clip (`previewFootage`, `videoFootage` in `/embed`). Agents find them with `catalog.search` (`kind: "timing"`) and inspect a retime with the new `catalog.timing` command.
+- 5b1126c: Scene layers can retime their video. A layer whose subject is `{ "video": url }` (or a slot the host fills with a video) takes a timing effect as its `timing`, by id (`"timing": "retime-reverse"`) or with a preset and values (`{ "effect": "long-exposure", "preset": "Light trails" }`). The layer's `effect`, if any, treats the retimed picture. `validateScene` checks the timing effect, its preset and values and the subject, with refusals that say what to write; a timing id in `effect` now points at `timing`. `scenePlan` carries it as the layer's `timing` (`{ effect, values }`, in the plan's JSON Schema), and `SceneCompositor`, `mountScene`, `recordScene` and the standalone scene page draw it with `TimingRenderer`. For agents, the new `retime_layer` scene tool sets or removes a layer's timing, `find_layer_effects` lists timing effects (`kind: "timing"`, `goesIn: "timing"`), and the outline shows each layer's timing.
+
 ## 0.98.0
 
 ### Minor Changes

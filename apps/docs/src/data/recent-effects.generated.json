@@ -1,5 +1,488 @@
 [
   {
+    "id": "long-exposure",
+    "name": "Long exposure",
+    "kind": "timing",
+    "category": "timing",
+    "description": "Footage seen through a shutter held open: moving water turns silky and crowds melt away, or the brightest lights draw streaks, while whatever stays still stays sharp.",
+    "tags": [
+      "timing",
+      "long-exposure",
+      "light-trails",
+      "motion-blur",
+      "photography",
+      "silky",
+      "night",
+      "video"
+    ],
+    "controls": [
+      {
+        "n": "exposure",
+        "t": "float",
+        "d": 1.5,
+        "l": "Exposure (s)",
+        "min": 0.1,
+        "max": 10,
+        "s": 0.1,
+        "b": 3,
+        "line": 1
+      },
+      {
+        "n": "lighten",
+        "t": "bool",
+        "d": false,
+        "l": "Light trails (brightest wins)",
+        "s": 0.01,
+        "line": 2
+      },
+      {
+        "n": "fade",
+        "t": "float",
+        "d": 0,
+        "l": "Fade older frames",
+        "s": 0.05,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "build",
+        "t": "bool",
+        "d": false,
+        "l": "Build from the start",
+        "s": 0.01,
+        "line": 4
+      }
+    ],
+    "presets": [
+      "Silky water",
+      "Light trails",
+      "Empty streets",
+      "Building trails"
+    ],
+    "inputs": {
+      "accepts": [
+        "video"
+      ],
+      "images": [
+        {
+          "name": "footage",
+          "label": "Footage",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "timing",
+    "addedAt": "2026-11-03T21:01:49Z",
+    "commitHash": "215aa619b6e440456254cdb6285124bf4211f68b",
+    "order": 631
+  },
+  {
+    "id": "frame-echo",
+    "name": "Frame echo",
+    "kind": "timing",
+    "category": "timing",
+    "description": "Each frame of footage with fading copies of the frames just before it, so moving things leave a trail of ghosts.",
+    "tags": [
+      "timing",
+      "echo",
+      "ghost",
+      "trail",
+      "onion-skin",
+      "video"
+    ],
+    "controls": [
+      {
+        "n": "echoes",
+        "t": "int",
+        "d": 4,
+        "min": 1,
+        "max": 8,
+        "b": 3,
+        "line": 1
+      },
+      {
+        "n": "spacing",
+        "t": "float",
+        "d": 0.1,
+        "l": "Spacing (s)",
+        "min": 0.02,
+        "max": 0.5,
+        "s": 0.01,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "decay",
+        "t": "float",
+        "d": 0.6,
+        "l": "Each echo's strength",
+        "min": 0.1,
+        "max": 0.95,
+        "s": 0.05,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "lighten",
+        "t": "bool",
+        "d": false,
+        "l": "Brightest wins",
+        "s": 0.01,
+        "line": 4
+      }
+    ],
+    "presets": [
+      "Onion skin",
+      "Light ghosts"
+    ],
+    "inputs": {
+      "accepts": [
+        "video"
+      ],
+      "images": [
+        {
+          "name": "footage",
+          "label": "Footage",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "timing",
+    "addedAt": "2026-11-03T21:01:49Z",
+    "commitHash": "215aa619b6e440456254cdb6285124bf4211f68b",
+    "order": 630
+  },
+  {
+    "id": "retime-step",
+    "name": "Step frames",
+    "kind": "timing",
+    "category": "timing",
+    "description": "Footage that holds each frame a while at a low frame rate, for a choppy stop-motion or animated-on-twos look.",
+    "tags": [
+      "timing",
+      "retime",
+      "frame-rate",
+      "stop-motion",
+      "choppy",
+      "on-twos",
+      "video"
+    ],
+    "controls": [
+      {
+        "n": "rate",
+        "t": "float",
+        "d": 8,
+        "l": "Frames per second",
+        "min": 2,
+        "max": 24,
+        "s": 1,
+        "b": 3,
+        "line": 1
+      }
+    ],
+    "presets": [
+      "On twos",
+      "Stop motion",
+      "Slideshow"
+    ],
+    "inputs": {
+      "accepts": [
+        "video"
+      ],
+      "images": [
+        {
+          "name": "footage",
+          "label": "Footage",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "timing",
+    "addedAt": "2026-11-03T21:01:49Z",
+    "commitHash": "215aa619b6e440456254cdb6285124bf4211f68b",
+    "order": 629
+  },
+  {
+    "id": "retime-stutter",
+    "name": "Stutter",
+    "kind": "timing",
+    "category": "timing",
+    "description": "Footage that catches on short snatches, replaying each a few times before it moves on, like a skipping record.",
+    "tags": [
+      "timing",
+      "retime",
+      "stutter",
+      "repeat",
+      "glitch",
+      "skip",
+      "music-video",
+      "video"
+    ],
+    "controls": [
+      {
+        "n": "chunk",
+        "t": "float",
+        "d": 0.16,
+        "l": "Snatch (s)",
+        "min": 0.04,
+        "s": 0.01,
+        "b": 3,
+        "line": 1
+      },
+      {
+        "n": "repeats",
+        "t": "int",
+        "d": 3,
+        "l": "Plays of each snatch",
+        "min": 2,
+        "max": 8,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "every",
+        "t": "int",
+        "d": 4,
+        "l": "Stutter every (snatches)",
+        "min": 1,
+        "max": 8,
+        "b": 3,
+        "line": 3
+      }
+    ],
+    "presets": [
+      "Glitch",
+      "Beat repeat"
+    ],
+    "inputs": {
+      "accepts": [
+        "video"
+      ],
+      "images": [
+        {
+          "name": "footage",
+          "label": "Footage",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "timing",
+    "addedAt": "2026-11-03T21:01:49Z",
+    "commitHash": "215aa619b6e440456254cdb6285124bf4211f68b",
+    "order": 628
+  },
+  {
+    "id": "retime-freeze",
+    "name": "Freeze frame",
+    "kind": "timing",
+    "category": "timing",
+    "description": "Footage that stops dead on one frame, holds it, then plays on from where it stopped.",
+    "tags": [
+      "timing",
+      "retime",
+      "freeze",
+      "freeze-frame",
+      "hold",
+      "pause",
+      "video"
+    ],
+    "controls": [
+      {
+        "n": "at",
+        "t": "float",
+        "d": 0.5,
+        "l": "Freeze at (share of the footage)",
+        "s": 0.01,
+        "b": 3,
+        "line": 1
+      },
+      {
+        "n": "hold",
+        "t": "float",
+        "d": 1.5,
+        "l": "Hold (s)",
+        "min": 0.1,
+        "max": 10,
+        "s": 0.1,
+        "b": 3,
+        "line": 2
+      }
+    ],
+    "presets": [
+      "Beat",
+      "Long hold",
+      "Opening still"
+    ],
+    "inputs": {
+      "accepts": [
+        "video"
+      ],
+      "images": [
+        {
+          "name": "footage",
+          "label": "Footage",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "timing",
+    "addedAt": "2026-11-03T21:01:49Z",
+    "commitHash": "215aa619b6e440456254cdb6285124bf4211f68b",
+    "order": 627
+  },
+  {
+    "id": "retime-boomerang",
+    "name": "Boomerang",
+    "kind": "timing",
+    "category": "timing",
+    "description": "Footage played forwards then backwards, again and again, sped up like a social-media boomerang.",
+    "tags": [
+      "timing",
+      "retime",
+      "boomerang",
+      "loop",
+      "ping-pong",
+      "reverse",
+      "social",
+      "video"
+    ],
+    "controls": [
+      {
+        "n": "speed",
+        "t": "float",
+        "d": 1.5,
+        "l": "Speed (×)",
+        "min": 0.5,
+        "max": 4,
+        "s": 0.05,
+        "b": 3,
+        "line": 1
+      },
+      {
+        "n": "loops",
+        "t": "int",
+        "d": 2,
+        "l": "There and back",
+        "min": 1,
+        "max": 5,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "smooth",
+        "t": "bool",
+        "d": false,
+        "l": "Blend frames",
+        "s": 0.01,
+        "line": 3
+      }
+    ],
+    "presets": [
+      "Quick",
+      "Lazy"
+    ],
+    "inputs": {
+      "accepts": [
+        "video"
+      ],
+      "images": [
+        {
+          "name": "footage",
+          "label": "Footage",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "timing",
+    "addedAt": "2026-11-03T21:01:49Z",
+    "commitHash": "215aa619b6e440456254cdb6285124bf4211f68b",
+    "order": 626
+  },
+  {
+    "id": "retime-reverse",
+    "name": "Reverse",
+    "kind": "timing",
+    "category": "timing",
+    "description": "Footage played backwards from its last frame to its first.",
+    "tags": [
+      "timing",
+      "retime",
+      "reverse",
+      "rewind",
+      "backwards",
+      "video"
+    ],
+    "controls": [
+      {
+        "n": "speed",
+        "t": "float",
+        "d": 1,
+        "l": "Speed (×)",
+        "min": 0.25,
+        "max": 4,
+        "s": 0.05,
+        "b": 3,
+        "line": 1
+      },
+      {
+        "n": "smooth",
+        "t": "bool",
+        "d": true,
+        "l": "Blend frames",
+        "s": 0.01,
+        "line": 2
+      }
+    ],
+    "presets": [
+      "Rewind",
+      "Slow reverse"
+    ],
+    "inputs": {
+      "accepts": [
+        "video"
+      ],
+      "images": [
+        {
+          "name": "footage",
+          "label": "Footage",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "timing",
+    "addedAt": "2026-11-03T21:01:49Z",
+    "commitHash": "215aa619b6e440456254cdb6285124bf4211f68b",
+    "order": 625
+  },
+  {
     "id": "retime-ramp",
     "name": "Speed ramp",
     "kind": "timing",
@@ -98,492 +581,9 @@
     },
     "animated": true,
     "module": "timing",
-    "addedAt": "2026-11-03T21:01:26.438Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "retime-reverse",
-    "name": "Reverse",
-    "kind": "timing",
-    "category": "timing",
-    "description": "Footage played backwards from its last frame to its first.",
-    "tags": [
-      "timing",
-      "retime",
-      "reverse",
-      "rewind",
-      "backwards",
-      "video"
-    ],
-    "controls": [
-      {
-        "n": "speed",
-        "t": "float",
-        "d": 1,
-        "l": "Speed (×)",
-        "min": 0.25,
-        "max": 4,
-        "s": 0.05,
-        "b": 3,
-        "line": 1
-      },
-      {
-        "n": "smooth",
-        "t": "bool",
-        "d": true,
-        "l": "Blend frames",
-        "s": 0.01,
-        "line": 2
-      }
-    ],
-    "presets": [
-      "Rewind",
-      "Slow reverse"
-    ],
-    "inputs": {
-      "accepts": [
-        "video"
-      ],
-      "images": [
-        {
-          "name": "footage",
-          "label": "Footage",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "timing",
-    "addedAt": "2026-11-03T21:01:26.438Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "retime-boomerang",
-    "name": "Boomerang",
-    "kind": "timing",
-    "category": "timing",
-    "description": "Footage played forwards then backwards, again and again, sped up like a social-media boomerang.",
-    "tags": [
-      "timing",
-      "retime",
-      "boomerang",
-      "loop",
-      "ping-pong",
-      "reverse",
-      "social",
-      "video"
-    ],
-    "controls": [
-      {
-        "n": "speed",
-        "t": "float",
-        "d": 1.5,
-        "l": "Speed (×)",
-        "min": 0.5,
-        "max": 4,
-        "s": 0.05,
-        "b": 3,
-        "line": 1
-      },
-      {
-        "n": "loops",
-        "t": "int",
-        "d": 2,
-        "l": "There and back",
-        "min": 1,
-        "max": 5,
-        "b": 3,
-        "line": 2
-      },
-      {
-        "n": "smooth",
-        "t": "bool",
-        "d": false,
-        "l": "Blend frames",
-        "s": 0.01,
-        "line": 3
-      }
-    ],
-    "presets": [
-      "Quick",
-      "Lazy"
-    ],
-    "inputs": {
-      "accepts": [
-        "video"
-      ],
-      "images": [
-        {
-          "name": "footage",
-          "label": "Footage",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "timing",
-    "addedAt": "2026-11-03T21:01:26.438Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "retime-freeze",
-    "name": "Freeze frame",
-    "kind": "timing",
-    "category": "timing",
-    "description": "Footage that stops dead on one frame, holds it, then plays on from where it stopped.",
-    "tags": [
-      "timing",
-      "retime",
-      "freeze",
-      "freeze-frame",
-      "hold",
-      "pause",
-      "video"
-    ],
-    "controls": [
-      {
-        "n": "at",
-        "t": "float",
-        "d": 0.5,
-        "l": "Freeze at (share of the footage)",
-        "s": 0.01,
-        "b": 3,
-        "line": 1
-      },
-      {
-        "n": "hold",
-        "t": "float",
-        "d": 1.5,
-        "l": "Hold (s)",
-        "min": 0.1,
-        "max": 10,
-        "s": 0.1,
-        "b": 3,
-        "line": 2
-      }
-    ],
-    "presets": [
-      "Beat",
-      "Long hold",
-      "Opening still"
-    ],
-    "inputs": {
-      "accepts": [
-        "video"
-      ],
-      "images": [
-        {
-          "name": "footage",
-          "label": "Footage",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "timing",
-    "addedAt": "2026-11-03T21:01:26.438Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "retime-stutter",
-    "name": "Stutter",
-    "kind": "timing",
-    "category": "timing",
-    "description": "Footage that catches on short snatches, replaying each a few times before it moves on, like a skipping record.",
-    "tags": [
-      "timing",
-      "retime",
-      "stutter",
-      "repeat",
-      "glitch",
-      "skip",
-      "music-video",
-      "video"
-    ],
-    "controls": [
-      {
-        "n": "chunk",
-        "t": "float",
-        "d": 0.16,
-        "l": "Snatch (s)",
-        "min": 0.04,
-        "s": 0.01,
-        "b": 3,
-        "line": 1
-      },
-      {
-        "n": "repeats",
-        "t": "int",
-        "d": 3,
-        "l": "Plays of each snatch",
-        "min": 2,
-        "max": 8,
-        "b": 3,
-        "line": 2
-      },
-      {
-        "n": "every",
-        "t": "int",
-        "d": 4,
-        "l": "Stutter every (snatches)",
-        "min": 1,
-        "max": 8,
-        "b": 3,
-        "line": 3
-      }
-    ],
-    "presets": [
-      "Glitch",
-      "Beat repeat"
-    ],
-    "inputs": {
-      "accepts": [
-        "video"
-      ],
-      "images": [
-        {
-          "name": "footage",
-          "label": "Footage",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "timing",
-    "addedAt": "2026-11-03T21:01:26.438Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "retime-step",
-    "name": "Step frames",
-    "kind": "timing",
-    "category": "timing",
-    "description": "Footage that holds each frame a while at a low frame rate, for a choppy stop-motion or animated-on-twos look.",
-    "tags": [
-      "timing",
-      "retime",
-      "frame-rate",
-      "stop-motion",
-      "choppy",
-      "on-twos",
-      "video"
-    ],
-    "controls": [
-      {
-        "n": "rate",
-        "t": "float",
-        "d": 8,
-        "l": "Frames per second",
-        "min": 2,
-        "max": 24,
-        "s": 1,
-        "b": 3,
-        "line": 1
-      }
-    ],
-    "presets": [
-      "On twos",
-      "Stop motion",
-      "Slideshow"
-    ],
-    "inputs": {
-      "accepts": [
-        "video"
-      ],
-      "images": [
-        {
-          "name": "footage",
-          "label": "Footage",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "timing",
-    "addedAt": "2026-11-03T21:01:26.438Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "frame-echo",
-    "name": "Frame echo",
-    "kind": "timing",
-    "category": "timing",
-    "description": "Each frame of footage with fading copies of the frames just before it, so moving things leave a trail of ghosts.",
-    "tags": [
-      "timing",
-      "echo",
-      "ghost",
-      "trail",
-      "onion-skin",
-      "video"
-    ],
-    "controls": [
-      {
-        "n": "echoes",
-        "t": "int",
-        "d": 4,
-        "min": 1,
-        "max": 8,
-        "b": 3,
-        "line": 1
-      },
-      {
-        "n": "spacing",
-        "t": "float",
-        "d": 0.1,
-        "l": "Spacing (s)",
-        "min": 0.02,
-        "max": 0.5,
-        "s": 0.01,
-        "b": 3,
-        "line": 2
-      },
-      {
-        "n": "decay",
-        "t": "float",
-        "d": 0.6,
-        "l": "Each echo's strength",
-        "min": 0.1,
-        "max": 0.95,
-        "s": 0.05,
-        "b": 3,
-        "line": 3
-      },
-      {
-        "n": "lighten",
-        "t": "bool",
-        "d": false,
-        "l": "Brightest wins",
-        "s": 0.01,
-        "line": 4
-      }
-    ],
-    "presets": [
-      "Onion skin",
-      "Light ghosts"
-    ],
-    "inputs": {
-      "accepts": [
-        "video"
-      ],
-      "images": [
-        {
-          "name": "footage",
-          "label": "Footage",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "timing",
-    "addedAt": "2026-11-03T21:01:26.438Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "long-exposure",
-    "name": "Long exposure",
-    "kind": "timing",
-    "category": "timing",
-    "description": "Footage seen through a shutter held open: moving water turns silky and crowds melt away, or the brightest lights draw streaks, while whatever stays still stays sharp.",
-    "tags": [
-      "timing",
-      "long-exposure",
-      "light-trails",
-      "motion-blur",
-      "photography",
-      "silky",
-      "night",
-      "video"
-    ],
-    "controls": [
-      {
-        "n": "exposure",
-        "t": "float",
-        "d": 1.5,
-        "l": "Exposure (s)",
-        "min": 0.1,
-        "max": 10,
-        "s": 0.1,
-        "b": 3,
-        "line": 1
-      },
-      {
-        "n": "lighten",
-        "t": "bool",
-        "d": false,
-        "l": "Light trails (brightest wins)",
-        "s": 0.01,
-        "line": 2
-      },
-      {
-        "n": "fade",
-        "t": "float",
-        "d": 0,
-        "l": "Fade older frames",
-        "s": 0.05,
-        "b": 3,
-        "line": 3
-      },
-      {
-        "n": "build",
-        "t": "bool",
-        "d": false,
-        "l": "Build from the start",
-        "s": 0.01,
-        "line": 4
-      }
-    ],
-    "presets": [
-      "Silky water",
-      "Light trails",
-      "Empty streets",
-      "Building trails"
-    ],
-    "inputs": {
-      "accepts": [
-        "video"
-      ],
-      "images": [
-        {
-          "name": "footage",
-          "label": "Footage",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "timing",
-    "addedAt": "2026-11-03T21:01:26.438Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-11-03T21:01:49Z",
+    "commitHash": "215aa619b6e440456254cdb6285124bf4211f68b",
+    "order": 624
   },
   {
     "id": "retime-speed",
@@ -643,9 +643,9 @@
     },
     "animated": true,
     "module": "timing",
-    "addedAt": "2026-11-03T21:01:26.437Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-11-03T21:01:49Z",
+    "commitHash": "215aa619b6e440456254cdb6285124bf4211f68b",
+    "order": 623
   },
   {
     "id": "wireframe-reveal",
