@@ -2,6 +2,7 @@
   import { onDestroy, onMount } from "svelte";
   import { sharedThumbnailPool, SvgPlayer, ThumbnailPool, type ThumbnailHandle } from "@pixerate/flair";
   import { CAMERA_PREVIEW_SOURCE, cameraPreviewValues, effectDefaults, renderVectorEffect, SAMPLE_IMAGES } from "@pixerate/flair/catalog";
+  import { mountEffect } from "@pixerate/flair/embed";
   import { loadEffect, type EffectMeta } from "@pixerate/flair/catalog/lazy";
   import { abPictures } from "../lib/abPictures";
   import { showsOverPicture } from "../lib/overPicture";
@@ -12,6 +13,7 @@
   let containerEl: HTMLDivElement;
   let canvasEl: HTMLCanvasElement;
   let vectorHostEl: HTMLDivElement;
+  let timingHostEl: HTMLDivElement;
   let cursorEl: HTMLDivElement;
   let ringEl: HTMLSpanElement;
 
@@ -22,6 +24,8 @@
   let svgPlayer: SvgPlayer | null = null;
   let stopDemo: (() => void) | null = null;
   let observer: IntersectionObserver | null = null;
+  /** Plays or pauses a timing effect's preview with the hover, when motion is reduced. */
+  let timingHover: ((on: boolean) => void) | null = null;
   /** When a vector demo starts over after a real hover. */
   let restartAt = 0;
 
@@ -43,6 +47,7 @@
     if (on && cursorEl) cursorEl.style.opacity = "0";
     else restartAt = performance.now() + 1200;
     if (trigger === "hover" || trigger === "press") svgPlayer?.setActive(on);
+    timingHover?.(on);
   }
 
   async function start() {
@@ -71,6 +76,19 @@
         };
         raf = requestAnimationFrame(step);
         stopDemo = () => cancelAnimationFrame(raf);
+      } else if (effect.kind === "timing") {
+        // A timing effect retimes Flair's preview clip, whose clock shows the footage's own time.
+        const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const mounted = mountEffect(timingHostEl, effect, { autoplay: !reduced || hovered });
+        timingHover = (on) => {
+          if (!reduced) return;
+          if (on) mounted.play();
+          else mounted.pause();
+        };
+        stopDemo = () => {
+          timingHover = null;
+          mounted.dispose();
+        };
       } else {
         // The player listens to nothing: the card's hover and the demo below drive it.
         svgPlayer = new SvgPlayer(vectorHostEl, renderVectorEffect(effect, effectDefaults(effect)), {
@@ -187,7 +205,9 @@
     <img src={SAMPLE_IMAGES.city} alt="" loading="lazy" class="pointer-events-none absolute inset-0 h-full w-full object-cover" />
   {/if}
 
-  {#if effectMeta.kind !== "vector"}
+  {#if effectMeta.kind === "timing"}
+    <div bind:this={timingHostEl} class="pointer-events-none absolute inset-0"></div>
+  {:else if effectMeta.kind !== "vector"}
     <canvas bind:this={canvasEl} class="pointer-events-none absolute inset-0 h-full w-full"></canvas>
     {#if webglFailed}
       <span class="absolute inset-0 grid place-items-center text-xs text-white/50">Needs WebGL2</span>
