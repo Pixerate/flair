@@ -104,7 +104,7 @@ const LITE_TAPS = 10;
  * in {@link LITE_TAPS} taps a little higher up the mip chain, for wide blurs
  * where the difference does not show.
  */
-const MASK_FAST = `
+export const MASK_FAST = `
 vec3 gKeyColour;
 float gKeyTolerance;
 // Picture units per frame unit (xy), texels per frame unit (z), 1 with a picture (w).
