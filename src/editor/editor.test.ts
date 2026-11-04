@@ -248,6 +248,28 @@ describe("commands and agent tools", () => {
     expect(editor.commands.execute("values.set", { values: { uBlush: 1 } })).toMatchObject({ ok: false, message: expect.stringMatching(/uBlush/) });
   });
 
+  it("lets agents find the anime effects, load one and tune it within its controls", async () => {
+    const editor = createEffectEditor({ from: "aurora" });
+    const provider = createEffectToolProvider(editor);
+    type Search = { total: number; effects: { id: string; category: string }[] };
+    const found = await callTool(provider, "run_command", { id: "catalog.search", params: { category: "anime", limit: 50 } });
+    expect(found.isError).toBeFalsy();
+    const { result } = found.structuredContent as { result: Search };
+    expect(result.effects.map((e) => e.id)).toEqual(
+      expect.arrayContaining(["manga-tone", "anime-sky", "sakura-petals", "shoujo-sparkles", "gloom-lines", "focus-lines", "menacing", "eyecatch", "anime-emotes"]),
+    );
+    expect(result.effects.every((e) => e.category === "anime")).toBe(true);
+
+    // A misspelt category is refused, naming the ones that are.
+    const wrong = await callTool(provider, "run_command", { id: "catalog.search", params: { category: "animé" } });
+    expect(wrong.isError).toBe(true);
+    expect(JSON.stringify(wrong)).toContain("anime");
+
+    expect(editor.commands.execute("effect.load", { id: "sakura-petals" })).toMatchObject({ ok: true });
+    expect(editor.commands.execute("values.set", { values: { uDensity: 0.8, uWind: -0.5 } })).toMatchObject({ ok: true });
+    expect(editor.commands.execute("values.set", { values: { uDensity: 4 } })).toMatchObject({ ok: false, message: expect.stringMatching(/uDensity/) });
+  });
+
   it("lets agents find the horror effects, load one and tune it within its controls", async () => {
     const editor = createEffectEditor({ from: "aurora" });
     const provider = createEffectToolProvider(editor);

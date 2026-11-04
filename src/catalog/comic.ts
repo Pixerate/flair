@@ -531,7 +531,7 @@ export const animeEmotes: VectorEffect = {
   id: "anime-emotes",
   name: "Anime emotes",
   description: "Anime and manga emote symbols, picked by number: a pulsing anger vein, a sliding sweat drop, twinkling sparkles or a popping exclamation mark.",
-  category: "comic",
+  category: "anime",
   tags: ["comic", "cartoon", "anime", "manga", "emote", "reaction", "icon", "loop"],
   hold: 0,
   presets: [

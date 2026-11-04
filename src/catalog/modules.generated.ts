@@ -2,6 +2,7 @@
 // Each catalog module that holds effects, loaded on demand by `loadEffect`.
 
 export const EFFECT_MODULES: Record<string, () => Promise<Record<string, unknown>>> = {
+  "anime": () => import("./anime.js"),
   "annotation": () => import("./annotation.js"),
   "beauty": () => import("./beauty.js"),
   "broadcast": () => import("./broadcast.js"),
@@ -27,6 +28,7 @@ export const EFFECT_MODULES: Record<string, () => Promise<Record<string, unknown
   "promo": () => import("./promo.js"),
   "pyro": () => import("./pyro.js"),
   "scroll": () => import("./scroll.js"),
+  "shaders/anime": () => import("./shaders/anime.js"),
   "shaders/atmosphere": () => import("./shaders/atmosphere.js"),
   "shaders/audio": () => import("./shaders/audio.js"),
   "shaders/beauty": () => import("./shaders/beauty.js"),
