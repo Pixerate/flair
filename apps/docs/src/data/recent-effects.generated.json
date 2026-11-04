@@ -1,5 +1,608 @@
 [
   {
+    "id": "eyecatch",
+    "name": "Eyecatch",
+    "kind": "vector",
+    "category": "anime",
+    "description": "An anime eyecatch card, the bumper either side of an ad break: two diagonal colour bands slash across from opposite sides, a starburst spins open and the show's title slams in over it with its subtitle, holds, then everything sweeps away.",
+    "tags": [
+      "anime",
+      "eyecatch",
+      "title",
+      "bumper",
+      "episode",
+      "text",
+      "broadcast",
+      "loop"
+    ],
+    "controls": [
+      {
+        "n": "title",
+        "t": "text",
+        "d": "SUMMER ARC",
+        "line": 1
+      },
+      {
+        "n": "subtitle",
+        "t": "text",
+        "d": "Episode 12",
+        "line": 2
+      },
+      {
+        "n": "background",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            246,
+            234
+          ]
+        },
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "band1",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            79,
+            139
+          ]
+        },
+        "l": "First band",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "band2",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            201,
+            60
+          ]
+        },
+        "l": "Second band",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "burst",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "letters",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "ink",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            27,
+            26,
+            51
+          ]
+        },
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "font",
+        "t": "text",
+        "d": "'Bangers', 'Luckiest Guy', Impact, 'Arial Black', sans-serif",
+        "line": 9
+      }
+    ],
+    "presets": [
+      "Mecha",
+      "Slice of life"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "title",
+          "label": "Title",
+          "holds": "copy",
+          "default": "SUMMER ARC"
+        },
+        {
+          "name": "subtitle",
+          "label": "Subtitle",
+          "holds": "copy",
+          "default": "Episode 12"
+        },
+        {
+          "name": "font",
+          "label": "Font",
+          "holds": "font",
+          "default": "'Bangers', 'Luckiest Guy', Impact, 'Arial Black', sans-serif"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 400,
+    "animated": true,
+    "duration": 3220,
+    "module": "anime",
+    "addedAt": "2026-11-04T01:09:37Z",
+    "commitHash": "9482b18b3d3a5db4e3e1a91902b9792f43b53bda",
+    "order": 638
+  },
+  {
+    "id": "menacing",
+    "name": "Menacing",
+    "kind": "vector",
+    "category": "anime",
+    "description": "The manga menace: heavy outlined ゴ glyphs climbing both sides of the frame, throbbing and trembling one after another while something ominous happens, on a transparent loop.",
+    "tags": [
+      "anime",
+      "manga",
+      "menacing",
+      "katakana",
+      "onomatopoeia",
+      "tension",
+      "overlay",
+      "loop"
+    ],
+    "controls": [
+      {
+        "n": "glyph",
+        "t": "text",
+        "d": "ゴ",
+        "line": 1
+      },
+      {
+        "n": "fill",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            123,
+            44,
+            191
+          ]
+        },
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "outline",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            20,
+            6,
+            31
+          ]
+        },
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "font",
+        "t": "text",
+        "d": "'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic', 'Meiryo', sans-serif",
+        "line": 4
+      }
+    ],
+    "presets": [
+      "Rumble (ドドド)",
+      "Shock (ザワ)"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "glyph",
+          "label": "Glyph",
+          "holds": "copy",
+          "default": "ゴ"
+        },
+        {
+          "name": "font",
+          "label": "Font",
+          "holds": "font",
+          "default": "'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic', 'Meiryo', sans-serif"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 0,
+    "animated": true,
+    "duration": 1800,
+    "module": "anime",
+    "addedAt": "2026-11-04T01:09:37Z",
+    "commitHash": "9482b18b3d3a5db4e3e1a91902b9792f43b53bda",
+    "order": 637
+  },
+  {
+    "id": "gloom-lines",
+    "name": "Gloom lines",
+    "kind": "shader",
+    "category": "anime",
+    "description": "The manga gloom over a character's despair: wavering vertical lines hanging down from the top of the frame into a shadow that darkens towards it, swaying slowly.",
+    "tags": [
+      "anime",
+      "manga",
+      "gloom",
+      "despair",
+      "sad",
+      "reaction",
+      "overlay",
+      "line"
+    ],
+    "controls": [
+      {
+        "n": "uInk",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            30,
+            26,
+            46
+          ]
+        },
+        "l": "Lines",
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "uShade",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            63,
+            53,
+            96
+          ]
+        },
+        "l": "Shadow",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uShadow",
+        "t": "float",
+        "d": 0.55,
+        "l": "Shadow strength",
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uLines",
+        "t": "float",
+        "d": 46,
+        "min": 10,
+        "max": 120,
+        "s": 1,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uLength",
+        "t": "float",
+        "d": 0.45,
+        "l": "Line length",
+        "min": 0.1,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uThickness",
+        "t": "float",
+        "d": 2,
+        "l": "Thickness (px)",
+        "min": 0.5,
+        "max": 6,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uSway",
+        "t": "float",
+        "d": 0.4,
+        "b": 3,
+        "line": 8
+      }
+    ],
+    "presets": [
+      "Purple funk",
+      "Lines only",
+      "Ghost white"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": true
+    },
+    "transparent": true,
+    "animated": true,
+    "module": "shaders/anime",
+    "addedAt": "2026-11-04T01:09:37Z",
+    "commitHash": "9482b18b3d3a5db4e3e1a91902b9792f43b53bda",
+    "order": 636
+  },
+  {
+    "id": "shoujo-sparkles",
+    "name": "Shoujo sparkles",
+    "kind": "shader",
+    "category": "anime",
+    "description": "A shoujo manga backdrop: a soft pastel gradient filled with rising rimmed bubbles and long-rayed sparkles twinkling, the dreamy screen behind a romantic close-up.",
+    "tags": [
+      "anime",
+      "manga",
+      "shoujo",
+      "sparkle",
+      "bubble",
+      "romance",
+      "dreamy",
+      "background",
+      "overlay"
+    ],
+    "controls": [
+      {
+        "n": "uTop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            217,
+            236
+          ]
+        },
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "uBottom",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            231,
+            218,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Background opacity",
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uBubble",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "l": "Bubbles",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uSparkle",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "l": "Sparkles",
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "uBubbles",
+        "t": "float",
+        "d": 0.5,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uSparkles",
+        "t": "float",
+        "d": 0.6,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uSpeed",
+        "t": "float",
+        "d": 0.6,
+        "max": 2,
+        "b": 3,
+        "line": 9
+      }
+    ],
+    "presets": [
+      "Overlay",
+      "Lavender",
+      "Night"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "shaders/anime",
+    "addedAt": "2026-11-04T01:09:37Z",
+    "commitHash": "9482b18b3d3a5db4e3e1a91902b9792f43b53bda",
+    "order": 635
+  },
+  {
+    "id": "sakura-petals",
+    "name": "Sakura petals",
+    "kind": "shader",
+    "category": "anime",
+    "description": "Cherry blossom petals drifting down on a breeze at three depths, each notched petal fluttering and flipping over as it falls.",
+    "tags": [
+      "anime",
+      "sakura",
+      "cherry-blossom",
+      "petals",
+      "spring",
+      "japan",
+      "overlay",
+      "particles"
+    ],
+    "controls": [
+      {
+        "n": "uPetal",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            200,
+            217
+          ]
+        },
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "uPetalBase",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            240,
+            129,
+            159
+          ]
+        },
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            191,
+            228,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 0,
+        "l": "Background opacity",
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uDensity",
+        "t": "float",
+        "d": 0.45,
+        "min": 0.1,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 0.03,
+        "l": "Petal size",
+        "min": 0.01,
+        "max": 0.06,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uFall",
+        "t": "float",
+        "d": 0.12,
+        "l": "Fall speed",
+        "max": 0.5,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uWind",
+        "t": "float",
+        "d": 0.3,
+        "min": -1,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uFlutter",
+        "t": "float",
+        "d": 1,
+        "max": 2,
+        "b": 3,
+        "line": 10
+      }
+    ],
+    "presets": [
+      "Spring sky",
+      "Storm of petals",
+      "White plum"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": true
+    },
+    "transparent": true,
+    "animated": true,
+    "module": "shaders/anime",
+    "addedAt": "2026-11-04T01:09:37Z",
+    "commitHash": "9482b18b3d3a5db4e3e1a91902b9792f43b53bda",
+    "order": 634
+  },
+  {
     "id": "anime-sky",
     "name": "Anime sky",
     "kind": "shader",
@@ -161,612 +764,9 @@
     },
     "animated": true,
     "module": "shaders/anime",
-    "addedAt": "2026-11-04T01:09:01.942Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "sakura-petals",
-    "name": "Sakura petals",
-    "kind": "shader",
-    "category": "anime",
-    "description": "Cherry blossom petals drifting down on a breeze at three depths, each notched petal fluttering and flipping over as it falls.",
-    "tags": [
-      "anime",
-      "sakura",
-      "cherry-blossom",
-      "petals",
-      "spring",
-      "japan",
-      "overlay",
-      "particles"
-    ],
-    "controls": [
-      {
-        "n": "uPetal",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            200,
-            217
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "uPetalBase",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            240,
-            129,
-            159
-          ]
-        },
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            191,
-            228,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uBackgroundAlpha",
-        "t": "float",
-        "d": 0,
-        "l": "Background opacity",
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uDensity",
-        "t": "float",
-        "d": 0.45,
-        "min": 0.1,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uSize",
-        "t": "float",
-        "d": 0.03,
-        "l": "Petal size",
-        "min": 0.01,
-        "max": 0.06,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uFall",
-        "t": "float",
-        "d": 0.12,
-        "l": "Fall speed",
-        "max": 0.5,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uWind",
-        "t": "float",
-        "d": 0.3,
-        "min": -1,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uFlutter",
-        "t": "float",
-        "d": 1,
-        "max": 2,
-        "b": 3,
-        "line": 10
-      }
-    ],
-    "presets": [
-      "Spring sky",
-      "Storm of petals",
-      "White plum"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": true
-    },
-    "transparent": true,
-    "animated": true,
-    "module": "shaders/anime",
-    "addedAt": "2026-11-04T01:09:01.942Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "shoujo-sparkles",
-    "name": "Shoujo sparkles",
-    "kind": "shader",
-    "category": "anime",
-    "description": "A shoujo manga backdrop: a soft pastel gradient filled with rising rimmed bubbles and long-rayed sparkles twinkling, the dreamy screen behind a romantic close-up.",
-    "tags": [
-      "anime",
-      "manga",
-      "shoujo",
-      "sparkle",
-      "bubble",
-      "romance",
-      "dreamy",
-      "background",
-      "overlay"
-    ],
-    "controls": [
-      {
-        "n": "uTop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            217,
-            236
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "uBottom",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            231,
-            218,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uBackgroundAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Background opacity",
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "uBubble",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "l": "Bubbles",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uSparkle",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "l": "Sparkles",
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "uBubbles",
-        "t": "float",
-        "d": 0.5,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uSparkles",
-        "t": "float",
-        "d": 0.6,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 0.6,
-        "max": 2,
-        "b": 3,
-        "line": 9
-      }
-    ],
-    "presets": [
-      "Overlay",
-      "Lavender",
-      "Night"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "shaders/anime",
-    "addedAt": "2026-11-04T01:09:01.942Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "gloom-lines",
-    "name": "Gloom lines",
-    "kind": "shader",
-    "category": "anime",
-    "description": "The manga gloom over a character's despair: wavering vertical lines hanging down from the top of the frame into a shadow that darkens towards it, swaying slowly.",
-    "tags": [
-      "anime",
-      "manga",
-      "gloom",
-      "despair",
-      "sad",
-      "reaction",
-      "overlay",
-      "line"
-    ],
-    "controls": [
-      {
-        "n": "uInk",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            30,
-            26,
-            46
-          ]
-        },
-        "l": "Lines",
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "uShade",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            63,
-            53,
-            96
-          ]
-        },
-        "l": "Shadow",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uShadow",
-        "t": "float",
-        "d": 0.55,
-        "l": "Shadow strength",
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "uLines",
-        "t": "float",
-        "d": 46,
-        "min": 10,
-        "max": 120,
-        "s": 1,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uLength",
-        "t": "float",
-        "d": 0.45,
-        "l": "Line length",
-        "min": 0.1,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uThickness",
-        "t": "float",
-        "d": 2,
-        "l": "Thickness (px)",
-        "min": 0.5,
-        "max": 6,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uSway",
-        "t": "float",
-        "d": 0.4,
-        "b": 3,
-        "line": 8
-      }
-    ],
-    "presets": [
-      "Purple funk",
-      "Lines only",
-      "Ghost white"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": true
-    },
-    "transparent": true,
-    "animated": true,
-    "module": "shaders/anime",
-    "addedAt": "2026-11-04T01:09:01.942Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "menacing",
-    "name": "Menacing",
-    "kind": "vector",
-    "category": "anime",
-    "description": "The manga menace: heavy outlined ゴ glyphs climbing both sides of the frame, throbbing and trembling one after another while something ominous happens, on a transparent loop.",
-    "tags": [
-      "anime",
-      "manga",
-      "menacing",
-      "katakana",
-      "onomatopoeia",
-      "tension",
-      "overlay",
-      "loop"
-    ],
-    "controls": [
-      {
-        "n": "glyph",
-        "t": "text",
-        "d": "ゴ",
-        "line": 1
-      },
-      {
-        "n": "fill",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            123,
-            44,
-            191
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "outline",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            20,
-            6,
-            31
-          ]
-        },
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "font",
-        "t": "text",
-        "d": "'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic', 'Meiryo', sans-serif",
-        "line": 4
-      }
-    ],
-    "presets": [
-      "Rumble (ドドド)",
-      "Shock (ザワ)"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "glyph",
-          "label": "Glyph",
-          "holds": "copy",
-          "default": "ゴ"
-        },
-        {
-          "name": "font",
-          "label": "Font",
-          "holds": "font",
-          "default": "'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic', 'Meiryo', sans-serif"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 0,
-    "animated": true,
-    "duration": 1800,
-    "module": "anime",
-    "addedAt": "2026-11-04T01:09:01.942Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "eyecatch",
-    "name": "Eyecatch",
-    "kind": "vector",
-    "category": "anime",
-    "description": "An anime eyecatch card, the bumper either side of an ad break: two diagonal colour bands slash across from opposite sides, a starburst spins open and the show's title slams in over it with its subtitle, holds, then everything sweeps away.",
-    "tags": [
-      "anime",
-      "eyecatch",
-      "title",
-      "bumper",
-      "episode",
-      "text",
-      "broadcast",
-      "loop"
-    ],
-    "controls": [
-      {
-        "n": "title",
-        "t": "text",
-        "d": "SUMMER ARC",
-        "line": 1
-      },
-      {
-        "n": "subtitle",
-        "t": "text",
-        "d": "Episode 12",
-        "line": 2
-      },
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            246,
-            234
-          ]
-        },
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "band1",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            79,
-            139
-          ]
-        },
-        "l": "First band",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "band2",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            201,
-            60
-          ]
-        },
-        "l": "Second band",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "burst",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "letters",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 7
-      },
-      {
-        "n": "ink",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            27,
-            26,
-            51
-          ]
-        },
-        "c": 1,
-        "line": 8
-      },
-      {
-        "n": "font",
-        "t": "text",
-        "d": "'Bangers', 'Luckiest Guy', Impact, 'Arial Black', sans-serif",
-        "line": 9
-      }
-    ],
-    "presets": [
-      "Mecha",
-      "Slice of life"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "title",
-          "label": "Title",
-          "holds": "copy",
-          "default": "SUMMER ARC"
-        },
-        {
-          "name": "subtitle",
-          "label": "Subtitle",
-          "holds": "copy",
-          "default": "Episode 12"
-        },
-        {
-          "name": "font",
-          "label": "Font",
-          "holds": "font",
-          "default": "'Bangers', 'Luckiest Guy', Impact, 'Arial Black', sans-serif"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 400,
-    "animated": true,
-    "duration": 3220,
-    "module": "anime",
-    "addedAt": "2026-11-04T01:09:01.942Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-11-04T01:09:37Z",
+    "commitHash": "9482b18b3d3a5db4e3e1a91902b9792f43b53bda",
+    "order": 633
   },
   {
     "id": "manga-tone",
@@ -945,9 +945,9 @@
     "video": "filter",
     "animated": false,
     "module": "shaders/anime",
-    "addedAt": "2026-11-04T01:09:01.941Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-11-04T01:09:37Z",
+    "commitHash": "9482b18b3d3a5db4e3e1a91902b9792f43b53bda",
+    "order": 632
   },
   {
     "id": "long-exposure",
