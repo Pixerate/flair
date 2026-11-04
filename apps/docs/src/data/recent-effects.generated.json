@@ -1,5 +1,2310 @@
 [
   {
+    "id": "cymatics",
+    "name": "Cymatics",
+    "kind": "shader",
+    "category": "audio",
+    "description": "Sand on a vibrating metal plate gathering into Chladni figures: the music picks the pattern, simple for low notes and intricate for high ones, and every beat throws the sand.",
+    "tags": [
+      "audio",
+      "music",
+      "cymatics",
+      "chladni",
+      "sand",
+      "pattern",
+      "science",
+      "visualizer",
+      "beat"
+    ],
+    "controls": [
+      {
+        "n": "uComplexity",
+        "t": "float",
+        "d": 6,
+        "min": 2,
+        "max": 10,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "uLine",
+        "t": "float",
+        "d": 1,
+        "l": "Line width",
+        "min": 0.3,
+        "max": 3,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "uGrain",
+        "t": "float",
+        "d": 0.006,
+        "l": "Grain size",
+        "min": 0.002,
+        "max": 0.012,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uScatter",
+        "t": "float",
+        "d": 1,
+        "l": "Beat scatter",
+        "max": 2,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uSand",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            242,
+            230,
+            201
+          ]
+        },
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "uPlate",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            30,
+            32,
+            38
+          ]
+        },
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            10,
+            10,
+            12
+          ]
+        },
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "uRound",
+        "t": "bool",
+        "d": false,
+        "l": "Round plate",
+        "line": 9
+      },
+      {
+        "n": "uDemo",
+        "t": "bool",
+        "d": true,
+        "l": "Demo when silent",
+        "line": 10
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Background opacity",
+        "b": 3,
+        "line": 136
+      }
+    ],
+    "presets": [
+      "Black sand",
+      "Brass",
+      "Fine salt"
+    ],
+    "inputs": {
+      "accepts": [
+        "audio"
+      ],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "shaders/audio",
+    "addedAt": "2026-11-04T11:47:05.628Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "liquid-chrome",
+    "name": "Liquid chrome",
+    "kind": "shader",
+    "category": "audio",
+    "description": "A speaker cone of mirror-like liquid metal in a studio: the bass pumps its middle, the spectrum ripples its surface, and each beat splashes drops off it.",
+    "tags": [
+      "audio",
+      "music",
+      "chrome",
+      "metal",
+      "speaker",
+      "liquid",
+      "reflection",
+      "visualizer",
+      "beat"
+    ],
+    "controls": [
+      {
+        "n": "uPump",
+        "t": "float",
+        "d": 1,
+        "l": "Bass pump",
+        "max": 2,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "uRipple",
+        "t": "float",
+        "d": 1,
+        "l": "Ripples",
+        "max": 2,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "uSplash",
+        "t": "float",
+        "d": 1,
+        "l": "Beat splash",
+        "max": 2,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uTint",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            230,
+            235,
+            245
+          ]
+        },
+        "l": "Metal tint",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uLightA",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            79,
+            216
+          ]
+        },
+        "l": "Light 1",
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "uLightB",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            56,
+            189,
+            248
+          ]
+        },
+        "l": "Light 2",
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            8,
+            8,
+            12
+          ]
+        },
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "uDemo",
+        "t": "bool",
+        "d": true,
+        "l": "Demo when silent",
+        "line": 9
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Background opacity",
+        "b": 3,
+        "line": 140
+      }
+    ],
+    "presets": [
+      "Gold",
+      "Mercury",
+      "Subwoofer"
+    ],
+    "inputs": {
+      "accepts": [
+        "audio"
+      ],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "shaders/audio",
+    "addedAt": "2026-11-04T11:47:05.628Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "aurora-curtain",
+    "name": "Aurora curtain",
+    "kind": "shader",
+    "category": "audio",
+    "description": "Curtains of northern lights over mountains and a still lake: the spectrum lifts the curtain left to right, the bass sways it, the treble shimmers its lower edge and each beat sends a pulse up the folds.",
+    "tags": [
+      "audio",
+      "music",
+      "aurora",
+      "northern-lights",
+      "sky",
+      "night",
+      "ambient",
+      "background",
+      "visualizer"
+    ],
+    "controls": [
+      {
+        "n": "uHeight",
+        "t": "float",
+        "d": 0.9,
+        "min": 0.2,
+        "max": 1.5,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "uSway",
+        "t": "float",
+        "d": 1,
+        "max": 2,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "uReact",
+        "t": "float",
+        "d": 1,
+        "l": "Reactivity",
+        "max": 2,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uColorLow",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            60,
+            245,
+            154
+          ]
+        },
+        "l": "Lower colour",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uColorHigh",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            155,
+            92,
+            255
+          ]
+        },
+        "l": "Upper colour",
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "uFringe",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            79,
+            154
+          ]
+        },
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "uSky",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            4,
+            8,
+            20
+          ]
+        },
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "uLake",
+        "t": "bool",
+        "d": true,
+        "l": "Lake reflection",
+        "line": 9
+      },
+      {
+        "n": "uDemo",
+        "t": "bool",
+        "d": true,
+        "l": "Demo when silent",
+        "line": 10
+      }
+    ],
+    "presets": [
+      "Crimson",
+      "Arctic",
+      "No lake"
+    ],
+    "inputs": {
+      "accepts": [
+        "audio"
+      ],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "shaders/audio",
+    "addedAt": "2026-11-04T11:47:05.628Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "neon-skyline",
+    "name": "Neon skyline",
+    "kind": "shader",
+    "category": "audio",
+    "description": "A synthwave city whose towers are the equaliser: a striped sun pulsing with the level, a neon grid racing with the bass, and windows that flicker on every beat.",
+    "tags": [
+      "audio",
+      "music",
+      "synthwave",
+      "retrowave",
+      "80s",
+      "city",
+      "neon",
+      "equalizer",
+      "visualizer",
+      "beat"
+    ],
+    "controls": [
+      {
+        "n": "uTowers",
+        "t": "int",
+        "d": 24,
+        "min": 8,
+        "max": 48,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "uGain",
+        "t": "float",
+        "d": 1.1,
+        "min": 0.3,
+        "max": 2.5,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "uSpeed",
+        "t": "float",
+        "d": 1,
+        "l": "Grid speed",
+        "max": 3,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uSunTop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            230,
+            109
+          ]
+        },
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uSunBottom",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            46,
+            136
+          ]
+        },
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "uNeon",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            0,
+            229,
+            255
+          ]
+        },
+        "l": "Outline",
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "uGrid",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            60,
+            172
+          ]
+        },
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "uSky",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            26,
+            11,
+            61
+          ]
+        },
+        "c": 1,
+        "line": 9
+      },
+      {
+        "n": "uDemo",
+        "t": "bool",
+        "d": true,
+        "l": "Demo when silent",
+        "line": 10
+      }
+    ],
+    "presets": [
+      "Miami",
+      "Blade",
+      "Megacity"
+    ],
+    "inputs": {
+      "accepts": [
+        "audio"
+      ],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "shaders/audio",
+    "addedAt": "2026-11-04T11:47:05.628Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "fractal-pulse",
+    "name": "Fractal pulse",
+    "kind": "shader",
+    "category": "audio",
+    "description": "A flight down a tunnel bored through an endless 3D fractal: the bass reshapes it, the treble lights its edges and each beat lurches the camera forward.",
+    "tags": [
+      "audio",
+      "music",
+      "fractal",
+      "3d",
+      "tunnel",
+      "psychedelic",
+      "raymarch",
+      "visualizer",
+      "beat"
+    ],
+    "controls": [
+      {
+        "n": "uSpeed",
+        "t": "float",
+        "d": 0.5,
+        "l": "Flight speed",
+        "max": 2,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "uMorph",
+        "t": "float",
+        "d": 1,
+        "l": "Bass morph",
+        "max": 2,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "uGlow",
+        "t": "float",
+        "d": 1,
+        "l": "Edge glow",
+        "max": 2,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uLurch",
+        "t": "float",
+        "d": 1,
+        "l": "Beat lurch",
+        "max": 2,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uSteps",
+        "t": "int",
+        "d": 72,
+        "l": "Quality (steps)",
+        "min": 32,
+        "max": 128,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uColorA",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            245,
+            158,
+            11
+          ]
+        },
+        "l": "Colour 1",
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "uColorB",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            124,
+            58,
+            237
+          ]
+        },
+        "l": "Colour 2",
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "uGlowColor",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            34,
+            211,
+            238
+          ]
+        },
+        "l": "Glow colour",
+        "c": 1,
+        "line": 9
+      },
+      {
+        "n": "uDemo",
+        "t": "bool",
+        "d": true,
+        "l": "Demo when silent",
+        "line": 10
+      }
+    ],
+    "presets": [
+      "Ember",
+      "Ice cave",
+      "Fast"
+    ],
+    "inputs": {
+      "accepts": [
+        "audio"
+      ],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "shaders/audio",
+    "addedAt": "2026-11-04T11:47:05.628Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "ferrofluid-spikes",
+    "name": "Ferrofluid spikes",
+    "kind": "shader",
+    "category": "audio",
+    "description": "A puddle of glossy black magnetic fluid standing up in hexagonal spikes: the spectrum sets their height from the middle (bass) out (treble), each beat pulses the magnet and the treble sets the tips swaying.",
+    "tags": [
+      "audio",
+      "music",
+      "ferrofluid",
+      "magnetic",
+      "liquid",
+      "spikes",
+      "3d",
+      "visualizer",
+      "beat"
+    ],
+    "controls": [
+      {
+        "n": "uGain",
+        "t": "float",
+        "d": 1,
+        "l": "Spike height",
+        "min": 0.3,
+        "max": 2.5,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "uPulse",
+        "t": "float",
+        "d": 1,
+        "l": "Beat pulse",
+        "max": 2,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "uSway",
+        "t": "float",
+        "d": 1,
+        "l": "Treble sway",
+        "max": 2,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uSpacing",
+        "t": "float",
+        "d": 0.11,
+        "l": "Spike spacing",
+        "min": 0.08,
+        "max": 0.2,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uLightA",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            106,
+            61
+          ]
+        },
+        "l": "Light 1",
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "uLightB",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            61,
+            169,
+            255
+          ]
+        },
+        "l": "Light 2",
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "uDish",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            217,
+            214,
+            207
+          ]
+        },
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            12,
+            12,
+            16
+          ]
+        },
+        "c": 1,
+        "line": 9
+      },
+      {
+        "n": "uDemo",
+        "t": "bool",
+        "d": true,
+        "l": "Demo when silent",
+        "line": 10
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Background opacity",
+        "b": 3,
+        "line": 141
+      }
+    ],
+    "presets": [
+      "White dish",
+      "Fine",
+      "Calm"
+    ],
+    "inputs": {
+      "accepts": [
+        "audio"
+      ],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "shaders/audio",
+    "addedAt": "2026-11-04T11:47:05.628Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "saturn-rings",
+    "name": "Saturn rings",
+    "kind": "shader",
+    "category": "audio",
+    "description": "A ringed planet whose rings are the spectrum, bin by bin, each ringlet's density following its band; the planet shadows the rings, the rings stripe the planet, the treble stirs dark spokes and each beat sends a wave out through them.",
+    "tags": [
+      "audio",
+      "music",
+      "saturn",
+      "planet",
+      "ring",
+      "space",
+      "spectrum",
+      "3d",
+      "visualizer",
+      "beat"
+    ],
+    "controls": [
+      {
+        "n": "uTilt",
+        "t": "float",
+        "d": 16,
+        "l": "Ring tilt (degrees)",
+        "min": 3,
+        "max": 40,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "uSun",
+        "t": "float",
+        "d": -0.9,
+        "l": "Sun direction",
+        "min": -3.14,
+        "max": 3.14,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "uReact",
+        "t": "float",
+        "d": 1,
+        "l": "Reactivity",
+        "max": 2,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uSpokes",
+        "t": "float",
+        "d": 1,
+        "l": "Spokes (treble)",
+        "max": 2,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uWave",
+        "t": "float",
+        "d": 1,
+        "l": "Beat wave",
+        "max": 2,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uPlanet",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            227,
+            197,
+            149
+          ]
+        },
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "uBands",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            168,
+            123,
+            79
+          ]
+        },
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "uRings",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            237,
+            226,
+            203
+          ]
+        },
+        "c": 1,
+        "line": 9
+      },
+      {
+        "n": "uStars",
+        "t": "float",
+        "d": 0.6,
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uDemo",
+        "t": "bool",
+        "d": true,
+        "l": "Demo when silent",
+        "line": 11
+      }
+    ],
+    "presets": [
+      "Edge on",
+      "Backlit",
+      "Ice giant"
+    ],
+    "inputs": {
+      "accepts": [
+        "audio"
+      ],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "shaders/audio",
+    "addedAt": "2026-11-04T11:47:05.628Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "solar-prominence",
+    "name": "Solar prominence",
+    "kind": "shader",
+    "category": "audio",
+    "description": "The edge of the sun up close: a boiling surface, and arches of glowing plasma rising off it, one to a band of the spectrum; on each beat one of them snaps in a flare of light.",
+    "tags": [
+      "audio",
+      "music",
+      "sun",
+      "solar",
+      "plasma",
+      "fire",
+      "space",
+      "visualizer",
+      "beat"
+    ],
+    "controls": [
+      {
+        "n": "uArches",
+        "t": "int",
+        "d": 7,
+        "min": 3,
+        "max": 12,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "uHeight",
+        "t": "float",
+        "d": 1,
+        "min": 0.3,
+        "max": 2,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "uBoil",
+        "t": "float",
+        "d": 1,
+        "l": "Surface boil (treble)",
+        "max": 2,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uFlare",
+        "t": "float",
+        "d": 1,
+        "l": "Beat flare",
+        "max": 2,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uSurface",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            181,
+            71
+          ]
+        },
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "uPlasma",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            77,
+            31
+          ]
+        },
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "uCorona",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            217,
+            160
+          ]
+        },
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "uSpace",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            5,
+            3,
+            7
+          ]
+        },
+        "c": 1,
+        "line": 9
+      },
+      {
+        "n": "uDemo",
+        "t": "bool",
+        "d": true,
+        "l": "Demo when silent",
+        "line": 10
+      }
+    ],
+    "presets": [
+      "H-alpha",
+      "Blue star",
+      "Tall"
+    ],
+    "inputs": {
+      "accepts": [
+        "audio"
+      ],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "shaders/audio",
+    "addedAt": "2026-11-04T11:47:05.628Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "plasma-globe",
+    "name": "Plasma globe",
+    "kind": "shader",
+    "category": "audio",
+    "description": "A plasma lamp: lightning filaments crackling from the centre to the glass, one to a band of the spectrum, jagged with the treble; on each beat they all leap to one spot on the glass as if a finger touched it.",
+    "tags": [
+      "audio",
+      "music",
+      "plasma",
+      "lightning",
+      "electric",
+      "lamp",
+      "neon",
+      "visualizer",
+      "beat"
+    ],
+    "controls": [
+      {
+        "n": "uFilaments",
+        "t": "int",
+        "d": 9,
+        "min": 4,
+        "max": 16,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "uJag",
+        "t": "float",
+        "d": 1,
+        "l": "Jaggedness",
+        "max": 2,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "uTouch",
+        "t": "float",
+        "d": 1,
+        "l": "Beat touch",
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uFilament",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            216,
+            107,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uCore",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            185,
+            230,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "uGlass",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            154,
+            165,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            5,
+            4,
+            9
+          ]
+        },
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "uDemo",
+        "t": "bool",
+        "d": true,
+        "l": "Demo when silent",
+        "line": 9
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Background opacity",
+        "b": 3,
+        "line": 129
+      }
+    ],
+    "presets": [
+      "Tesla",
+      "Inferno",
+      "Wild"
+    ],
+    "inputs": {
+      "accepts": [
+        "audio"
+      ],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "shaders/audio",
+    "addedAt": "2026-11-04T11:47:05.628Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "pulsar",
+    "name": "Pulsar",
+    "kind": "shader",
+    "category": "audio",
+    "description": "A spinning neutron star wrapped in loops of magnetic field, one to a band of the spectrum, sweeping two lighthouse beams round; each beat whites out the frame as a beam crosses it.",
+    "tags": [
+      "audio",
+      "music",
+      "pulsar",
+      "neutron-star",
+      "space",
+      "beam",
+      "magnetic",
+      "visualizer",
+      "beat"
+    ],
+    "controls": [
+      {
+        "n": "uSpin",
+        "t": "float",
+        "d": 0.8,
+        "max": 3,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "uTilt",
+        "t": "float",
+        "d": 0.7,
+        "l": "Magnetic tilt",
+        "min": 0.1,
+        "max": 1.4,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "uField",
+        "t": "float",
+        "d": 1,
+        "l": "Field lines",
+        "max": 2,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uBeam",
+        "t": "float",
+        "d": 1,
+        "l": "Beams",
+        "max": 2,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uFlash",
+        "t": "float",
+        "d": 1,
+        "l": "Beat flash",
+        "max": 2,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uStar",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            221,
+            235,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "uFieldColor",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            139,
+            92,
+            255
+          ]
+        },
+        "l": "Field",
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "uBeamColor",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            159,
+            231,
+            255
+          ]
+        },
+        "l": "Beam",
+        "c": 1,
+        "line": 9
+      },
+      {
+        "n": "uSpace",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            3,
+            3,
+            10
+          ]
+        },
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "uDemo",
+        "t": "bool",
+        "d": true,
+        "l": "Demo when silent",
+        "line": 11
+      }
+    ],
+    "presets": [
+      "Magnetar",
+      "Millisecond",
+      "Field only"
+    ],
+    "inputs": {
+      "accepts": [
+        "audio"
+      ],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "shaders/audio",
+    "addedAt": "2026-11-04T11:47:05.628Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "nebula-pillars",
+    "name": "Nebula pillars",
+    "kind": "shader",
+    "category": "audio",
+    "description": "Dark pillars of dust in a glowing nebula, its gases lit by the music: red by the bass, teal by the mids, blue by the treble; on each beat a newborn star in a pillar's head flares and lights its edges.",
+    "tags": [
+      "audio",
+      "music",
+      "nebula",
+      "space",
+      "pillars",
+      "gas",
+      "background",
+      "ambient",
+      "visualizer",
+      "beat"
+    ],
+    "controls": [
+      {
+        "n": "uDrift",
+        "t": "float",
+        "d": 0.3,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "uReact",
+        "t": "float",
+        "d": 1,
+        "l": "Reactivity",
+        "max": 2,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "uPillars",
+        "t": "float",
+        "d": 1,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uFlare",
+        "t": "float",
+        "d": 1,
+        "l": "Beat flare",
+        "max": 2,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uBassGas",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            59,
+            78
+          ]
+        },
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "uMidGas",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            46,
+            230,
+            201
+          ]
+        },
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "uHighGas",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            77,
+            124,
+            255
+          ]
+        },
+        "l": "Treble gas",
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "uDust",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            30,
+            18,
+            13
+          ]
+        },
+        "c": 1,
+        "line": 9
+      },
+      {
+        "n": "uDemo",
+        "t": "bool",
+        "d": true,
+        "l": "Demo when silent",
+        "line": 10
+      }
+    ],
+    "presets": [
+      "Hubble palette",
+      "No pillars",
+      "Still"
+    ],
+    "inputs": {
+      "accepts": [
+        "audio"
+      ],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "shaders/audio",
+    "addedAt": "2026-11-04T11:47:05.628Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "black-hole-silhouette",
+    "name": "Black hole silhouette",
+    "kind": "shader",
+    "category": "audio",
+    "description": "Any shape or word as a black hole: an accretion disk of the spectrum hugging its outline (treble close in, bass far out), lensed up over the top and under the bottom, a photon ring tracing its edge and the stars bent round it, flashing on each beat.",
+    "tags": [
+      "audio",
+      "music",
+      "black-hole",
+      "space",
+      "spectrum",
+      "lensing",
+      "logo",
+      "text",
+      "visualizer",
+      "beat"
+    ],
+    "controls": [
+      {
+        "n": "uMask",
+        "t": "sampler2D",
+        "d": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201024%20256%22%20width%3D%221024%22%20height%3D%22256%22%3E%3Ctext%20x%3D%22512%22%20y%3D%22128%22%20dy%3D%220.35em%22%20text-anchor%3D%22middle%22%20textLength%3D%22503.2%22%20lengthAdjust%3D%22spacingAndGlyphs%22%20font-family%3D%22%26%2339%3BArial%20Black%26%2339%3B%2C%20%26%2339%3BHelvetica%20Neue%26%2339%3B%2C%20Helvetica%2C%20Arial%2C%20system-ui%2C%20sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%22199.7%22%20fill%3D%22%23fff%22%3EVOID%3C%2Ftext%3E%3C%2Fsvg%3E",
+        "l": "Shape",
+        "line": 3,
+        "x": {
+          "filter": "mipmap",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 0.6,
+        "min": 0.2,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uTilt",
+        "t": "float",
+        "d": 11,
+        "l": "Disk tilt (degrees)",
+        "min": 4,
+        "max": 40,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uReach",
+        "t": "float",
+        "d": 0.3,
+        "l": "Disk reach",
+        "min": 0.1,
+        "max": 0.38,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uSpin",
+        "t": "float",
+        "d": 0.8,
+        "max": 2,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uDoppler",
+        "t": "float",
+        "d": 0.6,
+        "l": "Doppler beaming",
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uLens",
+        "t": "float",
+        "d": 1,
+        "l": "Lensing",
+        "max": 2,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uReact",
+        "t": "float",
+        "d": 1,
+        "l": "Reactivity",
+        "max": 2,
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uFlash",
+        "t": "float",
+        "d": 1,
+        "l": "Beat flash",
+        "max": 2,
+        "b": 3,
+        "line": 11
+      },
+      {
+        "n": "uColorHot",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            231,
+            179
+          ]
+        },
+        "l": "Inner colour",
+        "c": 1,
+        "line": 12
+      },
+      {
+        "n": "uColorCool",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            90,
+            31
+          ]
+        },
+        "l": "Outer colour",
+        "c": 1,
+        "line": 13
+      },
+      {
+        "n": "uStars",
+        "t": "float",
+        "d": 0.7,
+        "b": 3,
+        "line": 14
+      },
+      {
+        "n": "uDemo",
+        "t": "bool",
+        "d": true,
+        "l": "Demo when silent",
+        "line": 15
+      }
+    ],
+    "presets": [
+      "Heart",
+      "Logo",
+      "Top down"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "svg",
+        "text",
+        "mask",
+        "audio"
+      ],
+      "images": [
+        {
+          "name": "uMask",
+          "label": "Shape",
+          "wants": "text"
+        }
+      ],
+      "texts": [],
+      "video": "none",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "none",
+    "animated": true,
+    "module": "shaders/audio",
+    "addedAt": "2026-11-04T11:47:05.628Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "arcane-sigil",
+    "name": "Arcane sigil",
+    "kind": "shader",
+    "category": "audio",
+    "description": "Any shape or word as a magic portal: arcane light swirling inside it, rings of glowing runes hugging its outline (one to a band of the spectrum, turning alternate ways), a tilted ring of runes orbiting it in front and behind, motes of light spiralling in and wisps curling up; each beat sends a pulse out through the runes.",
+    "tags": [
+      "audio",
+      "music",
+      "magic",
+      "fantasy",
+      "runes",
+      "portal",
+      "arcane",
+      "logo",
+      "text",
+      "visualizer",
+      "beat"
+    ],
+    "controls": [
+      {
+        "n": "uMask",
+        "t": "sampler2D",
+        "d": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201024%20256%22%20width%3D%221024%22%20height%3D%22256%22%3E%3Ctext%20x%3D%22512%22%20y%3D%22128%22%20dy%3D%220.35em%22%20text-anchor%3D%22middle%22%20textLength%3D%22690.9%22%20lengthAdjust%3D%22spacingAndGlyphs%22%20font-family%3D%22%26%2339%3BArial%20Black%26%2339%3B%2C%20%26%2339%3BHelvetica%20Neue%26%2339%3B%2C%20Helvetica%2C%20Arial%2C%20system-ui%2C%20sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%22199.7%22%20fill%3D%22%23fff%22%3EMAGIC%3C%2Ftext%3E%3C%2Fsvg%3E",
+        "l": "Shape",
+        "line": 3,
+        "x": {
+          "filter": "mipmap",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 0.6,
+        "min": 0.2,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uRings",
+        "t": "int",
+        "d": 4,
+        "l": "Rune rings",
+        "min": 1,
+        "max": 6,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uSpacing",
+        "t": "float",
+        "d": 0.05,
+        "l": "Ring spacing",
+        "min": 0.03,
+        "max": 0.08,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uTilt",
+        "t": "float",
+        "d": 14,
+        "l": "Orbit tilt (degrees)",
+        "min": 4,
+        "max": 40,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uSpin",
+        "t": "float",
+        "d": 0.6,
+        "max": 2,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uReact",
+        "t": "float",
+        "d": 1,
+        "l": "Reactivity",
+        "max": 2,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uFlash",
+        "t": "float",
+        "d": 1,
+        "l": "Beat pulse",
+        "max": 2,
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uMotes",
+        "t": "float",
+        "d": 0.7,
+        "b": 3,
+        "line": 11
+      },
+      {
+        "n": "uRune",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            207,
+            107
+          ]
+        },
+        "l": "Runes",
+        "c": 1,
+        "line": 12
+      },
+      {
+        "n": "uArcane",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            139,
+            92,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 13
+      },
+      {
+        "n": "uWisp",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            62,
+            230,
+            208
+          ]
+        },
+        "l": "Wisps",
+        "c": 1,
+        "line": 14
+      },
+      {
+        "n": "uNight",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            7,
+            4,
+            26
+          ]
+        },
+        "c": 1,
+        "line": 15
+      },
+      {
+        "n": "uDemo",
+        "t": "bool",
+        "d": true,
+        "l": "Demo when silent",
+        "line": 16
+      }
+    ],
+    "presets": [
+      "Fel fire",
+      "Frost",
+      "Heart"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "svg",
+        "text",
+        "mask",
+        "audio"
+      ],
+      "images": [
+        {
+          "name": "uMask",
+          "label": "Shape",
+          "wants": "text"
+        }
+      ],
+      "texts": [],
+      "video": "none",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "none",
+    "animated": true,
+    "module": "shaders/audio",
+    "addedAt": "2026-11-04T11:47:05.628Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "spell-trace",
+    "name": "Spell trace",
+    "kind": "shader",
+    "category": "audio",
+    "description": "Any shape or word traced in a hairline of light, as by a wand: a spark sweeps round its outline leaving a fading trail and a few drifting sparkles, a single ring of dots round it shows the spectrum, and each beat sends one soft ring of light out.",
+    "tags": [
+      "audio",
+      "music",
+      "magic",
+      "minimal",
+      "outline",
+      "sparkle",
+      "logo",
+      "text",
+      "overlay",
+      "visualizer",
+      "beat"
+    ],
+    "controls": [
+      {
+        "n": "uMask",
+        "t": "sampler2D",
+        "d": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201024%20256%22%20width%3D%221024%22%20height%3D%22256%22%3E%3Ctext%20x%3D%22512%22%20y%3D%22128%22%20dy%3D%220.35em%22%20text-anchor%3D%22middle%22%20textLength%3D%22738.8%22%20lengthAdjust%3D%22spacingAndGlyphs%22%20font-family%3D%22%26%2339%3BArial%20Black%26%2339%3B%2C%20%26%2339%3BHelvetica%20Neue%26%2339%3B%2C%20Helvetica%2C%20Arial%2C%20system-ui%2C%20sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%22199.7%22%20fill%3D%22%23fff%22%3ESPELL%3C%2Ftext%3E%3C%2Fsvg%3E",
+        "l": "Shape",
+        "line": 3,
+        "x": {
+          "filter": "mipmap",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 0.6,
+        "min": 0.2,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uSpeed",
+        "t": "float",
+        "d": 0.6,
+        "l": "Trace speed",
+        "max": 2,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uTrail",
+        "t": "float",
+        "d": 0.35,
+        "l": "Trail length",
+        "min": 0.05,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uLine",
+        "t": "float",
+        "d": 1.2,
+        "l": "Line width (px)",
+        "min": 0.5,
+        "max": 4,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uDots",
+        "t": "bool",
+        "d": true,
+        "l": "Spectrum dots",
+        "line": 8
+      },
+      {
+        "n": "uDotRing",
+        "t": "float",
+        "d": 0.07,
+        "l": "Dot ring distance",
+        "min": 0.03,
+        "max": 0.2,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uSparkle",
+        "t": "float",
+        "d": 0.6,
+        "l": "Sparkles",
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uFlash",
+        "t": "float",
+        "d": 1,
+        "l": "Beat ring",
+        "max": 2,
+        "b": 3,
+        "line": 11
+      },
+      {
+        "n": "uColor",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            207,
+            227,
+            255
+          ]
+        },
+        "l": "Light",
+        "c": 1,
+        "line": 12
+      },
+      {
+        "n": "uAccent",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            210,
+            122
+          ]
+        },
+        "l": "Spark",
+        "c": 1,
+        "line": 13
+      },
+      {
+        "n": "uDemo",
+        "t": "bool",
+        "d": true,
+        "l": "Demo when silent",
+        "line": 14
+      }
+    ],
+    "presets": [
+      "Gold leaf",
+      "Moonlight",
+      "Heart"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "svg",
+        "text",
+        "mask",
+        "audio"
+      ],
+      "images": [
+        {
+          "name": "uMask",
+          "label": "Shape",
+          "wants": "text"
+        }
+      ],
+      "texts": [],
+      "video": "none",
+      "interactions": [],
+      "transparent": true
+    },
+    "video": "none",
+    "transparent": true,
+    "animated": true,
+    "module": "shaders/audio",
+    "addedAt": "2026-11-04T11:47:05.628Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "ripple-dot",
+    "name": "Ripple dot",
+    "kind": "shader",
+    "category": "audio",
+    "description": "Just a dot and its waves: a single dot swelling with the bass, thin rings rippling out from it whose brightness at each distance is the spectrum (bass close, treble far), and one brighter ring on each beat.",
+    "tags": [
+      "audio",
+      "music",
+      "minimal",
+      "dots",
+      "ripple",
+      "wave",
+      "ring",
+      "overlay",
+      "visualizer",
+      "beat"
+    ],
+    "controls": [
+      {
+        "n": "uDot",
+        "t": "float",
+        "d": 0.012,
+        "l": "Dot size",
+        "min": 0.002,
+        "max": 0.05,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "uSpacing",
+        "t": "float",
+        "d": 0.035,
+        "l": "Wave spacing",
+        "min": 0.01,
+        "max": 0.1,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "uSpeed",
+        "t": "float",
+        "d": 0.5,
+        "l": "Wave speed",
+        "max": 2,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uReach",
+        "t": "float",
+        "d": 0.42,
+        "min": 0.1,
+        "max": 0.8,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uLine",
+        "t": "float",
+        "d": 1.2,
+        "l": "Line width (px)",
+        "min": 0.5,
+        "max": 4,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uFlash",
+        "t": "float",
+        "d": 1,
+        "l": "Beat ring",
+        "max": 2,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uColor",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            244,
+            241,
+            234
+          ]
+        },
+        "l": "Colour",
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "uDemo",
+        "t": "bool",
+        "d": true,
+        "l": "Demo when silent",
+        "line": 9
+      }
+    ],
+    "presets": [
+      "Sonar",
+      "Fine",
+      "Ink"
+    ],
+    "inputs": {
+      "accepts": [
+        "audio"
+      ],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": true
+    },
+    "transparent": true,
+    "animated": true,
+    "module": "shaders/audio",
+    "addedAt": "2026-11-04T11:47:05.628Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "black-hole-spectrum",
+    "name": "Black hole spectrum",
+    "kind": "shader",
+    "category": "audio",
+    "description": "A black hole whose accretion disk is the spectrum: bass on the outer rings, treble by the horizon, bent over and under the hole by gravity, its photon ring flashing on each beat.",
+    "tags": [
+      "audio",
+      "music",
+      "black-hole",
+      "space",
+      "spectrum",
+      "lensing",
+      "3d",
+      "visualizer",
+      "beat"
+    ],
+    "controls": [
+      {
+        "n": "uTilt",
+        "t": "float",
+        "d": 9,
+        "l": "Disk tilt (degrees)",
+        "min": 2,
+        "max": 60,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "uLens",
+        "t": "float",
+        "d": 1,
+        "l": "Lensing",
+        "max": 1.5,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "uSpin",
+        "t": "float",
+        "d": 0.8,
+        "max": 2,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uDoppler",
+        "t": "float",
+        "d": 0.6,
+        "l": "Doppler beaming",
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uReact",
+        "t": "float",
+        "d": 1,
+        "l": "Reactivity",
+        "max": 2,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uFlash",
+        "t": "float",
+        "d": 1,
+        "l": "Beat flash",
+        "max": 2,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uColorHot",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            231,
+            179
+          ]
+        },
+        "l": "Inner colour",
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "uColorCool",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            90,
+            31
+          ]
+        },
+        "l": "Outer colour",
+        "c": 1,
+        "line": 9
+      },
+      {
+        "n": "uStars",
+        "t": "float",
+        "d": 0.7,
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uDemo",
+        "t": "bool",
+        "d": true,
+        "l": "Demo when silent",
+        "line": 11
+      }
+    ],
+    "presets": [
+      "Interstellar",
+      "Blue giant",
+      "Top down"
+    ],
+    "inputs": {
+      "accepts": [
+        "audio"
+      ],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "shaders/audio",
+    "addedAt": "2026-11-04T11:47:05.627Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
     "id": "eyecatch",
     "name": "Eyecatch",
     "kind": "vector",
@@ -474,1930 +2779,5 @@
     "addedAt": "2026-11-04T01:09:37Z",
     "commitHash": "9482b18b3d3a5db4e3e1a91902b9792f43b53bda",
     "order": 635
-  },
-  {
-    "id": "sakura-petals",
-    "name": "Sakura petals",
-    "kind": "shader",
-    "category": "anime",
-    "description": "Cherry blossom petals drifting down on a breeze at three depths, each notched petal fluttering and flipping over as it falls.",
-    "tags": [
-      "anime",
-      "sakura",
-      "cherry-blossom",
-      "petals",
-      "spring",
-      "japan",
-      "overlay",
-      "particles"
-    ],
-    "controls": [
-      {
-        "n": "uPetal",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            200,
-            217
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "uPetalBase",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            240,
-            129,
-            159
-          ]
-        },
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            191,
-            228,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uBackgroundAlpha",
-        "t": "float",
-        "d": 0,
-        "l": "Background opacity",
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uDensity",
-        "t": "float",
-        "d": 0.45,
-        "min": 0.1,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uSize",
-        "t": "float",
-        "d": 0.03,
-        "l": "Petal size",
-        "min": 0.01,
-        "max": 0.06,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uFall",
-        "t": "float",
-        "d": 0.12,
-        "l": "Fall speed",
-        "max": 0.5,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uWind",
-        "t": "float",
-        "d": 0.3,
-        "min": -1,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uFlutter",
-        "t": "float",
-        "d": 1,
-        "max": 2,
-        "b": 3,
-        "line": 10
-      }
-    ],
-    "presets": [
-      "Spring sky",
-      "Storm of petals",
-      "White plum"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": true
-    },
-    "transparent": true,
-    "animated": true,
-    "module": "shaders/anime",
-    "addedAt": "2026-11-04T01:09:37Z",
-    "commitHash": "9482b18b3d3a5db4e3e1a91902b9792f43b53bda",
-    "order": 634
-  },
-  {
-    "id": "anime-sky",
-    "name": "Anime sky",
-    "kind": "shader",
-    "category": "anime",
-    "description": "A painted anime sky: a deep blue gradient over towering cumulus clouds shaded in a few crisp bands, lit at their edges by a glaring sun with soft lens-flare rings, drifting slowly.",
-    "tags": [
-      "anime",
-      "sky",
-      "clouds",
-      "summer",
-      "background",
-      "sun",
-      "lens-flare",
-      "painted"
-    ],
-    "controls": [
-      {
-        "n": "uZenith",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            29,
-            89,
-            214
-          ]
-        },
-        "l": "Sky",
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "uHorizon",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            166,
-            220,
-            248
-          ]
-        },
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uCloud",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "l": "Clouds",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uCloudShade",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            147,
-            174,
-            224
-          ]
-        },
-        "l": "Cloud shadow",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uSun",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            244,
-            210
-          ]
-        },
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "uCover",
-        "t": "float",
-        "d": 0.55,
-        "l": "Cloud cover",
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uScale",
-        "t": "float",
-        "d": 1.3,
-        "l": "Cloud size",
-        "min": 0.5,
-        "max": 3,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uBands",
-        "t": "float",
-        "d": 2,
-        "l": "Shading bands",
-        "min": 1,
-        "max": 4,
-        "s": 1,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 0.025,
-        "l": "Drift",
-        "max": 0.2,
-        "b": 3,
-        "line": 10
-      },
-      {
-        "n": "uGlare",
-        "t": "float",
-        "d": 0.6,
-        "l": "Sun glare",
-        "b": 3,
-        "line": 11
-      },
-      {
-        "n": "uSunX",
-        "t": "float",
-        "d": 0.78,
-        "l": "Sun across",
-        "b": 3,
-        "line": 12
-      },
-      {
-        "n": "uSunY",
-        "t": "float",
-        "d": 0.92,
-        "l": "Sun height",
-        "b": 3,
-        "line": 13
-      }
-    ],
-    "presets": [
-      "Golden hour",
-      "Twilight",
-      "Clear"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "shaders/anime",
-    "addedAt": "2026-11-04T01:09:37Z",
-    "commitHash": "9482b18b3d3a5db4e3e1a91902b9792f43b53bda",
-    "order": 633
-  },
-  {
-    "id": "manga-tone",
-    "name": "Manga tone",
-    "kind": "shader",
-    "category": "anime",
-    "description": "Any picture printed as a black-and-white manga page: inked outlines, mid-tones cut from screentone dot sheets, shadows in solid black or cross-hatching, on off-white paper.",
-    "tags": [
-      "anime",
-      "manga",
-      "comic",
-      "screentone",
-      "ink",
-      "black-and-white",
-      "image",
-      "print"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "portrait"
-        },
-        "line": 2,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uLine",
-        "t": "float",
-        "d": 1.4,
-        "l": "Line weight (px)",
-        "min": 0.5,
-        "max": 4,
-        "b": 3,
-        "line": 3
-      },
-      {
-        "n": "uThreshold",
-        "t": "float",
-        "d": 0.3,
-        "l": "Ink threshold",
-        "min": 0.05,
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "uTones",
-        "t": "int",
-        "d": 2,
-        "l": "Screentone levels",
-        "min": 1,
-        "max": 4,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uToneSize",
-        "t": "float",
-        "d": 4.5,
-        "l": "Tone dot pitch (px)",
-        "min": 2,
-        "max": 12,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uToneAngle",
-        "t": "float",
-        "d": 45,
-        "l": "Tone angle (°)",
-        "max": 90,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uBlack",
-        "t": "float",
-        "d": 0.16,
-        "l": "Shadows below",
-        "max": 0.5,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uWhite",
-        "t": "float",
-        "d": 0.74,
-        "l": "Paper white above",
-        "min": 0.5,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uHatch",
-        "t": "float",
-        "d": 0.5,
-        "l": "Hatched shadows",
-        "b": 3,
-        "line": 10
-      },
-      {
-        "n": "uInk",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            17,
-            17,
-            17
-          ]
-        },
-        "c": 1,
-        "line": 11
-      },
-      {
-        "n": "uPaper",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            250,
-            248,
-            242
-          ]
-        },
-        "c": 1,
-        "line": 12
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 13
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "b": 3,
-        "line": 14
-      }
-    ],
-    "presets": [
-      "Fine tone",
-      "Bold ink",
-      "Old volume"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "filter",
-    "animated": false,
-    "module": "shaders/anime",
-    "addedAt": "2026-11-04T01:09:37Z",
-    "commitHash": "9482b18b3d3a5db4e3e1a91902b9792f43b53bda",
-    "order": 632
-  },
-  {
-    "id": "long-exposure",
-    "name": "Long exposure",
-    "kind": "timing",
-    "category": "timing",
-    "description": "Footage seen through a shutter held open: moving water turns silky and crowds melt away, or the brightest lights draw streaks, while whatever stays still stays sharp.",
-    "tags": [
-      "timing",
-      "long-exposure",
-      "light-trails",
-      "motion-blur",
-      "photography",
-      "silky",
-      "night",
-      "video"
-    ],
-    "controls": [
-      {
-        "n": "exposure",
-        "t": "float",
-        "d": 1.5,
-        "l": "Exposure (s)",
-        "min": 0.1,
-        "max": 10,
-        "s": 0.1,
-        "b": 3,
-        "line": 1
-      },
-      {
-        "n": "lighten",
-        "t": "bool",
-        "d": false,
-        "l": "Light trails (brightest wins)",
-        "s": 0.01,
-        "line": 2
-      },
-      {
-        "n": "fade",
-        "t": "float",
-        "d": 0,
-        "l": "Fade older frames",
-        "s": 0.05,
-        "b": 3,
-        "line": 3
-      },
-      {
-        "n": "build",
-        "t": "bool",
-        "d": false,
-        "l": "Build from the start",
-        "s": 0.01,
-        "line": 4
-      }
-    ],
-    "presets": [
-      "Silky water",
-      "Light trails",
-      "Empty streets",
-      "Building trails"
-    ],
-    "inputs": {
-      "accepts": [
-        "video"
-      ],
-      "images": [
-        {
-          "name": "footage",
-          "label": "Footage",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "timing",
-    "addedAt": "2026-11-03T21:01:49Z",
-    "commitHash": "215aa619b6e440456254cdb6285124bf4211f68b",
-    "order": 631
-  },
-  {
-    "id": "frame-echo",
-    "name": "Frame echo",
-    "kind": "timing",
-    "category": "timing",
-    "description": "Each frame of footage with fading copies of the frames just before it, so moving things leave a trail of ghosts.",
-    "tags": [
-      "timing",
-      "echo",
-      "ghost",
-      "trail",
-      "onion-skin",
-      "video"
-    ],
-    "controls": [
-      {
-        "n": "echoes",
-        "t": "int",
-        "d": 4,
-        "min": 1,
-        "max": 8,
-        "b": 3,
-        "line": 1
-      },
-      {
-        "n": "spacing",
-        "t": "float",
-        "d": 0.1,
-        "l": "Spacing (s)",
-        "min": 0.02,
-        "max": 0.5,
-        "s": 0.01,
-        "b": 3,
-        "line": 2
-      },
-      {
-        "n": "decay",
-        "t": "float",
-        "d": 0.6,
-        "l": "Each echo's strength",
-        "min": 0.1,
-        "max": 0.95,
-        "s": 0.05,
-        "b": 3,
-        "line": 3
-      },
-      {
-        "n": "lighten",
-        "t": "bool",
-        "d": false,
-        "l": "Brightest wins",
-        "s": 0.01,
-        "line": 4
-      }
-    ],
-    "presets": [
-      "Onion skin",
-      "Light ghosts"
-    ],
-    "inputs": {
-      "accepts": [
-        "video"
-      ],
-      "images": [
-        {
-          "name": "footage",
-          "label": "Footage",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "timing",
-    "addedAt": "2026-11-03T21:01:49Z",
-    "commitHash": "215aa619b6e440456254cdb6285124bf4211f68b",
-    "order": 630
-  },
-  {
-    "id": "retime-step",
-    "name": "Step frames",
-    "kind": "timing",
-    "category": "timing",
-    "description": "Footage that holds each frame a while at a low frame rate, for a choppy stop-motion or animated-on-twos look.",
-    "tags": [
-      "timing",
-      "retime",
-      "frame-rate",
-      "stop-motion",
-      "choppy",
-      "on-twos",
-      "video"
-    ],
-    "controls": [
-      {
-        "n": "rate",
-        "t": "float",
-        "d": 8,
-        "l": "Frames per second",
-        "min": 2,
-        "max": 24,
-        "s": 1,
-        "b": 3,
-        "line": 1
-      }
-    ],
-    "presets": [
-      "On twos",
-      "Stop motion",
-      "Slideshow"
-    ],
-    "inputs": {
-      "accepts": [
-        "video"
-      ],
-      "images": [
-        {
-          "name": "footage",
-          "label": "Footage",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "timing",
-    "addedAt": "2026-11-03T21:01:49Z",
-    "commitHash": "215aa619b6e440456254cdb6285124bf4211f68b",
-    "order": 629
-  },
-  {
-    "id": "retime-stutter",
-    "name": "Stutter",
-    "kind": "timing",
-    "category": "timing",
-    "description": "Footage that catches on short snatches, replaying each a few times before it moves on, like a skipping record.",
-    "tags": [
-      "timing",
-      "retime",
-      "stutter",
-      "repeat",
-      "glitch",
-      "skip",
-      "music-video",
-      "video"
-    ],
-    "controls": [
-      {
-        "n": "chunk",
-        "t": "float",
-        "d": 0.16,
-        "l": "Snatch (s)",
-        "min": 0.04,
-        "s": 0.01,
-        "b": 3,
-        "line": 1
-      },
-      {
-        "n": "repeats",
-        "t": "int",
-        "d": 3,
-        "l": "Plays of each snatch",
-        "min": 2,
-        "max": 8,
-        "b": 3,
-        "line": 2
-      },
-      {
-        "n": "every",
-        "t": "int",
-        "d": 4,
-        "l": "Stutter every (snatches)",
-        "min": 1,
-        "max": 8,
-        "b": 3,
-        "line": 3
-      }
-    ],
-    "presets": [
-      "Glitch",
-      "Beat repeat"
-    ],
-    "inputs": {
-      "accepts": [
-        "video"
-      ],
-      "images": [
-        {
-          "name": "footage",
-          "label": "Footage",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "timing",
-    "addedAt": "2026-11-03T21:01:49Z",
-    "commitHash": "215aa619b6e440456254cdb6285124bf4211f68b",
-    "order": 628
-  },
-  {
-    "id": "retime-freeze",
-    "name": "Freeze frame",
-    "kind": "timing",
-    "category": "timing",
-    "description": "Footage that stops dead on one frame, holds it, then plays on from where it stopped.",
-    "tags": [
-      "timing",
-      "retime",
-      "freeze",
-      "freeze-frame",
-      "hold",
-      "pause",
-      "video"
-    ],
-    "controls": [
-      {
-        "n": "at",
-        "t": "float",
-        "d": 0.5,
-        "l": "Freeze at (share of the footage)",
-        "s": 0.01,
-        "b": 3,
-        "line": 1
-      },
-      {
-        "n": "hold",
-        "t": "float",
-        "d": 1.5,
-        "l": "Hold (s)",
-        "min": 0.1,
-        "max": 10,
-        "s": 0.1,
-        "b": 3,
-        "line": 2
-      }
-    ],
-    "presets": [
-      "Beat",
-      "Long hold",
-      "Opening still"
-    ],
-    "inputs": {
-      "accepts": [
-        "video"
-      ],
-      "images": [
-        {
-          "name": "footage",
-          "label": "Footage",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "timing",
-    "addedAt": "2026-11-03T21:01:49Z",
-    "commitHash": "215aa619b6e440456254cdb6285124bf4211f68b",
-    "order": 627
-  },
-  {
-    "id": "retime-boomerang",
-    "name": "Boomerang",
-    "kind": "timing",
-    "category": "timing",
-    "description": "Footage played forwards then backwards, again and again, sped up like a social-media boomerang.",
-    "tags": [
-      "timing",
-      "retime",
-      "boomerang",
-      "loop",
-      "ping-pong",
-      "reverse",
-      "social",
-      "video"
-    ],
-    "controls": [
-      {
-        "n": "speed",
-        "t": "float",
-        "d": 1.5,
-        "l": "Speed (×)",
-        "min": 0.5,
-        "max": 4,
-        "s": 0.05,
-        "b": 3,
-        "line": 1
-      },
-      {
-        "n": "loops",
-        "t": "int",
-        "d": 2,
-        "l": "There and back",
-        "min": 1,
-        "max": 5,
-        "b": 3,
-        "line": 2
-      },
-      {
-        "n": "smooth",
-        "t": "bool",
-        "d": false,
-        "l": "Blend frames",
-        "s": 0.01,
-        "line": 3
-      }
-    ],
-    "presets": [
-      "Quick",
-      "Lazy"
-    ],
-    "inputs": {
-      "accepts": [
-        "video"
-      ],
-      "images": [
-        {
-          "name": "footage",
-          "label": "Footage",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "timing",
-    "addedAt": "2026-11-03T21:01:49Z",
-    "commitHash": "215aa619b6e440456254cdb6285124bf4211f68b",
-    "order": 626
-  },
-  {
-    "id": "retime-reverse",
-    "name": "Reverse",
-    "kind": "timing",
-    "category": "timing",
-    "description": "Footage played backwards from its last frame to its first.",
-    "tags": [
-      "timing",
-      "retime",
-      "reverse",
-      "rewind",
-      "backwards",
-      "video"
-    ],
-    "controls": [
-      {
-        "n": "speed",
-        "t": "float",
-        "d": 1,
-        "l": "Speed (×)",
-        "min": 0.25,
-        "max": 4,
-        "s": 0.05,
-        "b": 3,
-        "line": 1
-      },
-      {
-        "n": "smooth",
-        "t": "bool",
-        "d": true,
-        "l": "Blend frames",
-        "s": 0.01,
-        "line": 2
-      }
-    ],
-    "presets": [
-      "Rewind",
-      "Slow reverse"
-    ],
-    "inputs": {
-      "accepts": [
-        "video"
-      ],
-      "images": [
-        {
-          "name": "footage",
-          "label": "Footage",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "timing",
-    "addedAt": "2026-11-03T21:01:49Z",
-    "commitHash": "215aa619b6e440456254cdb6285124bf4211f68b",
-    "order": 625
-  },
-  {
-    "id": "retime-ramp",
-    "name": "Speed ramp",
-    "kind": "timing",
-    "category": "timing",
-    "description": "Footage that eases from full speed into slow motion round one moment and back out again, like a sports replay.",
-    "tags": [
-      "timing",
-      "retime",
-      "speed",
-      "ramp",
-      "slow-motion",
-      "sport",
-      "replay",
-      "video"
-    ],
-    "controls": [
-      {
-        "n": "at",
-        "t": "float",
-        "d": 0.5,
-        "l": "Slow moment (share of the footage)",
-        "s": 0.01,
-        "b": 3,
-        "line": 1
-      },
-      {
-        "n": "slow",
-        "t": "float",
-        "d": 0.2,
-        "l": "Slow speed (×)",
-        "min": 0.05,
-        "s": 0.05,
-        "b": 3,
-        "line": 2
-      },
-      {
-        "n": "fast",
-        "t": "float",
-        "d": 1,
-        "l": "Speed either side (×)",
-        "min": 0.25,
-        "max": 4,
-        "s": 0.05,
-        "b": 3,
-        "line": 3
-      },
-      {
-        "n": "hold",
-        "t": "float",
-        "d": 0.6,
-        "l": "Slow stretch (s of footage)",
-        "max": 5,
-        "s": 0.05,
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "ramp",
-        "t": "float",
-        "d": 0.4,
-        "l": "Ramp (s of footage)",
-        "min": 0.05,
-        "max": 2,
-        "s": 0.05,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "smooth",
-        "t": "bool",
-        "d": true,
-        "l": "Blend frames",
-        "s": 0.01,
-        "line": 6
-      }
-    ],
-    "presets": [
-      "Sports replay",
-      "Gentle",
-      "Snap"
-    ],
-    "inputs": {
-      "accepts": [
-        "video"
-      ],
-      "images": [
-        {
-          "name": "footage",
-          "label": "Footage",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "timing",
-    "addedAt": "2026-11-03T21:01:49Z",
-    "commitHash": "215aa619b6e440456254cdb6285124bf4211f68b",
-    "order": 624
-  },
-  {
-    "id": "retime-speed",
-    "name": "Speed change",
-    "kind": "timing",
-    "category": "timing",
-    "description": "Footage played slower or faster throughout: slow motion with blended in-between frames, or a sped-up time-lapse with its motion blurred.",
-    "tags": [
-      "timing",
-      "retime",
-      "speed",
-      "slow-motion",
-      "time-lapse",
-      "video"
-    ],
-    "controls": [
-      {
-        "n": "speed",
-        "t": "float",
-        "d": 0.5,
-        "l": "Speed (×)",
-        "min": 0.1,
-        "max": 8,
-        "s": 0.05,
-        "b": 3,
-        "line": 1
-      },
-      {
-        "n": "smooth",
-        "t": "bool",
-        "d": true,
-        "l": "Blend frames",
-        "s": 0.01,
-        "line": 2
-      }
-    ],
-    "presets": [
-      "Slow motion",
-      "Double speed",
-      "Time-lapse",
-      "Choppy slow motion"
-    ],
-    "inputs": {
-      "accepts": [
-        "video"
-      ],
-      "images": [
-        {
-          "name": "footage",
-          "label": "Footage",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "timing",
-    "addedAt": "2026-11-03T21:01:49Z",
-    "commitHash": "215aa619b6e440456254cdb6285124bf4211f68b",
-    "order": 623
-  },
-  {
-    "id": "wireframe-reveal",
-    "name": "Wireframe reveal",
-    "kind": "shader",
-    "category": "image",
-    "description": "A picture first seen as a schematic wireframe on black: pale panels with fine hatching, outlines and coloured circuit traces running along their edges. Then the real picture builds up block by block behind a glitching front, holds, and folds back into the wireframe.",
-    "tags": [
-      "image",
-      "wireframe",
-      "blueprint",
-      "schematic",
-      "reveal",
-      "intro",
-      "glitch",
-      "tech",
-      "circuit",
-      "cyberpunk"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "city"
-        },
-        "line": 2,
-        "x": {
-          "filter": "mipmap",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uAnimate",
-        "t": "bool",
-        "d": true,
-        "line": 3
-      },
-      {
-        "n": "uProgress",
-        "t": "float",
-        "d": 0.5,
-        "l": "Progress (when still)",
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "uFromTop",
-        "t": "bool",
-        "d": false,
-        "l": "Reveal from the top",
-        "line": 5
-      },
-      {
-        "n": "uPanel",
-        "t": "float",
-        "d": 90,
-        "l": "Panel size (px)",
-        "min": 12,
-        "max": 200,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uCut",
-        "t": "float",
-        "d": 0.16,
-        "l": "Background cut-off",
-        "max": 0.6,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uTraces",
-        "t": "float",
-        "d": 0.45,
-        "l": "Circuit traces",
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uGlitch",
-        "t": "float",
-        "d": 0.7,
-        "l": "Glitch at the front",
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uWire",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            228,
-            220,
-            226
-          ]
-        },
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "uTraceA",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            63,
-            227,
-            236
-          ]
-        },
-        "l": "Trace 1",
-        "c": 1,
-        "line": 11
-      },
-      {
-        "n": "uTraceB",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            45,
-            91,
-            255
-          ]
-        },
-        "l": "Trace 2",
-        "c": 1,
-        "line": 12
-      },
-      {
-        "n": "uTraceC",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            240,
-            140,
-            203
-          ]
-        },
-        "l": "Trace 3",
-        "c": 1,
-        "line": 13
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 14
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "b": 3,
-        "line": 15
-      }
-    ],
-    "presets": [
-      "Blueprint",
-      "Dense",
-      "Clean sweep",
-      "Wireframe only"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "filter",
-    "loop": 6,
-    "animated": true,
-    "duration": 6000,
-    "module": "shaders/sketch",
-    "addedAt": "2026-11-02T16:40:25Z",
-    "commitHash": "3c9b08d85dcf665c90110068915da8a4424802ee",
-    "order": 622
-  },
-  {
-    "id": "led-net",
-    "name": "LED net",
-    "kind": "shader",
-    "category": "image",
-    "description": "A picture shown through a net of tiny LEDs draped in folds like fabric: each light glows with a cross-shaped star flare, mostly in one cool tint with drifting patches of rainbow colour, dark parts of the picture leaving the lights off so shapes stand out as silhouettes.",
-    "tags": [
-      "image",
-      "led",
-      "light",
-      "grid",
-      "sparkle",
-      "stars",
-      "fabric",
-      "glow",
-      "neon",
-      "display"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "portrait"
-        },
-        "line": 2,
-        "x": {
-          "filter": "mipmap",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uTint",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            42,
-            140,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uImageColour",
-        "t": "float",
-        "d": 0.2,
-        "l": "Picture colour",
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "uRainbow",
-        "t": "float",
-        "d": 0.5,
-        "l": "Rainbow patches",
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uPitch",
-        "t": "float",
-        "d": 26,
-        "l": "Light spacing (px)",
-        "min": 6,
-        "max": 48,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uLightSize",
-        "t": "float",
-        "d": 1,
-        "min": 0.3,
-        "max": 2,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uFlare",
-        "t": "float",
-        "d": 1,
-        "l": "Star flare",
-        "max": 2,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uDrape",
-        "t": "float",
-        "d": 0.6,
-        "l": "Folds",
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uThreshold",
-        "t": "float",
-        "d": 0.12,
-        "l": "Cut-off",
-        "max": 0.8,
-        "b": 3,
-        "line": 10
-      },
-      {
-        "n": "uBacklight",
-        "t": "float",
-        "d": 0.06,
-        "l": "Picture behind",
-        "b": 3,
-        "line": 11
-      },
-      {
-        "n": "uTwinkle",
-        "t": "float",
-        "d": 0.4,
-        "b": 3,
-        "line": 12
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 0.2,
-        "b": 3,
-        "line": 13
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 14
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "b": 3,
-        "line": 15
-      }
-    ],
-    "presets": [
-      "Full colour",
-      "Rainbow",
-      "Flat grid",
-      "Fine",
-      "Warm"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "video": "filter",
-    "animated": true,
-    "module": "shaders/light",
-    "addedAt": "2026-11-02T16:36:05Z",
-    "commitHash": "ccb6368550fa7e0b3d29e7fd6ebd9c32cc020854",
-    "order": 621
-  },
-  {
-    "id": "glass-writing",
-    "name": "Glass writing",
-    "kind": "shader",
-    "category": "path",
-    "description": "Words written on in one glowing glass stroke, letter by letter as a pen would, in joined-up script or print; give the path words as {\"text\": …} or any path.",
-    "tags": [
-      "title",
-      "path",
-      "handwriting",
-      "signature",
-      "writing",
-      "draw",
-      "tube",
-      "glass",
-      "glow",
-      "neon"
-    ],
-    "controls": [
-      {
-        "n": "uPath",
-        "t": "path",
-        "d": "M 10.7 10.7 C 10.2 10.4 8.4 9.9 7.6 9.1 C 6.9 8.4 6.3 6.9 6.1 6.1 C 5.8 5.3 5.8 5.3 6.1 4.6 C 6.3 3.8 6.9 2.3 7.6 1.5 C 8.4 0.8 9.9 0.3 10.7 0 C 11.4 -0.3 11.4 -0.3 12.2 0 C 13 0.3 14.5 0.8 15.2 1.5 C 16 2.3 16.5 3.6 16.8 4.6 C 17 5.6 17 6.1 16.8 7.6 C 16.5 9.1 16 11.2 15.2 13.7 C 14.5 16.3 13.2 20.3 12.2 22.9 C 11.2 25.4 10.2 27.4 9.1 29 C 8.1 30.5 7.1 31.5 6.1 32 C 5.1 32.5 3.8 32.3 3 32 C 2.3 31.7 1.8 31.2 1.5 30.5 C 1.3 29.7 1.5 27.9 1.5 27.4 M 10.7 18.3 C 13 17.5 21.6 14.7 24.4 13.7 C 27.2 12.7 26.2 13 27.4 12.2 C 28.7 11.4 30.7 10.2 32 9.1 C 33.3 8.1 34.3 7.1 35 6.1 C 35.8 5.1 36.3 3.8 36.6 3 C 36.8 2.3 36.8 2 36.6 1.5 C 36.3 1 35.6 0.3 35 0 C 34.5 -0.3 34.3 -0.5 33.5 0 C 32.8 0.5 31.5 1.5 30.5 3 C 29.5 4.6 28.4 6.6 27.4 9.1 C 26.4 11.7 25.1 15.5 24.4 18.3 C 23.6 21.1 23.1 23.9 22.9 25.9 C 22.6 27.9 22.6 29.5 22.9 30.5 C 23.1 31.5 23.9 31.7 24.4 32 C 24.9 32.3 25.1 32.3 25.9 32 C 26.7 31.7 28.2 31 29 30.5 C 29.7 30 29.7 30 30.5 29 C 31.2 27.9 33 25.1 33.5 24.4 L 38.1 29 C 38.6 28.7 40.4 27.9 41.1 27.4 C 41.9 26.9 42.2 26.7 42.7 25.9 C 43.2 25.1 43.9 23.9 44.2 22.9 C 44.4 21.8 44.4 20.6 44.2 19.8 C 43.9 19 43.2 18.5 42.7 18.3 C 42.2 18 41.9 18 41.1 18.3 C 40.4 18.5 38.9 19 38.1 19.8 C 37.3 20.6 36.8 21.6 36.6 22.9 C 36.3 24.1 36.3 26.2 36.6 27.4 C 36.8 28.7 37.3 29.7 38.1 30.5 C 38.9 31.2 40.1 31.7 41.1 32 C 42.2 32.3 43.2 32.3 44.2 32 C 45.2 31.7 46.5 31 47.2 30.5 C 48 30 48 30 48.8 29 C 49.5 27.9 51.3 25.1 51.8 24.4 L 51.8 24.4 C 52.3 23.6 53.6 21.8 54.9 19.8 C 56.1 17.8 58.4 14 59.4 12.2 C 60.4 10.4 60.4 10.4 61 9.1 C 61.5 7.9 62.2 5.8 62.5 4.6 C 62.7 3.3 62.7 2.3 62.5 1.5 C 62.2 0.8 61.7 0 61 0 C 60.2 0 58.7 0.8 57.9 1.5 C 57.1 2.3 56.9 3 56.4 4.6 C 55.9 6.1 55.4 7.9 54.9 10.7 C 54.3 13.5 53.6 18 53.3 21.3 C 53.1 24.6 53.1 28.7 53.3 30.5 C 53.6 32.3 54.3 31.7 54.9 32 C 55.4 32.3 55.6 32.3 56.4 32 C 57.1 31.7 58.7 31 59.4 30.5 C 60.2 30 60.2 30 61 29 C 61.7 27.9 63.5 25.1 64 24.4 L 64 24.4 C 64.5 23.6 65.8 21.8 67 19.8 C 68.3 17.8 70.6 14 71.6 12.2 C 72.6 10.4 72.6 10.4 73.1 9.1 C 73.7 7.9 74.4 5.8 74.7 4.6 C 74.9 3.3 74.9 2.3 74.7 1.5 C 74.4 0.8 73.9 0 73.1 0 C 72.4 0 70.9 0.8 70.1 1.5 C 69.3 2.3 69.1 3 68.6 4.6 C 68.1 6.1 67.6 7.9 67 10.7 C 66.5 13.5 65.8 18 65.5 21.3 C 65.3 24.6 65.3 28.7 65.5 30.5 C 65.8 32.3 66.5 31.7 67 32 C 67.6 32.3 67.8 32.3 68.6 32 C 69.3 31.7 70.9 31 71.6 30.5 C 72.4 30 72.4 30 73.1 29 C 73.9 27.9 75.7 25.1 76.2 24.4 L 85.3 18.3 C 84.8 18.3 83.3 18 82.3 18.3 C 81.3 18.5 80 19.3 79.2 19.8 C 78.5 20.3 78.2 20.6 77.7 21.3 C 77.2 22.1 76.4 23.4 76.2 24.4 C 75.9 25.4 75.9 26.4 76.2 27.4 C 76.4 28.4 77 29.7 77.7 30.5 C 78.5 31.2 79.7 31.7 80.8 32 C 81.8 32.3 82.8 32.3 83.8 32 C 84.8 31.7 86.1 31 86.9 30.5 C 87.6 30 87.9 29.7 88.4 29 C 88.9 28.2 89.7 26.9 89.9 25.9 C 90.2 24.9 90.2 23.9 89.9 22.9 C 89.7 21.8 89.1 20.6 88.4 19.8 C 87.6 19 86.1 18.3 85.3 18.3 C 84.6 18.3 84.1 19 83.8 19.8 C 83.6 20.6 83.6 21.8 83.8 22.9 C 84.1 23.9 84.6 25.1 85.3 25.9 C 86.1 26.7 87.1 27.2 88.4 27.4 C 89.7 27.7 91.7 27.7 93 27.4 C 94.2 27.2 95.2 26.4 96 25.9 C 96.8 25.4 97.3 24.6 97.5 24.4",
-        "path": {
-          "fit": "contain",
-          "margin": 0.1
-        },
-        "l": "Words (path)",
-        "line": 2
-      },
-      {
-        "n": "uColorA",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            232,
-            40,
-            60
-          ]
-        },
-        "l": "Start colour",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uColorB",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            122,
-            69
-          ]
-        },
-        "l": "Middle colour",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uColorC",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            197,
-            61
-          ]
-        },
-        "l": "End colour",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            20,
-            11,
-            8
-          ]
-        },
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "uThickness",
-        "t": "float",
-        "d": 3.5,
-        "l": "Thickness (%)",
-        "min": 1,
-        "max": 30,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uProgress",
-        "t": "float",
-        "d": 1,
-        "l": "Drawn",
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uDrawOn",
-        "t": "float",
-        "d": 3,
-        "l": "Draw-on time (s)",
-        "max": 10,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uOpacity",
-        "t": "float",
-        "d": 0.8,
-        "l": "Body opacity",
-        "b": 3,
-        "line": 10
-      },
-      {
-        "n": "uRim",
-        "t": "float",
-        "d": 1,
-        "l": "Edge light",
-        "max": 2,
-        "b": 3,
-        "line": 11
-      },
-      {
-        "n": "uGlow",
-        "t": "float",
-        "d": 0.8,
-        "max": 2,
-        "b": 3,
-        "line": 12
-      },
-      {
-        "n": "uFlow",
-        "t": "float",
-        "d": 0.4,
-        "l": "Shimmer speed",
-        "max": 2,
-        "b": 3,
-        "line": 13
-      },
-      {
-        "n": "uDownFrame",
-        "t": "bool",
-        "d": false,
-        "l": "Colour down the frame",
-        "line": 14
-      },
-      {
-        "n": "uBackgroundAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Background opacity",
-        "b": 3,
-        "line": 206
-      }
-    ],
-    "presets": [
-      "Neon sign",
-      "Print",
-      "Gold"
-    ],
-    "inputs": {
-      "accepts": [
-        "path"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "uPath",
-          "label": "Words (path)",
-          "holds": "path",
-          "default": "M 10.7 10.7 C 10.2 10.4 8.4 9.9 7.6 9.1 C 6.9 8.4 6.3 6.9 6.1 6.1 C 5.8 5.3 5.8 5.3 6.1 4.6 C 6.3 3.8 6.9 2.3 7.6 1.5 C 8.4 0.8 9.9 0.3 10.7 0 C 11.4 -0.3 11.4 -0.3 12.2 0 C 13 0.3 14.5 0.8 15.2 1.5 C 16 2.3 16.5 3.6 16.8 4.6 C 17 5.6 17 6.1 16.8 7.6 C 16.5 9.1 16 11.2 15.2 13.7 C 14.5 16.3 13.2 20.3 12.2 22.9 C 11.2 25.4 10.2 27.4 9.1 29 C 8.1 30.5 7.1 31.5 6.1 32 C 5.1 32.5 3.8 32.3 3 32 C 2.3 31.7 1.8 31.2 1.5 30.5 C 1.3 29.7 1.5 27.9 1.5 27.4 M 10.7 18.3 C 13 17.5 21.6 14.7 24.4 13.7 C 27.2 12.7 26.2 13 27.4 12.2 C 28.7 11.4 30.7 10.2 32 9.1 C 33.3 8.1 34.3 7.1 35 6.1 C 35.8 5.1 36.3 3.8 36.6 3 C 36.8 2.3 36.8 2 36.6 1.5 C 36.3 1 35.6 0.3 35 0 C 34.5 -0.3 34.3 -0.5 33.5 0 C 32.8 0.5 31.5 1.5 30.5 3 C 29.5 4.6 28.4 6.6 27.4 9.1 C 26.4 11.7 25.1 15.5 24.4 18.3 C 23.6 21.1 23.1 23.9 22.9 25.9 C 22.6 27.9 22.6 29.5 22.9 30.5 C 23.1 31.5 23.9 31.7 24.4 32 C 24.9 32.3 25.1 32.3 25.9 32 C 26.7 31.7 28.2 31 29 30.5 C 29.7 30 29.7 30 30.5 29 C 31.2 27.9 33 25.1 33.5 24.4 L 38.1 29 C 38.6 28.7 40.4 27.9 41.1 27.4 C 41.9 26.9 42.2 26.7 42.7 25.9 C 43.2 25.1 43.9 23.9 44.2 22.9 C 44.4 21.8 44.4 20.6 44.2 19.8 C 43.9 19 43.2 18.5 42.7 18.3 C 42.2 18 41.9 18 41.1 18.3 C 40.4 18.5 38.9 19 38.1 19.8 C 37.3 20.6 36.8 21.6 36.6 22.9 C 36.3 24.1 36.3 26.2 36.6 27.4 C 36.8 28.7 37.3 29.7 38.1 30.5 C 38.9 31.2 40.1 31.7 41.1 32 C 42.2 32.3 43.2 32.3 44.2 32 C 45.2 31.7 46.5 31 47.2 30.5 C 48 30 48 30 48.8 29 C 49.5 27.9 51.3 25.1 51.8 24.4 L 51.8 24.4 C 52.3 23.6 53.6 21.8 54.9 19.8 C 56.1 17.8 58.4 14 59.4 12.2 C 60.4 10.4 60.4 10.4 61 9.1 C 61.5 7.9 62.2 5.8 62.5 4.6 C 62.7 3.3 62.7 2.3 62.5 1.5 C 62.2 0.8 61.7 0 61 0 C 60.2 0 58.7 0.8 57.9 1.5 C 57.1 2.3 56.9 3 56.4 4.6 C 55.9 6.1 55.4 7.9 54.9 10.7 C 54.3 13.5 53.6 18 53.3 21.3 C 53.1 24.6 53.1 28.7 53.3 30.5 C 53.6 32.3 54.3 31.7 54.9 32 C 55.4 32.3 55.6 32.3 56.4 32 C 57.1 31.7 58.7 31 59.4 30.5 C 60.2 30 60.2 30 61 29 C 61.7 27.9 63.5 25.1 64 24.4 L 64 24.4 C 64.5 23.6 65.8 21.8 67 19.8 C 68.3 17.8 70.6 14 71.6 12.2 C 72.6 10.4 72.6 10.4 73.1 9.1 C 73.7 7.9 74.4 5.8 74.7 4.6 C 74.9 3.3 74.9 2.3 74.7 1.5 C 74.4 0.8 73.9 0 73.1 0 C 72.4 0 70.9 0.8 70.1 1.5 C 69.3 2.3 69.1 3 68.6 4.6 C 68.1 6.1 67.6 7.9 67 10.7 C 66.5 13.5 65.8 18 65.5 21.3 C 65.3 24.6 65.3 28.7 65.5 30.5 C 65.8 32.3 66.5 31.7 67 32 C 67.6 32.3 67.8 32.3 68.6 32 C 69.3 31.7 70.9 31 71.6 30.5 C 72.4 30 72.4 30 73.1 29 C 73.9 27.9 75.7 25.1 76.2 24.4 L 85.3 18.3 C 84.8 18.3 83.3 18 82.3 18.3 C 81.3 18.5 80 19.3 79.2 19.8 C 78.5 20.3 78.2 20.6 77.7 21.3 C 77.2 22.1 76.4 23.4 76.2 24.4 C 75.9 25.4 75.9 26.4 76.2 27.4 C 76.4 28.4 77 29.7 77.7 30.5 C 78.5 31.2 79.7 31.7 80.8 32 C 81.8 32.3 82.8 32.3 83.8 32 C 84.8 31.7 86.1 31 86.9 30.5 C 87.6 30 87.9 29.7 88.4 29 C 88.9 28.2 89.7 26.9 89.9 25.9 C 90.2 24.9 90.2 23.9 89.9 22.9 C 89.7 21.8 89.1 20.6 88.4 19.8 C 87.6 19 86.1 18.3 85.3 18.3 C 84.6 18.3 84.1 19 83.8 19.8 C 83.6 20.6 83.6 21.8 83.8 22.9 C 84.1 23.9 84.6 25.1 85.3 25.9 C 86.1 26.7 87.1 27.2 88.4 27.4 C 89.7 27.7 91.7 27.7 93 27.4 C 94.2 27.2 95.2 26.4 96 25.9 C 96.8 25.4 97.3 24.6 97.5 24.4"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "build": 3,
-    "animated": true,
-    "module": "shaders/paths",
-    "addedAt": "2026-11-02T16:24:28Z",
-    "commitHash": "1bb3f3fff93749a6847c7486b4d5aef96d8d9bbf",
-    "order": 620
-  },
-  {
-    "id": "light-strand-text",
-    "name": "Light strand text",
-    "kind": "shader",
-    "category": "text",
-    "description": "Tall, heavy letters built from hundreds of fine strands of light, steel blue to white, that fall into place from top to bottom, the letters' cores first and their edges last, then curve along the edges, brightening and fading as light slides down them, with a few warm threads running through and a glow along the lower edges.",
-    "tags": [
-      "text",
-      "title",
-      "light",
-      "streak",
-      "line",
-      "fibre",
-      "glow",
-      "hero",
-      "tech",
-      "overlay"
-    ],
-    "controls": [
-      {
-        "n": "uText",
-        "t": "sampler2D",
-        "d": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201280%20512%22%20width%3D%221280%22%20height%3D%22512%22%3E%3Ctext%20x%3D%22640%22%20y%3D%22256%22%20dy%3D%220.35em%22%20text-anchor%3D%22middle%22%20textLength%3D%22886.6%22%20lengthAdjust%3D%22spacingAndGlyphs%22%20font-family%3D%22%26%2339%3BArial%20Black%26%2339%3B%2C%20%26%2339%3BHelvetica%20Neue%26%2339%3B%2C%20Helvetica%2C%20Arial%2C%20system-ui%2C%20sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%22399.4%22%20fill%3D%22%23fff%22%3EPRO%3C%2Ftext%3E%3C%2Fsvg%3E",
-        "line": 4,
-        "x": {
-          "filter": "mipmap",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            0,
-            0,
-            0
-          ]
-        },
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uBackgroundAlpha",
-        "t": "float",
-        "d": 0,
-        "l": "Background opacity",
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uDark",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            6,
-            11,
-            26
-          ]
-        },
-        "c": 1,
-        "line": 7
-      },
-      {
-        "n": "uMid",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            78,
-            108,
-            154
-          ]
-        },
-        "c": 1,
-        "line": 8
-      },
-      {
-        "n": "uLight",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            238,
-            244,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 9
-      },
-      {
-        "n": "uWarm",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            90,
-            31
-          ]
-        },
-        "l": "Warm threads",
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "uSize",
-        "t": "float",
-        "d": 1.45,
-        "l": "Text size",
-        "min": 0.3,
-        "max": 2,
-        "b": 3,
-        "line": 11
-      },
-      {
-        "n": "uStretch",
-        "t": "float",
-        "d": 2.2,
-        "min": 1,
-        "max": 4,
-        "b": 3,
-        "line": 12
-      },
-      {
-        "n": "uStrands",
-        "t": "float",
-        "d": 1,
-        "l": "Strand density",
-        "min": 0.3,
-        "max": 3,
-        "b": 3,
-        "line": 13
-      },
-      {
-        "n": "uContrast",
-        "t": "float",
-        "d": 1.1,
-        "min": 0.5,
-        "max": 2,
-        "b": 3,
-        "line": 14
-      },
-      {
-        "n": "uWarmth",
-        "t": "float",
-        "d": 1,
-        "l": "Warm threads",
-        "max": 2,
-        "b": 3,
-        "line": 15
-      },
-      {
-        "n": "uBend",
-        "t": "float",
-        "d": 1,
-        "l": "Follow edges",
-        "b": 3,
-        "line": 16
-      },
-      {
-        "n": "uEdge",
-        "t": "float",
-        "d": 1,
-        "l": "Edge glow",
-        "max": 2,
-        "b": 3,
-        "line": 17
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 0.15,
-        "l": "Flow speed",
-        "b": 3,
-        "line": 18
-      },
-      {
-        "n": "uAnimate",
-        "t": "bool",
-        "d": true,
-        "l": "Build up",
-        "line": 19
-      },
-      {
-        "n": "uBuildTime",
-        "t": "float",
-        "d": 3,
-        "l": "Build time (s)",
-        "min": 0.5,
-        "max": 10,
-        "b": 3,
-        "line": 20
-      },
-      {
-        "n": "uProgress",
-        "t": "float",
-        "d": 1,
-        "l": "Built (when still)",
-        "b": 3,
-        "line": 21
-      }
-    ],
-    "presets": [
-      "On black",
-      "Gold",
-      "Emerald",
-      "Fine"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "svg",
-        "text",
-        "mask"
-      ],
-      "images": [
-        {
-          "name": "uText",
-          "label": "Text",
-          "wants": "text"
-        }
-      ],
-      "texts": [],
-      "video": "none",
-      "interactions": [],
-      "transparent": true
-    },
-    "video": "none",
-    "transparent": true,
-    "build": 3,
-    "animated": true,
-    "module": "shaders/light",
-    "addedAt": "2026-11-02T16:20:46Z",
-    "commitHash": "0e80eedf64462bbab221b33748e51ceb98190c15",
-    "order": 619
   }
 ]

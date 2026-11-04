@@ -190,7 +190,7 @@ describe("catalog", () => {
   });
 
   it("finds effects by words, kind and tags", () => {
-    expect(findEffects({ text: "aurora" }).map((e) => e.id)).toEqual(["aurora", "northern-lights"]);
+    expect(findEffects({ text: "aurora" }).map((e) => e.id)).toEqual(["aurora", "northern-lights", "aurora-curtain"]);
     expect(findEffects({ kind: "vector" }).every((e) => e.kind === "vector")).toBe(true);
     expect(findEffects({ tags: ["loader"] }).length).toBeGreaterThan(2);
     expect(findEffects({ text: "no such thing anywhere" })).toEqual([]);
@@ -1939,8 +1939,32 @@ describe("glare sweep", () => {
 describe("audio effects", () => {
   const audio = findEffects({ category: "audio" });
 
-  it("has the bars, ring, waveform, pulse, particles, plasma and vinyl", () => {
-    expect(audio.map((e) => e.id)).toEqual(["spectrum-bars", "circular-spectrum", "waveform-line", "bass-pulse", "audio-particles", "audio-plasma", "vinyl"]);
+  it("has the bars, ring, waveform, pulse, particles, plasma, vinyl and the scenes", () => {
+    expect(audio.map((e) => e.id)).toEqual([
+      "spectrum-bars",
+      "circular-spectrum",
+      "waveform-line",
+      "bass-pulse",
+      "audio-particles",
+      "audio-plasma",
+      "vinyl",
+      "black-hole-spectrum",
+      "cymatics",
+      "liquid-chrome",
+      "aurora-curtain",
+      "neon-skyline",
+      "fractal-pulse",
+      "ferrofluid-spikes",
+      "saturn-rings",
+      "solar-prominence",
+      "plasma-globe",
+      "pulsar",
+      "nebula-pillars",
+      "black-hole-silhouette",
+      "arcane-sigil",
+      "spell-trace",
+      "ripple-dot",
+    ]);
   });
 
   it.each(audio.map((e) => [e.id, e] as const))("%s hears sound, plays a demo when silent, and is not tagged interactive", (_, effect) => {
@@ -1956,7 +1980,8 @@ describe("audio effects", () => {
 
   it("finds them by what they take", () => {
     expect(findEffects({ accepts: ["audio"] }).map((e) => e.id).sort()).toEqual(audio.map((e) => e.id).sort());
-    expect(findEffects({ accepts: ["audio", "image"] }).map((e) => e.id)).toEqual(["circular-spectrum", "bass-pulse", "vinyl"]);
+    expect(findEffects({ accepts: ["audio", "image"] }).map((e) => e.id)).toEqual(["circular-spectrum", "bass-pulse", "vinyl", "black-hole-silhouette", "arcane-sigil", "spell-trace"]);
+    expect(findEffects({ accepts: ["audio", "mask"] }).map((e) => e.id)).toEqual(["black-hole-silhouette", "arcane-sigil", "spell-trace"]);
   });
 });
 
