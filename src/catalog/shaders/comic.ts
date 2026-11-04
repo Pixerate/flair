@@ -177,7 +177,7 @@ export const focusLines: ShaderEffect = {
   id: "focus-lines",
   name: "Focus lines",
   description: "Manga focus lines: tapering radial speed lines converging on the centre, or the pointer, around a clear middle, flickering and shifting a few times a second.",
-  category: "comic",
+  category: "anime",
   tags: ["comic", "manga", "anime", "speed-lines", "focus", "interactive", "overlay"],
   transparent: true,
   presets: [

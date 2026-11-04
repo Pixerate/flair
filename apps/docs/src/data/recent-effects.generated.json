@@ -1,5 +1,955 @@
 [
   {
+    "id": "anime-sky",
+    "name": "Anime sky",
+    "kind": "shader",
+    "category": "anime",
+    "description": "A painted anime sky: a deep blue gradient over towering cumulus clouds shaded in a few crisp bands, lit at their edges by a glaring sun with soft lens-flare rings, drifting slowly.",
+    "tags": [
+      "anime",
+      "sky",
+      "clouds",
+      "summer",
+      "background",
+      "sun",
+      "lens-flare",
+      "painted"
+    ],
+    "controls": [
+      {
+        "n": "uZenith",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            29,
+            89,
+            214
+          ]
+        },
+        "l": "Sky",
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "uHorizon",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            166,
+            220,
+            248
+          ]
+        },
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uCloud",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "l": "Clouds",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uCloudShade",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            147,
+            174,
+            224
+          ]
+        },
+        "l": "Cloud shadow",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uSun",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            244,
+            210
+          ]
+        },
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "uCover",
+        "t": "float",
+        "d": 0.55,
+        "l": "Cloud cover",
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uScale",
+        "t": "float",
+        "d": 1.3,
+        "l": "Cloud size",
+        "min": 0.5,
+        "max": 3,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uBands",
+        "t": "float",
+        "d": 2,
+        "l": "Shading bands",
+        "min": 1,
+        "max": 4,
+        "s": 1,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uSpeed",
+        "t": "float",
+        "d": 0.025,
+        "l": "Drift",
+        "max": 0.2,
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uGlare",
+        "t": "float",
+        "d": 0.6,
+        "l": "Sun glare",
+        "b": 3,
+        "line": 11
+      },
+      {
+        "n": "uSunX",
+        "t": "float",
+        "d": 0.78,
+        "l": "Sun across",
+        "b": 3,
+        "line": 12
+      },
+      {
+        "n": "uSunY",
+        "t": "float",
+        "d": 0.92,
+        "l": "Sun height",
+        "b": 3,
+        "line": 13
+      }
+    ],
+    "presets": [
+      "Golden hour",
+      "Twilight",
+      "Clear"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "shaders/anime",
+    "addedAt": "2026-11-04T01:09:01.942Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "sakura-petals",
+    "name": "Sakura petals",
+    "kind": "shader",
+    "category": "anime",
+    "description": "Cherry blossom petals drifting down on a breeze at three depths, each notched petal fluttering and flipping over as it falls.",
+    "tags": [
+      "anime",
+      "sakura",
+      "cherry-blossom",
+      "petals",
+      "spring",
+      "japan",
+      "overlay",
+      "particles"
+    ],
+    "controls": [
+      {
+        "n": "uPetal",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            200,
+            217
+          ]
+        },
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "uPetalBase",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            240,
+            129,
+            159
+          ]
+        },
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            191,
+            228,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 0,
+        "l": "Background opacity",
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uDensity",
+        "t": "float",
+        "d": 0.45,
+        "min": 0.1,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 0.03,
+        "l": "Petal size",
+        "min": 0.01,
+        "max": 0.06,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uFall",
+        "t": "float",
+        "d": 0.12,
+        "l": "Fall speed",
+        "max": 0.5,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uWind",
+        "t": "float",
+        "d": 0.3,
+        "min": -1,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uFlutter",
+        "t": "float",
+        "d": 1,
+        "max": 2,
+        "b": 3,
+        "line": 10
+      }
+    ],
+    "presets": [
+      "Spring sky",
+      "Storm of petals",
+      "White plum"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": true
+    },
+    "transparent": true,
+    "animated": true,
+    "module": "shaders/anime",
+    "addedAt": "2026-11-04T01:09:01.942Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "shoujo-sparkles",
+    "name": "Shoujo sparkles",
+    "kind": "shader",
+    "category": "anime",
+    "description": "A shoujo manga backdrop: a soft pastel gradient filled with rising rimmed bubbles and long-rayed sparkles twinkling, the dreamy screen behind a romantic close-up.",
+    "tags": [
+      "anime",
+      "manga",
+      "shoujo",
+      "sparkle",
+      "bubble",
+      "romance",
+      "dreamy",
+      "background",
+      "overlay"
+    ],
+    "controls": [
+      {
+        "n": "uTop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            217,
+            236
+          ]
+        },
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "uBottom",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            231,
+            218,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Background opacity",
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uBubble",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "l": "Bubbles",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uSparkle",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "l": "Sparkles",
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "uBubbles",
+        "t": "float",
+        "d": 0.5,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uSparkles",
+        "t": "float",
+        "d": 0.6,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uSpeed",
+        "t": "float",
+        "d": 0.6,
+        "max": 2,
+        "b": 3,
+        "line": 9
+      }
+    ],
+    "presets": [
+      "Overlay",
+      "Lavender",
+      "Night"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "shaders/anime",
+    "addedAt": "2026-11-04T01:09:01.942Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "gloom-lines",
+    "name": "Gloom lines",
+    "kind": "shader",
+    "category": "anime",
+    "description": "The manga gloom over a character's despair: wavering vertical lines hanging down from the top of the frame into a shadow that darkens towards it, swaying slowly.",
+    "tags": [
+      "anime",
+      "manga",
+      "gloom",
+      "despair",
+      "sad",
+      "reaction",
+      "overlay",
+      "line"
+    ],
+    "controls": [
+      {
+        "n": "uInk",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            30,
+            26,
+            46
+          ]
+        },
+        "l": "Lines",
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "uShade",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            63,
+            53,
+            96
+          ]
+        },
+        "l": "Shadow",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uShadow",
+        "t": "float",
+        "d": 0.55,
+        "l": "Shadow strength",
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uLines",
+        "t": "float",
+        "d": 46,
+        "min": 10,
+        "max": 120,
+        "s": 1,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uLength",
+        "t": "float",
+        "d": 0.45,
+        "l": "Line length",
+        "min": 0.1,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uThickness",
+        "t": "float",
+        "d": 2,
+        "l": "Thickness (px)",
+        "min": 0.5,
+        "max": 6,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uSway",
+        "t": "float",
+        "d": 0.4,
+        "b": 3,
+        "line": 8
+      }
+    ],
+    "presets": [
+      "Purple funk",
+      "Lines only",
+      "Ghost white"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": true
+    },
+    "transparent": true,
+    "animated": true,
+    "module": "shaders/anime",
+    "addedAt": "2026-11-04T01:09:01.942Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "menacing",
+    "name": "Menacing",
+    "kind": "vector",
+    "category": "anime",
+    "description": "The manga menace: heavy outlined ゴ glyphs climbing both sides of the frame, throbbing and trembling one after another while something ominous happens, on a transparent loop.",
+    "tags": [
+      "anime",
+      "manga",
+      "menacing",
+      "katakana",
+      "onomatopoeia",
+      "tension",
+      "overlay",
+      "loop"
+    ],
+    "controls": [
+      {
+        "n": "glyph",
+        "t": "text",
+        "d": "ゴ",
+        "line": 1
+      },
+      {
+        "n": "fill",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            123,
+            44,
+            191
+          ]
+        },
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "outline",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            20,
+            6,
+            31
+          ]
+        },
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "font",
+        "t": "text",
+        "d": "'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic', 'Meiryo', sans-serif",
+        "line": 4
+      }
+    ],
+    "presets": [
+      "Rumble (ドドド)",
+      "Shock (ザワ)"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "glyph",
+          "label": "Glyph",
+          "holds": "copy",
+          "default": "ゴ"
+        },
+        {
+          "name": "font",
+          "label": "Font",
+          "holds": "font",
+          "default": "'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic', 'Meiryo', sans-serif"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 0,
+    "animated": true,
+    "duration": 1800,
+    "module": "anime",
+    "addedAt": "2026-11-04T01:09:01.942Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "eyecatch",
+    "name": "Eyecatch",
+    "kind": "vector",
+    "category": "anime",
+    "description": "An anime eyecatch card, the bumper either side of an ad break: two diagonal colour bands slash across from opposite sides, a starburst spins open and the show's title slams in over it with its subtitle, holds, then everything sweeps away.",
+    "tags": [
+      "anime",
+      "eyecatch",
+      "title",
+      "bumper",
+      "episode",
+      "text",
+      "broadcast",
+      "loop"
+    ],
+    "controls": [
+      {
+        "n": "title",
+        "t": "text",
+        "d": "SUMMER ARC",
+        "line": 1
+      },
+      {
+        "n": "subtitle",
+        "t": "text",
+        "d": "Episode 12",
+        "line": 2
+      },
+      {
+        "n": "background",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            246,
+            234
+          ]
+        },
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "band1",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            79,
+            139
+          ]
+        },
+        "l": "First band",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "band2",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            201,
+            60
+          ]
+        },
+        "l": "Second band",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "burst",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "letters",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "ink",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            27,
+            26,
+            51
+          ]
+        },
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "font",
+        "t": "text",
+        "d": "'Bangers', 'Luckiest Guy', Impact, 'Arial Black', sans-serif",
+        "line": 9
+      }
+    ],
+    "presets": [
+      "Mecha",
+      "Slice of life"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "title",
+          "label": "Title",
+          "holds": "copy",
+          "default": "SUMMER ARC"
+        },
+        {
+          "name": "subtitle",
+          "label": "Subtitle",
+          "holds": "copy",
+          "default": "Episode 12"
+        },
+        {
+          "name": "font",
+          "label": "Font",
+          "holds": "font",
+          "default": "'Bangers', 'Luckiest Guy', Impact, 'Arial Black', sans-serif"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 400,
+    "animated": true,
+    "duration": 3220,
+    "module": "anime",
+    "addedAt": "2026-11-04T01:09:01.942Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "manga-tone",
+    "name": "Manga tone",
+    "kind": "shader",
+    "category": "anime",
+    "description": "Any picture printed as a black-and-white manga page: inked outlines, mid-tones cut from screentone dot sheets, shadows in solid black or cross-hatching, on off-white paper.",
+    "tags": [
+      "anime",
+      "manga",
+      "comic",
+      "screentone",
+      "ink",
+      "black-and-white",
+      "image",
+      "print"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "line": 2,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uLine",
+        "t": "float",
+        "d": 1.4,
+        "l": "Line weight (px)",
+        "min": 0.5,
+        "max": 4,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "uThreshold",
+        "t": "float",
+        "d": 0.3,
+        "l": "Ink threshold",
+        "min": 0.05,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uTones",
+        "t": "int",
+        "d": 2,
+        "l": "Screentone levels",
+        "min": 1,
+        "max": 4,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uToneSize",
+        "t": "float",
+        "d": 4.5,
+        "l": "Tone dot pitch (px)",
+        "min": 2,
+        "max": 12,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uToneAngle",
+        "t": "float",
+        "d": 45,
+        "l": "Tone angle (°)",
+        "max": 90,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uBlack",
+        "t": "float",
+        "d": 0.16,
+        "l": "Shadows below",
+        "max": 0.5,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uWhite",
+        "t": "float",
+        "d": 0.74,
+        "l": "Paper white above",
+        "min": 0.5,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uHatch",
+        "t": "float",
+        "d": 0.5,
+        "l": "Hatched shadows",
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uInk",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            17,
+            17,
+            17
+          ]
+        },
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "uPaper",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            250,
+            248,
+            242
+          ]
+        },
+        "c": 1,
+        "line": 12
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 13
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 14
+      }
+    ],
+    "presets": [
+      "Fine tone",
+      "Bold ink",
+      "Old volume"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "filter",
+    "animated": false,
+    "module": "shaders/anime",
+    "addedAt": "2026-11-04T01:09:01.941Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
     "id": "long-exposure",
     "name": "Long exposure",
     "kind": "timing",
@@ -1449,1094 +2399,5 @@
     "addedAt": "2026-11-02T16:20:46Z",
     "commitHash": "0e80eedf64462bbab221b33748e51ceb98190c15",
     "order": 619
-  },
-  {
-    "id": "light-waves",
-    "name": "Light waves",
-    "kind": "shader",
-    "category": "light",
-    "description": "A glossy sheet of fine parallel ridges folding in slow, deep waves, each ridge catching the light so the lines shimmer and bunch where the sheet turns, with an iridescent sheen sliding across the folds.",
-    "tags": [
-      "background",
-      "hero",
-      "wave",
-      "line",
-      "ribbed",
-      "iridescent",
-      "gloss",
-      "fold",
-      "flow",
-      "wallpaper"
-    ],
-    "controls": [
-      {
-        "n": "uShadow",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            3,
-            36,
-            23
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "uBase",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            34,
-            179,
-            86
-          ]
-        },
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uHighlight",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            216,
-            255,
-            226
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uSheen",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            242,
-            122,
-            217
-          ]
-        },
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uScale",
-        "t": "float",
-        "d": 1.2,
-        "l": "Fold size",
-        "min": 0.3,
-        "max": 4,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uDensity",
-        "t": "float",
-        "d": 110,
-        "l": "Lines",
-        "min": 10,
-        "max": 300,
-        "s": 1,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uBend",
-        "t": "float",
-        "d": 1.4,
-        "max": 3,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uRidge",
-        "t": "float",
-        "d": 1,
-        "l": "Ridge depth",
-        "max": 2,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uRelief",
-        "t": "float",
-        "d": 1,
-        "l": "Fold depth",
-        "max": 2,
-        "b": 3,
-        "line": 10
-      },
-      {
-        "n": "uGloss",
-        "t": "float",
-        "d": 1,
-        "max": 2,
-        "b": 3,
-        "line": 11
-      },
-      {
-        "n": "uIridescence",
-        "t": "float",
-        "d": 1,
-        "l": "Sheen",
-        "max": 2,
-        "b": 3,
-        "line": 12
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 0.12,
-        "b": 3,
-        "line": 13
-      },
-      {
-        "n": "uAngle",
-        "t": "float",
-        "d": -25,
-        "l": "Angle (°)",
-        "min": -180,
-        "max": 180,
-        "b": 3,
-        "line": 14
-      }
-    ],
-    "presets": [
-      "Ultraviolet",
-      "Chrome",
-      "Sunset",
-      "Bold",
-      "Still"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "shaders/light",
-    "addedAt": "2026-11-02T16:20:46Z",
-    "commitHash": "0e80eedf64462bbab221b33748e51ceb98190c15",
-    "order": 618
-  },
-  {
-    "id": "glass-tube",
-    "name": "Glass tube",
-    "kind": "shader",
-    "category": "path",
-    "description": "A thick, see-through tube of glowing glass drawing itself along any path, with bright edges, a soft core and overlaps that show through each other, coloured from one end to the other.",
-    "tags": [
-      "background",
-      "path",
-      "line",
-      "draw",
-      "tube",
-      "glass",
-      "glow",
-      "squiggle",
-      "ribbon",
-      "wallpaper"
-    ],
-    "controls": [
-      {
-        "n": "uPath",
-        "t": "path",
-        "d": "M 40 50 C 43 56 47 76 59 87 C 70 98 89 108 108 115 C 127 121 151 125 171 126 C 191 127 213 124 228 120 C 242 116 254 108 258 101 C 262 95 259 86 252 80 C 244 73 228 67 211 64 C 194 62 170 61 150 64 C 130 67 106 73 89 81 C 72 89 56 101 48 113 C 41 124 38 139 42 151 C 46 163 58 176 72 186 C 87 195 109 204 129 208 C 149 213 173 214 192 213 C 211 213 230 208 241 203 C 253 197 260 189 260 182 C 260 175 253 167 241 161 C 230 156 211 151 192 150 C 173 149 149 151 129 156 C 109 160 87 169 72 178 C 58 188 46 201 42 213 C 38 225 41 240 48 251 C 56 263 72 275 89 283 C 106 291 130 297 150 300 C 170 303 194 302 211 299 C 228 297 244 290 252 284 C 259 278 262 269 258 263 C 254 256 242 248 228 244 C 213 240 191 237 171 238 C 151 239 127 243 108 249 C 89 256 70 266 59 277 C 47 288 40 302 40 314 C 40 326 47 340 59 351 C 70 362 89 372 108 378 C 127 385 151 389 171 390 C 191 391 213 388 228 384 C 242 380 254 372 258 365 C 262 359 259 350 252 343 C 244 337 228 331 211 328 C 194 326 160 328 150 328",
-        "path": {
-          "fit": "contain",
-          "margin": 0.1
-        },
-        "line": 2
-      },
-      {
-        "n": "uColorA",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            232,
-            40,
-            60
-          ]
-        },
-        "l": "Start colour",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uColorB",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            122,
-            69
-          ]
-        },
-        "l": "Middle colour",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uColorC",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            197,
-            61
-          ]
-        },
-        "l": "End colour",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            20,
-            11,
-            8
-          ]
-        },
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "uThickness",
-        "t": "float",
-        "d": 13,
-        "l": "Thickness (%)",
-        "min": 1,
-        "max": 30,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uProgress",
-        "t": "float",
-        "d": 1,
-        "l": "Drawn",
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uDrawOn",
-        "t": "float",
-        "d": 2.5,
-        "l": "Draw-on time (s)",
-        "max": 10,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uOpacity",
-        "t": "float",
-        "d": 0.45,
-        "l": "Body opacity",
-        "b": 3,
-        "line": 10
-      },
-      {
-        "n": "uRim",
-        "t": "float",
-        "d": 1,
-        "l": "Edge light",
-        "max": 2,
-        "b": 3,
-        "line": 11
-      },
-      {
-        "n": "uGlow",
-        "t": "float",
-        "d": 0.6,
-        "max": 2,
-        "b": 3,
-        "line": 12
-      },
-      {
-        "n": "uFlow",
-        "t": "float",
-        "d": 0.4,
-        "l": "Shimmer speed",
-        "max": 2,
-        "b": 3,
-        "line": 13
-      },
-      {
-        "n": "uDownFrame",
-        "t": "bool",
-        "d": false,
-        "l": "Colour down the frame",
-        "line": 14
-      },
-      {
-        "n": "uBackgroundAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Background opacity",
-        "b": 3,
-        "line": 206
-      }
-    ],
-    "presets": [
-      "Neon",
-      "Chrome",
-      "Light",
-      "Static"
-    ],
-    "inputs": {
-      "accepts": [
-        "path"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "uPath",
-          "label": "Path",
-          "holds": "path",
-          "default": "M 40 50 C 43 56 47 76 59 87 C 70 98 89 108 108 115 C 127 121 151 125 171 126 C 191 127 213 124 228 120 C 242 116 254 108 258 101 C 262 95 259 86 252 80 C 244 73 228 67 211 64 C 194 62 170 61 150 64 C 130 67 106 73 89 81 C 72 89 56 101 48 113 C 41 124 38 139 42 151 C 46 163 58 176 72 186 C 87 195 109 204 129 208 C 149 213 173 214 192 213 C 211 213 230 208 241 203 C 253 197 260 189 260 182 C 260 175 253 167 241 161 C 230 156 211 151 192 150 C 173 149 149 151 129 156 C 109 160 87 169 72 178 C 58 188 46 201 42 213 C 38 225 41 240 48 251 C 56 263 72 275 89 283 C 106 291 130 297 150 300 C 170 303 194 302 211 299 C 228 297 244 290 252 284 C 259 278 262 269 258 263 C 254 256 242 248 228 244 C 213 240 191 237 171 238 C 151 239 127 243 108 249 C 89 256 70 266 59 277 C 47 288 40 302 40 314 C 40 326 47 340 59 351 C 70 362 89 372 108 378 C 127 385 151 389 171 390 C 191 391 213 388 228 384 C 242 380 254 372 258 365 C 262 359 259 350 252 343 C 244 337 228 331 211 328 C 194 326 160 328 150 328"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "build": 2.5,
-    "animated": true,
-    "module": "shaders/paths",
-    "addedAt": "2026-11-02T16:08:33Z",
-    "commitHash": "eeb557e12a633f07cd106ee3de547e4f23a31250",
-    "order": 617
-  },
-  {
-    "id": "sticker-wrap",
-    "name": "Sticker wrap",
-    "kind": "vector",
-    "category": "sticker",
-    "description": "Any outline (SVG path data) made into a still die-cut sticker: fitted to the frame, given a thick white border, a coloured glossy face and a soft shadow, and tilted a little. Give it a logo's or an asset's silhouette.",
-    "tags": [
-      "sticker",
-      "static",
-      "die-cut",
-      "path",
-      "silhouette",
-      "logo",
-      "outline",
-      "gloss"
-    ],
-    "controls": [
-      {
-        "n": "silhouette",
-        "t": "text",
-        "d": "M12 21 C12 21 2.5 15 2.5 8.6 C2.5 5.6 4.9 3.3 7.9 3.3 C9.7 3.3 11.2 4.3 12 5.8 C12.8 4.3 14.3 3.3 16.1 3.3 C19.1 3.3 21.5 5.6 21.5 8.6 C21.5 15 12 21 12 21 Z",
-        "l": "Silhouette (SVG path data)",
-        "line": 1
-      },
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            237,
-            232,
-            223
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "sticker",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            90,
-            54
-          ]
-        },
-        "l": "Face",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "border",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "cut",
-        "t": "float",
-        "d": 10,
-        "l": "Border width",
-        "min": 2,
-        "max": 20,
-        "s": 1,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "tilt",
-        "t": "float",
-        "d": -6,
-        "l": "Tilt (degrees)",
-        "min": -30,
-        "max": 30,
-        "s": 1,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "shadow",
-        "t": "float",
-        "d": 0.3,
-        "max": 0.6,
-        "s": 0.05,
-        "b": 3,
-        "line": 7
-      }
-    ],
-    "presets": [
-      "Star",
-      "Bolt on dark",
-      "Thin cut"
-    ],
-    "inputs": {
-      "accepts": [
-        "path"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "silhouette",
-          "label": "Silhouette (SVG path data)",
-          "holds": "path",
-          "default": "M12 21 C12 21 2.5 15 2.5 8.6 C2.5 5.6 4.9 3.3 7.9 3.3 C9.7 3.3 11.2 4.3 12 5.8 C12.8 4.3 14.3 3.3 16.1 3.3 C19.1 3.3 21.5 5.6 21.5 8.6 C21.5 15 12 21 12 21 Z"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "duration": 601,
-    "module": "sticker",
-    "addedAt": "2026-11-02T12:44:53Z",
-    "commitHash": "359d8593cdbb9abfd2f45d6b22180a15fcf43b9e",
-    "order": 616
-  },
-  {
-    "id": "speech-sticker",
-    "name": "Speech sticker",
-    "kind": "vector",
-    "category": "sticker",
-    "description": "A still die-cut speech bubble sticker saying a few words, in a white border with a glossy face and a soft shadow, tilted a little.",
-    "tags": [
-      "sticker",
-      "static",
-      "speech",
-      "bubble",
-      "comic",
-      "die-cut",
-      "label"
-    ],
-    "controls": [
-      {
-        "n": "words",
-        "t": "text",
-        "d": "HELLO!",
-        "line": 1
-      },
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            237,
-            232,
-            223
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "sticker",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "l": "Bubble",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "ink",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            17,
-            24,
-            39
-          ]
-        },
-        "l": "Words colour",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "border",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "outline",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            17,
-            24,
-            39
-          ]
-        },
-        "l": "Bubble outline",
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "tilt",
-        "t": "float",
-        "d": -5,
-        "l": "Tilt (degrees)",
-        "min": -30,
-        "max": 30,
-        "s": 1,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "shadow",
-        "t": "float",
-        "d": 0.3,
-        "max": 0.6,
-        "s": 0.05,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "font",
-        "t": "text",
-        "d": "'Arial Black', 'Helvetica Neue', Impact, system-ui, sans-serif",
-        "line": 9
-      }
-    ],
-    "presets": [
-      "Hey!",
-      "Wow",
-      "Night chat"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "words",
-          "label": "Words",
-          "holds": "copy",
-          "default": "HELLO!"
-        },
-        {
-          "name": "font",
-          "label": "Font",
-          "holds": "font",
-          "default": "'Arial Black', 'Helvetica Neue', Impact, system-ui, sans-serif"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "duration": 601,
-    "module": "sticker",
-    "addedAt": "2026-11-02T12:44:53Z",
-    "commitHash": "359d8593cdbb9abfd2f45d6b22180a15fcf43b9e",
-    "order": 615
-  },
-  {
-    "id": "sticker-label",
-    "name": "Sticker label",
-    "kind": "vector",
-    "category": "sticker",
-    "description": "A still rounded-rectangle label sticker, like one on a laptop lid: a bold title over a small line, in a white border with a glossy face and a soft shadow, tilted a little.",
-    "tags": [
-      "sticker",
-      "static",
-      "label",
-      "laptop",
-      "die-cut",
-      "title",
-      "gloss"
-    ],
-    "controls": [
-      {
-        "n": "title",
-        "t": "text",
-        "d": "SHIP IT",
-        "line": 1
-      },
-      {
-        "n": "sub",
-        "t": "text",
-        "d": "FLAIR STUDIO",
-        "l": "Small line (may be empty)",
-        "line": 2
-      },
-      {
-        "n": "round",
-        "t": "float",
-        "d": 0.3,
-        "l": "Roundness",
-        "s": 0.05,
-        "b": 3,
-        "line": 3
-      },
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            231,
-            229,
-            228
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "sticker",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            99,
-            102,
-            241
-          ]
-        },
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "ink",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "l": "Text colour",
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "border",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 7
-      },
-      {
-        "n": "tilt",
-        "t": "float",
-        "d": -4,
-        "l": "Tilt (degrees)",
-        "min": -30,
-        "max": 30,
-        "s": 1,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "shadow",
-        "t": "float",
-        "d": 0.3,
-        "max": 0.6,
-        "s": 0.05,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "font",
-        "t": "text",
-        "d": "'Arial Black', 'Helvetica Neue', Impact, system-ui, sans-serif",
-        "line": 10
-      }
-    ],
-    "presets": [
-      "Laptop lid",
-      "Midnight",
-      "Pill"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "title",
-          "label": "Title",
-          "holds": "copy",
-          "default": "SHIP IT"
-        },
-        {
-          "name": "sub",
-          "label": "Small line (may be empty)",
-          "holds": "copy",
-          "default": "FLAIR STUDIO"
-        },
-        {
-          "name": "font",
-          "label": "Font",
-          "holds": "font",
-          "default": "'Arial Black', 'Helvetica Neue', Impact, system-ui, sans-serif"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "duration": 601,
-    "module": "sticker",
-    "addedAt": "2026-11-02T12:44:53Z",
-    "commitHash": "359d8593cdbb9abfd2f45d6b22180a15fcf43b9e",
-    "order": 614
-  },
-  {
-    "id": "die-cut-sticker",
-    "name": "Die-cut sticker",
-    "kind": "vector",
-    "category": "sticker",
-    "description": "A still die-cut sticker with a label: a burst, heart, star, circle, pill or bolt in a thick white border, with a glossy face and a soft shadow, tilted a little. Drops into a page or a scene as it is.",
-    "tags": [
-      "sticker",
-      "static",
-      "die-cut",
-      "badge",
-      "label",
-      "gloss"
-    ],
-    "controls": [
-      {
-        "n": "label",
-        "t": "text",
-        "d": "NEW!",
-        "line": 1
-      },
-      {
-        "n": "shape",
-        "t": "int",
-        "d": 0,
-        "l": "Shape (0 burst, 1 heart, 2 star, 3 circle, 4 pill, 5 bolt)",
-        "max": 5,
-        "b": 3,
-        "line": 2
-      },
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            237,
-            232,
-            223
-          ]
-        },
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "sticker",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            90,
-            54
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "ink",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "l": "Label colour",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "border",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "tilt",
-        "t": "float",
-        "d": -6,
-        "l": "Tilt (degrees)",
-        "min": -30,
-        "max": 30,
-        "s": 1,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "shadow",
-        "t": "float",
-        "d": 0.3,
-        "max": 0.6,
-        "s": 0.05,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "font",
-        "t": "text",
-        "d": "'Arial Black', 'Helvetica Neue', Impact, system-ui, sans-serif",
-        "line": 9
-      }
-    ],
-    "presets": [
-      "Hello heart",
-      "Ship it pill",
-      "Power bolt"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "label",
-          "label": "Label",
-          "holds": "copy",
-          "default": "NEW!"
-        },
-        {
-          "name": "font",
-          "label": "Font",
-          "holds": "font",
-          "default": "'Arial Black', 'Helvetica Neue', Impact, system-ui, sans-serif"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "duration": 601,
-    "module": "sticker",
-    "addedAt": "2026-11-02T12:44:53Z",
-    "commitHash": "359d8593cdbb9abfd2f45d6b22180a15fcf43b9e",
-    "order": 613
-  },
-  {
-    "id": "sticker-cutout",
-    "name": "Sticker cutout",
-    "kind": "shader",
-    "category": "sticker",
-    "description": "Any picture or SVG with transparency turned into a still die-cut sticker: its own colours inside a white border grown from its outline, a soft drop shadow, a gloss band and, if wanted, a touch of holographic foil. Made for dropping artwork into a page or scene.",
-    "tags": [
-      "sticker",
-      "die-cut",
-      "static",
-      "cutout",
-      "border",
-      "shadow",
-      "gloss",
-      "artwork",
-      "svg",
-      "logo"
-    ],
-    "controls": [
-      {
-        "n": "uMask",
-        "t": "sampler2D",
-        "d": {
-          "sample": "heart"
-        },
-        "l": "Artwork (with transparency)",
-        "line": 2,
-        "x": {
-          "filter": "mipmap",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uBorderColor",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "l": "Border",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uBorder",
-        "t": "float",
-        "d": 0.03,
-        "l": "Border width",
-        "max": 0.08,
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "uSize",
-        "t": "float",
-        "d": 0.78,
-        "min": 0.3,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uTurn",
-        "t": "float",
-        "d": -6,
-        "l": "Turn (degrees)",
-        "min": -30,
-        "max": 30,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uShadow",
-        "t": "float",
-        "d": 0.4,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uGloss",
-        "t": "float",
-        "d": 0.5,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uFoil",
-        "t": "float",
-        "d": 0,
-        "l": "Holo foil",
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            238,
-            240,
-            246
-          ]
-        },
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "uBackgroundAlpha",
-        "t": "float",
-        "d": 0,
-        "l": "Background opacity",
-        "b": 3,
-        "line": 11
-      }
-    ],
-    "presets": [
-      "Logo",
-      "Holo heart",
-      "Word on a card"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "svg",
-        "text",
-        "mask"
-      ],
-      "images": [
-        {
-          "name": "uMask",
-          "label": "Artwork (with transparency)",
-          "wants": "mask"
-        }
-      ],
-      "texts": [],
-      "video": "none",
-      "interactions": [],
-      "transparent": true
-    },
-    "video": "none",
-    "transparent": true,
-    "animated": false,
-    "module": "shaders/sticker",
-    "addedAt": "2026-11-02T12:44:53Z",
-    "commitHash": "359d8593cdbb9abfd2f45d6b22180a15fcf43b9e",
-    "order": 612
   }
 ]

@@ -9,6 +9,7 @@ import {
   EFFECT_CATEGORIES,
   EFFECT_CATEGORY_GROUPS,
   categoryGroup,
+  drawsAlpha,
   EFFECTS,
   effectControls,
   effectDefaults,
@@ -1304,19 +1305,15 @@ describe("comic effects", () => {
 
   it("has the inked, toon, speed-line, panel and cartoon effects, all tagged", () => {
     const ids = comics.map((e) => e.id);
-    for (const id of ["comic-book", "cel-shade", "focus-lines", "action-lines", "sound-effect", "speech-bubble", "fight-cloud", "dizzy-stars", "anime-emotes", "cartoon-poof", "line-boil"])
+    for (const id of ["comic-book", "cel-shade", "action-lines", "sound-effect", "speech-bubble", "fight-cloud", "dizzy-stars", "cartoon-poof", "line-boil"])
       expect(ids).toContain(id);
     for (const effect of comics) expect(effect.tags.some((t) => t === "comic" || t === "cartoon"), effect.id).toBe(true);
     expect(getEffect("transition-comic-panels")).toMatchObject({ category: "transition", video: "transition", loop: 4 });
     expect(getEffect("transition-comic-panels")!.tags).toEqual(expect.arrayContaining(["transition", "comic"]));
   });
 
-  it("says how the image ones suit video, and focus lines follow the pointer", () => {
+  it("says how the image ones suit video", () => {
     for (const id of ["comic-book", "cel-shade", "action-lines"]) expect(getEffect(id), id).toMatchObject({ video: "filter" });
-    const focus = getEffect("focus-lines")!;
-    expect(focus).toMatchObject({ transparent: true });
-    expect(focus.kind === "shader" && focus.source).toMatch(/\biPointer\b/);
-    expect(focus.kind === "shader" && focus.source).not.toMatch(/uniform\s+vec4\s+iPointer/);
   });
 
   it("sound effect and speech bubble take any text", () => {
@@ -1340,13 +1337,6 @@ describe("comic effects", () => {
     expect(speech).toMatch(/<g display="none"><circle id="sbTrail0"/);
   });
 
-  it("anime emotes show one emote at a time", () => {
-    for (const emote of [0, 1, 2, 3]) {
-      const svg = render("anime-emotes", { emote }).svg;
-      expect(svg.match(/display="inline"/g)!.length, String(emote)).toBe(1);
-    }
-  });
-
   it("cartoon poof vanishes on a click and comes back as it was", () => {
     const effect = getEffect("cartoon-poof")!;
     expect(effect.kind === "vector" && effect.trigger).toBe("click");
@@ -1360,7 +1350,7 @@ describe("comic effects", () => {
   });
 
   it("loops end where they start", () => {
-    for (const id of ["fight-cloud", "dizzy-stars", "anime-emotes"]) {
+    for (const id of ["fight-cloud", "dizzy-stars"]) {
       const motion = render(id);
       expect(frameAt(motion, [], svgDuration(motion)), id).toBe(frameAt(motion, [], 0));
     }
@@ -1373,6 +1363,62 @@ describe("comic effects", () => {
     expect(svgDuration(motion)).toBe(400);
     const seeds = new Set([0, 150, 250, 350].map((t) => svgFrame(motion.animate!, [], t).get("lineBoilNoise")!.attrs.seed));
     expect(seeds.size).toBe(4);
+  });
+});
+
+describe("anime effects", () => {
+  const anime = findEffects({ category: "anime" });
+  const render = (id: string, values: Record<string, unknown> = {}) => {
+    const effect = getEffect(id)!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    return renderVectorEffect(effect, { ...effectDefaults(effect), ...values } as never);
+  };
+  const frameAt = (motion: ReturnType<typeof render>, ms: number) => JSON.stringify([...svgFrame(motion.animate!, [], ms)].sort());
+
+  it("has the manga page, sky, petals, sparkles, gloom, menace, eyecatch, emotes and focus lines, all tagged", () => {
+    const ids = anime.map((e) => e.id);
+    for (const id of ["manga-tone", "anime-sky", "sakura-petals", "shoujo-sparkles", "gloom-lines", "menacing", "eyecatch", "anime-emotes", "focus-lines"]) expect(ids).toContain(id);
+    for (const effect of anime) expect(effect.tags.some((t) => t === "anime" || t === "manga"), effect.id).toBe(true);
+    expect(categoryGroup("anime").name).toBe("Pictures");
+  });
+
+  it("manga tone is a video filter, and the overlays draw transparent", () => {
+    expect(getEffect("manga-tone")).toMatchObject({ video: "filter" });
+    for (const id of ["sakura-petals", "gloom-lines", "focus-lines"]) expect(getEffect(id), id).toMatchObject({ transparent: true });
+    expect(effectDefaults(getEffect("sakura-petals")!).uBackgroundAlpha).toBe(0);
+    expect(drawsAlpha(getEffect("shoujo-sparkles")!, { uBackgroundAlpha: 0 })).toBe(true);
+    expect(drawsAlpha(getEffect("shoujo-sparkles")!)).toBe(true);
+  });
+
+  it("focus lines follow the pointer", () => {
+    const focus = getEffect("focus-lines")!;
+    expect(focus.kind === "shader" && focus.source).toMatch(/\biPointer\b/);
+    expect(focus.kind === "shader" && focus.source).not.toMatch(/uniform\s+vec4\s+iPointer/);
+  });
+
+  it("anime emotes show one emote at a time", () => {
+    for (const emote of [0, 1, 2, 3]) {
+      const svg = render("anime-emotes", { emote }).svg;
+      expect(svg.match(/display="inline"/g)!.length, String(emote)).toBe(1);
+    }
+  });
+
+  it("menacing and eyecatch take any text", () => {
+    for (const [id, names] of [["menacing", ["glyph"]], ["eyecatch", ["title", "subtitle"]]] as const)
+      for (const text of ["A", "ゴゴゴゴゴゴゴゴ", "Supercalifragilistic expialidocious & <co> with a long tail", "Café 日本 🎉", ""]) {
+        const motion = render(id, Object.fromEntries(names.map((n) => [n, text])));
+        expect(svgMotionIssues(motion), id).toEqual([]);
+        expect(JSON.stringify(motion), id).not.toMatch(/\{\{|NaN|undefined/);
+      }
+    const long = render("eyecatch", { title: "An extraordinarily long anime title" }).svg;
+    expect(Number(long.match(/font-size="([\d.]+)"/)![1])).toBeLessThan(76);
+  });
+
+  it("loops end where they start", () => {
+    for (const id of ["menacing", "eyecatch", "anime-emotes"]) {
+      const motion = render(id);
+      expect(frameAt(motion, svgDuration(motion)), id).toBe(frameAt(motion, 0));
+    }
   });
 });
 
