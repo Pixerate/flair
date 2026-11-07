@@ -70,6 +70,7 @@ import { fireShaders } from "./shaders/fire.js";
 import { loaderShaders } from "./shaders/loaders.js";
 import { hologramShaders } from "./shaders/hologram.js";
 import { meltShaders } from "./shaders/melt.js";
+import { phyllotaxisShaders } from "./shaders/phyllotaxis.js";
 import { pixelShaders } from "./shaders/pixel.js";
 import { pyroShaders } from "./shaders/pyro.js";
 import { timewarpShaders } from "./shaders/timewarp.js";
@@ -258,6 +259,7 @@ export const SHADER_EFFECTS: readonly ShaderEffect[] = [
   ...loaderShaders,
   ...hologramShaders,
   ...pixelShaders,
+  ...phyllotaxisShaders,
   ...splatterShaders,
   ...bubbleShaders,
   ...growthShaders,

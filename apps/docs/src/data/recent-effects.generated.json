@@ -1,5 +1,529 @@
 [
   {
+    "id": "transition-pixel-bloom",
+    "name": "Pixel bloom transition",
+    "kind": "shader",
+    "category": "transition",
+    "description": "Squares on a sunflower spiral grow out from the centre, each carrying the next picture, until they cover the frame; a glow rides the growing edge. Loops back and forth; or turn Animate off and set Progress.",
+    "tags": [
+      "transition",
+      "pixel",
+      "phyllotaxis",
+      "sunflower",
+      "spiral",
+      "image",
+      "slideshow",
+      "logo"
+    ],
+    "controls": [
+      {
+        "n": "uFrom",
+        "t": "sampler2D",
+        "d": {
+          "sample": "landscape"
+        },
+        "l": "From image",
+        "line": 2,
+        "x": {
+          "filter": "mipmap",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uTo",
+        "t": "sampler2D",
+        "d": {
+          "sample": "city"
+        },
+        "l": "To image",
+        "line": 3,
+        "x": {
+          "filter": "mipmap",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uAnimate",
+        "t": "bool",
+        "d": true,
+        "line": 4
+      },
+      {
+        "n": "uProgress",
+        "t": "float",
+        "d": 0.5,
+        "l": "Progress (when still)",
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uCell",
+        "t": "float",
+        "d": 72,
+        "l": "Square spacing (px)",
+        "min": 64,
+        "max": 200,
+        "s": 1,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uSpread",
+        "t": "float",
+        "d": 0.55,
+        "min": 0.1,
+        "max": 0.9,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uTwist",
+        "t": "float",
+        "d": 0.3,
+        "min": -1,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uUpright",
+        "t": "bool",
+        "d": false,
+        "l": "Keep squares upright",
+        "line": 9
+      },
+      {
+        "n": "uEdge",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            240,
+            90,
+            180
+          ]
+        },
+        "l": "Edge glow",
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "uEdgeGlow",
+        "t": "float",
+        "d": 0.5,
+        "l": "Edge glow strength",
+        "b": 3,
+        "line": 11
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 12
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 13
+      }
+    ],
+    "presets": [
+      "Fine",
+      "Bold blocks",
+      "Upright pixels"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uFrom",
+          "label": "From image",
+          "wants": "picture"
+        },
+        {
+          "name": "uTo",
+          "label": "To image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "transition",
+      "interactions": [],
+      "transparent": false
+    },
+    "video": "transition",
+    "loop": 4,
+    "animated": true,
+    "duration": 4000,
+    "module": "shaders/phyllotaxis",
+    "addedAt": "2026-11-07T19:20:07.980Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "pixel-bloom-reveal",
+    "name": "Pixel bloom reveal",
+    "kind": "shader",
+    "category": "loader",
+    "description": "A logo-sting loop: squares pop out from the centre along a sunflower spiral, the bloom holds and shimmers, then it spins away into pixel dust from the edge in. On a clear background; works as a loader.",
+    "tags": [
+      "pixel",
+      "phyllotaxis",
+      "sunflower",
+      "logo",
+      "reveal",
+      "sting",
+      "intro",
+      "loader",
+      "dissolve",
+      "overlay"
+    ],
+    "controls": [
+      {
+        "n": "uCount",
+        "t": "int",
+        "d": 70,
+        "l": "Squares",
+        "min": 20,
+        "max": 400,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "uRadius",
+        "t": "float",
+        "d": 0.42,
+        "min": 0.1,
+        "max": 0.6,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 1.6,
+        "l": "Square size",
+        "min": 0.4,
+        "max": 2,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uDissolve",
+        "t": "float",
+        "d": 0.9,
+        "l": "Dissolve toward the edge",
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uTwist",
+        "t": "float",
+        "d": 0,
+        "min": -1,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uUpright",
+        "t": "bool",
+        "d": false,
+        "l": "Keep squares upright",
+        "line": 7
+      },
+      {
+        "n": "uInner",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            225,
+            10,
+            107
+          ]
+        },
+        "l": "Centre colour",
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "uMiddle",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            132,
+            38,
+            136
+          ]
+        },
+        "l": "Middle colour",
+        "c": 1,
+        "line": 9
+      },
+      {
+        "n": "uOuter",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            45,
+            55,
+            160
+          ]
+        },
+        "l": "Edge colour",
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "uDiagonal",
+        "t": "bool",
+        "d": false,
+        "l": "Colour across (not outward)",
+        "line": 11
+      },
+      {
+        "n": "uGlow",
+        "t": "float",
+        "d": 0.25,
+        "b": 3,
+        "line": 12
+      },
+      {
+        "n": "uLoop",
+        "t": "float",
+        "d": 5,
+        "l": "Seconds per loop",
+        "min": 2,
+        "max": 12,
+        "b": 3,
+        "line": 13
+      },
+      {
+        "n": "uHold",
+        "t": "float",
+        "d": 0.3,
+        "max": 0.6,
+        "b": 3,
+        "line": 14
+      },
+      {
+        "n": "uPop",
+        "t": "float",
+        "d": 0.6,
+        "l": "Overshoot",
+        "b": 3,
+        "line": 15
+      }
+    ],
+    "presets": [
+      "Quick loader",
+      "Upright",
+      "Galaxy sting"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": true
+    },
+    "transparent": true,
+    "loop": 5,
+    "animated": true,
+    "duration": 5000,
+    "module": "shaders/phyllotaxis",
+    "addedAt": "2026-11-07T19:20:07.980Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "pixel-bloom",
+    "name": "Pixel bloom",
+    "kind": "shader",
+    "category": "pattern",
+    "description": "Rounded squares on a sunflower spiral, big at the bright centre and shrinking to pixel dust toward the edge, turning slowly while a shimmer ripples outward. On a clear background, for logos, headers and loaders.",
+    "tags": [
+      "pixel",
+      "phyllotaxis",
+      "sunflower",
+      "spiral",
+      "logo",
+      "brand",
+      "squares",
+      "dissolve",
+      "generative",
+      "overlay"
+    ],
+    "controls": [
+      {
+        "n": "uCount",
+        "t": "int",
+        "d": 70,
+        "l": "Squares",
+        "min": 20,
+        "max": 400,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "uRadius",
+        "t": "float",
+        "d": 0.42,
+        "min": 0.1,
+        "max": 0.6,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 1.6,
+        "l": "Square size",
+        "min": 0.4,
+        "max": 2,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uDissolve",
+        "t": "float",
+        "d": 0.9,
+        "l": "Dissolve toward the edge",
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uTwist",
+        "t": "float",
+        "d": 0,
+        "min": -1,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uUpright",
+        "t": "bool",
+        "d": false,
+        "l": "Keep squares upright",
+        "line": 7
+      },
+      {
+        "n": "uInner",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            225,
+            10,
+            107
+          ]
+        },
+        "l": "Centre colour",
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "uMiddle",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            132,
+            38,
+            136
+          ]
+        },
+        "l": "Middle colour",
+        "c": 1,
+        "line": 9
+      },
+      {
+        "n": "uOuter",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            45,
+            55,
+            160
+          ]
+        },
+        "l": "Edge colour",
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "uDiagonal",
+        "t": "bool",
+        "d": false,
+        "l": "Colour across (not outward)",
+        "line": 11
+      },
+      {
+        "n": "uGlow",
+        "t": "float",
+        "d": 0.25,
+        "b": 3,
+        "line": 12
+      },
+      {
+        "n": "uSpin",
+        "t": "int",
+        "d": 1,
+        "l": "Turns per loop (24 s)",
+        "min": -2,
+        "max": 2,
+        "b": 3,
+        "line": 13
+      },
+      {
+        "n": "uWaves",
+        "t": "int",
+        "d": 8,
+        "l": "Shimmer waves per loop",
+        "max": 16,
+        "b": 3,
+        "line": 14
+      },
+      {
+        "n": "uShimmer",
+        "t": "float",
+        "d": 0.35,
+        "b": 3,
+        "line": 15
+      }
+    ],
+    "presets": [
+      "Upright pixels",
+      "Galaxy",
+      "Sunflower",
+      "Mint"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": true
+    },
+    "transparent": true,
+    "loop": 24,
+    "animated": true,
+    "duration": 24000,
+    "module": "shaders/phyllotaxis",
+    "addedAt": "2026-11-07T19:20:07.979Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
     "id": "ripple-dot",
     "name": "Ripple dot",
     "kind": "shader",
@@ -2459,325 +2983,5 @@
     "addedAt": "2026-11-04T01:09:37Z",
     "commitHash": "9482b18b3d3a5db4e3e1a91902b9792f43b53bda",
     "order": 638
-  },
-  {
-    "id": "menacing",
-    "name": "Menacing",
-    "kind": "vector",
-    "category": "anime",
-    "description": "The manga menace: heavy outlined ゴ glyphs climbing both sides of the frame, throbbing and trembling one after another while something ominous happens, on a transparent loop.",
-    "tags": [
-      "anime",
-      "manga",
-      "menacing",
-      "katakana",
-      "onomatopoeia",
-      "tension",
-      "overlay",
-      "loop"
-    ],
-    "controls": [
-      {
-        "n": "glyph",
-        "t": "text",
-        "d": "ゴ",
-        "line": 1
-      },
-      {
-        "n": "fill",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            123,
-            44,
-            191
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "outline",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            20,
-            6,
-            31
-          ]
-        },
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "font",
-        "t": "text",
-        "d": "'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic', 'Meiryo', sans-serif",
-        "line": 4
-      }
-    ],
-    "presets": [
-      "Rumble (ドドド)",
-      "Shock (ザワ)"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "glyph",
-          "label": "Glyph",
-          "holds": "copy",
-          "default": "ゴ"
-        },
-        {
-          "name": "font",
-          "label": "Font",
-          "holds": "font",
-          "default": "'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic', 'Meiryo', sans-serif"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 0,
-    "animated": true,
-    "duration": 1800,
-    "module": "anime",
-    "addedAt": "2026-11-04T01:09:37Z",
-    "commitHash": "9482b18b3d3a5db4e3e1a91902b9792f43b53bda",
-    "order": 637
-  },
-  {
-    "id": "gloom-lines",
-    "name": "Gloom lines",
-    "kind": "shader",
-    "category": "anime",
-    "description": "The manga gloom over a character's despair: wavering vertical lines hanging down from the top of the frame into a shadow that darkens towards it, swaying slowly.",
-    "tags": [
-      "anime",
-      "manga",
-      "gloom",
-      "despair",
-      "sad",
-      "reaction",
-      "overlay",
-      "line"
-    ],
-    "controls": [
-      {
-        "n": "uInk",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            30,
-            26,
-            46
-          ]
-        },
-        "l": "Lines",
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "uShade",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            63,
-            53,
-            96
-          ]
-        },
-        "l": "Shadow",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uShadow",
-        "t": "float",
-        "d": 0.55,
-        "l": "Shadow strength",
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "uLines",
-        "t": "float",
-        "d": 46,
-        "min": 10,
-        "max": 120,
-        "s": 1,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uLength",
-        "t": "float",
-        "d": 0.45,
-        "l": "Line length",
-        "min": 0.1,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uThickness",
-        "t": "float",
-        "d": 2,
-        "l": "Thickness (px)",
-        "min": 0.5,
-        "max": 6,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uSway",
-        "t": "float",
-        "d": 0.4,
-        "b": 3,
-        "line": 8
-      }
-    ],
-    "presets": [
-      "Purple funk",
-      "Lines only",
-      "Ghost white"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": true
-    },
-    "transparent": true,
-    "animated": true,
-    "module": "shaders/anime",
-    "addedAt": "2026-11-04T01:09:37Z",
-    "commitHash": "9482b18b3d3a5db4e3e1a91902b9792f43b53bda",
-    "order": 636
-  },
-  {
-    "id": "shoujo-sparkles",
-    "name": "Shoujo sparkles",
-    "kind": "shader",
-    "category": "anime",
-    "description": "A shoujo manga backdrop: a soft pastel gradient filled with rising rimmed bubbles and long-rayed sparkles twinkling, the dreamy screen behind a romantic close-up.",
-    "tags": [
-      "anime",
-      "manga",
-      "shoujo",
-      "sparkle",
-      "bubble",
-      "romance",
-      "dreamy",
-      "background",
-      "overlay"
-    ],
-    "controls": [
-      {
-        "n": "uTop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            217,
-            236
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "uBottom",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            231,
-            218,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uBackgroundAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Background opacity",
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "uBubble",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "l": "Bubbles",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uSparkle",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "l": "Sparkles",
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "uBubbles",
-        "t": "float",
-        "d": 0.5,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uSparkles",
-        "t": "float",
-        "d": 0.6,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 0.6,
-        "max": 2,
-        "b": 3,
-        "line": 9
-      }
-    ],
-    "presets": [
-      "Overlay",
-      "Lavender",
-      "Night"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "shaders/anime",
-    "addedAt": "2026-11-04T01:09:37Z",
-    "commitHash": "9482b18b3d3a5db4e3e1a91902b9792f43b53bda",
-    "order": 635
   }
 ]
