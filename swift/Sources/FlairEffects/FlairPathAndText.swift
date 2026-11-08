@@ -4,10 +4,16 @@ import Foundation
 import simd
 
 /// Ports `src/shader/path.ts` (`pathTexture`) to Swift: parses SVG path commands or pixel
-/// point arrays, fits them into the frame (`contain`, `cover`, `fill`, `none`) with Y=0 at
-/// the bottom (matching `fragCoord`), and resamples them into a `256 × 2` `RGBA32Float` texture.
+/// point arrays and resamples them into a `256 × 2` `RGBA32Float` texture matching the exact
+/// `PATH` GLSL/Metal shader helper layout:
+/// - row 0, texel `i`: `(x, y, distanceAlong, joinFlag)` in path units (y down);
+/// - row 1, texel 0: `(pointsCount, totalLength, chunksCount, fitCode: 0 none, 1 contain, 2 cover)`;
+/// - row 1, texel 1: `(minX, minY, maxX, maxY)`;
+/// - row 1, texel 2: `(margin, 0, 0, 0)`;
+/// - row 1, texel `3 + c`: chunk `c` bounding box `(cMinX, cMinY, cMaxX, cMaxY)` for points `16*c ... 16*(c+1)`.
 public enum FlairPathRasterizer {
     public static let maxPoints = 256
+    public static let pathChunk = 16
 
     private struct Subpath {
         var points: [SIMD2<Float>]
@@ -22,7 +28,7 @@ public enum FlairPathRasterizer {
         height: Int = 360
     ) -> [Float] {
         let subpaths = parseSvgPath(path)
-        return packSubpaths(subpaths, isSvg: true, fit: fit, margin: margin, width: Float(max(1, width)), height: Float(max(1, height)))
+        return packSubpaths(subpaths, isSvg: true, fit: fit, margin: margin)
     }
 
     public static func rasterize(
@@ -35,140 +41,150 @@ public enum FlairPathRasterizer {
         }
         let closed = simd_distance(points.first!, points.last!) < 1e-3 && points.count > 2
         let sub = Subpath(points: points, closed: closed)
-        return packSubpaths([sub], isSvg: false, fit: .none, margin: 0, width: Float(max(1, width)), height: Float(max(1, height)))
+        return packSubpaths([sub], isSvg: false, fit: .none, margin: 0)
+    }
+
+    private static func lengthOf(_ piece: [SIMD2<Float>]) -> Float {
+        guard piece.count >= 2 else { return 0 }
+        var sum: Float = 0
+        for i in 1..<piece.count {
+            sum += simd_distance(piece[i], piece[i - 1])
+        }
+        return sum
+    }
+
+    private static func pointAlong(_ piece: [SIMD2<Float>], at distance: Float) -> SIMD2<Float> {
+        guard let first = piece.first else { return .zero }
+        var left = distance
+        for i in 1..<piece.count {
+            let a = piece[i - 1]
+            let b = piece[i]
+            let l = simd_distance(b, a)
+            if left <= l && l > 0 {
+                return a + (b - a) * (left / l)
+            }
+            left -= l
+        }
+        return piece.last ?? first
     }
 
     private static func packSubpaths(
         _ rawSubpaths: [Subpath],
         isSvg: Bool,
         fit: FlairPathFit,
-        margin: Float,
-        width: Float,
-        height: Float
+        margin: Float
     ) -> [Float] {
         var out = Array<Float>(repeating: 0, count: maxPoints * 2 * 4)
-        let valid = rawSubpaths.filter { $0.points.count >= 2 }
-        guard !valid.isEmpty else { return out }
-
-        var minX = Float.greatestFiniteMagnitude
-        var minY = Float.greatestFiniteMagnitude
-        var maxX = -Float.greatestFiniteMagnitude
-        var maxY = -Float.greatestFiniteMagnitude
-        for sub in valid {
-            for p in sub.points {
-                minX = Swift.min(minX, p.x)
-                minY = Swift.min(minY, p.y)
-                maxX = Swift.max(maxX, p.x)
-                maxY = Swift.max(maxY, p.y)
+        let pieces: [[SIMD2<Float>]] = rawSubpaths.compactMap { sub in
+            guard sub.points.count >= 2 else { return nil }
+            var pts = sub.points
+            if sub.closed, let first = pts.first, let last = pts.last, simd_distance(first, last) > 1e-4 {
+                pts.append(first)
             }
+            return lengthOf(pts) > 1e-4 ? pts : nil
+        }
+        guard !pieces.isEmpty else { return out }
+
+        let totalLength = pieces.reduce(Float(0)) { $0 + lengthOf($1) }
+        guard totalLength > 1e-4 else { return out }
+
+        let vertices = pieces.reduce(0) { $0 + $1.count }
+        let maxSamplePoints = maxPoints - 4 // keep room for row 1 metadata + up to 16 chunks
+        let budget = Swift.max(
+            2 * pieces.count,
+            Swift.min(maxSamplePoints, Swift.max(64, Int(ceil(Double(vertices) / 4.0))))
+        )
+        let spacing = totalLength / Float(Swift.max(1, budget - pieces.count))
+
+        var points: [SIMD4<Float>] = []
+        points.reserveCapacity(budget)
+        var along: Float = 0
+
+        for (pieceIdx, piece) in pieces.enumerated() {
+            let own = lengthOf(piece)
+            let remainingPieces = pieces.count - 1 - pieceIdx
+            let maxForPiece = maxSamplePoints - points.count - 2 * remainingPieces
+            let targetCount = Int((own / spacing).rounded()) + 1
+            let n = Swift.max(2, Swift.min(maxForPiece, targetCount))
+            for i in 0..<n {
+                let d = (own * Float(i)) / Float(n - 1)
+                let p = pointAlong(piece, at: d)
+                points.append(SIMD4<Float>(p.x, p.y, along + d, i == 0 ? 0.0 : 1.0))
+            }
+            along += own
         }
 
-        let boxW = Swift.max(maxX - minX, 1e-4)
-        let boxH = Swift.max(maxY - minY, 1e-4)
+        guard points.count >= 2 else { return out }
+
+        for (i, p) in points.enumerated() {
+            let base = i * 4
+            out[base + 0] = p.x
+            out[base + 1] = p.y
+            out[base + 2] = p.z
+            out[base + 3] = p.w
+        }
+
+        func box(from startIdx: Int, to endIdx: Int) -> SIMD4<Float> {
+            var x0 = Float.greatestFiniteMagnitude
+            var y0 = Float.greatestFiniteMagnitude
+            var x1 = -Float.greatestFiniteMagnitude
+            var y1 = -Float.greatestFiniteMagnitude
+            for i in startIdx...endIdx {
+                let p = points[i]
+                x0 = Swift.min(x0, p.x)
+                y0 = Swift.min(y0, p.y)
+                x1 = Swift.max(x1, p.x)
+                y1 = Swift.max(y1, p.y)
+            }
+            return SIMD4<Float>(x0, y0, x1, y1)
+        }
+
+        let chunks = Int(ceil(Double(points.count - 1) / Double(pathChunk)))
+        let allBounds = box(from: 0, to: points.count - 1)
         let clampedMargin = Swift.min(0.45, Swift.max(0, margin))
-        let pad = clampedMargin * Swift.min(width, height)
-        let availW = Swift.max(1, width - 2 * pad)
-        let availH = Swift.max(1, height - 2 * pad)
-
-        let scaleX: Float
-        let scaleY: Float
-        let offsetX: Float
-        let offsetY: Float
-
+        let fitCode: Float
         if !isSvg {
-            scaleX = 1
-            scaleY = 1
-            offsetX = 0
-            offsetY = 0
+            fitCode = 0.0
         } else {
             switch fit {
+            case .none, .fill:
+                fitCode = 0.0
             case .contain:
-                let s = Swift.min(availW / boxW, availH / boxH)
-                scaleX = s
-                scaleY = s
-                offsetX = (width - boxW * s) * 0.5 - minX * s
-                offsetY = (height - boxH * s) * 0.5 - minY * s
+                fitCode = 1.0
             case .cover:
-                let s = Swift.max(availW / boxW, availH / boxH)
-                scaleX = s
-                scaleY = s
-                offsetX = (width - boxW * s) * 0.5 - minX * s
-                offsetY = (height - boxH * s) * 0.5 - minY * s
-            case .fill:
-                scaleX = availW / boxW
-                scaleY = availH / boxH
-                offsetX = pad - minX * scaleX
-                offsetY = pad - minY * scaleY
-            case .none:
-                scaleX = 1
-                scaleY = 1
-                offsetX = 0
-                offsetY = 0
+                fitCode = 2.0
             }
         }
 
-        struct Segment {
-            var a: SIMD2<Float>
-            var b: SIMD2<Float>
-            var length: Float
-            var u0: Float
-            var u1: Float
-        }
+        let row1 = maxPoints * 4
+        // Row 1, texel 0: (points, length, chunks, fit)
+        out[row1 + 0] = Float(points.count)
+        out[row1 + 1] = totalLength
+        out[row1 + 2] = Float(chunks)
+        out[row1 + 3] = fitCode
 
-        var segments: [Segment] = []
-        var totalLength: Float = 0
-        let allClosed = valid.allSatisfy { $0.closed }
+        // Row 1, texel 1: (minX, minY, maxX, maxY)
+        out[row1 + 4] = allBounds.x
+        out[row1 + 5] = allBounds.y
+        out[row1 + 6] = allBounds.z
+        out[row1 + 7] = allBounds.w
 
-        for sub in valid {
-            let transformed: [SIMD2<Float>] = sub.points.map { p in
-                let x = p.x * scaleX + offsetX
-                let yRaw = p.y * scaleY + offsetY
-                // SVG Y grows downward; shader fragCoord.y grows upward from 0 at bottom.
-                let y = isSvg ? (height - yRaw) : yRaw
-                return SIMD2<Float>(x, y)
+        // Row 1, texel 2: (margin, 0, 0, 0)
+        out[row1 + 8] = clampedMargin
+        out[row1 + 9] = 0.0
+        out[row1 + 10] = 0.0
+        out[row1 + 11] = 0.0
+
+        // Row 1, texel 3 + c: chunk bounding box
+        for c in 0..<chunks {
+            let b = box(from: c * pathChunk, to: Swift.min((c + 1) * pathChunk, points.count - 1))
+            let offset = row1 + (3 + c) * 4
+            if offset + 3 < out.count {
+                out[offset + 0] = b.x
+                out[offset + 1] = b.y
+                out[offset + 2] = b.z
+                out[offset + 3] = b.w
             }
-            for i in 0..<(transformed.count - 1) {
-                let a = transformed[i]
-                let b = transformed[i + 1]
-                let len = simd_distance(a, b)
-                if len > 1e-4 {
-                    segments.append(Segment(a: a, b: b, length: len, u0: totalLength, u1: totalLength + len))
-                    totalLength += len
-                }
-            }
-        }
-
-        guard !segments.isEmpty, totalLength > 1e-4 else { return out }
-
-        let step = totalLength / Float(maxPoints)
-        var segIndex = 0
-        for i in 0..<maxPoints {
-            let d0 = Float(i) * step
-            let d1 = Float(i + 1) * step
-            while segIndex + 1 < segments.count && segments[segIndex].u1 < d0 {
-                segIndex += 1
-            }
-            let seg = segments[segIndex]
-            let t0 = Swift.min(1, Swift.max(0, (d0 - seg.u0) / Swift.max(seg.length, 1e-5)))
-            let t1 = Swift.min(1, Swift.max(0, (d1 - seg.u0) / Swift.max(seg.length, 1e-5)))
-            let p0 = seg.a + (seg.b - seg.a) * t0
-            let p1 = seg.a + (seg.b - seg.a) * t1
-            let u0 = d0 / totalLength
-            let u1 = d1 / totalLength
-
-            // Row 0: (x0, y0, x1, y1)
-            let row0Base = i * 4
-            out[row0Base + 0] = p0.x
-            out[row0Base + 1] = p0.y
-            out[row0Base + 2] = p1.x
-            out[row0Base + 3] = p1.y
-
-            // Row 1: (u0, u1, totalLength, closed ? 1 : 0)
-            let row1Base = (maxPoints + i) * 4
-            out[row1Base + 0] = u0
-            out[row1Base + 1] = u1
-            out[row1Base + 2] = totalLength
-            out[row1Base + 3] = allClosed ? 1.0 : 0.0
         }
 
         return out
