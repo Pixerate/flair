@@ -47,7 +47,7 @@ export function effectTags(query: EffectQuery = {}): EffectTag[] {
 }
 
 const loaded = new Map<string, EffectDefinition>();
-const loading = new Map<string, Promise<EffectDefinition>>();
+const loadingModules = new Map<string, Promise<void>>();
 
 /** Every effect a module exports, alone or in lists. */
 function effectsIn(module: Record<string, unknown>): EffectDefinition[] {
@@ -63,24 +63,26 @@ function effectsIn(module: Record<string, unknown>): EffectDefinition[] {
 export function loadEffect(id: string): Promise<EffectDefinition> {
   const done = loaded.get(id);
   if (done) return Promise.resolve(done);
-  const pending = loading.get(id);
-  if (pending) return pending;
   const entry = byId.get(id);
   if (!entry) {
     return Promise.reject(new Error(`There is no effect ${JSON.stringify(id)} in the catalog.${didYouMean(id, [...byId.keys()])} findEffectMeta lists them.`));
   }
-  const load = EFFECT_MODULES[entry.module]!().then((module) => {
-    for (const effect of effectsIn(module)) if (byId.has(effect.id) && !loaded.has(effect.id)) loaded.set(effect.id, effect);
+  let moduleLoad = loadingModules.get(entry.module);
+  if (!moduleLoad) {
+    moduleLoad = EFFECT_MODULES[entry.module]!().then((module) => {
+      for (const effect of effectsIn(module)) if (byId.has(effect.id) && !loaded.has(effect.id)) loaded.set(effect.id, effect);
+    });
+    loadingModules.set(entry.module, moduleLoad);
+    moduleLoad.then(
+      () => loadingModules.delete(entry.module),
+      () => loadingModules.delete(entry.module),
+    );
+  }
+  return moduleLoad.then(() => {
     const effect = loaded.get(id);
     if (!effect) throw new Error(`The catalog module "${entry.module}" does not have the effect "${id}".`);
     return effect;
   });
-  loading.set(id, load);
-  load.then(
-    () => loading.delete(id),
-    () => loading.delete(id),
-  );
-  return load;
 }
 
 /** Loads several effects at once (in the order given). */

@@ -1,9 +1,9 @@
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
   import { sharedThumbnailPool, SvgPlayer, ThumbnailPool, type ThumbnailHandle } from "@pixerate/flair";
-  import { CAMERA_PREVIEW_SOURCE, cameraPreviewValues, effectDefaults, renderVectorEffect, SAMPLE_IMAGES } from "@pixerate/flair/catalog";
+  import { CAMERA_PREVIEW_SOURCE, cameraPreviewValues, effectDefaults, loadEffect, renderVectorEffect, SAMPLE_IMAGES } from "@pixerate/flair/catalog";
   import { mountEffect } from "@pixerate/flair/embed";
-  import { loadEffect, type EffectMeta } from "@pixerate/flair/catalog/lazy";
+  import type { EffectMeta } from "@pixerate/flair/catalog/lazy";
   import { abPictures } from "../lib/abPictures";
   import { showsOverPicture } from "../lib/overPicture";
 
@@ -20,6 +20,8 @@
   let visible = false;
   let loaded = false;
   let webglFailed = false;
+  /** The effect's code did not load (e.g. a stale chunk after a deploy); scrolling back retries. */
+  let loadFailed = false;
   let shaderHandle: ThumbnailHandle | null = null;
   let svgPlayer: SvgPlayer | null = null;
   let stopDemo: (() => void) | null = null;
@@ -53,6 +55,7 @@
   async function start() {
     if (loaded) return;
     loaded = true;
+    loadFailed = false;
     try {
       const effect = await loadEffect(effectMeta.id);
       if (!visible) return cleanup();
@@ -100,6 +103,9 @@
         stopDemo = runDemo(svgPlayer);
       }
     } catch (err) {
+      // Drop anything half set up; `loaded` goes back to false so the card retries when shown again.
+      cleanup();
+      loadFailed = true;
       console.warn(`Flair: could not preview ${effectMeta.id}`, err);
     }
   }
@@ -209,7 +215,7 @@
     <div bind:this={timingHostEl} class="pointer-events-none absolute inset-0"></div>
   {:else if effectMeta.kind !== "vector"}
     <canvas bind:this={canvasEl} class="pointer-events-none absolute inset-0 h-full w-full"></canvas>
-    {#if webglFailed}
+    {#if webglFailed && !loadFailed}
       <span class="absolute inset-0 grid place-items-center text-xs text-white/50">Needs WebGL2</span>
     {/if}
   {:else}
@@ -227,5 +233,8 @@
         </svg>
       </div>
     {/if}
+  {/if}
+  {#if loadFailed}
+    <span class="pointer-events-none absolute inset-0 grid place-items-center text-xs {lightGround ? 'text-black/50' : 'text-white/50'}">Preview unavailable</span>
   {/if}
 </div>
