@@ -1,8 +1,8 @@
 <script lang="ts">
   import { createEventDispatcher, onDestroy, tick } from "svelte";
   import { mountEffect, type MountedEffect } from "@pixerate/flair/embed";
-  import { effectDefaults, SAMPLE_IMAGES, type EffectDefinition } from "@pixerate/flair/catalog";
-  import { loadEffect, type EffectMeta } from "@pixerate/flair/catalog/lazy";
+  import { effectDefaults, loadEffect, SAMPLE_IMAGES, type EffectDefinition } from "@pixerate/flair/catalog";
+  import type { EffectMeta } from "@pixerate/flair/catalog/lazy";
   import { showsOverPicture } from "../lib/overPicture";
 
   export let meta: EffectMeta;
@@ -42,6 +42,7 @@
       if (showing !== id || !stage) return;
       effect = next;
       mounted = mountEffect(stage, next, { className: "absolute inset-0 h-full w-full" });
+      if (mounted.renderer && (!mounted.renderer.supported || !mounted.renderer.status.ok)) failed = true;
     } catch (err) {
       failed = true;
       console.warn(`Flair: could not show ${id}`, err);

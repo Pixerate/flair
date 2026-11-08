@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
   import { mountEffect, type MountedEffect } from "@pixerate/flair/embed";
-  import { effectDefaults, type EffectDefinition } from "@pixerate/flair/catalog";
-  import { getEffectMeta, loadEffect } from "@pixerate/flair/catalog/lazy";
+  import { effectDefaults, loadEffect, type EffectDefinition } from "@pixerate/flair/catalog";
+  import { getEffectMeta } from "@pixerate/flair/catalog/lazy";
 
   type Theme = "dark" | "light";
 

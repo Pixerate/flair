@@ -185,9 +185,11 @@ describe("@pixerate/flair/catalog/lazy", async () => {
   });
 
   it("loads each effect once, and several together", async () => {
-    const [a, b] = await lazy.loadEffects(["aurora", "aurora"]);
+    const [a, b, c, d] = await lazy.loadEffects(["aurora", "aurora", "transition-claw-slash", "transition-blood-wipe"]);
     expect(a).toBe(b);
     expect(await lazy.loadEffect("aurora")).toBe(a);
+    expect(c).toBe(getEffect("transition-claw-slash"));
+    expect(d).toBe(getEffect("transition-blood-wipe"));
   });
 
   it("refuses an unknown id, naming the nearest", async () => {

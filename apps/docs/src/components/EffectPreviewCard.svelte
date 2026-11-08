@@ -1,9 +1,9 @@
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
   import { sharedThumbnailPool, SvgPlayer, ThumbnailPool, type ThumbnailHandle } from "@pixerate/flair";
-  import { CAMERA_PREVIEW_SOURCE, cameraPreviewValues, effectDefaults, renderVectorEffect, SAMPLE_IMAGES } from "@pixerate/flair/catalog";
+  import { CAMERA_PREVIEW_SOURCE, cameraPreviewValues, effectDefaults, loadEffect, renderVectorEffect, SAMPLE_IMAGES } from "@pixerate/flair/catalog";
   import { mountEffect } from "@pixerate/flair/embed";
-  import { loadEffect, type EffectMeta } from "@pixerate/flair/catalog/lazy";
+  import type { EffectMeta } from "@pixerate/flair/catalog/lazy";
   import { abPictures } from "../lib/abPictures";
   import { showsOverPicture } from "../lib/overPicture";
 
@@ -100,6 +100,8 @@
         stopDemo = runDemo(svgPlayer);
       }
     } catch (err) {
+      loaded = false;
+      webglFailed = true;
       console.warn(`Flair: could not preview ${effectMeta.id}`, err);
     }
   }
