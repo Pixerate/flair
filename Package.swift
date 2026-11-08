@@ -1,0 +1,33 @@
+// swift-tools-version: 5.9
+// The manifest is at the repository root so the package can be used as a git dependency;
+// its sources live under swift/.
+import PackageDescription
+
+let package = Package(
+    name: "FlairEffects",
+    platforms: [
+        .macOS(.v13),
+        .iOS(.v16),
+    ],
+    products: [
+        .library(
+            name: "FlairEffects",
+            targets: ["FlairEffects"]
+        ),
+    ],
+    targets: [
+        .target(
+            name: "FlairEffects",
+            dependencies: [],
+            path: "swift/Sources/FlairEffects",
+            resources: [
+                .process("Shaders"),
+            ]
+        ),
+        .testTarget(
+            name: "FlairEffectsTests",
+            dependencies: ["FlairEffects"],
+            path: "swift/Tests/FlairEffectsTests"
+        ),
+    ]
+)
