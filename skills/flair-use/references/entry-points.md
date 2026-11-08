@@ -13,7 +13,7 @@ Install: `npm install @pixerate/flair` (React and Svelte are optional peers, use
 | `@pixerate/flair/vector` | `SvgPlayer`, `svgFrameMarkup` (a still as markup), `svgAnimatedMarkup` (a self-playing `.svg`) | Browser or Node |
 | `@pixerate/flair/motion` | Motion primitives: `PRIMITIVES`, `applyPrimitive`, `removePrimitive` | Browser or Node |
 | `@pixerate/flair/testing` | `installFakeWebGl` for unit tests without a GPU | Tests |
-| `@pixerate/flair/node` | `exportEffect`, `exportMotionGraphic`: render to MP4, WebM, MOV, GIF, PNG or SVG with headless Chrome | Node only |
+| `@pixerate/flair/node` | `exportEffect`, `exportMotionGraphic`, `compileShaderToMetal`, `exportMetalPackage`: render with headless Chrome or transpile shaders to Metal + Swift | Node only |
 
 Every entry point except `/node` is browser-safe. Never import `/node` into browser code.
 

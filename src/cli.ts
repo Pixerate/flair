@@ -156,8 +156,8 @@ program
 
 program
   .command('export <targetOrShader> [extraPath] [outputPath]')
-  .description('Export a shader file to video (.mp4/.webm/.mov), .gif or .png frames, or a scene to motn/lottie/fcp7/edl/text-template')
-  .option('-o, --out <outputPath>', 'Output file path')
+  .description('Export a shader file to video (.mp4/.webm/.mov), .gif or .png frames, a scene to motn/lottie/fcp7/edl/text-template, or the shader catalog to a Metal/Swift package (`flair export metal`)')
+  .option('-o, --out <outputPath>', 'Output file or directory path')
   .option('-w, --width <width>', 'Canvas width', '720')
   .option('-h, --height <height>', 'Canvas height', '720')
   .option('--fps <fps>', 'Frames per second', '30')
@@ -170,7 +170,45 @@ program
   .option('--software', 'Draw with software GL (SwiftShader) everywhere: the same frames on every machine', false)
   .option('--shutter-angle <degrees>', "Motion blur: the shutter angle, 0 to 360 (180 is a film camera's usual; default 0, off)")
   .option('--shutter-samples <n>', 'Sub-frames averaged into each blurred frame, 2 to 32 (default 8)')
+  .option('--only <ids>', 'For `flair export metal`: comma-separated shader effect IDs to compile')
+  .option('--verify', 'For `flair export metal`: also compile every .metal file with `xcrun metal` when available', false)
+  .option('--json', 'For `flair export metal`: print the compile report as JSON', false)
   .action(async (targetOrShader, extraPath, outputPath, options) => {
+    if (targetOrShader === 'metal') {
+      try {
+        const { exportMetalPackage } = await import('./export/metal.js');
+        const outDir = options.out || extraPath || 'swift';
+        const only = options.only
+          ? String(options.only)
+              .split(',')
+              .map((s: string) => s.trim())
+              .filter(Boolean)
+          : undefined;
+        const report = exportMetalPackage({
+          outDir,
+          ...(only ? { only } : {}),
+          verify: Boolean(options.verify),
+        });
+        if (options.json) {
+          console.log(JSON.stringify(report, null, 2));
+        } else {
+          console.log(
+            `✅ Exported FlairEffects Swift package to ${report.outDir} (${report.compiled}/${report.total} shaders compiled: Phase 1=${report.phases[1]}, Phase 2=${report.phases[2]}, Phase 4=${report.phases[4]}${report.verifiedWithXcrun ? ', verified with xcrun metal' : ''}).`
+          );
+          if (!report.ok) {
+            for (const eff of report.effects.filter((e) => !e.ok)) {
+              console.error(`  • ${eff.id}: ${eff.errors?.map((e) => `line ${e.line}: ${e.message}`).join('; ')}`);
+            }
+          }
+        }
+        if (!report.ok) process.exit(1);
+        return;
+      } catch (err: any) {
+        console.error(`Metal export failed: ${err.message}`);
+        process.exit(1);
+      }
+    }
+
     if ((SCENE_EXPORT_FORMATS as readonly string[]).includes(targetOrShader)) {
       const sceneFile = extraPath;
       if (!sceneFile) {
@@ -258,14 +296,15 @@ program
   .option('--search <words>', 'Words to look for in the id, name, description and tags')
   .option('--tag <tags>', 'Only effects with every one of these tags (comma-separated or repeated; `flair tags` lists them)', collect, [])
   .option('--transparent', 'Only overlays: effects that draw over what is under them (they take a --backdrop in render)')
-  .option('--json', 'Output JSON (id, name, kind, category, description, tags, inputs, presets)', false)
+  .option('--swift', 'Only effects available in the FlairEffects Swift/Metal package')
+  .option('--json', 'Output JSON (id, name, kind, category, description, tags, inputs, presets, swiftReady)', false)
   .action(async (options) => {
     try {
       const { findEffects, effectInputs } = await import('./catalog/index.js');
       const { effectQueryFromFlags, describeEffect } = await import('./export/effect.js');
       const effects = findEffects(effectQueryFromFlags(options));
       if (options.json) {
-        console.log(JSON.stringify(effects.map((e) => ({ id: e.id, name: e.name, kind: e.kind, category: e.category, description: e.description, tags: e.tags, inputs: effectInputs(e), presets: e.presets?.map((p) => p.name) ?? [] })), null, 2));
+        console.log(JSON.stringify(effects.map((e) => ({ id: e.id, name: e.name, kind: e.kind, category: e.category, description: e.description, tags: e.tags, inputs: effectInputs(e), presets: e.presets?.map((p) => p.name) ?? [], ...(e.kind === 'shader' ? { swiftReady: true } : {}) })), null, 2));
         return;
       }
       if (!effects.length) {

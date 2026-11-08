@@ -967,7 +967,7 @@ npx flair scene export ./scene.json --format text-template  # any export format 
 npx flair template fill stat-countdown --set value=4200 --html stats.html  # a template filled into a scene (list, show)
 
 # Catalog effects to files
-npx flair effects --accepts video            # pick an effect: what each takes (--interaction click, --category image, --kind, --search, --tag glass, --transparent, --json)
+npx flair effects --accepts video            # pick an effect: what each takes (--interaction click, --category image, --kind, --search, --tag glass, --transparent, --swift, --json)
 npx flair tags --category fire               # the tags there are, with how many effects carry each (--kind, --search, --tag, --limit, --json)
 npx flair render image-duotone --image team.jpg --preset Spotify -o team.mp4
 npx flair render crt --video clip.mp4 -o crt.mp4
@@ -980,6 +980,7 @@ npx flair render neon-warp --shutter-angle 180 -o warp.mp4   # motion blur: 8 su
 
 # A shader file of your own
 npx flair export ./effect.frag -o out.mp4 -w 1280 -h 720 -d 5 --values '{"speed":2}'
+npx flair export metal --out ./swift         # transpile all catalog shaders to Metal + Swift package (--only, --verify, --json)
 npx flair controls ./headline.svg            # a vector effect's {{control}} declarations, and what keeps it from drawing (also .json)
 
 # Agent skills for coding agents
@@ -1027,6 +1028,32 @@ await exportMotionGraphic({ source, values: { speed: 2 }, outputPath: "out.gif",
 ```
 
 Limits: vector frames are drawn with `svgFrameMarkup`, so a change `along` a path and a `view` that frames an element by id stay where the markup puts them; GIF frame delays are whole hundredths of a second (30 fps plays at 33.3).
+
+#### Swift & Metal (`FlairEffects`)
+
+Every catalog shader effect compiles to Metal Shading Language (MSL 2.4) and ships as a native Swift package in [`swift/`](./swift) (`FlairEffects`, targeting iOS 15+ and macOS 12+):
+
+- **441 shader effects**, typed as `FlairEffect & Sendable & Equatable & Codable` structs (`MeshGradient`, `Aurora`, `Crt`, `LiquidGlass`, …) with `@control` properties, presets, `std140` uniform packing, and web-compatible `Codable` JSON (`uSpeed`, hex or `[r, g, b]` colours).
+- **Textures, text & SVG paths**: `sampler2D` inputs bind at `[[texture(0..7)]]` alongside a bilinear clamp sampler at `[[sampler(0)]]`, with native `FlairTextRasterizer` (CoreText) and `FlairPathRasterizer` (`CGPath` distance field + arc-length parameter + tangent vector matching the web `pathImage` channels).
+- **Multi-pass & feedback**: `FlairPipeline` executes multi-pass chains (`passes`, `inputs`) and ping-pongs double-buffered `feedback` targets across frames.
+- **Interactive built-ins**: `iPointer`, `iClicks`, `iTrail` (`FlairPointerTracker`), `iAudio`, `iSpectrum`, `iBeat` (`FlairAudioTracker`), and `iScroll` (`FlairScrollTracker`).
+- **SwiftUI & MetalKit**: `FlairEffectView`, `.flairBackground(...)`, `.flairOverlay(...)`, and offscreen `FlairRenderer` (`renderImage(effect:size:)`).
+
+```swift
+import SwiftUI
+import FlairEffects
+
+struct HeroCard: View {
+    var body: some View {
+        Text("Flair on Metal")
+            .font(.largeTitle.bold())
+            .padding(32)
+            .flairBackground(MeshGradient(preset: "Sunset"))
+    }
+}
+```
+
+Use `npx flair effects --swift` (or `findEffects({ swiftReady: true })` / `findEffectMeta({ swiftReady: true })`) to filter catalog effects available in `FlairEffects`. After adding or editing a shader in the catalog, regenerate the Metal shaders and Swift sources with `npx flair export metal` (requires `glslangValidator` and `spirv-cross`, e.g. `brew install glslang spirv-cross`; add `--verify` on macOS to compile-check every `.metal` file with `xcrun -sdk macosx metal`). From Node, `compileShaderToMetal` and `exportMetalPackage` from `@pixerate/flair/node` run the same pipeline programmatically.
 
 #### Agent skills
 

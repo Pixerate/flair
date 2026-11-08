@@ -60,3 +60,17 @@ jobs:
         run: |
           node ./dist/cli.js controls ./tests/fixtures/sample.frag
           node ./dist/cli.js scene review ./tests/fixtures/sample.scene.json
+          node ./dist/cli.js effects --swift --category gradient
+
+  swift-metal:
+    name: Swift & Metal Package (macOS)
+    runs-on: macos-14
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Run Swift package tests
+        working-directory: swift
+        run: swift test
