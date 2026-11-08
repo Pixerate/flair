@@ -20,7 +20,8 @@
   let effect: EffectDefinition | null = null;
   let preset = "";
   let copied = false;
-  let failed = false;
+  /** Why the preview is not showing, or `null` while it is. */
+  let failure: string | null = null;
   /** The id whose effect is mounted, so a quick step past one drops its late load. */
   let showing = "";
 
@@ -33,7 +34,7 @@
   async function load(id: string) {
     showing = id;
     preset = "";
-    failed = false;
+    failure = null;
     mounted?.dispose();
     mounted = null;
     await tick();
@@ -42,9 +43,11 @@
       if (showing !== id || !stage) return;
       effect = next;
       mounted = mountEffect(stage, next, { className: "absolute inset-0 h-full w-full" });
-      if (mounted.renderer && (!mounted.renderer.supported || !mounted.renderer.status.ok)) failed = true;
+      if (mounted.renderer && !mounted.renderer.supported) failure = "This preview needs WebGL2.";
+      else if (mounted.renderer && !mounted.renderer.status.ok) failure = "This preview could not start.";
     } catch (err) {
-      failed = true;
+      if (showing !== id) return;
+      failure = "This preview could not load. Try reloading the page.";
       console.warn(`Flair: could not show ${id}`, err);
     }
     panel?.focus();
@@ -98,8 +101,8 @@
         <img src={SAMPLE_IMAGES.city} alt="" class="absolute inset-0 h-full w-full object-cover" />
       {/if}
       <div bind:this={stage} class="absolute {lightGround ? 'inset-[10%]' : 'inset-0'}"></div>
-      {#if failed}
-        <span class="absolute inset-0 grid place-items-center text-sm text-white/60">This preview needs WebGL2.</span>
+      {#if failure}
+        <span class="absolute inset-0 grid place-items-center text-sm text-white/60">{failure}</span>
       {/if}
       <div class="absolute right-3 top-3 flex gap-1.5">
         <button class="glass-on-dark grid h-8 w-8 place-items-center rounded-full" aria-label="Previous effect" on:click={() => dispatch("step", -1)}>‹</button>
