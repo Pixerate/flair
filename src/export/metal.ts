@@ -671,6 +671,15 @@ export function parseGlslangLog(log: string, lineCount?: number): CompileError[]
   return errors;
 }
 
+/**
+ * The `// flair-metal-hash: …` header line a shader's generated `.metal` file
+ * starts with; a file without it is out of date (`flair export metal` rebuilds it).
+ */
+export function metalHashHeader(id: string, source: string, controls?: readonly ControlDef[]): string {
+  const { glsl } = wrapMetalSource(source, controls);
+  return `// flair-metal-hash: ${fnv1aHash(`${metalFunctionName(id)}\n${glsl}`)}`;
+}
+
 function fnv1aHash(text: string): string {
   let h = 0x811c9dc5;
   for (let i = 0; i < text.length; i++) {
@@ -1236,14 +1245,14 @@ export function exportMetalPackage(options: ExportMetalPackageOptions = {}): Met
       ? new Set(options.only.map((id) => id.trim()).filter(Boolean))
       : null;
 
-  const selected = onlySet
-    ? SHADER_EFFECTS.filter((e) => onlySet.has(e.id))
-    : [...SHADER_EFFECTS];
-
-  if (onlySet && selected.length === 0) {
-    throw new Error(
-      `None of the requested shader effect IDs (${[...onlySet].join(", ")}) exist in SHADER_EFFECTS.`,
-    );
+  if (onlySet) {
+    const known = new Set(SHADER_EFFECTS.map((e) => e.id));
+    const unknown = [...onlySet].filter((id) => !known.has(id));
+    if (unknown.length > 0) {
+      throw new Error(
+        `There is no shader effect ${unknown.map((id) => `"${id}"`).join(", ")}; \`flair effects --kind shader\` lists the ${known.size} shader effect ids.`,
+      );
+    }
   }
 
   const tools = metalToolsAvailable();
@@ -1280,7 +1289,7 @@ export function exportMetalPackage(options: ExportMetalPackageOptions = {}): Met
   const compiledEffects: ShaderEffect[] = [];
   const structChunks: string[] = [];
 
-  for (const effect of selected) {
+  for (const effect of SHADER_EFFECTS) {
     const controls = effectControls(effect);
     const phase = effectMetalPhase(effect.source, controls);
     const functionName = metalFunctionName(effect.id);
@@ -1288,16 +1297,19 @@ export function exportMetalPackage(options: ExportMetalPackageOptions = {}): Met
     const swiftType = swiftTypeName(effect.id);
     const expectedHash = `// flair-metal-hash: ${fnv1aHash(`${functionName}\n${glsl}`)}\n`;
     const targetMetalPath = join(shadersDir, `${effect.id}.metal`);
+    const existing = existsSync(targetMetalPath) ? readFileSync(targetMetalPath, "utf8") : null;
 
-    let cachedMsl: string | null = null;
-    if (!verify && existsSync(targetMetalPath)) {
-      const existing = readFileSync(targetMetalPath, "utf8");
-      if (existing.startsWith(expectedHash)) {
-        cachedMsl = existing;
-      } else if (!existing.startsWith("// flair-metal-hash:") && existing.includes(`fragment `) && existing.includes(functionName)) {
-        cachedMsl = `${expectedHash}${existing}`;
+    // With `only`, the other effects keep their committed shaders, so the
+    // generated Swift registry and structs still cover the whole package.
+    if (onlySet && !onlySet.has(effect.id)) {
+      if (existing !== null) {
+        compiledEffects.push(effect);
+        structChunks.push(generateSwiftEffectStruct(effect, controls, layout));
       }
+      continue;
     }
+
+    const cachedMsl = !verify && existing?.startsWith(expectedHash) ? existing : null;
 
     const res: CompileMetalResult = cachedMsl
       ? { ok: true, msl: cachedMsl, functionName, layout, phase }

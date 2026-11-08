@@ -1,4 +1,5 @@
-import { existsSync, readFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { effectControls, EFFECTS, findEffects, getEffect, SHADER_EFFECTS } from "../catalog/index.js";
@@ -13,6 +14,7 @@ import {
   FLAIR_METAL_BUILTIN_BYTE_LENGTH,
   generateSwiftEffectStruct,
   metalFunctionName,
+  metalHashHeader,
   metalToolsAvailable,
   metalUniformLayout,
   packMetalUniforms,
@@ -233,10 +235,26 @@ describe("GLSL → Metal pipeline & Swift package generator", () => {
     const shadersDir = join(swiftDir, "Sources", "FlairEffects", "Shaders");
     expect(existsSync(join(shadersDir, "_FlairVertex.metal"))).toBe(true);
 
+    const stale: string[] = [];
     for (const effect of SHADER_EFFECTS) {
       const metalFile = join(shadersDir, `${effect.id}.metal`);
       expect(existsSync(metalFile), `Missing ${effect.id}.metal — run 'flair export metal'`).toBe(true);
+      const header = metalHashHeader(effect.id, effect.source, effectControls(effect));
+      if (!readFileSync(metalFile, "utf8").startsWith(`${header}\n`)) stale.push(effect.id);
     }
+    expect(stale, `Out-of-date .metal files — run 'flair export metal'`).toEqual([]);
+
+    // Every effect has exactly one generated Swift struct and a registry entry.
+    const generatedDir = join(swiftDir, "Sources", "FlairEffects", "Generated");
+    const generated = readdirSync(generatedDir)
+      .filter((f) => f.startsWith("FlairEffectsPart"))
+      .map((f) => readFileSync(join(generatedDir, f), "utf8"))
+      .join("\n");
+    const ids = [...generated.matchAll(/public static let effectId = "([^"]+)"/g)].map((m) => m[1]).sort();
+    expect(ids, `Generated Swift structs are out of date — run 'flair export metal'`).toEqual(SHADER_EFFECTS.map((e) => e.id).sort());
+    const registry = readFileSync(join(generatedDir, "FlairEffectsCatalog.swift"), "utf8");
+    const registered = [...registry.matchAll(/AnyFlairEffect\((\w+)\(\)\)/g)].map((m) => m[1]);
+    expect(registered).toEqual(SHADER_EFFECTS.map((e) => swiftTypeName(e.id)));
 
     const tools = metalToolsAvailable();
     if (tools.ok) {
@@ -246,6 +264,30 @@ describe("GLSL → Metal pipeline & Swift package generator", () => {
       expect(report.ok).toBe(true);
       expect(report.compiled).toBe(SHADER_EFFECTS.length);
       expect(beforeCatalog).toContain(`public static let all: [AnyFlairEffect]`);
+    }
+  });
+
+  it("refuses unknown --only ids, naming them", () => {
+    expect(() => exportMetalPackage({ only: ["mesh-gradient", "no-such-effect"], write: false })).toThrow(/no shader effect "no-such-effect"/);
+  });
+
+  it("keeps the whole Swift registry when exporting a subset with only", () => {
+    const tools = metalToolsAvailable();
+    if (!tools.ok) return;
+    const out = mkdtempSync(join(tmpdir(), "flair-metal-only-"));
+    try {
+      const shaders = join(out, "Sources", "FlairEffects", "Shaders");
+      mkdirSync(shaders, { recursive: true });
+      for (const id of ["aurora", "crt"]) {
+        copyFileSync(join(resolve("swift"), "Sources", "FlairEffects", "Shaders", `${id}.metal`), join(shaders, `${id}.metal`));
+      }
+      const report = exportMetalPackage({ outDir: out, only: ["mesh-gradient"] });
+      expect(report.ok).toBe(true);
+      expect(report.effects.map((e) => e.id)).toEqual(["mesh-gradient"]);
+      const registry = readFileSync(join(out, "Sources", "FlairEffects", "Generated", "FlairEffectsCatalog.swift"), "utf8");
+      for (const id of ["aurora", "crt", "mesh-gradient"]) expect(registry).toContain(`AnyFlairEffect(${swiftTypeName(id)}())`);
+    } finally {
+      rmSync(out, { recursive: true, force: true });
     }
   });
 });

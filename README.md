@@ -1031,7 +1031,7 @@ Limits: vector frames are drawn with `svgFrameMarkup`, so a change `along` a pat
 
 #### Swift & Metal (`FlairEffects`)
 
-Every catalog shader effect compiles to Metal Shading Language (MSL 2.4) and ships as a native Swift package in [`swift/`](./swift) (`FlairEffects`, targeting iOS 15+ and macOS 12+):
+Every catalog shader effect compiles to Metal Shading Language (MSL 2.1) and ships as a native Swift package in [`swift/`](./swift) (`FlairEffects`, targeting iOS 15+ and macOS 12+):
 
 - **441 shader effects**, typed as `FlairEffect & Sendable & Equatable & Codable` structs (`MeshGradient`, `Aurora`, `Crt`, `LiquidGlass`, …) with `@control` properties, presets, `std140` uniform packing, and web-compatible `Codable` JSON (`uSpeed`, hex or `[r, g, b]` colours).
 - **Textures, text & SVG paths**: `sampler2D` inputs bind at `[[texture(0..7)]]` alongside a bilinear clamp sampler at `[[sampler(0)]]`, with native `FlairTextRasterizer` (CoreText) and `FlairPathRasterizer` (`CGPath` distance field + arc-length parameter + tangent vector matching the web `pathImage` channels).

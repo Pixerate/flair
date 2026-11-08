@@ -62,6 +62,7 @@ export {
   generateSwiftEffectStruct,
   glslangPath,
   metalFunctionName,
+  metalHashHeader,
   metalToolsAvailable,
   metalUniformLayout,
   packMetalUniforms,
