@@ -91,9 +91,10 @@ const catalogFilters = {
     description: "Only effects that answer the pointer in one of these ways: hover, press, click, trail (follows where it has been), pointer (follows where it is). An empty list finds effects that don't answer it.",
   },
   transparent: { type: "boolean", description: "Only overlays (true), drawn over other content, or only effects that fill their frame (false)." },
+  swiftReady: { type: "boolean", description: "Only effects available in the FlairEffects Swift/Metal package (true), or not (false)." },
 } as const;
 
-type CatalogFilters = Pick<EffectQuery, "text" | "category" | "group" | "kind" | "tags" | "video" | "accepts" | "interaction" | "transparent">;
+type CatalogFilters = Pick<EffectQuery, "text" | "category" | "group" | "kind" | "tags" | "video" | "accepts" | "interaction" | "transparent" | "swiftReady">;
 
 /** The catalog's tags, worked out on first use. */
 let knownTags: Set<string> | undefined;
@@ -241,6 +242,7 @@ export function effectCommands(): CommandSpec<EffectEditor>[] {
             accepts: inputs.accepts,
             ...(inputs.interactions.length ? { interactions: inputs.interactions } : {}),
             ...(inputs.transparent ? { transparent: true } : {}),
+            ...(e.kind === "shader" ? { swiftReady: true } : {}),
             presets: e.presets?.map((p) => p.name) ?? [],
           };
         });

@@ -10,3 +10,5 @@ apps/demo/dist/
 .astro/
 .apphosting/
 .DS_Store
+swift/.build/
+swift/.swiftpm/

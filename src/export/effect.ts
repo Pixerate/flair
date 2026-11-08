@@ -1057,7 +1057,7 @@ export function parseChoices<T extends string>(flag: string, values: readonly st
 }
 
 /** The effects command's filters, checked. */
-export function effectQueryFromFlags(flags: { accepts?: readonly string[]; interaction?: readonly string[]; category?: string; kind?: string; search?: string; tag?: readonly string[]; transparent?: boolean }) {
+export function effectQueryFromFlags(flags: { accepts?: readonly string[]; interaction?: readonly string[]; category?: string; kind?: string; search?: string; tag?: readonly string[]; transparent?: boolean; swift?: boolean }) {
   const accepts = parseChoices<EffectInput>('--accepts', flags.accepts, EFFECT_INPUTS);
   const interaction = parseChoices<EffectInteraction>('--interaction', flags.interaction, EFFECT_INTERACTIONS);
   const tags = flags.tag?.length ? flags.tag.flatMap((t) => t.split(',')).map(normaliseTag).filter(Boolean) : undefined;
@@ -1078,6 +1078,7 @@ export function effectQueryFromFlags(flags: { accepts?: readonly string[]; inter
     ...(flags.search ? { text: flags.search } : {}),
     ...(tags ? { tags } : {}),
     ...(flags.transparent !== undefined ? { transparent: flags.transparent } : {}),
+    ...(flags.swift !== undefined ? { swiftReady: flags.swift } : {}),
   };
 }
 

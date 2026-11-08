@@ -49,6 +49,8 @@ export interface EffectMeta {
    * length is its footage's).
    */
   duration?: number;
+  /** Whether this effect is compiled into the `FlairEffects` Swift/Metal package. */
+  swiftReady?: boolean;
 }
 
 /** An effect's metadata, from its definition (given its controls and inputs, which the catalog works out). */
@@ -64,7 +66,7 @@ export function metaOf(effect: EffectDefinition, controls: readonly ControlDef[]
     presets: (effect.presets ?? []).map((p) => p.name),
     inputs,
     ...(effect.kind === "shader"
-      ? { ...(effect.video && { video: effect.video }), ...(effect.transparent && { transparent: true }), ...(effect.loop !== undefined && { loop: effect.loop }), ...(effect.build !== undefined && { build: effect.build }) }
+      ? { swiftReady: true, ...(effect.video && { video: effect.video }), ...(effect.transparent && { transparent: true }), ...(effect.loop !== undefined && { loop: effect.loop }), ...(effect.build !== undefined && { build: effect.build }) }
       : effect.kind === "vector"
         ? { ...(effect.hold !== undefined && { hold: effect.hold }), ...(effect.trigger && { trigger: effect.trigger }) }
         : effect.kind === "camera"

@@ -30,6 +30,8 @@ export interface EffectQuery {
   singlePicture?: boolean;
   /** Target output format: "animation" for animated SVGs, "video" for video shaders. */
   output?: "animation" | "video";
+  /** Effects available in the `FlairEffects` Swift/Metal package (`true`), or not (`false`). */
+  swiftReady?: boolean;
 }
 
 /** What a query looks at in an effect. */
@@ -42,6 +44,7 @@ export interface QueryTarget {
   kind: EffectDefinition["kind"];
   video?: VideoUse;
   role?: CameraRole;
+  swiftReady?: boolean;
 }
 
 /** How tags are written: lower case, words joined by hyphens (`motion-blur`, `8-bit`). */
@@ -86,6 +89,10 @@ export function matchesQuery(target: QueryTarget, inputsOf: () => EffectInputs, 
   if (query.video && !(e.kind === "shader" && e.video && query.video.includes(e.video))) return false;
   if (query.output === "animation" && e.kind !== "vector") return false;
   if (query.output === "video" && !(e.kind === "shader" && e.video !== "none")) return false;
+  if (query.swiftReady !== undefined) {
+    const ready = e.swiftReady !== undefined ? Boolean(e.swiftReady) : e.kind === "shader";
+    if (ready !== query.swiftReady) return false;
+  }
   if (query.singlePicture !== undefined && singlePicture(inputsOf()) !== query.singlePicture) return false;
   if (query.accepts || query.interaction || query.transparent !== undefined) {
     const inputs = inputsOf();
