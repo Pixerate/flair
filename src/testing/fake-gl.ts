@@ -83,6 +83,7 @@ export class FakeGl {
   readonly BLEND = 0x0be2;
   readonly SRC_ALPHA = 0x0302;
   readonly ONE_MINUS_SRC_ALPHA = 0x0303;
+  readonly ZERO = 0;
   readonly ONE = 1;
   readonly ACTIVE_TEXTURE = 0x84e0;
   readonly TEXTURE_BINDING_2D = 0x8069;

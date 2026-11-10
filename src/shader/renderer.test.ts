@@ -60,6 +60,30 @@ describe("ShaderRenderer", () => {
     renderer.dispose();
   });
 
+  it("draws a transparent canvas premultiplied, which Safari composites correctly", () => {
+    const webgl = installFakeWebGl();
+    installManualRaf();
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const renderer = new ShaderRenderer(host, { alpha: true });
+    const gl = webgl.last();
+    expect(gl.attributes).toMatchObject({ alpha: true, premultipliedAlpha: true });
+    renderer.pause();
+    renderer.setSource(shaderSource());
+    expect(gl.draws.at(-1)).toMatchObject({ target: null, blend: true });
+    // The blender premultiplies straight-alpha output and replaces the pixel.
+    expect(gl.named("blendFuncSeparate").at(-1)!.args).toEqual([gl.SRC_ALPHA, gl.ZERO, gl.ONE, gl.ZERO]);
+    renderer.dispose();
+  });
+
+  it("leaves an opaque canvas straight and unblended", () => {
+    const { renderer, gl } = setup();
+    expect(gl!.attributes).toMatchObject({ alpha: false, premultipliedAlpha: false });
+    renderer.pause();
+    renderer.setSource(shaderSource());
+    expect(gl!.draws.at(-1)).toMatchObject({ target: null, blend: false });
+  });
+
   it("pauses and resumes when scrolled out of view with pauseWhenHidden", () => {
     installFakeWebGl();
     installManualRaf();

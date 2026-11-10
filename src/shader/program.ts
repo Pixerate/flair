@@ -372,22 +372,42 @@ export function drawFrame(
 }
 
 /**
+ * Has the blender premultiply what shaders write (`rgb * a`, `a`), so their
+ * straight-alpha output lands right in a premultiplied drawing buffer
+ * ({@link createContext} with `premultiplied`). Every draw replaces the
+ * pixel, as without blending. `false` turns blending off again.
+ */
+export function premultiplyOutput(gl: WebGL2RenderingContext, on = true) {
+  if (!on) {
+    gl.disable(gl.BLEND);
+    return;
+  }
+  gl.enable(gl.BLEND);
+  gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ZERO, gl.ONE, gl.ZERO);
+}
+
+/**
  * A WebGL2 context set up for full-screen fragment shaders: opaque by default,
  * no depth, stencil or antialiasing. `preserveDrawingBuffer` keeps the last
  * frame readable after the task that drew it (for captures). `alpha` enables a
- * transparent drawing buffer for overlay shaders. Null without WebGL2.
+ * transparent drawing buffer for overlay shaders. `premultiplied` makes that
+ * buffer premultiplied, for a canvas shown on the page: Safari shows a
+ * straight-alpha WebGL canvas as if it were premultiplied, so faint pixels
+ * come out bright. Whoever draws into it must premultiply (see
+ * {@link premultiplyOutput}). Null without WebGL2.
  */
 export function createContext(
   canvas: HTMLCanvasElement | OffscreenCanvas,
   preserveDrawingBuffer = false,
   alpha = false,
+  premultiplied = false,
 ): WebGL2RenderingContext | null {
   return canvas.getContext("webgl2", {
     alpha,
     antialias: false,
     depth: false,
     stencil: false,
-    premultipliedAlpha: false,
+    premultipliedAlpha: alpha && premultiplied,
     preserveDrawingBuffer,
     powerPreference: "high-performance",
   }) as WebGL2RenderingContext | null;
