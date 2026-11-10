@@ -95,6 +95,8 @@ public struct AnyFlairEffect: Sendable, Equatable {
     private let _encodeUniforms: @Sendable (UnsafeMutableRawPointer, FlairFrameState) -> Void
     private let _textureInput: @Sendable (Int) -> FlairTextureInput
     private let _makePreset: @Sendable (String) -> AnyFlairEffect
+    private let _encodeJSON: @Sendable () throws -> Data
+    private let _decodeJSON: @Sendable (Data) throws -> AnyFlairEffect
     private var textureOverrides: [Int: FlairTextureInput] = [:]
 
     public init<E: FlairEffect>(_ effect: E) {
@@ -121,10 +123,61 @@ public struct AnyFlairEffect: Sendable, Equatable {
         self._makePreset = { name in
             AnyFlairEffect(E(preset: name))
         }
+        self._encodeJSON = {
+            try JSONEncoder().encode(effect)
+        }
+        self._decodeJSON = { data in
+            let decoded = try JSONDecoder().decode(E.self, from: data)
+            return AnyFlairEffect(decoded)
+        }
     }
 
     public func withPreset(_ name: String) -> AnyFlairEffect {
         _makePreset(name)
+    }
+
+    /// Encodes the effect's current control values as JSON `Data`.
+    public func encodedJSON() throws -> Data {
+        try _encodeJSON()
+    }
+
+    /// Decodes a new `AnyFlairEffect` of the same concrete type from control JSON `Data`,
+    /// preserving any existing texture overrides.
+    public func decoded(from data: Data) throws -> AnyFlairEffect {
+        var next = try _decodeJSON(data)
+        for (binding, overrideInput) in textureOverrides {
+            next.setTextureInput(overrideInput, for: binding)
+        }
+        return next
+    }
+
+    /// Encodes the effect's current control values as a `[String: FlairJSONValue]` dictionary.
+    public func encodedValues() -> [String: FlairJSONValue] {
+        guard let data = try? _encodeJSON(),
+              let dict = try? JSONDecoder().decode([String: FlairJSONValue].self, from: data) else {
+            return [:]
+        }
+        return dict
+    }
+
+    /// Returns a copy of this effect with the specified control values (keyed by uniform name or Swift property name) applied.
+    public func applying(values overrides: [String: FlairJSONValue]) -> AnyFlairEffect {
+        var merged = encodedValues()
+        for (k, v) in overrides {
+            merged[k] = v
+            if let desc = controls.first(where: { $0.name == k || $0.property == k }) {
+                merged[desc.name] = v
+                merged[desc.property] = v
+            }
+        }
+        guard let data = try? JSONEncoder().encode(merged),
+              var next = try? _decodeJSON(data) else {
+            return self
+        }
+        for (binding, overrideInput) in textureOverrides {
+            next.setTextureInput(overrideInput, for: binding)
+        }
+        return next
     }
 
     public func encodeUniforms(into buffer: UnsafeMutableRawPointer, state: FlairFrameState) {

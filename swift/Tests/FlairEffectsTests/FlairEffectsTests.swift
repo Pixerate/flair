@@ -73,11 +73,24 @@ final class FlairEffectsTests: XCTestCase {
             height: 200
         )
         XCTAssertEqual(pathFloats.count, 256 * 2 * 4)
-        // Total length in row 1 (.z) should be positive, and closed (.w) == 1.0
-        let totalLength = pathFloats[256 * 4 + 2]
-        let isClosed = pathFloats[256 * 4 + 3]
-        XCTAssertGreaterThan(totalLength, 100)
-        XCTAssertEqual(isClosed, 1.0)
+        // Row 1 texel 0: (pointsCount, totalLength, chunks, fitCode)
+        let pointCount = pathFloats[256 * 4 + 0]
+        let totalLength = pathFloats[256 * 4 + 1]
+        let chunks = pathFloats[256 * 4 + 2]
+        let fitCode = pathFloats[256 * 4 + 3]
+        XCTAssertGreaterThanOrEqual(pointCount, 4)
+        XCTAssertGreaterThan(totalLength, 300)
+        XCTAssertGreaterThanOrEqual(chunks, 1)
+        XCTAssertEqual(fitCode, 1.0)
+
+        let ptsFloats = FlairPathRasterizer.rasterize(
+            points: [SIMD2<Float>(10, 20), SIMD2<Float>(110, 20), SIMD2<Float>(110, 80)],
+            width: 200,
+            height: 200
+        )
+        XCTAssertGreaterThanOrEqual(ptsFloats[256 * 4 + 0], 2)
+        XCTAssertEqual(ptsFloats[256 * 4 + 1], 160, accuracy: 1e-3)
+        XCTAssertEqual(ptsFloats[256 * 4 + 3], 0.0) // fitCode == 0 for point arrays
 
         let textBytes = FlairTextRasterizer.rasterize(text: "FLAIR", width: 256, height: 64)
         XCTAssertEqual(textBytes.count, 256 * 64 * 4)
@@ -125,9 +138,19 @@ final class FlairEffectsTests: XCTestCase {
         XCTAssertEqual(crtImage.width, 96)
         let textImage = try renderer.renderCGImage(effect: ShaderText(), width: 96, height: 64, time: 0.5)
         XCTAssertEqual(textImage.width, 96)
-        if let pathEffect = FlairCatalog.effect(id: "neon-path") {
-            let pathImg = try renderer.renderCGImage(anyEffect: pathEffect, width: 96, height: 64, time: 0.5)
-            XCTAssertEqual(pathImg.width, 96)
+        if let pathEffect = FlairCatalog.effect(id: "glass-tube") {
+            var configured = pathEffect
+                .withPreset("Neon")
+                .applying(values: [
+                    "uBackgroundAlpha": .number(0.0),
+                    "uDrawOn": .number(0.0),
+                    "uProgress": .number(1.0),
+                ])
+            configured.setTextureInput(.points([SIMD2<Float>(12, 32), SIMD2<Float>(84, 32)]), for: 1)
+            let bytes = try renderer.renderBytes(anyEffect: configured, width: 96, height: 64, time: 0.5)
+            XCTAssertEqual(bytes.count, 96 * 64 * 4)
+            let strokeOpaqueCount = bytes.stride(by: 4, offset: 3).filter { $0 > 16 }.count
+            XCTAssertGreaterThan(strokeOpaqueCount, 50)
         }
 
         // Phase 3: Multi-pass pipeline (MeshGradient -> Crt filter -> Sparkles overlay)

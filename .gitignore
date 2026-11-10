@@ -11,4 +11,6 @@ apps/demo/dist/
 .apphosting/
 .DS_Store
 swift/.build/
+/.build/
+/.swiftpm/
 swift/.swiftpm/

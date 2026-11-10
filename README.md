@@ -1034,10 +1034,18 @@ Limits: vector frames are drawn with `svgFrameMarkup`, so a change `along` a pat
 Every catalog shader effect compiles to Metal Shading Language (MSL 2.1) and ships as a native Swift package in [`swift/`](./swift) (`FlairEffects`, targeting iOS 15+ and macOS 12+):
 
 - **441 shader effects**, typed as `FlairEffect & Sendable & Equatable & Codable` structs (`MeshGradient`, `Aurora`, `Crt`, `LiquidGlass`, …) with `@control` properties, presets, `std140` uniform packing, and web-compatible `Codable` JSON (`uSpeed`, hex or `[r, g, b]` colours).
-- **Textures, text & SVG paths**: `sampler2D` inputs bind at `[[texture(0..7)]]` alongside a bilinear clamp sampler at `[[sampler(0)]]`, with native `FlairTextRasterizer` (CoreText) and `FlairPathRasterizer` (`CGPath` distance field + arc-length parameter + tangent vector matching the web `pathImage` channels).
+- **Textures, text & SVG paths**: `sampler2D` inputs bind at `[[texture(0..7)]]` alongside a bilinear clamp sampler at `[[sampler(0)]]`, with native `FlairTextRasterizer` (CoreText) and `FlairPathRasterizer` (packs SVG path data or pixel points into the same `256 × 2` point texture as the web `pathTexture`, so the shader's `PATH` helpers fit it to the frame).
 - **Multi-pass & feedback**: `FlairPipeline` executes multi-pass chains (`passes`, `inputs`) and ping-pongs double-buffered `feedback` targets across frames.
 - **Interactive built-ins**: `iPointer`, `iClicks`, `iTrail` (`FlairPointerTracker`), `iAudio`, `iSpectrum`, `iBeat` (`FlairAudioTracker`), and `iScroll` (`FlairScrollTracker`).
 - **SwiftUI & MetalKit**: `FlairEffectView`, `.flairBackground(...)`, `.flairOverlay(...)`, and offscreen `FlairRenderer` (`renderImage(effect:size:)`).
+
+The repository root has a `Package.swift` too, so a Swift app can depend on this repository directly. Release tags are `@pixerate/flair@x.y.z`, not plain semver, so pin a branch or revision:
+
+```swift
+.package(url: "https://github.com/Pixerate/flair.git", branch: "main"),
+// …
+.product(name: "FlairEffects", package: "flair"),
+```
 
 ```swift
 import SwiftUI

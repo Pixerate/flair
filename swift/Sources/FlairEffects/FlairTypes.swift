@@ -32,7 +32,8 @@ public enum FlairTextureWrap: String, Codable, Sendable, Equatable {
     case mirror
 }
 
-/// How an SVG path is fitted into the frame.
+/// How an SVG path is fitted into the frame (the shader's `PATH` helpers do the fitting, so a path
+/// follows resizes). `fill` has no shader equivalent and is drawn as `none`.
 public enum FlairPathFit: String, Codable, Sendable, Equatable {
     case contain
     case cover
@@ -154,6 +155,7 @@ public enum FlairTextureInput: Sendable, Equatable, Codable {
     case sample(FlairSampleImage)
     case text(String, font: String = "Helvetica-Bold", weight: Double = 900, width: Int = 1024, height: Int = 256)
     case path(String, fit: FlairPathFit = .contain, margin: Float = 0.1)
+    /// Points in frame pixels from the top left (y down), like the web `[x0, y0, x1, y1, …]` path value.
     case points([SIMD2<Float>])
     case url(String)
     case pngData(Data)

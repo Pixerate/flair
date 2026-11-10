@@ -219,6 +219,46 @@ public final class FlairRenderer: @unchecked Sendable {
         return try readCGImage(from: texture)
     }
 
+    /// Renders a type-erased `AnyFlairEffect` offscreen and returns upright RGBA8 pixel bytes (`width * height * 4`).
+    public func renderBytes(
+        anyEffect effect: AnyFlairEffect,
+        width: Int = 320,
+        height: Int = 180,
+        time: Float = 0,
+        state: FlairFrameState? = nil
+    ) throws -> [UInt8] {
+        let w = max(1, width)
+        let h = max(1, height)
+        let desc = MTLTextureDescriptor.texture2DDescriptor(
+            pixelFormat: .rgba8Unorm,
+            width: w,
+            height: h,
+            mipmapped: false
+        )
+        desc.usage = [.renderTarget, .shaderRead]
+        desc.storageMode = .shared
+        guard let texture = device.makeTexture(descriptor: desc) else {
+            throw FlairRendererError.textureCreationFailed
+        }
+
+        var frameState = state ?? FlairFrameState(width: Float(w), height: Float(h), time: time)
+        frameState.width = Float(w)
+        frameState.height = Float(h)
+        if state == nil { frameState.time = time }
+        frameState.flipY = true
+
+        try render(anyEffect: effect, state: frameState, to: texture)
+        let bytesPerRow = w * 4
+        var bytes = Array<UInt8>(repeating: 0, count: bytesPerRow * h)
+        texture.getBytes(
+            &bytes,
+            bytesPerRow: bytesPerRow,
+            from: MTLRegionMake2D(0, 0, w, h),
+            mipmapLevel: 0
+        )
+        return bytes
+    }
+
     /// Reads an `.rgba8Unorm` or `.bgra8Unorm` `MTLTexture` into a `CGImage`.
     public func readCGImage(from texture: MTLTexture) throws -> CGImage {
         let w = texture.width
