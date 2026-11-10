@@ -1,5 +1,23 @@
 # @pixerate/flair
 
+## 0.106.0
+
+### Minor Changes
+
+- 04bd8bc: Three new categories of effects, browsed under Pictures:
+
+  - `emergency`: `siren-lights` (the red and blue wash of a light bar, alternating or rotating, as an overlay), `red-alert` (a picture or video under red emergency lighting with a beacon sweeping round), `caution-tape` (tape snapping across the frame in an X, any text) and `emergency-alert` (a phone's emergency alert card dropping in and buzzing). Neither light can be set to light up more than one and a half times a second; the shaders clamp it too.
+  - `film`: `film-strip` (a picture or video running through a strip of film between its sprocket holes, upright, across or tilted, as a negative too), `film-damage` (a battered print: scratches, dust, hair, blotches, splices and cue marks), `dramatic-letterbox` (bars slamming in with a push-in and a teal-and-orange grade) and `film-projector` (a vintage projector running, as an animated SVG). `letterbox`, `academy-leader` and `cinema-projector` move here from `cinematic`, keeping their `cinematic` tag.
+  - `crt`: `crt-power` (a tube switching on from a bright line and off to a fading dot), `vertical-roll` (a picture rolling as it loses vertical hold, then catching), `crt-television` (a picture on an old TV set in a dark room) and `crt-terminal` (a phosphor terminal typing out lines, as an animated SVG). `crt` moves here from `image` and `tv-static` from `retro`.
+
+  Filter by `category: "emergency"`, `"film"` or `"crt"` to find them. The Swift package gains the new shaders.
+
+### Patch Changes
+
+- 79d5e32: Deduplicate in-flight module loads in `@pixerate/flair/catalog/lazy` when multiple effects from the same module are requested together, and resolve effects in the docs gallery, detail sheet, and hero stage from the already-bundled `@pixerate/flair/catalog` so previews never fail on dynamic chunk fetches across deployments.
+- b3d8e9d: Swift: add a root `Package.swift` so `FlairEffects` can be used as a SwiftPM git dependency. `FlairPathRasterizer` now packs paths in the same texture layout as the web `pathTexture` (points in path units, y down, fitted by the shader's `PATH` helpers), fixing path effects such as `glass-tube` on Metal. `AnyFlairEffect` gains `encodedJSON()`, `decoded(from:)`, `encodedValues()` and `applying(values:)`, and `FlairRenderer` gains `renderBytes(anyEffect:…)`.
+- 7ccbe85: Transparent effects render correctly in Safari. `ShaderRenderer` with `alpha: true` (and so `mountEffect` for overlay effects such as `iridescent-text`) now draws into a premultiplied canvas and premultiplies its output: Safari shows a straight-alpha WebGL canvas as if it were premultiplied, so faint pixels such as soft glows came out as bright, opaque boxes. `createContext` takes a `premultiplied` option and `premultiplyOutput` sets up the blending for it. Pixels read back from `ShaderFrames` and `ShaderPipeline` are unchanged.
+
 ## 0.105.0
 
 ### Minor Changes

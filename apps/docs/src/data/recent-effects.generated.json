@@ -1,1434 +1,5 @@
 [
   {
-    "id": "vertical-roll",
-    "name": "Vertical roll",
-    "kind": "shader",
-    "category": "crt",
-    "description": "A picture on a tube set that has lost its vertical hold: the picture rolling up the screen with the black blanking bar between frames, the lines tearing sideways near it, then (if you like) slowing and catching again as if someone fixed the knob.",
-    "tags": [
-      "crt",
-      "tv",
-      "retro",
-      "roll",
-      "vertical-hold",
-      "glitch",
-      "analogue",
-      "image"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "city"
-        },
-        "line": 4,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uMode",
-        "t": "int",
-        "d": 1,
-        "l": "Mode (0 rolls, 1 rolls then catches)",
-        "max": 1,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uRoll",
-        "t": "float",
-        "d": 0.5,
-        "l": "Rolls a second",
-        "min": 0.05,
-        "max": 1.5,
-        "s": 0.05,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uBar",
-        "t": "float",
-        "d": 0.08,
-        "l": "Bar height",
-        "min": 0.02,
-        "max": 0.25,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uTear",
-        "t": "float",
-        "d": 0.5,
-        "l": "Tearing",
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uScanlines",
-        "t": "float",
-        "d": 0.35,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uNoise",
-        "t": "float",
-        "d": 0.25,
-        "b": 3,
-        "line": 10
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 11
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "b": 3,
-        "line": 12
-      }
-    ],
-    "presets": [
-      "Rolling",
-      "Fast tear",
-      "Clean"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "swiftReady": true,
-    "video": "filter",
-    "animated": true,
-    "module": "shaders/crt",
-    "addedAt": "2026-11-10T15:11:56.119Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "crt-television",
-    "name": "CRT television",
-    "kind": "shader",
-    "category": "crt",
-    "description": "A picture on an old television set in a dark room: a wooden cabinet with a rounded, bulging screen, its dial knobs and speaker grille, rabbit-ear antennas on top, scanlines and a little snow on the glass, its glare, and the screen's light spilling onto the wall and floor.",
-    "tags": [
-      "crt",
-      "tv",
-      "retro",
-      "television",
-      "vintage",
-      "screen",
-      "living-room",
-      "image"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "landscape"
-        },
-        "line": 4,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uSize",
-        "t": "float",
-        "d": 0.85,
-        "l": "Set size",
-        "min": 0.5,
-        "max": 1.2,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uCabinet",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            107,
-            68,
-            40
-          ]
-        },
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "uRoom",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            23,
-            21,
-            28
-          ]
-        },
-        "c": 1,
-        "line": 7
-      },
-      {
-        "n": "uScanlines",
-        "t": "float",
-        "d": 0.45,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uStatic",
-        "t": "float",
-        "d": 0.08,
-        "l": "Snow",
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uGlare",
-        "t": "float",
-        "d": 0.6,
-        "b": 3,
-        "line": 10
-      },
-      {
-        "n": "uAntenna",
-        "t": "bool",
-        "d": true,
-        "line": 11
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 12
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "b": 3,
-        "line": 13
-      }
-    ],
-    "presets": [
-      "Plastic",
-      "Lost signal",
-      "Close up"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "swiftReady": true,
-    "video": "filter",
-    "animated": true,
-    "module": "shaders/crt",
-    "addedAt": "2026-11-10T15:11:56.119Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "crt-terminal",
-    "name": "CRT terminal",
-    "kind": "vector",
-    "category": "crt",
-    "description": "An old phosphor terminal typing out its lines one after another behind a block cursor, glowing green through scanlines with a vignette and a faint bar rolling down the glass, then clearing to type again.",
-    "tags": [
-      "crt",
-      "terminal",
-      "retro",
-      "typing",
-      "phosphor",
-      "computer",
-      "hacker",
-      "text"
-    ],
-    "controls": [
-      {
-        "n": "lines",
-        "t": "text",
-        "d": "> BOOT SEQUENCE INITIATED; > CHECKING MEMORY ... 640K OK; > LOADING SYSTEM FILES; > ESTABLISHING LINK; > READY.",
-        "l": "Lines (separated by ;)",
-        "line": 1
-      },
-      {
-        "n": "ink",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            61,
-            255,
-            126
-          ]
-        },
-        "l": "Phosphor",
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            3,
-            20,
-            10
-          ]
-        },
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "pace",
-        "t": "float",
-        "d": 45,
-        "l": "Ms per letter",
-        "min": 15,
-        "max": 200,
-        "s": 5,
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "glow",
-        "t": "float",
-        "d": 2.5,
-        "max": 6,
-        "s": 0.5,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "hold",
-        "t": "float",
-        "d": 2.5,
-        "l": "Hold (s)",
-        "min": 0.5,
-        "max": 20,
-        "s": 0.5,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "font",
-        "t": "text",
-        "d": "ui-monospace, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace",
-        "line": 7
-      }
-    ],
-    "presets": [
-      "Amber",
-      "Mainframe",
-      "Fast"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "lines",
-          "label": "Lines (separated by ;)",
-          "holds": "copy",
-          "default": "> BOOT SEQUENCE INITIATED; > CHECKING MEMORY ... 640K OK; > LOADING SYSTEM FILES; > ESTABLISHING LINK; > READY."
-        },
-        {
-          "name": "font",
-          "label": "Font",
-          "holds": "font",
-          "default": "ui-monospace, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 300,
-    "animated": true,
-    "duration": 8985,
-    "module": "crt",
-    "addedAt": "2026-11-10T15:11:56.119Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "film-strip",
-    "name": "Film strip",
-    "kind": "shader",
-    "category": "film",
-    "description": "A picture running through a strip of film: frame after frame of it sliding past between rows of sprocket holes, with frame lines, printed edge marks along the margin and a little dust and flicker, lit from behind as on a lightbox; upright or across, tilted if you like, or as an orange-based negative.",
-    "tags": [
-      "film",
-      "cinema",
-      "sprockets",
-      "film-strip",
-      "35mm",
-      "negative",
-      "vintage",
-      "image"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "landscape"
-        },
-        "line": 4,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uDirection",
-        "t": "int",
-        "d": 0,
-        "l": "Direction (0 runs up, 1 runs across)",
-        "max": 1,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 0.6,
-        "l": "Frames a second",
-        "min": -4,
-        "max": 4,
-        "s": 0.05,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uWidth",
-        "t": "float",
-        "d": 0.62,
-        "l": "Strip width",
-        "min": 0.3,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uAngle",
-        "t": "float",
-        "d": 0,
-        "l": "Tilt (degrees)",
-        "min": -45,
-        "max": 45,
-        "s": 1,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uFrameAspect",
-        "t": "float",
-        "d": 1.5,
-        "l": "Frame aspect ratio",
-        "min": 1,
-        "max": 2.4,
-        "s": 0.01,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uBase",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            23,
-            17,
-            14
-          ]
-        },
-        "l": "Film base",
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "uEdge",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            224,
-            150,
-            58
-          ]
-        },
-        "l": "Edge marks",
-        "c": 1,
-        "line": 11
-      },
-      {
-        "n": "uNegative",
-        "t": "bool",
-        "d": false,
-        "line": 12
-      },
-      {
-        "n": "uWear",
-        "t": "float",
-        "d": 0.35,
-        "b": 3,
-        "line": 13
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 14
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "b": 3,
-        "line": 15
-      }
-    ],
-    "presets": [
-      "Across",
-      "Negative",
-      "Tilted",
-      "Dark room",
-      "Overlay"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "swiftReady": true,
-    "video": "filter",
-    "animated": true,
-    "module": "shaders/film",
-    "addedAt": "2026-11-10T15:11:56.119Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "film-damage",
-    "name": "Film damage",
-    "kind": "shader",
-    "category": "film",
-    "description": "A picture as a battered old print: scratches running down it that come and go, dust and the odd hair flashing past for a frame, emulsion blotches, flicker and a faded colour, the frame jumping at bad splices and a cue mark blinking in the corner.",
-    "tags": [
-      "film",
-      "cinema",
-      "scratches",
-      "dust",
-      "damage",
-      "vintage",
-      "grain",
-      "projector",
-      "image"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "landscape"
-        },
-        "line": 4,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uScratches",
-        "t": "float",
-        "d": 0.6,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uDust",
-        "t": "float",
-        "d": 0.5,
-        "l": "Dust and hair",
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uBlotches",
-        "t": "float",
-        "d": 0.3,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uFlicker",
-        "t": "float",
-        "d": 0.4,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uJumps",
-        "t": "float",
-        "d": 0.3,
-        "l": "Splices and jumps",
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uCueMarks",
-        "t": "bool",
-        "d": true,
-        "line": 10
-      },
-      {
-        "n": "uFade",
-        "t": "float",
-        "d": 0.35,
-        "l": "Faded print",
-        "b": 3,
-        "line": 11
-      },
-      {
-        "n": "uGrain",
-        "t": "float",
-        "d": 0.35,
-        "b": 3,
-        "line": 12
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 13
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "b": 3,
-        "line": 14
-      }
-    ],
-    "presets": [
-      "Grindhouse",
-      "Archive",
-      "Light wear"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "swiftReady": true,
-    "video": "filter",
-    "animated": true,
-    "module": "shaders/film",
-    "addedAt": "2026-11-10T15:11:56.119Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "dramatic-letterbox",
-    "name": "Dramatic letterbox",
-    "kind": "shader",
-    "category": "film",
-    "description": "A picture's big moment: cinema bars slam in from the top and bottom, bouncing and shaking the frame as they land, while the picture pushes slowly in and the grade turns moody, contrasty and teal and orange; then it all eases back. Loops; or turn Animate off and set Progress.",
-    "tags": [
-      "film",
-      "cinematic",
-      "letterbox",
-      "dramatic",
-      "trailer",
-      "aspect-ratio",
-      "grade",
-      "image"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "portrait"
-        },
-        "line": 4,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uAspect",
-        "t": "float",
-        "d": 2.39,
-        "l": "Aspect ratio (width ÷ height)",
-        "min": 1,
-        "max": 3,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uBar",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            0,
-            0,
-            0
-          ]
-        },
-        "l": "Bar colour",
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "uSlam",
-        "t": "float",
-        "d": 0.6,
-        "l": "Slam (bounce and shake)",
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uPush",
-        "t": "float",
-        "d": 0.08,
-        "l": "Push in",
-        "max": 0.25,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uGrade",
-        "t": "float",
-        "d": 0.7,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uShadowTint",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            15,
-            76,
-            92
-          ]
-        },
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "uHighlightTint",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            178,
-            107
-          ]
-        },
-        "c": 1,
-        "line": 11
-      },
-      {
-        "n": "uAnimate",
-        "t": "bool",
-        "d": true,
-        "line": 12
-      },
-      {
-        "n": "uProgress",
-        "t": "float",
-        "d": 1,
-        "l": "Progress (when still)",
-        "b": 3,
-        "line": 13
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 14
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "b": 3,
-        "line": 15
-      }
-    ],
-    "presets": [
-      "Scope slam",
-      "Ultra wide",
-      "Noir",
-      "Gentle"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "swiftReady": true,
-    "video": "filter",
-    "loop": 6,
-    "animated": true,
-    "duration": 6000,
-    "module": "shaders/film",
-    "addedAt": "2026-11-10T15:11:56.119Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "film-projector",
-    "name": "Film projector",
-    "kind": "vector",
-    "category": "film",
-    "description": "A vintage film projector running: its two reels turning, the film feeding through it from one to the other, and a flickering cone of light streaming from its lens with dust drifting through the beam, on a seamless loop.",
-    "tags": [
-      "film",
-      "cinema",
-      "projector",
-      "film-reel",
-      "vintage",
-      "movie",
-      "icon",
-      "loop"
-    ],
-    "controls": [
-      {
-        "n": "body",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            46,
-            49,
-            56
-          ]
-        },
-        "c": 1,
-        "line": 1
-      },
-      {
-        "n": "trim",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            154,
-            160,
-            170
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "reel",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            198,
-            202,
-            210
-          ]
-        },
-        "l": "Reels",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "film",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            59,
-            42,
-            30
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "beam",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            243,
-            209
-          ]
-        },
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "beamOpacity",
-        "t": "float",
-        "d": 0.55,
-        "l": "Beam strength",
-        "s": 0.05,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            16,
-            18,
-            22
-          ]
-        },
-        "c": 1,
-        "line": 7
-      },
-      {
-        "n": "backdrop",
-        "t": "float",
-        "d": 0,
-        "l": "Background opacity",
-        "s": 0.05,
-        "b": 3,
-        "line": 8
-      }
-    ],
-    "presets": [
-      "Chrome",
-      "Dark room",
-      "Warm beam"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 0,
-    "animated": true,
-    "duration": 2400,
-    "module": "film",
-    "addedAt": "2026-11-10T15:11:56.119Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "siren-lights",
-    "name": "Siren lights",
-    "kind": "shader",
-    "category": "emergency",
-    "description": "The red and blue wash of an emergency vehicle's light bar spilling over the frame from above: the two lamps taking turns, or spinning so their beams sweep across, glowing through a faint haze. It lights up at most one and a half times a second.",
-    "tags": [
-      "emergency",
-      "police",
-      "siren",
-      "light-bar",
-      "red",
-      "blue",
-      "flashing",
-      "overlay",
-      "night"
-    ],
-    "controls": [
-      {
-        "n": "uColorA",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            31,
-            45
-          ]
-        },
-        "l": "Left lamp",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uColorB",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            31,
-            91,
-            255
-          ]
-        },
-        "l": "Right lamp",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uPattern",
-        "t": "int",
-        "d": 0,
-        "l": "Pattern (0 alternate, 1 rotate)",
-        "max": 1,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uRate",
-        "t": "float",
-        "d": 1,
-        "l": "Cycles a second",
-        "min": 0.25,
-        "max": 1.5,
-        "s": 0.05,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uIntensity",
-        "t": "float",
-        "d": 1,
-        "max": 2,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uSpread",
-        "t": "float",
-        "d": 0.7,
-        "min": 0.2,
-        "max": 1.5,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uHaze",
-        "t": "float",
-        "d": 0.4,
-        "b": 3,
-        "line": 10
-      },
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            5,
-            7,
-            13
-          ]
-        },
-        "c": 1,
-        "line": 11
-      },
-      {
-        "n": "uBackgroundAlpha",
-        "t": "float",
-        "d": 0,
-        "l": "Background opacity",
-        "b": 3,
-        "line": 12
-      }
-    ],
-    "presets": [
-      "Night street",
-      "Rotating",
-      "Ambulance",
-      "Hazard amber"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": true
-    },
-    "swiftReady": true,
-    "transparent": true,
-    "animated": true,
-    "module": "shaders/emergency",
-    "addedAt": "2026-11-10T15:11:56.119Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "red-alert",
-    "name": "Red alert",
-    "kind": "shader",
-    "category": "emergency",
-    "description": "A picture as the main lights cut to emergency power: the scene drops into shadow and turns red, lit by a beacon spinning overhead whose beam sweeps across it, with a slow red pulse and the corners falling into dark. It sweeps at most one and a half times a second.",
-    "tags": [
-      "emergency",
-      "alarm",
-      "red",
-      "beacon",
-      "klaxon",
-      "alert",
-      "lighting",
-      "image"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "city"
-        },
-        "line": 4,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uColor",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            42,
-            31
-          ]
-        },
-        "l": "Alarm light",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uRate",
-        "t": "float",
-        "d": 0.6,
-        "l": "Sweeps a second",
-        "min": 0.2,
-        "max": 1.5,
-        "s": 0.05,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uDarken",
-        "t": "float",
-        "d": 0.65,
-        "l": "Lights out",
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uSweep",
-        "t": "float",
-        "d": 0.8,
-        "l": "Beacon beam",
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uPulse",
-        "t": "float",
-        "d": 0.5,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uBeaconX",
-        "t": "float",
-        "d": 0.5,
-        "l": "Beacon across",
-        "b": 3,
-        "line": 10
-      },
-      {
-        "n": "uVignette",
-        "t": "float",
-        "d": 0.6,
-        "b": 3,
-        "line": 11
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 12
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "b": 3,
-        "line": 13
-      }
-    ],
-    "presets": [
-      "Blackout",
-      "Amber warning",
-      "Slow pulse"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "swiftReady": true,
-    "video": "filter",
-    "animated": true,
-    "module": "shaders/emergency",
-    "addedAt": "2026-11-10T15:11:56.119Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "caution-tape",
-    "name": "Caution tape",
-    "kind": "vector",
-    "category": "emergency",
-    "description": "Yellow and black caution tape snapping across the frame from either side, crossed in an X or as one band, its warning repeated along it, fluttering while it holds, then torn down and dropping away.",
-    "tags": [
-      "emergency",
-      "caution",
-      "warning",
-      "tape",
-      "hazard",
-      "barrier",
-      "crime-scene",
-      "text",
-      "overlay"
-    ],
-    "controls": [
-      {
-        "n": "text",
-        "t": "text",
-        "d": "CAUTION  DO NOT CROSS",
-        "l": "Tape text",
-        "line": 1
-      },
-      {
-        "n": "tape",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            212,
-            0
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "ink",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            17,
-            17,
-            17
-          ]
-        },
-        "l": "Text and stripes",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "angle",
-        "t": "float",
-        "d": 14,
-        "l": "Angle (degrees)",
-        "max": 35,
-        "s": 1,
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "cross",
-        "t": "bool",
-        "d": true,
-        "l": "Two tapes, crossed",
-        "line": 5
-      },
-      {
-        "n": "hold",
-        "t": "float",
-        "d": 3,
-        "l": "Hold (s)",
-        "min": 0.5,
-        "max": 20,
-        "s": 0.5,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "font",
-        "t": "text",
-        "d": "'Inter', 'Helvetica Neue', Arial, system-ui, sans-serif",
-        "line": 7
-      }
-    ],
-    "presets": [
-      "Crime scene",
-      "Danger",
-      "One band"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "text",
-          "label": "Tape text",
-          "holds": "copy",
-          "default": "CAUTION  DO NOT CROSS"
-        },
-        {
-          "name": "font",
-          "label": "Font",
-          "holds": "font",
-          "default": "'Inter', 'Helvetica Neue', Arial, system-ui, sans-serif"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 400,
-    "animated": true,
-    "duration": 5250,
-    "module": "emergency",
-    "addedAt": "2026-11-10T15:11:56.119Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
     "id": "emergency-alert",
     "name": "Emergency alert",
     "kind": "vector",
@@ -1602,9 +173,1438 @@
     "animated": true,
     "duration": 6520,
     "module": "emergency",
-    "addedAt": "2026-11-10T15:11:56.119Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-11-10T15:17:55Z",
+    "commitHash": "04bd8bc6d2ca1aba5d35f2311c0dcbce4a3cea4d",
+    "order": 669
+  },
+  {
+    "id": "caution-tape",
+    "name": "Caution tape",
+    "kind": "vector",
+    "category": "emergency",
+    "description": "Yellow and black caution tape snapping across the frame from either side, crossed in an X or as one band, its warning repeated along it, fluttering while it holds, then torn down and dropping away.",
+    "tags": [
+      "emergency",
+      "caution",
+      "warning",
+      "tape",
+      "hazard",
+      "barrier",
+      "crime-scene",
+      "text",
+      "overlay"
+    ],
+    "controls": [
+      {
+        "n": "text",
+        "t": "text",
+        "d": "CAUTION  DO NOT CROSS",
+        "l": "Tape text",
+        "line": 1
+      },
+      {
+        "n": "tape",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            212,
+            0
+          ]
+        },
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "ink",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            17,
+            17,
+            17
+          ]
+        },
+        "l": "Text and stripes",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "angle",
+        "t": "float",
+        "d": 14,
+        "l": "Angle (degrees)",
+        "max": 35,
+        "s": 1,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "cross",
+        "t": "bool",
+        "d": true,
+        "l": "Two tapes, crossed",
+        "line": 5
+      },
+      {
+        "n": "hold",
+        "t": "float",
+        "d": 3,
+        "l": "Hold (s)",
+        "min": 0.5,
+        "max": 20,
+        "s": 0.5,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "font",
+        "t": "text",
+        "d": "'Inter', 'Helvetica Neue', Arial, system-ui, sans-serif",
+        "line": 7
+      }
+    ],
+    "presets": [
+      "Crime scene",
+      "Danger",
+      "One band"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "text",
+          "label": "Tape text",
+          "holds": "copy",
+          "default": "CAUTION  DO NOT CROSS"
+        },
+        {
+          "name": "font",
+          "label": "Font",
+          "holds": "font",
+          "default": "'Inter', 'Helvetica Neue', Arial, system-ui, sans-serif"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 400,
+    "animated": true,
+    "duration": 5250,
+    "module": "emergency",
+    "addedAt": "2026-11-10T15:17:55Z",
+    "commitHash": "04bd8bc6d2ca1aba5d35f2311c0dcbce4a3cea4d",
+    "order": 668
+  },
+  {
+    "id": "red-alert",
+    "name": "Red alert",
+    "kind": "shader",
+    "category": "emergency",
+    "description": "A picture as the main lights cut to emergency power: the scene drops into shadow and turns red, lit by a beacon spinning overhead whose beam sweeps across it, with a slow red pulse and the corners falling into dark. It sweeps at most one and a half times a second.",
+    "tags": [
+      "emergency",
+      "alarm",
+      "red",
+      "beacon",
+      "klaxon",
+      "alert",
+      "lighting",
+      "image"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "city"
+        },
+        "line": 4,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uColor",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            42,
+            31
+          ]
+        },
+        "l": "Alarm light",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uRate",
+        "t": "float",
+        "d": 0.6,
+        "l": "Sweeps a second",
+        "min": 0.2,
+        "max": 1.5,
+        "s": 0.05,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uDarken",
+        "t": "float",
+        "d": 0.65,
+        "l": "Lights out",
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uSweep",
+        "t": "float",
+        "d": 0.8,
+        "l": "Beacon beam",
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uPulse",
+        "t": "float",
+        "d": 0.5,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uBeaconX",
+        "t": "float",
+        "d": 0.5,
+        "l": "Beacon across",
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uVignette",
+        "t": "float",
+        "d": 0.6,
+        "b": 3,
+        "line": 11
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 12
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 13
+      }
+    ],
+    "presets": [
+      "Blackout",
+      "Amber warning",
+      "Slow pulse"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "swiftReady": true,
+    "video": "filter",
+    "animated": true,
+    "module": "shaders/emergency",
+    "addedAt": "2026-11-10T15:17:55Z",
+    "commitHash": "04bd8bc6d2ca1aba5d35f2311c0dcbce4a3cea4d",
+    "order": 667
+  },
+  {
+    "id": "siren-lights",
+    "name": "Siren lights",
+    "kind": "shader",
+    "category": "emergency",
+    "description": "The red and blue wash of an emergency vehicle's light bar spilling over the frame from above: the two lamps taking turns, or spinning so their beams sweep across, glowing through a faint haze. It lights up at most one and a half times a second.",
+    "tags": [
+      "emergency",
+      "police",
+      "siren",
+      "light-bar",
+      "red",
+      "blue",
+      "flashing",
+      "overlay",
+      "night"
+    ],
+    "controls": [
+      {
+        "n": "uColorA",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            31,
+            45
+          ]
+        },
+        "l": "Left lamp",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uColorB",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            31,
+            91,
+            255
+          ]
+        },
+        "l": "Right lamp",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uPattern",
+        "t": "int",
+        "d": 0,
+        "l": "Pattern (0 alternate, 1 rotate)",
+        "max": 1,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uRate",
+        "t": "float",
+        "d": 1,
+        "l": "Cycles a second",
+        "min": 0.25,
+        "max": 1.5,
+        "s": 0.05,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uIntensity",
+        "t": "float",
+        "d": 1,
+        "max": 2,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uSpread",
+        "t": "float",
+        "d": 0.7,
+        "min": 0.2,
+        "max": 1.5,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uHaze",
+        "t": "float",
+        "d": 0.4,
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            5,
+            7,
+            13
+          ]
+        },
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 0,
+        "l": "Background opacity",
+        "b": 3,
+        "line": 12
+      }
+    ],
+    "presets": [
+      "Night street",
+      "Rotating",
+      "Ambulance",
+      "Hazard amber"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": true
+    },
+    "swiftReady": true,
+    "transparent": true,
+    "animated": true,
+    "module": "shaders/emergency",
+    "addedAt": "2026-11-10T15:17:55Z",
+    "commitHash": "04bd8bc6d2ca1aba5d35f2311c0dcbce4a3cea4d",
+    "order": 666
+  },
+  {
+    "id": "film-projector",
+    "name": "Film projector",
+    "kind": "vector",
+    "category": "film",
+    "description": "A vintage film projector running: its two reels turning, the film feeding through it from one to the other, and a flickering cone of light streaming from its lens with dust drifting through the beam, on a seamless loop.",
+    "tags": [
+      "film",
+      "cinema",
+      "projector",
+      "film-reel",
+      "vintage",
+      "movie",
+      "icon",
+      "loop"
+    ],
+    "controls": [
+      {
+        "n": "body",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            46,
+            49,
+            56
+          ]
+        },
+        "c": 1,
+        "line": 1
+      },
+      {
+        "n": "trim",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            154,
+            160,
+            170
+          ]
+        },
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "reel",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            198,
+            202,
+            210
+          ]
+        },
+        "l": "Reels",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "film",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            59,
+            42,
+            30
+          ]
+        },
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "beam",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            243,
+            209
+          ]
+        },
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "beamOpacity",
+        "t": "float",
+        "d": 0.55,
+        "l": "Beam strength",
+        "s": 0.05,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "background",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            16,
+            18,
+            22
+          ]
+        },
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "backdrop",
+        "t": "float",
+        "d": 0,
+        "l": "Background opacity",
+        "s": 0.05,
+        "b": 3,
+        "line": 8
+      }
+    ],
+    "presets": [
+      "Chrome",
+      "Dark room",
+      "Warm beam"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 0,
+    "animated": true,
+    "duration": 2400,
+    "module": "film",
+    "addedAt": "2026-11-10T15:17:55Z",
+    "commitHash": "04bd8bc6d2ca1aba5d35f2311c0dcbce4a3cea4d",
+    "order": 665
+  },
+  {
+    "id": "dramatic-letterbox",
+    "name": "Dramatic letterbox",
+    "kind": "shader",
+    "category": "film",
+    "description": "A picture's big moment: cinema bars slam in from the top and bottom, bouncing and shaking the frame as they land, while the picture pushes slowly in and the grade turns moody, contrasty and teal and orange; then it all eases back. Loops; or turn Animate off and set Progress.",
+    "tags": [
+      "film",
+      "cinematic",
+      "letterbox",
+      "dramatic",
+      "trailer",
+      "aspect-ratio",
+      "grade",
+      "image"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "line": 4,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uAspect",
+        "t": "float",
+        "d": 2.39,
+        "l": "Aspect ratio (width ÷ height)",
+        "min": 1,
+        "max": 3,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uBar",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            0,
+            0,
+            0
+          ]
+        },
+        "l": "Bar colour",
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "uSlam",
+        "t": "float",
+        "d": 0.6,
+        "l": "Slam (bounce and shake)",
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uPush",
+        "t": "float",
+        "d": 0.08,
+        "l": "Push in",
+        "max": 0.25,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uGrade",
+        "t": "float",
+        "d": 0.7,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uShadowTint",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            15,
+            76,
+            92
+          ]
+        },
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "uHighlightTint",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            178,
+            107
+          ]
+        },
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "uAnimate",
+        "t": "bool",
+        "d": true,
+        "line": 12
+      },
+      {
+        "n": "uProgress",
+        "t": "float",
+        "d": 1,
+        "l": "Progress (when still)",
+        "b": 3,
+        "line": 13
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 14
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 15
+      }
+    ],
+    "presets": [
+      "Scope slam",
+      "Ultra wide",
+      "Noir",
+      "Gentle"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "swiftReady": true,
+    "video": "filter",
+    "loop": 6,
+    "animated": true,
+    "duration": 6000,
+    "module": "shaders/film",
+    "addedAt": "2026-11-10T15:17:55Z",
+    "commitHash": "04bd8bc6d2ca1aba5d35f2311c0dcbce4a3cea4d",
+    "order": 664
+  },
+  {
+    "id": "film-damage",
+    "name": "Film damage",
+    "kind": "shader",
+    "category": "film",
+    "description": "A picture as a battered old print: scratches running down it that come and go, dust and the odd hair flashing past for a frame, emulsion blotches, flicker and a faded colour, the frame jumping at bad splices and a cue mark blinking in the corner.",
+    "tags": [
+      "film",
+      "cinema",
+      "scratches",
+      "dust",
+      "damage",
+      "vintage",
+      "grain",
+      "projector",
+      "image"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "landscape"
+        },
+        "line": 4,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uScratches",
+        "t": "float",
+        "d": 0.6,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uDust",
+        "t": "float",
+        "d": 0.5,
+        "l": "Dust and hair",
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uBlotches",
+        "t": "float",
+        "d": 0.3,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uFlicker",
+        "t": "float",
+        "d": 0.4,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uJumps",
+        "t": "float",
+        "d": 0.3,
+        "l": "Splices and jumps",
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uCueMarks",
+        "t": "bool",
+        "d": true,
+        "line": 10
+      },
+      {
+        "n": "uFade",
+        "t": "float",
+        "d": 0.35,
+        "l": "Faded print",
+        "b": 3,
+        "line": 11
+      },
+      {
+        "n": "uGrain",
+        "t": "float",
+        "d": 0.35,
+        "b": 3,
+        "line": 12
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 13
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 14
+      }
+    ],
+    "presets": [
+      "Grindhouse",
+      "Archive",
+      "Light wear"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "swiftReady": true,
+    "video": "filter",
+    "animated": true,
+    "module": "shaders/film",
+    "addedAt": "2026-11-10T15:17:55Z",
+    "commitHash": "04bd8bc6d2ca1aba5d35f2311c0dcbce4a3cea4d",
+    "order": 663
+  },
+  {
+    "id": "film-strip",
+    "name": "Film strip",
+    "kind": "shader",
+    "category": "film",
+    "description": "A picture running through a strip of film: frame after frame of it sliding past between rows of sprocket holes, with frame lines, printed edge marks along the margin and a little dust and flicker, lit from behind as on a lightbox; upright or across, tilted if you like, or as an orange-based negative.",
+    "tags": [
+      "film",
+      "cinema",
+      "sprockets",
+      "film-strip",
+      "35mm",
+      "negative",
+      "vintage",
+      "image"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "landscape"
+        },
+        "line": 4,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uDirection",
+        "t": "int",
+        "d": 0,
+        "l": "Direction (0 runs up, 1 runs across)",
+        "max": 1,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uSpeed",
+        "t": "float",
+        "d": 0.6,
+        "l": "Frames a second",
+        "min": -4,
+        "max": 4,
+        "s": 0.05,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uWidth",
+        "t": "float",
+        "d": 0.62,
+        "l": "Strip width",
+        "min": 0.3,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uAngle",
+        "t": "float",
+        "d": 0,
+        "l": "Tilt (degrees)",
+        "min": -45,
+        "max": 45,
+        "s": 1,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uFrameAspect",
+        "t": "float",
+        "d": 1.5,
+        "l": "Frame aspect ratio",
+        "min": 1,
+        "max": 2.4,
+        "s": 0.01,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uBase",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            23,
+            17,
+            14
+          ]
+        },
+        "l": "Film base",
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "uEdge",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            224,
+            150,
+            58
+          ]
+        },
+        "l": "Edge marks",
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "uNegative",
+        "t": "bool",
+        "d": false,
+        "line": 12
+      },
+      {
+        "n": "uWear",
+        "t": "float",
+        "d": 0.35,
+        "b": 3,
+        "line": 13
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 14
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 15
+      }
+    ],
+    "presets": [
+      "Across",
+      "Negative",
+      "Tilted",
+      "Dark room",
+      "Overlay"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "swiftReady": true,
+    "video": "filter",
+    "animated": true,
+    "module": "shaders/film",
+    "addedAt": "2026-11-10T15:17:55Z",
+    "commitHash": "04bd8bc6d2ca1aba5d35f2311c0dcbce4a3cea4d",
+    "order": 662
+  },
+  {
+    "id": "crt-terminal",
+    "name": "CRT terminal",
+    "kind": "vector",
+    "category": "crt",
+    "description": "An old phosphor terminal typing out its lines one after another behind a block cursor, glowing green through scanlines with a vignette and a faint bar rolling down the glass, then clearing to type again.",
+    "tags": [
+      "crt",
+      "terminal",
+      "retro",
+      "typing",
+      "phosphor",
+      "computer",
+      "hacker",
+      "text"
+    ],
+    "controls": [
+      {
+        "n": "lines",
+        "t": "text",
+        "d": "> BOOT SEQUENCE INITIATED; > CHECKING MEMORY ... 640K OK; > LOADING SYSTEM FILES; > ESTABLISHING LINK; > READY.",
+        "l": "Lines (separated by ;)",
+        "line": 1
+      },
+      {
+        "n": "ink",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            61,
+            255,
+            126
+          ]
+        },
+        "l": "Phosphor",
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "background",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            3,
+            20,
+            10
+          ]
+        },
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "pace",
+        "t": "float",
+        "d": 45,
+        "l": "Ms per letter",
+        "min": 15,
+        "max": 200,
+        "s": 5,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "glow",
+        "t": "float",
+        "d": 2.5,
+        "max": 6,
+        "s": 0.5,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "hold",
+        "t": "float",
+        "d": 2.5,
+        "l": "Hold (s)",
+        "min": 0.5,
+        "max": 20,
+        "s": 0.5,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "font",
+        "t": "text",
+        "d": "ui-monospace, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace",
+        "line": 7
+      }
+    ],
+    "presets": [
+      "Amber",
+      "Mainframe",
+      "Fast"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "lines",
+          "label": "Lines (separated by ;)",
+          "holds": "copy",
+          "default": "> BOOT SEQUENCE INITIATED; > CHECKING MEMORY ... 640K OK; > LOADING SYSTEM FILES; > ESTABLISHING LINK; > READY."
+        },
+        {
+          "name": "font",
+          "label": "Font",
+          "holds": "font",
+          "default": "ui-monospace, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 300,
+    "animated": true,
+    "duration": 8985,
+    "module": "crt",
+    "addedAt": "2026-11-10T15:17:55Z",
+    "commitHash": "04bd8bc6d2ca1aba5d35f2311c0dcbce4a3cea4d",
+    "order": 661
+  },
+  {
+    "id": "crt-television",
+    "name": "CRT television",
+    "kind": "shader",
+    "category": "crt",
+    "description": "A picture on an old television set in a dark room: a wooden cabinet with a rounded, bulging screen, its dial knobs and speaker grille, rabbit-ear antennas on top, scanlines and a little snow on the glass, its glare, and the screen's light spilling onto the wall and floor.",
+    "tags": [
+      "crt",
+      "tv",
+      "retro",
+      "television",
+      "vintage",
+      "screen",
+      "living-room",
+      "image"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "landscape"
+        },
+        "line": 4,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 0.85,
+        "l": "Set size",
+        "min": 0.5,
+        "max": 1.2,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uCabinet",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            107,
+            68,
+            40
+          ]
+        },
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "uRoom",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            23,
+            21,
+            28
+          ]
+        },
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "uScanlines",
+        "t": "float",
+        "d": 0.45,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uStatic",
+        "t": "float",
+        "d": 0.08,
+        "l": "Snow",
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uGlare",
+        "t": "float",
+        "d": 0.6,
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uAntenna",
+        "t": "bool",
+        "d": true,
+        "line": 11
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 12
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 13
+      }
+    ],
+    "presets": [
+      "Plastic",
+      "Lost signal",
+      "Close up"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "swiftReady": true,
+    "video": "filter",
+    "animated": true,
+    "module": "shaders/crt",
+    "addedAt": "2026-11-10T15:17:55Z",
+    "commitHash": "04bd8bc6d2ca1aba5d35f2311c0dcbce4a3cea4d",
+    "order": 660
+  },
+  {
+    "id": "vertical-roll",
+    "name": "Vertical roll",
+    "kind": "shader",
+    "category": "crt",
+    "description": "A picture on a tube set that has lost its vertical hold: the picture rolling up the screen with the black blanking bar between frames, the lines tearing sideways near it, then (if you like) slowing and catching again as if someone fixed the knob.",
+    "tags": [
+      "crt",
+      "tv",
+      "retro",
+      "roll",
+      "vertical-hold",
+      "glitch",
+      "analogue",
+      "image"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "city"
+        },
+        "line": 4,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uMode",
+        "t": "int",
+        "d": 1,
+        "l": "Mode (0 rolls, 1 rolls then catches)",
+        "max": 1,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uRoll",
+        "t": "float",
+        "d": 0.5,
+        "l": "Rolls a second",
+        "min": 0.05,
+        "max": 1.5,
+        "s": 0.05,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uBar",
+        "t": "float",
+        "d": 0.08,
+        "l": "Bar height",
+        "min": 0.02,
+        "max": 0.25,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uTear",
+        "t": "float",
+        "d": 0.5,
+        "l": "Tearing",
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uScanlines",
+        "t": "float",
+        "d": 0.35,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uNoise",
+        "t": "float",
+        "d": 0.25,
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 12
+      }
+    ],
+    "presets": [
+      "Rolling",
+      "Fast tear",
+      "Clean"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "swiftReady": true,
+    "video": "filter",
+    "animated": true,
+    "module": "shaders/crt",
+    "addedAt": "2026-11-10T15:17:55Z",
+    "commitHash": "04bd8bc6d2ca1aba5d35f2311c0dcbce4a3cea4d",
+    "order": 659
   },
   {
     "id": "crt-power",
@@ -1737,9 +1737,9 @@
     "animated": true,
     "duration": 5000,
     "module": "shaders/crt",
-    "addedAt": "2026-11-10T15:11:56.118Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-11-10T15:17:55Z",
+    "commitHash": "04bd8bc6d2ca1aba5d35f2311c0dcbce4a3cea4d",
+    "order": 658
   },
   {
     "id": "pixel-bloom-reveal",
