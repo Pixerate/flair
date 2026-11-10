@@ -46,6 +46,7 @@ jobs:
           else
             echo "Pending changeset found: $CHANGESETS"
           fi
+          pnpm changeset status
 
       - name: Build package & demo
         run: pnpm build && pnpm --filter demo build
