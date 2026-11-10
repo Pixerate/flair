@@ -17,25 +17,17 @@ Generate a 1024x1024 app/repo icon for "Flair" (a shader, visual effects, and mo
 
 Visual brief (must match the Pixerate family icons for Jazz Paint, Swash, and Pixerate Stats):
 - Style: Modern Apple macOS / iOS app icon aesthetic — tactile, dimensional, glossy 3D glassmorphic and vector-crafted object with rich lighting, specular highlights, subtle inner glow, smooth gradients, and a clean, bold silhouette.
-- Subject: A bold, sculptural 3D radiant four-point star / optical flare emblem intertwined with a sweeping, dynamic luminous light-wave ribbon curving upward from bottom-left toward top-right. The sweeping flare wave and outer tips of the radiant star gracefully dissolve and scatter outward into crisp, floating, luminous rounded-square pixel blocks of varying sizes with glowing edges (echoing the signature Pixerate pixel-grid motif).
+- Subject: A bold, solid, glossy 3D faceted four-point star / optical flare emblem in the center, with a single sleek 3D luminous ribbon looping in an angled elliptical orbit around the star (passing behind the upper-left and sweeping smoothly around the front toward the upper-right) where its trailing tip dissolves into a clean cluster of floating, glowing rounded-square pixel blocks (echoing the signature Pixerate pixel-grid motif).
 - Brand Colours (from the Pixerate palette):
   - Background: Full-bleed rich dark obsidian-violet gradient (`#0D061A` to `#1A0B2E`, full square canvas with NO white border, NO transparent corners, and NO pre-cut rounded-rectangle or squircle frame inside the image — fill the entire 1024x1024 square edge-to-edge into all four sharp 90-degree corners).
   - Flare, Wave & Pixels Palette: Pixerate's signature neon gradient — hot pink / rose (`#EC4899` / `#EE1D7E`), electric fuchsia (`#E12AFB` / `#EE6BFF` / `#C800DE`), luminous violet (`#8E51FF` / `#7F22FE`), and deep electric indigo (`#4338CA`), with brilliant glass-like specular highlights.
 - Composition: Centered, bold, uncluttered, instantly readable at both 1024px and small 16px/32px site header and browser favicon sizes. No text, no letter "F", no typography.
 ```
 
-## 3. Exact Image Generation Prompts
-
-### Pass 1 — Initial 1:1 Icon Generation
+## 3. Exact Image Generation Prompt
 
 ```text
-App icon design for Flair, a shader and visual effects library. Centered sculptural 3D radiant four-point optical flare star emblem intertwined with a sweeping, dynamic luminous wave ribbon curving gracefully upward from bottom-left toward top-right. The outer tips of the radiant star and the sweeping light ribbon dissolve into floating luminous rounded-square pixel cubes and micro-blocks of varying sizes with glowing edges. Premium modern Apple iOS app icon aesthetic, glassmorphic 3D rendering with tactile depth, frosted translucent glass, prismatic caustics, and crisp specular highlights. Vibrant neon gradient palette of hot pink, electric fuchsia, luminous purple-violet, and deep indigo with brilliant glowing white-hot core lighting. Full-bleed background filling the entire square canvas edge-to-edge into all four sharp corners with a deep obsidian dark violet and midnight-purple ambient gradient (#0D061A to #1A0B2E). No squircle frame, no border, no text, no letters, no typography, full square bleed.
-```
-
-### Pass 2 — Contained Composition & Specular Glass Refinement
-
-```text
-App icon for "Flair" visual effects studio. Centered fully within the frame with comfortable margins: a stunning sculptural 3D four-pointed optical flare star emblem with a bright glowing center, intertwined with an elegant, glossy curved light-wave ribbon flowing from lower-left to upper-right. The ends of the curved ribbon and the tips of the 4-point flare gracefully dissolve and disperse into floating, luminous rounded-square pixel cubes of varying sizes with glowing edges. Premium modern macOS app icon style, tactile dimensional glossy translucent 3D glass and polished ceramic finish, rich specular highlights, subtle neon inner glow, vibrant gradients of neon hot pink (#EC4899), vivid fuchsia (#E12AFB), luminous electric violet (#8E51FF), and indigo (#4338CA). Full-bleed edge-to-edge dark obsidian violet background (#0D061A to #1A0B2E) filling all 4 sharp corners. Completely contained subject within canvas, no cropping of elements, no squircle mask, no border, no text.
+Minimalist modern macOS app icon for Flair. In the center, a bold, solid 3D four-pointed optical flare star emblem with crisp geometric beveled facets, solid volume, and an intense glowing core with glass-like specular highlights. A single sleek, smooth 3D luminous ribbon loops in an elegant angled elliptical orbit around the star, swooping behind the left point and curving gracefully around the front towards the upper-right. Only at the upper-right tip does the ribbon dissolve into a small, clean, well-spaced cluster of crisp floating rounded-square pixel blocks with glowing edges. Uncluttered, iconic, high-contrast, perfectly legible at tiny favicon sizes. Vibrant Pixerate neon color gradient flowing through the ribbon and star: hot pink (#EC4899), electric fuchsia (#E12AFB), luminous violet (#8E51FF), and deep indigo (#4338CA). Background is a full-bleed edge-to-edge dark obsidian-violet gradient (#0D061A to #1A0B2E) filling all four sharp 90-degree corners with generous margin around the emblem. No squircle frame, no border, no text, no wireframe lines.
 ```
 
 ## 4. Generating the Site Header Logo, Favicon & Touch Icon
