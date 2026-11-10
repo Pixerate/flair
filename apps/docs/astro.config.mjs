@@ -12,8 +12,15 @@ export default defineConfig({
     starlight({
       title: 'Flair',
       description: 'Visual effects and motion graphics for the web: WebGL2 shaders, animated vectors, ready-made catalog, and agent-ready editor.',
+      favicon: '/favicon.png',
+      head: [
+        {
+          tag: 'link',
+          attrs: { rel: 'apple-touch-icon', sizes: '180x180', href: '/apple-touch-icon.png' },
+        },
+      ],
       logo: {
-        src: './src/assets/logo.svg',
+        src: './src/assets/logo.png',
         replacesTitle: false,
       },
       social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/Pixerate/flair' }],
