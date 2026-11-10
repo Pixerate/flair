@@ -71,6 +71,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
-      - name: Run Swift package tests
-        working-directory: swift
+      - name: Run Swift package tests (root manifest, used by SwiftPM git dependencies)
         run: swift test
+
+      - name: Check the exported swift/ manifest resolves
+        working-directory: swift
+        run: swift package describe
