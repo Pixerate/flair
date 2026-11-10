@@ -5,6 +5,8 @@ import { svgInlineLayout } from "../vector/static.js";
 import { svgDuration } from "../vector/svg.js";
 import type { EffectCategory, ShaderEffect, VectorEffect } from "./types.js";
 import { CREDIT_SLOTS, parseCredits } from "./cinematic.js";
+import { parseTerminalLines, TERMINAL_LINES } from "./crt.js";
+import { EMERGENCY_MAX_RATE } from "./shaders/emergency.js";
 import {
   EFFECT_CATEGORIES,
   EFFECT_CATEGORY_GROUPS,
@@ -263,7 +265,7 @@ describe("catalog", () => {
   // black strokes on clear) are not black on black, and pass its alpha on for overlays.
   const PICTURE_EFFECTS = SHADER_EFFECTS.filter((e) => /\b(picture|pictureRGBA|flair_transition)\(/.test(e.source));
   // These draw a whole opaque device, ticket or scene around the picture, so they stay opaque.
-  const OPAQUE = new Set(["gameboy-screen", "scratch-card", "polaroid-develop", "cover-flow", "tarot-reveal", "cinema-projector"]);
+  const OPAQUE = new Set(["gameboy-screen", "scratch-card", "polaroid-develop", "cover-flow", "tarot-reveal", "cinema-projector", "crt-television"]);
 
   it.each(PICTURE_EFFECTS.map((e) => [e.id, e] as const))("%s lays its image over a backdrop and keeps its alpha", (_, effect) => {
     expect(effectDefaults(effect)).toMatchObject({ uBackdrop: [1, 1, 1], uBackdropAlpha: 1 });
@@ -1422,6 +1424,128 @@ describe("anime effects", () => {
   });
 });
 
+describe("emergency effects", () => {
+  const render = (id: string, values: Record<string, unknown> = {}) => {
+    const effect = getEffect(id)!;
+    if (effect.kind !== "vector") throw new Error("vector expected");
+    return renderVectorEffect(effect, { ...effectDefaults(effect), ...values } as never);
+  };
+  const frameAt = (motion: ReturnType<typeof render>, ms: number) => JSON.stringify([...svgFrame(motion.animate!, [], ms)].sort());
+
+  it("has the siren lights, red alert, caution tape and phone alert, all tagged, browsed under Pictures", () => {
+    const ids = findEffects({ category: "emergency" }).map((e) => e.id);
+    expect(ids.sort()).toEqual(["caution-tape", "emergency-alert", "red-alert", "siren-lights"]);
+    for (const id of ids) expect(getEffect(id)!.tags, id).toContain("emergency");
+    expect(categoryGroup("emergency").name).toBe("Pictures");
+    expect(getEffect("red-alert")).toMatchObject({ video: "filter" });
+    const siren = getEffect("siren-lights")!;
+    expect(siren).toMatchObject({ transparent: true });
+    expect(effectDefaults(siren).uBackgroundAlpha).toBe(0);
+    expect(siren.presets?.some((p) => p.values.uBackgroundAlpha === 1)).toBe(true);
+  });
+
+  it("cannot be set to light up more than one and a half times a second", () => {
+    expect(EMERGENCY_MAX_RATE).toBeLessThanOrEqual(1.5);
+    for (const id of ["siren-lights", "red-alert"]) {
+      const effect = getEffect(id) as ShaderEffect;
+      expect(effectControls(effect).find((c) => c.name === "uRate")!.max, id).toBeLessThanOrEqual(EMERGENCY_MAX_RATE);
+      // Clamped in the shader too, whatever value is sent.
+      expect(effect.source, id).toMatch(new RegExp(`clamp\\(uRate, [\\d.]+, ${EMERGENCY_MAX_RATE.toFixed(1)}\\)`));
+    }
+  });
+
+  it("caution tape and the alert take any text", () => {
+    for (const [id, names] of [["caution-tape", ["text"]], ["emergency-alert", ["label", "level", "title", "body"]]] as const)
+      for (const text of ["A", "Supercalifragilistic expialidocious & <co> with a long tail that goes on and on and on and on and on and on and on", "Café 日本 🎉", ""]) {
+        const motion = render(id, Object.fromEntries(names.map((n) => [n, text])));
+        expect(svgMotionIssues(motion), id).toEqual([]);
+        expect(JSON.stringify(motion), id).not.toMatch(/\{\{|NaN|undefined/);
+      }
+  });
+
+  it("the alert wraps its message onto at most three lines, its card sized to fit, and starts and ends out of sight", () => {
+    const shown = (body: string) => (render("emergency-alert", { body }).svg.match(/display="inline"/g) ?? []).length;
+    expect(shown("Short.")).toBe(1);
+    expect(shown("Move to higher ground now. Avoid walking or driving through flood water. Check local news for updates.")).toBe(2);
+    expect(shown("word ".repeat(200))).toBe(3);
+    const card = (body: string) => Number(render("emergency-alert", { body }).svg.match(/height="([\d.]+)" rx="40"/)![1]);
+    expect(card("word ".repeat(200))).toBeGreaterThan(card("Short."));
+    const motion = render("emergency-alert");
+    expect(frameAt(motion, svgDuration(motion))).toBe(frameAt(motion, 0));
+  });
+
+  it("caution tape crosses two tapes, or shows one band", () => {
+    expect(render("caution-tape").svg.match(/display="none"/g)).toBeNull();
+    expect(render("caution-tape", { cross: false }).svg).toContain('<g id="cautionTape1" display="none"');
+  });
+});
+
+describe("film effects", () => {
+  it("has the film strip, damage, dramatic letterbox and projector, with the cinema's letterbox, leader and projector", () => {
+    const ids = findEffects({ category: "film" }).map((e) => e.id);
+    expect(ids.sort()).toEqual(["academy-leader", "cinema-projector", "dramatic-letterbox", "film-damage", "film-projector", "film-strip", "letterbox"]);
+    for (const id of ids) expect(getEffect(id)!.tags, id).toContain("film");
+    expect(categoryGroup("film").name).toBe("Pictures");
+    for (const id of ["film-strip", "film-damage", "dramatic-letterbox"]) expect(getEffect(id), id).toMatchObject({ kind: "shader", video: "filter" });
+    for (const word of ["sprocket", "scratches", "letterbox", "projector", "negative", "splice"]) expect(findEffects({ text: word, category: "film" }).length, word).toBeGreaterThan(0);
+  });
+
+  it("the dramatic letterbox loops, or holds still at a progress", () => {
+    const effect = getEffect("dramatic-letterbox")!;
+    expect(effect).toMatchObject({ loop: 6 });
+    expect(effectDefaults(effect)).toMatchObject({ uAnimate: true, uProgress: 1, uAspect: 2.39 });
+  });
+
+  it("the film strip runs either way, as a negative too, on a backdrop that can go clear", () => {
+    const names = effectControls(getEffect("film-strip")!).map((c) => c.name);
+    expect(names).toEqual(expect.arrayContaining(["uDirection", "uSpeed", "uAngle", "uNegative", "uBackdropAlpha"]));
+    expect(getEffect("film-strip")!.presets?.find((p) => p.name === "Overlay")?.values.uBackdropAlpha).toBe(0);
+  });
+
+  it("the projector loops seamlessly", () => {
+    const effect = getEffect("film-projector") as VectorEffect;
+    const motion = renderVectorEffect(effect, effectDefaults(effect));
+    expect(svgDuration(motion)).toBe(2400);
+    expect(svgMotionIssues(motion)).toEqual([]);
+  });
+});
+
+describe("CRT effects", () => {
+  const render = (values: Record<string, unknown> = {}) => {
+    const effect = getEffect("crt-terminal") as VectorEffect;
+    return renderVectorEffect(effect, { ...effectDefaults(effect), ...values } as never);
+  };
+
+  it("has the tube effects, with the CRT screen and TV static, browsed under Pictures", () => {
+    const ids = findEffects({ category: "crt" }).map((e) => e.id);
+    expect(ids.sort()).toEqual(["crt", "crt-power", "crt-television", "crt-terminal", "tv-static", "vertical-roll"]);
+    for (const id of ids) expect(getEffect(id)!.tags, id).toContain("crt");
+    expect(categoryGroup("crt").name).toBe("Pictures");
+    for (const id of ["crt", "crt-power", "vertical-roll", "crt-television"]) expect(getEffect(id), id).toMatchObject({ kind: "shader", video: "filter" });
+    expect(getEffect("crt-power")).toMatchObject({ loop: 5 });
+  });
+
+  it("the terminal reads lines separated by semicolons, at most six", () => {
+    expect(parseTerminalLines("> one; ;two\nthree")).toEqual(["> one", "two", "three"]);
+    expect(parseTerminalLines(Array.from({ length: 9 }, (_, k) => `L${k}`).join(";"))).toHaveLength(TERMINAL_LINES);
+    expect(parseTerminalLines("")).toEqual([]);
+  });
+
+  it("the terminal types its lines one after another, whatever they say", () => {
+    const motion = render();
+    const starts = motion.animate!.filter((a) => a.write !== undefined && a.write !== "").map((a) => a.delay!);
+    expect(starts.length).toBe(5);
+    for (let i = 1; i < starts.length; i++) expect(starts[i]!).toBeGreaterThan(starts[i - 1]!);
+    for (const lines of ["", "x", "A very long line indeed that will need the type to shrink to fit the screen & <more>; 日本 🎉"]) {
+      const m = render({ lines });
+      expect(svgMotionIssues(m), lines).toEqual([]);
+      expect(JSON.stringify(m), lines).not.toMatch(/\{\{|NaN|undefined/);
+    }
+    const small = Number(render({ lines: "x".repeat(80) }).svg.match(/font-size="([\d.]+)"/)![1]);
+    expect(small).toBeLessThan(26);
+  });
+});
+
 describe("debris effects", () => {
   const debris = findEffects({ category: "debris" });
   const source = (id: string) => {
@@ -1596,22 +1720,22 @@ describe("cinematic effects", () => {
   it("browse under Pictures, are tagged cinematic and are found by the words people use", () => {
     expect(categoryGroup("cinematic").name).toBe("Pictures");
     expect(findEffects({ category: "cinematic" }).map((e) => e.id).sort()).toEqual([
-      "academy-leader",
       "anamorphic-lens",
       "bleach-bypass",
-      "cinema-projector",
       "day-for-night",
       "dolly-zoom",
       "end-credits-roll",
-      "letterbox",
       "opening-credits",
       "rack-focus",
       "technicolor",
       "trailer-title-slam",
     ]);
-    expect(findEffects({ tags: ["cinematic"] }).map((e) => e.id)).toEqual(expect.arrayContaining(["transition-focus-pull", "transition-flare-wipe", "film-look", "vignette-grain", "camera-handheld"]));
+    // The letterbox, the leader and the projector moved to film, still tagged cinematic.
+    expect(findEffects({ tags: ["cinematic"] }).map((e) => e.id)).toEqual(
+      expect.arrayContaining(["transition-focus-pull", "transition-flare-wipe", "film-look", "vignette-grain", "camera-handheld", "letterbox", "academy-leader", "cinema-projector"]),
+    );
     for (const id of shaders) {
-      expect(getEffect(id), id).toMatchObject({ kind: "shader", category: "cinematic", video: "filter" });
+      expect(getEffect(id), id).toMatchObject({ kind: "shader", category: id === "cinema-projector" ? "film" : "cinematic", video: "filter" });
       expect(effectInputs(getEffect(id)!).accepts, id).toContain("video");
     }
     for (const word of ["anamorphic", "focus", "bokeh", "letterbox", "credits", "grade", "countdown", "trailer", "moonlight", "projector", "vertigo", "handheld"]) expect(findEffects({ text: word, tags: ["cinematic"] }).length, word).toBeGreaterThan(0);

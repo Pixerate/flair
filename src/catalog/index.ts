@@ -48,6 +48,9 @@ import { trailEffects } from "./trail.js";
 import { impactEffects } from "./impact.js";
 import { comicEffects } from "./comic.js";
 import { animeEffects } from "./anime.js";
+import { emergencyEffects } from "./emergency.js";
+import { filmEffects } from "./film.js";
+import { crtEffects } from "./crt.js";
 import { memeEffects } from "./meme.js";
 import { glowEffects } from "./glow.js";
 import { shadowEffects } from "./shadow.js";
@@ -91,6 +94,9 @@ import { debrisShaders } from "./shaders/debris.js";
 import { impactShaders } from "./shaders/impact.js";
 import { comicShaders } from "./shaders/comic.js";
 import { animeShaders } from "./shaders/anime.js";
+import { emergencyShaders } from "./shaders/emergency.js";
+import { filmShaders } from "./shaders/film.js";
+import { crtShaders } from "./shaders/crt.js";
 import { memeShaders } from "./shaders/meme.js";
 import { atmosphereShaders } from "./shaders/atmosphere.js";
 import { glowShaders } from "./shaders/glow.js";
@@ -270,6 +276,9 @@ export const SHADER_EFFECTS: readonly ShaderEffect[] = [
   ...impactShaders,
   ...comicShaders,
   ...animeShaders,
+  ...emergencyShaders,
+  ...filmShaders,
+  ...crtShaders,
   ...memeShaders,
   ...atmosphereShaders,
   ...glowShaders,
@@ -299,7 +308,7 @@ export const SHADER_EFFECTS: readonly ShaderEffect[] = [
 ];
 
 /** Every effect in the catalog, shaders first, grouped by category. */
-export const EFFECTS: readonly EffectDefinition[] = [...SHADER_EFFECTS, ...vectorEffects, ...textEffects, ...morphEffects, ...interactionEffects, ...pyroEffects, ...timewarpEffects, ...meltEffects, ...electricEffects, ...fireEffects, ...hologramEffects, ...pixelEffects, ...splatterEffects, ...bubbleEffects, ...stickerEffects, ...trailEffects, ...impactEffects, ...comicEffects, ...animeEffects, ...glowEffects, ...shadowEffects, ...lightingEffects, ...scrollEffects, ...broadcastEffects, ...annotationEffects, ...uiEffects, ...loaderEffects, ...dataEffects, ...iconEffects, ...webEffects, ...promoEffects, ...horrorEffects, ...beautyEffects, ...memeEffects, ...cinematicEffects, ...cameraEffects, ...timingEffects].sort(
+export const EFFECTS: readonly EffectDefinition[] = [...SHADER_EFFECTS, ...vectorEffects, ...textEffects, ...morphEffects, ...interactionEffects, ...pyroEffects, ...timewarpEffects, ...meltEffects, ...electricEffects, ...fireEffects, ...hologramEffects, ...pixelEffects, ...splatterEffects, ...bubbleEffects, ...stickerEffects, ...trailEffects, ...impactEffects, ...comicEffects, ...animeEffects, ...emergencyEffects, ...filmEffects, ...crtEffects, ...glowEffects, ...shadowEffects, ...lightingEffects, ...scrollEffects, ...broadcastEffects, ...annotationEffects, ...uiEffects, ...loaderEffects, ...dataEffects, ...iconEffects, ...webEffects, ...promoEffects, ...horrorEffects, ...beautyEffects, ...memeEffects, ...cinematicEffects, ...cameraEffects, ...timingEffects].sort(
   (a, b) => EFFECT_CATEGORIES.indexOf(a.category) - EFFECT_CATEGORIES.indexOf(b.category),
 );
 

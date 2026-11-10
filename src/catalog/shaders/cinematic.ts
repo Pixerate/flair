@@ -9,7 +9,9 @@ import { BACKDROP_CONTROLS, PICTURE } from "./image.js";
  * racking between two points, bleach-bypass, Technicolor and day-for-night
  * grades, letterbox bars, an academy leader, a picture on a cinema screen, a
  * trailer title, a dolly zoom and transitions through a focus pull and a lens flare.
- * Each is tagged "cinematic".
+ * Each is tagged "cinematic". The letterbox, the academy leader and the
+ * cinema projector are in the "film" category, with the film strip and film
+ * damage (see `film.ts`).
  */
 
 const LUMA = "vec3(0.2126, 0.7152, 0.0722)";
@@ -209,7 +211,7 @@ export const letterbox: ShaderEffect = {
   id: "letterbox",
   name: "Letterbox",
   description: "Black bars that frame any picture to a cinema aspect ratio: top and bottom for a wider ratio (2.39 scope, 1.85 flat), at the sides for a narrower one (4:3). Animate slides them in and out.",
-  category: "cinematic",
+  category: "film",
   tags: ["cinematic", "film", "letterbox", "aspect-ratio", "overlay", "frame"],
   transparent: true,
   loop: 5,
@@ -395,7 +397,7 @@ export const academyLeader: ShaderEffect = {
   id: "academy-leader",
   name: "Academy leader",
   description: "The countdown at the head of a film reel: 8 down to 3 in a ringed circle under crosshairs, a sweep going round each second, worn with dust, scratches and flicker; the 2 flashes for a frame and the screen goes black.",
-  category: "cinematic",
+  category: "film",
   tags: ["cinematic", "film", "countdown", "leader", "vintage", "intro", "projector"],
   loop: 7,
   source: glsl(
@@ -489,7 +491,7 @@ export const cinemaProjector: ShaderEffect = {
   id: "cinema-projector",
   name: "Cinema projector",
   description: "A picture showing on a cinema screen in a dark auditorium: it flickers and weaves in the gate, a dusty projector beam fans down onto it, its light spills onto the curtains, and a row of heads sits silhouetted in front.",
-  category: "cinematic",
+  category: "film",
   video: "filter",
   tags: ["cinematic", "film", "cinema", "projector", "screen", "audience", "vintage", "image"],
   source: glsl(

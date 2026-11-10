@@ -20,8 +20,10 @@ export type EffectCategory =
   | "lighting"
   | "space"
   | "retro"
+  | "crt"
   | "image"
   | "cinematic"
+  | "film"
   | "beauty"
   | "overlay"
   | "text"
@@ -45,6 +47,7 @@ export type EffectCategory =
   | "comic"
   | "anime"
   | "horror"
+  | "emergency"
   | "meme"
   | "atmosphere"
   | "glow"
@@ -73,8 +76,10 @@ export const EFFECT_CATEGORIES: readonly EffectCategory[] = [
   "lighting",
   "space",
   "retro",
+  "crt",
   "image",
   "cinematic",
+  "film",
   "beauty",
   "overlay",
   "text",
@@ -98,6 +103,7 @@ export const EFFECT_CATEGORIES: readonly EffectCategory[] = [
   "comic",
   "anime",
   "horror",
+  "emergency",
   "meme",
   "atmosphere",
   "glow",
@@ -128,7 +134,7 @@ export interface EffectCategoryGroup {
 export const EFFECT_CATEGORY_GROUPS: readonly EffectCategoryGroup[] = [
   { name: "Backgrounds", categories: ["gradient", "organic", "pattern", "space", "3d", "weather", "water", "atmosphere"] },
   { name: "Light", categories: ["light", "lighting", "glow", "shadow", "electric", "fire", "hologram"] },
-  { name: "Pictures", categories: ["image", "cinematic", "beauty", "distortion", "retro", "comic", "anime", "horror", "meme", "timewarp", "timing", "melt"] },
+  { name: "Pictures", categories: ["image", "cinematic", "film", "beauty", "distortion", "retro", "crt", "comic", "anime", "horror", "emergency", "meme", "timewarp", "timing", "melt"] },
   { name: "Particles & FX", categories: ["overlay", "splatter", "bubble", "particles", "trail", "debris", "impact", "pyrotechnics"] },
   { name: "Type & titles", categories: ["text", "morph", "broadcast", "annotation", "sticker"] },
   { name: "Paths", categories: ["path"] },

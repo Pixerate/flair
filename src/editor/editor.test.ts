@@ -214,8 +214,8 @@ describe("commands and agent tools", () => {
     type Search = { total: number; effects: { id: string; category: string }[] };
     const found = await callTool(provider, "run_command", { id: "catalog.search", params: { category: "cinematic", limit: 50 } });
     const result = (found.structuredContent as { result: Search }).result;
-    expect(result.total).toBe(12);
-    expect(result.effects.map((e) => e.id)).toEqual(expect.arrayContaining(["anamorphic-lens", "end-credits-roll", "academy-leader", "opening-credits"]));
+    expect(result.total).toBe(9);
+    expect(result.effects.map((e) => e.id)).toEqual(expect.arrayContaining(["anamorphic-lens", "end-credits-roll", "opening-credits"]));
     const pulls = editor.commands.execute<Search>("catalog.search", { group: "Transitions", text: "focus", limit: 50 });
     expect(pulls.ok && pulls.result.effects.map((e) => e.id)).toContain("transition-focus-pull");
     const flares = editor.commands.execute<Search>("catalog.search", { group: "Transitions", text: "flare", limit: 50 });
@@ -268,6 +268,41 @@ describe("commands and agent tools", () => {
     expect(editor.commands.execute("effect.load", { id: "sakura-petals" })).toMatchObject({ ok: true });
     expect(editor.commands.execute("values.set", { values: { uDensity: 0.8, uWind: -0.5 } })).toMatchObject({ ok: true });
     expect(editor.commands.execute("values.set", { values: { uDensity: 4 } })).toMatchObject({ ok: false, message: expect.stringMatching(/uDensity/) });
+  });
+
+  it("lets agents find the emergency, film and CRT effects, load them and tune them within their controls", async () => {
+    const editor = createEffectEditor({ from: "aurora" });
+    const provider = createEffectToolProvider(editor);
+    type Search = { total: number; effects: { id: string; category: string }[] };
+    for (const [category, ids] of [
+      ["emergency", ["siren-lights", "red-alert", "caution-tape", "emergency-alert"]],
+      ["film", ["film-strip", "film-damage", "dramatic-letterbox", "film-projector", "letterbox", "academy-leader", "cinema-projector"]],
+      ["crt", ["crt-power", "vertical-roll", "crt-television", "crt-terminal", "crt", "tv-static"]],
+    ] as const) {
+      const found = await callTool(provider, "run_command", { id: "catalog.search", params: { category, limit: 50 } });
+      expect(found.isError, category).toBeFalsy();
+      const { result } = found.structuredContent as { result: Search };
+      expect(result.effects.map((e) => e.id).sort(), category).toEqual([...ids].sort());
+      expect(result.effects.every((e) => e.category === category), category).toBe(true);
+    }
+    // A category that is not one is refused, naming the ones that are.
+    const wrong = await callTool(provider, "run_command", { id: "catalog.search", params: { category: "cinema" } });
+    expect(wrong.isError).toBe(true);
+    expect(JSON.stringify(wrong)).toContain("film");
+
+    expect(editor.commands.execute("effect.load", { id: "siren-lights" })).toMatchObject({ ok: true });
+    expect(editor.commands.execute("values.set", { values: { uPattern: 1, uRate: 0.8 } })).toMatchObject({ ok: true });
+    // Faster than one and a half cycles a second is refused.
+    expect(editor.commands.execute("values.set", { values: { uRate: 4 } })).toMatchObject({ ok: false, message: expect.stringMatching(/uRate/) });
+    expect(editor.commands.execute("effect.load", { id: "caution-tape" })).toMatchObject({ ok: true });
+    expect(editor.commands.execute("values.set", { values: { text: "POLICE LINE  DO NOT CROSS", cross: false } })).toMatchObject({ ok: true });
+    expect(editor.commands.execute("values.set", { values: { angle: 90 } })).toMatchObject({ ok: false, message: expect.stringMatching(/angle/) });
+    expect(editor.commands.execute("effect.load", { id: "film-strip" })).toMatchObject({ ok: true });
+    expect(editor.commands.execute("values.set", { values: { uDirection: 1, uNegative: true } })).toMatchObject({ ok: true });
+    expect(editor.commands.execute("values.set", { values: { uDirection: "sideways" } })).toMatchObject({ ok: false, message: expect.stringMatching(/uDirection/) });
+    expect(editor.commands.execute("effect.load", { id: "crt-terminal" })).toMatchObject({ ok: true });
+    expect(editor.commands.execute("values.set", { values: { lines: "> HELLO; > READY.", pace: 30 } })).toMatchObject({ ok: true });
+    expect(editor.commands.execute("values.set", { values: { pace: 0 } })).toMatchObject({ ok: false, message: expect.stringMatching(/pace/) });
   });
 
   it("lets agents find the horror effects, load one and tune it within its controls", async () => {

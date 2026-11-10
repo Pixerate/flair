@@ -800,14 +800,14 @@ public struct DitherGradient: FlairEffect, Codable, Sendable, Equatable {
     }
 }
 
-/// **TV static** (`tv-static`, category: `retro`).
+/// **TV static** (`tv-static`, category: `crt`).
 /// Analogue snow with rolling bars and scanlines.
 public struct TvStatic: FlairEffect, Codable, Sendable, Equatable {
     public static let effectId = "tv-static"
     public static let effectName = "TV static"
-    public static let category = "retro"
+    public static let category = "crt"
     public static let effectDescription = "Analogue snow with rolling bars and scanlines."
-    public static let tags: [String] = ["glitch", "analogue", "transition", "noise"]
+    public static let tags: [String] = ["crt", "tv", "static", "glitch", "analogue", "transition", "noise"]
     public static let phase: Int = 1
     public static let functionName = "flair_tv_static_frag"
     public static let uniformByteLength: Int = 1024
@@ -3976,12 +3976,12 @@ public struct DayForNight: FlairEffect, Codable, Sendable, Equatable {
     }
 }
 
-/// **Letterbox** (`letterbox`, category: `cinematic`).
+/// **Letterbox** (`letterbox`, category: `film`).
 /// Black bars that frame any picture to a cinema aspect ratio: top and bottom for a wider ratio (2.39 scope, 1.85 flat), at the sides for a narrower one (4:3). Animate slides them in and out.
 public struct Letterbox: FlairEffect, Codable, Sendable, Equatable {
     public static let effectId = "letterbox"
     public static let effectName = "Letterbox"
-    public static let category = "cinematic"
+    public static let category = "film"
     public static let effectDescription = "Black bars that frame any picture to a cinema aspect ratio: top and bottom for a wider ratio (2.39 scope, 1.85 flat), at the sides for a narrower one (4:3). Animate slides them in and out."
     public static let tags: [String] = ["cinematic", "film", "letterbox", "aspect-ratio", "overlay", "frame"]
     public static let phase: Int = 1
@@ -4059,12 +4059,12 @@ public struct Letterbox: FlairEffect, Codable, Sendable, Equatable {
     }
 }
 
-/// **Academy leader** (`academy-leader`, category: `cinematic`).
+/// **Academy leader** (`academy-leader`, category: `film`).
 /// The countdown at the head of a film reel: 8 down to 3 in a ringed circle under crosshairs, a sweep going round each second, worn with dust, scratches and flicker; the 2 flashes for a frame and the screen goes black.
 public struct AcademyLeader: FlairEffect, Codable, Sendable, Equatable {
     public static let effectId = "academy-leader"
     public static let effectName = "Academy leader"
-    public static let category = "cinematic"
+    public static let category = "film"
     public static let effectDescription = "The countdown at the head of a film reel: 8 down to 3 in a ringed circle under crosshairs, a sweep going round each second, worn with dust, scratches and flicker; the 2 flashes for a frame and the screen goes black."
     public static let tags: [String] = ["cinematic", "film", "countdown", "leader", "vintage", "intro", "projector"]
     public static let phase: Int = 1
@@ -4123,12 +4123,12 @@ public struct AcademyLeader: FlairEffect, Codable, Sendable, Equatable {
     }
 }
 
-/// **Cinema projector** (`cinema-projector`, category: `cinematic`).
+/// **Cinema projector** (`cinema-projector`, category: `film`).
 /// A picture showing on a cinema screen in a dark auditorium: it flickers and weaves in the gate, a dusty projector beam fans down onto it, its light spills onto the curtains, and a row of heads sits silhouetted in front.
 public struct CinemaProjector: FlairEffect, Codable, Sendable, Equatable {
     public static let effectId = "cinema-projector"
     public static let effectName = "Cinema projector"
-    public static let category = "cinematic"
+    public static let category = "film"
     public static let effectDescription = "A picture showing on a cinema screen in a dark auditorium: it flickers and weaves in the gate, a dusty projector beam fans down onto it, its light spills onto the curtains, and a row of heads sits silhouetted in front."
     public static let tags: [String] = ["cinematic", "film", "cinema", "projector", "screen", "audience", "vintage", "image"]
     public static let phase: Int = 2
