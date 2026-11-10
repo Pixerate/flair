@@ -46,6 +46,7 @@ jobs:
           else
             echo "Pending changeset found: $CHANGESETS"
           fi
+          git branch -f main origin/main
           pnpm changeset status
 
       - name: Build package & demo
