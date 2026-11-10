@@ -51,8 +51,8 @@ export const tvStatic: ShaderEffect = {
   id: "tv-static",
   name: "TV static",
   description: "Analogue snow with rolling bars and scanlines.",
-  category: "retro",
-  tags: ["glitch", "analogue", "transition", "noise"],
+  category: "crt",
+  tags: ["crt", "tv", "static", "glitch", "analogue", "transition", "noise"],
   source: glsl(
     `// TV static: analogue snow with a rolling bar and scanlines.
 uniform float uAmount;    // @control min=0 max=1 default=0.9 label="Snow"

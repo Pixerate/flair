@@ -242,9 +242,9 @@ export const crt: ShaderEffect = {
   id: "crt",
   name: "CRT screen",
   description: "An image on a curved CRT: scanlines, shadow mask, bloom and flicker.",
-  category: "image",
+  category: "crt",
   video: "filter",
-  tags: ["image", "retro", "screen", "arcade"],
+  tags: ["crt", "tv", "image", "retro", "screen", "arcade"],
   source: glsl(
     `// CRT screen: an image on a curved tube with scanlines and a shadow mask.
 uniform sampler2D uImage;   // @control filter=linear wrap=clamp default=${SAMPLE_IMAGES.landscape} label="Image"

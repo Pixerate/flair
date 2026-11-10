@@ -1554,14 +1554,14 @@ public struct WireframeReveal: FlairEffect, Codable, Sendable, Equatable {
     }
 }
 
-/// **CRT screen** (`crt`, category: `image`).
+/// **CRT screen** (`crt`, category: `crt`).
 /// An image on a curved CRT: scanlines, shadow mask, bloom and flicker.
 public struct Crt: FlairEffect, Codable, Sendable, Equatable {
     public static let effectId = "crt"
     public static let effectName = "CRT screen"
-    public static let category = "image"
+    public static let category = "crt"
     public static let effectDescription = "An image on a curved CRT: scanlines, shadow mask, bloom and flicker."
-    public static let tags: [String] = ["image", "retro", "screen", "arcade"]
+    public static let tags: [String] = ["crt", "tv", "image", "retro", "screen", "arcade"]
     public static let phase: Int = 2
     public static let functionName = "flair_crt_frag"
     public static let uniformByteLength: Int = 1024
