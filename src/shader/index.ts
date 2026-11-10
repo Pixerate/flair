@@ -54,6 +54,7 @@ export {
   BUILTIN_UNIFORMS,
   compileShader,
   createContext,
+  premultiplyOutput,
   drawFrame,
   formatCompileError,
   parseCompileLog,

@@ -3,6 +3,7 @@ import {
   compileShader,
   createContext,
   drawFrame,
+  premultiplyOutput,
   resetGlCaches,
   type CompileError,
   type CompiledShader,
@@ -122,7 +123,7 @@ export class ShaderRenderer {
     }
     this.canvas = canvas;
     this.alpha = Boolean(opts.alpha);
-    this.gl = createContext(canvas, true, this.alpha);
+    this.gl = createContext(canvas, true, this.alpha, true);
     this.textures = this.gl && this.textureCache(this.gl);
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(canvas);
@@ -375,6 +376,8 @@ export class ShaderRenderer {
 
   private render(delta = 0) {
     if (!this.gl || !this.shader || this.gl.isContextLost()) return;
+    // A transparent canvas is premultiplied (Safari composites straight alpha wrongly), so the output is too.
+    premultiplyOutput(this.gl, this.alpha);
     drawFrame(
       this.gl,
       this.shader,
@@ -535,7 +538,7 @@ export class ShaderRenderer {
 
   private onRestored = () => {
     resetGlCaches();
-    this.gl = createContext(this.canvas, true, this.alpha);
+    this.gl = createContext(this.canvas, true, this.alpha, true);
     this.textures = this.gl && this.textureCache(this.gl);
     this.setSource(this.source);
     this.onContextLost?.(false);
