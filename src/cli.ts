@@ -156,7 +156,7 @@ program
 
 program
   .command('export <targetOrShader> [extraPath] [outputPath]')
-  .description('Export a shader file to video (.mp4/.webm/.mov), .gif or .png frames, a scene to motn/lottie/fcp7/edl/text-template, or the shader catalog to a Metal/Swift package (`flair export metal`)')
+  .description('Export a shader file to video (.mp4/.webm/.mov), .gif or .png frames, a scene to motn/lottie/fcp7/edl/text-template, or the shader catalog to a Metal/Swift package (`flair export metal`), or add Metal compiled from its GLSL to a saved authoring document for the Swift adapter (`flair export metal-document <document.json> [output.json]`)')
   .option('-o, --out <outputPath>', 'Output file or directory path')
   .option('-w, --width <width>', 'Canvas width', '720')
   .option('-h, --height <height>', 'Canvas height', '720')
@@ -171,7 +171,7 @@ program
   .option('--shutter-angle <degrees>', "Motion blur: the shutter angle, 0 to 360 (180 is a film camera's usual; default 0, off)")
   .option('--shutter-samples <n>', 'Sub-frames averaged into each blurred frame, 2 to 32 (default 8)')
   .option('--only <ids>', 'For `flair export metal`: comma-separated shader effect IDs to compile')
-  .option('--verify', 'For `flair export metal`: also compile every .metal file with `xcrun metal` when available', false)
+  .option('--verify', 'For `flair export metal` and `metal-document`: also compile the Metal with `xcrun metal` when available', false)
   .option('--json', 'For `flair export metal`: print the compile report as JSON', false)
   .action(async (targetOrShader, extraPath, outputPath, options) => {
     if (targetOrShader === 'metal') {
@@ -205,6 +205,40 @@ program
         return;
       } catch (err: any) {
         console.error(`Metal export failed: ${err.message}`);
+        process.exit(1);
+      }
+    }
+
+    if (targetOrShader === 'metal-document') {
+      // A Flair authoring document with Metal compiled from its GLSL, for the Swift adapter to draw.
+      const input = extraPath;
+      if (!input) {
+        console.error('Error: Please provide a document saved by Flair authoring: flair export metal-document <document.json> [output.json]');
+        process.exit(1);
+      }
+      try {
+        const { readFileSync, writeFileSync } = await import('node:fs');
+        const { attachFlairMetal } = await import('./export/metal-document.js');
+        const { metalToolsAvailable } = await import('./export/metal.js');
+        const tools = metalToolsAvailable();
+        if (!tools.ok) {
+          console.error(`Error: ${tools.message}`);
+          process.exit(1);
+        }
+        const result = attachFlairMetal(JSON.parse(readFileSync(input, 'utf8')), { verify: Boolean(options.verify) });
+        if (!result.ok) {
+          console.error(`Error: ${result.message}`);
+          process.exit(1);
+        }
+        const out = options.out || outputPath;
+        const text = `${JSON.stringify(result.document, null, 2)}\n`;
+        if (out) {
+          writeFileSync(out, text);
+          console.log(`✅ Wrote ${out}: Metal for "${result.metal.description.name as string}" (${result.metal.functionName}, GLSL ${result.metal.sourceHash.slice(0, 12)}…).`);
+        } else process.stdout.write(text);
+        return;
+      } catch (err: any) {
+        console.error(`Metal document export failed: ${err.message}`);
         process.exit(1);
       }
     }

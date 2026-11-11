@@ -1,0 +1,385 @@
+{
+  "source": "// Aurora: curtains of light drifting over a night sky.\nuniform vec3 uSky;        // @control color default=#050816 label=\"Sky\"\nuniform vec3 uGlowA;      // @control color default=#22D3A6 label=\"Glow A\"\nuniform vec3 uGlowB;      // @control color default=#7C3AED label=\"Glow B\"\nuniform float uSpeed;     // @control min=0 max=2 default=0.35 label=\"Speed\"\nuniform float uIntensity; // @control min=0 max=2 default=1 label=\"Intensity\"\nuniform float uHeight;    // @control min=0 max=1 default=0.55 label=\"Height\"\n\nfloat hash12(vec2 p) {\n  vec3 p3 = fract(vec3(p.xyx) * 0.1031);\n  p3 += dot(p3, p3.yzx + 33.33);\n  return fract((p3.x + p3.y) * p3.z);\n}\nvec2 hash22(vec2 p) {\n  vec3 p3 = fract(vec3(p.xyx) * vec3(0.1031, 0.1030, 0.0973));\n  p3 += dot(p3, p3.yzx + 33.33);\n  return fract((p3.xx + p3.yz) * p3.zy);\n}\n\nfloat vnoise(vec2 p) {\n  vec2 i = floor(p);\n  vec2 f = fract(p);\n  vec2 u = f * f * (3.0 - 2.0 * f);\n  float a = hash12(i);\n  float b = hash12(i + vec2(1.0, 0.0));\n  float c = hash12(i + vec2(0.0, 1.0));\n  float d = hash12(i + vec2(1.0, 1.0));\n  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);\n}\n\nfloat fbm(vec2 p, int octaves) {\n  float sum = 0.0;\n  float amp = 0.5;\n  mat2 turn = mat2(0.8, 0.6, -0.6, 0.8);\n  for (int i = 0; i < 8; i++) {\n    if (i >= octaves) break;\n    sum += amp * vnoise(p);\n    p = turn * p * 2.02 + 17.0;\n    amp *= 0.5;\n  }\n  return sum;\n}\n\nvoid mainImage(out vec4 fragColor, in vec2 fragCoord) {\n  vec2 uv = fragCoord / iResolution.xy;\n  float t = iTime * uSpeed;\n  vec3 col = uSky * (0.6 + 0.4 * uv.y);\n  for (int i = 0; i < 3; i++) {\n    float fi = float(i);\n    float x = uv.x * (1.4 + 0.3 * fi) + fi * 3.7;\n    float wave = fbm(vec2(x * 1.5 + t * 0.4, t * 0.25 + fi), 4);\n    float centre = uHeight + 0.18 * (wave - 0.5) + 0.06 * fi;\n    float band = exp(-pow((uv.y - centre) * (7.0 + 2.0 * fi), 2.0));\n    float rays = 0.55 + 0.45 * fbm(vec2(x * 12.0, t * 0.6 + fi * 9.0), 3);\n    float above = smoothstep(centre - 0.05, centre + 0.35, uv.y) * 0.35;\n    vec3 glow = mix(uGlowA, uGlowB, clamp(uv.y * 1.4 - 0.2 + 0.25 * fi, 0.0, 1.0));\n    col += glow * (band * rays + above * band) * 0.6 * uIntensity;\n  }\n  float stars = step(0.997, hash12(floor(fragCoord * 0.5))) * smoothstep(0.3, 1.0, uv.y);\n  col += stars * 0.6 * (0.5 + 0.5 * sin(iTime * 3.0 + hash12(floor(fragCoord)) * 40.0));\n  fragColor = vec4(col, 1.0);\n}\n\n// Edited on the web: a comment, so it draws as the catalog's Aurora.\n",
+  "sourceLanguage": "glsl",
+  "version": 1,
+  "providerId": "flair",
+  "effectId": "aurora",
+  "name": "Aurora",
+  "values": {
+    "uSky": "#0f0508",
+    "uGlowA": "#ff731a",
+    "uGlowB": "#e61a66",
+    "uSpeed": 0.8
+  },
+  "tracks": {
+    "uIntensity": [
+      {
+        "time": 0,
+        "value": 0.2
+      },
+      {
+        "time": 2000,
+        "value": 1.4,
+        "easing": "ease-in-out"
+      }
+    ]
+  },
+  "presets": [
+    {
+      "name": "Arctic",
+      "values": {
+        "uGlowA": "#21d4a6",
+        "uGlowB": "#7d3bed"
+      }
+    },
+    {
+      "name": "Ember",
+      "values": {
+        "uSky": "#0f0508",
+        "uGlowA": "#ff731a",
+        "uGlowB": "#e61a66"
+      }
+    },
+    {
+      "name": "Ice",
+      "values": {
+        "uSky": "#03080f",
+        "uGlowA": "#80e6ff",
+        "uGlowB": "#3366ff"
+      }
+    },
+    {
+      "name": "Saved on the web",
+      "values": {
+        "uSky": "#0f0508",
+        "uGlowA": "#ff731a",
+        "uGlowB": "#e61a66",
+        "uSpeed": 0.8,
+        "uIntensity": 0.2,
+        "uHeight": 0.55
+      }
+    }
+  ],
+  "duration": 3000,
+  "loop": true,
+  "flair": {
+    "version": 1,
+    "name": "Aurora",
+    "basedOn": "aurora",
+    "effect": {
+      "kind": "shader",
+      "source": "// Aurora: curtains of light drifting over a night sky.\nuniform vec3 uSky;        // @control color default=#050816 label=\"Sky\"\nuniform vec3 uGlowA;      // @control color default=#22D3A6 label=\"Glow A\"\nuniform vec3 uGlowB;      // @control color default=#7C3AED label=\"Glow B\"\nuniform float uSpeed;     // @control min=0 max=2 default=0.35 label=\"Speed\"\nuniform float uIntensity; // @control min=0 max=2 default=1 label=\"Intensity\"\nuniform float uHeight;    // @control min=0 max=1 default=0.55 label=\"Height\"\n\nfloat hash12(vec2 p) {\n  vec3 p3 = fract(vec3(p.xyx) * 0.1031);\n  p3 += dot(p3, p3.yzx + 33.33);\n  return fract((p3.x + p3.y) * p3.z);\n}\nvec2 hash22(vec2 p) {\n  vec3 p3 = fract(vec3(p.xyx) * vec3(0.1031, 0.1030, 0.0973));\n  p3 += dot(p3, p3.yzx + 33.33);\n  return fract((p3.xx + p3.yz) * p3.zy);\n}\n\nfloat vnoise(vec2 p) {\n  vec2 i = floor(p);\n  vec2 f = fract(p);\n  vec2 u = f * f * (3.0 - 2.0 * f);\n  float a = hash12(i);\n  float b = hash12(i + vec2(1.0, 0.0));\n  float c = hash12(i + vec2(0.0, 1.0));\n  float d = hash12(i + vec2(1.0, 1.0));\n  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);\n}\n\nfloat fbm(vec2 p, int octaves) {\n  float sum = 0.0;\n  float amp = 0.5;\n  mat2 turn = mat2(0.8, 0.6, -0.6, 0.8);\n  for (int i = 0; i < 8; i++) {\n    if (i >= octaves) break;\n    sum += amp * vnoise(p);\n    p = turn * p * 2.02 + 17.0;\n    amp *= 0.5;\n  }\n  return sum;\n}\n\nvoid mainImage(out vec4 fragColor, in vec2 fragCoord) {\n  vec2 uv = fragCoord / iResolution.xy;\n  float t = iTime * uSpeed;\n  vec3 col = uSky * (0.6 + 0.4 * uv.y);\n  for (int i = 0; i < 3; i++) {\n    float fi = float(i);\n    float x = uv.x * (1.4 + 0.3 * fi) + fi * 3.7;\n    float wave = fbm(vec2(x * 1.5 + t * 0.4, t * 0.25 + fi), 4);\n    float centre = uHeight + 0.18 * (wave - 0.5) + 0.06 * fi;\n    float band = exp(-pow((uv.y - centre) * (7.0 + 2.0 * fi), 2.0));\n    float rays = 0.55 + 0.45 * fbm(vec2(x * 12.0, t * 0.6 + fi * 9.0), 3);\n    float above = smoothstep(centre - 0.05, centre + 0.35, uv.y) * 0.35;\n    vec3 glow = mix(uGlowA, uGlowB, clamp(uv.y * 1.4 - 0.2 + 0.25 * fi, 0.0, 1.0));\n    col += glow * (band * rays + above * band) * 0.6 * uIntensity;\n  }\n  float stars = step(0.997, hash12(floor(fragCoord * 0.5))) * smoothstep(0.3, 1.0, uv.y);\n  col += stars * 0.6 * (0.5 + 0.5 * sin(iTime * 3.0 + hash12(floor(fragCoord)) * 40.0));\n  fragColor = vec4(col, 1.0);\n}\n\n// Edited on the web: a comment, so it draws as the catalog's Aurora.\n"
+    },
+    "values": {
+      "uSky": [
+        0.06,
+        0.02,
+        0.03
+      ],
+      "uGlowA": [
+        1,
+        0.45,
+        0.1
+      ],
+      "uGlowB": [
+        0.9,
+        0.1,
+        0.4
+      ],
+      "uSpeed": 0.8
+    },
+    "tracks": {
+      "uIntensity": {
+        "keyframes": [
+          {
+            "time": 0,
+            "value": 0.2
+          },
+          {
+            "time": 2000,
+            "value": 1.4,
+            "easing": "ease-in-out"
+          }
+        ]
+      }
+    },
+    "duration": 3000,
+    "loop": true,
+    "presets": [
+      {
+        "name": "Arctic",
+        "values": {
+          "uGlowA": [
+            0.13,
+            0.83,
+            0.65
+          ],
+          "uGlowB": [
+            0.49,
+            0.23,
+            0.93
+          ]
+        }
+      },
+      {
+        "name": "Ember",
+        "values": {
+          "uSky": [
+            0.06,
+            0.02,
+            0.03
+          ],
+          "uGlowA": [
+            1,
+            0.45,
+            0.1
+          ],
+          "uGlowB": [
+            0.9,
+            0.1,
+            0.4
+          ]
+        }
+      },
+      {
+        "name": "Ice",
+        "values": {
+          "uSky": [
+            0.01,
+            0.03,
+            0.06
+          ],
+          "uGlowA": [
+            0.5,
+            0.9,
+            1
+          ],
+          "uGlowB": [
+            0.2,
+            0.4,
+            1
+          ]
+        }
+      },
+      {
+        "name": "Saved on the web",
+        "values": {
+          "uSky": [
+            0.06,
+            0.02,
+            0.03
+          ],
+          "uGlowA": [
+            1,
+            0.45,
+            0.1
+          ],
+          "uGlowB": [
+            0.9,
+            0.1,
+            0.4
+          ],
+          "uSpeed": 0.8,
+          "uIntensity": 0.2,
+          "uHeight": 0.55
+        }
+      }
+    ]
+  },
+  "provider": {
+    "metal": {
+      "version": 1,
+      "sourceHash": "740c5f5bf0966d3af61b05f4eb9a0e1ff27261ebc8f29e75346e4c9afd840db7",
+      "functionName": "flair_doc_740c5f5bf0966d3a_frag",
+      "msl": "// flair-metal-hash: 60e3c62f\n#pragma clang diagnostic ignored \"-Wmissing-prototypes\"\n\n#include <metal_stdlib>\n#include <simd/simd.h>\n\nusing namespace metal;\n\nstruct FlairUniforms\n{\n    packed_float3 iResolution;\n    float iTime;\n    float iTimeDelta;\n    int iFrame;\n    float iBeat;\n    float flair_flipY;\n    float4 iMouse;\n    float4 iPointer;\n    float4 iClicks[8];\n    float4 iTrail[32];\n    float4 iAudio;\n    float4 iSpectrum[16];\n    float4 iScroll;\n    float3 uSky;\n    float3 uGlowA;\n    packed_float3 uGlowB;\n    float uSpeed;\n    float uIntensity;\n    float uHeight;\n};\n\nstruct flair_doc_740c5f5bf0966d3a_frag_out\n{\n    float4 flair_FragColor [[color(0)]];\n};\n\nstatic inline __attribute__((always_inline))\nfloat hash12(thread const float2& p)\n{\n    float3 p3 = fract(p.xyx * 0.103100001811981201171875);\n    p3 += float3(dot(p3, p3.yzx + float3(33.3300018310546875)));\n    return fract((p3.x + p3.y) * p3.z);\n}\n\nstatic inline __attribute__((always_inline))\nfloat vnoise(thread const float2& p)\n{\n    float2 i = floor(p);\n    float2 f = fract(p);\n    float2 u = (f * f) * (float2(3.0) - (f * 2.0));\n    float2 param = i;\n    float a = hash12(param);\n    float2 param_1 = i + float2(1.0, 0.0);\n    float b = hash12(param_1);\n    float2 param_2 = i + float2(0.0, 1.0);\n    float c = hash12(param_2);\n    float2 param_3 = i + float2(1.0);\n    float d = hash12(param_3);\n    return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);\n}\n\nstatic inline __attribute__((always_inline))\nfloat fbm(thread float2& p, thread const int& octaves)\n{\n    float sum = 0.0;\n    float amp = 0.5;\n    float2x2 turn = float2x2(float2(0.800000011920928955078125, 0.60000002384185791015625), float2(-0.60000002384185791015625, 0.800000011920928955078125));\n    for (int i = 0; i < 8; i++)\n    {\n        if (i >= octaves)\n        {\n            break;\n        }\n        float2 param = p;\n        sum += (amp * vnoise(param));\n        p = ((turn * p) * 2.019999980926513671875) + float2(17.0);\n        amp *= 0.5;\n    }\n    return sum;\n}\n\nstatic inline __attribute__((always_inline))\nvoid mainImage(thread float4& fragColor, thread const float2& fragCoord, constant FlairUniforms& _182)\n{\n    float2 uv = fragCoord / float2(_182.iResolution[0], _182.iResolution[1]);\n    float t = _182.iTime * _182.uSpeed;\n    float3 col = _182.uSky * (0.60000002384185791015625 + (0.4000000059604644775390625 * uv.y));\n    for (int i = 0; i < 3; i++)\n    {\n        float fi = float(i);\n        float x = (uv.x * (1.39999997615814208984375 + (0.300000011920928955078125 * fi))) + (fi * 3.7000000476837158203125);\n        float2 param = float2((x * 1.5) + (t * 0.4000000059604644775390625), (t * 0.25) + fi);\n        int param_1 = 4;\n        float _247 = fbm(param, param_1);\n        float wave = _247;\n        float centre = (_182.uHeight + (0.180000007152557373046875 * (wave - 0.5))) + (0.0599999986588954925537109375 * fi);\n        float band = exp(-powr((uv.y - centre) * (7.0 + (2.0 * fi)), 2.0));\n        float2 param_2 = float2(x * 12.0, (t * 0.60000002384185791015625) + (fi * 9.0));\n        int param_3 = 3;\n        float _289 = fbm(param_2, param_3);\n        float rays = 0.550000011920928955078125 + (0.449999988079071044921875 * _289);\n        float above = smoothstep(centre - 0.0500000007450580596923828125, centre + 0.3499999940395355224609375, uv.y) * 0.3499999940395355224609375;\n        float3 glow = mix(_182.uGlowA, float3(_182.uGlowB), float3(fast::clamp(((uv.y * 1.39999997615814208984375) - 0.20000000298023223876953125) + (0.25 * fi), 0.0, 1.0)));\n        col += (((glow * ((band * rays) + (above * band))) * 0.60000002384185791015625) * _182.uIntensity);\n    }\n    float2 param_4 = floor(fragCoord * 0.5);\n    float stars = step(0.9969999790191650390625, hash12(param_4)) * smoothstep(0.300000011920928955078125, 1.0, uv.y);\n    float2 param_5 = floor(fragCoord);\n    col += float3((stars * 0.60000002384185791015625) * (0.5 + (0.5 * sin((_182.iTime * 3.0) + (hash12(param_5) * 40.0)))));\n    fragColor = float4(col, 1.0);\n}\n\nfragment flair_doc_740c5f5bf0966d3a_frag_out flair_doc_740c5f5bf0966d3a_frag(constant FlairUniforms& _182 [[buffer(0)]], float4 gl_FragCoord [[position]])\n{\n    flair_doc_740c5f5bf0966d3a_frag_out out = {};\n    float4 flair_color = float4(0.0, 0.0, 0.0, 1.0);\n    float _387;\n    if (_182.flair_flipY > 0.5)\n    {\n        _387 = _182.iResolution[1u] - gl_FragCoord.y;\n    }\n    else\n    {\n        _387 = gl_FragCoord.y;\n    }\n    float2 flair_coord = float2(gl_FragCoord.x, _387);\n    float2 param_1 = flair_coord;\n    float4 param;\n    mainImage(param, param_1, _182);\n    flair_color = param;\n    out.flair_FragColor = flair_color;\n    return out;\n}\n\n",
+      "uniformByteLength": 1056,
+      "fields": [
+        {
+          "name": "uSky",
+          "type": "vec3",
+          "offset": 992,
+          "min": 0,
+          "max": 1,
+          "color": true
+        },
+        {
+          "name": "uGlowA",
+          "type": "vec3",
+          "offset": 1008,
+          "min": 0,
+          "max": 1,
+          "color": true
+        },
+        {
+          "name": "uGlowB",
+          "type": "vec3",
+          "offset": 1024,
+          "min": 0,
+          "max": 1,
+          "color": true
+        },
+        {
+          "name": "uSpeed",
+          "type": "float",
+          "offset": 1036,
+          "min": 0,
+          "max": 2,
+          "color": false
+        },
+        {
+          "name": "uIntensity",
+          "type": "float",
+          "offset": 1040,
+          "min": 0,
+          "max": 2,
+          "color": false
+        },
+        {
+          "name": "uHeight",
+          "type": "float",
+          "offset": 1044,
+          "min": 0,
+          "max": 1,
+          "color": false
+        }
+      ],
+      "samplers": [],
+      "description": {
+        "id": "aurora",
+        "name": "Aurora",
+        "kind": "shader",
+        "category": "gradient",
+        "uses": [
+          "generator"
+        ],
+        "description": "Soft curtains of light drifting over a night sky.",
+        "tags": [
+          "background",
+          "hero",
+          "calm",
+          "night"
+        ],
+        "transparent": false,
+        "loop": false,
+        "duration": 4000,
+        "controls": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "title": "Aurora controls",
+          "description": "Soft curtains of light drifting over a night sky.",
+          "type": "object",
+          "properties": {
+            "uSky": {
+              "title": "Sky",
+              "description": "Sky: a colour, as 3 sRGB channels (red, green and blue) from 0 to 1, or a CSS colour string such as \"#050816\" (default #050816).",
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "minItems": 3,
+                  "maxItems": 3
+                },
+                {
+                  "type": "string",
+                  "pattern": "^\\s*(?:#?(?:[0-9A-Fa-f]{3,4}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})|(?:rgba?|hsla?|RGBA?|HSLA?)\\([^)]*\\))\\s*$"
+                }
+              ],
+              "default": "#050816",
+              "examples": [
+                "#050816"
+              ]
+            },
+            "uGlowA": {
+              "title": "Glow A",
+              "description": "Glow A: a colour, as 3 sRGB channels (red, green and blue) from 0 to 1, or a CSS colour string such as \"#22d3a6\" (default #22d3a6).",
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "minItems": 3,
+                  "maxItems": 3
+                },
+                {
+                  "type": "string",
+                  "pattern": "^\\s*(?:#?(?:[0-9A-Fa-f]{3,4}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})|(?:rgba?|hsla?|RGBA?|HSLA?)\\([^)]*\\))\\s*$"
+                }
+              ],
+              "default": "#22d3a6",
+              "examples": [
+                "#22d3a6"
+              ]
+            },
+            "uGlowB": {
+              "title": "Glow B",
+              "description": "Glow B: a colour, as 3 sRGB channels (red, green and blue) from 0 to 1, or a CSS colour string such as \"#7c3aed\" (default #7c3aed).",
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "minItems": 3,
+                  "maxItems": 3
+                },
+                {
+                  "type": "string",
+                  "pattern": "^\\s*(?:#?(?:[0-9A-Fa-f]{3,4}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})|(?:rgba?|hsla?|RGBA?|HSLA?)\\([^)]*\\))\\s*$"
+                }
+              ],
+              "default": "#7c3aed",
+              "examples": [
+                "#7c3aed"
+              ]
+            },
+            "uSpeed": {
+              "type": "number",
+              "title": "Speed",
+              "description": "Speed: from 0 to 2 (default 0.35).",
+              "minimum": 0,
+              "maximum": 2,
+              "default": 0.35
+            },
+            "uIntensity": {
+              "type": "number",
+              "title": "Intensity",
+              "description": "Intensity: from 0 to 2 (default 1).",
+              "minimum": 0,
+              "maximum": 2,
+              "default": 1
+            },
+            "uHeight": {
+              "type": "number",
+              "title": "Height",
+              "description": "Height: from 0 to 1 (default 0.55).",
+              "minimum": 0,
+              "maximum": 1,
+              "default": 0.55
+            }
+          },
+          "additionalProperties": false
+        },
+        "defaults": {
+          "uSky": "#050816",
+          "uGlowA": "#22d3a6",
+          "uGlowB": "#7c3aed",
+          "uSpeed": 0.35,
+          "uIntensity": 1,
+          "uHeight": 0.55
+        },
+        "presets": [],
+        "inputs": []
+      },
+      "inputs": {},
+      "transition": false
+    }
+  }
+}

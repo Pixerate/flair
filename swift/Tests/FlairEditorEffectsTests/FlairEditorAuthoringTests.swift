@@ -10,6 +10,12 @@ private func tsDocument() throws -> JSONObject {
     return try XCTUnwrap(JSONValue.parse(Data(contentsOf: url)).objectValue)
 }
 
+/// The same document with its GLSL edited (a comment) and Metal compiled from it (`attachFlairMetal`, written by `pnpm swift:meta`).
+private func metalDocument() throws -> JSONObject {
+    let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("Fixtures/aurora-edited-metal-document.json")
+    return try XCTUnwrap(JSONValue.parse(Data(contentsOf: url)).objectValue)
+}
+
 private func openError(_ provider: FlairEffectProvider, _ from: EffectAuthoringSource) async -> EffectError? {
     do {
         let s = try await provider.openAuthoring(from)
@@ -28,7 +34,8 @@ private struct Host {
     /// CI's virtual GPUs are slow; the editor's own tests cover the trial render budget, so these give it room.
     init(rawShaders: Bool) throws {
         c = try PaintEditorController(width: 32, height: 16, paperPreset: "smooth", authoredEffects: .author, rawShaders: rawShaders, authoredEffectLimits: AuthoredEffectLimits(trialRenderMs: 30_000, liveFrameMs: 30_000))
-        c.setEffectsProvider(FlairEffectProvider())
+        // CI's virtual GPUs compile slowly: the budget is tested on its own (testShadersHaveTwoSecondsToCompile).
+        c.setEffectsProvider(FlairEffectProvider(compileTimeoutMs: 60_000))
         registry = ToolRegistry(validateArguments: true)
         _ = try registry.register(createPaintEditorToolProvider(c))
         _ = try registry.register(createPaintEffectsToolProvider(c))
@@ -150,7 +157,7 @@ final class FlairEditorAuthoringTests: XCTestCase {
         let header = await openError(provider, .document(.object(doc)))
         XCTAssertEqual(header?.message, "Invalid values for effect \"aurora\":\n- /version: must be 1\n- /providerId: is \"pixel\"; this is Flair's provider (\"flair\"): open it with the provider that saved it")
 
-        // GLSL edited on the web can't be drawn here: there is no GLSL compiler on the device.
+        // GLSL edited on the web, with no Metal compiled from it, can't be drawn: there is no GLSL compiler on the device.
         var edited = try tsDocument()
         var flair = edited["flair"]?.objectValue ?? [:]
         var effect = flair["effect"]?.objectValue ?? [:]
@@ -159,7 +166,7 @@ final class FlairEditorAuthoringTests: XCTestCase {
         edited["flair"] = .object(flair)
         let glsl = await openError(provider, .document(.object(edited)))
         XCTAssertEqual(glsl?.code, "unsupported")
-        XCTAssertEqual(glsl?.message, "\"Aurora\" has GLSL edited from \"aurora\"; this adapter draws Flair's shaders compiled to Metal ahead of time, so it can't draw edited source. Open the document where Flair's TypeScript adapter runs (flairEffects().openAuthoring), or open \"aurora\" here and set its values instead.")
+        XCTAssertEqual(glsl?.message, "\"Aurora\" has GLSL edited from \"aurora\" and no Metal compiled from it; this adapter can't compile GLSL on the device. Compile Metal for it where Flair's Node tools run (`flair export metal-document <document.json>`, or attachFlairMetal from @pixerate/flair/node), or open \"aurora\" here and set its values instead.")
 
         var contractSource = try tsDocument()
         contractSource["flair"] = nil
@@ -176,6 +183,106 @@ final class FlairEditorAuthoringTests: XCTestCase {
         let values = await openError(provider, .document(.object(badValues)))
         XCTAssertEqual(values?.code, "invalid_values")
         XCTAssertTrue(values?.message.contains("/values/uSpeed") == true, values?.message ?? "")
+    }
+
+    // MARK: - Edited GLSL, with Metal compiled from it
+
+    func testDrawsEditedGLSLWithTheMetalCompiledFromIt() async throws {
+        try gpu()
+        let provider = FlairEffectProvider(compileTimeoutMs: 60_000)
+        let doc = try metalDocument()
+        let s = try await provider.openAuthoring(.document(.object(doc)))
+        defer { s.dispose() }
+        let state = s.getState()
+        XCTAssertEqual(state.sourceLanguage, "glsl")
+        XCTAssertTrue(state.source?.hasSuffix("// Edited on the web: a comment, so it draws as the catalog's Aurora.\n") == true)
+        XCTAssertEqual(state.compiled, true)
+        XCTAssertEqual(state.values["uSpeed"], 0.8)
+        XCTAssertEqual(state.description.controlNames, ["uSky", "uGlowA", "uGlowB", "uSpeed", "uIntensity", "uHeight"])
+
+        // The edit is a comment, so the run-time Metal draws what the catalog shader draws: the uniforms are packed alike.
+        let preview = try await s.createPreview(width: 32, height: 20)
+        defer { preview.dispose() }
+        let catalog = try provider.createRenderer("aurora", width: 32, height: 20)
+        defer { catalog.dispose() }
+        for time in [0.0, 1200, 2000] {
+            let drawn = try await preview.render(EffectRenderRequest(time: time))
+            let values = authoringValuesAt(s.exportDocument(), time)
+            let expected = try await catalog.render(EffectRenderRequest(time: time, values: values))
+            let worst = zip(drawn.data, expected.data).map { abs(Int($0) - Int($1)) }.max() ?? 0
+            XCTAssertLessThanOrEqual(worst, 1, "at \(time) ms")
+        }
+        XCTAssertNil(s.getState().previewError)
+
+        // Saved, it keeps its GLSL and its Metal, and opens again.
+        let saved = s.exportDocument()
+        XCTAssertEqual(saved.sourceLanguage, "glsl")
+        XCTAssertEqual(saved.source, state.source)
+        XCTAssertEqual(saved.provider?["metal"], doc["provider"]?.objectValue?["metal"])
+        let again = try await provider.openAuthoring(.document(.object(saved.json)))
+        defer { again.dispose() }
+        XCTAssertEqual(again.getState().source, state.source)
+    }
+
+    func testEditingTheGLSLHereSaysItCantCompileAndUndoBringsTheMetalBack() async throws {
+        let provider = FlairEffectProvider()
+        let s = try await provider.openAuthoring(.document(.object(try metalDocument())))
+        defer { s.dispose() }
+        XCTAssertTrue(s.canEditSource)
+        let original = s.getState().source!
+        let edit = await s.setSource(original + "// another edit\n")
+        XCTAssertTrue(edit.isOK)
+        XCTAssertEqual(s.getState().compiled, false)
+        XCTAssertTrue(s.getState().issues.first?.message.hasPrefix("GLSL can't be compiled on this device") == true)
+        XCTAssertNil(s.exportDocument().provider, "Metal made from the old GLSL is dropped.")
+        XCTAssertTrue(s.undo())
+        XCTAssertEqual(s.getState().source, original)
+        XCTAssertNotNil(s.exportDocument().provider?["metal"])
+    }
+
+    func testRefusesStaleOrBrokenMetalSayingWhatToDo() async throws {
+        let provider = FlairEffectProvider()
+        var stale = try metalDocument()
+        var flair = stale["flair"]?.objectValue ?? [:]
+        var effect = flair["effect"]?.objectValue ?? [:]
+        effect["source"] = .string((effect["source"]?.stringValue ?? "") + "// edited after the Metal was made\n")
+        flair["effect"] = .object(effect)
+        stale["flair"] = .object(flair)
+        let staleError = await openError(provider, .document(.object(stale)))
+        XCTAssertEqual(staleError?.code, "unsupported")
+        XCTAssertTrue(staleError?.message.contains("carries Metal compiled from other GLSL than its own") == true, staleError?.message ?? "")
+
+        var broken = try metalDocument()
+        broken["provider"] = ["metal": ["version": 2]]
+        let brokenError = await openError(provider, .document(.object(broken)))
+        XCTAssertEqual(brokenError?.message, "Invalid values for effect \"aurora\":\n- /provider/metal: version must be 1")
+
+        var catalogName = try metalDocument()
+        var metal = catalogName["provider"]?.objectValue?["metal"]?.objectValue ?? [:]
+        metal["functionName"] = "flair_aurora_frag"
+        catalogName["provider"] = ["metal": .object(metal)]
+        let clash = await openError(provider, .document(.object(catalogName)))
+        XCTAssertTrue(clash?.message.contains("functionName must start with flair_doc_") == true, clash?.message ?? "")
+    }
+
+    func testPaintEditorsDrawEditedGLSLDocumentsWithRawShaders() async throws {
+        try gpu()
+        let painting = try Host(rawShaders: true)
+        var json = painting.c.toJSON()
+        json["authoredEffects"] = ["authored.web-aurora": ["name": "Web aurora", "document": .object(try metalDocument())]]
+
+        let off = try Host(rawShaders: false)
+        XCTAssertEqual(try off.c.loadJSON(.object(json)), [])
+        let refused = await off.call("list_authored_effects")["effects"]?.arrayValue?.first?.objectValue?["problem"]?.stringValue ?? ""
+        XCTAssertTrue(refused.contains("raw shader source needs rawShaders: true"), refused)
+
+        let on = try Host(rawShaders: true)
+        XCTAssertEqual(try on.c.loadJSON(.object(json)), [])
+        let listed = await on.call("list_authored_effects")["effects"]?.arrayValue?.first?.objectValue ?? [:]
+        XCTAssertNil(listed["problem"], "\(listed)")
+        XCTAssertEqual(listed["language"], "glsl")
+        let layer = try await on.c.addEffectLayer("authored.web-aurora")
+        XCTAssertEqual(layer.source.effect, "authored.web-aurora")
     }
 
     // MARK: - Previews
@@ -212,6 +319,16 @@ final class FlairEditorAuthoringTests: XCTestCase {
             r.dispose()
         } catch let e as EffectError {
             XCTAssertEqual(e.message, "\"plasma\" took longer than 0 ms to compile for the GPU; try again shortly (it keeps compiling), or use another effect.")
+        }
+        // A document's run-time Metal has the same budget.
+        let s = try await hurried.openAuthoring(.document(.object(try metalDocument())))
+        defer { s.dispose() }
+        do {
+            let p = try await s.createPreview(width: 8, height: 8)
+            p.dispose()
+        } catch let e as EffectError {
+            XCTAssertEqual(e.message, "\"aurora\"'s Metal took longer than 0 ms to compile for the GPU; try again shortly (it keeps compiling).")
+            XCTAssertTrue(s.getState().previewError?.contains("took longer than 0 ms") == true)
         }
     }
 

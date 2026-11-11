@@ -54,6 +54,7 @@ export {
   type InstalledSkills,
   type InstallSkillsOptions,
 } from "./skills.js";
+export { attachFlairMetal, documentGlsl, flairSourceHash, type AttachFlairMetalResult, type FlairMetalBlock } from "./export/metal-document.js";
 export {
   compileShaderToMetal,
   effectMetalPhase,

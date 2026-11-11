@@ -668,6 +668,33 @@ describe("authoring", () => {
     expect(fromContract.description.presets.map((p) => p.name)).toEqual(["Arctic", "Ember", "Ice", "Mine"]);
   });
 
+  it("opens GLSL given as the contract's source (as the Swift adapter saves it)", async () => {
+    const { provider, session } = await open();
+    const edited = `${session.getState().source}\n// edited on Swift's side`;
+    const { flair: _, ...contract } = JSON.parse(JSON.stringify(session.exportDocument()));
+    const opened = (await provider.openAuthoring!({ document: { ...contract, source: edited, sourceLanguage: "glsl" } })).getState();
+    expect(opened.source).toBe(edited);
+    expect(await failure(() => provider.openAuthoring!({ document: { ...contract, source: edited, sourceLanguage: "pixel" } }))).toMatchObject({
+      code: "invalid_values",
+      message: expect.stringContaining('/sourceLanguage: is "pixel"'),
+    });
+    expect(await failure(() => provider.openAuthoring!({ document: { ...contract, source: 7 } }))).toMatchObject({ code: "invalid_values", message: expect.stringContaining("/source") });
+  });
+
+  it("keeps a document's provider data until its source is edited", async () => {
+    const { provider, session } = await open();
+    const data = { metal: { sourceHash: "abc", msl: "…" } };
+    const doc = { ...JSON.parse(JSON.stringify(session.exportDocument())), provider: data };
+    const reopened = await provider.openAuthoring!({ document: doc });
+    reopened.setValue("uSpeed", 0.9);
+    expect(reopened.exportDocument()).toMatchObject({ provider: data, values: { uSpeed: 0.9 } });
+    await reopened.setSource!(`${reopened.getState().source}\n// edited`);
+    expect("provider" in reopened.exportDocument()).toBe(false);
+    reopened.undo();
+    expect(reopened.exportDocument()).toMatchObject({ provider: data });
+    expect(await failure(() => provider.openAuthoring!({ document: { ...doc, provider: "metal" } }))).toMatchObject({ code: "invalid_values", message: expect.stringContaining("/provider") });
+  });
+
   it("refuses a corrupted document with invalid_values, naming what is wrong", async () => {
     const { provider, session } = await open();
     const saved = JSON.parse(JSON.stringify(session.exportDocument()));
