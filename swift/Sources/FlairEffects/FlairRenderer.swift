@@ -11,6 +11,8 @@ public enum FlairRendererError: Error, LocalizedError, Sendable {
     case shaderSourceNotFound(String)
     case shaderFunctionNotFound(String)
     case textureCreationFailed
+    /// Compiling an effect's shader took longer than the allowed ms (`prepare(anyEffect:timeoutMs:)`).
+    case compileTimedOut(String, Double)
 
     public var errorDescription: String? {
         switch self {
@@ -24,6 +26,8 @@ public enum FlairRendererError: Error, LocalizedError, Sendable {
             return "Could not find Metal fragment function '\(name)'."
         case .textureCreationFailed:
             return "Could not allocate target MTLTexture."
+        case .compileTimedOut(let id, let ms):
+            return "Compiling the Metal shader for '\(id)' took longer than \(Int(ms)) ms."
         }
     }
 }
@@ -83,6 +87,33 @@ public final class FlairRenderer: @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
         textureCache.removeAll()
+    }
+
+    /**
+     * Compiles `effect`'s pipeline for `pixelFormat` now, unless it is cached already, and waits at
+     * most `timeoutMs` for it. Past that it throws `compileTimedOut`; the compile still finishes in
+     * the background and is cached, so a later render (or `prepare`) uses it. Shaders in the
+     * package's default library (an Xcode build) are ready at once; a SwiftPM build compiles the
+     * bundled `.metal` source on first use, which this bounds.
+     */
+    public func prepare(anyEffect effect: AnyFlairEffect, pixelFormat: MTLPixelFormat = .rgba8Unorm, timeoutMs: Double) throws {
+        let key = PipelineKey(functionName: effect.functionName, pixelFormat: pixelFormat.rawValue, isTransparent: false)
+        if lock.withLock({ pipelines[key] }) != nil { return }
+        final class Outcome: @unchecked Sendable { var error: Error? }
+        let outcome = Outcome()
+        let done = DispatchSemaphore(value: 0)
+        DispatchQueue.global(qos: .userInitiated).async {
+            do {
+                _ = try self.pipelineState(functionName: effect.functionName, effectId: effect.effectId, pixelFormat: pixelFormat, isTransparent: false)
+            } catch {
+                outcome.error = error
+            }
+            done.signal()
+        }
+        if done.wait(timeout: .now() + .milliseconds(max(0, Int(timeoutMs)))) == .timedOut {
+            throw FlairRendererError.compileTimedOut(effect.effectId, timeoutMs)
+        }
+        if let error = outcome.error { throw error }
     }
 
     /// Renders `effect` into `targetTexture`.

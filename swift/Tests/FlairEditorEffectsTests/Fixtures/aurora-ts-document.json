@@ -1,0 +1,187 @@
+{
+  "version": 1,
+  "providerId": "flair",
+  "effectId": "aurora",
+  "name": "Aurora",
+  "values": {
+    "uSky": "#0f0508",
+    "uGlowA": "#ff731a",
+    "uGlowB": "#e61a66",
+    "uSpeed": 0.8
+  },
+  "tracks": {
+    "uIntensity": [
+      {
+        "time": 0,
+        "value": 0.2
+      },
+      {
+        "time": 2000,
+        "value": 1.4,
+        "easing": "ease-in-out"
+      }
+    ]
+  },
+  "presets": [
+    {
+      "name": "Arctic",
+      "values": {
+        "uGlowA": "#21d4a6",
+        "uGlowB": "#7d3bed"
+      }
+    },
+    {
+      "name": "Ember",
+      "values": {
+        "uSky": "#0f0508",
+        "uGlowA": "#ff731a",
+        "uGlowB": "#e61a66"
+      }
+    },
+    {
+      "name": "Ice",
+      "values": {
+        "uSky": "#03080f",
+        "uGlowA": "#80e6ff",
+        "uGlowB": "#3366ff"
+      }
+    },
+    {
+      "name": "Saved on the web",
+      "values": {
+        "uSky": "#0f0508",
+        "uGlowA": "#ff731a",
+        "uGlowB": "#e61a66",
+        "uSpeed": 0.8,
+        "uIntensity": 0.2,
+        "uHeight": 0.55
+      }
+    }
+  ],
+  "duration": 3000,
+  "loop": true,
+  "flair": {
+    "version": 1,
+    "name": "Aurora",
+    "basedOn": "aurora",
+    "effect": {
+      "kind": "shader",
+      "source": "// Aurora: curtains of light drifting over a night sky.\nuniform vec3 uSky;        // @control color default=#050816 label=\"Sky\"\nuniform vec3 uGlowA;      // @control color default=#22D3A6 label=\"Glow A\"\nuniform vec3 uGlowB;      // @control color default=#7C3AED label=\"Glow B\"\nuniform float uSpeed;     // @control min=0 max=2 default=0.35 label=\"Speed\"\nuniform float uIntensity; // @control min=0 max=2 default=1 label=\"Intensity\"\nuniform float uHeight;    // @control min=0 max=1 default=0.55 label=\"Height\"\n\nfloat hash12(vec2 p) {\n  vec3 p3 = fract(vec3(p.xyx) * 0.1031);\n  p3 += dot(p3, p3.yzx + 33.33);\n  return fract((p3.x + p3.y) * p3.z);\n}\nvec2 hash22(vec2 p) {\n  vec3 p3 = fract(vec3(p.xyx) * vec3(0.1031, 0.1030, 0.0973));\n  p3 += dot(p3, p3.yzx + 33.33);\n  return fract((p3.xx + p3.yz) * p3.zy);\n}\n\nfloat vnoise(vec2 p) {\n  vec2 i = floor(p);\n  vec2 f = fract(p);\n  vec2 u = f * f * (3.0 - 2.0 * f);\n  float a = hash12(i);\n  float b = hash12(i + vec2(1.0, 0.0));\n  float c = hash12(i + vec2(0.0, 1.0));\n  float d = hash12(i + vec2(1.0, 1.0));\n  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);\n}\n\nfloat fbm(vec2 p, int octaves) {\n  float sum = 0.0;\n  float amp = 0.5;\n  mat2 turn = mat2(0.8, 0.6, -0.6, 0.8);\n  for (int i = 0; i < 8; i++) {\n    if (i >= octaves) break;\n    sum += amp * vnoise(p);\n    p = turn * p * 2.02 + 17.0;\n    amp *= 0.5;\n  }\n  return sum;\n}\n\nvoid mainImage(out vec4 fragColor, in vec2 fragCoord) {\n  vec2 uv = fragCoord / iResolution.xy;\n  float t = iTime * uSpeed;\n  vec3 col = uSky * (0.6 + 0.4 * uv.y);\n  for (int i = 0; i < 3; i++) {\n    float fi = float(i);\n    float x = uv.x * (1.4 + 0.3 * fi) + fi * 3.7;\n    float wave = fbm(vec2(x * 1.5 + t * 0.4, t * 0.25 + fi), 4);\n    float centre = uHeight + 0.18 * (wave - 0.5) + 0.06 * fi;\n    float band = exp(-pow((uv.y - centre) * (7.0 + 2.0 * fi), 2.0));\n    float rays = 0.55 + 0.45 * fbm(vec2(x * 12.0, t * 0.6 + fi * 9.0), 3);\n    float above = smoothstep(centre - 0.05, centre + 0.35, uv.y) * 0.35;\n    vec3 glow = mix(uGlowA, uGlowB, clamp(uv.y * 1.4 - 0.2 + 0.25 * fi, 0.0, 1.0));\n    col += glow * (band * rays + above * band) * 0.6 * uIntensity;\n  }\n  float stars = step(0.997, hash12(floor(fragCoord * 0.5))) * smoothstep(0.3, 1.0, uv.y);\n  col += stars * 0.6 * (0.5 + 0.5 * sin(iTime * 3.0 + hash12(floor(fragCoord)) * 40.0));\n  fragColor = vec4(col, 1.0);\n}\n"
+    },
+    "values": {
+      "uSky": [
+        0.06,
+        0.02,
+        0.03
+      ],
+      "uGlowA": [
+        1,
+        0.45,
+        0.1
+      ],
+      "uGlowB": [
+        0.9,
+        0.1,
+        0.4
+      ],
+      "uSpeed": 0.8
+    },
+    "tracks": {
+      "uIntensity": {
+        "keyframes": [
+          {
+            "time": 0,
+            "value": 0.2
+          },
+          {
+            "time": 2000,
+            "value": 1.4,
+            "easing": "ease-in-out"
+          }
+        ]
+      }
+    },
+    "duration": 3000,
+    "loop": true,
+    "presets": [
+      {
+        "name": "Arctic",
+        "values": {
+          "uGlowA": [
+            0.13,
+            0.83,
+            0.65
+          ],
+          "uGlowB": [
+            0.49,
+            0.23,
+            0.93
+          ]
+        }
+      },
+      {
+        "name": "Ember",
+        "values": {
+          "uSky": [
+            0.06,
+            0.02,
+            0.03
+          ],
+          "uGlowA": [
+            1,
+            0.45,
+            0.1
+          ],
+          "uGlowB": [
+            0.9,
+            0.1,
+            0.4
+          ]
+        }
+      },
+      {
+        "name": "Ice",
+        "values": {
+          "uSky": [
+            0.01,
+            0.03,
+            0.06
+          ],
+          "uGlowA": [
+            0.5,
+            0.9,
+            1
+          ],
+          "uGlowB": [
+            0.2,
+            0.4,
+            1
+          ]
+        }
+      },
+      {
+        "name": "Saved on the web",
+        "values": {
+          "uSky": [
+            0.06,
+            0.02,
+            0.03
+          ],
+          "uGlowA": [
+            1,
+            0.45,
+            0.1
+          ],
+          "uGlowB": [
+            0.9,
+            0.1,
+            0.4
+          ],
+          "uSpeed": 0.8,
+          "uIntensity": 0.2,
+          "uHeight": 0.55
+        }
+      }
+    ]
+  }
+}

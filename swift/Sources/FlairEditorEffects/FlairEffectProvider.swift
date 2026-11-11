@@ -1,3 +1,4 @@
+import CryptoKit
 import FlairEffects
 import Foundation
 import Metal
@@ -22,9 +23,16 @@ import PixeratePaint
  * a filter's `source` and a transition's `from` / `to` become the shader's pictures, a transition's
  * progress drives it (`progress`, else `time` over its duration), and a mask keeps the untouched
  * picture (a filter's source, a transition's start) where it is 0. Vector, motion, camera and timing
- * effects, float pixels and authoring are not offered here yet.
+ * effects and float pixels are not offered here yet.
+ *
+ * Authoring (`openAuthoring`, the editor's `effect_authoring_*` tools) edits a catalog effect's
+ * values, presets, keyframes and timing with the editor's generic session. A document saved by
+ * either adapter opens again here when its shader is the catalog's: the Swift adapter draws Flair's
+ * Metal shaders, compiled ahead of time, so a document whose GLSL was edited (on the web) is
+ * refused, saying so. Paint editors draw saved Flair documents only when the host sets
+ * `rawShaders: true`; the provider needs nothing more for that.
  */
-public final class FlairEffectProvider: EffectProvider {
+public final class FlairEffectProvider: AuthoringEffectProvider {
     /// The provider's id, saved next to effect ids (the TypeScript adapter's `FLAIR_PROVIDER_ID`).
     public static let providerId = "flair"
 
@@ -35,6 +43,10 @@ public final class FlairEffectProvider: EffectProvider {
     /// The largest renderer side, in pixels.
     public let maxSize: Int
 
+    /// The most ms a renderer waits for its shader to compile before refusing (as the editor's
+    /// `PixelGPU.defaultCompileTimeoutMs`, 2000). Shaders compile once per provider.
+    public let compileTimeoutMs: Double
+
     private let entries: [String: FlairEditorEffect]
     private let summaries: [EffectDescription]
     private let device: MTLDevice?
@@ -43,8 +55,9 @@ public final class FlairEffectProvider: EffectProvider {
 
     /// A provider drawing on `device` (the system default GPU unless given). Without a GPU the
     /// catalog still lists and describes, and `createRenderer` refuses saying why.
-    public init(device: MTLDevice? = MTLCreateSystemDefaultDevice()) {
+    public init(device: MTLDevice? = MTLCreateSystemDefaultDevice(), compileTimeoutMs: Double = 2000) {
         self.device = device
+        self.compileTimeoutMs = compileTimeoutMs
         let all = FlairEditorCatalog.shared.filter { FlairCatalog.effect(id: $0.description.id) != nil }
         entries = Dictionary(all.map { ($0.description.id, $0) }, uniquingKeysWith: { a, _ in a })
         summaries = all.map(\.description.summary)
@@ -55,7 +68,7 @@ public final class FlairEffectProvider: EffectProvider {
             "supportsMask": true,
             "supportsHostImages": false,
             "supportsVector": false,
-            "supportsAuthoring": false,
+            "supportsAuthoring": true,
             "supportsCamera": false,
             "supportsTiming": false,
             "supportsTemplates": false,
@@ -89,7 +102,86 @@ public final class FlairEffectProvider: EffectProvider {
             throw EffectError.unsupported("createRenderer takes sides up to \(maxSize) pixels; got \(width) × \(height).", id)
         }
         guard let effect = FlairCatalog.effect(id: id) else { throw EffectError.unknown(id, in: "Flair") }
+        try withGPU(id) { gpu in
+            do {
+                try gpu.prepare(anyEffect: effect, timeoutMs: compileTimeoutMs)
+            } catch FlairRendererError.compileTimedOut {
+                throw EffectError.unsupported("\"\(id)\" took longer than \(Int(compileTimeoutMs)) ms to compile for the GPU; try again shortly (it keeps compiling), or use another effect.", id)
+            } catch {
+                throw EffectError.unsupported("\"\(id)\" cannot render here: \(error.localizedDescription)", id)
+            }
+        }
         return FlairShaderRenderer(entry: e, effect: effect, width: width, height: height, provider: self)
+    }
+
+    // MARK: Authoring
+
+    /**
+     * Opens a catalog effect (with a preset's values when one is named) or a document saved by
+     * `exportDocument` on either adapter, for editing its values, presets, keyframes and timing.
+     * The session is the editor's `GenericEffectAuthoringSession` drawing with this provider; it has
+     * no source to edit (`canEditSource` is false). Refuses an unknown effect or preset, a document
+     * from another provider, and a document whose GLSL is not the catalog effect's, saying why.
+     */
+    public func openAuthoring(_ from: EffectAuthoringSource) async throws -> EffectAuthoringSession {
+        switch from {
+        case .effect(let id, let preset):
+            let e = try entry(id)
+            if let preset {
+                let names = (e.description.json["presets"]?.arrayValue ?? []).compactMap { $0.objectValue?["name"]?.stringValue }
+                if !names.contains(preset) {
+                    let valid = names.isEmpty ? "none" : names.map { "\"\($0)\"" }.joined(separator: ", ")
+                    throw EffectError.unsupported("\"\(id)\" has no preset \"\(preset)\"; its presets are \(valid).", id)
+                }
+            }
+            return try await GenericEffectAuthoringSession(.effect(id, preset: preset), options: GenericAuthoringOptions(provider: self))
+        case .document(let raw):
+            let doc = try authoringDocument(raw)
+            return try await GenericEffectAuthoringSession(.document(.object(doc)), options: GenericAuthoringOptions(provider: self))
+        }
+    }
+
+    /// A saved document's contract fields, once its header and shader are known to be ones this provider draws.
+    private func authoringDocument(_ raw: JSONValue) throws -> JSONObject {
+        guard let o = raw.objectValue else {
+            throw documentError("", [("/", "must be a document saved with exportDocument (an object)")])
+        }
+        var header: [(String, String)] = []
+        if o["version"] != .number(1) { header.append(("/version", "must be 1")) }
+        if let p = o["providerId"], p != .string(Self.providerId) {
+            header.append(("/providerId", "is \(p.stringified()); this is Flair's provider (\"\(Self.providerId)\"): open it with the provider that saved it"))
+        }
+        let effectId = o["effectId"]?.stringValue ?? ""
+        if effectId.isEmpty { header.append(("/effectId", "must be the id of the effect the document was made from")) }
+        if !header.isEmpty { throw documentError(effectId, header) }
+        let e = try entry(effectId)
+
+        // The GLSL it was saved with: Flair's own document (the TypeScript adapter's), else the contract's source.
+        var glsl: String?
+        if let flair = o["flair"] {
+            guard let effect = flair.objectValue?["effect"]?.objectValue else {
+                throw documentError(effectId, [("/flair/effect", "must be the effect's source ({ kind, source })")])
+            }
+            if effect["kind"] != .string("shader") {
+                throw documentError(effectId, [("/flair/effect/kind", "is \(effect["kind"]?.stringified() ?? "missing"), but \"\(effectId)\" is a shader effect")])
+            }
+            guard let s = effect["source"]?.stringValue else { throw documentError(effectId, [("/flair/effect/source", "must be a string")]) }
+            glsl = s
+        } else if let s = o["source"]?.stringValue {
+            if let lang = o["sourceLanguage"], lang != .string("glsl") {
+                throw documentError(effectId, [("/sourceLanguage", "is \(lang.stringified()); Flair's shader documents are written in \"glsl\"")])
+            }
+            glsl = s
+        }
+        if let glsl, flairSourceHash(glsl) != e.sourceHash {
+            let name = o["name"]?.stringValue ?? e.description.name
+            throw EffectError.unsupported(
+                "\"\(name)\" has GLSL edited from \"\(effectId)\"; this adapter draws Flair's shaders compiled to Metal ahead of time, so it can't draw edited source. Open the document where Flair's TypeScript adapter runs (flairEffects().openAuthoring), or open \"\(effectId)\" here and set its values instead.",
+                effectId)
+        }
+        var doc = o
+        for key in ["flair", "source", "sourceLanguage"] { doc[key] = nil }
+        return doc
     }
 
     /// The shared GPU renderer (its pipelines and textures are cached across renderers), made on first use.
@@ -114,6 +206,19 @@ struct FlairEditorEffect {
     /// Input name → the image control (Metal sampler) it fills.
     let inputs: [String: String]
     let transition: Bool
+    /// `flairSourceHash` of the GLSL its Metal shader was made from.
+    let sourceHash: String
+}
+
+/// SHA-256 of a GLSL source's UTF-8 bytes, as lowercase hex (as `pnpm swift:meta` writes it).
+func flairSourceHash(_ source: String) -> String {
+    SHA256.hash(data: Data(source.utf8)).map { String(format: "%02x", $0) }.joined()
+}
+
+/// A saved document's problems, as the editor's `invalid_values` error (one line per path).
+private func documentError(_ effectId: String, _ problems: [(path: String, message: String)]) -> EffectError {
+    let lines = problems.map { "- \($0.path): \($0.message)" }.joined(separator: "\n")
+    return EffectError("invalid_values", "Invalid values for effect \"\(effectId)\":\n\(lines)", effectId: effectId.isEmpty ? nil : effectId)
 }
 
 /// The descriptions `pnpm swift:meta` writes, read once.
@@ -129,7 +234,7 @@ enum FlairEditorCatalog {
             for (name, uniform) in o["inputs"]?.objectValue ?? [:] {
                 if let u = uniform.stringValue { inputs[name] = u }
             }
-            return FlairEditorEffect(description: EffectDescription(d), inputs: inputs, transition: o["transition"] == .bool(true))
+            return FlairEditorEffect(description: EffectDescription(d), inputs: inputs, transition: o["transition"] == .bool(true), sourceHash: o["sourceHash"]?.stringValue ?? "")
         }
     }()
 }
