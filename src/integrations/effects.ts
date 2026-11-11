@@ -94,6 +94,48 @@ declare const __FLAIR_VERSION__: string | undefined;
 /** The provider's id, saved next to effect ids. */
 export const FLAIR_PROVIDER_ID = "flair";
 
+/**
+ * How an effect paints, as `flairEffects()` gives it on summaries and descriptions (`paint`), for
+ * an editor that brushes with effects. Only effects that make good paint have one: with the
+ * provider's `paintHints` capability, an effect without one is not meant as paint.
+ * - `map`: `path` (the effect draws along the stroke, given its centreline as the path control
+ *   `pathControlsOf` names), `stroke` (rendered into a strip bent along the stroke) or `canvas`
+ *   (fixed to the canvas; strokes uncover it).
+ * - `colors`: up to two colour controls the brush's main and second colours fill, main first.
+ * - `values`: values to apply over the defaults when painting (contract values: colours as hex).
+ * - `live`: whether a stroke keeps playing the effect.
+ * - `repeat`: for `stroke`, past the end of the strip (`repeat`, `mirror` or `clamp`).
+ * - `size`: a suggested brush width (px), when it has one.
+ */
+export interface EffectPaint {
+  map: "path" | "stroke" | "canvas";
+  colors: readonly string[];
+  values: EffectValues;
+  live: boolean;
+  repeat?: "repeat" | "mirror" | "clamp";
+  size?: number;
+}
+
+/** A Flair summary: the contract's, with its paint hint when the effect makes good paint. */
+export type FlairEffectSummary = EffectSummary & { paint?: EffectPaint };
+
+/** A Flair description: the contract's, with its paint hint when the effect makes good paint. */
+export type FlairEffectDescription = EffectDescription & { paint?: EffectPaint };
+
+/**
+ * Flair's capabilities: the contract's, and `paintHints` (effects that make good paint say how
+ * with `paint`, and those without one are not meant as paint).
+ */
+export type FlairEffectProviderCapabilities = EffectProviderCapabilities & { paintHints: true };
+
+/** The provider `flairEffects()` returns: an `EffectProvider` whose summaries and descriptions carry paint hints. */
+export type FlairEffectProvider = Omit<EffectProvider, "capabilities" | "list" | "search" | "describe"> & {
+  readonly capabilities: FlairEffectProviderCapabilities;
+  list(options?: EffectSearchOptions): FlairEffectSummary[];
+  search(query: string, options?: EffectSearchOptions): FlairEffectSummary[];
+  describe(id: string): Promise<FlairEffectDescription>;
+};
+
 // ---------------------------------------------------------------------------
 // The catalog as the contract sees it
 // ---------------------------------------------------------------------------
@@ -182,8 +224,26 @@ function playOf(meta: EffectMeta): number | undefined {
   return meta.kind === "shader" && meta.animated ? ENDLESS_PLAY_MS : undefined;
 }
 
-export function summaryOf(plan: Plan): EffectSummary {
+/** The plan's paint hint as the contract gives it, when the effect has one and its controls are still the hint's. */
+export function paintOf(plan: Plan): EffectPaint | undefined {
+  const hint = plan.meta.paint;
+  if (!hint) return undefined;
+  const controls = new Map(plan.controls.map((c) => [c.name, c]));
+  const named = [...(hint.colors ?? []), ...Object.keys(hint.values ?? {})];
+  if (!named.every((name) => controls.has(name)) || (hint.map === "path" && !plan.controls.some((c) => c.type === "path"))) return undefined;
+  return {
+    map: hint.map,
+    colors: [...(hint.colors ?? [])],
+    values: Object.fromEntries(Object.entries(hint.values ?? {}).map(([name, value]) => [name, contractValue(controls.get(name)!, value)])) as EffectValues,
+    live: hint.live ?? false,
+    ...(hint.map === "stroke" && { repeat: hint.repeat ?? "mirror" }),
+    ...(hint.size !== undefined && { size: hint.size }),
+  };
+}
+
+export function summaryOf(plan: Plan): FlairEffectSummary {
   const { meta } = plan;
+  const paint = paintOf(plan);
   const duration = playOf(meta);
   const move = meta.kind === "camera" ? getCameraMove(meta.id) : undefined;
   const background = plan.controls.find((c) => c.name === BACKGROUND_OPACITY_CONTROL && c.type === "float");
@@ -202,6 +262,7 @@ export function summaryOf(plan: Plan): EffectSummary {
     // Effects that draw along a path given at run time say so, for search.
     ...(plan.controls.some((c) => c.type === "path") && { accepts: ["path"] as const }),
     ...(move && { camera: { role: move.motion.role, durationMs: move.motion.duration, ...(move.motion.cut !== undefined && { cut: move.motion.cut }) } }),
+    ...(paint && { paint }),
   };
 }
 
@@ -309,7 +370,7 @@ function describePrimitive(p: PrimitiveDescriptor): EffectDescription {
 }
 
 /** A catalog effect's description from its plan, with these presets (Flair's values; controls the contract does not show are left out). */
-export function describePlan(plan: Plan, presets: readonly { name: string; values: Record<string, ControlValue> }[]): EffectDescription {
+export function describePlan(plan: Plan, presets: readonly { name: string; values: Record<string, ControlValue> }[]): FlairEffectDescription {
   const controls = new Map(plan.controls.map((c) => [c.name, c]));
   return {
     ...summaryOf(plan),
@@ -660,16 +721,16 @@ class VectorRenderer extends BaseRenderer {
  *   commands, camera angles, effects not offered under `kinds`) is left
  *   out and named in `notes`, with `validateScene`'s issues.
  */
-export function flairEffects(options: FlairEffectsOptions = {}): EffectProvider {
+export function flairEffects(options: FlairEffectsOptions = {}): FlairEffectProvider {
   const kinds = new Set<EffectKind>(options.kinds ?? ["shader", "vector", "motion", "camera", "timing"]);
   const plans = new Map(EFFECT_META.filter((m) => kinds.has(m.kind)).map((m) => [m.id, planOf(m)]));
   const primitives = kinds.has("motion") ? PRIMITIVES : [];
-  const summaries: EffectSummary[] = [...[...plans.values()].map(summaryOf), ...primitives.map(primitiveSummary)];
-  const descriptions = new Map<string, Promise<EffectDescription>>();
+  const summaries: FlairEffectSummary[] = [...[...plans.values()].map(summaryOf), ...primitives.map(primitiveSummary)];
+  const descriptions = new Map<string, Promise<FlairEffectDescription>>();
   const inWorker = typeof document === "undefined";
   const rasterize = options.rasterizeSvg ?? (inWorker ? undefined : pageRasterizer);
 
-  const capabilities: EffectProviderCapabilities = {
+  const capabilities: FlairEffectProviderCapabilities = {
     supportsWorker: inWorker,
     supportsFloat: kinds.has("shader") && canRenderFloat(),
     supportsMask: true,
@@ -679,6 +740,8 @@ export function flairEffects(options: FlairEffectsOptions = {}): EffectProvider 
     supportsCamera: kinds.has("camera"),
     supportsTiming: kinds.has("timing"),
     supportsTemplates: true,
+    // Effects that make good paint say how (`paint`); the rest are not meant as paint.
+    paintHints: true,
   };
 
   // Templates (and their summaries, which fill each one to time it) load with the first call that needs them.
@@ -707,7 +770,7 @@ export function flairEffects(options: FlairEffectsOptions = {}): EffectProvider 
     return { plan, effect, description: await describe(id) };
   }
 
-  async function describeCatalog(plan: Plan): Promise<EffectDescription> {
+  async function describeCatalog(plan: Plan): Promise<FlairEffectDescription> {
     return describePlan(plan, (await loadEffect(plan.meta.id)).presets ?? []);
   }
 
@@ -783,7 +846,7 @@ export function flairEffects(options: FlairEffectsOptions = {}): EffectProvider 
     return { frames: sample.frames.slice(0, MAX_TIMING_FRAMES).map((f) => ({ time: f.time, weight: f.weight })), blend: sample.blend };
   }
 
-  function describe(id: string): Promise<EffectDescription> {
+  function describe(id: string): Promise<FlairEffectDescription> {
     let found = descriptions.get(id);
     if (!found) {
       const primitive = kinds.has("motion") ? getPrimitive(id) : undefined;
@@ -803,11 +866,11 @@ export function flairEffects(options: FlairEffectsOptions = {}): EffectProvider 
     capabilities,
 
     list(searchOptions?: EffectSearchOptions) {
-      return searchEffectSummaries(summaries, "", searchOptions);
+      return searchEffectSummaries(summaries, "", searchOptions) as FlairEffectSummary[];
     },
 
     search(query: string, searchOptions?: EffectSearchOptions) {
-      return searchEffectSummaries(summaries, query ?? "", searchOptions);
+      return searchEffectSummaries(summaries, query ?? "", searchOptions) as FlairEffectSummary[];
     },
 
     describe,

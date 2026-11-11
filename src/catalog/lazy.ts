@@ -21,6 +21,7 @@ import type { EffectDefinition } from "./types.js";
 export type { EffectMeta } from "./meta.js";
 export { normaliseTag, TAG_FORMAT, type EffectQuery, type EffectTag } from "./query.js";
 export { EFFECT_CATEGORIES, EFFECT_CATEGORY_GROUPS, VIDEO_USES, type EffectCategory, type EffectDefinition, type ShaderEffect, type VectorEffect, type VideoUse } from "./types.js";
+export { PAINT_HINTS, PAINT_MAPS, PAINT_REPEATS, paintHint, type EffectPaintHint, type PaintMap, type PaintRepeat } from "./paint.js";
 export { EFFECT_INPUTS, EFFECT_INTERACTIONS, type EffectInput, type EffectInputs, type EffectInteraction } from "./inputs.js";
 
 const entries = (PACKED as unknown as PackedMeta[]).map(unpackMeta);
