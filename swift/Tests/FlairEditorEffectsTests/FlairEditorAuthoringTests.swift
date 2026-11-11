@@ -25,8 +25,9 @@ private struct Host {
     let c: PaintEditorController
     let registry: ToolRegistry
 
+    /// CI's virtual GPUs are slow; the editor's own tests cover the trial render budget, so these give it room.
     init(rawShaders: Bool) throws {
-        c = try PaintEditorController(width: 32, height: 16, paperPreset: "smooth", authoredEffects: .author, rawShaders: rawShaders)
+        c = try PaintEditorController(width: 32, height: 16, paperPreset: "smooth", authoredEffects: .author, rawShaders: rawShaders, authoredEffectLimits: AuthoredEffectLimits(trialRenderMs: 30_000, liveFrameMs: 30_000))
         c.setEffectsProvider(FlairEffectProvider())
         registry = ToolRegistry(validateArguments: true)
         _ = try registry.register(createPaintEditorToolProvider(c))
@@ -239,6 +240,10 @@ final class FlairEditorAuthoringTests: XCTestCase {
         let t = try Host(rawShaders: true)
         _ = await t.call("open_effect_authoring", ["effect": "aurora"])
         _ = await t.call("effect_authoring_set_values", ["values": ["uSpeed": 1.2]])
+        // As the authoring tab does: a preview first, so the shader is compiled before the trial render.
+        let preview = try await XCTUnwrap(t.c.authoringSession).createPreview(width: 16, height: 16)
+        _ = try await preview.render(EffectRenderRequest(time: 0))
+        preview.dispose()
         let saved = await t.call("save_authored_effect", ["name": "Fast aurora"])
         let id = try XCTUnwrap(saved["id"]?.stringValue ?? saved["effect"]?.objectValue?["id"]?.stringValue, "\(saved)")
         XCTAssertEqual(id, "authored.fast-aurora")
