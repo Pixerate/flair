@@ -116,6 +116,33 @@ public final class FlairRenderer: @unchecked Sendable {
         if let error = outcome.error { throw error }
     }
 
+    /**
+     * Compiles a run-time effect's Metal source (`FlairRuntimeEffect.msl`) so `functionName` can be
+     * drawn, waiting at most `timeoutMs`. Past that it throws `compileTimedOut`; the compile finishes
+     * in the background and is kept. A source that doesn't compile, or has no `functionName`, throws
+     * the compiler's error. Loading the same function again does nothing.
+     */
+    public func loadLibrary(msl: String, functionName: String, timeoutMs: Double) throws {
+        if lock.withLock({ functionLibraries[functionName] }) != nil { return }
+        final class Outcome: @unchecked Sendable { var error: Error? }
+        let outcome = Outcome()
+        let done = DispatchSemaphore(value: 0)
+        let opts = MTLCompileOptions()
+        opts.fastMathEnabled = true
+        device.makeLibrary(source: msl, options: opts) { [weak self] library, error in
+            if let library, library.makeFunction(name: functionName) != nil {
+                self?.lock.withLock { self?.functionLibraries[functionName] = library }
+            } else {
+                outcome.error = error ?? FlairRendererError.shaderFunctionNotFound(functionName)
+            }
+            done.signal()
+        }
+        if done.wait(timeout: .now() + .milliseconds(max(0, Int(timeoutMs)))) == .timedOut {
+            throw FlairRendererError.compileTimedOut(functionName, timeoutMs)
+        }
+        if let error = outcome.error { throw error }
+    }
+
     /// Renders `effect` into `targetTexture`.
     public func render<E: FlairEffect>(
         effect: E,

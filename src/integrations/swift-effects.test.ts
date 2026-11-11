@@ -3,6 +3,8 @@ import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { EFFECT_META, loadEffect } from "../catalog/lazy.js";
+import { attachFlairMetal, documentGlsl } from "../export/metal-document.js";
+import { metalToolsAvailable } from "../export/metal.js";
 import { flairEffects, planOf } from "./effects.js";
 
 /**
@@ -14,11 +16,16 @@ import { flairEffects, planOf } from "./effects.js";
  * again with `pnpm swift:meta` (which runs it with UPDATE_SWIFT_EFFECTS=1).
  *
  * It also writes a document saved by the TypeScript adapter's authoring session, which the Swift
- * tests open, draw and save again: documents cross between the two adapters.
+ * tests open, draw and save again: documents cross between the two adapters. A second one has its
+ * GLSL edited (a comment only, so it draws as the catalog shader does) and Metal compiled from it
+ * (`attachFlairMetal`), which the Swift tests draw with run-time Metal. That one needs
+ * `glslangValidator` and `spirv-cross`; without them it is checked against its GLSL, not rewritten.
  */
 const SHADERS_DIR = resolve("swift/Sources/FlairEffects/Shaders");
 const OUT_FILE = resolve("swift/Sources/FlairEditorEffects/Resources/flair-effects.json");
 const DOCUMENT_FIXTURE = resolve("swift/Tests/FlairEditorEffectsTests/Fixtures/aurora-ts-document.json");
+const METAL_FIXTURE = resolve("swift/Tests/FlairEditorEffectsTests/Fixtures/aurora-edited-metal-document.json");
+const EDIT = "\n// Edited on the web: a comment, so it draws as the catalog's Aurora.\n";
 
 /** The shader effects the Metal package has: one `.metal` file each. */
 function metalIds(): Set<string> {
@@ -54,11 +61,12 @@ async function generate(): Promise<string> {
   return `{"generatedBy":"pnpm swift:meta (src/integrations/swift-effects.test.ts)","effects":[\n${lines.join(",\n")}\n]}\n`;
 }
 
-/** A document the TypeScript adapter saves: Aurora with a preset, a changed value, keyframes, timing and a saved preset. */
-async function tsDocument(): Promise<string> {
+/** A document the TypeScript adapter saves: Aurora with a preset, a changed value, keyframes, timing and a saved preset (and with `edit` appended to its GLSL). */
+async function tsDocument(edit?: string): Promise<string> {
   const session = await flairEffects({ kinds: ["shader"] }).openAuthoring!({ effectId: "aurora", preset: "Ember" });
   try {
     const ok = (r: { ok: boolean; message?: string }) => expect(r.message).toBeUndefined();
+    if (edit) ok(await session.setSource!(`${session.getState().source}${edit}`));
     ok(session.setTiming({ duration: 3000, loop: true }));
     ok(session.setValue("uSpeed", 0.8));
     ok(session.setKeyframe("uIntensity", 0, 0.2));
@@ -86,5 +94,23 @@ describe("the Swift adapter's effect descriptions", () => {
     // The Swift adapter draws it with Aurora's Metal shader because its GLSL is the catalog's.
     expect(sourceHash(doc.flair.effect.source)).toBe(sourceHash(((await loadEffect("aurora")) as { source: string }).source));
     expect(existsSync(DOCUMENT_FIXTURE) && readFileSync(DOCUMENT_FIXTURE, "utf8") === text, "Run `pnpm swift:meta`: the TypeScript adapter's documents have changed.").toBe(true);
+  });
+
+  it("come with an edited document carrying Metal compiled from its GLSL (pnpm swift:meta writes it where the Metal tools are)", async () => {
+    const edited = JSON.parse(await tsDocument(EDIT)) as Record<string, unknown>;
+    const glsl = documentGlsl(edited)!;
+    expect(glsl.endsWith(EDIT)).toBe(true);
+    if (metalToolsAvailable().ok) {
+      const attached = attachFlairMetal(edited);
+      if (!attached.ok) throw new Error(attached.message);
+      const text = `${JSON.stringify(attached.document, null, 2)}\n`;
+      if (process.env.UPDATE_SWIFT_EFFECTS) writeFileSync(METAL_FIXTURE, text);
+      expect(existsSync(METAL_FIXTURE) && readFileSync(METAL_FIXTURE, "utf8") === text, "Run `pnpm swift:meta` (with glslangValidator and spirv-cross installed).").toBe(true);
+    } else {
+      // Without the compilers: the committed document is still this GLSL, and its Metal was made from it.
+      const committed = JSON.parse(readFileSync(METAL_FIXTURE, "utf8")) as Record<string, unknown> & { provider: { metal: { sourceHash: string } } };
+      expect(documentGlsl(committed), "Run `pnpm swift:meta` where glslangValidator and spirv-cross are installed.").toBe(glsl);
+      expect(committed.provider.metal.sourceHash).toBe(sourceHash(glsl));
+    }
   });
 });

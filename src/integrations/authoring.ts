@@ -150,6 +150,7 @@ function documentProblems(doc: Record<string, unknown>, description: EffectDescr
     problems.push({ path: "/duration", message: "must be a finite number of ms > 0" });
   }
   if (doc.loop !== undefined && typeof doc.loop !== "boolean") problems.push({ path: "/loop", message: "must be a boolean" });
+  if (doc.provider !== undefined && !isRecord(doc.provider)) problems.push({ path: "/provider", message: "must be an object of the provider's own data" });
   return problems;
 }
 
@@ -175,7 +176,18 @@ async function readDocument(raw: unknown, env: AuthoringEnvironment): Promise<Ef
       throw new EffectControlError(effectId, [{ path: "/flair/effect/kind", message: `is "${parsed.document.effect.kind}", but "${effectId}" is a ${plan.meta.kind} effect` }]);
     }
     doc = { ...parsed.document, basedOn: parsed.document.basedOn ?? effectId };
-  } else doc = createEffectDocument(await loadEffect(effectId));
+  } else {
+    doc = createEffectDocument(await loadEffect(effectId));
+    // The contract's own source (as the Swift adapter saves GLSL edited on the web).
+    if (raw.source !== undefined) {
+      if (typeof raw.source !== "string") throw new EffectControlError(effectId, [{ path: "/source", message: "must be a string" }]);
+      if (raw.sourceLanguage !== undefined && raw.sourceLanguage !== "glsl") {
+        throw new EffectControlError(effectId, [{ path: "/sourceLanguage", message: `is ${JSON.stringify(raw.sourceLanguage)}; Flair's shader documents are written in "glsl"` }]);
+      }
+      if (doc.effect.kind !== "shader") throw new EffectControlError(effectId, [{ path: "/source", message: `"${effectId}" is a ${plan.meta.kind} effect, which has no GLSL` }]);
+      doc = { ...doc, effect: { kind: "shader", source: raw.source } };
+    }
+  }
 
   const controls = documentControls(doc);
   const description = describePlan(withControls(plan, controls), []);
@@ -234,7 +246,10 @@ export async function openFlairAuthoring(source: EffectAuthoringSource, env: Aut
       doc = { ...doc, values: { ...preset.values } };
     }
   } else throw new EffectUnsupportedError("openAuthoring takes { effectId, preset? } or { document } (one saved with exportDocument).");
-  return new FlairAuthoringSession(createEffectEditor({ document: doc }), planOf(env, doc.basedOn!), env.rasterize);
+  // A document's provider data (such as Metal compiled from its GLSL) holds while its effect is the one it was saved with.
+  const raw = "document" in source && isRecord(source.document) ? source.document : undefined;
+  const providerData = raw && isRecord(raw.provider) ? { data: JSON.parse(JSON.stringify(raw.provider)) as Record<string, unknown>, effect: JSON.stringify(doc.effect) } : undefined;
+  return new FlairAuthoringSession(createEffectEditor({ document: doc }), planOf(env, doc.basedOn!), env.rasterize, providerData);
 }
 
 class FlairAuthoringSession implements EffectAuthoringSession {
@@ -252,6 +267,8 @@ class FlairAuthoringSession implements EffectAuthoringSession {
     readonly editor: EffectEditor,
     private readonly basePlan: Plan,
     private readonly rasterize: SvgRasterizer | undefined,
+    /** The opened document's `provider` data, and the effect (source) it was saved with. */
+    private readonly providerData?: { data: Record<string, unknown>; effect: string },
   ) {
     this.compileSource();
   }
@@ -528,6 +545,8 @@ class FlairAuthoringSession implements EffectAuthoringSession {
     const state = this.getState();
     return JSON.parse(
       JSON.stringify({
+        // A shader's GLSL as the contract's source too, so editors can tell what it is written in.
+        ...(doc.effect.kind === "shader" && { source: doc.effect.source, sourceLanguage: "glsl" }),
         version: 1,
         providerId: FLAIR_PROVIDER_ID,
         effectId: state.effectId!,
@@ -538,6 +557,8 @@ class FlairAuthoringSession implements EffectAuthoringSession {
         duration: doc.duration,
         loop: doc.loop,
         flair: doc,
+        // Dropped once the source is edited: it may describe the old source.
+        ...(this.providerData && JSON.stringify(doc.effect) === this.providerData.effect && { provider: this.providerData.data }),
       }),
     ) as FlairAuthoringDocument;
   }

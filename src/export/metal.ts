@@ -785,6 +785,7 @@ export function compileShaderToMetal(source: string, options: CompileMetalOption
 
 import {
   FLAIR_EFFECT_SWIFT,
+  FLAIR_RUNTIME_EFFECT_SWIFT,
   FLAIR_EFFECT_VIEW_SWIFT,
   FLAIR_INPUTS_SWIFT,
   FLAIR_PATH_AND_TEXT_SWIFT,
@@ -1274,6 +1275,7 @@ export function exportMetalPackage(options: ExportMetalPackageOptions = {}): Met
     writeIfChanged(join(shadersDir, "_FlairVertex.metal"), VERTEX_METAL_TEMPLATE);
     writeIfChanged(join(sourcesDir, "FlairTypes.swift"), FLAIR_TYPES_SWIFT);
     writeIfChanged(join(sourcesDir, "FlairEffect.swift"), FLAIR_EFFECT_SWIFT);
+    writeIfChanged(join(sourcesDir, "FlairRuntimeEffect.swift"), FLAIR_RUNTIME_EFFECT_SWIFT);
     writeIfChanged(join(sourcesDir, "FlairPathAndText.swift"), FLAIR_PATH_AND_TEXT_SWIFT);
     writeIfChanged(join(sourcesDir, "FlairInputs.swift"), FLAIR_INPUTS_SWIFT);
     writeIfChanged(join(sourcesDir, "FlairRenderer.swift"), FLAIR_RENDERER_SWIFT);

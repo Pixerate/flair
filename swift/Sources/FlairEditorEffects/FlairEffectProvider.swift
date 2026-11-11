@@ -143,13 +143,17 @@ public final class FlairEffectProvider: AuthoringEffectProvider {
             }
             return try await GenericEffectAuthoringSession(.effect(id, preset: preset), options: GenericAuthoringOptions(provider: self))
         case .document(let raw):
-            let doc = try authoringDocument(raw)
-            return try await GenericEffectAuthoringSession(.document(.object(doc)), options: GenericAuthoringOptions(provider: self))
+            let opened = try authoringDocument(raw)
+            return try await GenericEffectAuthoringSession(.document(.object(opened.document)), options: GenericAuthoringOptions(provider: self, source: opened.backend))
         }
     }
 
-    /// A saved document's contract fields, once its header and shader are known to be ones this provider draws.
-    private func authoringDocument(_ raw: JSONValue) throws -> JSONObject {
+    /**
+     * A saved document's contract fields, once its header and shader are known to be ones this
+     * provider draws: the catalog's shader (no source), or edited GLSL with Metal compiled from it in
+     * `provider.metal` (the GLSL kept as the contract's `source`, drawn through a source backend).
+     */
+    private func authoringDocument(_ raw: JSONValue) throws -> (document: JSONObject, backend: AuthoringSourceBackend?) {
         guard let o = raw.objectValue else {
             throw documentError("", [("/", "must be a document saved with exportDocument (an object)")])
         }
@@ -180,15 +184,47 @@ public final class FlairEffectProvider: AuthoringEffectProvider {
             }
             glsl = s
         }
-        if let glsl, flairSourceHash(glsl) != e.sourceHash {
-            let name = o["name"]?.stringValue ?? e.description.name
-            throw EffectError.unsupported(
-                "\"\(name)\" has GLSL edited from \"\(effectId)\"; this adapter draws Flair's shaders compiled to Metal ahead of time, so it can't draw edited source. Open the document where Flair's TypeScript adapter runs (flairEffects().openAuthoring), or open \"\(effectId)\" here and set its values instead.",
-                effectId)
-        }
         var doc = o
         for key in ["flair", "source", "sourceLanguage"] { doc[key] = nil }
-        return doc
+        guard let glsl, flairSourceHash(glsl) != e.sourceHash else { return (doc, nil) }
+
+        // Edited GLSL: drawn with the Metal compiled from it, when the document carries it.
+        let name = o["name"]?.stringValue ?? e.description.name
+        let hash = flairSourceHash(glsl)
+        let compileHint = "Compile Metal for it where Flair's Node tools run (`flair export metal-document <document.json>`, or attachFlairMetal from @pixerate/flair/node), or open \"\(effectId)\" here and set its values instead."
+        guard let metalJSON = o["provider"]?.objectValue?["metal"] else {
+            throw EffectError.unsupported("\"\(name)\" has GLSL edited from \"\(effectId)\" and no Metal compiled from it; this adapter can't compile GLSL on the device. \(compileHint)", effectId)
+        }
+        let block: FlairMetalBlock
+        do { block = try FlairMetalBlock(metalJSON, effectId: effectId) } catch let problem as MetalBlockProblem {
+            throw documentError(effectId, [("/provider/metal", problem.message)])
+        }
+        if block.sourceHash != hash {
+            throw EffectError.unsupported("\"\(name)\" carries Metal compiled from other GLSL than its own (the GLSL was edited after the Metal was made). \(compileHint)", effectId)
+        }
+        doc["source"] = .string(glsl)
+        doc["sourceLanguage"] = "glsl"
+        return (doc, FlairMetalBackend(provider: self, block: block))
+    }
+
+    /// A renderer for a document's run-time Metal, within the compile budget.
+    func createRuntimeRenderer(_ block: FlairMetalBlock, width: Int, height: Int) throws -> EffectRenderer {
+        let id = block.entry.description.id
+        if !(width >= 1 && height >= 1) || width > maxSize || height > maxSize {
+            throw EffectError.unsupported("createPreview takes sides from 1 to \(maxSize) pixels; got \(width) × \(height).", id)
+        }
+        let effect = AnyFlairEffect(runtime: block.runtime)
+        try withGPU(id) { gpu in
+            do {
+                try gpu.loadLibrary(msl: block.runtime.msl, functionName: block.runtime.functionName, timeoutMs: compileTimeoutMs)
+                try gpu.prepare(anyEffect: effect, timeoutMs: compileTimeoutMs)
+            } catch FlairRendererError.compileTimedOut {
+                throw EffectError.unsupported("\"\(id)\"'s Metal took longer than \(Int(compileTimeoutMs)) ms to compile for the GPU; try again shortly (it keeps compiling).", id)
+            } catch {
+                throw EffectError.unsupported("\"\(id)\"'s Metal didn't compile for this GPU (\(error.localizedDescription)); compile it again with `flair export metal-document`.", id)
+            }
+        }
+        return FlairShaderRenderer(entry: block.entry, effect: effect, width: width, height: height, provider: self)
     }
 
     /// The shared GPU renderer (its pipelines and textures are cached across renderers), made on first use.
@@ -215,6 +251,88 @@ struct FlairEditorEffect {
     let transition: Bool
     /// `flairSourceHash` of the GLSL its Metal shader was made from.
     let sourceHash: String
+}
+
+/**
+ * `provider.metal` in a saved document (`FlairMetalBlock` in `@pixerate/flair/node`): Metal compiled
+ * from the document's GLSL, with its uniform layout and the effect's description for those controls.
+ */
+struct FlairMetalBlock {
+    let sourceHash: String
+    let runtime: FlairRuntimeEffect
+    let entry: FlairEditorEffect
+
+    /// Reads a block; throws `MetalBlockProblem` naming what is wrong.
+    init(_ json: JSONValue, effectId: String) throws {
+        guard let o = json.objectValue else { throw MetalBlockProblem(message: "must be an object made by attachFlairMetal") }
+        guard o["version"] == .number(1) else { throw MetalBlockProblem(message: "version must be 1") }
+        guard let hash = o["sourceHash"]?.stringValue, let fn = o["functionName"]?.stringValue, let msl = o["msl"]?.stringValue,
+              let length = o["uniformByteLength"]?.numberValue, var description = o["description"]?.objectValue else {
+            throw MetalBlockProblem(message: "must have sourceHash, functionName, msl, uniformByteLength and description")
+        }
+        guard fn.hasPrefix("flair_doc_") else { throw MetalBlockProblem(message: "functionName must start with flair_doc_ (it must not be a catalog shader's)") }
+        var fields: [FlairRuntimeEffect.Field] = []
+        for (i, f) in (o["fields"]?.arrayValue ?? []).enumerated() {
+            guard let x = f.objectValue, let name = x["name"]?.stringValue, let type = x["type"]?.stringValue.flatMap(FlairControlType.init(rawValue:)),
+                  let offset = x["offset"]?.numberValue else { throw MetalBlockProblem(message: "fields/\(i) must have a name, a type and an offset") }
+            fields.append(.init(name: name, type: type, offset: Int(offset), min: Float(x["min"]?.numberValue ?? -.infinity), max: Float(x["max"]?.numberValue ?? .infinity), isColor: x["color"] == .bool(true)))
+        }
+        var samplers: [FlairSamplerBinding] = []
+        for (i, b) in (o["samplers"]?.arrayValue ?? []).enumerated() {
+            guard let x = b.objectValue, let name = x["name"]?.stringValue, let type = x["type"]?.stringValue.flatMap(FlairControlType.init(rawValue:)),
+                  let binding = x["binding"]?.numberValue else { throw MetalBlockProblem(message: "samplers/\(i) must have a name, a type and a binding") }
+            samplers.append(FlairSamplerBinding(
+                name: name, property: name, type: type, binding: Int(binding),
+                filter: x["filter"]?.stringValue.flatMap(FlairTextureFilter.init(rawValue:)) ?? (type == .path ? .nearest : .mipmap),
+                wrap: x["wrap"]?.stringValue.flatMap(FlairTextureWrap.init(rawValue:)) ?? (type == .path ? .clamp : .repeat),
+                pathFit: x["pathFit"]?.stringValue.flatMap(FlairPathFit.init(rawValue:)) ?? .contain,
+                pathMargin: Float(x["pathMargin"]?.numberValue ?? 0.1)))
+        }
+        description["id"] = .string(effectId)
+        var inputs: [String: String] = [:]
+        for (name, uniform) in o["inputs"]?.objectValue ?? [:] { if let u = uniform.stringValue { inputs[name] = u } }
+        sourceHash = hash
+        runtime = FlairRuntimeEffect(effectId: effectId, effectName: description["name"]?.stringValue ?? effectId, functionName: fn, msl: msl, uniformByteLength: Int(length),
+                                     fields: fields, samplerBindings: samplers, isTransparent: description["transparent"] == .bool(true))
+        entry = FlairEditorEffect(description: EffectDescription(description), inputs: inputs, transition: o["transition"] == .bool(true), sourceHash: hash)
+    }
+}
+
+/// What is wrong with a `provider.metal` block, as a sentence.
+struct MetalBlockProblem: Error { let message: String }
+
+/**
+ * The source backend of a document with edited GLSL: the GLSL "compiles" only when it is the source
+ * its Metal was made from (there is no GLSL compiler on the device), and draws with that Metal.
+ */
+final class FlairMetalBackend: AuthoringSourceBackend {
+    let language = "glsl"
+    private weak var provider: FlairEffectProvider?
+    let block: FlairMetalBlock
+
+    init(provider: FlairEffectProvider, block: FlairMetalBlock) {
+        self.provider = provider
+        self.block = block
+    }
+
+    func sourceOf(_ effectId: String) throws -> String {
+        throw EffectError.unsupported("\"\(effectId)\" opens with its document's GLSL; there is no catalog source here.", effectId)
+    }
+
+    func compile(_ source: String, effectId: String) -> AuthoringCompileResult {
+        if flairSourceHash(source) == block.sourceHash { return AuthoringCompileResult(description: block.entry.description, issues: []) }
+        return AuthoringCompileResult(description: nil, issues: [EffectAuthoringIssue(
+            message: "GLSL can't be compiled on this device: edit it where Flair's TypeScript adapter runs, then compile Metal for it (`flair export metal-document`). Undo to keep drawing the source the Metal was made from.",
+            severity: "error")])
+    }
+
+    func createRenderer(_ source: String, effectId: String, width: Int, height: Int) async throws -> EffectRenderer {
+        guard let provider else { throw EffectError("disposed", "The provider for \"\(effectId)\" was released. Open the effect again.", effectId: effectId) }
+        if flairSourceHash(source) != block.sourceHash {
+            throw EffectError.unsupported("\"\(effectId)\" has no Metal for this GLSL; compile it with `flair export metal-document`.", effectId)
+        }
+        return try provider.createRuntimeRenderer(block, width: width, height: height)
+    }
 }
 
 /// SHA-256 of a GLSL source's UTF-8 bytes, as lowercase hex (as `pnpm swift:meta` writes it).

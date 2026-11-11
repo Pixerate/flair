@@ -209,3 +209,31 @@ public struct AnyFlairEffect: Sendable, Equatable {
                 == rhs.samplerBindings.map { rhs.textureInput(for: $0.binding) }
     }
 }
+
+extension AnyFlairEffect {
+    /// A run-time effect, drawn by `FlairRenderer` once `loadLibrary` has compiled its `msl`.
+    public init(runtime effect: FlairRuntimeEffect) {
+        effectId = effect.effectId
+        effectName = effect.effectName
+        category = ""
+        effectDescription = ""
+        tags = []
+        phase = effect.samplerBindings.isEmpty ? 1 : 2
+        functionName = effect.functionName
+        uniformByteLength = effect.uniformByteLength
+        isTransparent = effect.isTransparent
+        loopDuration = nil
+        controls = effect.controls
+        samplerBindings = effect.samplerBindings
+        presetNames = []
+        _encodeUniforms = { ptr, state in effect.encodeUniforms(into: ptr, state: state) }
+        _textureInput = { binding in effect.textureInput(for: binding) }
+        _makePreset = { _ in AnyFlairEffect(runtime: effect) }
+        _encodeJSON = { try JSONEncoder().encode(effect.values) }
+        _decodeJSON = { data in
+            var next = effect
+            next.values = try JSONDecoder().decode([String: FlairJSONValue].self, from: data)
+            return AnyFlairEffect(runtime: next)
+        }
+    }
+}

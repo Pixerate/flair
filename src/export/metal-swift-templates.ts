@@ -883,6 +883,136 @@ public struct AnyFlairEffect: Sendable, Equatable {
                 == rhs.samplerBindings.map { rhs.textureInput(for: $0.binding) }
     }
 }
+
+extension AnyFlairEffect {
+    /// A run-time effect, drawn by \`FlairRenderer\` once \`loadLibrary\` has compiled its \`msl\`.
+    public init(runtime effect: FlairRuntimeEffect) {
+        effectId = effect.effectId
+        effectName = effect.effectName
+        category = ""
+        effectDescription = ""
+        tags = []
+        phase = effect.samplerBindings.isEmpty ? 1 : 2
+        functionName = effect.functionName
+        uniformByteLength = effect.uniformByteLength
+        isTransparent = effect.isTransparent
+        loopDuration = nil
+        controls = effect.controls
+        samplerBindings = effect.samplerBindings
+        presetNames = []
+        _encodeUniforms = { ptr, state in effect.encodeUniforms(into: ptr, state: state) }
+        _textureInput = { binding in effect.textureInput(for: binding) }
+        _makePreset = { _ in AnyFlairEffect(runtime: effect) }
+        _encodeJSON = { try JSONEncoder().encode(effect.values) }
+        _decodeJSON = { data in
+            var next = effect
+            next.values = try JSONDecoder().decode([String: FlairJSONValue].self, from: data)
+            return AnyFlairEffect(runtime: next)
+        }
+    }
+}
+`;
+
+export const FLAIR_RUNTIME_EFFECT_SWIFT = `import Foundation
+
+/**
+ * A shader compiled to Metal Shading Language outside this package (for instance by
+ * \`attachFlairMetal\` in \`@pixerate/flair/node\`, from GLSL edited after the package was built), with
+ * the \`std140\` layout of its \`FlairUniforms\` buffer. Wrap it with \`AnyFlairEffect(runtime:)\` to draw
+ * it with \`FlairRenderer\`, after \`FlairRenderer.loadLibrary(msl:functionName:timeoutMs:)\` has
+ * compiled its source.
+ */
+public struct FlairRuntimeEffect: Sendable, Equatable {
+    /// One scalar or vector control in the uniform buffer.
+    public struct Field: Sendable, Equatable {
+        public let name: String
+        public let type: FlairControlType
+        /// Byte offset in \`FlairUniforms\` (at least \`FlairFrameState.builtinByteLength\`).
+        public let offset: Int
+        /// The range values are clamped to (per component for vectors).
+        public let min: Float
+        public let max: Float
+        public let isColor: Bool
+
+        public init(name: String, type: FlairControlType, offset: Int, min: Float, max: Float, isColor: Bool = false) {
+            self.name = name
+            self.type = type
+            self.offset = offset
+            self.min = min
+            self.max = max
+            self.isColor = isColor
+        }
+    }
+
+    public let effectId: String
+    public let effectName: String
+    /// The fragment function in \`msl\`; it must not clash with a catalog effect's.
+    public let functionName: String
+    public let msl: String
+    public let uniformByteLength: Int
+    public let fields: [Field]
+    public let samplerBindings: [FlairSamplerBinding]
+    public let isTransparent: Bool
+    /// Control values by uniform name: numbers, booleans, channel arrays (or hex colour strings) and texture strings.
+    public var values: [String: FlairJSONValue]
+
+    public init(effectId: String, effectName: String, functionName: String, msl: String, uniformByteLength: Int, fields: [Field], samplerBindings: [FlairSamplerBinding] = [], isTransparent: Bool = false, values: [String: FlairJSONValue] = [:]) {
+        self.effectId = effectId
+        self.effectName = effectName
+        self.functionName = functionName
+        self.msl = msl
+        self.uniformByteLength = Swift.max(uniformByteLength, FlairFrameState.builtinByteLength)
+        self.fields = fields
+        self.samplerBindings = samplerBindings
+        self.isTransparent = isTransparent
+        self.values = values
+    }
+
+    /// Writes the built-ins and every field (clamped to its range; zero when it has no value) into \`buffer\` (\`uniformByteLength\` bytes).
+    public func encodeUniforms(into buffer: UnsafeMutableRawPointer, state: FlairFrameState) {
+        memset(buffer, 0, uniformByteLength)
+        state.encodeBuiltins(into: buffer)
+        for f in fields where f.offset >= FlairFrameState.builtinByteLength {
+            let value = values[f.name] ?? .null
+            func clamp(_ x: Float) -> Float { Swift.min(f.max, Swift.max(f.min, x)) }
+            switch f.type {
+            case .float:
+                if case .number(let n) = value { FlairUniformEncoder.writeFloat(clamp(Float(n)), to: buffer, at: f.offset) }
+            case .int:
+                if case .number(let n) = value { FlairUniformEncoder.writeInt(Int32(clamp(Float(n.rounded()))), to: buffer, at: f.offset) }
+            case .bool:
+                if case .bool(let b) = value { FlairUniformEncoder.writeBool(b, to: buffer, at: f.offset) }
+            case .vec2, .vec3, .vec4:
+                let count = f.type == .vec2 ? 2 : f.type == .vec3 ? 3 : 4
+                var channels: [Float]
+                switch value {
+                case .array(let a): channels = a.map(Float.init)
+                case .string(let s):
+                    guard let c = FlairJSONBag.parseHexColor(s) else { continue }
+                    channels = [c.x, c.y, c.z, c.w]
+                default: continue
+                }
+                for i in 0..<count {
+                    FlairUniformEncoder.writeFloat(clamp(i < channels.count ? channels[i] : 0), to: buffer, at: f.offset + i * 4)
+                }
+            case .sampler2D, .path:
+                continue
+            }
+        }
+    }
+
+    /// The texture a sampler shows: a texture string value (a sample image or SVG path data), else none.
+    public func textureInput(for binding: Int) -> FlairTextureInput {
+        guard let b = samplerBindings.first(where: { $0.binding == binding }), case .string(let s)? = values[b.name] else { return .none }
+        return FlairTextureInput.fromControlString(s, defaultFit: b.pathFit, defaultMargin: b.pathMargin)
+    }
+
+    /// Control descriptors (fields, then samplers), as \`AnyFlairEffect.controls\` lists them.
+    public var controls: [FlairControlDescriptor] {
+        fields.map { FlairControlDescriptor(name: $0.name, property: $0.name, type: $0.type, label: $0.name, isColor: $0.isColor, min: $0.min, max: $0.max) }
+            + samplerBindings.map { FlairControlDescriptor(name: $0.name, property: $0.property, type: $0.type, label: $0.name, filter: $0.filter, wrap: $0.wrap, pathFit: $0.pathFit, pathMargin: $0.pathMargin) }
+    }
+}
 `;
 
 export const FLAIR_PATH_AND_TEXT_SWIFT = `import CoreGraphics
@@ -1680,6 +1810,8 @@ public enum FlairRendererError: Error, LocalizedError, Sendable {
     case shaderSourceNotFound(String)
     case shaderFunctionNotFound(String)
     case textureCreationFailed
+    /// Compiling an effect's shader took longer than the allowed ms (\`prepare(anyEffect:timeoutMs:)\`).
+    case compileTimedOut(String, Double)
 
     public var errorDescription: String? {
         switch self {
@@ -1693,6 +1825,8 @@ public enum FlairRendererError: Error, LocalizedError, Sendable {
             return "Could not find Metal fragment function '\\(name)'."
         case .textureCreationFailed:
             return "Could not allocate target MTLTexture."
+        case .compileTimedOut(let id, let ms):
+            return "Compiling the Metal shader for '\\(id)' took longer than \\(Int(ms)) ms."
         }
     }
 }
@@ -1752,6 +1886,60 @@ public final class FlairRenderer: @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
         textureCache.removeAll()
+    }
+
+    /**
+     * Compiles \`effect\`'s pipeline for \`pixelFormat\` now, unless it is cached already, and waits at
+     * most \`timeoutMs\` for it. Past that it throws \`compileTimedOut\`; the compile still finishes in
+     * the background and is cached, so a later render (or \`prepare\`) uses it. Shaders in the
+     * package's default library (an Xcode build) are ready at once; a SwiftPM build compiles the
+     * bundled \`.metal\` source on first use, which this bounds.
+     */
+    public func prepare(anyEffect effect: AnyFlairEffect, pixelFormat: MTLPixelFormat = .rgba8Unorm, timeoutMs: Double) throws {
+        let key = PipelineKey(functionName: effect.functionName, pixelFormat: pixelFormat.rawValue, isTransparent: false)
+        if lock.withLock({ pipelines[key] }) != nil { return }
+        final class Outcome: @unchecked Sendable { var error: Error? }
+        let outcome = Outcome()
+        let done = DispatchSemaphore(value: 0)
+        DispatchQueue.global(qos: .userInitiated).async {
+            do {
+                _ = try self.pipelineState(functionName: effect.functionName, effectId: effect.effectId, pixelFormat: pixelFormat, isTransparent: false)
+            } catch {
+                outcome.error = error
+            }
+            done.signal()
+        }
+        if done.wait(timeout: .now() + .milliseconds(max(0, Int(timeoutMs)))) == .timedOut {
+            throw FlairRendererError.compileTimedOut(effect.effectId, timeoutMs)
+        }
+        if let error = outcome.error { throw error }
+    }
+
+    /**
+     * Compiles a run-time effect's Metal source (\`FlairRuntimeEffect.msl\`) so \`functionName\` can be
+     * drawn, waiting at most \`timeoutMs\`. Past that it throws \`compileTimedOut\`; the compile finishes
+     * in the background and is kept. A source that doesn't compile, or has no \`functionName\`, throws
+     * the compiler's error. Loading the same function again does nothing.
+     */
+    public func loadLibrary(msl: String, functionName: String, timeoutMs: Double) throws {
+        if lock.withLock({ functionLibraries[functionName] }) != nil { return }
+        final class Outcome: @unchecked Sendable { var error: Error? }
+        let outcome = Outcome()
+        let done = DispatchSemaphore(value: 0)
+        let opts = MTLCompileOptions()
+        opts.fastMathEnabled = true
+        device.makeLibrary(source: msl, options: opts) { [weak self] library, error in
+            if let library, library.makeFunction(name: functionName) != nil {
+                self?.lock.withLock { self?.functionLibraries[functionName] = library }
+            } else {
+                outcome.error = error ?? FlairRendererError.shaderFunctionNotFound(functionName)
+            }
+            done.signal()
+        }
+        if done.wait(timeout: .now() + .milliseconds(max(0, Int(timeoutMs)))) == .timedOut {
+            throw FlairRendererError.compileTimedOut(functionName, timeoutMs)
+        }
+        if let error = outcome.error { throw error }
     }
 
     /// Renders \`effect\` into \`targetTexture\`.
