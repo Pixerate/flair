@@ -72,6 +72,7 @@ export const PAINT_HINTS: Readonly<Record<string, EffectPaintHint>> = {
   "glass-tube": { map: "path", colors: ["uColorA", "uColorC"], values: { ...clear, uDrawOn: 0 } },
   "glass-writing": { map: "path", colors: ["uColorA", "uColorC"], values: { ...clear, uDrawOn: 0 }, size: 32 },
   "swoosh-underline": { map: "path", colors: ["uColor", "uCore"], values: { uAnimate: false, uSecond: false } },
+  "light-painting": { map: "path", values: clear },
   "border-beam": { map: "path", colors: ["uHead", "uTail"], live: true },
 
   // Materials bent along the stroke.
@@ -116,6 +117,7 @@ export const PAINT_HINTS: Readonly<Record<string, EffectPaintHint>> = {
   "lava-lamp": { map: "canvas", colors: ["uBlobA", "uBlobB"], values: clear, live: true },
   veins: { map: "canvas", colors: ["uVein", "uPulse"], values: clear, live: true },
   "dot-wave": { map: "canvas", colors: ["uDot"], values: clear, live: true },
+  "neon-ripple": { map: "canvas", colors: ["uNeon"], values: clear, live: true },
   "hex-pulse": { map: "canvas", colors: ["uEdge", "uFill"], values: clear, live: true },
   moire: { map: "canvas", colors: ["uInk", "uPaper"], live: true },
   kaleidoscope: { map: "canvas", colors: ["uTint"], live: true },
