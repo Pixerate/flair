@@ -93,6 +93,7 @@
     "version-packages": "changeset version && node -e \"const fs = require('fs'); const file = '.claude-plugin/plugin.json'; const plugin = JSON.parse(fs.readFileSync(file, 'utf8')); plugin.version = require('./package.json').version; fs.writeFileSync(file, JSON.stringify(plugin, null, 2) + '\\n');\"",
     "release": "changeset publish",
     "catalog:meta": "UPDATE_CATALOG_META=1 vitest run src/catalog/lazy.test.ts",
+    "swift:meta": "UPDATE_SWIFT_EFFECTS=1 vitest run src/integrations/swift-effects.test.ts",
     "scene:runtime": "UPDATE_SCENE_RUNTIME=1 vitest run src/scene/runtime.test.ts"
   },
   "keywords": [

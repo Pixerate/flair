@@ -9,8 +9,8 @@ import PackageDescription
 let package = Package(
     name: "FlairEffects",
     platforms: [
-        .macOS(.v12),
-        .iOS(.v15),
+        .macOS(.v14),
+        .iOS(.v17),
     ],
     products: [
         .library(
