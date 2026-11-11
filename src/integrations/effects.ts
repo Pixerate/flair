@@ -66,6 +66,7 @@ import type { LiveSource } from "../shader/textures.js";
 import type { SvgMotion } from "../vector/motion.js";
 import { svgDuration, svgView } from "../vector/svg.js";
 import { instantiateTemplate as fillTemplate, type SceneTemplate, type TemplateValues } from "../scene/template.js";
+import { pathTrail } from "./path-trail.js";
 import { sequenceOf, templateDescriptionOf, templateSummaryOf } from "./templates.js";
 
 /** Draws one frame of an animated SVG as pixels (see {@link FlairEffectsOptions.rasterizeSvg}). */
@@ -488,7 +489,9 @@ export async function drawShaderFrame(
   frame: { width: number; height: number; depth: 8 | 16 | 32; duration: number; disposed: () => boolean },
 ): Promise<EffectPixels> {
   const given = request.inputs ?? {};
-  const flair = { ...values };
+  // A trail effect given its path as points draws the whole path as its trail (see path-trail.ts).
+  const traced = pathTrail(plan.controls, values, frame.height, request.time / 1000);
+  const flair = { ...(traced?.values ?? values) };
   for (const input of plan.inputs) {
     const source = given[input.name];
     pipeline.setInput(0, input.uniform, source ? passInput(source) : null);
@@ -508,7 +511,7 @@ export async function drawShaderFrame(
   // The effect's own sample pictures: a failure shows black where they go rather than failing the frame.
   await pipeline.ready().catch(() => undefined);
   if (frame.disposed()) throw new EffectDisposedError(plan.meta.id);
-  pipeline.render(request.time / 1000);
+  pipeline.render(request.time / 1000, traced ? { trail: traced.trail } : {});
   const data = pipeline.readImageData().data;
   return { width: frame.width, height: frame.height, data, ...(frame.depth > 8 ? { float: pipeline.readFloatPixels() } : {}) };
 }
