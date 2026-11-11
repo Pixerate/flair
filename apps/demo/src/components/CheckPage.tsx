@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { compileShader, createContext, parseControls, ShaderFrames, type ControlValue } from "@pixerate/flair";
-import { SAMPLE_IMAGES, SHADER_EFFECTS, type ShaderEffect } from "@pixerate/flair/catalog";
+import { PAINT_HINTS, SAMPLE_IMAGES, SHADER_EFFECTS, type ShaderEffect } from "@pixerate/flair/catalog";
+import { flairEffects } from "@pixerate/flair/integrations";
 
 interface Result {
   id: string;
@@ -74,9 +75,71 @@ async function checkIcon(effect: ShaderEffect): Promise<Result> {
   return { id: `${effect.id} (icon)`, ok: errors.length === 0, errors };
 }
 
+/** The sample stroke paint is checked along: an S-curve across a 64 × 64 frame, as points in pixels from the top left. */
+const PAINT_SIZE = 64;
+const PAINT_STROKE: number[] = Array.from({ length: 17 }, (_, i) => {
+  const t = i / 16;
+  return [8 + 48 * t, 32 - 16 * Math.sin(t * Math.PI * 2)];
+}).flat();
+
+/** A pixel's distance from the sample stroke. */
+function strokeDistance(x: number, y: number): number {
+  let best = Infinity;
+  for (let i = 0; i + 3 < PAINT_STROKE.length; i += 2) {
+    const [ax, ay, bx, by] = PAINT_STROKE.slice(i, i + 4) as [number, number, number, number];
+    const dx = bx - ax;
+    const dy = by - ay;
+    const t = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy || 1)));
+    best = Math.min(best, Math.hypot(x - ax - t * dx, y - ay - t * dy));
+  }
+  return best;
+}
+
+const paintProvider = flairEffects({ kinds: ["shader"] });
+
+/**
+ * Renders a hinted effect as an editor paints with it: its hint's values over its defaults, at
+ * 64 × 64, a path effect given the sample stroke. It must draw something, and a path effect must
+ * stay mostly clear away from the stroke.
+ */
+async function checkPaint(id: string): Promise<Result> {
+  const errors: string[] = [];
+  try {
+    const description = await paintProvider.describe(id);
+    const paint = description.paint!;
+    const properties = description.controls.properties as Record<string, { anyOf?: { format?: string }[] }>;
+    const pathControl = Object.keys(properties).find((k) => properties[k]!.anyOf?.some((o) => o.format === "svg-path"));
+    const values = { ...paint.values, ...(paint.map === "path" && pathControl && { [pathControl]: PAINT_STROKE }) };
+    const renderer = await paintProvider.createRenderer(id, { width: PAINT_SIZE, height: PAINT_SIZE });
+    try {
+      const { data } = await renderer.render({ time: 1500, values });
+      let drawn = 0;
+      let outside = 0;
+      let clearOutside = 0;
+      for (let y = 0; y < PAINT_SIZE; y++) {
+        for (let x = 0; x < PAINT_SIZE; x++) {
+          const alpha = data[(y * PAINT_SIZE + x) * 4 + 3]!;
+          if (alpha > 16) drawn += 1;
+          if (strokeDistance(x + 0.5, y + 0.5) > 14) {
+            outside += 1;
+            if (alpha <= 16) clearOutside += 1;
+          }
+        }
+      }
+      if (drawn < 8) errors.push(`painted with its hint, it draws almost nothing (${drawn} pixels)`);
+      if (paint.map === "path" && clearOutside / outside < 0.75) errors.push(`as path paint, only ${((clearOutside / outside) * 100).toFixed(0)}% of the frame away from the stroke is clear`);
+    } finally {
+      renderer.dispose();
+    }
+  } catch (e) {
+    errors.push(e instanceof Error ? e.message : String(e));
+  }
+  return { id: `${id} (paint)`, ok: errors.length === 0, errors };
+}
+
 /**
  * `#check`: compiles every catalog shader on this browser's GPU, renders the
- * image effects with a transparent icon, and lists the results (also as
+ * image effects with a transparent icon and each paint hint along a stroke, and lists the results (also as
  * `window.flairCheck`, for automated runs).
  */
 export function CheckPage() {
@@ -101,6 +164,7 @@ export function CheckPage() {
       const rendered: Result[] = [];
       // One at a time: browsers cap live WebGL contexts.
       for (const effect of PICTURE_EFFECTS) rendered.push(await checkIcon(effect));
+      for (const id of Object.keys(PAINT_HINTS)) rendered.push(await checkPaint(id));
       if (cancelled) return;
       const out = [...compiled, ...rendered];
       (window as unknown as { flairCheck: Result[] }).flairCheck = out;

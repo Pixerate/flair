@@ -12,4 +12,15 @@
  * @packageDocumentation
  */
 
-export { ENDLESS_PLAY_MS, flairEffects, FLAIR_PROVIDER_ID, type FlairEffectsOptions, type SvgRasterizer } from "./effects.js";
+export {
+  ENDLESS_PLAY_MS,
+  flairEffects,
+  FLAIR_PROVIDER_ID,
+  type EffectPaint,
+  type FlairEffectDescription,
+  type FlairEffectProvider,
+  type FlairEffectProviderCapabilities,
+  type FlairEffectsOptions,
+  type FlairEffectSummary,
+  type SvgRasterizer,
+} from "./effects.js";

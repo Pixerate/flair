@@ -25,6 +25,11 @@ import PixeratePaint
  * picture (a filter's source, a transition's start) where it is 0. Vector, motion, camera and timing
  * effects and float pixels are not offered here yet.
  *
+ * Effects that make good paint carry a `paint` hint on their summaries and descriptions, as
+ * `flairEffects()` gives it (`map`: `path`, `stroke` or `canvas`; `colors`; `values`; `live`; and
+ * `repeat` for `stroke`, `size` when suggested), and `capabilities.paintHints` says effects without
+ * one are not meant as paint.
+ *
  * Authoring (`openAuthoring`, the editor's `effect_authoring_*` tools) edits a catalog effect's
  * values, presets, keyframes and timing with the editor's generic session. A document saved by
  * either adapter opens again here when its shader is the catalog's: the Swift adapter draws Flair's
@@ -72,6 +77,8 @@ public final class FlairEffectProvider: AuthoringEffectProvider {
             "supportsCamera": false,
             "supportsTiming": false,
             "supportsTemplates": false,
+            // Effects that make good paint say how (`paint` on their descriptions); the rest are not meant as paint.
+            "paintHints": true,
             "maxSize": .number(Double(maxSize)),
         ]
     }
