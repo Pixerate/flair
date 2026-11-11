@@ -24,7 +24,7 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/Pixerate/editor.git", from: "0.39.0"),
+        .package(url: "https://github.com/Pixerate/editor.git", from: "0.41.0"),
     ],
     targets: [
         .target(

@@ -1,18 +1,24 @@
+import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { EFFECT_META } from "../catalog/lazy.js";
+import { EFFECT_META, loadEffect } from "../catalog/lazy.js";
 import { flairEffects, planOf } from "./effects.js";
 
 /**
  * The Swift adapter (`FlairEditorEffects`, the `EffectProvider` of the editor's Swift package)
  * describes Flair's Metal effects exactly as `flairEffects()` describes them, from a file written
- * here: each effect's description, with the image control each of its inputs fills. When the
- * catalog or the Metal package changes, this test fails until the file is written again with
- * `pnpm swift:meta` (which runs it with UPDATE_SWIFT_EFFECTS=1).
+ * here: each effect's description, with the image control each of its inputs fills and a hash of
+ * the GLSL its Metal shader was made from (so Swift can tell a saved document still uses that
+ * shader). When the catalog or the Metal package changes, this test fails until the file is written
+ * again with `pnpm swift:meta` (which runs it with UPDATE_SWIFT_EFFECTS=1).
+ *
+ * It also writes a document saved by the TypeScript adapter's authoring session, which the Swift
+ * tests open, draw and save again: documents cross between the two adapters.
  */
 const SHADERS_DIR = resolve("swift/Sources/FlairEffects/Shaders");
 const OUT_FILE = resolve("swift/Sources/FlairEditorEffects/Resources/flair-effects.json");
+const DOCUMENT_FIXTURE = resolve("swift/Tests/FlairEditorEffectsTests/Fixtures/aurora-ts-document.json");
 
 /** The shader effects the Metal package has: one `.metal` file each. */
 function metalIds(): Set<string> {
@@ -23,6 +29,9 @@ function metalIds(): Set<string> {
   );
 }
 
+/** SHA-256 of a GLSL source's UTF-8 bytes, as hex (`flairSourceHash` in Swift). */
+const sourceHash = (source: string) => createHash("sha256").update(source, "utf8").digest("hex");
+
 async function generate(): Promise<string> {
   const ids = metalIds();
   const provider = flairEffects({ kinds: ["shader"] });
@@ -31,15 +40,34 @@ async function generate(): Promise<string> {
     if (meta.kind !== "shader" || !ids.has(meta.id)) continue;
     const plan = planOf(meta);
     const description = await provider.describe(meta.id);
+    const effect = await loadEffect(meta.id);
+    if (effect.kind !== "shader") continue;
     const entry = {
       description,
       // Input name → the image control (Metal sampler) it fills.
       inputs: Object.fromEntries(plan.inputs.map((i) => [i.name, i.uniform])),
       ...(plan.transition && { transition: true }),
+      sourceHash: sourceHash(effect.source),
     };
     lines.push(JSON.stringify(entry));
   }
   return `{"generatedBy":"pnpm swift:meta (src/integrations/swift-effects.test.ts)","effects":[\n${lines.join(",\n")}\n]}\n`;
+}
+
+/** A document the TypeScript adapter saves: Aurora with a preset, a changed value, keyframes, timing and a saved preset. */
+async function tsDocument(): Promise<string> {
+  const session = await flairEffects({ kinds: ["shader"] }).openAuthoring!({ effectId: "aurora", preset: "Ember" });
+  try {
+    const ok = (r: { ok: boolean; message?: string }) => expect(r.message).toBeUndefined();
+    ok(session.setTiming({ duration: 3000, loop: true }));
+    ok(session.setValue("uSpeed", 0.8));
+    ok(session.setKeyframe("uIntensity", 0, 0.2));
+    ok(session.setKeyframe("uIntensity", 2000, 1.4, "ease-in-out"));
+    ok(session.savePreset("Saved on the web"));
+    return `${JSON.stringify(session.exportDocument(), null, 2)}\n`;
+  } finally {
+    session.dispose();
+  }
 }
 
 describe("the Swift adapter's effect descriptions", () => {
@@ -49,5 +77,14 @@ describe("the Swift adapter's effect descriptions", () => {
     const parsed = JSON.parse(text) as { effects: { description: { id: string } }[] };
     expect(parsed.effects.length).toBe([...metalIds()].filter((id) => EFFECT_META.some((m) => m.id === id && m.kind === "shader")).length);
     expect(existsSync(OUT_FILE) && readFileSync(OUT_FILE, "utf8") === text, "Run `pnpm swift:meta`: the catalog or the Metal package has changed.").toBe(true);
+  });
+
+  it("come with a document the TypeScript adapter saved, for the Swift tests to open (pnpm swift:meta writes it)", async () => {
+    const text = await tsDocument();
+    if (process.env.UPDATE_SWIFT_EFFECTS) writeFileSync(DOCUMENT_FIXTURE, text);
+    const doc = JSON.parse(text) as { flair: { effect: { source: string } } };
+    // The Swift adapter draws it with Aurora's Metal shader because its GLSL is the catalog's.
+    expect(sourceHash(doc.flair.effect.source)).toBe(sourceHash(((await loadEffect("aurora")) as { source: string }).source));
+    expect(existsSync(DOCUMENT_FIXTURE) && readFileSync(DOCUMENT_FIXTURE, "utf8") === text, "Run `pnpm swift:meta`: the TypeScript adapter's documents have changed.").toBe(true);
   });
 });

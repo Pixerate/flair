@@ -116,10 +116,11 @@ func checkEffectProvider(_ provider: EffectProvider, ids only: [String]? = nil, 
     var issues: [EffectProviderIssue] = []
     func top(_ m: String) { issues.append(EffectProviderIssue(effectId: nil, message: m)) }
     if provider.id.isEmpty { top("provider has no id") }
-    for k in ["supportsWorker", "supportsFloat", "supportsMask", "supportsHostImages", "supportsVector"] where provider.capabilities[k]?.boolValue == nil {
+    for k in ["supportsWorker", "supportsFloat", "supportsMask", "supportsHostImages", "supportsVector", "supportsAuthoring"] where provider.capabilities[k]?.boolValue == nil {
         top("capabilities.\(k) is not a boolean")
     }
     if provider.capabilities["supportsVector"] == .bool(true) && !(provider is VectorEffectProvider) { top("supportsVector is set but applyVectorEffect is missing") }
+    if provider.capabilities["supportsAuthoring"] == .bool(true) && !(provider is AuthoringEffectProvider) { top("supportsAuthoring is set but openAuthoring is missing") }
 
     let list = try await provider.list()
     var ids: [String] = []
@@ -148,5 +149,44 @@ func checkEffectProvider(_ provider: EffectProvider, ids only: [String]? = nil, 
         checkDescription(id, d, &issues)
         if d.kind == "shader" { await checkRender(provider, d, size, &issues) }
     }
+    if provider.capabilities["supportsAuthoring"] == .bool(true), let authoring = provider as? AuthoringEffectProvider {
+        await checkAuthoring(authoring, only ?? ids, &issues)
+    }
     return issues
+}
+
+/// The TS conformance's authoring checks: state identity, refusals that change nothing, undo, and a document round trip.
+private func checkAuthoring(_ provider: AuthoringEffectProvider, _ ids: [String], _ issues: inout [EffectProviderIssue]) async {
+    var target: EffectDescription?
+    for id in ids {
+        if let d = try? await provider.describe(id), !["motion", "vector", "camera", "timing"].contains(d.kind) {
+            target = d
+            break
+        }
+    }
+    guard let target else { return }
+    func at(_ m: String) { issues.append(EffectProviderIssue(effectId: target.id, message: m)) }
+    do {
+        let session = try await provider.openAuthoring(.effect(target.id))
+        let s1 = session.getState()
+        if session.getState() !== s1 { at("session.getState() returned different objects without changes") }
+        checkDescription(target.id, s1.description, &issues)
+        let bad = session.setValue("__no_such_control__", 123)
+        if bad.isOK { at("setValue with unknown control did not fail") } else if session.getState() !== s1 { at("setValue with unknown control changed state") }
+        if let first = target.controlNames.first, let value = target.defaults[first] {
+            _ = session.setValue(first, value)
+            if !session.getState().canUndo { at("setValue did not enable canUndo") }
+            if !session.undo() { at("undo() returned false") }
+        }
+        let doc = try JSONValue.parse(Data(JSONValue.object(session.exportDocument().json).stringified().utf8))
+        let restored = try await provider.openAuthoring(.document(doc))
+        if JSONValue.object(restored.getState().values).stringified() != JSONValue.object(session.getState().values).stringified() {
+            at("reopening exported document gave different values")
+        }
+        restored.dispose()
+        if s1.sourceLanguage != nil && !session.canEditSource { at("sourceLanguage is not null but setSource is missing") }
+        session.dispose()
+    } catch {
+        at("authoring check failed: \(codeOf(error))")
+    }
 }
