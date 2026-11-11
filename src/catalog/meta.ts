@@ -9,6 +9,7 @@
 import { humanise, type ControlDef, type ControlValue } from "../shader/controls.js";
 import type { EffectInputs } from "./inputs.js";
 import { SAMPLE_IMAGES } from "./images.js";
+import { paintHint, type EffectPaintHint } from "./paint.js";
 import type { CameraRole, EffectCategory, EffectDefinition, VideoUse } from "./types.js";
 import type { SvgTrigger } from "../vector/svg.js";
 
@@ -51,6 +52,8 @@ export interface EffectMeta {
   duration?: number;
   /** Whether this effect is compiled into the `FlairEffects` Swift/Metal package. */
   swiftReady?: boolean;
+  /** How it makes good paint in an editor that paints with effects; absent when it does not (see `PAINT_HINTS`). */
+  paint?: EffectPaintHint;
 }
 
 /** An effect's metadata, from its definition (given its controls and inputs, which the catalog works out). */
@@ -74,7 +77,19 @@ export function metaOf(effect: EffectDefinition, controls: readonly ControlDef[]
           : {}),
     animated: effect.kind !== "shader" || /\biTime\b/.test(effect.source),
     ...(duration !== undefined && { duration }),
+    ...(paintOf(effect, controls) && { paint: paintHint(effect.id)! }),
   };
+}
+
+/**
+ * Whether a catalog effect's paint hint applies to `effect`: a shader with
+ * that id whose controls are the hint's (an edited copy may have lost some).
+ */
+function paintOf(effect: EffectDefinition, controls: readonly ControlDef[]): boolean {
+  const hint = effect.kind === "shader" ? paintHint(effect.id) : undefined;
+  if (!hint) return false;
+  const names = new Set(controls.map((c) => c.name));
+  return [...(hint.colors ?? []), ...Object.keys(hint.values ?? {})].every((name) => names.has(name)) && (hint.map !== "path" || controls.some((c) => c.type === "path"));
 }
 
 /**

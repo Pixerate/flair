@@ -262,6 +262,16 @@
         "transparent": false,
         "loop": false,
         "duration": 4000,
+        "paint": {
+          "map": "stroke",
+          "colors": [
+            "uGlowA",
+            "uGlowB"
+          ],
+          "values": {},
+          "live": true,
+          "repeat": "mirror"
+        },
         "controls": {
           "$schema": "https://json-schema.org/draft/2020-12/schema",
           "title": "Aurora controls",

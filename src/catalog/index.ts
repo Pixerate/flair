@@ -197,6 +197,7 @@ export {
 } from "./timing.js";
 export { controlSchema, controlsSchema, controlUnit, type JsonSchema, type SchemaOptions } from "../shader/schema.js";
 export { SCENE_TEMPLATES, sceneTemplate } from "./templates.js";
+export { PAINT_HINTS, PAINT_MAPS, PAINT_REPEATS, paintHint, type EffectPaintHint, type PaintMap, type PaintRepeat } from "./paint.js";
 export { FBM, glsl, HASH, NOISE, OKLAB_MIX, PALETTE, PATH, ROTATE, SPECTRUM } from "./glsl.js";
 
 /** The catalog's shader effects. */

@@ -5,6 +5,7 @@ import { EFFECTS } from "../catalog/index.js";
 import { SCENE_TEMPLATES } from "../catalog/templates.js";
 import type { Scene } from "../scene/types.js";
 import { EFFECT_META } from "../catalog/lazy.js";
+import { PAINT_HINTS } from "../catalog/paint.js";
 import { PRIMITIVES } from "../motion/library.js";
 import { installFakeImages, installFakeWebGl, type FakeGl } from "../shader/test-utils.js";
 import { ENDLESS_PLAY_MS } from "./effects.js";
@@ -125,6 +126,41 @@ describe("the catalog as the contract sees it", () => {
     expect((await shaders.list()).every((e) => e.kind === "shader")).toBe(true);
     expect(shaders.capabilities.supportsVector).toBe(false);
     expect(await failure(() => shaders.describe("entrance.pop"))).toMatchObject({ code: "unknown_effect" });
+  });
+});
+
+describe("paint hints", () => {
+  it("declares paintHints, and gives each hinted effect its hint on its summary and description", async () => {
+    const { provider } = setup();
+    expect(provider.capabilities.paintHints).toBe(true);
+    const painted = (await provider.list()).filter((s) => s.paint);
+    expect(painted.map((s) => s.id).sort()).toEqual(Object.keys(PAINT_HINTS).sort());
+    for (const summary of painted) expect((await provider.describe(summary.id)).paint, summary.id).toEqual(summary.paint);
+    expect((await provider.describe("planet")).paint).toBeUndefined();
+    expect((await provider.describe("click-ripple")).paint).toBeUndefined();
+  });
+
+  it("fills in what the hint leaves out: colours, values, live and a strip's repeat", async () => {
+    const { provider } = setup();
+    expect((await provider.describe("lava-flow")).paint).toEqual({ map: "stroke", colors: ["uLava", "uHot"], values: {}, live: true, repeat: "mirror" });
+    expect((await provider.describe("glass-writing")).paint).toEqual({ map: "path", colors: ["uColorA", "uColorC"], values: { uBackgroundAlpha: 0, uDrawOn: 0 }, live: false, size: 32 });
+    expect((await provider.describe("comet-trail")).paint).toEqual({ map: "path", colors: ["uTail", "uHead"], values: {}, live: true });
+    expect((await provider.describe("starfield")).paint).toMatchObject({ map: "canvas", colors: ["uStar"], live: true });
+  });
+
+  it("gives hints an editor can apply as they are: colours and values its controls take, and a path control for path paint", async () => {
+    const { provider } = setup({ kinds: ["shader"] });
+    for (const id of Object.keys(PAINT_HINTS)) {
+      const d = await provider.describe(id);
+      const paint = d.paint!;
+      const properties = d.controls.properties as Record<string, { anyOf?: { format?: string }[] }>;
+      for (const name of [...paint.colors, ...Object.keys(paint.values)]) expect(properties[name], `${id}: ${name}`).toBeDefined();
+      if (paint.map === "path") expect(Object.values(properties).some((p) => p.anyOf?.some((o) => o.format === "svg-path")), id).toBe(true);
+      // Applied over the defaults, the hint's values render.
+      const renderer = await provider.createRenderer(id, { width: 8, height: 8 });
+      await expect(renderer.render({ time: 500, values: paint.values })).resolves.toMatchObject({ width: 8, height: 8 });
+      renderer.dispose();
+    }
   });
 });
 

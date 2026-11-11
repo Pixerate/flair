@@ -126,6 +126,25 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: "true"
 
+      # SwiftPM resolves plain semantic version tags only, not changesets' `@pixerate/flair@x.y.z`
+      # tags, so each release commit also gets `x.y.z`: Swift apps then depend on Flair with
+      # `.package(url: "https://github.com/Pixerate/flair.git", from: "x.y.z")`.
+      - name: Tag the release for SwiftPM
+        if: steps.changeset_check.outputs.should_release == 'true' && (steps.version.outputs.bumped == 'true' || github.event_name == 'workflow_dispatch')
+        run: |
+          version=$(node -p "require('./package.json').version")
+          release=$(git rev-parse -q --verify "refs/tags/@pixerate/flair@$version^{commit}" || git rev-parse HEAD)
+          if existing=$(git rev-parse -q --verify "refs/tags/$version^{commit}"); then
+            if [ "$existing" = "$release" ]; then
+              echo "$version already tags the release commit."
+              exit 0
+            fi
+            echo "::error::$version already exists on $existing, not on the release commit $release."
+            exit 1
+          fi
+          git tag -a "$version" "$release" -m "@pixerate/flair $version (Swift package)"
+          echo "Tagged $version for SwiftPM."
+
       - name: Push release tags
         if: steps.changeset_check.outputs.should_release == 'true' && (steps.version.outputs.bumped == 'true' || github.event_name == 'workflow_dispatch')
         run: git push origin --tags
