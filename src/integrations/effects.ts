@@ -124,7 +124,8 @@ function wantsText(wants: string): string {
   return "a picture";
 }
 
-function planOf(meta: EffectMeta): Plan {
+/** How the contract sees a catalog effect: its uses, the image controls its inputs fill, and the controls it shows. */
+export function planOf(meta: EffectMeta): Plan {
   // A camera move draws no picture: it has no inputs (its preview picture is Flair's own) and only the use "camera".
   const move = meta.kind === "camera" ? getCameraMove(meta.id) : undefined;
   if (move) return { meta, uses: ["camera"], inputs: [], controls: cameraMoveControls(move), transition: false };

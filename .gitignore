@@ -14,3 +14,4 @@ swift/.build/
 /.build/
 /.swiftpm/
 swift/.swiftpm/
+/Package.resolved

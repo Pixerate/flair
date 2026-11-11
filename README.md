@@ -1034,7 +1034,7 @@ Limits: vector frames are drawn with `svgFrameMarkup`, so a change `along` a pat
 
 #### Swift & Metal (`FlairEffects`)
 
-Every catalog shader effect compiles to Metal Shading Language (MSL 2.1) and ships as a native Swift package in [`swift/`](./swift) (`FlairEffects`, targeting iOS 15+ and macOS 12+):
+Every catalog shader effect compiles to Metal Shading Language (MSL 2.1) and ships as a native Swift package in [`swift/`](./swift) (`FlairEffects`, targeting iOS 17+ and macOS 14+):
 
 - **441 shader effects**, typed as `FlairEffect & Sendable & Equatable & Codable` structs (`MeshGradient`, `Aurora`, `Crt`, `LiquidGlass`, …) with `@control` properties, presets, `std140` uniform packing, and web-compatible `Codable` JSON (`uSpeed`, hex or `[r, g, b]` colours).
 - **Textures, text & SVG paths**: `sampler2D` inputs bind at `[[texture(0..7)]]` alongside a bilinear clamp sampler at `[[sampler(0)]]`, with native `FlairTextRasterizer` (CoreText) and `FlairPathRasterizer` (packs SVG path data or pixel points into the same `256 × 2` point texture as the web `pathTexture`, so the shader's `PATH` helpers fit it to the frame).
@@ -1063,6 +1063,26 @@ struct HeroCard: View {
     }
 }
 ```
+
+##### Flair in the Pixerate editors' Swift package (`FlairEditorEffects`)
+
+`FlairEditorEffects` is the Swift side of `flairEffects()`: `FlairEffectProvider` implements the `EffectProvider` of the [Pixerate editors' Swift package](https://github.com/Pixerate/editor) (`PixeratePaint`), so a Swift editor gets Flair's Metal shaders as effect paper, effect layers, fills and effect paint, saved and replayed like any provider's. The editor never depends on Flair; the product is optional, so an app that only takes `FlairEffects` never fetches the editor.
+
+```swift
+.product(name: "FlairEditorEffects", package: "flair"),
+```
+
+```swift
+import FlairEditorEffects
+import PixeratePaint
+
+let controller = try PaintEditorController(width: 1024, height: 768)
+controller.setEffectsProvider(FlairEffectProvider())
+_ = try await controller.addEffectLayer("aurora", values: ["uSpeed": 0.5])
+_ = try await controller.fillLayerWithEffect("image-duotone") // a filter: the layer is its source
+```
+
+It offers every shader in `FlairEffects`, described exactly as `flairEffects()` describes them (ids, uses, controls as JSON Schema, defaults, presets, inputs and durations, written by `pnpm swift:meta` into `swift/Sources/FlairEditorEffects/Resources/flair-effects.json`), so a document saved by a web editor opens in a Swift one and the other way round. Renderers draw on the GPU and return straight-alpha RGBA8: a filter's `source` and a transition's `from` / `to` are the shader's pictures, a transition follows `progress` (else `time` over its duration), colours take any CSS form the schema allows, and a mask keeps the untouched picture where it is 0. Refusals are `EffectError`s that say what to do (`unknown_effect`, `invalid_values`, `unsupported`, `disposed`). Not yet offered: vector and motion effects (`VectorEffectProvider`), camera moves, timing effects, float pixels and authoring.
 
 Use `npx flair effects --swift` (or `findEffects({ swiftReady: true })` / `findEffectMeta({ swiftReady: true })`) to filter catalog effects available in `FlairEffects`. After adding or editing a shader in the catalog, regenerate the Metal shaders and Swift sources with `npx flair export metal` (requires `glslangValidator` and `spirv-cross`, e.g. `brew install glslang spirv-cross`; add `--verify` on macOS to compile-check every `.metal` file with `xcrun -sdk macosx metal`). From Node, `compileShaderToMetal` and `exportMetalPackage` from `@pixerate/flair/node` run the same pipeline programmatically.
 
