@@ -1047,10 +1047,10 @@ Every catalog shader effect compiles to Metal Shading Language (MSL 2.1) and shi
 - **Interactive built-ins**: `iPointer`, `iClicks`, `iTrail` (`FlairPointerTracker`), `iAudio`, `iSpectrum`, `iBeat` (`FlairAudioTracker`), and `iScroll` (`FlairScrollTracker`).
 - **SwiftUI & MetalKit**: `FlairEffectView`, `.flairBackground(...)`, `.flairOverlay(...)`, and offscreen `FlairRenderer` (`renderImage(effect:size:)`).
 
-The repository root has a `Package.swift` too, so a Swift app can depend on this repository directly. Each release commit carries a plain semver tag (`0.109.0`, from 0.109.0 on) next to npm's `@pixerate/flair@x.y.z`, so SwiftPM resolves Flair by version:
+The repository root has a `Package.swift` too, so a Swift app can depend on this repository directly. Each release commit carries a plain semver tag (`0.110.0`, from 0.110.0 on) next to npm's `@pixerate/flair@x.y.z`, so SwiftPM resolves Flair by version:
 
 ```swift
-.package(url: "https://github.com/Pixerate/flair.git", from: "0.109.0"),
+.package(url: "https://github.com/Pixerate/flair.git", from: "0.110.0"),
 // …
 .product(name: "FlairEffects", package: "flair"),
 ```
