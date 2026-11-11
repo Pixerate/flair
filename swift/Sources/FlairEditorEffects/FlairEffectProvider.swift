@@ -391,6 +391,12 @@ final class FlairShaderRenderer: SyncEffectRenderer {
         try checkRequest(request)
         let values = try resolveEffectValues(entry.description, request.values)
         var flair = flairValues(values)
+        // A trail effect given its path as points draws the whole path as its trail (`FlairPathTrail`).
+        var state: FlairFrameState?
+        if let traced = FlairPathTrail.trail(controls: effect.controls, values: flair, height: Double(height), time: request.time / 1000) {
+            flair = traced.values
+            state = FlairFrameState(width: Float(width), height: Float(height), time: Float(request.time / 1000), trail: traced.trail)
+        }
         if entry.transition {
             let duration = entry.description.duration ?? endlessPlayMs
             let p = request.progress ?? request.time / duration
@@ -411,7 +417,7 @@ final class FlairShaderRenderer: SyncEffectRenderer {
                 bound.append(uniform)
             }
             do {
-                return try gpu.renderBytes(anyEffect: configured, width: w, height: h, time: Float(request.time / 1000))
+                return try gpu.renderBytes(anyEffect: configured, width: w, height: h, time: Float(request.time / 1000), state: state)
             } catch {
                 throw EffectError.unsupported("\"\(id)\" cannot render here: \(error.localizedDescription)", id)
             }

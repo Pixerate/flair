@@ -168,6 +168,49 @@ final class FlairEditorEffectsTests: XCTestCase {
         XCTAssertEqual(late.data, end.data)
     }
 
+    func testTrailEffectsGivenPathPointsDrawTheWholePath() async throws {
+        try gpu()
+        let provider = FlairEffectProvider()
+        let w = 320, h = 180
+        // A stroke's centreline, as an editor gives it: points from the top left.
+        let line: JSONValue = .array(stride(from: 20.0, through: 300.0, by: 20.0).flatMap { [JSONValue.number($0), .number(90)] })
+        func brightest(_ p: EffectPixels, x: Int) -> UInt8 { (80...100).map { pixel(p, x, $0)[3] }.max() ?? 0 }
+        for id in ["comet-trail", "ribbon-trail", "sparkle-trail", "brush-trail", "ghost-trail", "light-painting"] {
+            let r = try provider.createRenderer(id, width: w, height: h)
+            defer { r.dispose() }
+            // Clear backgrounds, so alpha shows where the trail is.
+            var values: JSONObject = ["uPath": line]
+            if id == "brush-trail" { values["uPaper"] = false }
+            if id == "light-painting" { values["uBackgroundAlpha"] = 0 }
+            let traced = try await r.render(EffectRenderRequest(time: 4000, values: values))
+            // The head is at the path's end and the trail runs back along all of it, not a demo walking it.
+            XCTAssertGreaterThan(brightest(traced, x: 280), 0, "\(id) draws its head at the path's end")
+            XCTAssertGreaterThan(brightest(traced, x: 160), 0, "\(id) draws the middle of the path")
+            XCTAssertGreaterThan(brightest(traced, x: 160), pixel(traced, 160, 10)[3], "\(id) is brightest on the path")
+            if id == "comet-trail" {
+                // SVG path data still walks the demo: the old picture, a short trail somewhere along the line.
+                let walked = try await r.render(EffectRenderRequest(time: 4000, values: ["uPath": "M 20 90 L 300 90"]))
+                XCTAssertGreaterThan(brightest(traced, x: 180), brightest(walked, x: 180) + 50, "Traced, the middle of the line shows; walked, only the head")
+            }
+        }
+    }
+
+    func testTrailPointsRunFromThePathsEndBackToItsStart() {
+        let points: [SIMD2<Double>] = [SIMD2(10, 20), SIMD2(110, 20)]
+        let trail = FlairPathTrail.trailPoints(points, height: 100, time: 2, life: 1)
+        XCTAssertEqual(trail.count, FlairFrameState.maxTrail)
+        // Newest first: the end of the path at the frame's time, flipped to y up.
+        XCTAssertEqual(trail[0], SIMD4<Float>(110, 80, 2, 1))
+        XCTAssertEqual(trail[trail.count - 1].x, 10, accuracy: 1e-4)
+        XCTAssertEqual(trail[trail.count - 1].z, 1.5, accuracy: 1e-4, "Ages spread over half of uLife")
+        let controls = FlairCatalog.effect(id: "comet-trail")!.controls
+        XCTAssertTrue(FlairPathTrail.isTrailEffect(controls))
+        XCTAssertFalse(FlairPathTrail.isTrailEffect(FlairCatalog.effect(id: "glass-tube")!.controls))
+        // SVG path data keeps the demo walk; points switch it off.
+        XCTAssertNil(FlairPathTrail.trail(controls: controls, values: ["uPath": .string("M 0 0 L 10 10")], height: 100, time: 0))
+        XCTAssertEqual(FlairPathTrail.trail(controls: controls, values: ["uPath": .array([0, 0, 10, 10])], height: 100, time: 0)?.values["uDemo"], .bool(false))
+    }
+
     func testReadsCSSColoursAsFlairsTypeScriptDoes() {
         XCTAssertEqual(parseCSSColor("#f00"), [1, 0, 0])
         XCTAssertEqual(parseCSSColor("ff000080")?.count, 4)
