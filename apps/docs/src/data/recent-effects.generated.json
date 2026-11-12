@@ -1,5 +1,941 @@
 [
   {
+    "id": "relief-emboss",
+    "name": "Embossed picture",
+    "kind": "shader",
+    "category": "relief",
+    "description": "A picture or video pressed into a sheet of paper: its light parts raised and its dark parts sunk (or the other way), lit from one side, keeping as much of its colour as you like.",
+    "tags": [
+      "relief",
+      "emboss",
+      "deboss",
+      "paper",
+      "image",
+      "video",
+      "filter",
+      "white",
+      "letterpress",
+      "plaster"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "l": "Picture",
+        "line": 2,
+        "x": {
+          "filter": "mipmap",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uDepth",
+        "t": "float",
+        "d": 0.6,
+        "l": "Depth (− sinks the light parts)",
+        "min": -1,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "uSmoothing",
+        "t": "float",
+        "d": 0.3,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uColour",
+        "t": "float",
+        "d": 0,
+        "l": "Picture colour",
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uSurface",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            243,
+            242,
+            239
+          ]
+        },
+        "l": "Paper",
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "uShade",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            156,
+            158,
+            163
+          ]
+        },
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "uLight",
+        "t": "float",
+        "d": 135,
+        "l": "Light from (°)",
+        "max": 360,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uElevation",
+        "t": "float",
+        "d": 40,
+        "l": "Light height (°)",
+        "min": 10,
+        "max": 80,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uGrain",
+        "t": "float",
+        "d": 0.3,
+        "l": "Paper grain",
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 12
+      }
+    ],
+    "presets": [
+      "Debossed",
+      "Plaster",
+      "Tinted",
+      "Landscape"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Picture",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "swiftReady": true,
+    "video": "filter",
+    "animated": false,
+    "module": "shaders/relief",
+    "addedAt": "2026-11-12T13:16:06Z",
+    "commitHash": "fbf8224156bd0335bf49053c57eb46202f417297",
+    "order": 674
+  },
+  {
+    "id": "relief-paper-waves",
+    "name": "Paper-cut waves",
+    "kind": "shader",
+    "category": "relief",
+    "description": "Sheets of white paper cut into waves and stacked, each casting a soft shadow on the one beneath, the stack undulating gently.",
+    "tags": [
+      "relief",
+      "paper",
+      "paper-cut",
+      "papercraft",
+      "wave",
+      "layers",
+      "white",
+      "minimal",
+      "shadow",
+      "background",
+      "3d"
+    ],
+    "controls": [
+      {
+        "n": "uLayers",
+        "t": "int",
+        "d": 5,
+        "l": "Sheets",
+        "min": 2,
+        "max": 8,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "uAngle",
+        "t": "float",
+        "d": -25,
+        "l": "Angle (°)",
+        "min": -90,
+        "max": 90,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "uWaves",
+        "t": "float",
+        "d": 2.2,
+        "l": "Waves across",
+        "min": 0.5,
+        "max": 6,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uAmplitude",
+        "t": "float",
+        "d": 0.06,
+        "l": "Wave height",
+        "max": 0.2,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uSpacing",
+        "t": "float",
+        "d": 0.12,
+        "l": "Sheet spacing",
+        "min": 0.04,
+        "max": 0.3,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uOffset",
+        "t": "float",
+        "d": 0.15,
+        "l": "Stack position",
+        "min": -1,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uSpeed",
+        "t": "float",
+        "d": 1,
+        "l": "Undulation",
+        "max": 3,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uSurface",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            244,
+            244,
+            244
+          ]
+        },
+        "l": "Paper",
+        "c": 1,
+        "line": 9
+      },
+      {
+        "n": "uTint",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            244,
+            244,
+            244
+          ]
+        },
+        "l": "Deepest sheet",
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "uShade",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            159,
+            162,
+            168
+          ]
+        },
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "uLight",
+        "t": "float",
+        "d": 20,
+        "l": "Light from (°)",
+        "max": 360,
+        "b": 3,
+        "line": 12
+      },
+      {
+        "n": "uShadow",
+        "t": "float",
+        "d": 0.05,
+        "l": "Shadow length",
+        "max": 0.15,
+        "b": 3,
+        "line": 13
+      },
+      {
+        "n": "uSoftness",
+        "t": "float",
+        "d": 0.6,
+        "l": "Shadow softness",
+        "min": 0.1,
+        "b": 3,
+        "line": 14
+      }
+    ],
+    "presets": [
+      "Sunset",
+      "Ocean",
+      "Gentle",
+      "Diagonal"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "swiftReady": true,
+    "loop": 10,
+    "animated": true,
+    "duration": 10000,
+    "module": "shaders/relief",
+    "addedAt": "2026-11-12T13:16:06Z",
+    "commitHash": "fbf8224156bd0335bf49053c57eb46202f417297",
+    "order": 673
+  },
+  {
+    "id": "relief-paper-text",
+    "name": "Paper relief text",
+    "kind": "shader",
+    "category": "relief",
+    "description": "A word shaped out of a white sheet, its letters cut into the paper or raised from it (or cut in at one end and rising at the other), drawn only by light and the soft shadows of their walls.",
+    "tags": [
+      "relief",
+      "text",
+      "title",
+      "emboss",
+      "deboss",
+      "letterpress",
+      "paper",
+      "white",
+      "minimal",
+      "typography",
+      "3d",
+      "mask"
+    ],
+    "controls": [
+      {
+        "n": "uMask",
+        "t": "sampler2D",
+        "d": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201024%20256%22%20width%3D%221024%22%20height%3D%22256%22%3E%3Ctext%20x%3D%22512%22%20y%3D%22128%22%20dy%3D%220.35em%22%20text-anchor%3D%22middle%22%20textLength%3D%22798.7%22%20lengthAdjust%3D%22spacingAndGlyphs%22%20font-family%3D%22%26%2339%3BArial%20Black%26%2339%3B%2C%20%26%2339%3BHelvetica%20Neue%26%2339%3B%2C%20Helvetica%2C%20Arial%2C%20system-ui%2C%20sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%22199.7%22%20fill%3D%22%23fff%22%3ERELIEF%3C%2Ftext%3E%3C%2Fsvg%3E",
+        "l": "Shape (its alpha)",
+        "line": 2,
+        "x": {
+          "filter": "mipmap",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 0.85,
+        "l": "Shape size",
+        "min": 0.2,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "uDepthStart",
+        "t": "float",
+        "d": 0.7,
+        "l": "Depth at the start (− cut in)",
+        "min": -1,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uDepthEnd",
+        "t": "float",
+        "d": 0.7,
+        "l": "Depth at the end (− cut in)",
+        "min": -1,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uDepth",
+        "t": "float",
+        "d": 0.03,
+        "max": 0.1,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uBevel",
+        "t": "float",
+        "d": 0.2,
+        "l": "Rounded edges",
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uBreathe",
+        "t": "float",
+        "d": 0,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uSurface",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            241,
+            241,
+            240
+          ]
+        },
+        "l": "Paper",
+        "c": 1,
+        "line": 9
+      },
+      {
+        "n": "uShade",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            154,
+            156,
+            161
+          ]
+        },
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "uFace",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            241,
+            241,
+            240
+          ]
+        },
+        "l": "Letter faces",
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "uLight",
+        "t": "float",
+        "d": 130,
+        "l": "Light from (°)",
+        "max": 360,
+        "b": 3,
+        "line": 12
+      },
+      {
+        "n": "uElevation",
+        "t": "float",
+        "d": 40,
+        "l": "Light height (°)",
+        "min": 10,
+        "max": 80,
+        "b": 3,
+        "line": 13
+      },
+      {
+        "n": "uSoftness",
+        "t": "float",
+        "d": 0.8,
+        "l": "Shadow softness",
+        "min": 0.02,
+        "max": 2,
+        "b": 3,
+        "line": 14
+      },
+      {
+        "n": "uTilt",
+        "t": "float",
+        "d": 0.25,
+        "l": "View tilt",
+        "b": 3,
+        "line": 15
+      }
+    ],
+    "presets": [
+      "Cut in",
+      "Cut in to raised",
+      "Letterpress",
+      "Logo",
+      "Charcoal"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "svg",
+        "text",
+        "mask"
+      ],
+      "images": [
+        {
+          "name": "uMask",
+          "label": "Shape (its alpha)",
+          "wants": "text"
+        }
+      ],
+      "texts": [],
+      "video": "none",
+      "interactions": [],
+      "transparent": false
+    },
+    "swiftReady": true,
+    "video": "none",
+    "animated": true,
+    "module": "shaders/relief",
+    "addedAt": "2026-11-12T13:16:06Z",
+    "commitHash": "fbf8224156bd0335bf49053c57eb46202f417297",
+    "order": 672
+  },
+  {
+    "id": "relief-hex-ink",
+    "name": "Ink-splashed hexagons",
+    "kind": "shader",
+    "category": "relief",
+    "description": "Raised hexagon tiles on a cracked plaster wall, those deep in the cluster black and marbled with cracks, the rest white, with ink spattered and smudged across the wall around them.",
+    "tags": [
+      "relief",
+      "hexagon",
+      "honeycomb",
+      "tiles",
+      "grunge",
+      "ink",
+      "splatter",
+      "cracked",
+      "black-and-white",
+      "3d",
+      "background"
+    ],
+    "controls": [
+      {
+        "n": "uCells",
+        "t": "float",
+        "d": 9,
+        "l": "Tiles (down the frame)",
+        "min": 4,
+        "max": 30,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "uCoverage",
+        "t": "float",
+        "d": 0.5,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "uAngle",
+        "t": "float",
+        "d": 0,
+        "l": "Tiles gather toward (°)",
+        "max": 360,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uScatter",
+        "t": "float",
+        "d": 0.5,
+        "l": "Ragged edge",
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uHeight",
+        "t": "float",
+        "d": 0.022,
+        "l": "Tile height",
+        "max": 0.08,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uVariation",
+        "t": "float",
+        "d": 0.6,
+        "l": "Height variation",
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uGap",
+        "t": "float",
+        "d": 0.02,
+        "l": "Gap between tiles",
+        "max": 0.12,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uSpeed",
+        "t": "float",
+        "d": 1,
+        "l": "Sway speed",
+        "max": 3,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uSurface",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            236,
+            235,
+            232
+          ]
+        },
+        "l": "Wall and white tiles",
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "uShade",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            141,
+            141,
+            143
+          ]
+        },
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "uInk",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            17,
+            18,
+            20
+          ]
+        },
+        "c": 1,
+        "line": 12
+      },
+      {
+        "n": "uInkTiles",
+        "t": "float",
+        "d": 0.75,
+        "l": "Inked tiles",
+        "b": 3,
+        "line": 13
+      },
+      {
+        "n": "uSplatter",
+        "t": "float",
+        "d": 0.6,
+        "l": "Spatter",
+        "b": 3,
+        "line": 14
+      },
+      {
+        "n": "uCracks",
+        "t": "float",
+        "d": 0.5,
+        "b": 3,
+        "line": 15
+      },
+      {
+        "n": "uLight",
+        "t": "float",
+        "d": 135,
+        "l": "Light from (°)",
+        "max": 360,
+        "b": 3,
+        "line": 16
+      },
+      {
+        "n": "uElevation",
+        "t": "float",
+        "d": 42,
+        "l": "Light height (°)",
+        "min": 10,
+        "max": 80,
+        "b": 3,
+        "line": 17
+      },
+      {
+        "n": "uSoftness",
+        "t": "float",
+        "d": 0.4,
+        "l": "Shadow softness",
+        "min": 0.02,
+        "max": 2,
+        "b": 3,
+        "line": 18
+      },
+      {
+        "n": "uTilt",
+        "t": "float",
+        "d": 0.25,
+        "l": "View tilt",
+        "b": 3,
+        "line": 19
+      }
+    ],
+    "presets": [
+      "Clean",
+      "All ink",
+      "Rust",
+      "Blueprint"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "swiftReady": true,
+    "loop": 8,
+    "animated": true,
+    "duration": 8000,
+    "module": "shaders/relief",
+    "addedAt": "2026-11-12T13:16:06Z",
+    "commitHash": "fbf8224156bd0335bf49053c57eb46202f417297",
+    "order": 671
+  },
+  {
+    "id": "relief-hex-tiles",
+    "name": "Hexagon relief",
+    "kind": "shader",
+    "category": "relief",
+    "description": "White hexagon tiles raised from a white wall at different heights, gathering toward one side with a few strays, lit from the side so only their soft shadows draw them, rising and settling slowly.",
+    "tags": [
+      "relief",
+      "hexagon",
+      "honeycomb",
+      "tiles",
+      "3d",
+      "white",
+      "minimal",
+      "paper",
+      "shadow",
+      "background",
+      "extruded"
+    ],
+    "controls": [
+      {
+        "n": "uCells",
+        "t": "float",
+        "d": 9,
+        "l": "Tiles (down the frame)",
+        "min": 4,
+        "max": 30,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "uCoverage",
+        "t": "float",
+        "d": 0.55,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "uAngle",
+        "t": "float",
+        "d": 315,
+        "l": "Tiles gather toward (°)",
+        "max": 360,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uScatter",
+        "t": "float",
+        "d": 0.5,
+        "l": "Ragged edge",
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uHeight",
+        "t": "float",
+        "d": 0.022,
+        "l": "Tile height",
+        "max": 0.08,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uVariation",
+        "t": "float",
+        "d": 0.6,
+        "l": "Height variation",
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uGap",
+        "t": "float",
+        "d": 0.02,
+        "l": "Gap between tiles",
+        "max": 0.12,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uSpeed",
+        "t": "float",
+        "d": 1,
+        "l": "Sway speed",
+        "max": 3,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uSurface",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            242,
+            242,
+            242
+          ]
+        },
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "uShade",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            180,
+            183,
+            189
+          ]
+        },
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "uLight",
+        "t": "float",
+        "d": 40,
+        "l": "Light from (°)",
+        "max": 360,
+        "b": 3,
+        "line": 12
+      },
+      {
+        "n": "uElevation",
+        "t": "float",
+        "d": 38,
+        "l": "Light height (°)",
+        "min": 10,
+        "max": 80,
+        "b": 3,
+        "line": 13
+      },
+      {
+        "n": "uSoftness",
+        "t": "float",
+        "d": 0.4,
+        "l": "Shadow softness",
+        "min": 0.02,
+        "max": 2,
+        "b": 3,
+        "line": 14
+      },
+      {
+        "n": "uTilt",
+        "t": "float",
+        "d": 0.35,
+        "l": "View tilt",
+        "b": 3,
+        "line": 15
+      }
+    ],
+    "presets": [
+      "Full wall",
+      "Scattered",
+      "Top down",
+      "Graphite",
+      "Blush"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "swiftReady": true,
+    "loop": 8,
+    "animated": true,
+    "duration": 8000,
+    "paint": {
+      "map": "canvas",
+      "colors": [
+        "uSurface",
+        "uShade"
+      ],
+      "values": {
+        "uCoverage": 1,
+        "uScatter": 0.2
+      }
+    },
+    "module": "shaders/relief",
+    "addedAt": "2026-11-12T13:16:06Z",
+    "commitHash": "fbf8224156bd0335bf49053c57eb46202f417297",
+    "order": 670
+  },
+  {
     "id": "emergency-alert",
     "name": "Emergency alert",
     "kind": "vector",
@@ -2267,803 +3203,5 @@
     "addedAt": "2026-11-07T19:28:11Z",
     "commitHash": "4281796ee6e6bda2a45f063a2affa6061e67c6a1",
     "order": 655
-  },
-  {
-    "id": "ripple-dot",
-    "name": "Ripple dot",
-    "kind": "shader",
-    "category": "audio",
-    "description": "Just a dot and its waves: a single dot swelling with the bass, thin rings rippling out from it whose brightness at each distance is the spectrum (bass close, treble far), and one brighter ring on each beat.",
-    "tags": [
-      "audio",
-      "music",
-      "minimal",
-      "dots",
-      "ripple",
-      "wave",
-      "ring",
-      "overlay",
-      "visualizer",
-      "beat"
-    ],
-    "controls": [
-      {
-        "n": "uDot",
-        "t": "float",
-        "d": 0.012,
-        "l": "Dot size",
-        "min": 0.002,
-        "max": 0.05,
-        "b": 3,
-        "line": 2
-      },
-      {
-        "n": "uSpacing",
-        "t": "float",
-        "d": 0.035,
-        "l": "Wave spacing",
-        "min": 0.01,
-        "max": 0.1,
-        "b": 3,
-        "line": 3
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 0.5,
-        "l": "Wave speed",
-        "max": 2,
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "uReach",
-        "t": "float",
-        "d": 0.42,
-        "min": 0.1,
-        "max": 0.8,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uLine",
-        "t": "float",
-        "d": 1.2,
-        "l": "Line width (px)",
-        "min": 0.5,
-        "max": 4,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uFlash",
-        "t": "float",
-        "d": 1,
-        "l": "Beat ring",
-        "max": 2,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uColor",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            244,
-            241,
-            234
-          ]
-        },
-        "l": "Colour",
-        "c": 1,
-        "line": 8
-      },
-      {
-        "n": "uDemo",
-        "t": "bool",
-        "d": true,
-        "l": "Demo when silent",
-        "line": 9
-      }
-    ],
-    "presets": [
-      "Sonar",
-      "Fine",
-      "Ink"
-    ],
-    "inputs": {
-      "accepts": [
-        "audio"
-      ],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": true
-    },
-    "swiftReady": true,
-    "transparent": true,
-    "animated": true,
-    "module": "shaders/audio",
-    "addedAt": "2026-11-04T11:53:48Z",
-    "commitHash": "48069f76c88da16da42049e4cf7cfd8a6338b821",
-    "order": 654
-  },
-  {
-    "id": "spell-trace",
-    "name": "Spell trace",
-    "kind": "shader",
-    "category": "audio",
-    "description": "Any shape or word traced in a hairline of light, as by a wand: a spark sweeps round its outline leaving a fading trail and a few drifting sparkles, a single ring of dots round it shows the spectrum, and each beat sends one soft ring of light out.",
-    "tags": [
-      "audio",
-      "music",
-      "magic",
-      "minimal",
-      "outline",
-      "sparkle",
-      "logo",
-      "text",
-      "overlay",
-      "visualizer",
-      "beat"
-    ],
-    "controls": [
-      {
-        "n": "uMask",
-        "t": "sampler2D",
-        "d": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201024%20256%22%20width%3D%221024%22%20height%3D%22256%22%3E%3Ctext%20x%3D%22512%22%20y%3D%22128%22%20dy%3D%220.35em%22%20text-anchor%3D%22middle%22%20textLength%3D%22738.8%22%20lengthAdjust%3D%22spacingAndGlyphs%22%20font-family%3D%22%26%2339%3BArial%20Black%26%2339%3B%2C%20%26%2339%3BHelvetica%20Neue%26%2339%3B%2C%20Helvetica%2C%20Arial%2C%20system-ui%2C%20sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%22199.7%22%20fill%3D%22%23fff%22%3ESPELL%3C%2Ftext%3E%3C%2Fsvg%3E",
-        "l": "Shape",
-        "line": 3,
-        "x": {
-          "filter": "mipmap",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uSize",
-        "t": "float",
-        "d": 0.6,
-        "min": 0.2,
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 0.6,
-        "l": "Trace speed",
-        "max": 2,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uTrail",
-        "t": "float",
-        "d": 0.35,
-        "l": "Trail length",
-        "min": 0.05,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uLine",
-        "t": "float",
-        "d": 1.2,
-        "l": "Line width (px)",
-        "min": 0.5,
-        "max": 4,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uDots",
-        "t": "bool",
-        "d": true,
-        "l": "Spectrum dots",
-        "line": 8
-      },
-      {
-        "n": "uDotRing",
-        "t": "float",
-        "d": 0.07,
-        "l": "Dot ring distance",
-        "min": 0.03,
-        "max": 0.2,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uSparkle",
-        "t": "float",
-        "d": 0.6,
-        "l": "Sparkles",
-        "b": 3,
-        "line": 10
-      },
-      {
-        "n": "uFlash",
-        "t": "float",
-        "d": 1,
-        "l": "Beat ring",
-        "max": 2,
-        "b": 3,
-        "line": 11
-      },
-      {
-        "n": "uColor",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            207,
-            227,
-            255
-          ]
-        },
-        "l": "Light",
-        "c": 1,
-        "line": 12
-      },
-      {
-        "n": "uAccent",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            210,
-            122
-          ]
-        },
-        "l": "Spark",
-        "c": 1,
-        "line": 13
-      },
-      {
-        "n": "uDemo",
-        "t": "bool",
-        "d": true,
-        "l": "Demo when silent",
-        "line": 14
-      }
-    ],
-    "presets": [
-      "Gold leaf",
-      "Moonlight",
-      "Heart"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "svg",
-        "text",
-        "mask",
-        "audio"
-      ],
-      "images": [
-        {
-          "name": "uMask",
-          "label": "Shape",
-          "wants": "text"
-        }
-      ],
-      "texts": [],
-      "video": "none",
-      "interactions": [],
-      "transparent": true
-    },
-    "swiftReady": true,
-    "video": "none",
-    "transparent": true,
-    "animated": true,
-    "module": "shaders/audio",
-    "addedAt": "2026-11-04T11:53:48Z",
-    "commitHash": "48069f76c88da16da42049e4cf7cfd8a6338b821",
-    "order": 653
-  },
-  {
-    "id": "arcane-sigil",
-    "name": "Arcane sigil",
-    "kind": "shader",
-    "category": "audio",
-    "description": "Any shape or word as a magic portal: arcane light swirling inside it, rings of glowing runes hugging its outline (one to a band of the spectrum, turning alternate ways), a tilted ring of runes orbiting it in front and behind, motes of light spiralling in and wisps curling up; each beat sends a pulse out through the runes.",
-    "tags": [
-      "audio",
-      "music",
-      "magic",
-      "fantasy",
-      "runes",
-      "portal",
-      "arcane",
-      "logo",
-      "text",
-      "visualizer",
-      "beat"
-    ],
-    "controls": [
-      {
-        "n": "uMask",
-        "t": "sampler2D",
-        "d": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201024%20256%22%20width%3D%221024%22%20height%3D%22256%22%3E%3Ctext%20x%3D%22512%22%20y%3D%22128%22%20dy%3D%220.35em%22%20text-anchor%3D%22middle%22%20textLength%3D%22690.9%22%20lengthAdjust%3D%22spacingAndGlyphs%22%20font-family%3D%22%26%2339%3BArial%20Black%26%2339%3B%2C%20%26%2339%3BHelvetica%20Neue%26%2339%3B%2C%20Helvetica%2C%20Arial%2C%20system-ui%2C%20sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%22199.7%22%20fill%3D%22%23fff%22%3EMAGIC%3C%2Ftext%3E%3C%2Fsvg%3E",
-        "l": "Shape",
-        "line": 3,
-        "x": {
-          "filter": "mipmap",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uSize",
-        "t": "float",
-        "d": 0.6,
-        "min": 0.2,
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "uRings",
-        "t": "int",
-        "d": 4,
-        "l": "Rune rings",
-        "min": 1,
-        "max": 6,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uSpacing",
-        "t": "float",
-        "d": 0.05,
-        "l": "Ring spacing",
-        "min": 0.03,
-        "max": 0.08,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uTilt",
-        "t": "float",
-        "d": 14,
-        "l": "Orbit tilt (degrees)",
-        "min": 4,
-        "max": 40,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uSpin",
-        "t": "float",
-        "d": 0.6,
-        "max": 2,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uReact",
-        "t": "float",
-        "d": 1,
-        "l": "Reactivity",
-        "max": 2,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uFlash",
-        "t": "float",
-        "d": 1,
-        "l": "Beat pulse",
-        "max": 2,
-        "b": 3,
-        "line": 10
-      },
-      {
-        "n": "uMotes",
-        "t": "float",
-        "d": 0.7,
-        "b": 3,
-        "line": 11
-      },
-      {
-        "n": "uRune",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            207,
-            107
-          ]
-        },
-        "l": "Runes",
-        "c": 1,
-        "line": 12
-      },
-      {
-        "n": "uArcane",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            139,
-            92,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 13
-      },
-      {
-        "n": "uWisp",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            62,
-            230,
-            208
-          ]
-        },
-        "l": "Wisps",
-        "c": 1,
-        "line": 14
-      },
-      {
-        "n": "uNight",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            7,
-            4,
-            26
-          ]
-        },
-        "c": 1,
-        "line": 15
-      },
-      {
-        "n": "uDemo",
-        "t": "bool",
-        "d": true,
-        "l": "Demo when silent",
-        "line": 16
-      }
-    ],
-    "presets": [
-      "Fel fire",
-      "Frost",
-      "Heart"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "svg",
-        "text",
-        "mask",
-        "audio"
-      ],
-      "images": [
-        {
-          "name": "uMask",
-          "label": "Shape",
-          "wants": "text"
-        }
-      ],
-      "texts": [],
-      "video": "none",
-      "interactions": [],
-      "transparent": false
-    },
-    "swiftReady": true,
-    "video": "none",
-    "animated": true,
-    "module": "shaders/audio",
-    "addedAt": "2026-11-04T11:53:48Z",
-    "commitHash": "48069f76c88da16da42049e4cf7cfd8a6338b821",
-    "order": 652
-  },
-  {
-    "id": "black-hole-silhouette",
-    "name": "Black hole silhouette",
-    "kind": "shader",
-    "category": "audio",
-    "description": "Any shape or word as a black hole: an accretion disk of the spectrum hugging its outline (treble close in, bass far out), lensed up over the top and under the bottom, a photon ring tracing its edge and the stars bent round it, flashing on each beat.",
-    "tags": [
-      "audio",
-      "music",
-      "black-hole",
-      "space",
-      "spectrum",
-      "lensing",
-      "logo",
-      "text",
-      "visualizer",
-      "beat"
-    ],
-    "controls": [
-      {
-        "n": "uMask",
-        "t": "sampler2D",
-        "d": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201024%20256%22%20width%3D%221024%22%20height%3D%22256%22%3E%3Ctext%20x%3D%22512%22%20y%3D%22128%22%20dy%3D%220.35em%22%20text-anchor%3D%22middle%22%20textLength%3D%22503.2%22%20lengthAdjust%3D%22spacingAndGlyphs%22%20font-family%3D%22%26%2339%3BArial%20Black%26%2339%3B%2C%20%26%2339%3BHelvetica%20Neue%26%2339%3B%2C%20Helvetica%2C%20Arial%2C%20system-ui%2C%20sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%22199.7%22%20fill%3D%22%23fff%22%3EVOID%3C%2Ftext%3E%3C%2Fsvg%3E",
-        "l": "Shape",
-        "line": 3,
-        "x": {
-          "filter": "mipmap",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uSize",
-        "t": "float",
-        "d": 0.6,
-        "min": 0.2,
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "uTilt",
-        "t": "float",
-        "d": 11,
-        "l": "Disk tilt (degrees)",
-        "min": 4,
-        "max": 40,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uReach",
-        "t": "float",
-        "d": 0.3,
-        "l": "Disk reach",
-        "min": 0.1,
-        "max": 0.38,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uSpin",
-        "t": "float",
-        "d": 0.8,
-        "max": 2,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uDoppler",
-        "t": "float",
-        "d": 0.6,
-        "l": "Doppler beaming",
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uLens",
-        "t": "float",
-        "d": 1,
-        "l": "Lensing",
-        "max": 2,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uReact",
-        "t": "float",
-        "d": 1,
-        "l": "Reactivity",
-        "max": 2,
-        "b": 3,
-        "line": 10
-      },
-      {
-        "n": "uFlash",
-        "t": "float",
-        "d": 1,
-        "l": "Beat flash",
-        "max": 2,
-        "b": 3,
-        "line": 11
-      },
-      {
-        "n": "uColorHot",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            231,
-            179
-          ]
-        },
-        "l": "Inner colour",
-        "c": 1,
-        "line": 12
-      },
-      {
-        "n": "uColorCool",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            90,
-            31
-          ]
-        },
-        "l": "Outer colour",
-        "c": 1,
-        "line": 13
-      },
-      {
-        "n": "uStars",
-        "t": "float",
-        "d": 0.7,
-        "b": 3,
-        "line": 14
-      },
-      {
-        "n": "uDemo",
-        "t": "bool",
-        "d": true,
-        "l": "Demo when silent",
-        "line": 15
-      }
-    ],
-    "presets": [
-      "Heart",
-      "Logo",
-      "Top down"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "svg",
-        "text",
-        "mask",
-        "audio"
-      ],
-      "images": [
-        {
-          "name": "uMask",
-          "label": "Shape",
-          "wants": "text"
-        }
-      ],
-      "texts": [],
-      "video": "none",
-      "interactions": [],
-      "transparent": false
-    },
-    "swiftReady": true,
-    "video": "none",
-    "animated": true,
-    "module": "shaders/audio",
-    "addedAt": "2026-11-04T11:53:48Z",
-    "commitHash": "48069f76c88da16da42049e4cf7cfd8a6338b821",
-    "order": 651
-  },
-  {
-    "id": "nebula-pillars",
-    "name": "Nebula pillars",
-    "kind": "shader",
-    "category": "audio",
-    "description": "Dark pillars of dust in a glowing nebula, its gases lit by the music: red by the bass, teal by the mids, blue by the treble; on each beat a newborn star in a pillar's head flares and lights its edges.",
-    "tags": [
-      "audio",
-      "music",
-      "nebula",
-      "space",
-      "pillars",
-      "gas",
-      "background",
-      "ambient",
-      "visualizer",
-      "beat"
-    ],
-    "controls": [
-      {
-        "n": "uDrift",
-        "t": "float",
-        "d": 0.3,
-        "b": 3,
-        "line": 2
-      },
-      {
-        "n": "uReact",
-        "t": "float",
-        "d": 1,
-        "l": "Reactivity",
-        "max": 2,
-        "b": 3,
-        "line": 3
-      },
-      {
-        "n": "uPillars",
-        "t": "float",
-        "d": 1,
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "uFlare",
-        "t": "float",
-        "d": 1,
-        "l": "Beat flare",
-        "max": 2,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uBassGas",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            59,
-            78
-          ]
-        },
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "uMidGas",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            46,
-            230,
-            201
-          ]
-        },
-        "c": 1,
-        "line": 7
-      },
-      {
-        "n": "uHighGas",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            77,
-            124,
-            255
-          ]
-        },
-        "l": "Treble gas",
-        "c": 1,
-        "line": 8
-      },
-      {
-        "n": "uDust",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            30,
-            18,
-            13
-          ]
-        },
-        "c": 1,
-        "line": 9
-      },
-      {
-        "n": "uDemo",
-        "t": "bool",
-        "d": true,
-        "l": "Demo when silent",
-        "line": 10
-      }
-    ],
-    "presets": [
-      "Hubble palette",
-      "No pillars",
-      "Still"
-    ],
-    "inputs": {
-      "accepts": [
-        "audio"
-      ],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "swiftReady": true,
-    "animated": true,
-    "module": "shaders/audio",
-    "addedAt": "2026-11-04T11:53:48Z",
-    "commitHash": "48069f76c88da16da42049e4cf7cfd8a6338b821",
-    "order": 650
   }
 ]

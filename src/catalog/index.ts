@@ -101,6 +101,7 @@ import { memeShaders } from "./shaders/meme.js";
 import { atmosphereShaders } from "./shaders/atmosphere.js";
 import { glowShaders } from "./shaders/glow.js";
 import { shadowShaders } from "./shaders/shadow.js";
+import { reliefShaders } from "./shaders/relief.js";
 import { distortionShaders } from "./shaders/distortion.js";
 import { lightingShaders } from "./shaders/lighting.js";
 import { audioShaders } from "./shaders/audio.js";
@@ -284,6 +285,7 @@ export const SHADER_EFFECTS: readonly ShaderEffect[] = [
   ...atmosphereShaders,
   ...glowShaders,
   ...shadowShaders,
+  ...reliefShaders,
   ...distortionShaders,
   ...audioShaders,
   ...scrollShaders,
