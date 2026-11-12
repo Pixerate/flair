@@ -986,4 +986,210 @@ export const fanOutLinks: VectorEffect = {
   })(),
 };
 
-export const dataEffects: VectorEffect[] = [donutChart, pieChart, gauge, barRace, sparkline, leaderboard, areaChart, kpiTile, rolodex, fanOutLinks];
+// ── Hub-and-spoke graph ────────────────────────────────────────────────
+
+/**
+ * Hub-and-spoke graph's layout and timing: the hub in the middle, up to
+ * `slots` spokes round it on a slightly squashed ring (wider than tall, to
+ * fill the frame), each spoke's node with up to `leaves` leaves fanning
+ * outward. Times are in ms; spoke `i` leaves the hub at `start + i·stagger`
+ * and lands `spoke` later, and its leaves follow it out.
+ */
+const HSG = {
+  cx: 200,
+  cy: 150,
+  slots: 8,
+  leaves: 4,
+  radius: 92,
+  squash: 1.3,
+  start: 450,
+  stagger: 90,
+  spoke: 500,
+  leafGap: 150,
+  leafStagger: 80,
+  leafMs: 320,
+  nodeR: 6.5,
+  leafR: 2.6,
+  dust: 26,
+};
+const HSG_DEFAULT = ["Research", "Design", "Engineering", "Data", "Security", "Growth", "Support"];
+/** A fixed scatter in [0, 1) for slot `k`, so the layout looks hand-placed and stays the same every play. */
+const scatter = (k: number) => {
+  const s = Math.sin(k * 12.9898 + 78.233) * 43758.5453;
+  return s - Math.floor(s);
+};
+const hsgLanded = (i: number) => HSG.start + i * HSG.stagger + HSG.spoke;
+const hsgLeafAt = (i: number, j: number) => hsgLanded(i) + HSG.leafGap + j * HSG.leafStagger;
+
+export const hubSpokeGraph: VectorEffect = {
+  kind: "vector",
+  id: "hub-spoke-graph",
+  name: "Hub-and-spoke graph",
+  description:
+    "A glowing hub igniting in a puff of dust, then spokes shooting out to glossy pearl nodes on comet heads, each node branching into small leaves and linking to its neighbours, with sparks running out along the spokes and the hub pulsing.",
+  category: "data",
+  tags: ["network", "graph", "hub", "constellation", "relations", "dashboard", "explainer", "tech"],
+  hold: 1500,
+  presets: [
+    {
+      name: "Light",
+      values: { background: [0.95, 0.96, 0.97], core: [0.85, 0.55, 0.1], spoke: [0.75, 0.6, 0.35], node: [0.86, 0.3, 0.55], leaf: [0.45, 0.35, 0.85], comet: [0.1, 0.5, 0.9], ink: [0.12, 0.16, 0.22] },
+    },
+    {
+      name: "Neon",
+      values: { background: [0.04, 0.02, 0.1], core: [0.13, 0.83, 0.93], spoke: [0.6, 0.4, 1], node: [0.96, 0.45, 0.71], leaf: [0.5, 0.9, 1], comet: [1, 1, 1], ink: [0.88, 0.86, 1] },
+    },
+    { name: "Solar system", values: { hub: "Sun", labels: "Mercury,Venus,Earth,Mars,Jupiter,Saturn,Uranus,Neptune", leaves: 2 } },
+  ],
+  derived: (v) => {
+    const given = parseLabels(v.labels, HSG.slots).filter((s) => s !== "");
+    const labels = given.length ? given : HSG_DEFAULT;
+    const count = labels.length;
+    const leaves = Math.min(HSG.leaves, Math.max(0, Math.round(Number(v.leaves)) || 0));
+    const step = 360 / count;
+    const clamp = (x: number, lo: number, hi: number) => r1(Math.min(hi, Math.max(lo, x)));
+    const out: Record<string, string | number> = {};
+    const points: [number, number][] = [];
+    for (let i = 0; i < HSG.slots; i++) {
+      const shown = i < count;
+      // Offset by half a step so no spoke runs straight down through the hub's label.
+      const a = ((-90 + step * 0.5 + i * step + (scatter(i) - 0.5) * Math.min(18, step * 0.3)) * Math.PI) / 180;
+      const r = HSG.radius + (scatter(i + 11) - 0.5) * 22;
+      const x = r1(HSG.cx + Math.cos(a) * r * HSG.squash);
+      const y = r1(HSG.cy + Math.sin(a) * r);
+      points.push([x, y]);
+      out[`show${i}`] = shown ? "inline" : "none";
+      out[`x${i}`] = x;
+      out[`y${i}`] = y;
+      out[`spoke${i}`] = `M${HSG.cx} ${HSG.cy} L${x} ${y}`;
+      // The label sits on the hub's side of its node, away from the leaves fanning outward.
+      const label = fitLabel(labels[i] ?? "", 74, 9, 6);
+      const ly = y < HSG.cy ? y + 17 : y - 11;
+      out[`label${i}`] = label.text;
+      out[`labelSize${i}`] = label.size;
+      out[`labelLength${i}`] = label.length;
+      out[`labelX${i}`] = r1(x - label.length / 2);
+      out[`labelY${i}`] = r1(ly + label.size * 0.35);
+      out[`pillX${i}`] = r1(x - label.length / 2 - 4);
+      out[`pillY${i}`] = r1(ly - label.size * 0.6 - 2);
+      out[`pillW${i}`] = r1(label.length + 8);
+      out[`pillH${i}`] = r1(label.size * 1.2 + 4);
+      for (let j = 0; j < HSG.leaves; j++) {
+        const k = i * HSG.leaves + j;
+        const la = a + (((j - (leaves - 1) / 2) * 34 + (scatter(k + 31) - 0.5) * 14) * Math.PI) / 180;
+        const d = 26 + scatter(k + 47) * 14;
+        const lx = clamp(x + Math.cos(la) * d, 8, 392);
+        const lyy = clamp(y + Math.sin(la) * d, 8, 292);
+        out[`leafShow${k}`] = shown && j < leaves ? "inline" : "none";
+        out[`leaf${k}`] = `M${x} ${y} L${lx} ${lyy}`;
+        out[`lx${k}`] = lx;
+        out[`ly${k}`] = lyy;
+      }
+    }
+    for (let i = 0; i < HSG.slots; i++) {
+      const [x1, y1] = points[i]!;
+      const [x2, y2] = points[(i + 1) % count]!;
+      out[`chordShow${i}`] = i < count && count >= 3 ? "inline" : "none";
+      out[`chord${i}`] = `M${x1} ${y1} L${x2} ${y2}`;
+    }
+    const hub = fitLabel(v.hub, 96, 10, 7);
+    const settle = hsgLanded(count - 1) + HSG.leafGap + Math.max(0, leaves - 1) * HSG.leafStagger + HSG.leafMs + 250;
+    return {
+      ...out,
+      hubText: hub.text,
+      hubSize: hub.size,
+      hubLength: hub.length,
+      hubX: r1(HSG.cx - hub.length / 2),
+      hubPillX: r1(HSG.cx - hub.length / 2 - 6),
+      hubPillW: r1(hub.length + 12),
+      settle,
+      settle2: settle + 900,
+      backdropOpacity: v.backdrop ? 1 : 0,
+    };
+  },
+  motion: (() => {
+    const { cx, cy } = HSG;
+    const slots = Array.from({ length: HSG.slots }, (_, i) => i);
+    const leafSlots = Array.from({ length: HSG.slots * HSG.leaves }, (_, k) => k);
+    const dust = Array.from({ length: HSG.dust }, (_, d) => {
+      const a = (d / HSG.dust) * Math.PI * 2 + scatter(d + 90) * 0.6;
+      const r = 26 + scatter(d + 120) * 34;
+      return { d, x: r1(Math.cos(a) * r), y: r1(Math.sin(a) * r), size: r1(1.1 + scatter(d + 150) * 1.8) };
+    });
+    const pop = (s: number) => `translate(${cx} ${cy}) scale(${s})`;
+    const hubY = cy + 31;
+    return {
+      svg: `<svg viewBox="0 0 400 300" font-family="${SANS}"><!-- {{hub: text default='Platform' label='Hub'}} {{labels: text default='Research,Design,Engineering,Data,Security,Growth,Support' label='Spokes (comma-separated, up to 8)'}} {{leaves: int min=0 max=4 default=3 label='Leaves per spoke'}} {{background: color default=#0B1A1E label='Background'}} {{backdrop: bool default=true label='Background'}} {{core: color default=#F2C46D label='Hub'}} {{spoke: color default=#E8C48A label='Spokes'}} {{node: color default=#E58FB5 label='Nodes'}} {{leaf: color default=#9F8CF0 label='Leaves'}} {{comet: color default=#6FC3FF label='Comets'}} {{ink: color default=#D7E3E6 label='Text'}} {{glow: float min=0 max=6 default=2.5 step=0.5 label='Glow'}} --><defs><filter id="hubSpokeGraphGlow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="{{glow}}" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter><radialGradient id="hubSpokeGraphPearl" cx="0.35" cy="0.3" r="0.8"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0.95"/><stop offset="0.4" stop-color="{{node}}"/><stop offset="1" stop-color="{{node}}" stop-opacity="0.55"/></radialGradient><radialGradient id="hubSpokeGraphLeafPearl" cx="0.35" cy="0.3" r="0.8"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0.9"/><stop offset="0.45" stop-color="{{leaf}}"/><stop offset="1" stop-color="{{leaf}}" stop-opacity="0.6"/></radialGradient><radialGradient id="hubSpokeGraphCoreFill" cx="0.4" cy="0.35" r="0.75"><stop offset="0" stop-color="#FFF8E6"/><stop offset="0.45" stop-color="{{core}}"/><stop offset="1" stop-color="{{core}}" stop-opacity="0.6"/></radialGradient><radialGradient id="hubSpokeGraphVignette" cx="0.5" cy="0.5" r="0.7"><stop offset="0" stop-color="{{core}}" stop-opacity="0.08"/><stop offset="1" stop-color="{{core}}" stop-opacity="0"/></radialGradient></defs><g opacity="{{backdropOpacity}}"><rect width="400" height="300" fill="{{background}}"/><rect width="400" height="300" fill="url(#hubSpokeGraphVignette)"/></g>${slots
+        .map((i) => `<g display="{{chordShow${i}}}"><path id="hubSpokeGraphChord${i}" d="{{chord${i}}}" fill="none" stroke="{{comet}}" stroke-width="0.7" stroke-opacity="0.3"/></g>`)
+        .join("")}${slots
+        .map(
+          (i) =>
+            `<g display="{{show${i}}}"><path id="hubSpokeGraphSpoke${i}" d="{{spoke${i}}}" fill="none" stroke="{{spoke}}" stroke-width="1.4" stroke-opacity="0.8" filter="url(#hubSpokeGraphGlow)"/></g>`,
+        )
+        .join("")}${leafSlots
+        .map(
+          (k) =>
+            `<g display="{{leafShow${k}}}"><path id="hubSpokeGraphTwig${k}" d="{{leaf${k}}}" fill="none" stroke="{{leaf}}" stroke-width="0.8" stroke-opacity="0.55"/><circle id="hubSpokeGraphLeaf${k}" cx="{{lx${k}}}" cy="{{ly${k}}}" r="0" fill="url(#hubSpokeGraphLeafPearl)" filter="url(#hubSpokeGraphGlow)"/></g>`,
+        )
+        .join("")}${slots
+        .map(
+          (i) =>
+            `<g display="{{show${i}}}"><circle id="hubSpokeGraphHalo${i}" cx="{{x${i}}}" cy="{{y${i}}}" r="${HSG.nodeR * 2.2}" fill="{{node}}" fill-opacity="0.22" filter="url(#hubSpokeGraphGlow)" opacity="0"/><circle id="hubSpokeGraphNode${i}" cx="{{x${i}}}" cy="{{y${i}}}" r="0" fill="url(#hubSpokeGraphPearl)"/><g id="hubSpokeGraphTag${i}" opacity="0"><rect x="{{pillX${i}}}" y="{{pillY${i}}}" width="{{pillW${i}}}" height="{{pillH${i}}}" rx="3" fill="{{background}}" fill-opacity="0.7"/><text x="{{labelX${i}}}" y="{{labelY${i}}}" font-size="{{labelSize${i}}}" textLength="{{labelLength${i}}}" lengthAdjust="spacingAndGlyphs" font-weight="500" fill="{{ink}}">{{label${i}}}</text></g><circle id="hubSpokeGraphComet${i}" r="2.8" fill="{{comet}}" filter="url(#hubSpokeGraphGlow)" opacity="0"/><circle id="hubSpokeGraphSpark${i}" r="1.6" fill="#FFFFFF" filter="url(#hubSpokeGraphGlow)" opacity="0"/></g>`,
+        )
+        .join("")}<g transform="translate(${cx} ${cy})">${dust
+        .map((p) => `<circle id="hubSpokeGraphDust${p.d}" r="${p.size}" fill="{{core}}" opacity="0"/>`)
+        .join("")}</g>${[0, 1]
+        .map((k) => `<circle id="hubSpokeGraphPulse${k}" cx="${cx}" cy="${cy}" r="14" fill="none" stroke="{{core}}" stroke-width="1.2" opacity="0"/>`)
+        .join("")}<g id="hubSpokeGraphHub" transform="${pop(0)}"><circle r="26" fill="{{core}}" fill-opacity="0.28" filter="url(#hubSpokeGraphGlow)"/><g id="hubSpokeGraphRing" transform="rotate(0)"><circle r="17.5" fill="none" stroke="{{core}}" stroke-width="3" stroke-dasharray="0.8 1.6" stroke-opacity="0.85"/><circle r="15" fill="none" stroke="{{core}}" stroke-width="0.6" stroke-opacity="0.7"/></g><circle r="12" fill="url(#hubSpokeGraphCoreFill)" filter="url(#hubSpokeGraphGlow)"/></g><g id="hubSpokeGraphHubTag" opacity="0"><rect x="{{hubPillX}}" y="${hubY - 9}" width="{{hubPillW}}" height="15" rx="4" fill="{{background}}" fill-opacity="0.75"/><text x="{{hubX}}" y="${hubY + 2}" font-size="{{hubSize}}" textLength="{{hubLength}}" lengthAdjust="spacingAndGlyphs" font-weight="700" fill="{{ink}}">{{hubText}}</text></g></svg>`,
+      animate: [
+        // The hub ignites: a puff of dust, then the core pops and its ring of ticks turns.
+        ...dust.flatMap((p): SvgAnimation[] => [
+          { id: `hubSpokeGraphDust${p.d}`, attrs: { opacity: [0.9, 0], cx: [0, p.x], cy: [0, p.y] }, delay: 40, ms: 900 + (p.d % 4) * 120, ease: "out" },
+        ]),
+        { id: "hubSpokeGraphHub", attrs: { transform: [pop(0), pop(1.18)] }, ms: 300, ease: "out" },
+        { id: "hubSpokeGraphHub", attrs: { transform: [pop(1.18), pop(1)] }, delay: 300, ms: 260, ease: "in-out" },
+        { id: "hubSpokeGraphRing", attrs: { transform: ["rotate(0)", "rotate(150)"] }, ms: 5000, ease: "linear" },
+        { id: "hubSpokeGraphHubTag", attrs: { opacity: [0, 1] }, delay: 450, ms: 350 },
+        ...slots.flatMap((i): SvgAnimation[] => {
+          const at = HSG.start + i * HSG.stagger;
+          const land = hsgLanded(i);
+          const r = HSG.nodeR;
+          return [
+            // A spoke shoots out on a comet head, and its node pops on where it lands.
+            { id: `hubSpokeGraphSpoke${i}`, draw: true, delay: at, ms: HSG.spoke, ease: "out" },
+            { id: `hubSpokeGraphComet${i}`, attrs: { opacity: [0, 1] }, delay: at, ms: 80 },
+            { id: `hubSpokeGraphComet${i}`, along: `hubSpokeGraphSpoke${i}`, delay: at, ms: HSG.spoke, ease: "out" },
+            { id: `hubSpokeGraphComet${i}`, attrs: { opacity: [1, 0], r: [2.8, 8] }, delay: land, ms: 280, ease: "out" },
+            { id: `hubSpokeGraphNode${i}`, attrs: { r: [0, r * 1.35] }, delay: land - 40, ms: 170, ease: "out" },
+            { id: `hubSpokeGraphNode${i}`, attrs: { r: [r * 1.35, r] }, delay: land + 130, ms: 220, ease: "in-out" },
+            { id: `hubSpokeGraphHalo${i}`, attrs: { opacity: [0, 1] }, delay: land, ms: 300 },
+            { id: `hubSpokeGraphTag${i}`, attrs: { opacity: [0, 1] }, delay: land + 100, ms: 300 },
+            { id: `hubSpokeGraphChord${i}`, draw: true, delay: land + 700, ms: 500, ease: "in-out" },
+            // Once the graph is whole, sparks run out along the spokes twice.
+            { id: `hubSpokeGraphSpark${i}`, attrs: { opacity: [0, 1] }, delay: n("settle"), ms: 1 },
+            { id: `hubSpokeGraphSpark${i}`, along: `hubSpokeGraphSpoke${i}`, delay: n("settle"), ms: 800 + (i % 3) * 140, repeat: 2, ease: "in-out" },
+            { id: `hubSpokeGraphSpark${i}`, attrs: { opacity: [1, 0] }, delay: n("settle"), ms: 800 + (i % 3) * 140, repeat: 2, ease: [0.6, 0, 1, 1] },
+          ];
+        }),
+        ...leafSlots.flatMap((k): SvgAnimation[] => {
+          const at = hsgLeafAt(Math.floor(k / HSG.leaves), k % HSG.leaves);
+          return [
+            { id: `hubSpokeGraphTwig${k}`, draw: true, delay: at, ms: HSG.leafMs, ease: "out" },
+            { id: `hubSpokeGraphLeaf${k}`, attrs: { r: [0, HSG.leafR] }, delay: at + HSG.leafMs - 60, ms: 200, ease: "out" },
+          ];
+        }),
+        // Rings pulse out from the hub as the sparks set off (hidden till then).
+        ...[0, 1].map((k): SvgAnimation => ({ id: `hubSpokeGraphPulse${k}`, attrs: { opacity: [0, 0] }, ms: 1 })),
+        ...[0, 1].map((k): SvgAnimation => ({
+          id: `hubSpokeGraphPulse${k}`,
+          attrs: { r: [14, 48], opacity: [0.7, 0], "stroke-width": [1.6, 0.4] },
+          delay: n(k ? "settle2" : "settle"),
+          ms: 1200,
+          ease: "out",
+        })),
+      ],
+    };
+  })(),
+};
+
+export const dataEffects: VectorEffect[] = [donutChart, pieChart, gauge, barRace, sparkline, leaderboard, areaChart, kpiTile, rolodex, fanOutLinks, hubSpokeGraph];
