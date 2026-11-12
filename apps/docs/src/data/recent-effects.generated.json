@@ -210,9 +210,9 @@
     "transparent": true,
     "animated": true,
     "module": "shaders/promo",
-    "addedAt": "2026-11-12T21:57:17.010Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-11-12T21:58:39Z",
+    "commitHash": "6bfe7611cb82be63cbb8b20eb3ce6d5c30d98400",
+    "order": 680
   },
   {
     "id": "ai-prompt-bar",
