@@ -1,4 +1,6 @@
-// flair-metal-hash: d0cf5850
+// flair-metal-hash: 300dcb22
+#pragma clang diagnostic ignored "-Wunused-variable"
+#pragma clang diagnostic ignored "-Wunused-const-variable"
 #pragma clang diagnostic ignored "-Wmissing-prototypes"
 
 #include <metal_stdlib>
@@ -131,12 +133,6 @@ float4 pictureRGBA(texture2d<float> tex, sampler texSmplr, thread const float2& 
 }
 
 static inline __attribute__((always_inline))
-float luma(thread const float3& c)
-{
-    return dot(c, float3(0.2125999927520751953125, 0.715200006961822509765625, 0.072200000286102294921875));
-}
-
-static inline __attribute__((always_inline))
 float hash12(thread const float2& p)
 {
     float3 p3 = fract(p.xyx * 0.103100001811981201171875);
@@ -204,6 +200,12 @@ float3 pictureCover(texture2d<float> tex, sampler texSmplr, thread const float2&
 }
 
 static inline __attribute__((always_inline))
+float luma(thread const float3& c)
+{
+    return dot(c, float3(0.2125999927520751953125, 0.715200006961822509765625, 0.072200000286102294921875));
+}
+
+static inline __attribute__((always_inline))
 float2 lumaAlpha(texture2d<float> tex, sampler texSmplr, thread const float2& uv, constant FlairUniforms& _120)
 {
     float2 param = uv;
@@ -242,184 +244,182 @@ void mainImage(thread float4& fragColor, thread const float2& fragCoord, constan
     float2 uv = fitCoverUV(uImage, uImageSmplr, param, _120);
     float2 param_1 = uv;
     float4 pic = pictureRGBA(uImage, uImageSmplr, param_1, _120);
-    float3 param_2 = pic.xyz;
-    float lum = luma(param_2);
     float cycle = fract(_120.iTime / 6.0);
-    float _662;
+    float _657;
     if (_120.uAnimate != 0u)
     {
-        _662 = smoothstep(0.100000001490116119384765625, 0.5, cycle) * (1.0 - smoothstep(0.699999988079071044921875, 0.949999988079071044921875, cycle));
+        _657 = smoothstep(0.100000001490116119384765625, 0.5, cycle) * (1.0 - smoothstep(0.699999988079071044921875, 0.949999988079071044921875, cycle));
     }
     else
     {
-        _662 = _120.uProgress;
+        _657 = _120.uProgress;
     }
-    float t = _662;
-    float2 param_3 = fragCoord;
-    float param_4 = _120.uPanel;
-    float4 panel = panelAt(param_3, param_4);
+    float t = _657;
+    float2 param_2 = fragCoord;
+    float param_3 = _120.uPanel;
+    float4 panel = panelAt(param_2, param_3);
     float2 local = fragCoord - panel.xy;
-    float2 param_5 = panel.xy;
-    float id = hash12(param_5);
-    float2 param_6 = panel.xy / float2(_120.iResolution[0], _120.iResolution[1]);
-    float3 param_7 = pictureCover(uImage, uImageSmplr, param_6, _120);
-    float there = luma(param_7);
+    float2 param_4 = panel.xy;
+    float id = hash12(param_4);
+    float2 param_5 = panel.xy / float2(_120.iResolution[0], _120.iResolution[1]);
+    float3 param_6 = pictureCover(uImage, uImageSmplr, param_5, _120);
+    float there = luma(param_6);
     float solid = smoothstep(_120.uCut * 0.4000000059604644775390625, _120.uCut, there);
     float chance = 0.3499999940395355224609375 + (0.64999997615814208984375 * smoothstep(_120.uCut, _120.uCut + 0.3499999940395355224609375, there));
-    float2 param_8 = panel.xy + float2(21.700000762939453125);
-    float lit = solid * smoothstep(-0.039999999105930328369140625, 0.039999999105930328369140625, chance - hash12(param_8));
+    float2 param_7 = panel.xy + float2(21.700000762939453125);
+    float lit = solid * smoothstep(-0.039999999105930328369140625, 0.039999999105930328369140625, chance - hash12(param_7));
     float border = fast::min(panel.z - abs(local.x), panel.w - abs(local.y));
     float wire = 1.0 - smoothstep(0.5, 1.2999999523162841796875, border);
-    float _764;
+    float _759;
     if (id > 0.5)
     {
-        _764 = fract(fragCoord.x / 4.0);
+        _759 = fract(fragCoord.x / 4.0);
     }
     else
     {
-        _764 = fract(fragCoord.y / 4.0);
+        _759 = fract(fragCoord.y / 4.0);
     }
-    float hatch = _764;
-    float _781;
+    float hatch = _759;
+    float _776;
     if (id < 0.07999999821186065673828125)
     {
-        _781 = step(0.550000011920928955078125, fract((fragCoord.x + fragCoord.y) / 14.0));
+        _776 = step(0.550000011920928955078125, fract((fragCoord.x + fragCoord.y) / 14.0));
     }
     else
     {
-        _781 = 0.0;
+        _776 = 0.0;
     }
-    float stripes = _781;
+    float stripes = _776;
     float3 fill = ((_120.uWire * (0.62000000476837158203125 + (0.300000011920928955078125 * there))) * (1.0 - (0.25 * step(0.60000002384185791015625, hatch)))) * (1.0 - (0.75 * stripes));
     float3 col = mix(float3(0.0), float3(0.0900000035762786865234375, 0.0900000035762786865234375, 0.100000001490116119384765625), float3(solid));
     col = mix(col, fill, float3(lit));
-    float2 param_9 = panel.xy + float2(3.2999999523162841796875);
-    float traceId = hash12(param_9);
-    float2 param_10 = panel.xy + float2(9.8999996185302734375);
-    float side = hash12(param_10);
-    float _845;
+    float2 param_8 = panel.xy + float2(3.2999999523162841796875);
+    float traceId = hash12(param_8);
+    float2 param_9 = panel.xy + float2(9.8999996185302734375);
+    float side = hash12(param_9);
+    float _840;
     if (side < 0.25)
     {
-        _845 = panel.z + local.x;
+        _840 = panel.z + local.x;
     }
     else
     {
-        float _856;
+        float _851;
         if (side < 0.5)
         {
-            _856 = panel.z - local.x;
+            _851 = panel.z - local.x;
         }
         else
         {
-            float _867;
+            float _862;
             if (side < 0.75)
             {
-                _867 = panel.w + local.y;
+                _862 = panel.w + local.y;
             }
             else
             {
-                _867 = panel.w - local.y;
+                _862 = panel.w - local.y;
             }
-            _856 = _867;
+            _851 = _862;
         }
-        _845 = _856;
+        _840 = _851;
     }
-    float sideDist = _845;
+    float sideDist = _840;
     bool traced = (traceId < _120.uTraces) && (sideDist < 5.0);
-    float _897;
+    float _892;
     if (traced)
     {
-        _897 = 1.0 - smoothstep(1.7999999523162841796875, 3.2000000476837158203125, sideDist);
+        _892 = 1.0 - smoothstep(1.7999999523162841796875, 3.2000000476837158203125, sideDist);
     }
     else
     {
-        _897 = wire;
+        _892 = wire;
     }
-    float tw = _897;
-    float3 _914;
+    float tw = _892;
+    float3 _909;
     if (traceId < (_120.uTraces * 0.4000000059604644775390625))
     {
-        _914 = _120.uTraceA;
+        _909 = _120.uTraceA;
     }
     else
     {
-        float3 _926;
+        float3 _921;
         if (traceId < (_120.uTraces * 0.75))
         {
-            _926 = _120.uTraceB;
+            _921 = _120.uTraceB;
         }
         else
         {
-            _926 = _120.uTraceC;
+            _921 = _120.uTraceC;
         }
-        _914 = _926;
+        _909 = _921;
     }
-    float3 trace = _914;
-    float3 _940;
+    float3 trace = _909;
+    float3 _935;
     if (traced)
     {
-        _940 = trace;
+        _935 = trace;
     }
     else
     {
-        _940 = _120.uWire;
+        _935 = _120.uWire;
     }
-    col = mix(col, _940, float3(tw * solid));
-    float2 param_11 = uv;
-    float2 param_12 = float2(1.0) / float2(_120.iResolution[0], _120.iResolution[1]);
-    float edge = smoothstep(0.25, 0.60000002384185791015625, inkEdge(uImage, uImageSmplr, param_11, param_12, _120));
+    col = mix(col, _935, float3(tw * solid));
+    float2 param_10 = uv;
+    float2 param_11 = float2(1.0) / float2(_120.iResolution[0], _120.iResolution[1]);
+    float edge = smoothstep(0.25, 0.60000002384185791015625, inkEdge(uImage, uImageSmplr, param_10, param_11, _120));
     col = mix(col, _120.uWire, float3((edge * solid) * 0.800000011920928955078125));
     float2 block = floor(fragCoord / float2(_120.uPanel * 2.0));
     float along = (((block.y + 0.5) * _120.uPanel) * 2.0) / _120.iResolution[1u];
-    float _998;
+    float _993;
     if (_120.uFromTop != 0u)
     {
-        _998 = 1.0 - along;
+        _993 = 1.0 - along;
     }
     else
     {
-        _998 = along;
+        _993 = along;
     }
-    float2 param_13 = block + float2(7.099999904632568359375);
-    float order = (0.75 * _998) + (0.25 * hash12(param_13));
+    float2 param_12 = block + float2(7.099999904632568359375);
+    float order = (0.75 * _993) + (0.25 * hash12(param_12));
     float gap = (t * 1.2999999523162841796875) - order;
     float shown = step(0.0, gap);
     float front = (shown * (1.0 - step(0.07999999821186065673828125, gap))) * _120.uGlitch;
     float2 bit = floor(fragCoord / float2(6.0, 3.0));
-    float2 param_14 = bit + float2(floor(_120.iTime * 14.0));
-    float n = hash12(param_14);
+    float2 param_13 = bit + float2(floor(_120.iTime * 14.0));
+    float n = hash12(param_13);
     float3 noisy = floor((pic.xyz * 4.0) + float3(0.5)) / float3(4.0);
-    float3 _1060;
+    float3 _1055;
     if (n > 0.75)
     {
-        _1060 = float3(1.0, 0.300000011920928955078125, 0.85000002384185791015625);
+        _1055 = float3(1.0, 0.300000011920928955078125, 0.85000002384185791015625);
     }
     else
     {
-        float3 _1068;
+        float3 _1063;
         if (n > 0.60000002384185791015625)
         {
-            _1068 = float3(0.300000011920928955078125, 1.0, 0.949999988079071044921875);
+            _1063 = float3(0.300000011920928955078125, 1.0, 0.949999988079071044921875);
         }
         else
         {
-            float3 _1076;
+            float3 _1071;
             if (n > 0.449999988079071044921875)
             {
-                _1076 = float3(1.0);
+                _1071 = float3(1.0);
             }
             else
             {
-                _1076 = noisy * 1.39999997615814208984375;
+                _1071 = noisy * 1.39999997615814208984375;
             }
-            _1068 = _1076;
+            _1063 = _1071;
         }
-        _1060 = _1068;
+        _1055 = _1063;
     }
-    noisy = _1060;
+    noisy = _1055;
     float3 out_ = mix(col, pic.xyz, float3(shown));
-    float2 param_15 = block + float2(floor(_120.iTime * 6.0));
-    out_ = mix(out_, noisy, float3(front * step(0.3499999940395355224609375, hash12(param_15))));
+    float2 param_14 = block + float2(floor(_120.iTime * 6.0));
+    out_ = mix(out_, noisy, float3(front * step(0.3499999940395355224609375, hash12(param_14))));
     fragColor = float4(out_, fast::max(pic.w, solid * (1.0 - shown)));
 }
 
@@ -427,16 +427,16 @@ fragment flair_wireframe_reveal_frag_out flair_wireframe_reveal_frag(constant Fl
 {
     flair_wireframe_reveal_frag_out out = {};
     float4 flair_color = float4(0.0, 0.0, 0.0, 1.0);
-    float _1134;
+    float _1129;
     if (_120.flair_flipY > 0.5)
     {
-        _1134 = _120.iResolution[1u] - gl_FragCoord.y;
+        _1129 = _120.iResolution[1u] - gl_FragCoord.y;
     }
     else
     {
-        _1134 = gl_FragCoord.y;
+        _1129 = gl_FragCoord.y;
     }
-    float2 flair_coord = float2(gl_FragCoord.x, _1134);
+    float2 flair_coord = float2(gl_FragCoord.x, _1129);
     float2 param_1 = flair_coord;
     float4 param;
     mainImage(param, param_1, _120, uImage, uImageSmplr);

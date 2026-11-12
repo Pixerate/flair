@@ -723,7 +723,6 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   float px = 1.0 / iResolution.y;
   vec4 acc = vec4(0.0);
   float X = carried(iTime);
-  float gust = uWind * (1.0 + uGust * (0.8 * sin(0.8 * iTime) + 0.5 * sin(2.1 * iTime + 1.0)));
   for (int l = 2; l >= 0; l--) {
     // Three depths: farther leaves are smaller, slower and hazier.
     float sc = 1.0 - 0.25 * float(l);

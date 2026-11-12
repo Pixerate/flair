@@ -325,7 +325,6 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   col *= 1.0 - 0.45 * smoothstep(0.2, 0.7, shade) * smoothstep(BASE + 0.25, BASE - 0.05, p.y);
 
   float c = wax(p, m, 0.0);
-  float px = 1.5 / iResolution.y;
   float edge = smoothstep(0.5 - 0.06, 0.5 + 0.06, c);
   if (c > 0.3) {
     // The surface's slope from a softer copy, so the letters bulge like poured wax.

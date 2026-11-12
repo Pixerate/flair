@@ -1,4 +1,6 @@
-// flair-metal-hash: 4e784b43
+// flair-metal-hash: e58a8de3
+#pragma clang diagnostic ignored "-Wunused-variable"
+#pragma clang diagnostic ignored "-Wunused-const-variable"
 #pragma clang diagnostic ignored "-Wmissing-prototypes"
 
 #include <metal_stdlib>
@@ -105,11 +107,10 @@ void mainImage(thread float4& fragColor, thread const float2& fragCoord, constan
     float4 acc = float4(0.0);
     float param = _144.iTime;
     float X = carried(param, _144);
-    float gust = _144.uWind * (1.0 + (_144.uGust * ((0.800000011920928955078125 * sin(0.800000011920928955078125 * _144.iTime)) + (0.5 * sin((2.099999904632568359375 * _144.iTime) + 1.0)))));
-    float3 _683;
-    float3 _692;
-    float3 _701;
-    float _730;
+    float3 _663;
+    float3 _672;
+    float3 _681;
+    float _710;
     for (int l = 2; l >= 0; l--)
     {
         float sc = 1.0 - (0.25 * float(l));
@@ -162,39 +163,39 @@ void mainImage(thread float4& fragColor, thread const float2& fragCoord, constan
                 float pick = fract((h.y * 7.0) + (h.x * 3.0)) * 4.0;
                 if (pick < 1.0)
                 {
-                    _683 = _144.uColor1;
+                    _663 = _144.uColor1;
                 }
                 else
                 {
                     if (pick < 2.0)
                     {
-                        _692 = _144.uColor2;
+                        _672 = _144.uColor2;
                     }
                     else
                     {
                         if (pick < 3.0)
                         {
-                            _701 = _144.uColor3;
+                            _681 = _144.uColor3;
                         }
                         else
                         {
-                            _701 = float3(_144.uColor4);
+                            _681 = float3(_144.uColor4);
                         }
-                        _692 = _701;
+                        _672 = _681;
                     }
-                    _683 = _692;
+                    _663 = _672;
                 }
-                float3 colour = _683;
+                float3 colour = _663;
                 colour = mix(colour, float3(_144.uColor4), float3((0.5 * smoothstep(0.07999999821186065673828125, 0.0, inside)) * step(-0.5, inside)));
                 if (shape == 1.0)
                 {
-                    _730 = smoothstep(0.0500000007450580596923828125, 0.0, (abs(fract(((precise::atan2(q.x, q.y) / 6.28318023681640625) * 5.0) + 0.5) - 0.5) * length(q)) * 2.0);
+                    _710 = smoothstep(0.0500000007450580596923828125, 0.0, (abs(fract(((precise::atan2(q.x, q.y) / 6.28318023681640625) * 5.0) + 0.5) - 0.5) * length(q)) * 2.0);
                 }
                 else
                 {
-                    _730 = fast::max(smoothstep(0.02999999932944774627685546875, 0.0, abs(q.x)), smoothstep(0.039999999105930328369140625, 0.0, abs(fract((q.y - (abs(q.x) * 0.89999997615814208984375)) * 4.0) - 0.5) * 0.25));
+                    _710 = fast::max(smoothstep(0.02999999932944774627685546875, 0.0, abs(q.x)), smoothstep(0.039999999105930328369140625, 0.0, abs(fract((q.y - (abs(q.x) * 0.89999997615814208984375)) * 4.0) - 0.5) * 0.25));
                 }
-                float vein = _730;
+                float vein = _710;
                 colour *= (1.0 - ((0.300000011920928955078125 * vein) * step(0.0, inside)));
                 if (cf < 0.0)
                 {
@@ -217,16 +218,16 @@ fragment flair_leaves_blowing_frag_out flair_leaves_blowing_frag(constant FlairU
 {
     flair_leaves_blowing_frag_out out = {};
     float4 flair_color = float4(0.0, 0.0, 0.0, 1.0);
-    float _841;
+    float _821;
     if (_144.flair_flipY > 0.5)
     {
-        _841 = _144.iResolution[1u] - gl_FragCoord.y;
+        _821 = _144.iResolution[1u] - gl_FragCoord.y;
     }
     else
     {
-        _841 = gl_FragCoord.y;
+        _821 = gl_FragCoord.y;
     }
-    float2 flair_coord = float2(gl_FragCoord.x, _841);
+    float2 flair_coord = float2(gl_FragCoord.x, _821);
     float2 param_1 = flair_coord;
     float4 param;
     mainImage(param, param_1, _144);

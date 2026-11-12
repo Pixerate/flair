@@ -325,7 +325,6 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 p = fragCoord * px;
   float dir = uDirection < 0.0 ? -1.0 : 1.0;
   p.x *= dir;
-  float aspect = iResolution.x / iResolution.y;
   vec4 acc = vec4(0.0);
 
   // Wind lines: each row holds a curved segment sliding fast along it, shown while the gust passes.

@@ -1,4 +1,6 @@
-// flair-metal-hash: c392e07b
+// flair-metal-hash: a95d8ddf
+#pragma clang diagnostic ignored "-Wunused-variable"
+#pragma clang diagnostic ignored "-Wunused-const-variable"
 #pragma clang diagnostic ignored "-Wmissing-prototypes"
 
 #include <metal_stdlib>
@@ -229,7 +231,6 @@ void flair_opaqueImage(thread float4& fragColor, thread const float2& fragCoord,
     float param_5 = m;
     float param_6 = 0.0;
     float c = wax(param_4, param_5, param_6, _212, uMask, uMaskSmplr);
-    float px = 1.5 / _212.iResolution[1u];
     float edge = smoothstep(0.439999997615814208984375, 0.560000002384185791015625, c);
     if (c > 0.300000011920928955078125)
     {
@@ -273,27 +274,27 @@ float4 flair_backgroundOpacity(thread const float4& c, thread const float3& bg, 
     float3 room = mix(bg, float3(1.0) - bg, step(float3(0.0), d));
     float3 k = abs(d) / fast::max(room, float3(9.9999997473787516355514526367188e-05));
     float a = fast::clamp(fast::max(k.x, fast::max(k.y, k.z)), 0.0, 1.0);
-    float3 _845;
+    float3 _840;
     if (a > 0.0)
     {
-        _845 = bg + (d / float3(a));
+        _840 = bg + (d / float3(a));
     }
     else
     {
-        _845 = bg;
+        _840 = bg;
     }
-    float3 fg = _845;
+    float3 fg = _840;
     float alpha = a + (opacity * (1.0 - a));
-    float3 _867;
+    float3 _862;
     if (alpha > 0.0)
     {
-        _867 = ((fg * a) + ((bg * opacity) * (1.0 - a))) / float3(alpha);
+        _862 = ((fg * a) + ((bg * opacity) * (1.0 - a))) / float3(alpha);
     }
     else
     {
-        _867 = bg;
+        _862 = bg;
     }
-    float3 col = _867;
+    float3 col = _862;
     return float4(col, alpha * c.w);
 }
 
@@ -314,16 +315,16 @@ fragment flair_wax_melt_frag_out flair_wax_melt_frag(constant FlairUniforms& _21
 {
     flair_wax_melt_frag_out out = {};
     float4 flair_color = float4(0.0, 0.0, 0.0, 1.0);
-    float _924;
+    float _919;
     if (_212.flair_flipY > 0.5)
     {
-        _924 = _212.iResolution[1u] - gl_FragCoord.y;
+        _919 = _212.iResolution[1u] - gl_FragCoord.y;
     }
     else
     {
-        _924 = gl_FragCoord.y;
+        _919 = gl_FragCoord.y;
     }
-    float2 flair_coord = float2(gl_FragCoord.x, _924);
+    float2 flair_coord = float2(gl_FragCoord.x, _919);
     float2 param_1 = flair_coord;
     float4 param;
     mainImage(param, param_1, _212, uMask, uMaskSmplr);

@@ -232,7 +232,6 @@ uniform bool uStick;      // @control default=true label="Show stick"`,
       float u = tt - n;
       vec2 s = hash22(vec2(fj * 3.1, n));
       if (s.x > uDensity) continue;
-      float age = u * period;
       float angle = s.y * 6.28318;
       float speed = mix(0.6, 1.6, hash12(vec2(n, fj + 3.3))) * uLength;
       vec2 v = vec2(cos(angle), sin(angle)) * speed;

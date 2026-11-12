@@ -476,7 +476,6 @@ vec4 panelAt(vec2 p, float size) {
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 uv = fitCoverUV(uImage, fragCoord / iResolution.xy);
   vec4 pic = pictureRGBA(uImage, uv);
-  float lum = luma(pic.rgb);
   // Over a 6 s loop: wireframe, built up to the picture, held, then swept back.
   float cycle = fract(iTime / 6.0);
   float t = uAnimate ? smoothstep(0.1, 0.5, cycle) * (1.0 - smoothstep(0.7, 0.95, cycle)) : uProgress;
