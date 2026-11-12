@@ -1,4 +1,4 @@
-// flair-metal-hash: ddb258da
+// flair-metal-hash: 25038f22
 #pragma clang diagnostic ignored "-Wunused-variable"
 #pragma clang diagnostic ignored "-Wunused-const-variable"
 #pragma clang diagnostic ignored "-Wmissing-prototypes"
@@ -63,10 +63,10 @@ struct flair_relief_hex_ink_frag_out
 };
 
 static inline __attribute__((always_inline))
-float3 reliefLight(constant FlairUniforms& _333)
+float3 reliefLight(constant FlairUniforms& _349)
 {
-    float a = radians(_333.uLight);
-    float e = radians(_333.uElevation);
+    float a = radians(_349.uLight);
+    float e = radians(_349.uElevation);
     return float3(cos(a) * cos(e), sin(a) * cos(e), sin(e));
 }
 
@@ -115,60 +115,69 @@ float vnoise(thread const float2& p)
 }
 
 static inline __attribute__((always_inline))
-float tileRaise(thread const float2& c, constant FlairUniforms& _333)
+float2 hexId(thread const float2& c)
 {
-    float2 f = c / float2(_333.uCells);
-    float a = radians(_333.uAngle);
+    return float2(floor((c.x / 0.866025388240814208984375) + 0.5), floor((c.y / 0.5) + 0.5));
+}
+
+static inline __attribute__((always_inline))
+float tileRaise(thread const float2& c, constant FlairUniforms& _349)
+{
+    float2 f = c / float2(_349.uCells);
+    float a = radians(_349.uAngle);
     float2 dir = float2(cos(a), sin(a));
-    float extent = (0.5 * (((abs(dir.x) * _333.iResolution[0u]) / _333.iResolution[1u]) + abs(dir.y))) + 0.001000000047497451305389404296875;
+    float extent = (0.5 * (((abs(dir.x) * _349.iResolution[0u]) / _349.iResolution[1u]) + abs(dir.y))) + 0.001000000047497451305389404296875;
     float along = dot(f, dir) / extent;
     float2 param = (c * 0.449999988079071044921875) + float2(3.7000000476837158203125);
-    float v = along + (_333.uScatter * ((1.39999997615814208984375 * vnoise(param)) - 0.699999988079071044921875));
-    float edge = 1.0 - (2.0 * _333.uCoverage);
+    float v = along + (_349.uScatter * ((1.39999997615814208984375 * vnoise(param)) - 0.699999988079071044921875));
+    float edge = 1.0 - (2.0 * _349.uCoverage);
     float raise = smoothstep(edge, edge + 0.300000011920928955078125, v);
-    float2 param_1 = c + float2(41.0);
-    float stray = step(0.89999997615814208984375, hash12(param_1)) * step(edge - (0.449999988079071044921875 * (0.300000011920928955078125 + _333.uScatter)), v);
+    float2 param_1 = c;
+    float2 param_2 = hexId(param_1) + float2(41.0);
+    float stray = step(0.89999997615814208984375, hash12(param_2)) * step(edge - (0.449999988079071044921875 * (0.300000011920928955078125 + _349.uScatter)), v);
     return fast::max(raise, stray * 0.800000011920928955078125);
 }
 
 static inline __attribute__((always_inline))
-float tileHeight(thread const float2& c, constant FlairUniforms& _333)
+float tileHeight(thread const float2& c, constant FlairUniforms& _349)
 {
     float2 param = c;
-    float raise = tileRaise(param, _333);
+    float raise = tileRaise(param, _349);
     if (raise <= 0.0)
     {
         return 0.0;
     }
-    float a = radians(_333.uAngle);
+    float a = radians(_349.uAngle);
     float along = dot(c, float2(cos(a), sin(a)));
-    float2 param_1 = c + float2(13.0);
-    float phase = (((_333.iTime * _333.uSpeed) / 4.0) - (along * 0.0900000035762786865234375)) + (0.3499999940395355224609375 * hash12(param_1));
+    float2 param_1 = c;
+    float2 param_2 = hexId(param_1) + float2(13.0);
+    float phase = (((_349.iTime * _349.uSpeed) / 4.0) - (along * 0.0900000035762786865234375)) + (0.3499999940395355224609375 * hash12(param_2));
     float wave = 0.5 + (0.5 * sin(6.283185482025146484375 * phase));
-    float2 param_2 = c + float2(29.0);
-    float rest = 1.0 - ((_333.uVariation * hash12(param_2)) * 0.5);
-    return ((_333.uHeight * raise) * rest) * mix(1.0, wave * wave, _333.uVariation);
+    float2 param_3 = c;
+    float2 param_4 = hexId(param_3) + float2(29.0);
+    float rest = 1.0 - ((_349.uVariation * hash12(param_4)) * 0.5);
+    return ((_349.uHeight * raise) * rest) * mix(1.0, wave * wave, _349.uVariation);
 }
 
 static inline __attribute__((always_inline))
-float heightAt(thread const float2& p, constant FlairUniforms& _333)
+float heightAt(thread const float2& p, constant FlairUniforms& _349)
 {
-    float2 param = p * _333.uCells;
+    float2 param = p * _349.uCells;
     float4 h = hexCell(param);
     float2 param_1 = h.xy;
     float d = hexEdge(param_1);
     float2 param_2 = h.zw;
-    float th = tileHeight(param_2, _333);
-    return th * smoothstep(_333.uGap, _333.uGap + 0.0350000001490116119384765625, d);
+    float th = tileHeight(param_2, _349);
+    return th * smoothstep(_349.uGap, _349.uGap + 0.0350000001490116119384765625, d);
 }
 
 static inline __attribute__((always_inline))
-float3 reliefTrace(thread const float2& p, thread const float2& view, thread const float& bottom, thread const float& top, thread const float& px, constant FlairUniforms& _333)
+float3 reliefTrace(thread const float2& p, thread const float2& view, thread const float& bottom, thread const float& top, thread const float& px, constant FlairUniforms& _349)
 {
     if ((dot(view, view) < 1.0000000133514319600180897396058e-10) || (top <= bottom))
     {
         float2 param = p;
-        return float3(p, heightAt(param, _333));
+        return float3(p, heightAt(param, _349));
     }
     int steps = int(fast::clamp(ceil((length(view) * (top - bottom)) / px), 2.0, 36.0));
     float dz = (top - bottom) / float(steps);
@@ -182,7 +191,7 @@ float3 reliefTrace(thread const float2& p, thread const float2& view, thread con
         }
         float z = top - (float(i) * dz);
         float2 param_1 = p - (view * z);
-        if (heightAt(param_1, _333) >= z)
+        if (heightAt(param_1, _349) >= z)
         {
             lo = z;
             break;
@@ -193,7 +202,7 @@ float3 reliefTrace(thread const float2& p, thread const float2& view, thread con
     {
         float z_1 = 0.5 * (hi + lo);
         float2 param_2 = p - (view * z_1);
-        if (heightAt(param_2, _333) >= z_1)
+        if (heightAt(param_2, _349) >= z_1)
         {
             lo = z_1;
         }
@@ -206,20 +215,20 @@ float3 reliefTrace(thread const float2& p, thread const float2& view, thread con
 }
 
 static inline __attribute__((always_inline))
-float3 reliefNormal(thread const float2& q, thread const float& eps, constant FlairUniforms& _333)
+float3 reliefNormal(thread const float2& q, thread const float& eps, constant FlairUniforms& _349)
 {
     float2 e = float2(eps, 0.0);
     float2 param = q + e;
     float2 param_1 = q - e;
-    float dx = heightAt(param, _333) - heightAt(param_1, _333);
+    float dx = heightAt(param, _349) - heightAt(param_1, _349);
     float2 param_2 = q + e.yx;
     float2 param_3 = q - e.yx;
-    float dy = heightAt(param_2, _333) - heightAt(param_3, _333);
+    float dy = heightAt(param_2, _349) - heightAt(param_3, _349);
     return fast::normalize(float3(-dx, -dy, 2.0 * eps));
 }
 
 static inline __attribute__((always_inline))
-float reliefShadow(thread const float3& s, thread const float3& L, thread const float& softness, thread const float& top, thread const float& px, constant FlairUniforms& _333)
+float reliefShadow(thread const float3& s, thread const float3& L, thread const float& softness, thread const float& top, thread const float& px, constant FlairUniforms& _349)
 {
     float flatLen = fast::max(length(L.xy), 0.001000000047497451305389404296875);
     float2 dir = L.xy / float2(flatLen);
@@ -240,7 +249,7 @@ float reliefShadow(thread const float3& s, thread const float3& L, thread const 
         float f = float(i) / float(steps);
         float t = (1.5 * px) + ((reach * f) * f);
         float2 param = s.xy + (dir * t);
-        float clearance = (s.z + (rise * t)) - heightAt(param, _333);
+        float clearance = (s.z + (rise * t)) - heightAt(param, _349);
         lit = fast::min(lit, fast::clamp(0.5 + (clearance / ((softness * t) + px)), 0.0, 1.0));
         if (lit <= 0.0)
         {
@@ -314,13 +323,13 @@ float fbm(thread float2& p, thread const int& octaves)
 }
 
 static inline __attribute__((always_inline))
-float inkAt(thread const float2& p, thread const float& along, constant FlairUniforms& _333)
+float inkAt(thread const float2& p, thread const float& along, constant FlairUniforms& _349)
 {
-    float edge = 1.0 - (2.0 * _333.uCoverage);
+    float edge = 1.0 - (2.0 * _349.uCoverage);
     float2 param = p * 3.0;
     int param_1 = 5;
-    float _985 = fbm(param, param_1);
-    float cloud = smoothstep(edge - 0.100000001490116119384765625, edge + 0.5, (along + (0.699999988079071044921875 * (_985 - 0.5))) + (0.4000000059604644775390625 * (_333.uInkTiles - 0.75)));
+    float _1007 = fbm(param, param_1);
+    float cloud = smoothstep(edge - 0.100000001490116119384765625, edge + 0.5, (along + (0.699999988079071044921875 * (_1007 - 0.5))) + (0.4000000059604644775390625 * (_349.uInkTiles - 0.75)));
     float drops = 0.0;
     for (int i = 0; i < 3; i++)
     {
@@ -331,11 +340,11 @@ float inkAt(thread const float2& p, thread const float& along, constant FlairUni
         float2 r = hash22(param_2);
         float2 param_3 = cell + float2(2.0);
         float2 param_4 = cell + float2(5.0);
-        float size = mix(0.07999999821186065673828125, 0.319999992847442626953125, hash12(param_3)) * step(1.0 - (0.3499999940395355224609375 * _333.uSplatter), hash12(param_4));
+        float size = mix(0.07999999821186065673828125, 0.319999992847442626953125, hash12(param_3)) * step(1.0 - (0.3499999940395355224609375 * _349.uSplatter), hash12(param_4));
         drops = fast::max(drops, smoothstep(size, size - 0.0599999986588954925537109375, length(fract(g) - r)));
     }
     float near = smoothstep(-0.60000002384185791015625, 0.20000000298023223876953125, along);
-    return fast::max(cloud * (0.5 + (0.5 * _333.uSplatter)), (drops * near) * _333.uSplatter);
+    return fast::max(cloud * (0.5 + (0.5 * _349.uSplatter)), (drops * near) * _349.uSplatter);
 }
 
 static inline __attribute__((always_inline))
@@ -348,96 +357,102 @@ float3 reliefShade(thread const float3& N, thread const float3& L, thread const 
 }
 
 static inline __attribute__((always_inline))
-void mainImage(thread float4& fragColor, thread const float2& fragCoord, constant FlairUniforms& _333)
+void mainImage(thread float4& fragColor, thread const float2& fragCoord, constant FlairUniforms& _349)
 {
-    float2 p = (fragCoord - (float2(_333.iResolution[0], _333.iResolution[1]) * 0.5)) / float2(_333.iResolution[1u]);
-    float px = 1.0 / _333.iResolution[1u];
-    float3 L = reliefLight(_333);
-    float2 view = float2(-0.5, 0.866025388240814208984375) * (_333.uTilt * 0.89999997615814208984375);
-    float top = _333.uHeight + 9.9999997473787516355514526367188e-05;
+    float2 p = (fragCoord - (float2(_349.iResolution[0], _349.iResolution[1]) * 0.5)) / float2(_349.iResolution[1u]);
+    float px = 1.0 / _349.iResolution[1u];
+    float3 L = reliefLight(_349);
+    float2 view = float2(-0.5, 0.866025388240814208984375) * (_349.uTilt * 0.89999997615814208984375);
+    float top = _349.uHeight + 9.9999997473787516355514526367188e-05;
     float2 param = p;
     float2 param_1 = view;
     float param_2 = 0.0;
     float param_3 = top;
     float param_4 = px;
-    float3 s = reliefTrace(param, param_1, param_2, param_3, param_4, _333);
+    float3 s = reliefTrace(param, param_1, param_2, param_3, param_4, _349);
     float2 param_5 = s.xy;
     float param_6 = 0.75 * px;
-    float3 N = reliefNormal(param_5, param_6, _333);
+    float3 N = reliefNormal(param_5, param_6, _349);
     float3 param_7 = s;
     float3 param_8 = L;
-    float param_9 = _333.uSoftness;
+    float param_9 = _349.uSoftness;
     float param_10 = top;
     float param_11 = px;
-    float lit = reliefShadow(param_7, param_8, param_9, param_10, param_11, _333);
-    float a = radians(_333.uAngle);
+    float lit = reliefShadow(param_7, param_8, param_9, param_10, param_11, _349);
+    float a = radians(_349.uAngle);
     float2 dir = float2(cos(a), sin(a));
-    float along = dot(s.xy, dir) / ((0.5 * (((abs(dir.x) * _333.iResolution[0u]) / _333.iResolution[1u]) + abs(dir.y))) + 0.001000000047497451305389404296875);
-    float2 param_12 = s.xy * _333.uCells;
+    float extent = (0.5 * (((abs(dir.x) * _349.iResolution[0u]) / _349.iResolution[1u]) + abs(dir.y))) + 0.001000000047497451305389404296875;
+    float along = dot(s.xy, dir) / extent;
+    float2 param_12 = s.xy * _349.uCells;
     float4 h = hexCell(param_12);
     bool onTile = s.z > 9.9999997473787516355514526367188e-05;
-    float3 base = _333.uSurface;
+    float3 base = _349.uSurface;
     if (onTile)
     {
         float2 param_13 = s.xy * 16.0;
-        float crack = cracks(param_13) * _333.uCracks;
-        float edge = 1.0 - (2.0 * _333.uCoverage);
-        float deep = fast::clamp((along - edge) / fast::max(1.0 - edge, 0.100000001490116119384765625), 0.0, 1.0);
-        float2 param_14 = h.zw + float2(3.0);
-        float inked = step(hash12(param_14), fast::clamp(((deep * 1.7999999523162841796875) - 0.300000011920928955078125) + ((_333.uInkTiles - 0.75) * 1.5), 0.0, 1.0));
-        float2 param_15 = (s.xy * 14.0) + h.zw;
-        int param_16 = 5;
-        float _1252 = fbm(param_15, param_16);
-        float marble = _1252;
-        float3 ink = (float3(_333.uInk) * (0.699999988079071044921875 + (0.89999997615814208984375 * marble))) + float3(0.25 * smoothstep(0.62000000476837158203125, 0.800000011920928955078125, marble));
-        base = mix(_333.uSurface * (0.920000016689300537109375 + (0.07999999821186065673828125 * marble)), ink, float3(inked));
-        base = mix(base, mix(_333.uShade * 0.60000002384185791015625, _333.uSurface * 0.85000002384185791015625, float3(inked)), float3(crack * 0.800000011920928955078125));
-        float2 param_17 = h.xy;
-        float face = (hexEdge(param_17) - _333.uGap) - 0.0350000001490116119384765625;
+        float crack = cracks(param_13) * _349.uCracks;
+        float edge = 1.0 - (2.0 * _349.uCoverage);
+        float tileAlong = dot(h.zw / float2(_349.uCells), dir) / extent;
+        float deep = fast::clamp((tileAlong - edge) / fast::max(1.0 - edge, 0.100000001490116119384765625), 0.0, 1.0);
+        float2 param_14 = h.zw;
+        float2 param_15 = hexId(param_14) + float2(3.0);
+        float inked = step(hash12(param_15), fast::clamp(((deep * 1.7999999523162841796875) - 0.300000011920928955078125) + ((_349.uInkTiles - 0.75) * 1.5), 0.0, 1.0));
+        float2 param_16 = h.zw;
+        float2 param_17 = (s.xy * 14.0) + (hexId(param_16) * 1.7000000476837158203125);
+        int param_18 = 5;
+        float _1293 = fbm(param_17, param_18);
+        float marble = _1293;
+        float3 ink = (float3(_349.uInk) * (0.699999988079071044921875 + (0.89999997615814208984375 * marble))) + float3(0.25 * smoothstep(0.62000000476837158203125, 0.800000011920928955078125, marble));
+        base = mix(_349.uSurface * (0.920000016689300537109375 + (0.07999999821186065673828125 * marble)), ink, float3(inked));
+        base = mix(base, mix(_349.uShade * 0.60000002384185791015625, _349.uSurface * 0.85000002384185791015625, float3(inked)), float3(crack * 0.800000011920928955078125));
+        float2 param_19 = h.xy;
+        float face = (hexEdge(param_19) - _349.uGap) - 0.0350000001490116119384765625;
         float rim = smoothstep(-0.0040000001899898052215576171875, 0.0, face) * (1.0 - smoothstep(0.008000000379979610443115234375, 0.01600000075995922088623046875, face));
-        base = mix(base, _333.uSurface, float3((rim * 0.5) * inked));
+        base = mix(base, _349.uSurface, float3((rim * 0.5) * inked));
+        float rise = fast::clamp(s.z / fast::max(_349.uHeight, 9.9999997473787516355514526367188e-05), 0.0, 1.0);
+        base = mix(base * mix(0.86000001430511474609375 + (0.14000000059604644775390625 * rise), 0.699999988079071044921875 + (0.300000011920928955078125 * rise), inked), _349.uSurface, float3(((0.1599999964237213134765625 * rise) * rise) * inked));
     }
     else
     {
-        float2 param_18 = s.xy * 5.0;
-        float crack_1 = cracks(param_18) * _333.uCracks;
-        float2 param_19 = (s.xy * 4.0) + float2(11.0);
-        int param_20 = 5;
-        float _1342 = fbm(param_19, param_20);
-        float stain = _1342;
-        base = _333.uSurface * (0.89999997615814208984375 + (0.119999997317790985107421875 * stain));
-        base = mix(base, _333.uShade * 0.800000011920928955078125, float3(crack_1 * 0.300000011920928955078125));
-        float2 param_21 = s.xy;
-        float param_22 = along;
-        base = mix(base, float3(_333.uInk), float3(inkAt(param_21, param_22, _333) * (0.75 + (0.25 * stain))));
+        float2 param_20 = s.xy * 5.0;
+        float crack_1 = cracks(param_20) * _349.uCracks;
+        float2 param_21 = (s.xy * 4.0) + float2(11.0);
+        int param_22 = 5;
+        float _1414 = fbm(param_21, param_22);
+        float stain = _1414;
+        base = _349.uSurface * (0.89999997615814208984375 + (0.119999997317790985107421875 * stain));
+        base = mix(base, _349.uShade * 0.800000011920928955078125, float3(crack_1 * 0.300000011920928955078125));
+        float2 param_23 = s.xy;
+        float param_24 = along;
+        base = mix(base, float3(_349.uInk), float3(inkAt(param_23, param_24, _349) * (0.75 + (0.25 * stain))));
     }
-    float3 param_23 = N;
-    float3 param_24 = L;
-    float param_25 = lit;
-    float3 param_26 = base;
-    float3 param_27 = base * _333.uShade;
-    float3 col = reliefShade(param_23, param_24, param_25, param_26, param_27);
+    float3 param_25 = N;
+    float3 param_26 = L;
+    float param_27 = lit;
+    float3 param_28 = base;
+    float3 param_29 = base * _349.uShade;
+    float3 col = reliefShade(param_25, param_26, param_27, param_28, param_29);
     col *= (0.939999997615814208984375 + (0.07999999821186065673828125 * dot(p, fast::normalize(L.xy + float2(9.9999997473787516355514526367188e-05)))));
     fragColor = float4(col, 1.0);
 }
 
-fragment flair_relief_hex_ink_frag_out flair_relief_hex_ink_frag(constant FlairUniforms& _333 [[buffer(0)]], float4 gl_FragCoord [[position]])
+fragment flair_relief_hex_ink_frag_out flair_relief_hex_ink_frag(constant FlairUniforms& _349 [[buffer(0)]], float4 gl_FragCoord [[position]])
 {
     flair_relief_hex_ink_frag_out out = {};
     float4 flair_color = float4(0.0, 0.0, 0.0, 1.0);
-    float _1416;
-    if (_333.flair_flipY > 0.5)
+    float _1488;
+    if (_349.flair_flipY > 0.5)
     {
-        _1416 = _333.iResolution[1u] - gl_FragCoord.y;
+        _1488 = _349.iResolution[1u] - gl_FragCoord.y;
     }
     else
     {
-        _1416 = gl_FragCoord.y;
+        _1488 = gl_FragCoord.y;
     }
-    float2 flair_coord = float2(gl_FragCoord.x, _1416);
+    float2 flair_coord = float2(gl_FragCoord.x, _1488);
     float2 param_1 = flair_coord;
     float4 param;
-    mainImage(param, param_1, _333);
+    mainImage(param, param_1, _349);
     flair_color = param;
     out.flair_FragColor = flair_color;
     return out;
