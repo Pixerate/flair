@@ -48,6 +48,8 @@ final class FlairPaintHintTests: XCTestCase {
         XCTAssertNil(planet.json["paint"], "A framed object is not paint")
         let lava = try await provider.describe("lava-flow")
         XCTAssertEqual(lava.json["paint"], ["map": "stroke", "colors": ["uLava", "uHot"], "values": .object([:]), "live": true, "repeat": "mirror"])
+        let lightPainting = try await provider.describe("light-painting")
+        XCTAssertEqual(lightPainting.json["paint"], ["map": "path", "colors": [], "values": ["uBackgroundAlpha": 0], "live": false])
     }
 
     func testEveryHintNamesRealControlsAndAPathControlForPathPaint() async throws {

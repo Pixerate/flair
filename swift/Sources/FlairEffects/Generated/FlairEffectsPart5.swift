@@ -4079,8 +4079,8 @@ public struct LightPainting: FlairEffect, Codable, Sendable, Equatable {
         FlairControlDescriptor(name: "uLife", property: "life", type: .float, label: "Fade time", min: 0.5, max: 10.0, step: 0.0475),
         FlairControlDescriptor(name: "uFlicker", property: "flicker", type: .float, label: "Flicker", min: 0.0, max: 1.0, step: 0.005),
         FlairControlDescriptor(name: "uDemo", property: "demo", type: .bool, label: "Demo when idle", min: 0.0, max: 1.0, step: 0.005),
-        FlairControlDescriptor(name: "uPath", property: "path", type: .path, label: "Path when idle", min: 0.0, max: 1.0, step: 0.005, pathFit: .contain, pathMargin: 0.1),
         FlairControlDescriptor(name: "uBackgroundAlpha", property: "backgroundAlpha", type: .float, label: "Background opacity", min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uPath", property: "path", type: .path, label: "Path when idle", min: 0.0, max: 1.0, step: 0.005, pathFit: .contain, pathMargin: 0.1),
     ]
     public static let samplerBindings: [FlairSamplerBinding] = [
         FlairSamplerBinding(name: "uPath", property: "path", type: .path, binding: 1, filter: .nearest, wrap: .clamp, pathFit: .contain, pathMargin: 0.1),
@@ -4108,10 +4108,10 @@ public struct LightPainting: FlairEffect, Codable, Sendable, Equatable {
     public var flicker: Float = 0.25
     /// Demo when idle (`uDemo`).
     public var demo: Bool = true
-    /// Path when idle (`uPath`).
-    public var path: FlairTextureInput = .none
     /// Background opacity (`uBackgroundAlpha`).
     public var backgroundAlpha: Float = 1.0
+    /// Path when idle (`uPath`).
+    public var path: FlairTextureInput = .none
 
     public init() {}
 
@@ -4152,8 +4152,8 @@ public struct LightPainting: FlairEffect, Codable, Sendable, Equatable {
         self.life = bag.decodeFloat("uLife", "life", default: 4.0, min: 0.5, max: 10.0)
         self.flicker = bag.decodeFloat("uFlicker", "flicker", default: 0.25, min: 0.0, max: 1.0)
         self.demo = bag.decodeBool("uDemo", "demo", default: true)
-        self.path = bag.decodeTexture("uPath", "path", default: .none, fit: .contain, margin: 0.1)
         self.backgroundAlpha = bag.decodeFloat("uBackgroundAlpha", "backgroundAlpha", default: 1.0, min: 0.0, max: 1.0)
+        self.path = bag.decodeTexture("uPath", "path", default: .none, fit: .contain, margin: 0.1)
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -4166,8 +4166,8 @@ public struct LightPainting: FlairEffect, Codable, Sendable, Equatable {
         bag.encodeFloat(self.life, for: "uLife")
         bag.encodeFloat(self.flicker, for: "uFlicker")
         bag.encodeBool(self.demo, for: "uDemo")
-        bag.encodeTexture(self.path, for: "uPath")
         bag.encodeFloat(self.backgroundAlpha, for: "uBackgroundAlpha")
+        bag.encodeTexture(self.path, for: "uPath")
         try bag.encode(to: encoder)
     }
 }

@@ -599,7 +599,8 @@ uniform float uCycle;     // @control min=0 max=2 default=0.4 label="Colour cycl
 uniform float uHue;       // @control min=0 max=1 default=0 label="Hue"
 uniform float uLife;      // @control min=0.5 max=10 default=4 label="Fade time"
 uniform float uFlicker;   // @control min=0 max=1 default=0.25 label="Flicker"
-uniform bool uDemo;       // @control default=true label="Demo when idle"`,
+uniform bool uDemo;       // @control default=true label="Demo when idle"
+uniform float uBackgroundAlpha; // @control min=0 max=1 default=1 label="Background opacity"`,
     HASH,
     trailHelper(0.05, 1.1, true),
     SEGMENT,
@@ -616,6 +617,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   // A dark ground with a little vignette and grain.
   vec3 col = uBackground * (1.0 - 0.45 * dot(uv - 0.5, uv - 0.5) * 2.0);
   col += (hash12(fragCoord + fract(iTime) * 113.0) - 0.5) * 0.012;
+  vec3 lit = vec3(0.0);
 
   bool live = trailLive(uDemo);
   vec4 a = trailAt(0, live);
@@ -671,9 +673,11 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     vec3 tint = spectrum(uHue + bestWhen * uCycle);
     float flicker = 1.0 - uFlicker * 0.35 * hash12(vec2(floor(iTime * 30.0), floor(bestWhen * 20.0)));
     vec3 light = tint * halo * uGlow * 0.9 + mix(tint, vec3(1.0), 0.75) * core * 1.8;
-    col += (1.0 - exp(-light * 1.4)) * flicker;
+    lit = (1.0 - exp(-light * 1.4)) * flicker;
   }
-  fragColor = vec4(col, 1.0);
+  // The ground (vignette and grain included) fades with the background opacity; the light stays.
+  float alpha = uBackgroundAlpha + (1.0 - uBackgroundAlpha) * clamp(max(lit.r, max(lit.g, lit.b)), 0.0, 1.0);
+  fragColor = vec4((col * uBackgroundAlpha + lit) / max(alpha, 1e-4), alpha);
 }`,
   ),
   presets: [

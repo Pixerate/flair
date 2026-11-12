@@ -146,6 +146,11 @@ describe("paint hints", () => {
     expect((await provider.describe("glass-writing")).paint).toEqual({ map: "path", colors: ["uColorA", "uColorC"], values: { uBackgroundAlpha: 0, uDrawOn: 0 }, live: false, size: 32 });
     expect((await provider.describe("comet-trail")).paint).toEqual({ map: "path", colors: ["uTail", "uHead"], values: {}, live: true });
     expect((await provider.describe("starfield")).paint).toMatchObject({ map: "canvas", colors: ["uStar"], live: true });
+    // Light painting draws the whole stroke, still, on a clear ground (its vignette and grain fade with it).
+    expect((await provider.describe("light-painting")).paint).toEqual({ map: "path", colors: [], values: { uBackgroundAlpha: 0 }, live: false });
+    expect((await provider.describe("neon-ripple")).paint).toEqual({ map: "canvas", colors: ["uNeon"], values: { uBackgroundAlpha: 0 }, live: true });
+    // A single prism and its beam: painting only uncovers a fragment of it.
+    expect((await provider.describe("prism-light")).paint).toBeUndefined();
   });
 
   it("gives hints an editor can apply as they are: colours and values its controls take, and a path control for path paint", async () => {
