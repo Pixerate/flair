@@ -1,4 +1,6 @@
-// flair-metal-hash: 70f9954c
+// flair-metal-hash: 7b192f33
+#pragma clang diagnostic ignored "-Wunused-variable"
+#pragma clang diagnostic ignored "-Wunused-const-variable"
 #pragma clang diagnostic ignored "-Wmissing-prototypes"
 
 #include <metal_stdlib>
@@ -202,7 +204,6 @@ void mainImage(thread float4& fragColor, thread const float2& fragCoord, constan
     float3 shown = (onScreen(param_8, _244, uImage, uImageSmplr) * flicker) * (1.08000004291534423828125 - (0.300000011920928955078125 * length(s - float2(0.5))));
     col = mix(col, shown, float3(inside));
     float2 src = float2(0.5 * aspect, 1.25);
-    float2 tl = float2(lo.x * aspect, hi.y);
     float2 tr = float2(hi.x * aspect, hi.y);
     float2 d = q - src;
     float across = (d.x / fast::max(-d.y, 9.9999997473787516355514526367188e-05)) / ((tr.x - src.x) / (src.y - tr.y));
@@ -212,8 +213,8 @@ void mainImage(thread float4& fragColor, thread const float2& fragCoord, constan
     float rays = 0.60000002384185791015625 + (0.4000000059604644775390625 * vnoise(param_9));
     float2 param_10 = (q * 3.0) + float2(_244.iTime * 0.039999999105930328369140625, (-_244.iTime) * 0.0199999995529651641845703125);
     int param_11 = 4;
-    float _804 = fbm(param_10, param_11);
-    float haze = _804;
+    float _796 = fbm(param_10, param_11);
+    float haze = _796;
     float3 beamLight = mix(float3(1.0, 0.949999988079071044921875, 0.85000002384185791015625), spill * 2.0, float3(0.5));
     col += (((((((beamLight * inBeam) * _244.uBeam) * 0.319999992847442626953125) * rays) * (0.4000000059604644775390625 + haze)) * (0.5 + (0.5 * down))) * flicker);
     float2 g = (q * 90.0) + float2(_244.iTime * 1.5, (-_244.iTime) * 2.5);
@@ -252,16 +253,16 @@ fragment flair_cinema_projector_frag_out flair_cinema_projector_frag(constant Fl
 {
     flair_cinema_projector_frag_out out = {};
     float4 flair_color = float4(0.0, 0.0, 0.0, 1.0);
-    float _1026;
+    float _1018;
     if (_244.flair_flipY > 0.5)
     {
-        _1026 = _244.iResolution[1u] - gl_FragCoord.y;
+        _1018 = _244.iResolution[1u] - gl_FragCoord.y;
     }
     else
     {
-        _1026 = gl_FragCoord.y;
+        _1018 = gl_FragCoord.y;
     }
-    float2 flair_coord = float2(gl_FragCoord.x, _1026);
+    float2 flair_coord = float2(gl_FragCoord.x, _1018);
     float2 param_1 = flair_coord;
     float4 param;
     mainImage(param, param_1, _244, uImage, uImageSmplr);

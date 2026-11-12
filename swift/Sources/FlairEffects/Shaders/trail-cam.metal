@@ -1,4 +1,6 @@
-// flair-metal-hash: 0ab12769
+// flair-metal-hash: 3d724044
+#pragma clang diagnostic ignored "-Wunused-variable"
+#pragma clang diagnostic ignored "-Wunused-const-variable"
 #pragma clang diagnostic ignored "-Wmissing-prototypes"
 #pragma clang diagnostic ignored "-Wmissing-braces"
 
@@ -414,7 +416,6 @@ static inline __attribute__((always_inline))
 void mainImage(thread float4& fragColor, thread const float2& fragCoord, constant FlairUniforms& _149, texture2d<float> uImage, sampler uImageSmplr)
 {
     float2 uv = fragCoord / float2(_149.iResolution[0], _149.iResolution[1]);
-    float aspect = _149.iResolution[0u] / _149.iResolution[1u];
     float shot = floor(_149.iTime / _149.uInterval);
     float2 param = float2(shot, 3.0);
     float2 shake = (hash22(param) - float2(0.5)) * 0.006000000052154064178466796875;
@@ -428,53 +429,53 @@ void mainImage(thread float4& fragColor, thread const float2& fragCoord, constan
     if ((_149.uFigure != 0u) && (k >= 4.0))
     {
         float i = k - 4.0;
-        float _909;
+        float _903;
         if (i == 0.0)
         {
-            _909 = 0.319999992847442626953125;
+            _903 = 0.319999992847442626953125;
         }
         else
         {
-            float _915;
+            float _909;
             if (i == 1.0)
             {
-                _915 = 0.4799999892711639404296875;
+                _909 = 0.4799999892711639404296875;
             }
             else
             {
-                _915 = (i == 2.0) ? 0.7200000286102294921875 : 1.5;
+                _909 = (i == 2.0) ? 0.7200000286102294921875 : 1.5;
             }
-            _909 = _915;
+            _903 = _909;
         }
-        float size = _909;
-        float _928;
+        float size = _903;
+        float _922;
         if (i == 0.0)
         {
-            _928 = 0.4199999868869781494140625;
+            _922 = 0.4199999868869781494140625;
         }
         else
         {
-            float _934;
+            float _928;
             if (i == 1.0)
             {
-                _934 = -0.2800000011920928955078125;
+                _928 = -0.2800000011920928955078125;
             }
             else
             {
-                _934 = (i == 2.0) ? 0.119999997317790985107421875 : (-0.0500000007450580596923828125);
+                _928 = (i == 2.0) ? 0.119999997317790985107421875 : (-0.0500000007450580596923828125);
             }
-            _928 = _934;
+            _922 = _928;
         }
-        float _947;
+        float _941;
         if (i == 3.0)
         {
-            _947 = -0.300000011920928955078125;
+            _941 = -0.300000011920928955078125;
         }
         else
         {
-            _947 = ((-0.5) + (0.5 * size)) - 0.0199999995529651641845703125;
+            _941 = ((-0.5) + (0.5 * size)) - 0.0199999995529651641845703125;
         }
-        float2 at = float2(_928, _947);
+        float2 at = float2(_922, _941);
         float2 q = (p - at) / float2(size);
         float2 param_3 = q;
         float d = figure(param_3);
@@ -502,16 +503,16 @@ fragment flair_trail_cam_frag_out flair_trail_cam_frag(constant FlairUniforms& _
 {
     flair_trail_cam_frag_out out = {};
     float4 flair_color = float4(0.0, 0.0, 0.0, 1.0);
-    float _1115;
+    float _1109;
     if (_149.flair_flipY > 0.5)
     {
-        _1115 = _149.iResolution[1u] - gl_FragCoord.y;
+        _1109 = _149.iResolution[1u] - gl_FragCoord.y;
     }
     else
     {
-        _1115 = gl_FragCoord.y;
+        _1109 = gl_FragCoord.y;
     }
-    float2 flair_coord = float2(gl_FragCoord.x, _1115);
+    float2 flair_coord = float2(gl_FragCoord.x, _1109);
     float2 param_1 = flair_coord;
     float4 param;
     mainImage(param, param_1, _149, uImage, uImageSmplr);

@@ -548,7 +548,6 @@ ${BACKDROP_CONTROLS}`,
     FIGURE,
     `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 uv = fragCoord / iResolution.xy;
-  float aspect = iResolution.x / iResolution.y;
   float shot = floor(iTime / uInterval);
   // Each shot shakes a little (wind on the mount).
   vec2 shake = (hash22(vec2(shot, 3.0)) - 0.5) * 0.006;

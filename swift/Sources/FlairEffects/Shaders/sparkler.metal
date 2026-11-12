@@ -1,4 +1,6 @@
-// flair-metal-hash: 256c5a38
+// flair-metal-hash: 078534d4
+#pragma clang diagnostic ignored "-Wunused-variable"
+#pragma clang diagnostic ignored "-Wunused-const-variable"
 #pragma clang diagnostic ignored "-Wmissing-prototypes"
 
 #include <metal_stdlib>
@@ -147,7 +149,6 @@ void mainImage(thread float4& fragColor, thread const float2& fragCoord, constan
             {
                 continue;
             }
-            float age = u * period;
             float angle = s.y * 6.28318023681640625;
             float2 param_14 = float2(n, fj + 3.2999999523162841796875);
             float speed = mix(0.60000002384185791015625, 1.60000002384185791015625, hash12(param_14)) * _295.uLength;
@@ -206,8 +207,8 @@ void mainImage(thread float4& fragColor, thread const float2& fragCoord, constan
     col += ((float3(1.0, 0.9700000286102294921875, 0.89999997615814208984375) * exp(((-r) * r) / 5.9999998484272509813308715820312e-05)) * 3.0);
     col += (((float3(_295.uColor) * (0.006000000052154064178466796875 / (r + 0.006000000052154064178466796875))) * 0.5) * flicker);
     float3 param_35 = col * _295.uIntensity;
-    float4 _785 = glow(param_35);
-    float4 light = _785;
+    float4 _781 = glow(param_35);
+    float4 light = _781;
     float4 param_36 = acc;
     float3 param_37 = light.xyz;
     float param_38 = light.w;
@@ -220,16 +221,16 @@ fragment flair_sparkler_frag_out flair_sparkler_frag(constant FlairUniforms& _29
 {
     flair_sparkler_frag_out out = {};
     float4 flair_color = float4(0.0, 0.0, 0.0, 1.0);
-    float _810;
+    float _806;
     if (_295.flair_flipY > 0.5)
     {
-        _810 = _295.iResolution[1u] - gl_FragCoord.y;
+        _806 = _295.iResolution[1u] - gl_FragCoord.y;
     }
     else
     {
-        _810 = gl_FragCoord.y;
+        _806 = gl_FragCoord.y;
     }
-    float2 flair_coord = float2(gl_FragCoord.x, _810);
+    float2 flair_coord = float2(gl_FragCoord.x, _806);
     float2 param_1 = flair_coord;
     float4 param;
     mainImage(param, param_1, _295);

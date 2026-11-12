@@ -1,4 +1,6 @@
-// flair-metal-hash: 431c269a
+// flair-metal-hash: c49ecb45
+#pragma clang diagnostic ignored "-Wunused-variable"
+#pragma clang diagnostic ignored "-Wunused-const-variable"
 #pragma clang diagnostic ignored "-Wmissing-prototypes"
 
 #include <metal_stdlib>
@@ -76,7 +78,6 @@ void mainImage(thread float4& fragColor, thread const float2& fragCoord, constan
     float2 p = fragCoord * px;
     float dir = (_105.uDirection < 0.0) ? (-1.0) : 1.0;
     p.x *= dir;
-    float aspect = _105.iResolution[0u] / _105.iResolution[1u];
     float4 acc = float4(0.0);
     if (_105.uLines > 0.0)
     {
@@ -113,53 +114,53 @@ void mainImage(thread float4& fragColor, thread const float2& fragCoord, constan
             float d = abs(y - centre) / (rows * px);
             float taper = smoothstep(0.0, 0.300000011920928955078125, along) * smoothstep(1.0, 0.75, along);
             float line = (((1.0 - smoothstep(0.89999997615814208984375, 2.2000000476837158203125, d)) * taper) * mix(0.25, 1.0, smoothstep(0.300000011920928955078125, 0.89999997615814208984375, g))) * ((k == 0) ? 0.85000002384185791015625 : 0.5);
-            float4 _396 = acc;
-            float3 _404 = mix(_396.xyz, _105.uLineColor, float3(line));
-            acc.x = _404.x;
-            acc.y = _404.y;
-            acc.z = _404.z;
+            float4 _390 = acc;
+            float3 _398 = mix(_390.xyz, _105.uLineColor, float3(line));
+            acc.x = _398.x;
+            acc.y = _398.y;
+            acc.z = _398.z;
             acc.w = fast::max(acc.w, line);
         }
     }
     float param_5 = _105.iTime;
     float push = pushed(param_5, _105) * _105.uStrength;
-    float _442;
-    float _461;
-    float _474;
+    float _436;
+    float _455;
+    float _468;
     for (int k_1 = 0; k_1 < 3; k_1++)
     {
         bool leaf = k_1 < 2;
         if (leaf)
         {
-            _442 = _105.uLeaves;
+            _436 = _105.uLeaves;
         }
         else
         {
-            _442 = _105.uDust;
+            _436 = _105.uDust;
         }
-        float amount = _442;
+        float amount = _436;
         if (amount <= 0.0)
         {
             continue;
         }
         if (k_1 == 0)
         {
-            _461 = 5.0;
+            _455 = 5.0;
         }
         else
         {
-            _461 = (k_1 == 1) ? 8.0 : 22.0;
+            _455 = (k_1 == 1) ? 8.0 : 22.0;
         }
-        float scale = _461;
+        float scale = _455;
         if (k_1 == 0)
         {
-            _474 = 0.89999997615814208984375;
+            _468 = 0.89999997615814208984375;
         }
         else
         {
-            _474 = (k_1 == 1) ? 0.64999997615814208984375 : 1.2000000476837158203125;
+            _468 = (k_1 == 1) ? 0.64999997615814208984375 : 1.2000000476837158203125;
         }
-        float speed_1 = _474;
+        float speed_1 = _468;
         float2 q = p * scale;
         q.x -= (((push * speed_1) * scale) * 0.550000011920928955078125);
         q.y += ((sin((_105.iTime * 0.800000011920928955078125) + (q.x * 0.300000011920928955078125)) * 0.300000011920928955078125) + (((_105.iTime * 0.1500000059604644775390625) * scale) * 0.100000001490116119384765625));
@@ -193,11 +194,11 @@ void mainImage(thread float4& fragColor, thread const float2& fragCoord, constan
             float3 colour = mix(_105.uLeafA, _105.uLeafB, float3(hash12(param_11))) * (0.800000011920928955078125 + (0.300000011920928955078125 * sign(sin(spin * 0.60000002384185791015625))));
             float vein = ((1.0 - smoothstep(0.0, 0.07999999821186065673828125, abs(e.y))) * step(abs(e.x), 0.85000002384185791015625)) * 0.300000011920928955078125;
             colour *= (1.0 - vein);
-            float4 _696 = acc;
-            float3 _701 = mix(_696.xyz, colour, float3(shape));
-            acc.x = _701.x;
-            acc.y = _701.y;
-            acc.z = _701.z;
+            float4 _690 = acc;
+            float3 _695 = mix(_690.xyz, colour, float3(shape));
+            acc.x = _695.x;
+            acc.y = _695.y;
+            acc.z = _695.z;
             acc.w = fast::max(acc.w, shape);
         }
         else
@@ -207,12 +208,12 @@ void mainImage(thread float4& fragColor, thread const float2& fragCoord, constan
             float dd = length(float2(d_1.x / (1.0 + (len_1 * 12.0)), d_1.y));
             float param_13 = _105.iTime - (p.x * 0.3499999940395355224609375);
             float speck = ((1.0 - smoothstep(0.0199999995529651641845703125, 0.0500000007450580596923828125, dd)) * 0.550000011920928955078125) * smoothstep(0.300000011920928955078125, 0.60000002384185791015625, gust(param_13, _105));
-            float4 _751 = acc;
-            float _758 = acc.w;
-            float3 _762 = mix(_751.xyz, float3(_105.uDustColor), float3(speck * (1.0 - _758)));
-            acc.x = _762.x;
-            acc.y = _762.y;
-            acc.z = _762.z;
+            float4 _745 = acc;
+            float _752 = acc.w;
+            float3 _756 = mix(_745.xyz, float3(_105.uDustColor), float3(speck * (1.0 - _752)));
+            acc.x = _756.x;
+            acc.y = _756.y;
+            acc.z = _756.z;
             acc.w = fast::max(acc.w, speck);
         }
     }
@@ -223,16 +224,16 @@ fragment flair_wind_gust_frag_out flair_wind_gust_frag(constant FlairUniforms& _
 {
     flair_wind_gust_frag_out out = {};
     float4 flair_color = float4(0.0, 0.0, 0.0, 1.0);
-    float _796;
+    float _790;
     if (_105.flair_flipY > 0.5)
     {
-        _796 = _105.iResolution[1u] - gl_FragCoord.y;
+        _790 = _105.iResolution[1u] - gl_FragCoord.y;
     }
     else
     {
-        _796 = gl_FragCoord.y;
+        _790 = gl_FragCoord.y;
     }
-    float2 flair_coord = float2(gl_FragCoord.x, _796);
+    float2 flair_coord = float2(gl_FragCoord.x, _790);
     float2 param_1 = flair_coord;
     float4 param;
     mainImage(param, param_1, _105);

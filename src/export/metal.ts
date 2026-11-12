@@ -671,6 +671,9 @@ export function parseGlslangLog(log: string, lineCount?: number): CompileError[]
   return errors;
 }
 
+/** Pragmas after the hash header of every generated `.metal` file (see `transpileToMetal`). */
+const METAL_UNUSED_PRAGMAS = '#pragma clang diagnostic ignored "-Wunused-variable"\n#pragma clang diagnostic ignored "-Wunused-const-variable"\n';
+
 /**
  * The `// flair-metal-hash: …` header line a shader's generated `.metal` file
  * starts with; a file without it is out of date (`flair export metal` rebuilds it).
@@ -753,7 +756,10 @@ export function compileShaderToMetal(source: string, options: CompileMetalOption
       return { ok: false, errors: [{ line: 0, message: msg }] };
     }
 
-    const msl = `${hashHeader}${spirvRes.stdout}`;
+    // spirv-cross inlines helpers and copies constant arrays, so an `out` argument a call site
+    // ignores, or a constant it folded away, becomes an unused variable in the Metal although
+    // the GLSL is clean. Silence just those two diagnostics in the generated file.
+    const msl = `${hashHeader}${METAL_UNUSED_PRAGMAS}${spirvRes.stdout}`;
     if (options.verify && tools.xcrunMetal) {
       writeFileSync(metalPath, msl, "utf8");
       const metalRes = spawnSync(

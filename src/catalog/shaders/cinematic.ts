@@ -553,7 +553,6 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
   // The beam: the triangle from the projector to the screen's top corners.
   vec2 src = vec2(0.5 * aspect, 1.25);
-  vec2 tl = vec2(lo.x * aspect, hi.y);
   vec2 tr = vec2(hi.x * aspect, hi.y);
   vec2 d = q - src;
   float across = d.x / max(-d.y, 1e-4) / ((tr.x - src.x) / (src.y - tr.y));
