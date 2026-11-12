@@ -7,6 +7,7 @@ import type { EffectCategory, ShaderEffect, VectorEffect } from "./types.js";
 import { CREDIT_SLOTS, parseCredits } from "./cinematic.js";
 import { parseTerminalLines, TERMINAL_LINES } from "./crt.js";
 import { EMERGENCY_MAX_RATE } from "./shaders/emergency.js";
+import { insightCards, wrapText } from "./ui.js";
 import {
   EFFECT_CATEGORIES,
   EFFECT_CATEGORY_GROUPS,
@@ -2194,7 +2195,7 @@ describe("scroll effects", () => {
 describe("ui effects", () => {
   const ui = findEffects({ category: "ui" });
   const shaders = ["border-beam", "gradient-border", "meteors", "background-beams", "grid-spotlight", "dot-grid", "glass-card", "liquid-glass", "noise-grain-bg", "dichroic-glass", "metal-card", "card-spotlight"];
-  const vectors = ["marquee", "number-ticker", "animated-badge", "app-window", "swipe-stack", "pack-opening", "ai-prompt-bar"];
+  const vectors = ["marquee", "number-ticker", "animated-badge", "app-window", "swipe-stack", "pack-opening", "ai-prompt-bar", "insight-cards"];
   const render = (id: string, values: Record<string, unknown> = {}) => {
     const effect = getEffect(id)!;
     if (effect.kind !== "vector") throw new Error("vector expected");
@@ -2222,7 +2223,7 @@ describe("ui effects", () => {
   });
 
   it("prefixes every vector id with the effect's name", () => {
-    for (const [id, prefix] of [["marquee", "marquee"], ["number-ticker", "numberTicker"], ["animated-badge", "animatedBadge"], ["swipe-stack", "swipeStack"], ["pack-opening", "packOpening"], ["ai-prompt-bar", "aiPromptBar"]] as const)
+    for (const [id, prefix] of [["marquee", "marquee"], ["number-ticker", "numberTicker"], ["animated-badge", "animatedBadge"], ["swipe-stack", "swipeStack"], ["pack-opening", "packOpening"], ["ai-prompt-bar", "aiPromptBar"], ["insight-cards", "insightCards"]] as const)
       for (const [, name] of render(id).svg.matchAll(/\sid="([^"]+)"/g)) expect(name, id).toMatch(new RegExp(`^${prefix}`));
   });
 
@@ -2255,6 +2256,35 @@ describe("ui effects", () => {
     const longWrite = long.animate!.find((a) => a.id === "aiPromptBarText" && a.write)!;
     expect(String(longWrite.write)).toMatch(/\u2026$/);
     expect(Number(longWrite.ms)).toBeGreaterThan(Number(write.ms));
+  });
+
+  it("insight cards wrap each summary to two lines, flag only the chosen finding, and keep counts in range", () => {
+    expect(wrapText("one two three", 400, 9, 2)).toEqual(["one two three"]);
+    const long = wrapText("word ".repeat(80), 200, 9, 2);
+    expect(long).toHaveLength(2);
+    expect(long[1]).toMatch(/\u2026$/);
+    const derive = (values: Record<string, unknown>) => {
+      const all = { ...Object.fromEntries(effectControls(insightCards).map((c) => [c.name, c.default])), ...values };
+      return insightCards.derived!(all as never) as Record<string, string | number>;
+    };
+    const d = derive({});
+    expect([d.show0, d.show1, d.show2]).toEqual(["inline", "inline", "inline"]);
+    expect([d.wash0, d.wash1, d.wash2]).toEqual([1, 0, 0]);
+    // Out of range: no more than three findings, and a flag past the last finding lands on the last.
+    const many = derive({ count: 9, flagged: 9 });
+    expect(many.show2).toBe("inline");
+    expect([many.wash0, many.wash1, many.wash2]).toEqual([0, 0, 1]);
+    const one = derive({ count: 1, flagged: 0 });
+    expect([one.show0, one.show1]).toEqual(["inline", "none"]);
+    expect(one.flagShow).toBe("none");
+    // Fewer findings shrink the panel and keep it centred.
+    expect(Number(one.panelH)).toBeLessThan(Number(d.panelH));
+    expect(Number(one.offsetY)).toBeGreaterThan(Number(d.offsetY));
+    // The flag only traces round once every card is in.
+    const motion = render("insight-cards");
+    const lastText = Math.max(...motion.animate!.filter((a) => /^insightCardsText\d$/.test(a.id ?? "")).map((a) => Number(a.delay)));
+    const flagDraw = motion.animate!.find((a) => a.id === "insightCardsFlag" && a.draw)!;
+    expect(Number(flagDraw.delay)).toBeGreaterThan(lastText);
   });
 
   it("marquee scrolls exactly one copy per loop, either way, for any words", () => {

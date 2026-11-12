@@ -507,4 +507,153 @@ export const aiPromptBar: VectorEffect = {
   })(),
 };
 
-export const uiEffects: VectorEffect[] = [marquee, numberTicker, animatedBadge, swipeStack, packOpening, aiPromptBar];
+// ── Insight cards ──────────────────────────────────────────────────────
+
+/**
+ * Insight cards' layout and timing: a glass panel with a header (a sparkle,
+ * the heading, a "+n" pill and a close mark) over up to `slots` finding
+ * cards. Each card arrives as a shimmering skeleton, then its text fades
+ * in; the flagged card then gets a red wash and a glowing border that
+ * traces round it and pulses. Times are in ms.
+ */
+const INSIGHT = {
+  slots: 3,
+  panel: { x: 16, y: 12, w: 368, rx: 16 },
+  card: { x: 28, w: 344, top: 52, room: 174, gap: 8, rx: 10 },
+  intro: 420,
+  stagger: 520,
+  skeleton: 420,
+};
+
+/** `text` broken into at most `lines` lines of `width` at `size`, the last cut short with an ellipsis if it runs over. */
+export function wrapText(text: string, width: number, size: number, lines: number): string[] {
+  const words = text.split(/\s+/).filter(Boolean);
+  const fits = (s: string) => textWidthEm(s) * size <= width;
+  const out: string[] = [];
+  let line = "";
+  let i = 0;
+  for (; i < words.length; i++) {
+    const next = line ? `${line} ${words[i]}` : words[i]!;
+    if (fits(next) || !line) {
+      line = next;
+      continue;
+    }
+    out.push(line);
+    line = words[i]!;
+    if (out.length === lines) break;
+  }
+  if (out.length < lines && line) {
+    out.push(line);
+    i = words.length;
+  }
+  if (i < words.length || !fits(out[out.length - 1] ?? "")) {
+    let last = out[out.length - 1] ?? "";
+    while (last.length > 1 && !fits(`${last}…`)) last = last.slice(0, -1).trimEnd();
+    out[out.length - 1] = `${last}…`;
+  }
+  return out;
+}
+
+/** The outline of a rounded rectangle, from the middle of its top edge round clockwise. */
+const roundedOutline = (x: number, y: number, w: number, h: number, r: number) =>
+  `M${r1(x + w / 2)} ${r1(y)} H${r1(x + w - r)} A${r} ${r} 0 0 1 ${r1(x + w)} ${r1(y + r)} V${r1(y + h - r)} A${r} ${r} 0 0 1 ${r1(x + w - r)} ${r1(y + h)} H${r1(x + r)} A${r} ${r} 0 0 1 ${r1(x)} ${r1(y + h - r)} V${r1(y + r)} A${r} ${r} 0 0 1 ${r1(x + r)} ${r1(y)} Z`;
+
+export const insightCards: VectorEffect = {
+  kind: "vector",
+  id: "insight-cards",
+  name: "Insight cards",
+  description:
+    "An AI analysis panel whose findings drop in one after another, each as a shimmering skeleton before its title, source link and summary fade in; then the flagged one turns red, a glowing border tracing round it and pulsing.",
+  category: "ui",
+  tags: ["ui", "ai", "insight", "alert", "card", "assistant", "dashboard", "tech", "product-demo"],
+  hold: 1600,
+  presets: [
+    { name: "Light", values: { background: [0.93, 0.95, 0.96], panel: [1, 1, 1], ink: [0.1, 0.14, 0.2], accent: [0.05, 0.55, 0.58], alert: [0.86, 0.2, 0.22] } },
+    { name: "Amber warning", values: { alert: [0.98, 0.65, 0.15], title1: "Deadline at risk", source1: "Q3 roadmap", body1: "Three dependencies are behind schedule and block the launch milestone." } },
+    { name: "No flag", values: { flagged: 0 } },
+    { name: "Two findings", values: { count: 2 } },
+  ],
+  derived: (v) => {
+    const count = Math.min(INSIGHT.slots, Math.max(1, Math.round(Number(v.count)) || 1));
+    const flagged = Math.min(count, Math.max(0, Math.round(Number(v.flagged)) || 0));
+    const { card: c } = INSIGHT;
+    const h = Math.min(66, (c.room - (count - 1) * c.gap) / count);
+    const out: Record<string, string | number> = {};
+    for (let i = 0; i < INSIGHT.slots; i++) {
+      const shown = i < count;
+      const y = r1(c.top + i * (h + c.gap));
+      const source = fitLabel(v[`source${i + 1}`], 140, 9, 7);
+      const title = fitLabel(v[`title${i + 1}`], c.w - 40 - source.length - 30, 11, 8);
+      const body = wrapText(String(v[`body${i + 1}`] ?? ""), c.w - 32, 9, h >= 50 ? 2 : 1);
+      const at = INSIGHT.intro + 200 + i * INSIGHT.stagger;
+      out[`show${i}`] = shown ? "inline" : "none";
+      out[`y${i}`] = y;
+      out[`h${i}`] = r1(h);
+      out[`titleY${i}`] = r1(y + 19);
+      out[`bodyY${i}`] = r1(y + 34);
+      out[`body2Y${i}`] = r1(y + 46);
+      out[`bracket${i}`] = `M${c.x + 17} ${r1(y + 10)} h-3 v12 h3`;
+      out[`title${i}`] = title.text;
+      out[`titleSize${i}`] = title.size;
+      out[`titleLength${i}`] = title.length;
+      out[`source${i}`] = source.text;
+      out[`sourceSize${i}`] = source.size;
+      out[`sourceLength${i}`] = source.length;
+      out[`body${i}`] = body[0] ?? "";
+      out[`bodyMore${i}`] = body[1] ?? "";
+      out[`skel${i}`] = r1(c.w - 40);
+      out[`arrive${i}`] = at;
+      out[`text${i}`] = at + INSIGHT.skeleton;
+      out[`skeletonOut${i}`] = at + INSIGHT.skeleton - 60;
+      out[`outline${i}`] = roundedOutline(c.x, y, c.w, h, c.rx);
+      out[`wash${i}`] = i === flagged - 1 ? 1 : 0;
+    }
+    const settled = INSIGHT.intro + 200 + (count - 1) * INSIGHT.stagger + INSIGHT.skeleton + 300;
+    return {
+      ...out,
+      panelH: r1(c.top - INSIGHT.panel.y + count * h + (count - 1) * c.gap + 12),
+      offsetY: r1((250 - (c.top - INSIGHT.panel.y + count * h + (count - 1) * c.gap + 12)) / 2 - INSIGHT.panel.y),
+      flagShow: flagged ? "inline" : "none",
+      flagOutline: flagged ? out[`outline${flagged - 1}`]! : "M0 0",
+      flagY: flagged ? out[`y${flagged - 1}`]! : 0,
+      flagH: flagged ? out[`h${flagged - 1}`]! : 0,
+      flagAt: settled,
+      flagLit: settled + 700,
+      heading: fitLabel(String(v.heading ?? "").toUpperCase(), 180, 9.5, 7).text,
+      more: Math.max(0, Math.round(Number(v.more)) || 0),
+      moreShow: Math.round(Number(v.more)) > 0 ? "inline" : "none",
+      backdropOpacity: v.backdrop ? 1 : 0,
+    };
+  },
+  motion: ((): SvgMotion => {
+    const { panel: p, card: c } = INSIGHT;
+    const slots = Array.from({ length: INSIGHT.slots }, (_, i) => i);
+    const cards = slots
+      .map(
+        (i) =>
+          `<g id="insightCardsCard${i}" display="{{show${i}}}" opacity="0"><rect x="${c.x}" y="{{y${i}}}" width="${c.w}" height="{{h${i}}}" rx="${c.rx}" fill="{{ink}}" fill-opacity="0.05" stroke="{{ink}}" stroke-opacity="0.1"/><rect x="${c.x}" y="{{y${i}}}" width="${c.w}" height="{{h${i}}}" rx="${c.rx}" fill="url(#insightCardsWashFill)" opacity="0" id="insightCardsWash${i}"/><g id="insightCardsSkeleton${i}"><rect x="${c.x + 14}" y="{{titleY${i}}}" transform="translate(0 -8)" width="120" height="9" rx="4.5" fill="{{ink}}" fill-opacity="0.12"/><rect x="${c.x + 14}" y="{{bodyY${i}}}" transform="translate(0 -7)" width="{{skel${i}}}" height="7" rx="3.5" fill="{{ink}}" fill-opacity="0.08"/><rect id="insightCardsShine${i}" x="${c.x - 80}" y="{{y${i}}}" width="80" height="{{h${i}}}" fill="url(#insightCardsShineFill)"/></g><g id="insightCardsText${i}" opacity="0"><path d="{{bracket${i}}}" fill="none" stroke="{{accent}}" stroke-width="1.4" stroke-linecap="round"/><path id="insightCardsAlertBracket${i}" d="{{bracket${i}}}" fill="none" stroke="{{alert}}" stroke-width="1.6" stroke-linecap="round" opacity="0"/><text x="${c.x + 22}" y="{{titleY${i}}}" font-size="{{titleSize${i}}}" textLength="{{titleLength${i}}}" lengthAdjust="spacingAndGlyphs" font-weight="600" fill="{{ink}}">{{title${i}}}</text><text x="${c.x + c.w - 26}" y="{{titleY${i}}}" text-anchor="end" font-size="{{sourceSize${i}}}" textLength="{{sourceLength${i}}}" lengthAdjust="spacingAndGlyphs" fill="{{ink}}" fill-opacity="0.8">{{source${i}}}</text><path d="M${c.x + c.w - 19} {{titleY${i}}} l6 -6 m-4.2 0 h4.2 v4.2" transform="translate(0 -1)" fill="none" stroke="{{accent}}" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><text x="${c.x + 14}" y="{{bodyY${i}}}" font-size="9" fill="{{ink}}" fill-opacity="0.6">{{body${i}}}</text><text x="${c.x + 14}" y="{{body2Y${i}}}" font-size="9" fill="{{ink}}" fill-opacity="0.6">{{bodyMore${i}}}</text></g></g>`,
+      )
+      .join("");
+    const svg = `<svg viewBox="0 0 400 250" font-family="${SANS}"><!-- {{heading: text default='AI Analysis' label='Heading'}} {{count: int min=1 max=3 default=3 label='Findings'}} {{flagged: int min=0 max=3 default=1 label='Flagged finding (0: none)'}} {{more: int min=0 max=99 default=3 label='More findings (the +n pill; 0 hides it)'}} {{title1: text default='Critical concerns' label='Finding 1 title'}} {{source1: text default='Federal Decree-Law No. 42' label='Finding 1 source'}} {{body1: text default='These laws have run into unexpected challenges from several bodies during implementation.' label='Finding 1 summary'}} {{title2: text default='Propose deregulation' label='Finding 2 title'}} {{source2: text default='Federal Law on Mental Health' label='Finding 2 source'}} {{body2: text default='Several regulations were found to be out of date in the following domains.' label='Finding 2 summary'}} {{title3: text default='Coverage gap' label='Finding 3 title'}} {{source3: text default='Health Data Act' label='Finding 3 source'}} {{body3: text default='Two services handle patient records with no regulation covering them yet.' label='Finding 3 summary'}} {{background: color default=#0B1A1E label='Background'}} {{backdrop: bool default=true label='Background'}} {{panel: color default=#122A30 label='Panel'}} {{ink: color default=#E3EEF0 label='Text'}} {{accent: color default=#5EC8C4 label='Accent'}} {{alert: color default=#F0605E label='Flag'}} {{glow: float min=0 max=6 default=3 step=0.5 label='Glow'}} --><defs><filter id="insightCardsGlow" x="-10%" y="-30%" width="120%" height="160%"><feGaussianBlur stdDeviation="{{glow}}" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter><linearGradient id="insightCardsWashFill" x1="0" y1="0" x2="1" y2="0.6"><stop offset="0" stop-color="{{alert}}" stop-opacity="0.55"/><stop offset="0.6" stop-color="{{alert}}" stop-opacity="0.12"/><stop offset="1" stop-color="{{alert}}" stop-opacity="0"/></linearGradient><linearGradient id="insightCardsShineFill" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="{{ink}}" stop-opacity="0"/><stop offset="0.5" stop-color="{{ink}}" stop-opacity="0.12"/><stop offset="1" stop-color="{{ink}}" stop-opacity="0"/></linearGradient><linearGradient id="insightCardsSheen" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0.07"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></linearGradient><clipPath id="insightCardsClip"><rect x="${c.x}" y="${c.top}" width="${c.w}" height="${c.room}"/></clipPath></defs><g opacity="{{backdropOpacity}}"><rect width="400" height="250" fill="{{background}}"/></g><g id="insightCardsPanel" opacity="0"><g transform="translate(0 {{offsetY}})"><rect x="${p.x}" y="${p.y}" width="${p.w}" height="{{panelH}}" rx="${p.rx}" fill="{{panel}}" fill-opacity="0.94"/><rect x="${p.x}" y="${p.y}" width="${p.w}" height="{{panelH}}" rx="${p.rx}" fill="url(#insightCardsSheen)" stroke="{{ink}}" stroke-opacity="0.14"/><path d="${"M0 -5 C0.7 -1 1 -0.7 5 0 C1 0.7 0.7 1 0 5 C-0.7 1 -1 0.7 -5 0 C-1 -0.7 -0.7 -1 0 -5Z"}" transform="translate(${p.x + 18} ${p.y + 19})" fill="{{accent}}"/><text x="${p.x + 30}" y="${p.y + 22.5}" font-size="9.5" font-weight="600" letter-spacing="0.8" fill="{{ink}}" fill-opacity="0.85">{{heading}}</text><g display="{{moreShow}}"><rect x="${p.x + p.w - 74}" y="${p.y + 10}" width="40" height="18" rx="9" fill="{{ink}}" fill-opacity="0.1"/><path d="M${p.x + p.w - 66} ${p.y + 21} l3 -3 l3 3" fill="none" stroke="{{ink}}" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><text id="insightCardsMore" x="${p.x + p.w - 46}" y="${p.y + 22.5}" text-anchor="middle" font-size="9" fill="{{ink}}">+{{more}}</text></g><circle cx="${p.x + p.w - 19}" cy="${p.y + 19}" r="8" fill="none" stroke="{{ink}}" stroke-opacity="0.5"/><path d="M${p.x + p.w - 22} ${p.y + 16} l6 6 m0 -6 l-6 6" stroke="{{ink}}" stroke-opacity="0.7" stroke-width="1.2" stroke-linecap="round"/><g clip-path="url(#insightCardsClip)">${cards}</g><g display="{{flagShow}}"><path id="insightCardsFlag" d="{{flagOutline}}" fill="none" stroke="{{alert}}" stroke-width="1.6" filter="url(#insightCardsGlow)" opacity="0"/></g></g></g></svg>`;
+    const animate: SvgAnimation[] = [
+      { id: "insightCardsPanel", attrs: { opacity: [0, 1], transform: ["translate(0 10)", "translate(0 0)"] }, ms: INSIGHT.intro, ease: "out" },
+      { id: "insightCardsMore", count: [0, n("more")], format: "+{n}", delay: INSIGHT.intro, ms: 600, ease: "out" },
+      ...slots.flatMap((i): SvgAnimation[] => [
+        // In from above as a skeleton, a shine running across it, then the text.
+        { id: `insightCardsCard${i}`, attrs: { opacity: [0, 1], transform: ["translate(0 -10)", "translate(0 0)"] }, delay: n(`arrive${i}`), ms: 360, ease: "out" },
+        { id: `insightCardsShine${i}`, attrs: { x: [c.x - 80, c.x + c.w] }, delay: n(`arrive${i}`), ms: INSIGHT.skeleton, ease: "in-out" },
+        { id: `insightCardsSkeleton${i}`, attrs: { opacity: [1, 0] }, delay: n(`skeletonOut${i}`), ms: 220 },
+        { id: `insightCardsText${i}`, attrs: { opacity: [0, 1], transform: ["translate(0 3)", "translate(0 0)"] }, delay: n(`text${i}`), ms: 320, ease: "out" },
+        // The flagged one: its red wash comes up as the border traces round it.
+        { id: `insightCardsWash${i}`, attrs: { opacity: [0, n(`wash${i}`)] }, delay: n("flagAt"), ms: 700, ease: "out" },
+        { id: `insightCardsAlertBracket${i}`, attrs: { opacity: [0, n(`wash${i}`)] }, delay: n("flagAt"), ms: 300 },
+      ]),
+      { id: "insightCardsFlag", attrs: { opacity: [0, 1] }, delay: n("flagAt"), ms: 1 },
+      { id: "insightCardsFlag", draw: true, delay: n("flagAt"), ms: 700, ease: "in-out" },
+      { id: "insightCardsFlag", attrs: { "stroke-width": [1.6, 2.4], opacity: [1, 0.55] }, delay: n("flagLit"), ms: 550, ease: "in-out", repeat: 4, alternate: true },
+    ];
+    return { svg, animate };
+  })(),
+};
+
+export const uiEffects: VectorEffect[] = [marquee, numberTicker, animatedBadge, swipeStack, packOpening, aiPromptBar, insightCards];
