@@ -1,4 +1,4 @@
-import { glsl, HASH, PATH } from "../glsl.js";
+import { FBM, glsl, HASH, NOISE, PATH } from "../glsl.js";
 import { SAMPLE_IMAGES } from "../images.js";
 import type { ShaderEffect } from "../types.js";
 import { BACKDROP_CONTROLS, PICTURE } from "./image.js";
@@ -7,8 +7,9 @@ import { BACKDROP_CONTROLS, PICTURE } from "./image.js";
  * Promo: the accents of a punchy product-update video. Comet ribbons orbiting
  * a title, a ring of ticks bursting out behind it and a glowing swoosh under
  * its subtitle are transparent overlays, to lay over a title; a slanted wipe
- * knocks a picture's background out to a transparency checkerboard, and a
- * before-and-after divider compares a picture with its cut-out. Each is
+ * knocks a picture's background out to a transparency checkerboard, a
+ * before-and-after divider compares a picture with its cut-out, and a gold
+ * seed head bursts into rays for a hero moment. Each is
  * tagged "promo", so the family is easy to find together.
  *
  * Sizes are in thousandths of the frame's height, so they look the same at
@@ -461,4 +462,155 @@ ${BACKDROP_CONTROLS}`,
 };
 
 /** The promo accents and image effects. */
-export const promoShaders: ShaderEffect[] = [orbitSwoosh, tickRingBurst, swooshUnderline, knockoutWipe, beforeAfter];
+export const seedHeadBurst: ShaderEffect = {
+  kind: "shader",
+  id: "seed-head-burst",
+  name: "Seed-head burst",
+  description:
+    "A fuzzy gold orb like a dandelion seed head, its spines and engraved rings coming into focus out of a cloud of golden dust, then bursting: rays shoot out with glowing comet heads that land as small nodes while the dust blows away; a transparent overlay for a hero moment.",
+  category: "light",
+  transparent: true,
+  tags: ["overlay", "promo", "burst", "orbs", "hero", "network", "gold", "glow", "tech", "focus"],
+  source: glsl(
+    `// Seed-head burst: a gold orb with fine rings and a fringe of spines in a dust cloud, pulled into focus, then a
+// burst of rays whose comet heads fly out and land as nodes. Times are shares of the cycle.
+uniform vec3 uCore;     // @control color default=#FFE7A3 label="Orb"
+uniform vec3 uRim;      // @control color default=#C8892E label="Orb rim and spines"
+uniform vec3 uDust;     // @control color default=#B8913A label="Dust"
+uniform vec3 uRay;      // @control color default=#F1C6E8 label="Rays"
+uniform vec3 uHead;     // @control color default=#4FC8FF label="Comet heads"
+uniform vec3 uNode;     // @control color default=#9C7CF5 label="Nodes"
+uniform int uRays;      // @control min=4 max=32 default=18 label="Rays"
+uniform float uSize;    // @control min=0.04 max=0.25 default=0.11 label="Orb size"
+uniform float uReach;   // @control min=0.15 max=0.9 default=0.55 label="Ray reach"
+uniform float uDustAmount; // @control min=0 max=1 default=0.7 label="Dust"
+uniform float uGlow;    // @control min=0 max=2 default=1 label="Glow"
+uniform bool uAnimate;  // @control default=true label="Animate"
+uniform float uCycle;   // @control min=2 max=12 default=5 label="Cycle (s)"
+uniform float uProgress; // @control min=0 max=1 default=0.62 label="Progress (when still)"
+uniform vec3 uBackground;       // @control color default=#0B1A1E label="Background"
+uniform float uBackgroundAlpha; // @control min=0 max=1 default=0 label="Background opacity"`,
+    HASH,
+    NOISE,
+    FBM,
+    OVER,
+    `float easeOut(float x) {
+  x = clamp(x, 0.0, 1.0);
+  return 1.0 - (1.0 - x) * (1.0 - x) * (1.0 - x);
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  float px = 1.0 / iResolution.y;
+  vec2 p = (fragCoord - 0.5 * iResolution.xy) * px;
+  float t = uAnimate ? fract(iTime / uCycle) : uProgress;
+  float r = length(p);
+  float ang = atan(p.y, p.x);
+  float R = uSize;
+
+  // The cycle: fade in out of focus, sharpen, burst, hold, fade out.
+  float shown = smoothstep(0.0, 0.1, t) * (1.0 - smoothstep(0.9, 1.0, t));
+  float focus = smoothstep(0.08, 0.27, t);
+  float burstAt = 0.27;
+  float burst = smoothstep(burstAt, burstAt + 0.05, t);
+  float flash = exp(-max(t - burstAt, 0.0) * 40.0) * step(burstAt, t);
+  float blur = mix(R * 0.45, 1.5 * px, focus);
+  vec3 light = vec3(0.0);
+  vec4 acc = vec4(0.0);
+
+  // Dust: grains of gold in a fbm cloud round the orb, a soft haze while out of focus; the burst blows it outward and away.
+  float spread = 1.0 + 1.6 * easeOut((t - burstAt) / 0.4) * burst;
+  vec2 dq = p / spread;
+  float dr = length(dq);
+  float cloud = dr < R * 3.8 ? fbm(dq / R * 1.6 + 3.0, 4) : 0.0;
+  float shell = smoothstep(R * 0.9, R * 1.25, dr) * (1.0 - smoothstep(R * 1.7, mix(R * 3.4, R * 2.8, focus), dr + 0.3 * R * cloud));
+  float grains = step(0.8, hash12(floor(dq * 520.0))) * smoothstep(0.45, 0.75, cloud);
+  float haze = shell * (0.35 + 0.65 * smoothstep(0.3, 0.75, cloud));
+  float dust = shell * mix(haze * 1.1, grains * 0.9 + haze * 0.25, focus) * uDustAmount * (1.0 - smoothstep(0.35, 0.75, t) * burst);
+  light += uDust * dust * 0.9;
+
+  // Rays: each leaves the orb at its own angle and reach; a comet head runs out, easing to a stop, and lands as a node.
+  float n = float(uRays);
+  for (int i = 0; i < 32; i++) {
+    if (i >= uRays) break;
+    float fi = float(i);
+    float h1 = hash12(vec2(fi, 3.7));
+    float h2 = hash12(vec2(fi, 9.1));
+    float h3 = hash12(vec2(fi, 17.3));
+    float a = (fi + 0.15 + 0.7 * h1) / n * 6.28318;
+    vec2 dir = vec2(cos(a), sin(a));
+    // Mostly mid-length, with every few a long one.
+    float reach = R * 1.3 + (uReach - R * 1.3) * (0.3 + 0.5 * h2) * (h1 > 0.72 ? 1.6 : 1.0);
+    float start = burstAt + 0.02 + 0.05 * h3;
+    float e = easeOut((t - start) / (0.14 + 0.08 * h2));
+    if (t < start) continue;
+    float tip = R * 1.05 + (reach - R * 1.05) * e;
+    float along = dot(p, dir);
+    float across = abs(dot(p, vec2(-dir.y, dir.x)));
+    float onSeg = clamp(along, R * 1.05, tip);
+    float d = length(vec2(along - onSeg, across));
+    float hd = length(p - dir * tip);
+    // Nothing of a ray reaches past this.
+    if (min(d, hd) > 0.06 + 0.06 * uGlow) continue;
+    float u = clamp((along - R) / max(reach - R, 1e-3), 0.0, 1.0);
+    float core = exp(-d / (0.9 * px + 0.0008)) * step(R, along);
+    float halo = exp(-d / (0.006 + 0.004 * uGlow));
+    // Brighter toward the tip; a comet trail just behind the head while it flies.
+    float trail = exp(-max(tip - along, 0.0) / (0.03 + 0.05 * (1.0 - e))) * (1.0 - 0.6 * e);
+    vec3 c = mix(uRay, uHead, smoothstep(0.4, 1.0, u));
+    light += c * (core * (0.35 + 0.65 * u) * 0.9 + halo * (0.08 + 0.5 * trail) * uGlow) * step(along, tip + 0.002);
+    // The head, then the node it lands as: purple orbs on some rays, small cyan sparks on the rest.
+    float node = step(0.45, h3);
+    float landed = smoothstep(0.85, 1.0, e);
+    float headR = mix(0.006, 0.004, landed) + node * landed * 0.008 * (1.0 + 0.25 * sin(iTime * 2.0 + fi));
+    light += mix(uHead, uNode, node * landed) * exp(-hd / (0.008 + 0.008 * uGlow * (1.6 - 0.6 * landed))) * (1.5 - 1.0 * landed) * uGlow;
+    float dot0 = clamp(0.5 - (hd - headR) / px, 0.0, 1.0);
+    acc = over(acc, mix(vec3(1.0), uNode, node * landed * 0.75), dot0 * (0.6 + 0.4 * landed));
+  }
+
+  // The orb: warm gold, white-hot in the middle, engraved with fine rings toward its edge, mottled, under a fringe of spines.
+  float wob = 1.0 + 0.012 * sin(iTime * 1.7) + 0.08 * flash;
+  float Ro = R * wob;
+  float body = smoothstep(Ro + blur, Ro - blur, r);
+  float x = clamp(r / Ro, 0.0, 1.0);
+  float rings = 0.5 + 0.5 * cos(x * 130.0 + 0.6 * sin(ang * 3.0));
+  float band = smoothstep(0.62, 0.9, x) * (1.0 - smoothstep(0.97, 1.0, x));
+  float mottle = r < Ro + blur ? fbm(p / Ro * 3.0 + 7.0, 3) : 0.5;
+  vec3 orb = mix(vec3(1.0, 0.98, 0.9), uCore, smoothstep(0.0, 0.55, x));
+  orb = mix(orb, uRim, smoothstep(0.65, 1.0, x));
+  orb *= 0.85 + 0.3 * mottle;
+  orb = mix(orb, orb * (0.75 + 0.4 * rings), band * focus);
+  acc = over(acc, orb, body);
+  light += uCore * exp(-max(r - Ro, 0.0) / (Ro * (0.25 + 0.35 * (1.0 - focus)))) * (0.45 + 1.4 * flash) * uGlow * (1.0 - body);
+
+  // Spines: short radial hairs of scattered length round the rim, sharpening with the focus and flaring at the burst.
+  float cells = 150.0;
+  float ac = (ang / 6.28318 + 0.5) * cells;
+  float cell = floor(ac);
+  float s1 = hash12(vec2(cell, 1.9));
+  float s2 = hash12(vec2(cell, 5.3));
+  float len = Ro * (0.12 + 0.4 * s1 * s1) * (1.0 + 0.6 * flash);
+  float tang = (fract(ac) - 0.5) / cells * 6.28318 * r;
+  float sd = max(abs(tang) - (0.5 * px + 0.0006), abs(r - Ro - len * 0.5) - len * 0.5);
+  float spine = clamp(0.5 - sd / max(px, blur * 0.6), 0.0, 1.0) * (0.4 + 0.6 * s2);
+  acc = over(acc, mix(uRim, uCore, s2), spine * mix(0.35, 1.0, focus));
+
+  // Everything fades in and out with the cycle; light is tone-mapped and laid over the colour.
+  acc *= shown;
+  light = (1.0 - exp(-light)) * shown;
+  float la = max(light.r, max(light.g, light.b));
+  acc = vec4(acc.rgb + light * (1.0 - acc.a), acc.a + la * (1.0 - acc.a));
+  vec4 base = vec4(uBackground * uBackgroundAlpha, uBackgroundAlpha);
+  acc = vec4(acc.rgb + base.rgb * (1.0 - acc.a), acc.a + base.a * (1.0 - acc.a));
+  fragColor = unpremultiply(acc);
+}`,
+  ),
+  presets: [
+    { name: "With background", values: { uBackgroundAlpha: 1 } },
+    { name: "Ember", values: { uCore: [1, 0.78, 0.5], uRim: [0.85, 0.35, 0.12], uDust: [0.8, 0.4, 0.15], uRay: [1, 0.75, 0.5], uHead: [1, 0.45, 0.2], uNode: [1, 0.85, 0.4], uBackground: [0.07, 0.04, 0.03], uBackgroundAlpha: 1 } },
+    { name: "Ice", values: { uCore: [0.85, 0.97, 1], uRim: [0.35, 0.7, 0.95], uDust: [0.5, 0.75, 0.95], uRay: [0.8, 0.9, 1], uHead: [0.55, 0.95, 1], uNode: [0.95, 0.95, 1], uBackground: [0.03, 0.06, 0.1], uBackgroundAlpha: 1 } },
+    { name: "Still, burst", values: { uAnimate: false, uProgress: 0.62, uBackgroundAlpha: 1 } },
+    { name: "Many rays", values: { uRays: 30, uReach: 0.7, uSize: 0.08 } },
+  ],
+};
+
+export const promoShaders: ShaderEffect[] = [orbitSwoosh, tickRingBurst, swooshUnderline, knockoutWipe, beforeAfter, seedHeadBurst];
