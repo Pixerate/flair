@@ -26,6 +26,7 @@ uniform vec3 uColorB;     // @control color default=#FF7A45 label="Middle colour
 uniform vec3 uColorC;     // @control color default=#FFC53D label="End colour"
 uniform vec3 uBackground; // @control color default=#140B08 label="Background"
 uniform float uThickness; // @control min=1 max=30 default=${d.thickness} label="Thickness (%)"
+uniform float uUnit;      // @control min=0 max=16384 default=0 label="Size unit (px, 0 = frame's shorter side)"
 uniform float uProgress;  // @control min=0 max=1 default=1 label="Drawn"
 uniform float uDrawOn;    // @control min=0 max=10 default=${d.drawOn} label="Draw-on time (s)"
 uniform float uOpacity;   // @control min=0 max=1 default=${d.opacity} label="Body opacity"
@@ -40,7 +41,8 @@ uniform bool uDownFrame;  // @control default=false label="Colour down the frame
 }
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  float r = 0.5 * uThickness / 100.0 * min(iResolution.x, iResolution.y);
+  // Thickness is a share of uUnit px when set (a paint brush's scale), else of the frame's shorter side.
+  float r = 0.5 * uThickness / 100.0 * (uUnit > 0.0 ? uUnit : min(iResolution.x, iResolution.y));
   float total = pathLength(uPath);
   float drawn = uDrawOn > 0.0 ? min(uProgress, iTime / uDrawOn) : uProgress;
   float reach = r * (1.0 + 2.0 * min(uGlow, 1.0));
