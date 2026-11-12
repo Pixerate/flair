@@ -95,8 +95,9 @@ uniform float uTilt;         // @control min=0 max=1 default=${tilt} label="View
 
 /**
  * `hexCell(p)`: flat-topped hexagons one unit across their flats; the point
- * relative to its cell's centre (xy) and the centre (zw). `hexEdge(g)`: how
- * far a cell's point is from its edge (0.5 at the centre).
+ * relative to its cell's centre (xy) and the centre (zw). `hexId(c)`: a
+ * whole-number id for the cell centred at c, to key anything random per tile.
+ * `hexEdge(g)`: how far a cell's point is from its edge (0.5 at the centre).
  */
 const HEX = `
 vec4 hexCell(vec2 p) {
@@ -107,6 +108,11 @@ vec4 hexCell(vec2 p) {
   vec2 b = mod(s - h, r) - h;
   vec2 g = dot(a, a) < dot(b, b) ? a : b;
   return vec4(g.yx, (s - g).yx);
+}
+// A whole-number id for the cell centred at c: the centre comes out a hair different either
+// side of the grid's seams, so anything random per tile is keyed on this, not on c.
+vec2 hexId(vec2 c) {
+  return vec2(floor(c.x / 0.8660254 + 0.5), floor(c.y / 0.5 + 0.5));
 }
 float hexEdge(vec2 g) {
   vec2 a = abs(g.yx);
@@ -131,7 +137,7 @@ float tileRaise(vec2 c) {
   float edge = 1.0 - 2.0 * uCoverage;
   float raise = smoothstep(edge, edge + 0.3, v);
   // Strays: a few tiles out past the edge.
-  float stray = step(0.9, hash12(c + 41.0)) * step(edge - 0.45 * (0.3 + uScatter), v);
+  float stray = step(0.9, hash12(hexId(c) + 41.0)) * step(edge - 0.45 * (0.3 + uScatter), v);
   return max(raise, stray * 0.8);
 }
 float tileHeight(vec2 c) {
@@ -141,9 +147,9 @@ float tileHeight(vec2 c) {
   // two whole turns in 8 s, so it loops.
   float a = radians(uAngle);
   float along = dot(c, vec2(cos(a), sin(a)));
-  float phase = iTime * uSpeed / 4.0 - along * 0.09 + 0.35 * hash12(c + 13.0);
+  float phase = iTime * uSpeed / 4.0 - along * 0.09 + 0.35 * hash12(hexId(c) + 13.0);
   float wave = 0.5 + 0.5 * sin(6.2831853 * phase);
-  float rest = 1.0 - uVariation * hash12(c + 29.0) * 0.5;
+  float rest = 1.0 - uVariation * hash12(hexId(c) + 29.0) * 0.5;
   return uHeight * raise * rest * mix(1.0, wave * wave, uVariation);
 }
 float heightAt(vec2 p) {
@@ -280,7 +286,8 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
   float a = radians(uAngle);
   vec2 dir = vec2(cos(a), sin(a));
-  float along = dot(s.xy, dir) / (0.5 * (abs(dir.x) * iResolution.x / iResolution.y + abs(dir.y)) + 1e-3);
+  float extent = 0.5 * (abs(dir.x) * iResolution.x / iResolution.y + abs(dir.y)) + 1e-3;
+  float along = dot(s.xy, dir) / extent;
 
   vec4 h = hexCell(s.xy * uCells);
   bool onTile = s.z > 1e-4;
@@ -289,9 +296,11 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     float crack = cracks(s.xy * 16.0) * uCracks;
     // Tiles deep in the cluster are ink, marbled; toward its edge more of them stay white.
     float edge = 1.0 - 2.0 * uCoverage;
-    float deep = clamp((along - edge) / max(1.0 - edge, 0.1), 0.0, 1.0);
-    float inked = step(hash12(h.zw + 3.0), clamp(deep * 1.8 - 0.3 + (uInkTiles - 0.75) * 1.5, 0.0, 1.0));
-    float marble = fbm(s.xy * 14.0 + h.zw, 5);
+    // Judged at the tile's centre, so a whole tile is ink or white.
+    float tileAlong = dot(h.zw / uCells, dir) / extent;
+    float deep = clamp((tileAlong - edge) / max(1.0 - edge, 0.1), 0.0, 1.0);
+    float inked = step(hash12(hexId(h.zw) + 3.0), clamp(deep * 1.8 - 0.3 + (uInkTiles - 0.75) * 1.5, 0.0, 1.0));
+    float marble = fbm(s.xy * 14.0 + hexId(h.zw) * 1.7, 5);
     vec3 ink = uInk * (0.7 + 0.9 * marble) + 0.25 * smoothstep(0.62, 0.8, marble);
     base = mix(uSurface * (0.92 + 0.08 * marble), ink, inked);
     // Cracks show light on ink and dark on white.
@@ -300,6 +309,10 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     float face = hexEdge(h.xy) - uGap - 0.035;
     float rim = smoothstep(-0.004, 0.0, face) * (1.0 - smoothstep(0.008, 0.016, face));
     base = mix(base, uSurface, rim * 0.5 * inked);
+    // A tile sunk low sits in the shade of its neighbours; one raised high catches the light,
+    // so black tiles, whose shadows hardly show on black, are still seen rising and falling.
+    float rise = clamp(s.z / max(uHeight, 1e-4), 0.0, 1.0);
+    base = mix(base * mix(0.86 + 0.14 * rise, 0.7 + 0.3 * rise, inked), uSurface, 0.16 * rise * rise * inked);
   } else {
     float crack = cracks(s.xy * 5.0) * uCracks;
     float stain = fbm(s.xy * 4.0 + 11.0, 5);
