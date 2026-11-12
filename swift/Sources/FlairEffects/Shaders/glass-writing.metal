@@ -1,4 +1,4 @@
-// flair-metal-hash: 554b6ffa
+// flair-metal-hash: 0abc9412
 #pragma clang diagnostic ignored "-Wunused-variable"
 #pragma clang diagnostic ignored "-Wunused-const-variable"
 #pragma clang diagnostic ignored "-Wmissing-prototypes"
@@ -67,6 +67,7 @@ struct FlairUniforms
     float3 uColorC;
     packed_float3 uBackground;
     float uThickness;
+    float uUnit;
     float uProgress;
     float uDrawOn;
     float uOpacity;
@@ -280,18 +281,27 @@ float3 tubeTint(thread float& t, constant FlairUniforms& _105)
 static inline __attribute__((always_inline))
 void flair_opaqueImage(thread float4& fragColor, thread const float2& fragCoord, constant FlairUniforms& _105, texture2d<float> uPath, sampler uPathSmplr)
 {
-    float r = ((0.5 * _105.uThickness) / 100.0) * fast::min(_105.iResolution[0u], _105.iResolution[1u]);
-    float total = pathLength(uPath, uPathSmplr, _105);
-    float _615;
-    if (_105.uDrawOn > 0.0)
+    float _605;
+    if (_105.uUnit > 0.0)
     {
-        _615 = fast::min(_105.uProgress, _105.iTime / _105.uDrawOn);
+        _605 = _105.uUnit;
     }
     else
     {
-        _615 = _105.uProgress;
+        _605 = fast::min(_105.iResolution[0u], _105.iResolution[1u]);
     }
-    float drawn = _615;
+    float r = ((0.5 * _105.uThickness) / 100.0) * _605;
+    float total = pathLength(uPath, uPathSmplr, _105);
+    float _626;
+    if (_105.uDrawOn > 0.0)
+    {
+        _626 = fast::min(_105.uProgress, _105.iTime / _105.uDrawOn);
+    }
+    else
+    {
+        _626 = _105.uProgress;
+    }
+    float drawn = _626;
     float reach = r * (1.0 + (2.0 * fast::min(_105.uGlow, 1.0)));
     float2 param = fragCoord;
     float param_1 = reach;
@@ -299,24 +309,24 @@ void flair_opaqueImage(thread float4& fragColor, thread const float2& fragCoord,
     float param_3 = 0.0;
     float param_4 = total * fast::clamp(drawn, 0.0, 1.0);
     spvUnsafeArray<float4, 4> param_5;
-    int _657 = pathHits(uPath, uPathSmplr, param, param_1, param_2, param_3, param_4, param_5, _105);
+    int _668 = pathHits(uPath, uPathSmplr, param, param_1, param_2, param_3, param_4, param_5, _105);
     spvUnsafeArray<float4, 4> hits = param_5;
-    int n = _657;
+    int n = _668;
     for (int i = 0; i < 3; i++)
     {
         for (int j = 0; j < (3 - i); j++)
         {
-            bool _680 = (j + 1) < n;
-            bool _691;
-            if (_680)
+            bool _691 = (j + 1) < n;
+            bool _702;
+            if (_691)
             {
-                _691 = hits[j].y > hits[j + 1].y;
+                _702 = hits[j].y > hits[j + 1].y;
             }
             else
             {
-                _691 = _680;
+                _702 = _691;
             }
-            if (_691)
+            if (_702)
             {
                 float4 s = hits[j];
                 hits[j] = hits[j + 1];
@@ -326,7 +336,7 @@ void flair_opaqueImage(thread float4& fragColor, thread const float2& fragCoord,
     }
     float3 col = float3(_105.uBackground);
     float frameT = 1.0 - (fragCoord.y / _105.iResolution[1u]);
-    float _751;
+    float _762;
     for (int i_1 = 0; i_1 < 4; i_1++)
     {
         if (i_1 >= n)
@@ -337,15 +347,15 @@ void flair_opaqueImage(thread float4& fragColor, thread const float2& fragCoord,
         float x = h.x / r;
         if (_105.uDownFrame != 0u)
         {
-            _751 = frameT;
+            _762 = frameT;
         }
         else
         {
-            _751 = h.y / fast::max(total, 1.0);
+            _762 = h.y / fast::max(total, 1.0);
         }
-        float param_6 = _751;
-        float3 _763 = tubeTint(param_6, _105);
-        float3 tint = _763;
+        float param_6 = _762;
+        float3 _774 = tubeTint(param_6, _105);
+        float3 tint = _774;
         col += ((((tint * _105.uGlow) * 0.3499999940395355224609375) * exp((-2.5) * fast::max(x - 1.0, 0.0))) * (1.0 - smoothstep(0.0, 1.0, 1.0 - x)));
         if (x >= 1.0)
         {
@@ -376,27 +386,27 @@ float4 flair_backgroundOpacity(thread const float4& c, thread const float3& bg, 
     float3 room = mix(bg, float3(1.0) - bg, step(float3(0.0), d));
     float3 k = abs(d) / fast::max(room, float3(9.9999997473787516355514526367188e-05));
     float a = fast::clamp(fast::max(k.x, fast::max(k.y, k.z)), 0.0, 1.0);
-    float3 _953;
+    float3 _964;
     if (a > 0.0)
     {
-        _953 = bg + (d / float3(a));
+        _964 = bg + (d / float3(a));
     }
     else
     {
-        _953 = bg;
+        _964 = bg;
     }
-    float3 fg = _953;
+    float3 fg = _964;
     float alpha = a + (opacity * (1.0 - a));
-    float3 _975;
+    float3 _986;
     if (alpha > 0.0)
     {
-        _975 = ((fg * a) + ((bg * opacity) * (1.0 - a))) / float3(alpha);
+        _986 = ((fg * a) + ((bg * opacity) * (1.0 - a))) / float3(alpha);
     }
     else
     {
-        _975 = bg;
+        _986 = bg;
     }
-    float3 col = _975;
+    float3 col = _986;
     return float4(col, alpha * c.w);
 }
 
@@ -417,16 +427,16 @@ fragment flair_glass_writing_frag_out flair_glass_writing_frag(constant FlairUni
 {
     flair_glass_writing_frag_out out = {};
     float4 flair_color = float4(0.0, 0.0, 0.0, 1.0);
-    float _1032;
+    float _1043;
     if (_105.flair_flipY > 0.5)
     {
-        _1032 = _105.iResolution[1u] - gl_FragCoord.y;
+        _1043 = _105.iResolution[1u] - gl_FragCoord.y;
     }
     else
     {
-        _1032 = gl_FragCoord.y;
+        _1043 = gl_FragCoord.y;
     }
-    float2 flair_coord = float2(gl_FragCoord.x, _1032);
+    float2 flair_coord = float2(gl_FragCoord.x, _1043);
     float2 param_1 = flair_coord;
     float4 param;
     mainImage(param, param_1, _105, uPath, uPathSmplr);

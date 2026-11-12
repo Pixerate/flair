@@ -16,7 +16,7 @@ public struct GlassWriting: FlairEffect, Codable, Sendable, Equatable {
     public static let tags: [String] = ["title", "path", "handwriting", "signature", "writing", "draw", "tube", "glass", "glow", "neon"]
     public static let phase: Int = 2
     public static let functionName = "flair_glass_writing_frag"
-    public static let uniformByteLength: Int = 1088
+    public static let uniformByteLength: Int = 1104
     public static let isTransparent: Bool = false
     public static let loopDuration: Double? = nil
     public static let controls: [FlairControlDescriptor] = [
@@ -26,6 +26,7 @@ public struct GlassWriting: FlairEffect, Codable, Sendable, Equatable {
         FlairControlDescriptor(name: "uColorC", property: "colorC", type: .vec3, label: "End colour", isColor: true, min: 0.0, max: 1.0, step: 0.005),
         FlairControlDescriptor(name: "uBackground", property: "background", type: .vec3, label: "Background", isColor: true, min: 0.0, max: 1.0, step: 0.005),
         FlairControlDescriptor(name: "uThickness", property: "thickness", type: .float, label: "Thickness (%)", min: 1.0, max: 30.0, step: 0.145),
+        FlairControlDescriptor(name: "uUnit", property: "unit", type: .float, label: "Size unit (px, 0 = frame's shorter side)", min: 0.0, max: 16384.0, step: 81.92),
         FlairControlDescriptor(name: "uProgress", property: "progress", type: .float, label: "Drawn", min: 0.0, max: 1.0, step: 0.005),
         FlairControlDescriptor(name: "uDrawOn", property: "drawOn", type: .float, label: "Draw-on time (s)", min: 0.0, max: 10.0, step: 0.05),
         FlairControlDescriptor(name: "uOpacity", property: "opacity", type: .float, label: "Body opacity", min: 0.0, max: 1.0, step: 0.005),
@@ -58,6 +59,8 @@ public struct GlassWriting: FlairEffect, Codable, Sendable, Equatable {
     public var background: SIMD3<Float> = flairVec3(0.078431, 0.043137, 0.031373)
     /// Thickness (%) (`uThickness`).
     public var thickness: Float = 3.5
+    /// Size unit (px, 0 = frame's shorter side) (`uUnit`).
+    public var unit: Float = 0.0
     /// Drawn (`uProgress`).
     public var progress: Float = 1.0
     /// Draw-on time (s) (`uDrawOn`).
@@ -84,14 +87,15 @@ public struct GlassWriting: FlairEffect, Codable, Sendable, Equatable {
         FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(colorC, min: 0.0, max: 1.0), to: buffer, at: 1024)
         FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(background, min: 0.0, max: 1.0), to: buffer, at: 1040)
         FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(thickness, min: 1.0, max: 30.0), to: buffer, at: 1052)
-        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(progress, min: 0.0, max: 1.0), to: buffer, at: 1056)
-        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(drawOn, min: 0.0, max: 10.0), to: buffer, at: 1060)
-        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(opacity, min: 0.0, max: 1.0), to: buffer, at: 1064)
-        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(rim, min: 0.0, max: 2.0), to: buffer, at: 1068)
-        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(glow, min: 0.0, max: 2.0), to: buffer, at: 1072)
-        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(flow, min: 0.0, max: 2.0), to: buffer, at: 1076)
-        FlairUniformEncoder.writeBool(downFrame, to: buffer, at: 1080)
-        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(backgroundAlpha, min: 0.0, max: 1.0), to: buffer, at: 1084)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(unit, min: 0.0, max: 16384.0), to: buffer, at: 1056)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(progress, min: 0.0, max: 1.0), to: buffer, at: 1060)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(drawOn, min: 0.0, max: 10.0), to: buffer, at: 1064)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(opacity, min: 0.0, max: 1.0), to: buffer, at: 1068)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(rim, min: 0.0, max: 2.0), to: buffer, at: 1072)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(glow, min: 0.0, max: 2.0), to: buffer, at: 1076)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(flow, min: 0.0, max: 2.0), to: buffer, at: 1080)
+        FlairUniformEncoder.writeBool(downFrame, to: buffer, at: 1084)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(backgroundAlpha, min: 0.0, max: 1.0), to: buffer, at: 1088)
     }
 
     public func textureInput(for binding: Int) -> FlairTextureInput {
@@ -116,6 +120,7 @@ public struct GlassWriting: FlairEffect, Codable, Sendable, Equatable {
         self.colorC = bag.decodeVec3("uColorC", "colorC", default: flairVec3(1.0, 0.772549, 0.239216), isColor: true)
         self.background = bag.decodeVec3("uBackground", "background", default: flairVec3(0.078431, 0.043137, 0.031373), isColor: true)
         self.thickness = bag.decodeFloat("uThickness", "thickness", default: 3.5, min: 1.0, max: 30.0)
+        self.unit = bag.decodeFloat("uUnit", "unit", default: 0.0, min: 0.0, max: 16384.0)
         self.progress = bag.decodeFloat("uProgress", "progress", default: 1.0, min: 0.0, max: 1.0)
         self.drawOn = bag.decodeFloat("uDrawOn", "drawOn", default: 3.0, min: 0.0, max: 10.0)
         self.opacity = bag.decodeFloat("uOpacity", "opacity", default: 0.8, min: 0.0, max: 1.0)
@@ -134,6 +139,7 @@ public struct GlassWriting: FlairEffect, Codable, Sendable, Equatable {
         bag.encodeVec3(self.colorC, for: "uColorC")
         bag.encodeVec3(self.background, for: "uBackground")
         bag.encodeFloat(self.thickness, for: "uThickness")
+        bag.encodeFloat(self.unit, for: "uUnit")
         bag.encodeFloat(self.progress, for: "uProgress")
         bag.encodeFloat(self.drawOn, for: "uDrawOn")
         bag.encodeFloat(self.opacity, for: "uOpacity")

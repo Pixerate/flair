@@ -3503,6 +3503,7 @@ public struct CometTrail: FlairEffect, Codable, Sendable, Equatable {
         FlairControlDescriptor(name: "uIntensity", property: "intensity", type: .float, label: "Intensity", min: 0.2, max: 3.0, step: 0.014),
         FlairControlDescriptor(name: "uDemo", property: "demo", type: .bool, label: "Demo when idle", min: 0.0, max: 1.0, step: 0.005),
         FlairControlDescriptor(name: "uPath", property: "path", type: .path, label: "Path when idle", min: 0.0, max: 1.0, step: 0.005, pathFit: .contain, pathMargin: 0.1),
+        FlairControlDescriptor(name: "uUnit", property: "unit", type: .float, label: "Size unit (px, 0 = frame height)", min: 0.0, max: 16384.0, step: 81.92),
     ]
     public static let samplerBindings: [FlairSamplerBinding] = [
         FlairSamplerBinding(name: "uPath", property: "path", type: .path, binding: 1, filter: .nearest, wrap: .clamp, pathFit: .contain, pathMargin: 0.1),
@@ -3533,6 +3534,8 @@ public struct CometTrail: FlairEffect, Codable, Sendable, Equatable {
     public var demo: Bool = true
     /// Path when idle (`uPath`).
     public var path: FlairTextureInput = .none
+    /// Size unit (px, 0 = frame height) (`uUnit`).
+    public var unit: Float = 0.0
 
     public init() {}
 
@@ -3546,6 +3549,7 @@ public struct CometTrail: FlairEffect, Codable, Sendable, Equatable {
         FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(life, min: 0.1, max: 3.0), to: buffer, at: 1032)
         FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(intensity, min: 0.2, max: 3.0), to: buffer, at: 1036)
         FlairUniformEncoder.writeBool(demo, to: buffer, at: 1040)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(unit, min: 0.0, max: 16384.0), to: buffer, at: 1044)
     }
 
     public func textureInput(for binding: Int) -> FlairTextureInput {
@@ -3573,6 +3577,7 @@ public struct CometTrail: FlairEffect, Codable, Sendable, Equatable {
         self.intensity = bag.decodeFloat("uIntensity", "intensity", default: 1.2, min: 0.2, max: 3.0)
         self.demo = bag.decodeBool("uDemo", "demo", default: true)
         self.path = bag.decodeTexture("uPath", "path", default: .none, fit: .contain, margin: 0.1)
+        self.unit = bag.decodeFloat("uUnit", "unit", default: 0.0, min: 0.0, max: 16384.0)
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -3586,6 +3591,7 @@ public struct CometTrail: FlairEffect, Codable, Sendable, Equatable {
         bag.encodeFloat(self.intensity, for: "uIntensity")
         bag.encodeBool(self.demo, for: "uDemo")
         bag.encodeTexture(self.path, for: "uPath")
+        bag.encodeFloat(self.unit, for: "uUnit")
         try bag.encode(to: encoder)
     }
 }
@@ -3613,6 +3619,7 @@ public struct RibbonTrail: FlairEffect, Codable, Sendable, Equatable {
         FlairControlDescriptor(name: "uLife", property: "life", type: .float, label: "Fade time", min: 0.1, max: 3.0, step: 0.0145),
         FlairControlDescriptor(name: "uDemo", property: "demo", type: .bool, label: "Demo when idle", min: 0.0, max: 1.0, step: 0.005),
         FlairControlDescriptor(name: "uPath", property: "path", type: .path, label: "Path when idle", min: 0.0, max: 1.0, step: 0.005, pathFit: .contain, pathMargin: 0.1),
+        FlairControlDescriptor(name: "uUnit", property: "unit", type: .float, label: "Size unit (px, 0 = frame height)", min: 0.0, max: 16384.0, step: 81.92),
     ]
     public static let samplerBindings: [FlairSamplerBinding] = [
         FlairSamplerBinding(name: "uPath", property: "path", type: .path, binding: 1, filter: .nearest, wrap: .clamp, pathFit: .contain, pathMargin: 0.1),
@@ -3642,6 +3649,8 @@ public struct RibbonTrail: FlairEffect, Codable, Sendable, Equatable {
     public var demo: Bool = true
     /// Path when idle (`uPath`).
     public var path: FlairTextureInput = .none
+    /// Size unit (px, 0 = frame height) (`uUnit`).
+    public var unit: Float = 0.0
 
     public init() {}
 
@@ -3655,6 +3664,7 @@ public struct RibbonTrail: FlairEffect, Codable, Sendable, Equatable {
         FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(shine, min: 0.0, max: 1.0), to: buffer, at: 1032)
         FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(life, min: 0.1, max: 3.0), to: buffer, at: 1036)
         FlairUniformEncoder.writeBool(demo, to: buffer, at: 1040)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(unit, min: 0.0, max: 16384.0), to: buffer, at: 1044)
     }
 
     public func textureInput(for binding: Int) -> FlairTextureInput {
@@ -3682,6 +3692,7 @@ public struct RibbonTrail: FlairEffect, Codable, Sendable, Equatable {
         self.life = bag.decodeFloat("uLife", "life", default: 1.1, min: 0.1, max: 3.0)
         self.demo = bag.decodeBool("uDemo", "demo", default: true)
         self.path = bag.decodeTexture("uPath", "path", default: .none, fit: .contain, margin: 0.1)
+        self.unit = bag.decodeFloat("uUnit", "unit", default: 0.0, min: 0.0, max: 16384.0)
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -3695,6 +3706,7 @@ public struct RibbonTrail: FlairEffect, Codable, Sendable, Equatable {
         bag.encodeFloat(self.life, for: "uLife")
         bag.encodeBool(self.demo, for: "uDemo")
         bag.encodeTexture(self.path, for: "uPath")
+        bag.encodeFloat(self.unit, for: "uUnit")
         try bag.encode(to: encoder)
     }
 }
@@ -3724,6 +3736,7 @@ public struct SparkleTrail: FlairEffect, Codable, Sendable, Equatable {
         FlairControlDescriptor(name: "uIntensity", property: "intensity", type: .float, label: "Intensity", min: 0.2, max: 3.0, step: 0.014),
         FlairControlDescriptor(name: "uDemo", property: "demo", type: .bool, label: "Demo when idle", min: 0.0, max: 1.0, step: 0.005),
         FlairControlDescriptor(name: "uPath", property: "path", type: .path, label: "Path when idle", min: 0.0, max: 1.0, step: 0.005, pathFit: .contain, pathMargin: 0.1),
+        FlairControlDescriptor(name: "uUnit", property: "unit", type: .float, label: "Size unit (px, 0 = frame height)", min: 0.0, max: 16384.0, step: 81.92),
     ]
     public static let samplerBindings: [FlairSamplerBinding] = [
         FlairSamplerBinding(name: "uPath", property: "path", type: .path, binding: 1, filter: .nearest, wrap: .clamp, pathFit: .contain, pathMargin: 0.1),
@@ -3757,6 +3770,8 @@ public struct SparkleTrail: FlairEffect, Codable, Sendable, Equatable {
     public var demo: Bool = true
     /// Path when idle (`uPath`).
     public var path: FlairTextureInput = .none
+    /// Size unit (px, 0 = frame height) (`uUnit`).
+    public var unit: Float = 0.0
 
     public init() {}
 
@@ -3772,6 +3787,7 @@ public struct SparkleTrail: FlairEffect, Codable, Sendable, Equatable {
         FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(twinkle, min: 0.0, max: 1.0), to: buffer, at: 1040)
         FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(intensity, min: 0.2, max: 3.0), to: buffer, at: 1044)
         FlairUniformEncoder.writeBool(demo, to: buffer, at: 1048)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(unit, min: 0.0, max: 16384.0), to: buffer, at: 1052)
     }
 
     public func textureInput(for binding: Int) -> FlairTextureInput {
@@ -3801,6 +3817,7 @@ public struct SparkleTrail: FlairEffect, Codable, Sendable, Equatable {
         self.intensity = bag.decodeFloat("uIntensity", "intensity", default: 1.2, min: 0.2, max: 3.0)
         self.demo = bag.decodeBool("uDemo", "demo", default: true)
         self.path = bag.decodeTexture("uPath", "path", default: .none, fit: .contain, margin: 0.1)
+        self.unit = bag.decodeFloat("uUnit", "unit", default: 0.0, min: 0.0, max: 16384.0)
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -3816,6 +3833,7 @@ public struct SparkleTrail: FlairEffect, Codable, Sendable, Equatable {
         bag.encodeFloat(self.intensity, for: "uIntensity")
         bag.encodeBool(self.demo, for: "uDemo")
         bag.encodeTexture(self.path, for: "uPath")
+        bag.encodeFloat(self.unit, for: "uUnit")
         try bag.encode(to: encoder)
     }
 }
@@ -3830,7 +3848,7 @@ public struct BrushTrail: FlairEffect, Codable, Sendable, Equatable {
     public static let tags: [String] = ["trail", "interactive", "hover", "cursor", "overlay", "brush", "ink", "paint", "path"]
     public static let phase: Int = 4
     public static let functionName = "flair_brush_trail_frag"
-    public static let uniformByteLength: Int = 1056
+    public static let uniformByteLength: Int = 1072
     public static let isTransparent: Bool = true
     public static let loopDuration: Double? = nil
     public static let controls: [FlairControlDescriptor] = [
@@ -3844,6 +3862,7 @@ public struct BrushTrail: FlairEffect, Codable, Sendable, Equatable {
         FlairControlDescriptor(name: "uPaperColor", property: "paperColor", type: .vec3, label: "Paper colour", isColor: true, min: 0.0, max: 1.0, step: 0.005),
         FlairControlDescriptor(name: "uDemo", property: "demo", type: .bool, label: "Demo when idle", min: 0.0, max: 1.0, step: 0.005),
         FlairControlDescriptor(name: "uPath", property: "path", type: .path, label: "Path when idle", min: 0.0, max: 1.0, step: 0.005, pathFit: .contain, pathMargin: 0.1),
+        FlairControlDescriptor(name: "uUnit", property: "unit", type: .float, label: "Size unit (px, 0 = frame height)", min: 0.0, max: 16384.0, step: 81.92),
     ]
     public static let samplerBindings: [FlairSamplerBinding] = [
         FlairSamplerBinding(name: "uPath", property: "path", type: .path, binding: 1, filter: .nearest, wrap: .clamp, pathFit: .contain, pathMargin: 0.1),
@@ -3876,6 +3895,8 @@ public struct BrushTrail: FlairEffect, Codable, Sendable, Equatable {
     public var demo: Bool = true
     /// Path when idle (`uPath`).
     public var path: FlairTextureInput = .none
+    /// Size unit (px, 0 = frame height) (`uUnit`).
+    public var unit: Float = 0.0
 
     public init() {}
 
@@ -3890,6 +3911,7 @@ public struct BrushTrail: FlairEffect, Codable, Sendable, Equatable {
         FlairUniformEncoder.writeBool(paper, to: buffer, at: 1024)
         FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(paperColor, min: 0.0, max: 1.0), to: buffer, at: 1040)
         FlairUniformEncoder.writeBool(demo, to: buffer, at: 1052)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(unit, min: 0.0, max: 16384.0), to: buffer, at: 1056)
     }
 
     public func textureInput(for binding: Int) -> FlairTextureInput {
@@ -3918,6 +3940,7 @@ public struct BrushTrail: FlairEffect, Codable, Sendable, Equatable {
         self.paperColor = bag.decodeVec3("uPaperColor", "paperColor", default: flairVec3(0.956863, 0.92549, 0.866667), isColor: true)
         self.demo = bag.decodeBool("uDemo", "demo", default: true)
         self.path = bag.decodeTexture("uPath", "path", default: .none, fit: .contain, margin: 0.1)
+        self.unit = bag.decodeFloat("uUnit", "unit", default: 0.0, min: 0.0, max: 16384.0)
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -3932,6 +3955,7 @@ public struct BrushTrail: FlairEffect, Codable, Sendable, Equatable {
         bag.encodeVec3(self.paperColor, for: "uPaperColor")
         bag.encodeBool(self.demo, for: "uDemo")
         bag.encodeTexture(self.path, for: "uPath")
+        bag.encodeFloat(self.unit, for: "uUnit")
         try bag.encode(to: encoder)
     }
 }
@@ -3961,6 +3985,7 @@ public struct GhostTrail: FlairEffect, Codable, Sendable, Equatable {
         FlairControlDescriptor(name: "uShrink", property: "shrink", type: .bool, label: "Shrink with age", min: 0.0, max: 1.0, step: 0.005),
         FlairControlDescriptor(name: "uDemo", property: "demo", type: .bool, label: "Demo when idle", min: 0.0, max: 1.0, step: 0.005),
         FlairControlDescriptor(name: "uPath", property: "path", type: .path, label: "Path when idle", min: 0.0, max: 1.0, step: 0.005, pathFit: .contain, pathMargin: 0.1),
+        FlairControlDescriptor(name: "uUnit", property: "unit", type: .float, label: "Size unit (px, 0 = frame height)", min: 0.0, max: 16384.0, step: 81.92),
     ]
     public static let samplerBindings: [FlairSamplerBinding] = [
         FlairSamplerBinding(name: "uPath", property: "path", type: .path, binding: 1, filter: .nearest, wrap: .clamp, pathFit: .contain, pathMargin: 0.1),
@@ -3994,6 +4019,8 @@ public struct GhostTrail: FlairEffect, Codable, Sendable, Equatable {
     public var demo: Bool = true
     /// Path when idle (`uPath`).
     public var path: FlairTextureInput = .none
+    /// Size unit (px, 0 = frame height) (`uUnit`).
+    public var unit: Float = 0.0
 
     public init() {}
 
@@ -4009,6 +4036,7 @@ public struct GhostTrail: FlairEffect, Codable, Sendable, Equatable {
         FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(life, min: 0.1, max: 3.0), to: buffer, at: 1040)
         FlairUniformEncoder.writeBool(shrink, to: buffer, at: 1044)
         FlairUniformEncoder.writeBool(demo, to: buffer, at: 1048)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(unit, min: 0.0, max: 16384.0), to: buffer, at: 1052)
     }
 
     public func textureInput(for binding: Int) -> FlairTextureInput {
@@ -4038,6 +4066,7 @@ public struct GhostTrail: FlairEffect, Codable, Sendable, Equatable {
         self.shrink = bag.decodeBool("uShrink", "shrink", default: true)
         self.demo = bag.decodeBool("uDemo", "demo", default: true)
         self.path = bag.decodeTexture("uPath", "path", default: .none, fit: .contain, margin: 0.1)
+        self.unit = bag.decodeFloat("uUnit", "unit", default: 0.0, min: 0.0, max: 16384.0)
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -4053,6 +4082,7 @@ public struct GhostTrail: FlairEffect, Codable, Sendable, Equatable {
         bag.encodeBool(self.shrink, for: "uShrink")
         bag.encodeBool(self.demo, for: "uDemo")
         bag.encodeTexture(self.path, for: "uPath")
+        bag.encodeFloat(self.unit, for: "uUnit")
         try bag.encode(to: encoder)
     }
 }
@@ -4081,6 +4111,7 @@ public struct LightPainting: FlairEffect, Codable, Sendable, Equatable {
         FlairControlDescriptor(name: "uDemo", property: "demo", type: .bool, label: "Demo when idle", min: 0.0, max: 1.0, step: 0.005),
         FlairControlDescriptor(name: "uBackgroundAlpha", property: "backgroundAlpha", type: .float, label: "Background opacity", min: 0.0, max: 1.0, step: 0.005),
         FlairControlDescriptor(name: "uPath", property: "path", type: .path, label: "Path when idle", min: 0.0, max: 1.0, step: 0.005, pathFit: .contain, pathMargin: 0.1),
+        FlairControlDescriptor(name: "uUnit", property: "unit", type: .float, label: "Size unit (px, 0 = frame height)", min: 0.0, max: 16384.0, step: 81.92),
     ]
     public static let samplerBindings: [FlairSamplerBinding] = [
         FlairSamplerBinding(name: "uPath", property: "path", type: .path, binding: 1, filter: .nearest, wrap: .clamp, pathFit: .contain, pathMargin: 0.1),
@@ -4112,6 +4143,8 @@ public struct LightPainting: FlairEffect, Codable, Sendable, Equatable {
     public var backgroundAlpha: Float = 1.0
     /// Path when idle (`uPath`).
     public var path: FlairTextureInput = .none
+    /// Size unit (px, 0 = frame height) (`uUnit`).
+    public var unit: Float = 0.0
 
     public init() {}
 
@@ -4126,6 +4159,7 @@ public struct LightPainting: FlairEffect, Codable, Sendable, Equatable {
         FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(flicker, min: 0.0, max: 1.0), to: buffer, at: 1024)
         FlairUniformEncoder.writeBool(demo, to: buffer, at: 1028)
         FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(backgroundAlpha, min: 0.0, max: 1.0), to: buffer, at: 1032)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(unit, min: 0.0, max: 16384.0), to: buffer, at: 1036)
     }
 
     public func textureInput(for binding: Int) -> FlairTextureInput {
@@ -4154,6 +4188,7 @@ public struct LightPainting: FlairEffect, Codable, Sendable, Equatable {
         self.demo = bag.decodeBool("uDemo", "demo", default: true)
         self.backgroundAlpha = bag.decodeFloat("uBackgroundAlpha", "backgroundAlpha", default: 1.0, min: 0.0, max: 1.0)
         self.path = bag.decodeTexture("uPath", "path", default: .none, fit: .contain, margin: 0.1)
+        self.unit = bag.decodeFloat("uUnit", "unit", default: 0.0, min: 0.0, max: 16384.0)
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -4168,6 +4203,7 @@ public struct LightPainting: FlairEffect, Codable, Sendable, Equatable {
         bag.encodeBool(self.demo, for: "uDemo")
         bag.encodeFloat(self.backgroundAlpha, for: "uBackgroundAlpha")
         bag.encodeTexture(self.path, for: "uPath")
+        bag.encodeFloat(self.unit, for: "uUnit")
         try bag.encode(to: encoder)
     }
 }
