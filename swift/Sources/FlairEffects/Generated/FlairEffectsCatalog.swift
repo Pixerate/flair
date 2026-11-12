@@ -191,6 +191,7 @@ public enum FlairCatalog {
         AnyFlairEffect(GlowRingSpinner()),
         AnyFlairEffect(MetaballLoader()),
         AnyFlairEffect(FlameLoader()),
+        AnyFlairEffect(RingedOrb()),
         AnyFlairEffect(Hologram()),
         AnyFlairEffect(HologramText()),
         AnyFlairEffect(HologramProjector()),

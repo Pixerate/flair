@@ -302,5 +302,107 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   ],
 };
 
-/** Loaders as shaders: liquid, a glowing ring, goo and fire. */
-export const loaderShaders: ShaderEffect[] = [liquidLoader, glowRingSpinner, metaballLoader, flameLoader];
+export const ringedOrb: ShaderEffect = {
+  kind: "shader",
+  id: "ringed-orb",
+  name: "Ringed orb",
+  description:
+    "A glossy orb wrapped in a slowly turning ring of fine dashes and drifting specks, on a dark halo disk with a light sweeping round its rim; a hero icon or a thinking indicator.",
+  category: "loader",
+  tags: ["loader", "orbs", "ring", "glow", "hero", "thinking", "ai", "tech", "overlay"],
+  transparent: true,
+  source: glsl(
+    `// Ringed orb: a lit sphere, two counter-turning rings of dashes and specks round it, and a dark disk behind with a light running round its edge.
+uniform vec3 uOrb;              // @control color default=#B7A4FF label="Orb"
+uniform vec3 uRim;              // @control color default=#7B5CFF label="Orb rim"
+uniform vec3 uRing;             // @control color default=#9C8CF5 label="Ring"
+uniform vec3 uAccent;           // @control color default=#5EE6D8 label="Accent"
+uniform vec3 uDisk;             // @control color default=#0E2B30 label="Disk"
+uniform float uDiskAlpha;       // @control min=0 max=1 default=0.7 label="Disk opacity"
+uniform float uSize;            // @control min=0.3 max=0.98 default=0.8 label="Size"
+uniform int uTicks;             // @control min=40 max=240 default=150 label="Dashes"
+uniform float uSpeed;           // @control min=0 max=3 default=1 label="Speed"
+uniform float uSweep;           // @control min=0 max=3 default=1 label="Rim light speed"
+uniform float uGlow;            // @control min=0 max=2 default=1 label="Glow"
+${LOADER_BACKGROUND}`,
+    HASH,
+    COMPOSITE,
+    `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  float px = 1.0 / iResolution.y;
+  vec2 p = (fragCoord - 0.5 * iResolution.xy) * px;
+  float W = 0.5 * uSize;
+  float r = length(p);
+  float turn = atan(p.y, p.x) / 6.28318 + 0.5;
+  vec4 acc = vec4(0.0);
+  vec3 light = vec3(0.0);
+
+  // The halo disk: dark, a little lighter toward its edge, with a faint rim and a light sweeping round it.
+  float disk = smoothstep(W, W - 1.5 * px, r);
+  acc = over(acc, uDisk, disk * uDiskAlpha * (0.55 + 0.45 * smoothstep(W * 0.2, W, r)));
+  float edge = exp(-abs(r - W) / (1.2 * px + W * 0.006));
+  float behind = fract(turn - iTime * uSweep * 0.12);
+  float sweep = pow(behind, 5.0) * smoothstep(1.0, 0.96, behind);
+  light += mix(uRing, uAccent, 0.5) * edge * (0.12 + 0.9 * sweep) * uDiskAlpha;
+
+  // A soft glowing band under the dashes.
+  light += uRing * 0.12 * uGlow * exp(-abs(r - W * 0.62) / (W * 0.09));
+
+  // Two rings turning opposite ways: radial dashes of scattered length, then round specks.
+  for (int layer = 0; layer < 2; layer++) {
+    float fl = float(layer);
+    float spin = iTime * uSpeed * (layer == 0 ? 0.035 : -0.023);
+    float n = float(uTicks) * (layer == 0 ? 1.0 : 0.6);
+    float a = (turn + spin) * n;
+    float cell = floor(a);
+    float h1 = hash12(vec2(cell, 3.1 + fl * 17.0));
+    float h2 = hash12(vec2(cell + 41.0, 7.7 + fl));
+    float h3 = hash12(vec2(cell + 83.0, 1.3 + fl * 5.0));
+    float h4 = hash12(vec2(cell + 127.0, 9.4 + fl * 3.0));
+    // Tangential distance from the cell's middle, in frame units.
+    float along = (fract(a) - 0.5) / n * 6.28318 * r;
+    float rc = W * (layer == 0 ? 0.54 + 0.14 * h1 : 0.5 + 0.26 * h1);
+    float d;
+    if (layer == 0) {
+      float len = W * (0.015 + 0.07 * h2 * h2);
+      d = max(abs(along) - (0.6 * px + W * 0.0035), abs(r - rc) - len);
+    } else {
+      d = length(vec2(along, r - rc)) - (0.6 * px + W * (0.004 + 0.007 * h2));
+    }
+    float cover = clamp(0.5 - d / px, 0.0, 1.0);
+    float bright = (0.35 + 0.65 * h3) * (0.7 + 0.3 * sin(iTime * (1.0 + 2.0 * h4) + h3 * 6.28318));
+    vec3 c = mix(uRing, uAccent, step(0.88, h4));
+    acc = over(acc, c, cover * bright);
+    light += c * bright * 0.35 * uGlow * exp(-max(d, 0.0) / (W * 0.012));
+  }
+
+  // The orb: a lit sphere breathing a little, with a white highlight, a coloured rim and a faint bounce from below.
+  float R = W * 0.36 * (1.0 + 0.012 * sin(iTime * 1.3));
+  float s = smoothstep(R, R - 1.5 * px, r);
+  vec2 q = p / R;
+  float z = sqrt(max(0.0, 1.0 - dot(q, q)));
+  vec3 nrm = vec3(q, z);
+  vec3 L = normalize(vec3(-0.45, 0.55, 0.7));
+  float diff = max(dot(nrm, L), 0.0);
+  float spec = pow(max(dot(reflect(-L, nrm), vec3(0.0, 0.0, 1.0)), 0.0), 36.0);
+  float fres = pow(1.0 - z, 2.5);
+  vec3 orb = uOrb * (0.22 + 0.85 * diff) + uRim * fres * 0.9 + vec3(spec * 0.9);
+  orb += uAccent * 0.18 * pow(max(dot(nrm, normalize(vec3(0.5, -0.65, 0.4))), 0.0), 3.0);
+  acc = over(acc, orb, s);
+  light += uRim * 0.55 * uGlow * exp(-max(r - R, 0.0) / (R * 0.22)) * (1.0 - s);
+
+  light = 1.0 - exp(-light);
+  float la = max(light.r, max(light.g, light.b));
+  acc = vec4(acc.rgb + light * (1.0 - acc.a), acc.a + la * (1.0 - acc.a));
+  fragColor = finish(acc);
+}`,
+  ),
+  presets: [
+    { name: "With background", values: { uBackground: [0.04, 0.1, 0.12], uBackgroundAlpha: 1 } },
+    { name: "Gold", values: { uOrb: [1, 0.85, 0.5], uRim: [0.95, 0.55, 0.15], uRing: [0.95, 0.78, 0.45], uAccent: [1, 1, 0.9] } },
+    { name: "Cyan", values: { uOrb: [0.55, 0.95, 1], uRim: [0.1, 0.6, 0.95], uRing: [0.35, 0.85, 0.95], uAccent: [0.75, 0.6, 1] } },
+    { name: "No disk", values: { uDiskAlpha: 0, uSize: 0.9 } },
+  ],
+};
+
+/** Loaders as shaders: liquid, a glowing ring, goo, fire and a ringed orb. */
+export const loaderShaders: ShaderEffect[] = [liquidLoader, glowRingSpinner, metaballLoader, flameLoader, ringedOrb];
