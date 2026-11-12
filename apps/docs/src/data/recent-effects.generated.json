@@ -174,9 +174,9 @@
     "transparent": true,
     "animated": true,
     "module": "shaders/loaders",
-    "addedAt": "2026-11-12T18:24:10.306Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-11-12T20:06:30Z",
+    "commitHash": "3395927cebda31c797bb71f1f583fc3e72f5c7d3",
+    "order": 677
   },
   {
     "id": "hub-spoke-graph",

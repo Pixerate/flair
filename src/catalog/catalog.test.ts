@@ -1972,6 +1972,16 @@ describe("relief effects", () => {
     expect(effectInputs(getEffect("relief-emboss")!).accepts).toContain("video");
   });
 
+  it("key everything random per tile on a whole-number tile id, so no tile splits along the grid's seams", () => {
+    for (const id of ["relief-hex-tiles", "relief-hex-ink"]) {
+      // A tile's centre comes out a hair different either side of a seam: hashing it split tiles in two.
+      expect(source(id), id).not.toMatch(/hash12\((c|h\.zw)\s*\+/);
+      expect(source(id), id).toContain("hash12(hexId(c) + 13.0)");
+    }
+    // Whether an ink tile is black is judged at its centre, not per pixel.
+    expect(source("relief-hex-ink")).toContain("dot(h.zw / uCells, dir)");
+  });
+
   it("loop their motion seamlessly", () => {
     expect(getEffect("relief-hex-tiles")).toMatchObject({ loop: 8 });
     expect(getEffect("relief-hex-ink")).toMatchObject({ loop: 8 });
