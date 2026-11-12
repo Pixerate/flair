@@ -1,5 +1,163 @@
 [
   {
+    "id": "fan-out-links",
+    "name": "Fan-out links",
+    "kind": "vector",
+    "category": "data",
+    "description": "One source card sending a fan of curved links out to a column of targets, each drawn by a glowing comet head that lands on its label, the card's count ticking up as they arrive, then sparks running along the links.",
+    "tags": [
+      "network",
+      "graph",
+      "one-to-many",
+      "relations",
+      "dashboard",
+      "explainer",
+      "tech"
+    ],
+    "controls": [
+      {
+        "n": "source",
+        "t": "text",
+        "d": "Related laws",
+        "line": 1
+      },
+      {
+        "n": "labels",
+        "t": "text",
+        "d": "Services,Entities,Regulations,Policies,Guidelines,Standards,Agencies",
+        "l": "Targets (comma-separated, up to 10)",
+        "line": 2
+      },
+      {
+        "n": "total",
+        "t": "int",
+        "d": 0,
+        "l": "Count on the card (0: one per target)",
+        "max": 99999,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "background",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            11,
+            26,
+            30
+          ]
+        },
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "backdrop",
+        "t": "bool",
+        "d": true,
+        "l": "Background",
+        "line": 5
+      },
+      {
+        "n": "link",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            94,
+            200,
+            196
+          ]
+        },
+        "l": "Links",
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "head",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "l": "Comet heads",
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "accent",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            242,
+            196,
+            109
+          ]
+        },
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "ink",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            215,
+            227,
+            230
+          ]
+        },
+        "l": "Text",
+        "c": 1,
+        "line": 9
+      },
+      {
+        "n": "glow",
+        "t": "float",
+        "d": 2.5,
+        "max": 6,
+        "s": 0.5,
+        "b": 3,
+        "line": 10
+      }
+    ],
+    "presets": [
+      "Light",
+      "Neon",
+      "Team"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "source",
+          "label": "Source",
+          "holds": "copy",
+          "default": "Related laws"
+        },
+        {
+          "name": "labels",
+          "label": "Targets (comma-separated, up to 10)",
+          "holds": "copy",
+          "default": "Services,Entities,Regulations,Policies,Guidelines,Standards,Agencies"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 1500,
+    "animated": true,
+    "duration": 4830,
+    "module": "data",
+    "addedAt": "2026-11-12T16:42:07Z",
+    "commitHash": "ccddf399228c901c04168efc0e6f80c511836bdb",
+    "order": 675
+  },
+  {
     "id": "relief-emboss",
     "name": "Embossed picture",
     "kind": "shader",
@@ -3026,182 +3184,5 @@
     "addedAt": "2026-11-07T19:28:11Z",
     "commitHash": "4281796ee6e6bda2a45f063a2affa6061e67c6a1",
     "order": 656
-  },
-  {
-    "id": "pixel-bloom",
-    "name": "Pixel bloom",
-    "kind": "shader",
-    "category": "pattern",
-    "description": "Rounded squares on a sunflower spiral, big at the bright centre and shrinking to pixel dust toward the edge, turning slowly while a shimmer ripples outward. On a clear background, for logos, headers and loaders.",
-    "tags": [
-      "pixel",
-      "phyllotaxis",
-      "sunflower",
-      "spiral",
-      "logo",
-      "brand",
-      "squares",
-      "dissolve",
-      "generative",
-      "overlay"
-    ],
-    "controls": [
-      {
-        "n": "uCount",
-        "t": "int",
-        "d": 70,
-        "l": "Squares",
-        "min": 20,
-        "max": 400,
-        "b": 3,
-        "line": 2
-      },
-      {
-        "n": "uRadius",
-        "t": "float",
-        "d": 0.42,
-        "min": 0.1,
-        "max": 0.6,
-        "b": 3,
-        "line": 3
-      },
-      {
-        "n": "uSize",
-        "t": "float",
-        "d": 1.6,
-        "l": "Square size",
-        "min": 0.4,
-        "max": 2,
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "uDissolve",
-        "t": "float",
-        "d": 0.9,
-        "l": "Dissolve toward the edge",
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uTwist",
-        "t": "float",
-        "d": 0,
-        "min": -1,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uUpright",
-        "t": "bool",
-        "d": false,
-        "l": "Keep squares upright",
-        "line": 7
-      },
-      {
-        "n": "uInner",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            225,
-            10,
-            107
-          ]
-        },
-        "l": "Centre colour",
-        "c": 1,
-        "line": 8
-      },
-      {
-        "n": "uMiddle",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            132,
-            38,
-            136
-          ]
-        },
-        "l": "Middle colour",
-        "c": 1,
-        "line": 9
-      },
-      {
-        "n": "uOuter",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            45,
-            55,
-            160
-          ]
-        },
-        "l": "Edge colour",
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "uDiagonal",
-        "t": "bool",
-        "d": false,
-        "l": "Colour across (not outward)",
-        "line": 11
-      },
-      {
-        "n": "uGlow",
-        "t": "float",
-        "d": 0.25,
-        "b": 3,
-        "line": 12
-      },
-      {
-        "n": "uSpin",
-        "t": "int",
-        "d": 1,
-        "l": "Turns per loop (24 s)",
-        "min": -2,
-        "max": 2,
-        "b": 3,
-        "line": 13
-      },
-      {
-        "n": "uWaves",
-        "t": "int",
-        "d": 8,
-        "l": "Shimmer waves per loop",
-        "max": 16,
-        "b": 3,
-        "line": 14
-      },
-      {
-        "n": "uShimmer",
-        "t": "float",
-        "d": 0.35,
-        "b": 3,
-        "line": 15
-      }
-    ],
-    "presets": [
-      "Upright pixels",
-      "Galaxy",
-      "Sunflower",
-      "Mint"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": true
-    },
-    "swiftReady": true,
-    "transparent": true,
-    "loop": 24,
-    "animated": true,
-    "duration": 24000,
-    "module": "shaders/phyllotaxis",
-    "addedAt": "2026-11-07T19:28:11Z",
-    "commitHash": "4281796ee6e6bda2a45f063a2affa6061e67c6a1",
-    "order": 655
   }
 ]

@@ -875,4 +875,115 @@ export const rolodex: VectorEffect = {
   },
 };
 
-export const dataEffects: VectorEffect[] = [donutChart, pieChart, gauge, barRace, sparkline, leaderboard, areaChart, kpiTile, rolodex];
+// ── Fan-out links ──────────────────────────────────────────────────────
+
+/**
+ * Fan-out links' layout: the source card on the left, the point its links
+ * leave from, and the column of targets on the right, which bulges out in
+ * the middle so the fan reads as an arc. Timings are in ms.
+ */
+const FAN = {
+  slots: 10,
+  card: { x: 20, y: 96, w: 120, h: 48 },
+  from: [140, 120] as const,
+  mid: 120,
+  half: 98,
+  pitch: 26,
+  left: 232,
+  bulge: 34,
+  right: 388,
+  start: 350,
+  stagger: 130,
+  draw: 650,
+};
+const FAN_DEFAULT = ["Services", "Entities", "Regulations", "Policies", "Guidelines", "Standards", "Agencies"];
+
+export const fanOutLinks: VectorEffect = {
+  kind: "vector",
+  id: "fan-out-links",
+  name: "Fan-out links",
+  description:
+    "One source card sending a fan of curved links out to a column of targets, each drawn by a glowing comet head that lands on its label, the card's count ticking up as they arrive, then sparks running along the links.",
+  category: "data",
+  tags: ["network", "graph", "one-to-many", "relations", "dashboard", "explainer", "tech"],
+  hold: 1500,
+  presets: [
+    { name: "Light", values: { background: [0.95, 0.96, 0.97], link: [0.2, 0.55, 0.6], head: [0.06, 0.46, 0.55], accent: [0.85, 0.53, 0.05], ink: [0.12, 0.16, 0.22] } },
+    { name: "Neon", values: { background: [0.04, 0.02, 0.1], link: [0.66, 0.33, 0.97], head: [1, 1, 1], accent: [0.13, 0.83, 0.93], ink: [0.88, 0.86, 1] } },
+    {
+      name: "Team",
+      values: { source: "Design team", labels: "Brand,Product,Web,Motion,Research", total: 0 },
+    },
+  ],
+  derived: (v) => {
+    const given = parseLabels(v.labels, FAN.slots).filter((s) => s !== "");
+    const labels = given.length ? given : FAN_DEFAULT;
+    const count = labels.length;
+    const span = Math.min(FAN.pitch * (count - 1), FAN.half * 2);
+    const [fx, fy] = FAN.from;
+    const out: Record<string, string | number> = {};
+    for (let i = 0; i < FAN.slots; i++) {
+      const shown = i < count;
+      const y = shown ? (count === 1 ? FAN.mid : FAN.mid - span / 2 + (span * i) / (count - 1)) : FAN.mid;
+      const u = (y - FAN.mid) / FAN.half;
+      const x = r1(FAN.left + FAN.bulge * (1 - u * u));
+      const label = fitLabel(labels[i] ?? "", FAN.right - (x + 10), 10, 7);
+      out[`show${i}`] = shown ? "inline" : "none";
+      out[`d${i}`] = shown ? `M${fx} ${fy} C${r1(fx + (x - fx) * 0.55)} ${fy} ${r1(fx + (x - fx) * 0.45)} ${r1(y)} ${x} ${r1(y)}` : `M${fx} ${fy} L${fx + 1} ${fy}`;
+      out[`x${i}`] = x;
+      out[`y${i}`] = r1(y);
+      out[`labelX${i}`] = r1(x + 10);
+      out[`labelY${i}`] = r1(y + label.size * 0.35);
+      out[`text${i}`] = label.text;
+      out[`size${i}`] = label.size;
+      out[`length${i}`] = label.length;
+    }
+    const total = Math.round(Number(v.total)) > 0 ? Math.round(Number(v.total)) : count;
+    const landed = FAN.start + (count - 1) * FAN.stagger + FAN.draw;
+    const caption = fitLabel(v.source, FAN.card.w - 24, 10, 7);
+    return {
+      ...out,
+      total,
+      countMs: landed - FAN.start,
+      settle: landed + 350,
+      captionText: caption.text,
+      captionSize: caption.size,
+      captionLength: caption.length,
+      backdropOpacity: v.backdrop ? 1 : 0,
+    };
+  },
+  motion: (() => {
+    const { x: cx, y: cy, w: cw, h: ch } = FAN.card;
+    const heads = ["{{head}}", "{{link}}", "{{accent}}"];
+    const slots = Array.from({ length: FAN.slots }, (_, i) => i);
+    const at = (i: number) => FAN.start + i * FAN.stagger;
+    return {
+      svg: `<svg viewBox="0 0 400 240" font-family="${SANS}"><!-- {{source: text default='Related laws' label='Source'}} {{labels: text default='Services,Entities,Regulations,Policies,Guidelines,Standards,Agencies' label='Targets (comma-separated, up to 10)'}} {{total: int min=0 max=99999 default=0 label='Count on the card (0: one per target)'}} {{background: color default=#0B1A1E label='Background'}} {{backdrop: bool default=true label='Background'}} {{link: color default=#5EC8C4 label='Links'}} {{head: color default=#FFFFFF label='Comet heads'}} {{accent: color default=#F2C46D label='Accent'}} {{ink: color default=#D7E3E6 label='Text'}} {{glow: float min=0 max=6 default=2.5 step=0.5 label='Glow'}} --><defs><filter id="fanOutLinksGlow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="{{glow}}" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter><radialGradient id="fanOutLinksVignette" cx="0.35" cy="0.5" r="0.75"><stop offset="0" stop-color="{{link}}" stop-opacity="0.1"/><stop offset="1" stop-color="{{link}}" stop-opacity="0"/></radialGradient></defs><g opacity="{{backdropOpacity}}"><rect width="400" height="240" fill="{{background}}"/><rect width="400" height="240" fill="url(#fanOutLinksVignette)"/></g>${slots
+        .map(
+          (i) =>
+            `<g display="{{show${i}}}"><path id="fanOutLinksLink${i}" d="{{d${i}}}" fill="none" stroke="{{link}}" stroke-width="1.2" stroke-opacity="0.7"/><circle id="fanOutLinksDot${i}" cx="{{x${i}}}" cy="{{y${i}}}" r="2.4" fill="{{link}}" filter="url(#fanOutLinksGlow)" opacity="0"/><text id="fanOutLinksLabel${i}" x="{{labelX${i}}}" y="{{labelY${i}}}" font-size="{{size${i}}}" textLength="{{length${i}}}" lengthAdjust="spacingAndGlyphs" font-weight="500" fill="{{ink}}" opacity="0">{{text${i}}}</text><circle id="fanOutLinksHead${i}" r="3.2" fill="${heads[i % heads.length]}" filter="url(#fanOutLinksGlow)" opacity="0"/><circle id="fanOutLinksSpark${i}" r="1.6" fill="{{head}}" filter="url(#fanOutLinksGlow)" opacity="0"/></g>`,
+        )
+        .join(
+          "",
+        )}<g id="fanOutLinksCard"><rect x="${cx}" y="${cy}" width="${cw}" height="${ch}" rx="7" fill="{{link}}" fill-opacity="0.08" stroke="{{ink}}" stroke-opacity="0.18"/><rect id="fanOutLinksCardRing" x="${cx}" y="${cy}" width="${cw}" height="${ch}" rx="7" fill="none" stroke="{{accent}}" stroke-width="1.6" filter="url(#fanOutLinksGlow)" opacity="0"/><text id="fanOutLinksCount" x="${cx + 12}" y="${cy + 22}" font-size="17" font-weight="700" fill="{{ink}}">0</text><text x="${cx + 12}" y="${cy + 38}" font-size="{{captionSize}}" textLength="{{captionLength}}" lengthAdjust="spacingAndGlyphs" fill="{{ink}}" fill-opacity="0.65">{{captionText}}</text></g><circle cx="${FAN.from[0]}" cy="${FAN.from[1]}" r="2.6" fill="{{accent}}" filter="url(#fanOutLinksGlow)"/></svg>`,
+      animate: [
+        { id: "fanOutLinksCardRing", attrs: { opacity: [0, 1] }, ms: 300 },
+        { id: "fanOutLinksCount", count: [0, n("total")], delay: FAN.start, ms: n("countMs"), ease: "linear" },
+        ...slots.flatMap((i): SvgAnimation[] => [
+          { id: `fanOutLinksLink${i}`, draw: true, delay: at(i), ms: FAN.draw, ease: "in-out" },
+          { id: `fanOutLinksHead${i}`, attrs: { opacity: [0, 1] }, delay: at(i), ms: 120 },
+          { id: `fanOutLinksHead${i}`, along: `fanOutLinksLink${i}`, delay: at(i), ms: FAN.draw, ease: "in-out" },
+          { id: `fanOutLinksHead${i}`, attrs: { opacity: [1, 0], r: [3.2, 7] }, delay: at(i) + FAN.draw, ms: 260, ease: "out" },
+          { id: `fanOutLinksDot${i}`, attrs: { opacity: [0, 1], r: [0.5, 2.4] }, delay: at(i) + FAN.draw - 40, ms: 220, ease: "out" },
+          { id: `fanOutLinksLabel${i}`, attrs: { opacity: [0, 1], x: [`{{x${i}}}` as unknown as number, n(`labelX${i}`)] }, delay: at(i) + FAN.draw - 80, ms: 360, ease: "out" },
+          // Once every link has landed, sparks run out along them in turn.
+          { id: `fanOutLinksSpark${i}`, attrs: { opacity: [0, 1] }, delay: n("settle"), ms: 1 },
+          { id: `fanOutLinksSpark${i}`, along: `fanOutLinksLink${i}`, delay: n("settle"), ms: 900 + (i % 3) * 150, ease: "in-out" },
+          { id: `fanOutLinksSpark${i}`, attrs: { opacity: [1, 0] }, delay: n("settle"), ms: 900 + (i % 3) * 150, ease: [0.6, 0, 1, 1] },
+        ]),
+      ],
+    };
+  })(),
+};
+
+export const dataEffects: VectorEffect[] = [donutChart, pieChart, gauge, barRace, sparkline, leaderboard, areaChart, kpiTile, rolodex, fanOutLinks];
