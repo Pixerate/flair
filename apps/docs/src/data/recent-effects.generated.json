@@ -1,5 +1,288 @@
 [
   {
+    "id": "insight-cards",
+    "name": "Insight cards",
+    "kind": "vector",
+    "category": "ui",
+    "description": "An AI analysis panel whose findings drop in one after another, each as a shimmering skeleton before its title, source link and summary fade in; then the flagged one turns red, a glowing border tracing round it and pulsing.",
+    "tags": [
+      "ui",
+      "ai",
+      "insight",
+      "alert",
+      "card",
+      "assistant",
+      "dashboard",
+      "tech",
+      "product-demo"
+    ],
+    "controls": [
+      {
+        "n": "heading",
+        "t": "text",
+        "d": "AI Analysis",
+        "line": 1
+      },
+      {
+        "n": "count",
+        "t": "int",
+        "d": 3,
+        "l": "Findings",
+        "min": 1,
+        "max": 3,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "flagged",
+        "t": "int",
+        "d": 1,
+        "l": "Flagged finding (0: none)",
+        "max": 3,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "more",
+        "t": "int",
+        "d": 3,
+        "l": "More findings (the +n pill; 0 hides it)",
+        "max": 99,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "title1",
+        "t": "text",
+        "d": "Critical concerns",
+        "l": "Finding 1 title",
+        "line": 5
+      },
+      {
+        "n": "source1",
+        "t": "text",
+        "d": "Federal Decree-Law No. 42",
+        "l": "Finding 1 source",
+        "line": 6
+      },
+      {
+        "n": "body1",
+        "t": "text",
+        "d": "These laws have run into unexpected challenges from several bodies during implementation.",
+        "l": "Finding 1 summary",
+        "line": 7
+      },
+      {
+        "n": "title2",
+        "t": "text",
+        "d": "Propose deregulation",
+        "l": "Finding 2 title",
+        "line": 8
+      },
+      {
+        "n": "source2",
+        "t": "text",
+        "d": "Federal Law on Mental Health",
+        "l": "Finding 2 source",
+        "line": 9
+      },
+      {
+        "n": "body2",
+        "t": "text",
+        "d": "Several regulations were found to be out of date in the following domains.",
+        "l": "Finding 2 summary",
+        "line": 10
+      },
+      {
+        "n": "title3",
+        "t": "text",
+        "d": "Coverage gap",
+        "l": "Finding 3 title",
+        "line": 11
+      },
+      {
+        "n": "source3",
+        "t": "text",
+        "d": "Health Data Act",
+        "l": "Finding 3 source",
+        "line": 12
+      },
+      {
+        "n": "body3",
+        "t": "text",
+        "d": "Two services handle patient records with no regulation covering them yet.",
+        "l": "Finding 3 summary",
+        "line": 13
+      },
+      {
+        "n": "background",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            11,
+            26,
+            30
+          ]
+        },
+        "c": 1,
+        "line": 14
+      },
+      {
+        "n": "backdrop",
+        "t": "bool",
+        "d": true,
+        "l": "Background",
+        "line": 15
+      },
+      {
+        "n": "panel",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            18,
+            42,
+            48
+          ]
+        },
+        "c": 1,
+        "line": 16
+      },
+      {
+        "n": "ink",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            227,
+            238,
+            240
+          ]
+        },
+        "l": "Text",
+        "c": 1,
+        "line": 17
+      },
+      {
+        "n": "accent",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            94,
+            200,
+            196
+          ]
+        },
+        "c": 1,
+        "line": 18
+      },
+      {
+        "n": "alert",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            240,
+            96,
+            94
+          ]
+        },
+        "l": "Flag",
+        "c": 1,
+        "line": 19
+      },
+      {
+        "n": "glow",
+        "t": "float",
+        "d": 3,
+        "max": 6,
+        "s": 0.5,
+        "b": 3,
+        "line": 20
+      }
+    ],
+    "presets": [
+      "Light",
+      "Amber warning",
+      "No flag",
+      "Two findings"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "heading",
+          "label": "Heading",
+          "holds": "copy",
+          "default": "AI Analysis"
+        },
+        {
+          "name": "title1",
+          "label": "Finding 1 title",
+          "holds": "copy",
+          "default": "Critical concerns"
+        },
+        {
+          "name": "source1",
+          "label": "Finding 1 source",
+          "holds": "copy",
+          "default": "Federal Decree-Law No. 42"
+        },
+        {
+          "name": "body1",
+          "label": "Finding 1 summary",
+          "holds": "copy",
+          "default": "These laws have run into unexpected challenges from several bodies during implementation."
+        },
+        {
+          "name": "title2",
+          "label": "Finding 2 title",
+          "holds": "copy",
+          "default": "Propose deregulation"
+        },
+        {
+          "name": "source2",
+          "label": "Finding 2 source",
+          "holds": "copy",
+          "default": "Federal Law on Mental Health"
+        },
+        {
+          "name": "body2",
+          "label": "Finding 2 summary",
+          "holds": "copy",
+          "default": "Several regulations were found to be out of date in the following domains."
+        },
+        {
+          "name": "title3",
+          "label": "Finding 3 title",
+          "holds": "copy",
+          "default": "Coverage gap"
+        },
+        {
+          "name": "source3",
+          "label": "Finding 3 source",
+          "holds": "copy",
+          "default": "Health Data Act"
+        },
+        {
+          "name": "body3",
+          "label": "Finding 3 summary",
+          "holds": "copy",
+          "default": "Two services handle patient records with no regulation covering them yet."
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 1600,
+    "animated": true,
+    "duration": 6880,
+    "module": "ui",
+    "addedAt": "2026-11-12T22:47:16.213Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
     "id": "seed-head-burst",
     "name": "Seed-head burst",
     "kind": "shader",
@@ -3227,129 +3510,5 @@
     "addedAt": "2026-11-10T15:17:55Z",
     "commitHash": "04bd8bc6d2ca1aba5d35f2311c0dcbce4a3cea4d",
     "order": 662
-  },
-  {
-    "id": "crt-terminal",
-    "name": "CRT terminal",
-    "kind": "vector",
-    "category": "crt",
-    "description": "An old phosphor terminal typing out its lines one after another behind a block cursor, glowing green through scanlines with a vignette and a faint bar rolling down the glass, then clearing to type again.",
-    "tags": [
-      "crt",
-      "terminal",
-      "retro",
-      "typing",
-      "phosphor",
-      "computer",
-      "hacker",
-      "text"
-    ],
-    "controls": [
-      {
-        "n": "lines",
-        "t": "text",
-        "d": "> BOOT SEQUENCE INITIATED; > CHECKING MEMORY ... 640K OK; > LOADING SYSTEM FILES; > ESTABLISHING LINK; > READY.",
-        "l": "Lines (separated by ;)",
-        "line": 1
-      },
-      {
-        "n": "ink",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            61,
-            255,
-            126
-          ]
-        },
-        "l": "Phosphor",
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            3,
-            20,
-            10
-          ]
-        },
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "pace",
-        "t": "float",
-        "d": 45,
-        "l": "Ms per letter",
-        "min": 15,
-        "max": 200,
-        "s": 5,
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "glow",
-        "t": "float",
-        "d": 2.5,
-        "max": 6,
-        "s": 0.5,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "hold",
-        "t": "float",
-        "d": 2.5,
-        "l": "Hold (s)",
-        "min": 0.5,
-        "max": 20,
-        "s": 0.5,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "font",
-        "t": "text",
-        "d": "ui-monospace, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace",
-        "line": 7
-      }
-    ],
-    "presets": [
-      "Amber",
-      "Mainframe",
-      "Fast"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "lines",
-          "label": "Lines (separated by ;)",
-          "holds": "copy",
-          "default": "> BOOT SEQUENCE INITIATED; > CHECKING MEMORY ... 640K OK; > LOADING SYSTEM FILES; > ESTABLISHING LINK; > READY."
-        },
-        {
-          "name": "font",
-          "label": "Font",
-          "holds": "font",
-          "default": "ui-monospace, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 300,
-    "animated": true,
-    "duration": 8985,
-    "module": "crt",
-    "addedAt": "2026-11-10T15:17:55Z",
-    "commitHash": "04bd8bc6d2ca1aba5d35f2311c0dcbce4a3cea4d",
-    "order": 661
   }
 ]
