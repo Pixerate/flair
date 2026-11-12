@@ -417,6 +417,7 @@ public enum FlairCatalog {
         AnyFlairEffect(SwooshUnderline()),
         AnyFlairEffect(KnockoutWipe()),
         AnyFlairEffect(BeforeAfter()),
+        AnyFlairEffect(SeedHeadBurst()),
         AnyFlairEffect(VhsTracking()),
         AnyFlairEffect(NightVisionCam()),
         AnyFlairEffect(SignalLost()),

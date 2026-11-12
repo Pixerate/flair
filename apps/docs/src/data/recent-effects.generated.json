@@ -1,5 +1,220 @@
 [
   {
+    "id": "seed-head-burst",
+    "name": "Seed-head burst",
+    "kind": "shader",
+    "category": "light",
+    "description": "A fuzzy gold orb like a dandelion seed head, its spines and engraved rings coming into focus out of a cloud of golden dust, then bursting: rays shoot out with glowing comet heads that land as small nodes while the dust blows away; a transparent overlay for a hero moment.",
+    "tags": [
+      "overlay",
+      "promo",
+      "burst",
+      "orbs",
+      "hero",
+      "network",
+      "gold",
+      "glow",
+      "tech",
+      "focus"
+    ],
+    "controls": [
+      {
+        "n": "uCore",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            231,
+            163
+          ]
+        },
+        "l": "Orb",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uRim",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            200,
+            137,
+            46
+          ]
+        },
+        "l": "Orb rim and spines",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uDust",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            184,
+            145,
+            58
+          ]
+        },
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uRay",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            241,
+            198,
+            232
+          ]
+        },
+        "l": "Rays",
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "uHead",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            79,
+            200,
+            255
+          ]
+        },
+        "l": "Comet heads",
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "uNode",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            156,
+            124,
+            245
+          ]
+        },
+        "l": "Nodes",
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "uRays",
+        "t": "int",
+        "d": 18,
+        "min": 4,
+        "max": 32,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 0.11,
+        "l": "Orb size",
+        "min": 0.04,
+        "max": 0.25,
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uReach",
+        "t": "float",
+        "d": 0.55,
+        "l": "Ray reach",
+        "min": 0.15,
+        "max": 0.9,
+        "b": 3,
+        "line": 11
+      },
+      {
+        "n": "uDustAmount",
+        "t": "float",
+        "d": 0.7,
+        "l": "Dust",
+        "b": 3,
+        "line": 12
+      },
+      {
+        "n": "uGlow",
+        "t": "float",
+        "d": 1,
+        "max": 2,
+        "b": 3,
+        "line": 13
+      },
+      {
+        "n": "uAnimate",
+        "t": "bool",
+        "d": true,
+        "line": 14
+      },
+      {
+        "n": "uCycle",
+        "t": "float",
+        "d": 5,
+        "l": "Cycle (s)",
+        "min": 2,
+        "max": 12,
+        "b": 3,
+        "line": 15
+      },
+      {
+        "n": "uProgress",
+        "t": "float",
+        "d": 0.62,
+        "l": "Progress (when still)",
+        "b": 3,
+        "line": 16
+      },
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            11,
+            26,
+            30
+          ]
+        },
+        "c": 1,
+        "line": 17
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 0,
+        "l": "Background opacity",
+        "b": 3,
+        "line": 18
+      }
+    ],
+    "presets": [
+      "With background",
+      "Ember",
+      "Ice",
+      "Still, burst",
+      "Many rays"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": true
+    },
+    "swiftReady": true,
+    "transparent": true,
+    "animated": true,
+    "module": "shaders/promo",
+    "addedAt": "2026-11-12T21:58:39Z",
+    "commitHash": "6bfe7611cb82be63cbb8b20eb3ce6d5c30d98400",
+    "order": 680
+  },
+  {
     "id": "ai-prompt-bar",
     "name": "AI prompt bar",
     "kind": "vector",
@@ -3136,151 +3351,5 @@
     "addedAt": "2026-11-10T15:17:55Z",
     "commitHash": "04bd8bc6d2ca1aba5d35f2311c0dcbce4a3cea4d",
     "order": 661
-  },
-  {
-    "id": "crt-television",
-    "name": "CRT television",
-    "kind": "shader",
-    "category": "crt",
-    "description": "A picture on an old television set in a dark room: a wooden cabinet with a rounded, bulging screen, its dial knobs and speaker grille, rabbit-ear antennas on top, scanlines and a little snow on the glass, its glare, and the screen's light spilling onto the wall and floor.",
-    "tags": [
-      "crt",
-      "tv",
-      "retro",
-      "television",
-      "vintage",
-      "screen",
-      "living-room",
-      "image"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "landscape"
-        },
-        "line": 4,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uSize",
-        "t": "float",
-        "d": 0.85,
-        "l": "Set size",
-        "min": 0.5,
-        "max": 1.2,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uCabinet",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            107,
-            68,
-            40
-          ]
-        },
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "uRoom",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            23,
-            21,
-            28
-          ]
-        },
-        "c": 1,
-        "line": 7
-      },
-      {
-        "n": "uScanlines",
-        "t": "float",
-        "d": 0.45,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uStatic",
-        "t": "float",
-        "d": 0.08,
-        "l": "Snow",
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uGlare",
-        "t": "float",
-        "d": 0.6,
-        "b": 3,
-        "line": 10
-      },
-      {
-        "n": "uAntenna",
-        "t": "bool",
-        "d": true,
-        "line": 11
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 12
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "b": 3,
-        "line": 13
-      }
-    ],
-    "presets": [
-      "Plastic",
-      "Lost signal",
-      "Close up"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "swiftReady": true,
-    "video": "filter",
-    "animated": true,
-    "module": "shaders/crt",
-    "addedAt": "2026-11-10T15:17:55Z",
-    "commitHash": "04bd8bc6d2ca1aba5d35f2311c0dcbce4a3cea4d",
-    "order": 660
   }
 ]
