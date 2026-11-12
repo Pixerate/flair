@@ -1,5 +1,142 @@
 [
   {
+    "id": "stat-cards",
+    "name": "Stat cards",
+    "kind": "vector",
+    "category": "data",
+    "description": "A grid of headline stats that fade in dim, then light up one after another: an accent line draws across each card's top, a glowing ring flashes round it and its figure counts up, prefix and suffix kept (120+, $4.2M, 98%).",
+    "tags": [
+      "stat",
+      "metric",
+      "card",
+      "dashboard",
+      "highlight",
+      "counter",
+      "explainer",
+      "tech"
+    ],
+    "controls": [
+      {
+        "n": "values",
+        "t": "text",
+        "d": "120+,4800,98%,15 min",
+        "l": "Values (comma-separated, up to 6; prefixes and suffixes kept)",
+        "line": 1
+      },
+      {
+        "n": "labels",
+        "t": "text",
+        "d": "Jurisdictions,Regulations tracked,Accuracy,Alert time",
+        "l": "Labels (comma-separated)",
+        "line": 2
+      },
+      {
+        "n": "background",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            11,
+            26,
+            30
+          ]
+        },
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "backdrop",
+        "t": "bool",
+        "d": true,
+        "l": "Background",
+        "line": 4
+      },
+      {
+        "n": "card",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            16,
+            39,
+            44
+          ]
+        },
+        "l": "Cards",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "accent",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            94,
+            200,
+            196
+          ]
+        },
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "ink",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            227,
+            238,
+            240
+          ]
+        },
+        "l": "Text",
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "glow",
+        "t": "float",
+        "d": 2.5,
+        "max": 6,
+        "s": 0.5,
+        "b": 3,
+        "line": 8
+      }
+    ],
+    "presets": [
+      "Light",
+      "Gold",
+      "Six up"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "values",
+          "label": "Values (comma-separated, up to 6; prefixes and suffixes kept)",
+          "holds": "copy",
+          "default": "120+,4800,98%,15 min"
+        },
+        {
+          "name": "labels",
+          "label": "Labels (comma-separated)",
+          "holds": "copy",
+          "default": "Jurisdictions,Regulations tracked,Accuracy,Alert time"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 1800,
+    "animated": true,
+    "duration": 6140,
+    "module": "data",
+    "addedAt": "2026-11-12T20:49:41.584Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
     "id": "ringed-orb",
     "name": "Ringed orb",
     "kind": "shader",
@@ -3066,140 +3203,5 @@
     "addedAt": "2026-11-10T15:17:55Z",
     "commitHash": "04bd8bc6d2ca1aba5d35f2311c0dcbce4a3cea4d",
     "order": 659
-  },
-  {
-    "id": "crt-power",
-    "name": "CRT power",
-    "kind": "shader",
-    "category": "crt",
-    "description": "A picture on an old tube television switching on and off: a bright line stretching across the dark screen and opening out into the picture, overbright for a moment, then later squashing back down to a glowing line, shrinking to a dot and fading away. Loops; or turn Animate off and set Power.",
-    "tags": [
-      "crt",
-      "tv",
-      "retro",
-      "power",
-      "switch-on",
-      "switch-off",
-      "transition",
-      "image"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "landscape"
-        },
-        "line": 4,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uPhosphor",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            232,
-            241,
-            255
-          ]
-        },
-        "l": "Glow",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uScanlines",
-        "t": "float",
-        "d": 0.4,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uCurve",
-        "t": "float",
-        "d": 0.12,
-        "l": "Curvature",
-        "max": 0.5,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uAfterglow",
-        "t": "float",
-        "d": 0.8,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uAnimate",
-        "t": "bool",
-        "d": true,
-        "line": 9
-      },
-      {
-        "n": "uProgress",
-        "t": "float",
-        "d": 1,
-        "l": "Power (when still)",
-        "b": 3,
-        "line": 10
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 11
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "b": 3,
-        "line": 12
-      }
-    ],
-    "presets": [
-      "Switch on",
-      "Green phosphor",
-      "Flat screen"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "swiftReady": true,
-    "video": "filter",
-    "loop": 5,
-    "animated": true,
-    "duration": 5000,
-    "module": "shaders/crt",
-    "addedAt": "2026-11-10T15:17:55Z",
-    "commitHash": "04bd8bc6d2ca1aba5d35f2311c0dcbce4a3cea4d",
-    "order": 658
   }
 ]
