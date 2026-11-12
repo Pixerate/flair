@@ -1,5 +1,11 @@
 # @pixerate/flair
 
+## 0.113.2
+
+### Patch Changes
+
+- 0644b4a: `relief-hex-tiles` and `relief-hex-ink` now visibly move: their tiles rise and fall in a wave that rolls across the cluster toward where it gathers, each tile a little out of step, instead of each tile drifting on its own (which read as still). The wave turns twice in the 8-second loop. `uVariation` ("Rise and fall") now sets how deep the wave goes, default 0.8.
+
 ## 0.113.1
 
 ### Patch Changes

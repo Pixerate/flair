@@ -602,8 +602,8 @@
       {
         "n": "uVariation",
         "t": "float",
-        "d": 0.6,
-        "l": "Height variation",
+        "d": 0.8,
+        "l": "Rise and fall",
         "b": 3,
         "line": 7
       },
@@ -620,7 +620,7 @@
         "n": "uSpeed",
         "t": "float",
         "d": 1,
-        "l": "Sway speed",
+        "l": "Wave speed",
         "max": 3,
         "b": 3,
         "line": 9
@@ -753,7 +753,7 @@
     "name": "Hexagon relief",
     "kind": "shader",
     "category": "relief",
-    "description": "White hexagon tiles raised from a white wall at different heights, gathering toward one side with a few strays, lit from the side so only their soft shadows draw them, rising and settling slowly.",
+    "description": "White hexagon tiles raised from a white wall at different heights, gathering toward one side with a few strays, lit from the side so only their soft shadows draw them, rising and settling in a slow wave.",
     "tags": [
       "relief",
       "hexagon",
@@ -814,8 +814,8 @@
       {
         "n": "uVariation",
         "t": "float",
-        "d": 0.6,
-        "l": "Height variation",
+        "d": 0.8,
+        "l": "Rise and fall",
         "b": 3,
         "line": 7
       },
@@ -832,7 +832,7 @@
         "n": "uSpeed",
         "t": "float",
         "d": 1,
-        "l": "Sway speed",
+        "l": "Wave speed",
         "max": 3,
         "b": 3,
         "line": 9
