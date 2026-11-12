@@ -1,4 +1,4 @@
-// flair-metal-hash: 013887e2
+// flair-metal-hash: ee6f002d
 #pragma clang diagnostic ignored "-Wunused-variable"
 #pragma clang diagnostic ignored "-Wunused-const-variable"
 #pragma clang diagnostic ignored "-Wmissing-prototypes"
@@ -136,9 +136,14 @@ float tileHeight(thread const float2& c, constant FlairUniforms& _237)
     {
         return 0.0;
     }
+    float a = radians(_237.uAngle);
+    float along = dot(c, float2(cos(a), sin(a)));
     float2 param_1 = c + float2(13.0);
-    float sway = 0.5 + (0.5 * sin(6.283185482025146484375 * (((_237.iTime * _237.uSpeed) / 8.0) + hash12(param_1))));
-    return (_237.uHeight * raise) * (1.0 - (_237.uVariation * sway));
+    float phase = (((_237.iTime * _237.uSpeed) / 4.0) - (along * 0.0900000035762786865234375)) + (0.3499999940395355224609375 * hash12(param_1));
+    float wave = 0.5 + (0.5 * sin(6.283185482025146484375 * phase));
+    float2 param_2 = c + float2(29.0);
+    float rest = 1.0 - ((_237.uVariation * hash12(param_2)) * 0.5);
+    return ((_237.uHeight * raise) * rest) * mix(1.0, wave * wave, _237.uVariation);
 }
 
 static inline __attribute__((always_inline))
@@ -287,16 +292,16 @@ fragment flair_relief_hex_tiles_frag_out flair_relief_hex_tiles_frag(constant Fl
 {
     flair_relief_hex_tiles_frag_out out = {};
     float4 flair_color = float4(0.0, 0.0, 0.0, 1.0);
-    float _860;
+    float _895;
     if (_237.flair_flipY > 0.5)
     {
-        _860 = _237.iResolution[1u] - gl_FragCoord.y;
+        _895 = _237.iResolution[1u] - gl_FragCoord.y;
     }
     else
     {
-        _860 = gl_FragCoord.y;
+        _895 = gl_FragCoord.y;
     }
-    float2 flair_coord = float2(gl_FragCoord.x, _860);
+    float2 flair_coord = float2(gl_FragCoord.x, _895);
     float2 param_1 = flair_coord;
     float4 param;
     mainImage(param, param_1, _237);

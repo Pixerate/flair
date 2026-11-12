@@ -1976,8 +1976,8 @@ describe("relief effects", () => {
     expect(getEffect("relief-hex-tiles")).toMatchObject({ loop: 8 });
     expect(getEffect("relief-hex-ink")).toMatchObject({ loop: 8 });
     expect(getEffect("relief-paper-waves")).toMatchObject({ loop: 10 });
-    // Every time term turns a whole number of times over the loop: the sway over 8 s, the waves over 10 s.
-    expect(source("relief-hex-tiles")).toContain("iTime * uSpeed / 8.0");
+    // Every time term turns a whole number of times over the loop: the tiles' wave twice in 8 s, the paper waves once in 10 s.
+    expect(source("relief-hex-tiles")).toContain("iTime * uSpeed / 4.0");
     expect(source("relief-paper-waves")).toContain("iTime * uSpeed / 10.0");
   });
 });

@@ -1,4 +1,4 @@
-// flair-metal-hash: 3fcfb01c
+// flair-metal-hash: ddb258da
 #pragma clang diagnostic ignored "-Wunused-variable"
 #pragma clang diagnostic ignored "-Wunused-const-variable"
 #pragma clang diagnostic ignored "-Wmissing-prototypes"
@@ -140,9 +140,14 @@ float tileHeight(thread const float2& c, constant FlairUniforms& _333)
     {
         return 0.0;
     }
+    float a = radians(_333.uAngle);
+    float along = dot(c, float2(cos(a), sin(a)));
     float2 param_1 = c + float2(13.0);
-    float sway = 0.5 + (0.5 * sin(6.283185482025146484375 * (((_333.iTime * _333.uSpeed) / 8.0) + hash12(param_1))));
-    return (_333.uHeight * raise) * (1.0 - (_333.uVariation * sway));
+    float phase = (((_333.iTime * _333.uSpeed) / 4.0) - (along * 0.0900000035762786865234375)) + (0.3499999940395355224609375 * hash12(param_1));
+    float wave = 0.5 + (0.5 * sin(6.283185482025146484375 * phase));
+    float2 param_2 = c + float2(29.0);
+    float rest = 1.0 - ((_333.uVariation * hash12(param_2)) * 0.5);
+    return ((_333.uHeight * raise) * rest) * mix(1.0, wave * wave, _333.uVariation);
 }
 
 static inline __attribute__((always_inline))
@@ -314,8 +319,8 @@ float inkAt(thread const float2& p, thread const float& along, constant FlairUni
     float edge = 1.0 - (2.0 * _333.uCoverage);
     float2 param = p * 3.0;
     int param_1 = 5;
-    float _949 = fbm(param, param_1);
-    float cloud = smoothstep(edge - 0.100000001490116119384765625, edge + 0.5, (along + (0.699999988079071044921875 * (_949 - 0.5))) + (0.4000000059604644775390625 * (_333.uInkTiles - 0.75)));
+    float _985 = fbm(param, param_1);
+    float cloud = smoothstep(edge - 0.100000001490116119384765625, edge + 0.5, (along + (0.699999988079071044921875 * (_985 - 0.5))) + (0.4000000059604644775390625 * (_333.uInkTiles - 0.75)));
     float drops = 0.0;
     for (int i = 0; i < 3; i++)
     {
@@ -382,8 +387,8 @@ void mainImage(thread float4& fragColor, thread const float2& fragCoord, constan
         float inked = step(hash12(param_14), fast::clamp(((deep * 1.7999999523162841796875) - 0.300000011920928955078125) + ((_333.uInkTiles - 0.75) * 1.5), 0.0, 1.0));
         float2 param_15 = (s.xy * 14.0) + h.zw;
         int param_16 = 5;
-        float _1217 = fbm(param_15, param_16);
-        float marble = _1217;
+        float _1252 = fbm(param_15, param_16);
+        float marble = _1252;
         float3 ink = (float3(_333.uInk) * (0.699999988079071044921875 + (0.89999997615814208984375 * marble))) + float3(0.25 * smoothstep(0.62000000476837158203125, 0.800000011920928955078125, marble));
         base = mix(_333.uSurface * (0.920000016689300537109375 + (0.07999999821186065673828125 * marble)), ink, float3(inked));
         base = mix(base, mix(_333.uShade * 0.60000002384185791015625, _333.uSurface * 0.85000002384185791015625, float3(inked)), float3(crack * 0.800000011920928955078125));
@@ -398,8 +403,8 @@ void mainImage(thread float4& fragColor, thread const float2& fragCoord, constan
         float crack_1 = cracks(param_18) * _333.uCracks;
         float2 param_19 = (s.xy * 4.0) + float2(11.0);
         int param_20 = 5;
-        float _1308 = fbm(param_19, param_20);
-        float stain = _1308;
+        float _1342 = fbm(param_19, param_20);
+        float stain = _1342;
         base = _333.uSurface * (0.89999997615814208984375 + (0.119999997317790985107421875 * stain));
         base = mix(base, _333.uShade * 0.800000011920928955078125, float3(crack_1 * 0.300000011920928955078125));
         float2 param_21 = s.xy;
@@ -420,16 +425,16 @@ fragment flair_relief_hex_ink_frag_out flair_relief_hex_ink_frag(constant FlairU
 {
     flair_relief_hex_ink_frag_out out = {};
     float4 flair_color = float4(0.0, 0.0, 0.0, 1.0);
-    float _1382;
+    float _1416;
     if (_333.flair_flipY > 0.5)
     {
-        _1382 = _333.iResolution[1u] - gl_FragCoord.y;
+        _1416 = _333.iResolution[1u] - gl_FragCoord.y;
     }
     else
     {
-        _1382 = gl_FragCoord.y;
+        _1416 = gl_FragCoord.y;
     }
-    float2 flair_coord = float2(gl_FragCoord.x, _1382);
+    float2 flair_coord = float2(gl_FragCoord.x, _1416);
     float2 param_1 = flair_coord;
     float4 param;
     mainImage(param, param_1, _333);
