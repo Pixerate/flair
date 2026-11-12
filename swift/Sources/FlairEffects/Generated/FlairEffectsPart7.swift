@@ -554,12 +554,12 @@ public struct ShadowPuppets: FlairEffect, Codable, Sendable, Equatable {
 }
 
 /// **Hexagon relief** (`relief-hex-tiles`, category: `relief`).
-/// White hexagon tiles raised from a white wall at different heights, gathering toward one side with a few strays, lit from the side so only their soft shadows draw them, rising and settling slowly.
+/// White hexagon tiles raised from a white wall at different heights, gathering toward one side with a few strays, lit from the side so only their soft shadows draw them, rising and settling in a slow wave.
 public struct ReliefHexTiles: FlairEffect, Codable, Sendable, Equatable {
     public static let effectId = "relief-hex-tiles"
     public static let effectName = "Hexagon relief"
     public static let category = "relief"
-    public static let effectDescription = "White hexagon tiles raised from a white wall at different heights, gathering toward one side with a few strays, lit from the side so only their soft shadows draw them, rising and settling slowly."
+    public static let effectDescription = "White hexagon tiles raised from a white wall at different heights, gathering toward one side with a few strays, lit from the side so only their soft shadows draw them, rising and settling in a slow wave."
     public static let tags: [String] = ["relief", "hexagon", "honeycomb", "tiles", "3d", "white", "minimal", "paper", "shadow", "background", "extruded"]
     public static let phase: Int = 1
     public static let functionName = "flair_relief_hex_tiles_frag"
@@ -572,9 +572,9 @@ public struct ReliefHexTiles: FlairEffect, Codable, Sendable, Equatable {
         FlairControlDescriptor(name: "uAngle", property: "angle", type: .float, label: "Tiles gather toward (°)", min: 0.0, max: 360.0, step: 1.8),
         FlairControlDescriptor(name: "uScatter", property: "scatter", type: .float, label: "Ragged edge", min: 0.0, max: 1.0, step: 0.005),
         FlairControlDescriptor(name: "uHeight", property: "height", type: .float, label: "Tile height", min: 0.0, max: 0.08, step: 0.0004),
-        FlairControlDescriptor(name: "uVariation", property: "variation", type: .float, label: "Height variation", min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uVariation", property: "variation", type: .float, label: "Rise and fall", min: 0.0, max: 1.0, step: 0.005),
         FlairControlDescriptor(name: "uGap", property: "gap", type: .float, label: "Gap between tiles", min: 0.0, max: 0.12, step: 0.0006),
-        FlairControlDescriptor(name: "uSpeed", property: "speed", type: .float, label: "Sway speed", min: 0.0, max: 3.0, step: 0.015),
+        FlairControlDescriptor(name: "uSpeed", property: "speed", type: .float, label: "Wave speed", min: 0.0, max: 3.0, step: 0.015),
         FlairControlDescriptor(name: "uSurface", property: "surface", type: .vec3, label: "Surface", isColor: true, min: 0.0, max: 1.0, step: 0.005),
         FlairControlDescriptor(name: "uShade", property: "shade", type: .vec3, label: "Shade", isColor: true, min: 0.0, max: 1.0, step: 0.005),
         FlairControlDescriptor(name: "uLight", property: "light", type: .float, label: "Light from (°)", min: 0.0, max: 360.0, step: 1.8),
@@ -602,11 +602,11 @@ public struct ReliefHexTiles: FlairEffect, Codable, Sendable, Equatable {
     public var scatter: Float = 0.5
     /// Tile height (`uHeight`).
     public var height: Float = 0.022
-    /// Height variation (`uVariation`).
-    public var variation: Float = 0.6
+    /// Rise and fall (`uVariation`).
+    public var variation: Float = 0.8
     /// Gap between tiles (`uGap`).
     public var gap: Float = 0.02
-    /// Sway speed (`uSpeed`).
+    /// Wave speed (`uSpeed`).
     public var speed: Float = 1.0
     /// Surface (`uSurface`).
     public var surface: SIMD3<Float> = flairVec3(0.94902, 0.94902, 0.94902)
@@ -648,7 +648,7 @@ public struct ReliefHexTiles: FlairEffect, Codable, Sendable, Equatable {
         self.angle = bag.decodeFloat("uAngle", "angle", default: 315.0, min: 0.0, max: 360.0)
         self.scatter = bag.decodeFloat("uScatter", "scatter", default: 0.5, min: 0.0, max: 1.0)
         self.height = bag.decodeFloat("uHeight", "height", default: 0.022, min: 0.0, max: 0.08)
-        self.variation = bag.decodeFloat("uVariation", "variation", default: 0.6, min: 0.0, max: 1.0)
+        self.variation = bag.decodeFloat("uVariation", "variation", default: 0.8, min: 0.0, max: 1.0)
         self.gap = bag.decodeFloat("uGap", "gap", default: 0.02, min: 0.0, max: 0.12)
         self.speed = bag.decodeFloat("uSpeed", "speed", default: 1.0, min: 0.0, max: 3.0)
         self.surface = bag.decodeVec3("uSurface", "surface", default: flairVec3(0.94902, 0.94902, 0.94902), isColor: true)
@@ -698,9 +698,9 @@ public struct ReliefHexInk: FlairEffect, Codable, Sendable, Equatable {
         FlairControlDescriptor(name: "uAngle", property: "angle", type: .float, label: "Tiles gather toward (°)", min: 0.0, max: 360.0, step: 1.8),
         FlairControlDescriptor(name: "uScatter", property: "scatter", type: .float, label: "Ragged edge", min: 0.0, max: 1.0, step: 0.005),
         FlairControlDescriptor(name: "uHeight", property: "height", type: .float, label: "Tile height", min: 0.0, max: 0.08, step: 0.0004),
-        FlairControlDescriptor(name: "uVariation", property: "variation", type: .float, label: "Height variation", min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uVariation", property: "variation", type: .float, label: "Rise and fall", min: 0.0, max: 1.0, step: 0.005),
         FlairControlDescriptor(name: "uGap", property: "gap", type: .float, label: "Gap between tiles", min: 0.0, max: 0.12, step: 0.0006),
-        FlairControlDescriptor(name: "uSpeed", property: "speed", type: .float, label: "Sway speed", min: 0.0, max: 3.0, step: 0.015),
+        FlairControlDescriptor(name: "uSpeed", property: "speed", type: .float, label: "Wave speed", min: 0.0, max: 3.0, step: 0.015),
         FlairControlDescriptor(name: "uSurface", property: "surface", type: .vec3, label: "Wall and white tiles", isColor: true, min: 0.0, max: 1.0, step: 0.005),
         FlairControlDescriptor(name: "uShade", property: "shade", type: .vec3, label: "Shade", isColor: true, min: 0.0, max: 1.0, step: 0.005),
         FlairControlDescriptor(name: "uInk", property: "ink", type: .vec3, label: "Ink", isColor: true, min: 0.0, max: 1.0, step: 0.005),
@@ -731,11 +731,11 @@ public struct ReliefHexInk: FlairEffect, Codable, Sendable, Equatable {
     public var scatter: Float = 0.5
     /// Tile height (`uHeight`).
     public var height: Float = 0.022
-    /// Height variation (`uVariation`).
-    public var variation: Float = 0.6
+    /// Rise and fall (`uVariation`).
+    public var variation: Float = 0.8
     /// Gap between tiles (`uGap`).
     public var gap: Float = 0.02
-    /// Sway speed (`uSpeed`).
+    /// Wave speed (`uSpeed`).
     public var speed: Float = 1.0
     /// Wall and white tiles (`uSurface`).
     public var surface: SIMD3<Float> = flairVec3(0.92549, 0.921569, 0.909804)
@@ -789,7 +789,7 @@ public struct ReliefHexInk: FlairEffect, Codable, Sendable, Equatable {
         self.angle = bag.decodeFloat("uAngle", "angle", default: 0.0, min: 0.0, max: 360.0)
         self.scatter = bag.decodeFloat("uScatter", "scatter", default: 0.5, min: 0.0, max: 1.0)
         self.height = bag.decodeFloat("uHeight", "height", default: 0.022, min: 0.0, max: 0.08)
-        self.variation = bag.decodeFloat("uVariation", "variation", default: 0.6, min: 0.0, max: 1.0)
+        self.variation = bag.decodeFloat("uVariation", "variation", default: 0.8, min: 0.0, max: 1.0)
         self.gap = bag.decodeFloat("uGap", "gap", default: 0.02, min: 0.0, max: 0.12)
         self.speed = bag.decodeFloat("uSpeed", "speed", default: 1.0, min: 0.0, max: 3.0)
         self.surface = bag.decodeVec3("uSurface", "surface", default: flairVec3(0.92549, 0.921569, 0.909804), isColor: true)

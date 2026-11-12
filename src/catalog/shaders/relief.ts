@@ -137,8 +137,14 @@ float tileRaise(vec2 c) {
 float tileHeight(vec2 c) {
   float raise = tileRaise(c);
   if (raise <= 0.0) return 0.0;
-  float sway = 0.5 + 0.5 * sin(6.2831853 * (iTime * uSpeed / 8.0 + hash12(c + 13.0)));
-  return uHeight * raise * (1.0 - uVariation * sway);
+  // A wave rolling across the tiles toward where they gather, each tile a little out of step:
+  // two whole turns in 8 s, so it loops.
+  float a = radians(uAngle);
+  float along = dot(c, vec2(cos(a), sin(a)));
+  float phase = iTime * uSpeed / 4.0 - along * 0.09 + 0.35 * hash12(c + 13.0);
+  float wave = 0.5 + 0.5 * sin(6.2831853 * phase);
+  float rest = 1.0 - uVariation * hash12(c + 29.0) * 0.5;
+  return uHeight * raise * rest * mix(1.0, wave * wave, uVariation);
 }
 float heightAt(vec2 p) {
   vec4 h = hexCell(p * uCells);
@@ -154,15 +160,15 @@ uniform float uCoverage;     // @control min=0 max=1 default=${coverage} label="
 uniform float uAngle;        // @control min=0 max=360 default=${angle} label="Tiles gather toward (°)"
 uniform float uScatter;      // @control min=0 max=1 default=0.5 label="Ragged edge"
 uniform float uHeight;       // @control min=0 max=0.08 default=0.022 label="Tile height"
-uniform float uVariation;    // @control min=0 max=1 default=0.6 label="Height variation"
+uniform float uVariation;    // @control min=0 max=1 default=0.8 label="Rise and fall"
 uniform float uGap;          // @control min=0 max=0.12 default=0.02 label="Gap between tiles"
-uniform float uSpeed;        // @control min=0 max=3 default=1 label="Sway speed"`.trim();
+uniform float uSpeed;        // @control min=0 max=3 default=1 label="Wave speed"`.trim();
 
 export const reliefHexTiles: ShaderEffect = {
   kind: "shader",
   id: "relief-hex-tiles",
   name: "Hexagon relief",
-  description: "White hexagon tiles raised from a white wall at different heights, gathering toward one side with a few strays, lit from the side so only their soft shadows draw them, rising and settling slowly.",
+  description: "White hexagon tiles raised from a white wall at different heights, gathering toward one side with a few strays, lit from the side so only their soft shadows draw them, rising and settling in a slow wave.",
   category: "relief",
   loop: 8,
   tags: ["relief", "hexagon", "honeycomb", "tiles", "3d", "white", "minimal", "paper", "shadow", "background", "extruded"],
