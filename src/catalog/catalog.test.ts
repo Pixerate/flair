@@ -2194,7 +2194,7 @@ describe("scroll effects", () => {
 describe("ui effects", () => {
   const ui = findEffects({ category: "ui" });
   const shaders = ["border-beam", "gradient-border", "meteors", "background-beams", "grid-spotlight", "dot-grid", "glass-card", "liquid-glass", "noise-grain-bg", "dichroic-glass", "metal-card", "card-spotlight"];
-  const vectors = ["marquee", "number-ticker", "animated-badge", "app-window", "swipe-stack", "pack-opening"];
+  const vectors = ["marquee", "number-ticker", "animated-badge", "app-window", "swipe-stack", "pack-opening", "ai-prompt-bar"];
   const render = (id: string, values: Record<string, unknown> = {}) => {
     const effect = getEffect(id)!;
     if (effect.kind !== "vector") throw new Error("vector expected");
@@ -2222,7 +2222,7 @@ describe("ui effects", () => {
   });
 
   it("prefixes every vector id with the effect's name", () => {
-    for (const [id, prefix] of [["marquee", "marquee"], ["number-ticker", "numberTicker"], ["animated-badge", "animatedBadge"], ["swipe-stack", "swipeStack"], ["pack-opening", "packOpening"]] as const)
+    for (const [id, prefix] of [["marquee", "marquee"], ["number-ticker", "numberTicker"], ["animated-badge", "animatedBadge"], ["swipe-stack", "swipeStack"], ["pack-opening", "packOpening"], ["ai-prompt-bar", "aiPromptBar"]] as const)
       for (const [, name] of render(id).svg.matchAll(/\sid="([^"]+)"/g)) expect(name, id).toMatch(new RegExp(`^${prefix}`));
   });
 
@@ -2234,6 +2234,27 @@ describe("ui effects", () => {
     expect(JSON.stringify(frame(400))).toBe(JSON.stringify(frame(0)));
     expect(top(2000)).toEqual(["swipeStackFront1"]);
     expect(JSON.stringify(frame(svgDuration(motion)))).toBe(JSON.stringify(frame(0)));
+  });
+
+  it("AI prompt bar types its request after the placeholder, presses send once it is written, and never reuses an id", () => {
+    const motion = render("ai-prompt-bar");
+    const ids = [...motion.svg.matchAll(/\sid="([^"]+)"/g)].map(([, id]) => id);
+    expect(new Set(ids).size).toBe(ids.length);
+    const frame = (ms: number) => new Map(svgFrame(motion.animate!, [], ms));
+    const typed = (ms: number) => frame(ms).get("aiPromptBarText");
+    // Before typing: the placeholder shows and the empty field has no caret.
+    expect(typed(200)?.attrs.opacity).toBe("0");
+    expect(frame(200).get("aiPromptBarHint")?.attrs.opacity).toBe("0.45");
+    const write = motion.animate!.find((a) => a.id === "aiPromptBarText" && a.write)!;
+    const sent = motion.animate!.find((a) => a.id === "aiPromptBarSendLit")!;
+    expect(Number(write.delay) + Number(write.ms)).toBeLessThan(Number(sent.delay));
+    expect(typed(Number(write.delay) + Number(write.ms) / 2)?.text).toMatch(/^Analyse .*\|$/);
+    expect(typed(Number(sent.delay))?.text).toBe("Analyse Federal Decree-Law No. 45 of 2021 in healthcare");
+    // A request too long for the field is cut short with an ellipsis, and types for longer.
+    const long = render("ai-prompt-bar", { prompt: "word ".repeat(60) });
+    const longWrite = long.animate!.find((a) => a.id === "aiPromptBarText" && a.write)!;
+    expect(String(longWrite.write)).toMatch(/\u2026$/);
+    expect(Number(longWrite.ms)).toBeGreaterThan(Number(write.ms));
   });
 
   it("marquee scrolls exactly one copy per loop, either way, for any words", () => {

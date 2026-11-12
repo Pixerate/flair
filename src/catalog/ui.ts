@@ -1,4 +1,5 @@
 import type { SvgAnimation, SvgMotion } from "../vector/motion.js";
+import { fitLabel } from "./data.js";
 import { textWidthEm } from "./images.js";
 import type { VectorEffect } from "./types.js";
 
@@ -370,4 +371,140 @@ export const packOpening: VectorEffect = {
   },
 };
 
-export const uiEffects: VectorEffect[] = [marquee, numberTicker, animatedBadge, swipeStack, packOpening];
+// ── AI prompt bar ──────────────────────────────────────────────────────
+
+/**
+ * AI prompt bar's layout and timing: a frosted panel holding the input
+ * field (send button at its right end) over a row of chips. A request types
+ * into the field at `pace` ms a letter while a beam runs round the panel,
+ * the send button is pressed, then the action chip lights and a shimmer
+ * sweeps the field while it "thinks". Times are in ms.
+ */
+const PROMPT = {
+  panel: { x: 20, y: 22, w: 360, h: 116, rx: 18 },
+  field: { x: 32, y: 34, w: 336, h: 42 },
+  send: { cx: 346, cy: 55, r: 15 },
+  chipY: 92,
+  chipH: 30,
+  intro: 450,
+  turn: 1700,
+  think: 1500,
+};
+/** The panel's outline, from the middle of its top edge round clockwise. */
+const PROMPT_OUTLINE = (() => {
+  const { x, y, w, h, rx } = PROMPT.panel;
+  const r = rx;
+  return `M${x + w / 2} ${y} H${x + w - r} A${r} ${r} 0 0 1 ${x + w} ${y + r} V${y + h - r} A${r} ${r} 0 0 1 ${x + w - r} ${y + h} H${x + r} A${r} ${r} 0 0 1 ${x} ${y + h - r} V${y + r} A${r} ${r} 0 0 1 ${x + r} ${y} Z`;
+})();
+const SPARKLE_PATH = "M0 -6 C0.8 -1.2 1.2 -0.8 6 0 C1.2 0.8 0.8 1.2 0 6 C-0.8 1.2 -1.2 0.8 -6 0 C-1.2 -0.8 -0.8 -1.2 0 -6Z";
+
+export const aiPromptBar: VectorEffect = {
+  kind: "vector",
+  id: "ai-prompt-bar",
+  name: "AI prompt bar",
+  description:
+    "A frosted AI prompt box: a request types into the field while a glowing beam runs round the panel, the send button presses with a ripple, then the action chip lights up and a shimmer sweeps the text while it thinks.",
+  category: "ui",
+  tags: ["ui", "ai", "prompt", "chat", "typing", "assistant", "tech", "product-demo"],
+  hold: 1400,
+  presets: [
+    { name: "Light", values: { background: [0.93, 0.95, 0.96], panel: [1, 1, 1], field: [0.95, 0.97, 0.98], text: [0.08, 0.12, 0.18], ink: [0.25, 0.3, 0.36], accent: [0.05, 0.6, 0.62], accent2: [0.39, 0.4, 0.95] } },
+    { name: "Violet", values: { background: [0.05, 0.04, 0.1], panel: [0.11, 0.09, 0.2], accent: [0.66, 0.55, 1], accent2: [0.95, 0.45, 0.8], ink: [0.88, 0.86, 1] } },
+    { name: "Search", values: { prompt: "Summarise this quarter's customer feedback", agent: "Insights", action: "Search", placeholder: "Search anything…" } },
+  ],
+  derived: (v) => {
+    const { field: f, send } = PROMPT;
+    const room = send.cx - send.r - 10 - (f.x + 16);
+    const typed = fitLabel(v.prompt, room, 12.5, 8);
+    const hint = fitLabel(v.placeholder, room, 12.5, 8);
+    const letters = Math.max(1, Array.from(typed.text).length);
+    const typing = Math.round(letters * Math.min(200, Math.max(10, Number(v.pace) || 40)));
+    const sent = PROMPT.intro + 250 + typing + 200;
+    const lit = sent + 320;
+    const done = lit + PROMPT.think;
+    const chip = (text: unknown, max: number) => {
+      const l = fitLabel(text, max, 10.5, 8);
+      return { ...l, w: Math.round(l.length + 40) };
+    };
+    const agent = chip(v.agent, 110);
+    const action = chip(v.action, 120);
+    const { x, w } = PROMPT.panel;
+    const agentX = x + 12;
+    const actionX = x + w - 12 - action.w;
+    const turns = Math.max(1, Math.round((done - PROMPT.intro) / PROMPT.turn));
+    return {
+      typed: typed.text,
+      hint: hint.text,
+      textSize: typed.size,
+      hintSize: hint.size,
+      textY: r1(f.y + f.h / 2 + typed.size * 0.36),
+      hintY: r1(f.y + f.h / 2 + hint.size * 0.36),
+      typeAt: PROMPT.intro + 250,
+      typing,
+      sent,
+      sentUp: sent + 120,
+      lit,
+      think2: lit + PROMPT.think / 2,
+      done,
+      beamMs: done - PROMPT.intro,
+      beamEnd: -100 * turns,
+      agentText: agent.text,
+      agentSize: agent.size,
+      agentLength: agent.length,
+      agentX,
+      agentW: agent.w,
+      agentIconX: agentX + 14,
+      agentTextX: agentX + 26,
+      plusX: agentX + agent.w + 8,
+      plusTextX: agentX + agent.w + 8 + 17,
+      actionText: action.text,
+      actionSize: action.size,
+      actionLength: action.length,
+      actionX,
+      actionW: action.w,
+      actionIcon: `translate(${actionX + 15} ${PROMPT.chipY + PROMPT.chipH / 2})`,
+      actionIconTurned: `translate(${actionX + 15} ${PROMPT.chipY + PROMPT.chipH / 2}) rotate(180)`,
+      actionTextX: actionX + 27,
+      backdropOpacity: v.backdrop ? 1 : 0,
+    };
+  },
+  motion: ((): SvgMotion => {
+    const { panel: p, field: f, send: s, chipY, chipH } = PROMPT;
+    const cy = chipY + chipH / 2;
+    const at = (scale: number) => `translate(${s.cx} ${s.cy}) scale(${scale})`;
+    const svg = `<svg viewBox="0 0 400 160" font-family="${SANS}"><!-- {{prompt: text default='Analyse Federal Decree-Law No. 45 of 2021 in healthcare' label='Request'}} {{placeholder: text default='Ask a question…' label='Placeholder'}} {{agent: text default='My agent' label='Agent chip'}} {{action: text default='AI Analysis' label='Action chip'}} {{pace: float min=10 max=200 default=40 step=5 label='Ms per letter'}} {{background: color default=#0B1A1E label='Background'}} {{backdrop: bool default=true label='Background'}} {{panel: color default=#14303A label='Panel'}} {{field: color default=#E6F0F1 label='Field'}} {{text: color default=#16262B label='Typed text'}} {{ink: color default=#D7E3E6 label='Chip text'}} {{accent: color default=#5EC8C4 label='Accent'}} {{accent2: color default=#8F7CF7 label='Second accent'}} {{glow: float min=0 max=6 default=3 step=0.5 label='Glow'}} --><defs><filter id="aiPromptBarGlow" x="-10%" y="-30%" width="120%" height="160%"><feGaussianBlur stdDeviation="{{glow}}" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter><linearGradient id="aiPromptBarSheen" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0.1"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></linearGradient><linearGradient id="aiPromptBarShimmerFill" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="{{accent}}" stop-opacity="0"/><stop offset="0.5" stop-color="{{accent}}" stop-opacity="0.45"/><stop offset="1" stop-color="{{accent}}" stop-opacity="0"/></linearGradient><linearGradient id="aiPromptBarRimStroke" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="{{accent}}"/><stop offset="1" stop-color="{{accent2}}"/></linearGradient><clipPath id="aiPromptBarFieldClip"><rect x="${f.x}" y="${f.y}" width="${f.w}" height="${f.h}" rx="${f.h / 2}"/></clipPath></defs><g opacity="{{backdropOpacity}}"><rect width="400" height="160" fill="{{background}}"/></g><g id="aiPromptBarPanel" opacity="0"><rect x="${p.x}" y="${p.y}" width="${p.w}" height="${p.h}" rx="${p.rx}" fill="{{panel}}" fill-opacity="0.92"/><rect x="${p.x}" y="${p.y}" width="${p.w}" height="${p.h}" rx="${p.rx}" fill="url(#aiPromptBarSheen)" stroke="{{ink}}" stroke-opacity="0.14"/><path id="aiPromptBarRim" d="${PROMPT_OUTLINE}" fill="none" stroke="url(#aiPromptBarRimStroke)" stroke-width="1.2" opacity="0"/><path id="aiPromptBarBeam" d="${PROMPT_OUTLINE}" pathLength="100" fill="none" stroke="{{accent}}" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="12 88" stroke-dashoffset="0" filter="url(#aiPromptBarGlow)" opacity="0"/><path id="aiPromptBarBeam2" d="${PROMPT_OUTLINE}" pathLength="100" fill="none" stroke="{{accent2}}" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="12 88" stroke-dashoffset="-50" filter="url(#aiPromptBarGlow)" opacity="0"/><rect x="${f.x}" y="${f.y}" width="${f.w}" height="${f.h}" rx="${f.h / 2}" fill="{{field}}"/><g clip-path="url(#aiPromptBarFieldClip)"><text id="aiPromptBarHint" x="${f.x + 16}" y="{{hintY}}" font-size="{{hintSize}}" fill="{{text}}" opacity="0.45">{{hint}}</text><text id="aiPromptBarText" x="${f.x + 16}" y="{{textY}}" font-size="{{textSize}}" font-weight="500" fill="{{text}}" opacity="0" xml:space="preserve"></text><rect id="aiPromptBarShimmer" x="${f.x - 120}" y="${f.y}" width="120" height="${f.h}" fill="url(#aiPromptBarShimmerFill)" opacity="0"/></g><circle id="aiPromptBarRipple" cx="${s.cx}" cy="${s.cy}" r="${s.r}" fill="none" stroke="{{accent}}" stroke-width="2" opacity="0"/><g id="aiPromptBarSend" transform="${at(1)}"><circle r="${s.r}" fill="{{panel}}"/><circle id="aiPromptBarSendLit" r="${s.r}" fill="{{accent}}" opacity="0"/><path d="M-5 0 H5 M1 -4.5 L5.5 0 L1 4.5" fill="none" stroke="{{field}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g><g><rect x="{{agentX}}" y="${chipY}" width="{{agentW}}" height="${chipH}" rx="${chipH / 2}" fill="{{ink}}" fill-opacity="0.06" stroke="{{ink}}" stroke-opacity="0.14"/><rect x="{{agentIconX}}" y="${cy - 5}" width="10" height="10" rx="2.5" transform="translate(-5 0)" fill="none" stroke="{{ink}}" stroke-width="1.4"/><text x="{{agentTextX}}" y="${cy + 3.6}" font-size="{{agentSize}}" textLength="{{agentLength}}" lengthAdjust="spacingAndGlyphs" fill="{{ink}}">{{agentText}}</text><rect x="{{plusX}}" y="${chipY}" width="34" height="${chipH}" rx="${chipH / 2}" fill="{{ink}}" fill-opacity="0.06" stroke="{{ink}}" stroke-opacity="0.14"/><text x="{{plusTextX}}" y="${cy + 3.6}" text-anchor="middle" font-size="10.5" fill="{{ink}}" fill-opacity="0.75">+3</text></g><g><rect x="{{actionX}}" y="${chipY}" width="{{actionW}}" height="${chipH}" rx="${chipH / 2}" fill="{{accent}}" fill-opacity="0.14" stroke="{{accent}}" stroke-opacity="0.45"/><rect id="aiPromptBarActionLit" x="{{actionX}}" y="${chipY}" width="{{actionW}}" height="${chipH}" rx="${chipH / 2}" fill="{{accent}}" filter="url(#aiPromptBarGlow)" opacity="0"/><path id="aiPromptBarSpark" d="${SPARKLE_PATH}" transform="{{actionIcon}}" fill="{{ink}}"/><text id="aiPromptBarActionText" x="{{actionTextX}}" y="${cy + 3.6}" font-size="{{actionSize}}" textLength="{{actionLength}}" lengthAdjust="spacingAndGlyphs" font-weight="600" fill="{{ink}}">{{actionText}}</text></g></g></svg>`;
+    const animate: SvgAnimation[] = [
+        { id: "aiPromptBarPanel", attrs: { opacity: [0, 1], transform: ["translate(0 10)", "translate(0 0)"] }, ms: PROMPT.intro, ease: "out" },
+        // Focused: the rim comes up and two beams chase round the panel.
+        { id: "aiPromptBarRim", attrs: { opacity: [0, 0.7] }, delay: PROMPT.intro, ms: 300 },
+        { id: "aiPromptBarBeam", attrs: { opacity: [0, 1] }, delay: PROMPT.intro, ms: 300 },
+        { id: "aiPromptBarBeam2", attrs: { opacity: [0, 1] }, delay: PROMPT.intro, ms: 300 },
+        { id: "aiPromptBarBeam", attrs: { "stroke-dashoffset": [0, n("beamEnd")] }, delay: PROMPT.intro, ms: n("beamMs"), ease: "linear" },
+        { id: "aiPromptBarBeam2", attrs: { "stroke-dashoffset": [-50, `{{beamEnd}}` as unknown as number] }, delay: PROMPT.intro, ms: n("beamMs"), ease: "linear" },
+        // Typing.
+        { id: "aiPromptBarHint", attrs: { opacity: [0.45, 0] }, delay: n("typeAt"), ms: 1 },
+        { id: "aiPromptBarText", attrs: { opacity: [0, 1] }, delay: n("typeAt"), ms: 1 },
+        { id: "aiPromptBarText", write: "{{typed}}", caret: "|", delay: n("typeAt"), ms: n("typing"), ease: "linear" },
+        // Sent: the button presses, lights and throws a ripple.
+        { id: "aiPromptBarSend", attrs: { transform: [at(1), at(0.82)] }, delay: n("sent"), ms: 120, ease: "out" },
+        { id: "aiPromptBarSend", attrs: { transform: [at(0.82), at(1)] }, delay: n("sentUp"), ms: 260, ease: { spring: { stiffness: 260, damping: 14 } } },
+        { id: "aiPromptBarSendLit", attrs: { opacity: [0, 1] }, delay: n("sent"), ms: 120 },
+        { id: "aiPromptBarSendLit", attrs: { opacity: [1, 0] }, delay: n("done"), ms: 400 },
+        { id: "aiPromptBarRipple", attrs: { r: [s.r, s.r + 16], opacity: [0.9, 0], "stroke-width": [2, 0.5] }, delay: n("sent"), ms: 600, ease: "out" },
+        // Thinking: the action chip lights, its sparkle turns, and a shimmer sweeps the request twice.
+        { id: "aiPromptBarActionLit", attrs: { opacity: [0, 0.9] }, delay: n("lit"), ms: 250, ease: "out" },
+        { id: "aiPromptBarActionText", attrs: { fill: ["{{ink}}", "{{panel}}"] }, delay: n("lit"), ms: 250 },
+        { id: "aiPromptBarSpark", attrs: { fill: ["{{ink}}", "{{panel}}"] }, delay: n("lit"), ms: 250 },
+        { id: "aiPromptBarSpark", attrs: { transform: ["{{actionIcon}}", "{{actionIconTurned}}"] }, delay: n("lit"), ms: PROMPT.think, ease: "in-out" },
+        { id: "aiPromptBarShimmer", attrs: { opacity: [0, 1] }, delay: n("lit"), ms: 1 },
+        { id: "aiPromptBarShimmer", attrs: { x: [f.x - 120, f.x + f.w] }, delay: n("lit"), ms: PROMPT.think / 2, ease: "in-out" },
+        { id: "aiPromptBarShimmer", attrs: { x: [f.x - 120, f.x + f.w] }, delay: n("think2"), ms: PROMPT.think / 2, ease: "in-out" },
+        { id: "aiPromptBarActionLit", attrs: { opacity: [0.9, 0.35] }, delay: n("done"), ms: 500, ease: "in-out" },
+        { id: "aiPromptBarBeam", attrs: { opacity: [1, 0] }, delay: n("done"), ms: 500 },
+        { id: "aiPromptBarBeam2", attrs: { opacity: [1, 0] }, delay: n("done"), ms: 500 },
+      ];
+    return { svg, animate };
+  })(),
+};
+
+export const uiEffects: VectorEffect[] = [marquee, numberTicker, animatedBadge, swipeStack, packOpening, aiPromptBar];
