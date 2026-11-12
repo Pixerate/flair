@@ -1,103 +1,280 @@
 [
   {
-    "id": "relief-hex-tiles",
-    "name": "Hexagon relief",
+    "id": "relief-emboss",
+    "name": "Embossed picture",
     "kind": "shader",
     "category": "relief",
-    "description": "White hexagon tiles raised from a white wall at different heights, gathering toward one side with a few strays, lit from the side so only their soft shadows draw them, rising and settling slowly.",
+    "description": "A picture or video pressed into a sheet of paper: its light parts raised and its dark parts sunk (or the other way), lit from one side, keeping as much of its colour as you like.",
     "tags": [
       "relief",
-      "hexagon",
-      "honeycomb",
-      "tiles",
-      "3d",
-      "white",
-      "minimal",
+      "emboss",
+      "deboss",
       "paper",
-      "shadow",
-      "background",
-      "extruded"
+      "image",
+      "video",
+      "filter",
+      "white",
+      "letterpress",
+      "plaster"
     ],
     "controls": [
       {
-        "n": "uCells",
-        "t": "float",
-        "d": 9,
-        "l": "Tiles (down the frame)",
-        "min": 4,
-        "max": 30,
-        "b": 3,
-        "line": 2
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "l": "Picture",
+        "line": 2,
+        "x": {
+          "filter": "mipmap",
+          "wrap": "clamp"
+        }
       },
       {
-        "n": "uCoverage",
+        "n": "uDepth",
         "t": "float",
-        "d": 0.55,
+        "d": 0.6,
+        "l": "Depth (− sinks the light parts)",
+        "min": -1,
         "b": 3,
         "line": 3
       },
       {
-        "n": "uAngle",
+        "n": "uSmoothing",
         "t": "float",
-        "d": 315,
-        "l": "Tiles gather toward (°)",
-        "max": 360,
+        "d": 0.3,
         "b": 3,
         "line": 4
       },
       {
-        "n": "uScatter",
+        "n": "uColour",
         "t": "float",
-        "d": 0.5,
-        "l": "Ragged edge",
+        "d": 0,
+        "l": "Picture colour",
         "b": 3,
         "line": 5
-      },
-      {
-        "n": "uHeight",
-        "t": "float",
-        "d": 0.022,
-        "l": "Tile height",
-        "max": 0.08,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uVariation",
-        "t": "float",
-        "d": 0.6,
-        "l": "Height variation",
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uGap",
-        "t": "float",
-        "d": 0.02,
-        "l": "Gap between tiles",
-        "max": 0.12,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 1,
-        "l": "Sway speed",
-        "max": 3,
-        "b": 3,
-        "line": 9
       },
       {
         "n": "uSurface",
         "t": "vec3",
         "d": {
           "c255": [
+            243,
             242,
-            242,
-            242
+            239
           ]
         },
+        "l": "Paper",
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "uShade",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            156,
+            158,
+            163
+          ]
+        },
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "uLight",
+        "t": "float",
+        "d": 135,
+        "l": "Light from (°)",
+        "max": 360,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uElevation",
+        "t": "float",
+        "d": 40,
+        "l": "Light height (°)",
+        "min": 10,
+        "max": 80,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uGrain",
+        "t": "float",
+        "d": 0.3,
+        "l": "Paper grain",
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 12
+      }
+    ],
+    "presets": [
+      "Debossed",
+      "Plaster",
+      "Tinted",
+      "Landscape"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Picture",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "swiftReady": true,
+    "video": "filter",
+    "animated": false,
+    "module": "shaders/relief",
+    "addedAt": "2026-11-12T13:16:06Z",
+    "commitHash": "fbf8224156bd0335bf49053c57eb46202f417297",
+    "order": 674
+  },
+  {
+    "id": "relief-paper-waves",
+    "name": "Paper-cut waves",
+    "kind": "shader",
+    "category": "relief",
+    "description": "Sheets of white paper cut into waves and stacked, each casting a soft shadow on the one beneath, the stack undulating gently.",
+    "tags": [
+      "relief",
+      "paper",
+      "paper-cut",
+      "papercraft",
+      "wave",
+      "layers",
+      "white",
+      "minimal",
+      "shadow",
+      "background",
+      "3d"
+    ],
+    "controls": [
+      {
+        "n": "uLayers",
+        "t": "int",
+        "d": 5,
+        "l": "Sheets",
+        "min": 2,
+        "max": 8,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "uAngle",
+        "t": "float",
+        "d": -25,
+        "l": "Angle (°)",
+        "min": -90,
+        "max": 90,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "uWaves",
+        "t": "float",
+        "d": 2.2,
+        "l": "Waves across",
+        "min": 0.5,
+        "max": 6,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uAmplitude",
+        "t": "float",
+        "d": 0.06,
+        "l": "Wave height",
+        "max": 0.2,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uSpacing",
+        "t": "float",
+        "d": 0.12,
+        "l": "Sheet spacing",
+        "min": 0.04,
+        "max": 0.3,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uOffset",
+        "t": "float",
+        "d": 0.15,
+        "l": "Stack position",
+        "min": -1,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uSpeed",
+        "t": "float",
+        "d": 1,
+        "l": "Undulation",
+        "max": 3,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uSurface",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            244,
+            244,
+            244
+          ]
+        },
+        "l": "Paper",
+        "c": 1,
+        "line": 9
+      },
+      {
+        "n": "uTint",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            244,
+            244,
+            244
+          ]
+        },
+        "l": "Deepest sheet",
         "c": 1,
         "line": 10
       },
@@ -106,9 +283,9 @@
         "t": "vec3",
         "d": {
           "c255": [
-            180,
-            183,
-            189
+            159,
+            162,
+            168
           ]
         },
         "c": 1,
@@ -117,47 +294,36 @@
       {
         "n": "uLight",
         "t": "float",
-        "d": 40,
+        "d": 20,
         "l": "Light from (°)",
         "max": 360,
         "b": 3,
         "line": 12
       },
       {
-        "n": "uElevation",
+        "n": "uShadow",
         "t": "float",
-        "d": 38,
-        "l": "Light height (°)",
-        "min": 10,
-        "max": 80,
+        "d": 0.05,
+        "l": "Shadow length",
+        "max": 0.15,
         "b": 3,
         "line": 13
       },
       {
         "n": "uSoftness",
         "t": "float",
-        "d": 0.4,
+        "d": 0.6,
         "l": "Shadow softness",
-        "min": 0.02,
-        "max": 2,
+        "min": 0.1,
         "b": 3,
         "line": 14
-      },
-      {
-        "n": "uTilt",
-        "t": "float",
-        "d": 0.35,
-        "l": "View tilt",
-        "b": 3,
-        "line": 15
       }
     ],
     "presets": [
-      "Full wall",
-      "Scattered",
-      "Top down",
-      "Graphite",
-      "Blush"
+      "Sunset",
+      "Ocean",
+      "Gentle",
+      "Diagonal"
     ],
     "inputs": {
       "accepts": [],
@@ -167,24 +333,208 @@
       "transparent": false
     },
     "swiftReady": true,
-    "loop": 8,
+    "loop": 10,
     "animated": true,
-    "duration": 8000,
-    "paint": {
-      "map": "canvas",
-      "colors": [
-        "uSurface",
-        "uShade"
-      ],
-      "values": {
-        "uCoverage": 1,
-        "uScatter": 0.2
-      }
-    },
+    "duration": 10000,
     "module": "shaders/relief",
-    "addedAt": "2026-11-12T13:14:16.644Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-11-12T13:16:06Z",
+    "commitHash": "fbf8224156bd0335bf49053c57eb46202f417297",
+    "order": 673
+  },
+  {
+    "id": "relief-paper-text",
+    "name": "Paper relief text",
+    "kind": "shader",
+    "category": "relief",
+    "description": "A word shaped out of a white sheet, its letters cut into the paper or raised from it (or cut in at one end and rising at the other), drawn only by light and the soft shadows of their walls.",
+    "tags": [
+      "relief",
+      "text",
+      "title",
+      "emboss",
+      "deboss",
+      "letterpress",
+      "paper",
+      "white",
+      "minimal",
+      "typography",
+      "3d",
+      "mask"
+    ],
+    "controls": [
+      {
+        "n": "uMask",
+        "t": "sampler2D",
+        "d": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201024%20256%22%20width%3D%221024%22%20height%3D%22256%22%3E%3Ctext%20x%3D%22512%22%20y%3D%22128%22%20dy%3D%220.35em%22%20text-anchor%3D%22middle%22%20textLength%3D%22798.7%22%20lengthAdjust%3D%22spacingAndGlyphs%22%20font-family%3D%22%26%2339%3BArial%20Black%26%2339%3B%2C%20%26%2339%3BHelvetica%20Neue%26%2339%3B%2C%20Helvetica%2C%20Arial%2C%20system-ui%2C%20sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%22199.7%22%20fill%3D%22%23fff%22%3ERELIEF%3C%2Ftext%3E%3C%2Fsvg%3E",
+        "l": "Shape (its alpha)",
+        "line": 2,
+        "x": {
+          "filter": "mipmap",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 0.85,
+        "l": "Shape size",
+        "min": 0.2,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "uDepthStart",
+        "t": "float",
+        "d": 0.7,
+        "l": "Depth at the start (− cut in)",
+        "min": -1,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uDepthEnd",
+        "t": "float",
+        "d": 0.7,
+        "l": "Depth at the end (− cut in)",
+        "min": -1,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uDepth",
+        "t": "float",
+        "d": 0.03,
+        "max": 0.1,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uBevel",
+        "t": "float",
+        "d": 0.2,
+        "l": "Rounded edges",
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uBreathe",
+        "t": "float",
+        "d": 0,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uSurface",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            241,
+            241,
+            240
+          ]
+        },
+        "l": "Paper",
+        "c": 1,
+        "line": 9
+      },
+      {
+        "n": "uShade",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            154,
+            156,
+            161
+          ]
+        },
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "uFace",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            241,
+            241,
+            240
+          ]
+        },
+        "l": "Letter faces",
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "uLight",
+        "t": "float",
+        "d": 130,
+        "l": "Light from (°)",
+        "max": 360,
+        "b": 3,
+        "line": 12
+      },
+      {
+        "n": "uElevation",
+        "t": "float",
+        "d": 40,
+        "l": "Light height (°)",
+        "min": 10,
+        "max": 80,
+        "b": 3,
+        "line": 13
+      },
+      {
+        "n": "uSoftness",
+        "t": "float",
+        "d": 0.8,
+        "l": "Shadow softness",
+        "min": 0.02,
+        "max": 2,
+        "b": 3,
+        "line": 14
+      },
+      {
+        "n": "uTilt",
+        "t": "float",
+        "d": 0.25,
+        "l": "View tilt",
+        "b": 3,
+        "line": 15
+      }
+    ],
+    "presets": [
+      "Cut in",
+      "Cut in to raised",
+      "Letterpress",
+      "Logo",
+      "Charcoal"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "svg",
+        "text",
+        "mask"
+      ],
+      "images": [
+        {
+          "name": "uMask",
+          "label": "Shape (its alpha)",
+          "wants": "text"
+        }
+      ],
+      "texts": [],
+      "video": "none",
+      "interactions": [],
+      "transparent": false
+    },
+    "swiftReady": true,
+    "video": "none",
+    "animated": true,
+    "module": "shaders/relief",
+    "addedAt": "2026-11-12T13:16:06Z",
+    "commitHash": "fbf8224156bd0335bf49053c57eb46202f417297",
+    "order": 672
   },
   {
     "id": "relief-hex-ink",
@@ -394,137 +744,129 @@
     "animated": true,
     "duration": 8000,
     "module": "shaders/relief",
-    "addedAt": "2026-11-12T13:14:16.644Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-11-12T13:16:06Z",
+    "commitHash": "fbf8224156bd0335bf49053c57eb46202f417297",
+    "order": 671
   },
   {
-    "id": "relief-paper-text",
-    "name": "Paper relief text",
+    "id": "relief-hex-tiles",
+    "name": "Hexagon relief",
     "kind": "shader",
     "category": "relief",
-    "description": "A word shaped out of a white sheet, its letters cut into the paper or raised from it (or cut in at one end and rising at the other), drawn only by light and the soft shadows of their walls.",
+    "description": "White hexagon tiles raised from a white wall at different heights, gathering toward one side with a few strays, lit from the side so only their soft shadows draw them, rising and settling slowly.",
     "tags": [
       "relief",
-      "text",
-      "title",
-      "emboss",
-      "deboss",
-      "letterpress",
-      "paper",
+      "hexagon",
+      "honeycomb",
+      "tiles",
+      "3d",
       "white",
       "minimal",
-      "typography",
-      "3d",
-      "mask"
+      "paper",
+      "shadow",
+      "background",
+      "extruded"
     ],
     "controls": [
       {
-        "n": "uMask",
-        "t": "sampler2D",
-        "d": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201024%20256%22%20width%3D%221024%22%20height%3D%22256%22%3E%3Ctext%20x%3D%22512%22%20y%3D%22128%22%20dy%3D%220.35em%22%20text-anchor%3D%22middle%22%20textLength%3D%22798.7%22%20lengthAdjust%3D%22spacingAndGlyphs%22%20font-family%3D%22%26%2339%3BArial%20Black%26%2339%3B%2C%20%26%2339%3BHelvetica%20Neue%26%2339%3B%2C%20Helvetica%2C%20Arial%2C%20system-ui%2C%20sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%22199.7%22%20fill%3D%22%23fff%22%3ERELIEF%3C%2Ftext%3E%3C%2Fsvg%3E",
-        "l": "Shape (its alpha)",
-        "line": 2,
-        "x": {
-          "filter": "mipmap",
-          "wrap": "clamp"
-        }
+        "n": "uCells",
+        "t": "float",
+        "d": 9,
+        "l": "Tiles (down the frame)",
+        "min": 4,
+        "max": 30,
+        "b": 3,
+        "line": 2
       },
       {
-        "n": "uSize",
+        "n": "uCoverage",
         "t": "float",
-        "d": 0.85,
-        "l": "Shape size",
-        "min": 0.2,
+        "d": 0.55,
         "b": 3,
         "line": 3
       },
       {
-        "n": "uDepthStart",
+        "n": "uAngle",
         "t": "float",
-        "d": 0.7,
-        "l": "Depth at the start (− cut in)",
-        "min": -1,
+        "d": 315,
+        "l": "Tiles gather toward (°)",
+        "max": 360,
         "b": 3,
         "line": 4
       },
       {
-        "n": "uDepthEnd",
+        "n": "uScatter",
         "t": "float",
-        "d": 0.7,
-        "l": "Depth at the end (− cut in)",
-        "min": -1,
+        "d": 0.5,
+        "l": "Ragged edge",
         "b": 3,
         "line": 5
       },
       {
-        "n": "uDepth",
+        "n": "uHeight",
         "t": "float",
-        "d": 0.03,
-        "max": 0.1,
+        "d": 0.022,
+        "l": "Tile height",
+        "max": 0.08,
         "b": 3,
         "line": 6
       },
       {
-        "n": "uBevel",
+        "n": "uVariation",
         "t": "float",
-        "d": 0.2,
-        "l": "Rounded edges",
+        "d": 0.6,
+        "l": "Height variation",
         "b": 3,
         "line": 7
       },
       {
-        "n": "uBreathe",
+        "n": "uGap",
         "t": "float",
-        "d": 0,
+        "d": 0.02,
+        "l": "Gap between tiles",
+        "max": 0.12,
         "b": 3,
         "line": 8
+      },
+      {
+        "n": "uSpeed",
+        "t": "float",
+        "d": 1,
+        "l": "Sway speed",
+        "max": 3,
+        "b": 3,
+        "line": 9
       },
       {
         "n": "uSurface",
         "t": "vec3",
         "d": {
           "c255": [
-            241,
-            241,
-            240
-          ]
-        },
-        "l": "Paper",
-        "c": 1,
-        "line": 9
-      },
-      {
-        "n": "uShade",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            154,
-            156,
-            161
+            242,
+            242,
+            242
           ]
         },
         "c": 1,
         "line": 10
       },
       {
-        "n": "uFace",
+        "n": "uShade",
         "t": "vec3",
         "d": {
           "c255": [
-            241,
-            241,
-            240
+            180,
+            183,
+            189
           ]
         },
-        "l": "Letter faces",
         "c": 1,
         "line": 11
       },
       {
         "n": "uLight",
         "t": "float",
-        "d": 130,
+        "d": 40,
         "l": "Light from (°)",
         "max": 360,
         "b": 3,
@@ -533,7 +875,7 @@
       {
         "n": "uElevation",
         "t": "float",
-        "d": 40,
+        "d": 38,
         "l": "Light height (°)",
         "min": 10,
         "max": 80,
@@ -543,7 +885,7 @@
       {
         "n": "uSoftness",
         "t": "float",
-        "d": 0.8,
+        "d": 0.4,
         "l": "Shadow softness",
         "min": 0.02,
         "max": 2,
@@ -553,207 +895,18 @@
       {
         "n": "uTilt",
         "t": "float",
-        "d": 0.25,
+        "d": 0.35,
         "l": "View tilt",
         "b": 3,
         "line": 15
       }
     ],
     "presets": [
-      "Cut in",
-      "Cut in to raised",
-      "Letterpress",
-      "Logo",
-      "Charcoal"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "svg",
-        "text",
-        "mask"
-      ],
-      "images": [
-        {
-          "name": "uMask",
-          "label": "Shape (its alpha)",
-          "wants": "text"
-        }
-      ],
-      "texts": [],
-      "video": "none",
-      "interactions": [],
-      "transparent": false
-    },
-    "swiftReady": true,
-    "video": "none",
-    "animated": true,
-    "module": "shaders/relief",
-    "addedAt": "2026-11-12T13:14:16.644Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "relief-paper-waves",
-    "name": "Paper-cut waves",
-    "kind": "shader",
-    "category": "relief",
-    "description": "Sheets of white paper cut into waves and stacked, each casting a soft shadow on the one beneath, the stack undulating gently.",
-    "tags": [
-      "relief",
-      "paper",
-      "paper-cut",
-      "papercraft",
-      "wave",
-      "layers",
-      "white",
-      "minimal",
-      "shadow",
-      "background",
-      "3d"
-    ],
-    "controls": [
-      {
-        "n": "uLayers",
-        "t": "int",
-        "d": 5,
-        "l": "Sheets",
-        "min": 2,
-        "max": 8,
-        "b": 3,
-        "line": 2
-      },
-      {
-        "n": "uAngle",
-        "t": "float",
-        "d": -25,
-        "l": "Angle (°)",
-        "min": -90,
-        "max": 90,
-        "b": 3,
-        "line": 3
-      },
-      {
-        "n": "uWaves",
-        "t": "float",
-        "d": 2.2,
-        "l": "Waves across",
-        "min": 0.5,
-        "max": 6,
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "uAmplitude",
-        "t": "float",
-        "d": 0.06,
-        "l": "Wave height",
-        "max": 0.2,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uSpacing",
-        "t": "float",
-        "d": 0.12,
-        "l": "Sheet spacing",
-        "min": 0.04,
-        "max": 0.3,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uOffset",
-        "t": "float",
-        "d": 0.15,
-        "l": "Stack position",
-        "min": -1,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 1,
-        "l": "Undulation",
-        "max": 3,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uSurface",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            244,
-            244,
-            244
-          ]
-        },
-        "l": "Paper",
-        "c": 1,
-        "line": 9
-      },
-      {
-        "n": "uTint",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            244,
-            244,
-            244
-          ]
-        },
-        "l": "Deepest sheet",
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "uShade",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            159,
-            162,
-            168
-          ]
-        },
-        "c": 1,
-        "line": 11
-      },
-      {
-        "n": "uLight",
-        "t": "float",
-        "d": 20,
-        "l": "Light from (°)",
-        "max": 360,
-        "b": 3,
-        "line": 12
-      },
-      {
-        "n": "uShadow",
-        "t": "float",
-        "d": 0.05,
-        "l": "Shadow length",
-        "max": 0.15,
-        "b": 3,
-        "line": 13
-      },
-      {
-        "n": "uSoftness",
-        "t": "float",
-        "d": 0.6,
-        "l": "Shadow softness",
-        "min": 0.1,
-        "b": 3,
-        "line": 14
-      }
-    ],
-    "presets": [
-      "Sunset",
-      "Ocean",
-      "Gentle",
-      "Diagonal"
+      "Full wall",
+      "Scattered",
+      "Top down",
+      "Graphite",
+      "Blush"
     ],
     "inputs": {
       "accepts": [],
@@ -763,177 +916,24 @@
       "transparent": false
     },
     "swiftReady": true,
-    "loop": 10,
+    "loop": 8,
     "animated": true,
-    "duration": 10000,
-    "module": "shaders/relief",
-    "addedAt": "2026-11-12T13:14:16.644Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "relief-emboss",
-    "name": "Embossed picture",
-    "kind": "shader",
-    "category": "relief",
-    "description": "A picture or video pressed into a sheet of paper: its light parts raised and its dark parts sunk (or the other way), lit from one side, keeping as much of its colour as you like.",
-    "tags": [
-      "relief",
-      "emboss",
-      "deboss",
-      "paper",
-      "image",
-      "video",
-      "filter",
-      "white",
-      "letterpress",
-      "plaster"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "portrait"
-        },
-        "l": "Picture",
-        "line": 2,
-        "x": {
-          "filter": "mipmap",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uDepth",
-        "t": "float",
-        "d": 0.6,
-        "l": "Depth (− sinks the light parts)",
-        "min": -1,
-        "b": 3,
-        "line": 3
-      },
-      {
-        "n": "uSmoothing",
-        "t": "float",
-        "d": 0.3,
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "uColour",
-        "t": "float",
-        "d": 0,
-        "l": "Picture colour",
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uSurface",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            243,
-            242,
-            239
-          ]
-        },
-        "l": "Paper",
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "uShade",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            156,
-            158,
-            163
-          ]
-        },
-        "c": 1,
-        "line": 7
-      },
-      {
-        "n": "uLight",
-        "t": "float",
-        "d": 135,
-        "l": "Light from (°)",
-        "max": 360,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uElevation",
-        "t": "float",
-        "d": 40,
-        "l": "Light height (°)",
-        "min": 10,
-        "max": 80,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uGrain",
-        "t": "float",
-        "d": 0.3,
-        "l": "Paper grain",
-        "b": 3,
-        "line": 10
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 11
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "b": 3,
-        "line": 12
+    "duration": 8000,
+    "paint": {
+      "map": "canvas",
+      "colors": [
+        "uSurface",
+        "uShade"
+      ],
+      "values": {
+        "uCoverage": 1,
+        "uScatter": 0.2
       }
-    ],
-    "presets": [
-      "Debossed",
-      "Plaster",
-      "Tinted",
-      "Landscape"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Picture",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
     },
-    "swiftReady": true,
-    "video": "filter",
-    "animated": false,
     "module": "shaders/relief",
-    "addedAt": "2026-11-12T13:14:16.644Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-11-12T13:16:06Z",
+    "commitHash": "fbf8224156bd0335bf49053c57eb46202f417297",
+    "order": 670
   },
   {
     "id": "emergency-alert",
