@@ -1,5 +1,193 @@
 [
   {
+    "id": "hub-spoke-graph",
+    "name": "Hub-and-spoke graph",
+    "kind": "vector",
+    "category": "data",
+    "description": "A glowing hub igniting in a puff of dust, then spokes shooting out to glossy pearl nodes on comet heads, each node branching into small leaves and linking to its neighbours, with sparks running out along the spokes and the hub pulsing.",
+    "tags": [
+      "network",
+      "graph",
+      "hub",
+      "constellation",
+      "relations",
+      "dashboard",
+      "explainer",
+      "tech"
+    ],
+    "controls": [
+      {
+        "n": "hub",
+        "t": "text",
+        "d": "Platform",
+        "line": 1
+      },
+      {
+        "n": "labels",
+        "t": "text",
+        "d": "Research,Design,Engineering,Data,Security,Growth,Support",
+        "l": "Spokes (comma-separated, up to 8)",
+        "line": 2
+      },
+      {
+        "n": "leaves",
+        "t": "int",
+        "d": 3,
+        "l": "Leaves per spoke",
+        "max": 4,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "background",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            11,
+            26,
+            30
+          ]
+        },
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "backdrop",
+        "t": "bool",
+        "d": true,
+        "l": "Background",
+        "line": 5
+      },
+      {
+        "n": "core",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            242,
+            196,
+            109
+          ]
+        },
+        "l": "Hub",
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "spoke",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            232,
+            196,
+            138
+          ]
+        },
+        "l": "Spokes",
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "node",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            229,
+            143,
+            181
+          ]
+        },
+        "l": "Nodes",
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "leaf",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            159,
+            140,
+            240
+          ]
+        },
+        "l": "Leaves",
+        "c": 1,
+        "line": 9
+      },
+      {
+        "n": "comet",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            111,
+            195,
+            255
+          ]
+        },
+        "l": "Comets",
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "ink",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            215,
+            227,
+            230
+          ]
+        },
+        "l": "Text",
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "glow",
+        "t": "float",
+        "d": 2.5,
+        "max": 6,
+        "s": 0.5,
+        "b": 3,
+        "line": 12
+      }
+    ],
+    "presets": [
+      "Light",
+      "Neon",
+      "Solar system"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "hub",
+          "label": "Hub",
+          "holds": "copy",
+          "default": "Platform"
+        },
+        {
+          "name": "labels",
+          "label": "Spokes (comma-separated, up to 8)",
+          "holds": "copy",
+          "default": "Research,Design,Engineering,Data,Security,Growth,Support"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 1500,
+    "animated": true,
+    "duration": 6500,
+    "module": "data",
+    "addedAt": "2026-11-12T17:39:24.390Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
     "id": "fan-out-links",
     "name": "Fan-out links",
     "kind": "vector",
@@ -3010,179 +3198,5 @@
     "addedAt": "2026-11-07T19:28:11Z",
     "commitHash": "4281796ee6e6bda2a45f063a2affa6061e67c6a1",
     "order": 657
-  },
-  {
-    "id": "transition-pixel-bloom",
-    "name": "Pixel bloom transition",
-    "kind": "shader",
-    "category": "transition",
-    "description": "Squares on a sunflower spiral grow out from the centre, each carrying the next picture, until they cover the frame; a glow rides the growing edge. Loops back and forth; or turn Animate off and set Progress.",
-    "tags": [
-      "transition",
-      "pixel",
-      "phyllotaxis",
-      "sunflower",
-      "spiral",
-      "image",
-      "slideshow",
-      "logo"
-    ],
-    "controls": [
-      {
-        "n": "uFrom",
-        "t": "sampler2D",
-        "d": {
-          "sample": "landscape"
-        },
-        "l": "From image",
-        "line": 2,
-        "x": {
-          "filter": "mipmap",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uTo",
-        "t": "sampler2D",
-        "d": {
-          "sample": "city"
-        },
-        "l": "To image",
-        "line": 3,
-        "x": {
-          "filter": "mipmap",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uAnimate",
-        "t": "bool",
-        "d": true,
-        "line": 4
-      },
-      {
-        "n": "uProgress",
-        "t": "float",
-        "d": 0.5,
-        "l": "Progress (when still)",
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uCell",
-        "t": "float",
-        "d": 72,
-        "l": "Square spacing (px)",
-        "min": 64,
-        "max": 200,
-        "s": 1,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uSpread",
-        "t": "float",
-        "d": 0.55,
-        "min": 0.1,
-        "max": 0.9,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uTwist",
-        "t": "float",
-        "d": 0.3,
-        "min": -1,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uUpright",
-        "t": "bool",
-        "d": false,
-        "l": "Keep squares upright",
-        "line": 9
-      },
-      {
-        "n": "uEdge",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            240,
-            90,
-            180
-          ]
-        },
-        "l": "Edge glow",
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "uEdgeGlow",
-        "t": "float",
-        "d": 0.5,
-        "l": "Edge glow strength",
-        "b": 3,
-        "line": 11
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 12
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "b": 3,
-        "line": 13
-      }
-    ],
-    "presets": [
-      "Fine",
-      "Bold blocks",
-      "Upright pixels"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uFrom",
-          "label": "From image",
-          "wants": "picture"
-        },
-        {
-          "name": "uTo",
-          "label": "To image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "transition",
-      "interactions": [],
-      "transparent": false
-    },
-    "swiftReady": true,
-    "video": "transition",
-    "loop": 4,
-    "animated": true,
-    "duration": 4000,
-    "module": "shaders/phyllotaxis",
-    "addedAt": "2026-11-07T19:28:11Z",
-    "commitHash": "4281796ee6e6bda2a45f063a2affa6061e67c6a1",
-    "order": 656
   }
 ]
