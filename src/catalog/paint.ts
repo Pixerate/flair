@@ -117,6 +117,7 @@ export const PAINT_HINTS: Readonly<Record<string, EffectPaintHint>> = {
   veins: { map: "canvas", colors: ["uVein", "uPulse"], values: clear, live: true },
   "dot-wave": { map: "canvas", colors: ["uDot"], values: clear, live: true },
   "hex-pulse": { map: "canvas", colors: ["uEdge", "uFill"], values: clear, live: true },
+  "relief-hex-tiles": { map: "canvas", colors: ["uSurface", "uShade"], values: { uCoverage: 1, uScatter: 0.2 } },
   moire: { map: "canvas", colors: ["uInk", "uPaper"], live: true },
   kaleidoscope: { map: "canvas", colors: ["uTint"], live: true },
   "memphis-pattern": { map: "canvas", colors: ["uInkA", "uInkB"] },

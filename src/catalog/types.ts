@@ -52,6 +52,7 @@ export type EffectCategory =
   | "atmosphere"
   | "glow"
   | "shadow"
+  | "relief"
   | "distortion"
   | "audio"
   | "scroll"
@@ -108,6 +109,7 @@ export const EFFECT_CATEGORIES: readonly EffectCategory[] = [
   "atmosphere",
   "glow",
   "shadow",
+  "relief",
   "distortion",
   "audio",
   "scroll",
@@ -132,7 +134,7 @@ export interface EffectCategoryGroup {
 
 /** Every category in exactly one group, the groups in browsing order. */
 export const EFFECT_CATEGORY_GROUPS: readonly EffectCategoryGroup[] = [
-  { name: "Backgrounds", categories: ["gradient", "organic", "pattern", "space", "3d", "weather", "water", "atmosphere"] },
+  { name: "Backgrounds", categories: ["gradient", "organic", "pattern", "relief", "space", "3d", "weather", "water", "atmosphere"] },
   { name: "Light", categories: ["light", "lighting", "glow", "shadow", "electric", "fire", "hologram"] },
   { name: "Pictures", categories: ["image", "cinematic", "film", "beauty", "distortion", "retro", "crt", "comic", "anime", "horror", "emergency", "meme", "timewarp", "timing", "melt"] },
   { name: "Particles & FX", categories: ["overlay", "splatter", "bubble", "particles", "trail", "debris", "impact", "pyrotechnics"] },
