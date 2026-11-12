@@ -1192,4 +1192,129 @@ export const hubSpokeGraph: VectorEffect = {
   })(),
 };
 
-export const dataEffects: VectorEffect[] = [donutChart, pieChart, gauge, barRace, sparkline, leaderboard, areaChart, kpiTile, rolodex, fanOutLinks, hubSpokeGraph];
+// ── Stat cards ─────────────────────────────────────────────────────────
+
+/**
+ * Stat cards' layout and timing: up to `slots` cards in a grid laid out by
+ * how many there are (a row of up to three, two by two for four, three by
+ * two for five or six) inside the frame's margins. The cards fade in dim,
+ * then light up one after another from `start`, `stagger` apart. Times are
+ * in ms.
+ */
+const STAT = { slots: 6, left: 20, top: 24, width: 360, height: 192, gap: 12, start: 700, stagger: 520, count: 900 };
+const STAT_VALUES = ["120+", "4800", "98%", "15 min"];
+
+/**
+ * A stat as written (`120+`, `$4.2M`, `98.5%`, `24/7`): the text before the
+ * number, the number and its decimals, and the text after. Thousands commas
+ * are allowed (`4,800`). Text with no number in it has `value` NaN.
+ */
+export function parseStat(text: string): { pre: string; value: number; dec: number; suf: string } {
+  const m = /^([^\d]*?)(-?\d[\d,]*(?:\.\d+)?|-?\.\d+)(.*)$/.exec(text);
+  if (!m) return { pre: text, value: NaN, dec: 0, suf: "" };
+  const digits = m[2]!.replace(/,/g, "");
+  const value = Math.max(-1e9, Math.min(1e9, Number(digits)));
+  return { pre: m[1]!, value, dec: Math.min(3, digits.split(".")[1]?.length ?? 0), suf: m[3]! };
+}
+
+export const statCards: VectorEffect = {
+  kind: "vector",
+  id: "stat-cards",
+  name: "Stat cards",
+  description:
+    "A grid of headline stats that fade in dim, then light up one after another: an accent line draws across each card's top, a glowing ring flashes round it and its figure counts up, prefix and suffix kept (120+, $4.2M, 98%).",
+  category: "data",
+  tags: ["stat", "metric", "card", "dashboard", "highlight", "counter", "explainer", "tech"],
+  hold: 1800,
+  presets: [
+    { name: "Light", values: { background: [0.95, 0.96, 0.97], card: [1, 1, 1], accent: [0.06, 0.55, 0.6], ink: [0.08, 0.12, 0.18] } },
+    { name: "Gold", values: { background: [0.07, 0.06, 0.04], card: [0.13, 0.11, 0.07], accent: [0.95, 0.76, 0.36], ink: [0.96, 0.92, 0.84] } },
+    { name: "Six up", values: { values: "$4.2M,38%,1.2k,99.9%,12,4.8", labels: "Revenue,Growth,Customers,Uptime,Markets,Rating" } },
+  ],
+  derived: (v) => {
+    const given = parseLabels(v.values, STAT.slots);
+    const valueTokens = given.some((s) => s !== "") ? given : STAT_VALUES;
+    const labelTokens = parseLabels(v.labels, STAT.slots);
+    const count = Math.max(1, Math.min(STAT.slots, valueTokens.length));
+    const cols = count <= 3 ? count : count === 4 ? 2 : 3;
+    const rows = Math.ceil(count / cols);
+    const w = (STAT.width - (cols - 1) * STAT.gap) / cols;
+    const h = Math.min(120, (STAT.height - (rows - 1) * STAT.gap) / rows);
+    const top = STAT.top + (STAT.height - (rows * h + (rows - 1) * STAT.gap)) / 2;
+    const out: Record<string, string | number> = {};
+    for (let i = 0; i < STAT.slots; i++) {
+      const shown = i < count;
+      const row = Math.floor(i / cols);
+      // A short last row is centred.
+      const inRow = row === rows - 1 ? count - row * cols : cols;
+      const rowLeft = STAT.left + (STAT.width - (inRow * w + (inRow - 1) * STAT.gap)) / 2;
+      const x = r1(rowLeft + (i % cols) * (w + STAT.gap));
+      const y = r1(top + row * (h + STAT.gap));
+      const stat = parseStat(String(valueTokens[i] ?? ""));
+      const numeric = Number.isFinite(stat.value);
+      const pre = formatSafe(stat.pre);
+      const suf = formatSafe(stat.suf);
+      const shownText = numeric ? `${pre}${formatCount(stat.value, { decimals: stat.dec })}${suf}` : formatSafe(valueTokens[i]);
+      const big = fit(shownText, w - 28, Math.min(30, h * 0.36));
+      const label = fitLabel(labelTokens[i] ?? "", w - 28, Math.min(11, h * 0.14), 7);
+      out[`show${i}`] = shown ? "inline" : "none";
+      out[`x${i}`] = x;
+      out[`y${i}`] = y;
+      out[`w${i}`] = r1(w);
+      out[`h${i}`] = r1(h);
+      out[`tx${i}`] = r1(x + 14);
+      out[`vy${i}`] = r1(y + h * 0.5 + big.size * 0.18);
+      out[`ly${i}`] = r1(y + h * 0.5 + big.size * 0.18 + label.size + 7);
+      out[`dotX${i}`] = r1(x + w - 14);
+      out[`dotY${i}`] = r1(y + 14);
+      out[`edge${i}`] = `M${r1(x + 8)} ${y} H${r1(x + w - 8)}`;
+      out[`size${i}`] = big.size;
+      out[`val${i}`] = numeric ? stat.value : 0;
+      out[`dec${i}`] = numeric ? stat.dec : 0;
+      out[`fmt${i}`] = numeric ? `${pre}{n}${suf}` : shownText;
+      out[`label${i}`] = label.text;
+      out[`labelSize${i}`] = label.size;
+      out[`labelLength${i}`] = label.length;
+    }
+    const allLit = STAT.start + (count - 1) * STAT.stagger + STAT.count;
+    return { ...out, finale: allLit + 250, finale2: allLit + 510, backdropOpacity: v.backdrop ? 1 : 0 };
+  },
+  motion: (() => {
+    const slots = Array.from({ length: STAT.slots }, (_, i) => i);
+    const lit = (i: number) => STAT.start + i * STAT.stagger;
+    const at = (name: string, i: number) => `{{${name}${i}}}` as unknown as number;
+    return {
+      svg: `<svg viewBox="0 0 400 240" font-family="${SANS}"><!-- {{values: text default='120+,4800,98%,15 min' label='Values (comma-separated, up to 6; prefixes and suffixes kept)'}} {{labels: text default='Jurisdictions,Regulations tracked,Accuracy,Alert time' label='Labels (comma-separated)'}} {{background: color default=#0B1A1E label='Background'}} {{backdrop: bool default=true label='Background'}} {{card: color default=#10272C label='Cards'}} {{accent: color default=#5EC8C4 label='Accent'}} {{ink: color default=#E3EEF0 label='Text'}} {{glow: float min=0 max=6 default=2.5 step=0.5 label='Glow'}} --><defs><filter id="statCardsGlow" x="-20%" y="-30%" width="140%" height="160%"><feGaussianBlur stdDeviation="{{glow}}" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter><radialGradient id="statCardsVignette" cx="0.5" cy="0.45" r="0.7"><stop offset="0" stop-color="{{accent}}" stop-opacity="0.09"/><stop offset="1" stop-color="{{accent}}" stop-opacity="0"/></radialGradient></defs><g opacity="{{backdropOpacity}}"><rect width="400" height="240" fill="{{background}}"/><rect width="400" height="240" fill="url(#statCardsVignette)"/></g>${slots
+        .map(
+          (i) =>
+            `<g id="statCardsCard${i}" display="{{show${i}}}" opacity="0"><rect id="statCardsFace${i}" x="{{x${i}}}" y="{{y${i}}}" width="{{w${i}}}" height="{{h${i}}}" rx="9" fill="{{card}}" stroke="{{ink}}" stroke-opacity="0.12"/><rect id="statCardsWash${i}" x="{{x${i}}}" y="{{y${i}}}" width="{{w${i}}}" height="{{h${i}}}" rx="9" fill="{{accent}}" opacity="0"/><rect id="statCardsRing${i}" x="{{x${i}}}" y="{{y${i}}}" width="{{w${i}}}" height="{{h${i}}}" rx="9" fill="none" stroke="{{accent}}" stroke-width="1.4" filter="url(#statCardsGlow)" opacity="0"/><path id="statCardsEdge${i}" d="{{edge${i}}}" fill="none" stroke="{{ink}}" stroke-width="2" stroke-linecap="round" opacity="0"/><circle id="statCardsDot${i}" cx="{{dotX${i}}}" cy="{{dotY${i}}}" r="2.4" fill="{{ink}}" opacity="0.25"/><text id="statCardsValue${i}" x="{{tx${i}}}" y="{{vy${i}}}" font-size="{{size${i}}}" font-weight="700" fill="{{ink}}" opacity="0.3">{{fmt${i}}}</text><text id="statCardsLabel${i}" x="{{tx${i}}}" y="{{ly${i}}}" font-size="{{labelSize${i}}}" textLength="{{labelLength${i}}}" lengthAdjust="spacingAndGlyphs" fill="{{ink}}" opacity="0.35">{{label${i}}}</text></g>`,
+        )
+        .join("")}</svg>`,
+      animate: [
+        ...slots.flatMap((i): SvgAnimation[] => [
+          // In, dim, a little after one another.
+          { id: `statCardsCard${i}`, attrs: { opacity: [0, 1], transform: ["translate(0 8)", "translate(0 0)"] }, delay: 80 * i, ms: 450, ease: "out" },
+          // Lit: the top edge draws across, the ring flashes and settles,
+          // the figure counts up and the text comes up to full strength.
+          { id: `statCardsEdge${i}`, attrs: { opacity: [0, 1] }, delay: lit(i), ms: 1 },
+          { id: `statCardsEdge${i}`, draw: true, delay: lit(i), ms: 420, ease: "in-out" },
+          { id: `statCardsEdge${i}`, attrs: { opacity: [1, 0] }, delay: lit(i) + 420, ms: 500, ease: "out" },
+          { id: `statCardsRing${i}`, attrs: { opacity: [0, 1] }, delay: lit(i) + 120, ms: 220, ease: "out" },
+          { id: `statCardsRing${i}`, attrs: { opacity: [1, 0.35] }, delay: lit(i) + 340, ms: 700, ease: "in-out" },
+          { id: `statCardsWash${i}`, attrs: { opacity: [0, 0.16] }, delay: lit(i) + 120, ms: 220, ease: "out" },
+          { id: `statCardsWash${i}`, attrs: { opacity: [0.16, 0.06] }, delay: lit(i) + 340, ms: 700, ease: "in-out" },
+          { id: `statCardsDot${i}`, attrs: { opacity: [0.25, 1], r: [2.4, 4] }, delay: lit(i) + 120, ms: 200, ease: "out" },
+          { id: `statCardsDot${i}`, attrs: { r: [4, 2.6] }, delay: lit(i) + 320, ms: 300, ease: "in-out" },
+          { id: `statCardsValue${i}`, attrs: { opacity: [0.3, 1] }, delay: lit(i) + 120, ms: 300 },
+          { id: `statCardsValue${i}`, count: [0, at("val", i)], decimals: at("dec", i), format: `{{fmt${i}}}`, delay: lit(i) + 120, ms: STAT.count, ease: "out" },
+          { id: `statCardsLabel${i}`, attrs: { opacity: [0.35, 0.75] }, delay: lit(i) + 200, ms: 300 },
+          // Once all are lit, the rings pulse together.
+          { id: `statCardsRing${i}`, attrs: { opacity: [0.35, 0.9] }, delay: n("finale"), ms: 260, ease: "out" },
+          { id: `statCardsRing${i}`, attrs: { opacity: [0.9, 0.35] }, delay: n("finale2"), ms: 600, ease: "in-out" },
+        ]),
+      ],
+    };
+  })(),
+};
+
+export const dataEffects: VectorEffect[] = [donutChart, pieChart, gauge, barRace, sparkline, leaderboard, areaChart, kpiTile, rolodex, fanOutLinks, hubSpokeGraph, statCards];

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { svgAnimatedMarkup } from "../vector/animated.js";
 import { svgFrame, svgMotionIssues, type SvgMotion } from "../vector/motion.js";
 import { svgDuration } from "../vector/svg.js";
-import { dataEffects, decimalsOf, fitLabel, parseLabels, parseNumberList, parseRace, parseSeries, parseShares } from "./data.js";
+import { dataEffects, decimalsOf, fitLabel, parseLabels, parseNumberList, parseRace, parseSeries, parseShares, parseStat, statCards } from "./data.js";
 import { iconEffects } from "./icons.js";
 import { effectControls, effectDefaults, effectInputs, findEffects, getEffect, renderVectorEffect, type VectorEffect } from "./index.js";
 
@@ -136,6 +136,14 @@ describe("data parsing", () => {
     expect(decimalsOf([1, 2])).toBe(0);
   });
 
+  it("reads a stat as written, keeping what comes before and after the number", () => {
+    expect(parseStat("120+")).toEqual({ pre: "", value: 120, dec: 0, suf: "+" });
+    expect(parseStat("$4.25M")).toEqual({ pre: "$", value: 4.25, dec: 2, suf: "M" });
+    expect(parseStat("4,800 users")).toEqual({ pre: "", value: 4800, dec: 0, suf: " users" });
+    expect(parseStat("-3.5%")).toMatchObject({ value: -3.5, dec: 1, suf: "%" });
+    expect(parseStat("Live").value).toBeNaN();
+  });
+
   it("cuts labels too long to read short, with an ellipsis", () => {
     expect(fitLabel("Web", 50, 9, 7)).toMatchObject({ text: "Web", size: 9 });
     const long = fitLabel("A very long label that cannot fit", 50, 9, 7);
@@ -238,5 +246,30 @@ describe("data effects", () => {
     expect(frame(motion, svgDuration(motion))).toBe(frame(motion, 0));
     // Long and missing entries are cut to fit or left blank.
     clean(render("rolodex", { entries: "x".repeat(300), labels: "" }));
+  });
+});
+
+describe("stat cards", () => {
+  const at = (values: string) => statCards.derived!({ values, labels: "", backdrop: true }) as Record<string, string | number>;
+
+  it("lays the cards out by how many there are", () => {
+    const shown = (d: Record<string, string | number>) => Array.from({ length: 6 }, (_, i) => d[`show${i}`]).filter((s) => s === "inline").length;
+    expect(shown(at("1"))).toBe(1);
+    const four = at("1,2,3,4");
+    expect(shown(four)).toBe(4);
+    // Two by two: the third card starts a new row under the first.
+    expect(four.x2).toBe(four.x0);
+    expect(Number(four.y2)).toBeGreaterThan(Number(four.y0));
+    // Five: the short last row is centred.
+    const five = at("1,2,3,4,5");
+    expect(Number(five.x3)).toBeGreaterThan(Number(five.x0));
+    expect(shown(at("1,2,3,4,5,6,7,8"))).toBe(6);
+  });
+
+  it("counts numbers up with their prefix and suffix, and shows text with no number as it is", () => {
+    const d = at("$4.2M,Live");
+    expect(d).toMatchObject({ val0: 4.2, dec0: 1, fmt0: "$4.2M".replace("4.2", "{n}"), val1: 0, fmt1: "Live" });
+    // Nothing readable falls back to the default stats.
+    expect(at("").fmt0).toBe("{n}+");
   });
 });
