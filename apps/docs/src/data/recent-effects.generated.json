@@ -1,5 +1,184 @@
 [
   {
+    "id": "ringed-orb",
+    "name": "Ringed orb",
+    "kind": "shader",
+    "category": "loader",
+    "description": "A glossy orb wrapped in a slowly turning ring of fine dashes and drifting specks, on a dark halo disk with a light sweeping round its rim; a hero icon or a thinking indicator.",
+    "tags": [
+      "loader",
+      "orbs",
+      "ring",
+      "glow",
+      "hero",
+      "thinking",
+      "ai",
+      "tech",
+      "overlay"
+    ],
+    "controls": [
+      {
+        "n": "uOrb",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            183,
+            164,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "uRim",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            123,
+            92,
+            255
+          ]
+        },
+        "l": "Orb rim",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uRing",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            156,
+            140,
+            245
+          ]
+        },
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uAccent",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            94,
+            230,
+            216
+          ]
+        },
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uDisk",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            14,
+            43,
+            48
+          ]
+        },
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "uDiskAlpha",
+        "t": "float",
+        "d": 0.7,
+        "l": "Disk opacity",
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 0.8,
+        "min": 0.3,
+        "max": 0.98,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uTicks",
+        "t": "int",
+        "d": 150,
+        "l": "Dashes",
+        "min": 40,
+        "max": 240,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uSpeed",
+        "t": "float",
+        "d": 1,
+        "max": 3,
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uSweep",
+        "t": "float",
+        "d": 1,
+        "l": "Rim light speed",
+        "max": 3,
+        "b": 3,
+        "line": 11
+      },
+      {
+        "n": "uGlow",
+        "t": "float",
+        "d": 1,
+        "max": 2,
+        "b": 3,
+        "line": 12
+      },
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            15,
+            23,
+            42
+          ]
+        },
+        "c": 1,
+        "line": 13
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 0,
+        "l": "Background opacity",
+        "b": 3,
+        "line": 14
+      }
+    ],
+    "presets": [
+      "With background",
+      "Gold",
+      "Cyan",
+      "No disk"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": true
+    },
+    "swiftReady": true,
+    "transparent": true,
+    "animated": true,
+    "module": "shaders/loaders",
+    "addedAt": "2026-11-12T20:06:30Z",
+    "commitHash": "3395927cebda31c797bb71f1f583fc3e72f5c7d3",
+    "order": 677
+  },
+  {
     "id": "hub-spoke-graph",
     "name": "Hub-and-spoke graph",
     "kind": "vector",
@@ -3022,181 +3201,5 @@
     "addedAt": "2026-11-10T15:17:55Z",
     "commitHash": "04bd8bc6d2ca1aba5d35f2311c0dcbce4a3cea4d",
     "order": 658
-  },
-  {
-    "id": "pixel-bloom-reveal",
-    "name": "Pixel bloom reveal",
-    "kind": "shader",
-    "category": "loader",
-    "description": "A logo-sting loop: squares pop out from the centre along a sunflower spiral, the bloom holds and shimmers, then it spins away into pixel dust from the edge in. On a clear background; works as a loader.",
-    "tags": [
-      "pixel",
-      "phyllotaxis",
-      "sunflower",
-      "logo",
-      "reveal",
-      "sting",
-      "intro",
-      "loader",
-      "dissolve",
-      "overlay"
-    ],
-    "controls": [
-      {
-        "n": "uCount",
-        "t": "int",
-        "d": 70,
-        "l": "Squares",
-        "min": 20,
-        "max": 400,
-        "b": 3,
-        "line": 2
-      },
-      {
-        "n": "uRadius",
-        "t": "float",
-        "d": 0.42,
-        "min": 0.1,
-        "max": 0.6,
-        "b": 3,
-        "line": 3
-      },
-      {
-        "n": "uSize",
-        "t": "float",
-        "d": 1.6,
-        "l": "Square size",
-        "min": 0.4,
-        "max": 2,
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "uDissolve",
-        "t": "float",
-        "d": 0.9,
-        "l": "Dissolve toward the edge",
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uTwist",
-        "t": "float",
-        "d": 0,
-        "min": -1,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uUpright",
-        "t": "bool",
-        "d": false,
-        "l": "Keep squares upright",
-        "line": 7
-      },
-      {
-        "n": "uInner",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            225,
-            10,
-            107
-          ]
-        },
-        "l": "Centre colour",
-        "c": 1,
-        "line": 8
-      },
-      {
-        "n": "uMiddle",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            132,
-            38,
-            136
-          ]
-        },
-        "l": "Middle colour",
-        "c": 1,
-        "line": 9
-      },
-      {
-        "n": "uOuter",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            45,
-            55,
-            160
-          ]
-        },
-        "l": "Edge colour",
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "uDiagonal",
-        "t": "bool",
-        "d": false,
-        "l": "Colour across (not outward)",
-        "line": 11
-      },
-      {
-        "n": "uGlow",
-        "t": "float",
-        "d": 0.25,
-        "b": 3,
-        "line": 12
-      },
-      {
-        "n": "uLoop",
-        "t": "float",
-        "d": 5,
-        "l": "Seconds per loop",
-        "min": 2,
-        "max": 12,
-        "b": 3,
-        "line": 13
-      },
-      {
-        "n": "uHold",
-        "t": "float",
-        "d": 0.3,
-        "max": 0.6,
-        "b": 3,
-        "line": 14
-      },
-      {
-        "n": "uPop",
-        "t": "float",
-        "d": 0.6,
-        "l": "Overshoot",
-        "b": 3,
-        "line": 15
-      }
-    ],
-    "presets": [
-      "Quick loader",
-      "Upright",
-      "Galaxy sting"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": true
-    },
-    "swiftReady": true,
-    "transparent": true,
-    "loop": 5,
-    "animated": true,
-    "duration": 5000,
-    "module": "shaders/phyllotaxis",
-    "addedAt": "2026-11-07T19:28:11Z",
-    "commitHash": "4281796ee6e6bda2a45f063a2affa6061e67c6a1",
-    "order": 657
   }
 ]

@@ -6,6 +6,153 @@ import simd
 
 
 
+/// **Glass tube** (`glass-tube`, category: `path`).
+/// A thick, see-through tube of glowing glass drawing itself along any path, with bright edges, a soft core and overlaps that show through each other, coloured from one end to the other.
+public struct GlassTube: FlairEffect, Codable, Sendable, Equatable {
+    public static let effectId = "glass-tube"
+    public static let effectName = "Glass tube"
+    public static let category = "path"
+    public static let effectDescription = "A thick, see-through tube of glowing glass drawing itself along any path, with bright edges, a soft core and overlaps that show through each other, coloured from one end to the other."
+    public static let tags: [String] = ["background", "path", "line", "draw", "tube", "glass", "glow", "squiggle", "ribbon", "wallpaper"]
+    public static let phase: Int = 2
+    public static let functionName = "flair_glass_tube_frag"
+    public static let uniformByteLength: Int = 1104
+    public static let isTransparent: Bool = false
+    public static let loopDuration: Double? = nil
+    public static let controls: [FlairControlDescriptor] = [
+        FlairControlDescriptor(name: "uPath", property: "path", type: .path, label: "Path", min: 0.0, max: 1.0, step: 0.005, pathFit: .contain, pathMargin: 0.1),
+        FlairControlDescriptor(name: "uColorA", property: "colorA", type: .vec3, label: "Start colour", isColor: true, min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uColorB", property: "colorB", type: .vec3, label: "Middle colour", isColor: true, min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uColorC", property: "colorC", type: .vec3, label: "End colour", isColor: true, min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uBackground", property: "background", type: .vec3, label: "Background", isColor: true, min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uThickness", property: "thickness", type: .float, label: "Thickness (%)", min: 1.0, max: 30.0, step: 0.145),
+        FlairControlDescriptor(name: "uUnit", property: "unit", type: .float, label: "Size unit (px, 0 = frame's shorter side)", min: 0.0, max: 16384.0, step: 81.92),
+        FlairControlDescriptor(name: "uProgress", property: "progress", type: .float, label: "Drawn", min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uDrawOn", property: "drawOn", type: .float, label: "Draw-on time (s)", min: 0.0, max: 10.0, step: 0.05),
+        FlairControlDescriptor(name: "uOpacity", property: "opacity", type: .float, label: "Body opacity", min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uRim", property: "rim", type: .float, label: "Edge light", min: 0.0, max: 2.0, step: 0.01),
+        FlairControlDescriptor(name: "uGlow", property: "glow", type: .float, label: "Glow", min: 0.0, max: 2.0, step: 0.01),
+        FlairControlDescriptor(name: "uFlow", property: "flow", type: .float, label: "Shimmer speed", min: 0.0, max: 2.0, step: 0.01),
+        FlairControlDescriptor(name: "uDownFrame", property: "downFrame", type: .bool, label: "Colour down the frame", min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uBackgroundAlpha", property: "backgroundAlpha", type: .float, label: "Background opacity", min: 0.0, max: 1.0, step: 0.005),
+    ]
+    public static let samplerBindings: [FlairSamplerBinding] = [
+        FlairSamplerBinding(name: "uPath", property: "path", type: .path, binding: 1, filter: .nearest, wrap: .clamp, pathFit: .contain, pathMargin: 0.1),
+    ]
+    public static let presets: [String: GlassTube] = {
+        var map: [String: GlassTube] = [:]
+        do { var p = GlassTube(); p.colorA = flairVec3(0.1, 0.9, 1.0); p.colorB = flairVec3(0.55, 0.3, 1.0); p.colorC = flairVec3(1.0, 0.25, 0.75); p.background = flairVec3(0.02, 0.01, 0.06); p.opacity = 0.25; p.glow = 1.2; map["Neon"] = p }
+        do { var p = GlassTube(); p.colorA = flairVec3(0.75, 0.78, 0.85); p.colorB = flairVec3(0.95, 0.96, 1.0); p.colorC = flairVec3(0.6, 0.65, 0.75); p.background = flairVec3(0.06, 0.07, 0.09); p.opacity = 0.9; p.glow = 0.2; map["Chrome"] = p }
+        do { var p = GlassTube(); p.background = flairVec3(0.96, 0.95, 0.94); p.opacity = 0.6; p.glow = 0.2; map["Light"] = p }
+        do { var p = GlassTube(); p.drawOn = 0.0; p.flow = 0.0; map["Static"] = p }
+        return map
+    }()
+
+    /// Path (`uPath`).
+    public var path: FlairTextureInput = .path("M 40 50 C 43 56 47 76 59 87 C 70 98 89 108 108 115 C 127 121 151 125 171 126 C 191 127 213 124 228 120 C 242 116 254 108 258 101 C 262 95 259 86 252 80 C 244 73 228 67 211 64 C 194 62 170 61 150 64 C 130 67 106 73 89 81 C 72 89 56 101 48 113 C 41 124 38 139 42 151 C 46 163 58 176 72 186 C 87 195 109 204 129 208 C 149 213 173 214 192 213 C 211 213 230 208 241 203 C 253 197 260 189 260 182 C 260 175 253 167 241 161 C 230 156 211 151 192 150 C 173 149 149 151 129 156 C 109 160 87 169 72 178 C 58 188 46 201 42 213 C 38 225 41 240 48 251 C 56 263 72 275 89 283 C 106 291 130 297 150 300 C 170 303 194 302 211 299 C 228 297 244 290 252 284 C 259 278 262 269 258 263 C 254 256 242 248 228 244 C 213 240 191 237 171 238 C 151 239 127 243 108 249 C 89 256 70 266 59 277 C 47 288 40 302 40 314 C 40 326 47 340 59 351 C 70 362 89 372 108 378 C 127 385 151 389 171 390 C 191 391 213 388 228 384 C 242 380 254 372 258 365 C 262 359 259 350 252 343 C 244 337 228 331 211 328 C 194 326 160 328 150 328", fit: .contain, margin: 0.1)
+    /// Start colour (`uColorA`).
+    public var colorA: SIMD3<Float> = flairVec3(0.909804, 0.156863, 0.235294)
+    /// Middle colour (`uColorB`).
+    public var colorB: SIMD3<Float> = flairVec3(1.0, 0.478431, 0.270588)
+    /// End colour (`uColorC`).
+    public var colorC: SIMD3<Float> = flairVec3(1.0, 0.772549, 0.239216)
+    /// Background (`uBackground`).
+    public var background: SIMD3<Float> = flairVec3(0.078431, 0.043137, 0.031373)
+    /// Thickness (%) (`uThickness`).
+    public var thickness: Float = 13.0
+    /// Size unit (px, 0 = frame's shorter side) (`uUnit`).
+    public var unit: Float = 0.0
+    /// Drawn (`uProgress`).
+    public var progress: Float = 1.0
+    /// Draw-on time (s) (`uDrawOn`).
+    public var drawOn: Float = 2.5
+    /// Body opacity (`uOpacity`).
+    public var opacity: Float = 0.45
+    /// Edge light (`uRim`).
+    public var rim: Float = 1.0
+    /// Glow (`uGlow`).
+    public var glow: Float = 0.6
+    /// Shimmer speed (`uFlow`).
+    public var flow: Float = 0.4
+    /// Colour down the frame (`uDownFrame`).
+    public var downFrame: Bool = false
+    /// Background opacity (`uBackgroundAlpha`).
+    public var backgroundAlpha: Float = 1.0
+
+    public init() {}
+
+    public func encodeUniforms(into buffer: UnsafeMutableRawPointer, state: FlairFrameState) {
+        state.encodeBuiltins(into: buffer)
+        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(colorA, min: 0.0, max: 1.0), to: buffer, at: 992)
+        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(colorB, min: 0.0, max: 1.0), to: buffer, at: 1008)
+        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(colorC, min: 0.0, max: 1.0), to: buffer, at: 1024)
+        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(background, min: 0.0, max: 1.0), to: buffer, at: 1040)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(thickness, min: 1.0, max: 30.0), to: buffer, at: 1052)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(unit, min: 0.0, max: 16384.0), to: buffer, at: 1056)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(progress, min: 0.0, max: 1.0), to: buffer, at: 1060)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(drawOn, min: 0.0, max: 10.0), to: buffer, at: 1064)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(opacity, min: 0.0, max: 1.0), to: buffer, at: 1068)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(rim, min: 0.0, max: 2.0), to: buffer, at: 1072)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(glow, min: 0.0, max: 2.0), to: buffer, at: 1076)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(flow, min: 0.0, max: 2.0), to: buffer, at: 1080)
+        FlairUniformEncoder.writeBool(downFrame, to: buffer, at: 1084)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(backgroundAlpha, min: 0.0, max: 1.0), to: buffer, at: 1088)
+    }
+
+    public func textureInput(for binding: Int) -> FlairTextureInput {
+        switch binding {
+        case 1: return self.path
+        default: return .none
+        }
+    }
+
+    public mutating func setTextureInput(_ input: FlairTextureInput, for binding: Int) {
+        switch binding {
+        case 1: self.path = input
+        default: break
+        }
+    }
+
+    public init(from decoder: Decoder) throws {
+        let bag = try FlairJSONBag(from: decoder)
+        self.path = bag.decodeTexture("uPath", "path", default: .path("M 40 50 C 43 56 47 76 59 87 C 70 98 89 108 108 115 C 127 121 151 125 171 126 C 191 127 213 124 228 120 C 242 116 254 108 258 101 C 262 95 259 86 252 80 C 244 73 228 67 211 64 C 194 62 170 61 150 64 C 130 67 106 73 89 81 C 72 89 56 101 48 113 C 41 124 38 139 42 151 C 46 163 58 176 72 186 C 87 195 109 204 129 208 C 149 213 173 214 192 213 C 211 213 230 208 241 203 C 253 197 260 189 260 182 C 260 175 253 167 241 161 C 230 156 211 151 192 150 C 173 149 149 151 129 156 C 109 160 87 169 72 178 C 58 188 46 201 42 213 C 38 225 41 240 48 251 C 56 263 72 275 89 283 C 106 291 130 297 150 300 C 170 303 194 302 211 299 C 228 297 244 290 252 284 C 259 278 262 269 258 263 C 254 256 242 248 228 244 C 213 240 191 237 171 238 C 151 239 127 243 108 249 C 89 256 70 266 59 277 C 47 288 40 302 40 314 C 40 326 47 340 59 351 C 70 362 89 372 108 378 C 127 385 151 389 171 390 C 191 391 213 388 228 384 C 242 380 254 372 258 365 C 262 359 259 350 252 343 C 244 337 228 331 211 328 C 194 326 160 328 150 328", fit: .contain, margin: 0.1), fit: .contain, margin: 0.1)
+        self.colorA = bag.decodeVec3("uColorA", "colorA", default: flairVec3(0.909804, 0.156863, 0.235294), isColor: true)
+        self.colorB = bag.decodeVec3("uColorB", "colorB", default: flairVec3(1.0, 0.478431, 0.270588), isColor: true)
+        self.colorC = bag.decodeVec3("uColorC", "colorC", default: flairVec3(1.0, 0.772549, 0.239216), isColor: true)
+        self.background = bag.decodeVec3("uBackground", "background", default: flairVec3(0.078431, 0.043137, 0.031373), isColor: true)
+        self.thickness = bag.decodeFloat("uThickness", "thickness", default: 13.0, min: 1.0, max: 30.0)
+        self.unit = bag.decodeFloat("uUnit", "unit", default: 0.0, min: 0.0, max: 16384.0)
+        self.progress = bag.decodeFloat("uProgress", "progress", default: 1.0, min: 0.0, max: 1.0)
+        self.drawOn = bag.decodeFloat("uDrawOn", "drawOn", default: 2.5, min: 0.0, max: 10.0)
+        self.opacity = bag.decodeFloat("uOpacity", "opacity", default: 0.45, min: 0.0, max: 1.0)
+        self.rim = bag.decodeFloat("uRim", "rim", default: 1.0, min: 0.0, max: 2.0)
+        self.glow = bag.decodeFloat("uGlow", "glow", default: 0.6, min: 0.0, max: 2.0)
+        self.flow = bag.decodeFloat("uFlow", "flow", default: 0.4, min: 0.0, max: 2.0)
+        self.downFrame = bag.decodeBool("uDownFrame", "downFrame", default: false)
+        self.backgroundAlpha = bag.decodeFloat("uBackgroundAlpha", "backgroundAlpha", default: 1.0, min: 0.0, max: 1.0)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var bag = FlairJSONBag()
+        bag.encodeTexture(self.path, for: "uPath")
+        bag.encodeVec3(self.colorA, for: "uColorA")
+        bag.encodeVec3(self.colorB, for: "uColorB")
+        bag.encodeVec3(self.colorC, for: "uColorC")
+        bag.encodeVec3(self.background, for: "uBackground")
+        bag.encodeFloat(self.thickness, for: "uThickness")
+        bag.encodeFloat(self.unit, for: "uUnit")
+        bag.encodeFloat(self.progress, for: "uProgress")
+        bag.encodeFloat(self.drawOn, for: "uDrawOn")
+        bag.encodeFloat(self.opacity, for: "uOpacity")
+        bag.encodeFloat(self.rim, for: "uRim")
+        bag.encodeFloat(self.glow, for: "uGlow")
+        bag.encodeFloat(self.flow, for: "uFlow")
+        bag.encodeBool(self.downFrame, for: "uDownFrame")
+        bag.encodeFloat(self.backgroundAlpha, for: "uBackgroundAlpha")
+        try bag.encode(to: encoder)
+    }
+}
+
 /// **Glass writing** (`glass-writing`, category: `path`).
 /// Words written on in one glowing glass stroke, letter by letter as a pen would, in joined-up script or print; give the path words as {"text": …} or any path.
 public struct GlassWriting: FlairEffect, Codable, Sendable, Equatable {
@@ -5492,94 +5639,6 @@ public struct TransitionBlockDissolve: FlairEffect, Codable, Sendable, Equatable
         FlairSamplerBinding(name: "uTo", property: "to", type: .sampler2D, binding: 2, filter: .linear, wrap: .clamp),
     ]
     public static let presets: [String: TransitionBlockDissolve] = [:]
-
-    /// From image (`uFrom`).
-    public var from: FlairTextureInput = .sample(.landscape)
-    /// To image (`uTo`).
-    public var to: FlairTextureInput = .sample(.city)
-    /// Animate (`uAnimate`).
-    public var animate: Bool = true
-    /// Progress (when still) (`uProgress`).
-    public var progress: Float = 0.5
-    /// Backdrop (`uBackdrop`).
-    public var backdrop: SIMD3<Float> = flairVec3(1.0, 1.0, 1.0)
-    /// Backdrop opacity (`uBackdropAlpha`).
-    public var backdropAlpha: Float = 1.0
-
-    public init() {}
-
-    public func encodeUniforms(into buffer: UnsafeMutableRawPointer, state: FlairFrameState) {
-        state.encodeBuiltins(into: buffer)
-        FlairUniformEncoder.writeBool(animate, to: buffer, at: 992)
-        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(progress, min: 0.0, max: 1.0), to: buffer, at: 996)
-        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(backdrop, min: 0.0, max: 1.0), to: buffer, at: 1008)
-        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(backdropAlpha, min: 0.0, max: 1.0), to: buffer, at: 1020)
-    }
-
-    public func textureInput(for binding: Int) -> FlairTextureInput {
-        switch binding {
-        case 1: return self.from
-        case 2: return self.to
-        default: return .none
-        }
-    }
-
-    public mutating func setTextureInput(_ input: FlairTextureInput, for binding: Int) {
-        switch binding {
-        case 1: self.from = input
-        case 2: self.to = input
-        default: break
-        }
-    }
-
-    public init(from decoder: Decoder) throws {
-        let bag = try FlairJSONBag(from: decoder)
-        self.from = bag.decodeTexture("uFrom", "from", default: .sample(.landscape), fit: .contain, margin: 0.1)
-        self.to = bag.decodeTexture("uTo", "to", default: .sample(.city), fit: .contain, margin: 0.1)
-        self.animate = bag.decodeBool("uAnimate", "animate", default: true)
-        self.progress = bag.decodeFloat("uProgress", "progress", default: 0.5, min: 0.0, max: 1.0)
-        self.backdrop = bag.decodeVec3("uBackdrop", "backdrop", default: flairVec3(1.0, 1.0, 1.0), isColor: true)
-        self.backdropAlpha = bag.decodeFloat("uBackdropAlpha", "backdropAlpha", default: 1.0, min: 0.0, max: 1.0)
-    }
-
-    public func encode(to encoder: Encoder) throws {
-        var bag = FlairJSONBag()
-        bag.encodeTexture(self.from, for: "uFrom")
-        bag.encodeTexture(self.to, for: "uTo")
-        bag.encodeBool(self.animate, for: "uAnimate")
-        bag.encodeFloat(self.progress, for: "uProgress")
-        bag.encodeVec3(self.backdrop, for: "uBackdrop")
-        bag.encodeFloat(self.backdropAlpha, for: "uBackdropAlpha")
-        try bag.encode(to: encoder)
-    }
-}
-
-/// **Grid wipe** (`transition-grid-wipe`, category: `transition`).
-/// A diagonal cascade of cells revealing the next image. Loops back and forth; or turn Animate off and set Progress.
-public struct TransitionGridWipe: FlairEffect, Codable, Sendable, Equatable {
-    public static let effectId = "transition-grid-wipe"
-    public static let effectName = "Grid wipe"
-    public static let category = "transition"
-    public static let effectDescription = "A diagonal cascade of cells revealing the next image. Loops back and forth; or turn Animate off and set Progress."
-    public static let tags: [String] = ["transition", "image", "slideshow"]
-    public static let phase: Int = 2
-    public static let functionName = "flair_transition_grid_wipe_frag"
-    public static let uniformByteLength: Int = 1024
-    public static let isTransparent: Bool = false
-    public static let loopDuration: Double? = 4.0
-    public static let controls: [FlairControlDescriptor] = [
-        FlairControlDescriptor(name: "uFrom", property: "from", type: .sampler2D, label: "From image", min: 0.0, max: 1.0, step: 0.005, filter: .linear, wrap: .clamp),
-        FlairControlDescriptor(name: "uTo", property: "to", type: .sampler2D, label: "To image", min: 0.0, max: 1.0, step: 0.005, filter: .linear, wrap: .clamp),
-        FlairControlDescriptor(name: "uAnimate", property: "animate", type: .bool, label: "Animate", min: 0.0, max: 1.0, step: 0.005),
-        FlairControlDescriptor(name: "uProgress", property: "progress", type: .float, label: "Progress (when still)", min: 0.0, max: 1.0, step: 0.005),
-        FlairControlDescriptor(name: "uBackdrop", property: "backdrop", type: .vec3, label: "Backdrop", isColor: true, min: 0.0, max: 1.0, step: 0.005),
-        FlairControlDescriptor(name: "uBackdropAlpha", property: "backdropAlpha", type: .float, label: "Backdrop opacity", min: 0.0, max: 1.0, step: 0.005),
-    ]
-    public static let samplerBindings: [FlairSamplerBinding] = [
-        FlairSamplerBinding(name: "uFrom", property: "from", type: .sampler2D, binding: 1, filter: .linear, wrap: .clamp),
-        FlairSamplerBinding(name: "uTo", property: "to", type: .sampler2D, binding: 2, filter: .linear, wrap: .clamp),
-    ]
-    public static let presets: [String: TransitionGridWipe] = [:]
 
     /// From image (`uFrom`).
     public var from: FlairTextureInput = .sample(.landscape)
