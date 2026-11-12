@@ -25,8 +25,13 @@ import type { ShaderEffect } from "../types.js";
 function trailHelper(dt: number, speed: number, walk = false): string {
   return `
 uniform sampler2D uPath; // @control path default="" label="Path when idle"
+uniform float uUnit;     // @control min=0 max=16384 default=0 label="Size unit (px, 0 = frame height)"
 ${PATH}
 const int TRAIL_POINTS = 32;
+// The length the trail's sizes are shares of: uUnit px when set (a paint brush's scale), else the frame's height.
+float trailUnit() {
+  return uUnit > 0.0 ? uUnit : iResolution.y;
+}
 // The demo's way at time t: along uPath when one is set, at an even pace (round a closed path, back and forth
 // along an open one), else a looping curve.
 vec2 demoPath(float t) {
@@ -42,7 +47,7 @@ vec2 demoPath(float t) {
 }
 // Whether a and b are either side of a jump (the pointer left and came back elsewhere), not one stroke.
 bool trailJump(vec4 a, vec4 b) {
-  return a.z - b.z > 0.25 && length(a.xy - b.xy) > 0.03 * iResolution.y;
+  return a.z - b.z > 0.25 && length(a.xy - b.xy) > 0.03 * trailUnit();
 }
 vec4 trailPoint(int i, bool demo) {
   if (!demo || (iTrail[0].w > 0.5 && iPointer.z > 0.0)) return iTrail[i];
@@ -170,7 +175,7 @@ uniform bool uDemo;       // @control default=true label="Demo when idle"`,
     SEGMENT,
     GLOW,
     `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  float px = 1.0 / iResolution.y;
+  float px = 1.0 / trailUnit();
   vec2 p = fragCoord * px;
   vec4 a = trailPoint(0, uDemo);
   if (a.w < 0.5) {
@@ -244,7 +249,7 @@ uniform bool uDemo;       // @control default=true label="Demo when idle"`,
     CATMULL,
     CATMULL_BOX,
     `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  float px = 1.0 / iResolution.y;
+  float px = 1.0 / trailUnit();
   vec2 p = fragCoord * px;
   bool live = trailLive(uDemo);
   vec4 a = trailAt(0, live);
@@ -343,7 +348,7 @@ uniform bool uDemo;       // @control default=true label="Demo when idle"`,
     trailHelper(1 / 40, 1.4, true),
     GLOW,
     `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  float px = 1.0 / iResolution.y;
+  float px = 1.0 / trailUnit();
   vec2 p = fragCoord * px;
   vec3 col = vec3(0.0);
   bool live = trailLive(uDemo);
@@ -425,7 +430,7 @@ float pressWidth(vec4 a, vec4 b, float px) {
 }
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  float px = 1.0 / iResolution.y;
+  float px = 1.0 / trailUnit();
   vec2 p = fragCoord * px;
   bool live = trailLive(uDemo);
   vec4 a = trailAt(0, live);
@@ -538,7 +543,7 @@ float star5(vec2 p, float r, float rf) {
 }
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  float px = 1.0 / iResolution.y;
+  float px = 1.0 / trailUnit();
   vec2 p = fragCoord * px;
   // Newest first, each stamp going under the ones before it.
   vec4 acc = vec4(0.0);
@@ -611,7 +616,7 @@ uniform float uBackgroundAlpha; // @control min=0 max=1 default=1 label="Backgro
 }
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  float px = 1.0 / iResolution.y;
+  float px = 1.0 / trailUnit();
   vec2 p = fragCoord * px;
   vec2 uv = fragCoord / iResolution.xy;
   // A dark ground with a little vignette and grain.

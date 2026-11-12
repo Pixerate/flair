@@ -1,4 +1,4 @@
-// flair-metal-hash: 9dbb8421
+// flair-metal-hash: e1d2dcc4
 #pragma clang diagnostic ignored "-Wmissing-prototypes"
 
 #include <metal_stdlib>
@@ -31,6 +31,7 @@ struct FlairUniforms
     float uTwinkle;
     float uIntensity;
     uint uDemo;
+    float uUnit;
 };
 
 struct flair_sparkle_trail_frag_out
@@ -39,33 +40,48 @@ struct flair_sparkle_trail_frag_out
 };
 
 static inline __attribute__((always_inline))
-bool trailLive(thread const bool& demo, constant FlairUniforms& _166)
+float trailUnit(constant FlairUniforms& _169)
 {
-    bool _495 = !demo;
-    bool _510;
-    if (!_495)
+    float _416;
+    if (_169.uUnit > 0.0)
     {
-        bool _502 = _166.iTrail[0].w > 0.5;
-        bool _509;
-        if (_502)
-        {
-            _509 = _166.iPointer.z > 0.0;
-        }
-        else
-        {
-            _509 = _502;
-        }
-        _510 = _509;
+        _416 = _169.uUnit;
     }
     else
     {
-        _510 = _495;
+        _416 = _169.iResolution[1u];
     }
-    return _510;
+    return _416;
 }
 
 static inline __attribute__((always_inline))
-float3 pathFrame(texture2d<float> path, sampler pathSmplr, constant FlairUniforms& _166)
+bool trailLive(thread const bool& demo, constant FlairUniforms& _169)
+{
+    bool _513 = !demo;
+    bool _528;
+    if (!_513)
+    {
+        bool _520 = _169.iTrail[0].w > 0.5;
+        bool _527;
+        if (_520)
+        {
+            _527 = _169.iPointer.z > 0.0;
+        }
+        else
+        {
+            _527 = _520;
+        }
+        _528 = _527;
+    }
+    else
+    {
+        _528 = _513;
+    }
+    return _528;
+}
+
+static inline __attribute__((always_inline))
+float3 pathFrame(texture2d<float> path, sampler pathSmplr, constant FlairUniforms& _169)
 {
     float4 meta = path.read(uint2(int2(0, 1)), 0);
     if (meta.w < 0.5)
@@ -73,56 +89,56 @@ float3 pathFrame(texture2d<float> path, sampler pathSmplr, constant FlairUniform
         return float3(0.0, 0.0, 1.0);
     }
     float4 b = path.read(uint2(int2(1)), 0);
-    float margin = path.read(uint2(int2(2, 1)), 0).x * fast::min(_166.iResolution[0u], _166.iResolution[1u]);
+    float margin = path.read(uint2(int2(2, 1)), 0).x * fast::min(_169.iResolution[0u], _169.iResolution[1u]);
     float2 size = b.zw - b.xy;
-    float2 s = (float2(_166.iResolution[0], _166.iResolution[1]) - float2(2.0 * margin)) / fast::max(size, float2(9.9999999747524270787835121154785e-07));
-    float _199;
+    float2 s = (float2(_169.iResolution[0], _169.iResolution[1]) - float2(2.0 * margin)) / fast::max(size, float2(9.9999999747524270787835121154785e-07));
+    float _202;
     if (size.x < 9.9999999747524270787835121154785e-07)
     {
-        _199 = s.y;
+        _202 = s.y;
     }
     else
     {
-        float _208;
+        float _211;
         if (size.y < 9.9999999747524270787835121154785e-07)
         {
-            _208 = s.x;
+            _211 = s.x;
         }
         else
         {
-            float _218;
+            float _221;
             if (meta.w < 1.5)
             {
-                _218 = fast::min(s.x, s.y);
+                _221 = fast::min(s.x, s.y);
             }
             else
             {
-                _218 = fast::max(s.x, s.y);
+                _221 = fast::max(s.x, s.y);
             }
-            _208 = _218;
+            _211 = _221;
         }
-        _199 = _208;
+        _202 = _211;
     }
-    float k = _199;
-    return float3((float2(_166.iResolution[0], _166.iResolution[1]) * 0.5) - ((b.xy + (size * 0.5)) * k), k);
+    float k = _202;
+    return float3((float2(_169.iResolution[0], _169.iResolution[1]) * 0.5) - ((b.xy + (size * 0.5)) * k), k);
 }
 
 static inline __attribute__((always_inline))
-float pathLength(texture2d<float> path, sampler pathSmplr, constant FlairUniforms& _166)
+float pathLength(texture2d<float> path, sampler pathSmplr, constant FlairUniforms& _169)
 {
-    return path.read(uint2(int2(0, 1)), 0).y * pathFrame(path, pathSmplr, _166).z;
+    return path.read(uint2(int2(0, 1)), 0).y * pathFrame(path, pathSmplr, _169).z;
 }
 
 static inline __attribute__((always_inline))
-void trailFrom(thread const int& i, thread const bool& live, constant FlairUniforms& _166, texture2d<float> uPath, sampler uPathSmplr, thread int& gWalkI, thread float& gWalkBase, thread bool& gWalkPath, thread float4& gWalkCos, thread float4& gWalkSin)
+void trailFrom(thread const int& i, thread const bool& live, constant FlairUniforms& _169, texture2d<float> uPath, sampler uPathSmplr, thread int& gWalkI, thread float& gWalkBase, thread bool& gWalkPath, thread float4& gWalkCos, thread float4& gWalkSin)
 {
     gWalkI = i;
     if (live)
     {
         return;
     }
-    gWalkBase = floor(_166.iTime / 0.02500000037252902984619140625) + 1.0;
-    gWalkPath = pathLength(uPath, uPathSmplr, _166) > 0.0;
+    gWalkBase = floor(_169.iTime / 0.02500000037252902984619140625) + 1.0;
+    gWalkPath = pathLength(uPath, uPathSmplr, _169) > 0.0;
     float s = ((gWalkBase - float(i)) * 0.02500000037252902984619140625) * 1.39999997615814208984375;
     float4 phase = float4(s, (s * 2.2999999523162841796875) + 1.0, (s * 2.0) + 0.4000000059604644775390625, s * 3.099999904632568359375);
     gWalkCos = cos(phase);
@@ -130,7 +146,7 @@ void trailFrom(thread const int& i, thread const bool& live, constant FlairUnifo
 }
 
 static inline __attribute__((always_inline))
-float4 pathAt(texture2d<float> path, sampler pathSmplr, thread const float& along, constant FlairUniforms& _166)
+float4 pathAt(texture2d<float> path, sampler pathSmplr, thread const float& along, constant FlairUniforms& _169)
 {
     float4 meta = path.read(uint2(int2(0, 1)), 0);
     int n = int(meta.x);
@@ -138,7 +154,7 @@ float4 pathAt(texture2d<float> path, sampler pathSmplr, thread const float& alon
     {
         return float4(0.0, 0.0, 1.0, 0.0);
     }
-    float3 f = pathFrame(path, pathSmplr, _166);
+    float3 f = pathFrame(path, pathSmplr, _169);
     float s = fast::clamp(along / f.z, 0.0, meta.y);
     int lo = 0;
     int hi = n - 1;
@@ -160,74 +176,74 @@ float4 pathAt(texture2d<float> path, sampler pathSmplr, thread const float& alon
     }
     float4 a = path.read(uint2(int2(lo, 0)), 0);
     float4 b = path.read(uint2(int2(hi, 0)), 0);
-    float2 _342;
+    float2 _345;
     if (b.w < 0.5)
     {
-        _342 = a.xy;
+        _345 = a.xy;
     }
     else
     {
-        _342 = mix(a.xy, b.xy, float2(fast::clamp((s - a.z) / fast::max(b.z - a.z, 9.999999717180685365747194737196e-10), 0.0, 1.0)));
+        _345 = mix(a.xy, b.xy, float2(fast::clamp((s - a.z) / fast::max(b.z - a.z, 9.999999717180685365747194737196e-10), 0.0, 1.0)));
     }
-    float2 q = _342;
+    float2 q = _345;
     float2 t = b.xy - a.xy;
-    float2 _378;
+    float2 _381;
     if (dot(t, t) > 0.0)
     {
-        _378 = fast::normalize(t);
+        _381 = fast::normalize(t);
     }
     else
     {
-        _378 = float2(1.0, 0.0);
+        _381 = float2(1.0, 0.0);
     }
-    t = _378;
+    t = _381;
     float2 at = (q * f.z) + f.xy;
-    return float4(at.x, _166.iResolution[1u] - at.y, t.x, -t.y);
+    return float4(at.x, _169.iResolution[1u] - at.y, t.x, -t.y);
 }
 
 static inline __attribute__((always_inline))
-float2 demoPath(thread const float& t, constant FlairUniforms& _166, texture2d<float> uPath, sampler uPathSmplr)
+float2 demoPath(thread const float& t, constant FlairUniforms& _169, texture2d<float> uPath, sampler uPathSmplr)
 {
     float s = t * 1.39999997615814208984375;
-    float len = pathLength(uPath, uPathSmplr, _166);
+    float len = pathLength(uPath, uPathSmplr, _169);
     if (len > 0.0)
     {
         float lap = s / 6.283185482025146484375;
         float param = 0.0;
         float param_1 = len;
-        bool closed = length(pathAt(uPath, uPathSmplr, param, _166).xy - pathAt(uPath, uPathSmplr, param_1, _166).xy) < 2.0;
-        float _436;
+        bool closed = length(pathAt(uPath, uPathSmplr, param, _169).xy - pathAt(uPath, uPathSmplr, param_1, _169).xy) < 2.0;
+        float _454;
         if (closed)
         {
-            _436 = fract(lap) * len;
+            _454 = fract(lap) * len;
         }
         else
         {
-            _436 = (0.5 - (0.5 * cos(3.1415927410125732421875 * lap))) * len;
+            _454 = (0.5 - (0.5 * cos(3.1415927410125732421875 * lap))) * len;
         }
-        float param_2 = _436;
-        return pathAt(uPath, uPathSmplr, param_2, _166).xy;
+        float param_2 = _454;
+        return pathAt(uPath, uPathSmplr, param_2, _169).xy;
     }
     float2 q = float2((0.3400000035762786865234375 * sin(s)) + (0.0500000007450580596923828125 * sin((s * 2.2999999523162841796875) + 1.0)), (0.2700000107288360595703125 * sin((s * 2.0) + 0.4000000059604644775390625)) + (0.039999999105930328369140625 * cos(s * 3.099999904632568359375)));
-    return float2(_166.iResolution[0], _166.iResolution[1]) * (float2(0.5) + q);
+    return float2(_169.iResolution[0], _169.iResolution[1]) * (float2(0.5) + q);
 }
 
 static inline __attribute__((always_inline))
-float4 trailNext(thread const bool& live, constant FlairUniforms& _166, texture2d<float> uPath, sampler uPathSmplr, thread int& gWalkI, thread float& gWalkBase, thread bool& gWalkPath, thread float4& gWalkCos, thread float4& gWalkSin)
+float4 trailNext(thread const bool& live, constant FlairUniforms& _169, texture2d<float> uPath, sampler uPathSmplr, thread int& gWalkI, thread float& gWalkBase, thread bool& gWalkPath, thread float4& gWalkCos, thread float4& gWalkSin)
 {
     int i = gWalkI;
     gWalkI++;
     if (live)
     {
-        return _166.iTrail[min(i, 31)];
+        return _169.iTrail[min(i, 31)];
     }
     if (gWalkPath)
     {
         float param = (gWalkBase - float(i)) * 0.02500000037252902984619140625;
-        return float4(demoPath(param, _166, uPath, uPathSmplr), (gWalkBase - float(i)) * 0.02500000037252902984619140625, 1.0);
+        return float4(demoPath(param, _169, uPath, uPathSmplr), (gWalkBase - float(i)) * 0.02500000037252902984619140625, 1.0);
     }
     float2 q = float2((0.3400000035762786865234375 * gWalkSin.x) + (0.0500000007450580596923828125 * gWalkSin.y), (0.2700000107288360595703125 * gWalkSin.z) + (0.039999999105930328369140625 * gWalkCos.w));
-    float4 point = float4(float2(_166.iResolution[0], _166.iResolution[1]) * (float2(0.5) + q), (gWalkBase - float(i)) * 0.02500000037252902984619140625, 1.0);
+    float4 point = float4(float2(_169.iResolution[0], _169.iResolution[1]) * (float2(0.5) + q), (gWalkBase - float(i)) * 0.02500000037252902984619140625, 1.0);
     float4 c = (gWalkCos * float4(0.999387562274932861328125, 0.996761620044708251953125, 0.997551023960113525390625, 0.9941196441650390625)) + (gWalkSin * float4(0.034992851316928863525390625, 0.080413080751895904541015625, 0.06994284689426422119140625, 0.108287237584590911865234375));
     gWalkSin = (gWalkSin * float4(0.999387562274932861328125, 0.996761620044708251953125, 0.997551023960113525390625, 0.9941196441650390625)) - (gWalkCos * float4(0.034992851316928863525390625, 0.080413080751895904541015625, 0.06994284689426422119140625, 0.108287237584590911865234375));
     gWalkCos = c;
@@ -259,74 +275,74 @@ float4 glow(thread float3& c)
 }
 
 static inline __attribute__((always_inline))
-void mainImage(thread float4& fragColor, thread const float2& fragCoord, constant FlairUniforms& _166, texture2d<float> uPath, sampler uPathSmplr, thread int& gWalkI, thread float& gWalkBase, thread bool& gWalkPath, thread float4& gWalkCos, thread float4& gWalkSin)
+void mainImage(thread float4& fragColor, thread const float2& fragCoord, constant FlairUniforms& _169, texture2d<float> uPath, sampler uPathSmplr, thread int& gWalkI, thread float& gWalkBase, thread bool& gWalkPath, thread float4& gWalkCos, thread float4& gWalkSin)
 {
-    float px = 1.0 / _166.iResolution[1u];
+    float px = 1.0 / trailUnit(_169);
     float2 p = fragCoord * px;
     float3 col = float3(0.0);
-    bool param = _166.uDemo != 0u;
-    bool live = trailLive(param, _166);
-    float reach = (2.5 * _166.uSize) + px;
-    float side = (_166.uSpread + 0.01200000010430812835693359375) + reach;
+    bool param = _169.uDemo != 0u;
+    bool live = trailLive(param, _169);
+    float reach = (2.5 * _169.uSize) + px;
+    float side = (_169.uSpread + 0.01200000010430812835693359375) + reach;
     int param_1 = 1;
     bool param_2 = live;
-    trailFrom(param_1, param_2, _166, uPath, uPathSmplr, gWalkI, gWalkBase, gWalkPath, gWalkCos, gWalkSin);
-    float3 _1028;
+    trailFrom(param_1, param_2, _169, uPath, uPathSmplr, gWalkI, gWalkBase, gWalkPath, gWalkCos, gWalkSin);
+    float3 _1045;
     for (int k = 1; k < 32; k++)
     {
         bool param_3 = live;
-        float4 _726 = trailNext(param_3, _166, uPath, uPathSmplr, gWalkI, gWalkBase, gWalkPath, gWalkCos, gWalkSin);
-        float4 q = _726;
+        float4 _743 = trailNext(param_3, _169, uPath, uPathSmplr, gWalkI, gWalkBase, gWalkPath, gWalkCos, gWalkSin);
+        float4 q = _743;
         if (q.w < 0.5)
         {
             break;
         }
-        float age = _166.iTime - q.z;
-        bool _740 = age < 0.0;
-        bool _749;
-        if (!_740)
+        float age = _169.iTime - q.z;
+        bool _757 = age < 0.0;
+        bool _766;
+        if (!_757)
         {
-            _749 = age > _166.uLife;
+            _766 = age > _169.uLife;
         }
         else
         {
-            _749 = _740;
+            _766 = _757;
         }
-        if (_749)
+        if (_766)
         {
             continue;
         }
         float2 rel = p - (q.xy * px);
-        float fall = (_166.uFall * age) * (0.4000000059604644775390625 + (0.60000002384185791015625 * age));
-        bool _775 = abs(rel.x) > side;
-        bool _786;
-        if (!_775)
+        float fall = (_169.uFall * age) * (0.4000000059604644775390625 + (0.60000002384185791015625 * age));
+        bool _792 = abs(rel.x) > side;
+        bool _803;
+        if (!_792)
         {
-            _786 = rel.y > (_166.uSpread + reach);
+            _803 = rel.y > (_169.uSpread + reach);
         }
         else
         {
-            _786 = _775;
+            _803 = _792;
         }
-        bool _800;
-        if (!_786)
+        bool _817;
+        if (!_803)
         {
-            _800 = rel.y < (((-_166.uSpread) - fall) - reach);
+            _817 = rel.y < (((-_169.uSpread) - fall) - reach);
         }
         else
         {
-            _800 = _786;
+            _817 = _803;
         }
-        if (_800)
+        if (_817)
         {
             continue;
         }
-        float life = age / _166.uLife;
+        float life = age / _169.uLife;
         float keep = 1.0 - smoothstep(26.0, 31.0, float(k));
         float env = ((smoothstep(0.0, 0.07999999821186065673828125, life) * (1.0 - life)) * (1.0 - life)) * keep;
         for (int j = 0; j < 4; j++)
         {
-            if (j >= _166.uCount)
+            if (j >= _169.uCount)
             {
                 break;
             }
@@ -334,9 +350,9 @@ void mainImage(thread float4& fragColor, thread const float2& fragCoord, constan
             float2 h = hash22(param_4);
             float2 param_5 = (h * 37.09999847412109375) + float2(q.z);
             float h3 = hash12(param_5);
-            float2 pos = (q.xy * px) + (((h - float2(0.5)) * 2.0) * _166.uSpread);
-            pos += float2(0.01200000010430812835693359375 * sin((age * 3.0) + (h.x * 6.28318023681640625)), ((-_166.uFall) * age) * (0.4000000059604644775390625 + (0.60000002384185791015625 * age)));
-            float s = _166.uSize * (0.449999988079071044921875 + (0.800000011920928955078125 * h3));
+            float2 pos = (q.xy * px) + (((h - float2(0.5)) * 2.0) * _169.uSpread);
+            pos += float2(0.01200000010430812835693359375 * sin((age * 3.0) + (h.x * 6.28318023681640625)), ((-_169.uFall) * age) * (0.4000000059604644775390625 + (0.60000002384185791015625 * age)));
+            float s = _169.uSize * (0.449999988079071044921875 + (0.800000011920928955078125 * h3));
             float2 d = pos - p;
             if (dot(d, d) > ((s * s) * 4.0))
             {
@@ -344,28 +360,28 @@ void mainImage(thread float4& fragColor, thread const float2& fragCoord, constan
             }
             float an = (h.y - 0.5) * 0.89999997615814208984375;
             d = float2x2(float2(cos(an), sin(an)), float2(-sin(an), cos(an))) * d;
-            float tw = mix(1.0, 0.3499999940395355224609375 + (0.64999997615814208984375 * (0.5 + (0.5 * sin((age * (12.0 + (12.0 * h.y))) + (h.x * 6.28318023681640625))))), _166.uTwinkle);
+            float tw = mix(1.0, 0.3499999940395355224609375 + (0.64999997615814208984375 * (0.5 + (0.5 * sin((age * (12.0 + (12.0 * h.y))) + (h.x * 6.28318023681640625))))), _169.uTwinkle);
             float rays = exp((-abs(d.x)) / (s * 0.0500000007450580596923828125)) * exp((-abs(d.y)) / (s * 0.449999988079071044921875));
             rays += (exp((-abs(d.y)) / (s * 0.0500000007450580596923828125)) * exp((-abs(d.x)) / (s * 0.449999988079071044921875)));
             float core = exp((-dot(d, d)) / ((s * s) * 0.0199999995529651641845703125));
             if (h3 < 0.5)
             {
-                _1028 = _166.uColorA;
+                _1045 = _169.uColorA;
             }
             else
             {
-                _1028 = float3(_166.uColorB);
+                _1045 = float3(_169.uColorB);
             }
-            float3 tint = _1028;
+            float3 tint = _1045;
             col += ((((tint * ((rays * 0.89999997615814208984375) + (core * 0.60000002384185791015625))) + (float3(1.0) * core)) * env) * tw);
         }
     }
-    float3 param_6 = col * _166.uIntensity;
-    float4 _1066 = glow(param_6);
-    fragColor = _1066;
+    float3 param_6 = col * _169.uIntensity;
+    float4 _1083 = glow(param_6);
+    fragColor = _1083;
 }
 
-fragment flair_sparkle_trail_frag_out flair_sparkle_trail_frag(constant FlairUniforms& _166 [[buffer(0)]], texture2d<float> uPath [[texture(1)]], sampler uPathSmplr [[sampler(1)]], float4 gl_FragCoord [[position]])
+fragment flair_sparkle_trail_frag_out flair_sparkle_trail_frag(constant FlairUniforms& _169 [[buffer(0)]], texture2d<float> uPath [[texture(1)]], sampler uPathSmplr [[sampler(1)]], float4 gl_FragCoord [[position]])
 {
     flair_sparkle_trail_frag_out out = {};
     float4 flair_color = float4(0.0, 0.0, 0.0, 1.0);
@@ -374,19 +390,19 @@ fragment flair_sparkle_trail_frag_out flair_sparkle_trail_frag(constant FlairUni
     bool gWalkPath;
     float4 gWalkCos;
     float4 gWalkSin;
-    float _1079;
-    if (_166.flair_flipY > 0.5)
+    float _1096;
+    if (_169.flair_flipY > 0.5)
     {
-        _1079 = _166.iResolution[1u] - gl_FragCoord.y;
+        _1096 = _169.iResolution[1u] - gl_FragCoord.y;
     }
     else
     {
-        _1079 = gl_FragCoord.y;
+        _1096 = gl_FragCoord.y;
     }
-    float2 flair_coord = float2(gl_FragCoord.x, _1079);
+    float2 flair_coord = float2(gl_FragCoord.x, _1096);
     float2 param_1 = flair_coord;
     float4 param;
-    mainImage(param, param_1, _166, uPath, uPathSmplr, gWalkI, gWalkBase, gWalkPath, gWalkCos, gWalkSin);
+    mainImage(param, param_1, _169, uPath, uPathSmplr, gWalkI, gWalkBase, gWalkPath, gWalkCos, gWalkSin);
     flair_color = param;
     out.flair_FragColor = flair_color;
     return out;
