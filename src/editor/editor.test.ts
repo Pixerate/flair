@@ -248,6 +248,25 @@ describe("commands and agent tools", () => {
     expect(editor.commands.execute("values.set", { values: { uBlush: 1 } })).toMatchObject({ ok: false, message: expect.stringMatching(/uBlush/) });
   });
 
+  it("lets agents find relief effects by group and words, and tune one within its controls", async () => {
+    const editor = createEffectEditor({ from: "aurora" });
+    const provider = createEffectToolProvider(editor);
+    type Search = { total: number; effects: { id: string; category: string }[] };
+    const found = await callTool(provider, "run_command", { id: "catalog.search", params: { category: "relief", limit: 50 } });
+    const result = (found.structuredContent as { result: Search }).result;
+    expect(result.total).toBe(5);
+    expect(result.effects.every((e) => e.category === "relief")).toBe(true);
+    const hex = editor.commands.execute<Search>("catalog.search", { group: "Backgrounds", text: "hexagon", limit: 50 });
+    expect(hex.ok && hex.result.effects.map((e) => e.id)).toEqual(expect.arrayContaining(["relief-hex-tiles", "relief-hex-ink"]));
+    const wrong = await callTool(provider, "run_command", { id: "catalog.search", params: { category: "emboss" } });
+    expect(wrong.isError).toBe(true);
+    expect(JSON.stringify(wrong)).toMatch(/relief/);
+    expect(editor.commands.execute("effect.load", { id: "relief-paper-text", preset: "Cut in to raised" })).toMatchObject({ ok: true });
+    expect(editor.commands.execute("values.set", { values: { uDepthStart: -1, uLight: 200, uSurface: "#F5F0E8" } })).toMatchObject({ ok: true });
+    expect(editor.commands.execute("values.set", { values: { uDepthStart: -3 } })).toMatchObject({ ok: false, message: expect.stringMatching(/uDepthStart/) });
+    expect(editor.commands.execute("values.set", { values: { uEmboss: 1 } })).toMatchObject({ ok: false, message: expect.stringMatching(/uEmboss/) });
+  });
+
   it("lets agents find the anime effects, load one and tune it within its controls", async () => {
     const editor = createEffectEditor({ from: "aurora" });
     const provider = createEffectToolProvider(editor);

@@ -1946,6 +1946,42 @@ describe("glow effects", () => {
   });
 });
 
+describe("relief effects", () => {
+  const ids = ["relief-hex-tiles", "relief-hex-ink", "relief-paper-text", "relief-paper-waves", "relief-emboss"];
+  const source = (id: string) => (getEffect(id) as ShaderEffect).source;
+
+  it("browse under Backgrounds and are found by the words people use", () => {
+    expect(categoryGroup("relief").name).toBe("Backgrounds");
+    expect(findEffects({ category: "relief" }).map((e) => e.id)).toEqual(ids);
+    for (const id of ids) expect(getEffect(id)!.presets?.length ?? 0, id).toBeGreaterThan(2);
+    for (const word of ["hexagon", "emboss", "deboss", "paper", "letterpress", "honeycomb"]) expect(findEffects({ text: word, category: "relief" }).length, word).toBeGreaterThan(0);
+  });
+
+  it("share one light, shading and shadow march over each effect's height field", () => {
+    for (const id of ["relief-hex-tiles", "relief-hex-ink", "relief-paper-text"]) {
+      expect(source(id), id).toMatch(/float heightAt\(vec2 p\)/);
+      for (const fn of ["reliefTrace(", "reliefShadow(", "reliefShade("]) expect(source(id), `${id} ${fn}`).toContain(fn);
+      expect(effectControls(getEffect(id)!).map((c) => c.name), id).toEqual(expect.arrayContaining(["uLight", "uElevation", "uSoftness", "uTilt"]));
+    }
+  });
+
+  it("raise or cut a picture's shape, and emboss a picture or video", () => {
+    expect(getEffect("relief-paper-text")).toMatchObject({ video: "none" });
+    expect(effectControls(getEffect("relief-paper-text")!).find((c) => c.name === "uDepthStart")).toMatchObject({ min: -1, max: 1 });
+    expect(getEffect("relief-emboss")).toMatchObject({ video: "filter" });
+    expect(effectInputs(getEffect("relief-emboss")!).accepts).toContain("video");
+  });
+
+  it("loop their motion seamlessly", () => {
+    expect(getEffect("relief-hex-tiles")).toMatchObject({ loop: 8 });
+    expect(getEffect("relief-hex-ink")).toMatchObject({ loop: 8 });
+    expect(getEffect("relief-paper-waves")).toMatchObject({ loop: 10 });
+    // Every time term turns a whole number of times over the loop: the sway over 8 s, the waves over 10 s.
+    expect(source("relief-hex-tiles")).toContain("iTime * uSpeed / 8.0");
+    expect(source("relief-paper-waves")).toContain("iTime * uSpeed / 10.0");
+  });
+});
+
 describe("shadow effects", () => {
   const shadows = findEffects({ category: "shadow" });
   const shaders = ["long-shadow", "drop-shadow-lift", "light-sweep-shadows", "contact-shadow", "window-shadows", "shadow-puppets"];
