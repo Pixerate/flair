@@ -85,6 +85,7 @@ export const PAINT_HINTS: Readonly<Record<string, EffectPaintHint>> = {
   aurora: { map: "stroke", colors: ["uGlowA", "uGlowB"], live: true },
   "holographic-gradient": { map: "stroke", colors: ["uTint"] },
   "dither-gradient": { map: "stroke", colors: ["uLight", "uDark"] },
+  "stepped-gradient": { map: "stroke", colors: ["uColorA", "uColorC"] },
   plasma: { map: "stroke", live: true },
   "iridescent-blobs": { map: "stroke", live: true },
   marble: { map: "stroke", colors: ["uVein", "uStone"] },
@@ -110,6 +111,8 @@ export const PAINT_HINTS: Readonly<Record<string, EffectPaintHint>> = {
   "stained-glass": { map: "stroke", colors: ["uColorA", "uColorB"], repeat: "repeat" },
   truchet: { map: "stroke", colors: ["uLine", "uBackground"], repeat: "repeat" },
   voronoi: { map: "stroke", colors: ["uCell", "uWall"], repeat: "repeat" },
+  "ribbon-bands": { map: "stroke", colors: ["uColorA", "uColorB"], live: true },
+  "shape-tiles": { map: "stroke", colors: ["uColorA", "uColorB"], live: true, repeat: "repeat" },
 
   // Textures and fields fixed to the canvas: strokes uncover them.
   "conic-sweep": { map: "canvas", colors: ["uColorA", "uColorB"] },
@@ -123,6 +126,7 @@ export const PAINT_HINTS: Readonly<Record<string, EffectPaintHint>> = {
   moire: { map: "canvas", colors: ["uInk", "uPaper"], live: true },
   kaleidoscope: { map: "canvas", colors: ["uTint"], live: true },
   "memphis-pattern": { map: "canvas", colors: ["uInkA", "uInkB"] },
+  "concentric-shapes": { map: "canvas", colors: ["uColorA", "uColorB"], live: true },
   "frost-creep": { map: "canvas", colors: ["uColor"], values: { uAnimate: false } },
   "tv-static": { map: "canvas", colors: ["uTint"], live: true },
   "digital-rain": { map: "canvas", colors: ["uGlyph"], values: clear, live: true },

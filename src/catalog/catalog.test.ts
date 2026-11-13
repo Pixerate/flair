@@ -3518,3 +3518,82 @@ describe("meme effects", () => {
     expect(renderVectorEffect(effect, { ...effectDefaults(effect), face: false }).svg).toContain('<g opacity="0"><circle');
   });
 });
+
+describe("recap effects", () => {
+  const IDS = [
+    "ribbon-bands",
+    "concentric-shapes",
+    "shape-tiles",
+    "stepped-gradient",
+    "echo-text",
+    "stretch-text",
+    "image-pixel-stretch",
+    "image-photocopy",
+    "transition-color-blocks",
+  ];
+
+  it("are found together by their tag, each filed under the category it belongs to", () => {
+    expect(findEffects({ tags: ["recap"] }).map((e) => e.id).sort()).toEqual([...IDS].sort());
+    const categories = Object.fromEntries(IDS.map((id) => [id, getEffect(id)!.category]));
+    expect(categories).toEqual({
+      "ribbon-bands": "pattern",
+      "concentric-shapes": "pattern",
+      "shape-tiles": "pattern",
+      "stepped-gradient": "gradient",
+      "echo-text": "text",
+      "stretch-text": "text",
+      "image-pixel-stretch": "image",
+      "image-photocopy": "image",
+      "transition-color-blocks": "transition",
+    });
+  });
+
+  it("the backgrounds are opaque, take no pictures and share four flat colours (the gradient three)", () => {
+    for (const id of ["ribbon-bands", "concentric-shapes", "shape-tiles", "stepped-gradient"]) {
+      const effect = getEffect(id) as ShaderEffect;
+      expect(effect, id).not.toMatchObject({ transparent: true });
+      expect(effect.video, id).toBeUndefined();
+      const colours = parseControls(effect.source).filter((c) => c.type === "vec3").map((c) => c.name);
+      expect(colours, id).toEqual(id === "stepped-gradient" ? ["uColorA", "uColorB", "uColorC"] : ["uColorA", "uColorB", "uColorC", "uColorD"]);
+      expect(effect.presets!.length, id).toBeGreaterThanOrEqual(4);
+    }
+    expect(effectControls(getEffect("shape-tiles")!).find((c) => c.name === "uSize")!.label).toMatch(/px/);
+    expect(effectControls(getEffect("stepped-gradient")!).find((c) => c.name === "uBlock")!.label).toMatch(/px/);
+    expect(parseControls((getEffect("concentric-shapes") as ShaderEffect).source).find((c) => c.name === "uShape")).toMatchObject({ type: "int", min: 0, max: 4, default: 4 });
+  });
+
+  it("the titles take any text, loop every 4 s and can sit over other content", () => {
+    for (const id of ["echo-text", "stretch-text"]) {
+      const effect = getEffect(id)!;
+      expect(effect, id).toMatchObject({ category: "text", video: "none", loop: 4 });
+      expect(effectInputs(effect).images.map((s) => s.wants), id).toEqual(["text"]);
+      expect(effectDefaults(effect).uText, id).toBe(textImage("FLAIR"));
+      expect(effectDefaults(effect).uBackgroundAlpha, id).toBe(1);
+    }
+    const echoes = parseControls((getEffect("echo-text") as ShaderEffect).source);
+    expect(echoes.find((c) => c.name === "uEchoes")).toMatchObject({ type: "int", min: 1, max: 12 });
+    // An outline width of 0 fills the echoes, and a preset shows it.
+    expect(echoes.find((c) => c.name === "uOutline")).toMatchObject({ min: 0 });
+    expect(effectDefaults(getEffect("echo-text")!, { preset: "Solid stack" }).uOutline).toBe(0);
+  });
+
+  it("the picture treatments are video filters with a preset per look", () => {
+    for (const id of ["image-pixel-stretch", "image-photocopy"]) {
+      const effect = getEffect(id)!;
+      expect(effect, id).toMatchObject({ category: "image", video: "filter" });
+      expect(effectDefaults(effect).uImage, id).toBe(SAMPLE_IMAGES.landscape);
+      expect(effect.presets!.length, id).toBeGreaterThanOrEqual(4);
+    }
+    const stretch = parseControls((getEffect("image-pixel-stretch") as ShaderEffect).source);
+    expect(stretch.find((c) => c.name === "uDirection")).toMatchObject({ type: "int", min: 0, max: 3 });
+    expect(effectDefaults(getEffect("image-photocopy")!, { preset: "Clean copy" })).toMatchObject({ uJitter: 0, uStreaks: 0, uEdge: 0 });
+  });
+
+  it("colour blocks is a looping two-image transition with a still progress control", () => {
+    const effect = getEffect("transition-color-blocks") as ShaderEffect;
+    expect(effect).toMatchObject({ category: "transition", video: "transition", loop: 4 });
+    expect(effect.description).toContain("turn Animate off and set Progress");
+    expect(effectDefaults(effect)).toMatchObject({ uFrom: SAMPLE_IMAGES.landscape, uTo: SAMPLE_IMAGES.city, uAnimate: true, uProgress: 0.5 });
+    expect(parseControls(effect.source).find((c) => c.name === "uBands")).toMatchObject({ type: "int", min: 1, max: 4 });
+  });
+});

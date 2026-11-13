@@ -81,6 +81,7 @@ import { morphShaders } from "./shaders/morph.js";
 import { overlayEffects } from "./shaders/overlay.js";
 import { digitalRain, pixelSunset, synthwaveGrid, tvStatic } from "./shaders/retro.js";
 import { textShaders } from "./shaders/text.js";
+import { recapShaders } from "./shaders/recap.js";
 import { imageTreatments } from "./shaders/treatments.js";
 import { censorShaders } from "./shaders/censor.js";
 import { beautyShaders } from "./shaders/beauty.js";
@@ -278,6 +279,7 @@ export const SHADER_EFFECTS: readonly ShaderEffect[] = [
   filmGrain,
   ...overlayEffects,
   ...textShaders,
+  ...recapShaders,
   ...morphShaders,
   ...interactionShaders,
   ...pyroShaders,
