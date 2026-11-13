@@ -1,5 +1,305 @@
 [
   {
+    "id": "detail-panel",
+    "name": "Detail panel",
+    "kind": "vector",
+    "category": "ui",
+    "description": "A record's detail panel swinging in from the edge of the screen in perspective, then filling in from the top: a category and a typed title, a status badge and a button, a headline metric counting up over rising bars, a grid of four icon stats counting up, and an AI note; a sheen sweeps across it to finish.",
+    "tags": [
+      "ui",
+      "panel",
+      "card",
+      "dashboard",
+      "detail",
+      "ai",
+      "product-demo",
+      "tech",
+      "stat"
+    ],
+    "controls": [
+      {
+        "n": "category",
+        "t": "text",
+        "d": "Healthcare",
+        "line": 1
+      },
+      {
+        "n": "title",
+        "t": "text",
+        "d": "Decree-Law No. 42 of 2022",
+        "line": 2
+      },
+      {
+        "n": "subtitle",
+        "t": "text",
+        "d": "Promulgating the Civil Procedure Code",
+        "line": 3
+      },
+      {
+        "n": "status",
+        "t": "text",
+        "d": "Active",
+        "l": "Status badge",
+        "line": 4
+      },
+      {
+        "n": "updated",
+        "t": "text",
+        "d": "Last updated 01 Oct 2024",
+        "l": "Status note",
+        "line": 5
+      },
+      {
+        "n": "button",
+        "t": "text",
+        "d": "Explore details",
+        "line": 6
+      },
+      {
+        "n": "metricLabel",
+        "t": "text",
+        "d": "Sentiment rate",
+        "line": 7
+      },
+      {
+        "n": "metric",
+        "t": "float",
+        "d": 45,
+        "min": -1000000,
+        "max": 1000000,
+        "s": 0.1,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "metricSuffix",
+        "t": "text",
+        "d": "%",
+        "line": 9
+      },
+      {
+        "n": "rating",
+        "t": "text",
+        "d": "Moderate",
+        "l": "Metric chip (empty hides it)",
+        "line": 10
+      },
+      {
+        "n": "stats",
+        "t": "text",
+        "d": "12,2,18,12",
+        "l": "Stats (comma-separated, four; prefixes and suffixes kept)",
+        "line": 11
+      },
+      {
+        "n": "statLabels",
+        "t": "text",
+        "d": "Public complaints,Related regulations,Services,Entities involved",
+        "l": "Stat labels (comma-separated)",
+        "line": 12
+      },
+      {
+        "n": "noteHeading",
+        "t": "text",
+        "d": "AI Analysis",
+        "line": 13
+      },
+      {
+        "n": "noteTitle",
+        "t": "text",
+        "d": "Propose deregulation",
+        "line": 14
+      },
+      {
+        "n": "noteBody",
+        "t": "text",
+        "d": "Several regulations are out of date.",
+        "l": "Note text",
+        "line": 15
+      },
+      {
+        "n": "background",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            11,
+            26,
+            30
+          ]
+        },
+        "c": 1,
+        "line": 16
+      },
+      {
+        "n": "backdrop",
+        "t": "bool",
+        "d": true,
+        "l": "Background",
+        "line": 17
+      },
+      {
+        "n": "panel",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            18,
+            42,
+            48
+          ]
+        },
+        "c": 1,
+        "line": 18
+      },
+      {
+        "n": "ink",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            227,
+            238,
+            240
+          ]
+        },
+        "l": "Text",
+        "c": 1,
+        "line": 19
+      },
+      {
+        "n": "accent",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            94,
+            200,
+            196
+          ]
+        },
+        "c": 1,
+        "line": 20
+      },
+      {
+        "n": "highlight",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            226,
+            109,
+            92
+          ]
+        },
+        "l": "Metric highlight",
+        "c": 1,
+        "line": 21
+      }
+    ],
+    "presets": [
+      "Light",
+      "Product",
+      "Gold"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "category",
+          "label": "Category",
+          "holds": "copy",
+          "default": "Healthcare"
+        },
+        {
+          "name": "title",
+          "label": "Title",
+          "holds": "copy",
+          "default": "Decree-Law No. 42 of 2022"
+        },
+        {
+          "name": "subtitle",
+          "label": "Subtitle",
+          "holds": "copy",
+          "default": "Promulgating the Civil Procedure Code"
+        },
+        {
+          "name": "status",
+          "label": "Status badge",
+          "holds": "copy",
+          "default": "Active"
+        },
+        {
+          "name": "updated",
+          "label": "Status note",
+          "holds": "copy",
+          "default": "Last updated 01 Oct 2024"
+        },
+        {
+          "name": "button",
+          "label": "Button",
+          "holds": "copy",
+          "default": "Explore details"
+        },
+        {
+          "name": "metricLabel",
+          "label": "Metric label",
+          "holds": "copy",
+          "default": "Sentiment rate"
+        },
+        {
+          "name": "metricSuffix",
+          "label": "Metric suffix",
+          "holds": "copy",
+          "default": "%"
+        },
+        {
+          "name": "rating",
+          "label": "Metric chip (empty hides it)",
+          "holds": "copy",
+          "default": "Moderate"
+        },
+        {
+          "name": "stats",
+          "label": "Stats (comma-separated, four; prefixes and suffixes kept)",
+          "holds": "copy",
+          "default": "12,2,18,12"
+        },
+        {
+          "name": "statLabels",
+          "label": "Stat labels (comma-separated)",
+          "holds": "copy",
+          "default": "Public complaints,Related regulations,Services,Entities involved"
+        },
+        {
+          "name": "noteHeading",
+          "label": "Note heading",
+          "holds": "copy",
+          "default": "AI Analysis"
+        },
+        {
+          "name": "noteTitle",
+          "label": "Note title",
+          "holds": "copy",
+          "default": "Propose deregulation"
+        },
+        {
+          "name": "noteBody",
+          "label": "Note text",
+          "holds": "copy",
+          "default": "Several regulations are out of date."
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 1800,
+    "animated": true,
+    "duration": 7100,
+    "module": "ui",
+    "addedAt": "2026-11-13T15:05:55.030Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
     "id": "live-network",
     "name": "Live network",
     "kind": "shader",
@@ -3508,140 +3808,5 @@
     "addedAt": "2026-11-10T15:17:55Z",
     "commitHash": "04bd8bc6d2ca1aba5d35f2311c0dcbce4a3cea4d",
     "order": 666
-  },
-  {
-    "id": "film-projector",
-    "name": "Film projector",
-    "kind": "vector",
-    "category": "film",
-    "description": "A vintage film projector running: its two reels turning, the film feeding through it from one to the other, and a flickering cone of light streaming from its lens with dust drifting through the beam, on a seamless loop.",
-    "tags": [
-      "film",
-      "cinema",
-      "projector",
-      "film-reel",
-      "vintage",
-      "movie",
-      "icon",
-      "loop"
-    ],
-    "controls": [
-      {
-        "n": "body",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            46,
-            49,
-            56
-          ]
-        },
-        "c": 1,
-        "line": 1
-      },
-      {
-        "n": "trim",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            154,
-            160,
-            170
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "reel",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            198,
-            202,
-            210
-          ]
-        },
-        "l": "Reels",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "film",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            59,
-            42,
-            30
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "beam",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            243,
-            209
-          ]
-        },
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "beamOpacity",
-        "t": "float",
-        "d": 0.55,
-        "l": "Beam strength",
-        "s": 0.05,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            16,
-            18,
-            22
-          ]
-        },
-        "c": 1,
-        "line": 7
-      },
-      {
-        "n": "backdrop",
-        "t": "float",
-        "d": 0,
-        "l": "Background opacity",
-        "s": 0.05,
-        "b": 3,
-        "line": 8
-      }
-    ],
-    "presets": [
-      "Chrome",
-      "Dark room",
-      "Warm beam"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 0,
-    "animated": true,
-    "duration": 2400,
-    "module": "film",
-    "addedAt": "2026-11-10T15:17:55Z",
-    "commitHash": "04bd8bc6d2ca1aba5d35f2311c0dcbce4a3cea4d",
-    "order": 665
   }
 ]
