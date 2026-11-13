@@ -2195,7 +2195,7 @@ describe("scroll effects", () => {
 describe("ui effects", () => {
   const ui = findEffects({ category: "ui" });
   const shaders = ["border-beam", "gradient-border", "meteors", "background-beams", "grid-spotlight", "dot-grid", "glass-card", "liquid-glass", "noise-grain-bg", "dichroic-glass", "metal-card", "card-spotlight"];
-  const vectors = ["marquee", "number-ticker", "animated-badge", "app-window", "swipe-stack", "pack-opening", "ai-prompt-bar", "insight-cards", "detail-panel"];
+  const vectors = ["marquee", "number-ticker", "animated-badge", "app-window", "swipe-stack", "pack-opening", "ai-prompt-bar", "insight-cards", "detail-panel", "logo-cloud"];
   const render = (id: string, values: Record<string, unknown> = {}) => {
     const effect = getEffect(id)!;
     if (effect.kind !== "vector") throw new Error("vector expected");
@@ -2223,7 +2223,7 @@ describe("ui effects", () => {
   });
 
   it("prefixes every vector id with the effect's name", () => {
-    for (const [id, prefix] of [["marquee", "marquee"], ["number-ticker", "numberTicker"], ["animated-badge", "animatedBadge"], ["swipe-stack", "swipeStack"], ["pack-opening", "packOpening"], ["ai-prompt-bar", "aiPromptBar"], ["insight-cards", "insightCards"], ["detail-panel", "detailPanel"]] as const)
+    for (const [id, prefix] of [["marquee", "marquee"], ["number-ticker", "numberTicker"], ["animated-badge", "animatedBadge"], ["swipe-stack", "swipeStack"], ["pack-opening", "packOpening"], ["ai-prompt-bar", "aiPromptBar"], ["insight-cards", "insightCards"], ["detail-panel", "detailPanel"], ["logo-cloud", "logoCloud"]] as const)
       for (const [, name] of render(id).svg.matchAll(/\sid="([^"]+)"/g)) expect(name, id).toMatch(new RegExp(`^${prefix}`));
   });
 

@@ -859,4 +859,154 @@ export const detailPanel: VectorEffect = {
   })(),
 };
 
-export const uiEffects: VectorEffect[] = [marquee, numberTicker, animatedBadge, swipeStack, packOpening, aiPromptBar, insightCards, detailPanel];
+// ── Logo cloud ─────────────────────────────────────────────────────────
+
+/**
+ * A 640 × 360 cloud of up to 12 app tiles round a hub, in three depths:
+ * near (big, blurred), middle (sharp) and far (small, a little blurred).
+ * Each depth drifts toward the viewer at its own pace, then the tiles fly
+ * into the hub. Times in ms.
+ */
+const CLOUD = {
+  tiles: 12,
+  cx: 320,
+  cy: 180,
+  tiers: [
+    { from: 0, to: 4, size: 58, rx: 270, ry: 140, push: 1 },
+    { from: 4, to: 9, size: 46, rx: 200, ry: 112, push: 0.5 },
+    { from: 9, to: 12, size: 34, rx: 128, ry: 80, push: 0.25 },
+  ],
+  pop: 60,
+  drift: 2600,
+  gather: 3400,
+  gatherStagger: 45,
+};
+const CLOUD_LABELS = "Atlas,Beacon,Cobalt,Delta,Ember,Flux,Grove,Helix,Ion,Juno,Kite,Lumen";
+
+/** Up to two letters for a tile: the first of two words, or the first two of one. */
+function initials(label: string): string {
+  const words = label.split(/\s+/).filter(Boolean);
+  const letters = words.length > 1 ? [Array.from(words[0]!)[0], Array.from(words[1]!)[0]] : Array.from(words[0] ?? "").slice(0, 2);
+  const text = letters.join("");
+  return text ? Array.from(text)[0]!.toUpperCase() + Array.from(text).slice(1).join("") : "";
+}
+
+/** The tiles' order of appearing, shuffled by the seed, so near and far ones mix. */
+function cloudOrder(seed: unknown): number[] {
+  let a = (Math.round(Number(seed)) || 0) * 9301 + 49297;
+  const rand = () => {
+    a = (a * 9301 + 49297) % 233280;
+    return a / 233280;
+  };
+  const order = Array.from({ length: CLOUD.tiles }, (_, i) => i);
+  for (let i = order.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [order[i], order[j]] = [order[j]!, order[i]!];
+  }
+  return order;
+}
+
+const tierOf = (i: number) => CLOUD.tiers.findIndex((t) => i >= t.from && i < t.to);
+
+export const logoCloud: VectorEffect = {
+  kind: "vector",
+  id: "logo-cloud",
+  name: "Logo cloud",
+  description:
+    "App tiles scattered in depth round a central hub, the near ones big and soft, the far ones small, each layer drifting toward the viewer at its own pace before every tile flies into the hub and it pulses: integrations, connectors or partners.",
+  category: "ui",
+  tags: ["ui", "logo", "integration", "connector", "depth", "parallax", "saas", "social-proof"],
+  hold: 900,
+  presets: [
+    { name: "Dark", values: { background: [0.06, 0.06, 0.08], tile: [0.13, 0.13, 0.16], ink: [0.95, 0.95, 0.97] } },
+    { name: "Sharp", values: { blur: 0, drift: 0.06 } },
+    { name: "Over the page", values: { backdrop: false } },
+  ],
+  derived: (v) => {
+    const labels = parseLabels(v.labels, CLOUD.tiles).filter(Boolean);
+    const count = labels.length;
+    const order = cloudOrder(v.seed);
+    let jitter = (Math.round(Number(v.seed)) || 0) * 7 + 3;
+    const wobble = () => {
+      jitter = (jitter * 16807) % 2147483647;
+      return (jitter % 1000) / 1000 - 0.5;
+    };
+    const blur = Math.max(0, Number(v.blur) || 0);
+    const drift = Math.max(0, Number(v.drift) || 0);
+    const out: Record<string, string | number> = {};
+    // Tiles fill the middle depth first, then the near, then the far, so a short list still reads as a cloud.
+    const fillOrder = [4, 5, 6, 7, 8, 0, 1, 2, 3, 9, 10, 11];
+    const label = new Map(fillOrder.slice(0, count).map((slot, k) => [slot, labels[k]!]));
+    for (let i = 0; i < CLOUD.tiles; i++) {
+      const tier = CLOUD.tiers[tierOf(i)]!;
+      const k = i - tier.from;
+      const per = tier.to - tier.from;
+      const angle = (k / per) * Math.PI * 2 + tierOf(i) * 0.9 + wobble() * 0.5;
+      const reach = 0.82 + wobble() * 0.3;
+      const x = CLOUD.cx + Math.cos(angle) * tier.rx * reach;
+      const y = CLOUD.cy + Math.sin(angle) * tier.ry * reach;
+      const s = tier.size;
+      const text = initials(label.get(i) ?? "");
+      const f = Math.min(s * 0.4, (s * 0.7) / Math.max(0.6, textWidthEm(text || "A")));
+      const style = i % 3;
+      out[`show${i}`] = label.has(i) ? "inline" : "none";
+      out[`at${i}`] = `translate(${r1(x)} ${r1(y)})`;
+      out[`to${i}`] = `translate(${r1(CLOUD.cx - x)} ${r1(CLOUD.cy - y)}) scale(0.2)`;
+      out[`text${i}`] = text;
+      out[`size${i}`] = r1(f);
+      out[`base${i}`] = r1(f * 0.36);
+      out[`plate${i}`] = style === 0 ? 1 : 0;
+      out[`inner${i}`] = style === 2 ? 1 : 0;
+      out[`coloured${i}`] = style === 1 ? 1 : 0;
+      out[`white${i}`] = style === 1 ? 0 : 1;
+      out[`popAt${i}`] = 150 + order.indexOf(i) * CLOUD.pop;
+      out[`settleAt${i}`] = 150 + order.indexOf(i) * CLOUD.pop + 260;
+      out[`gatherAt${i}`] = CLOUD.gather + order.indexOf(i) * CLOUD.gatherStagger;
+    }
+    CLOUD.tiers.forEach((t, k) => {
+      const z = r1((1 + drift * t.push) * 1000) / 1000;
+      out[`tierTo${k}`] = `translate(${CLOUD.cx} ${CLOUD.cy}) scale(${z}) translate(${-CLOUD.cx} ${-CLOUD.cy})`;
+    });
+    return {
+      ...out,
+      blurNear: r1(blur),
+      blurFar: r1(blur * 0.5),
+      pulseAt: CLOUD.gather + CLOUD.tiles * CLOUD.gatherStagger + 250,
+      pulseEnd: CLOUD.gather + CLOUD.tiles * CLOUD.gatherStagger + 430,
+      backdropOpacity: v.backdrop ? 1 : 0,
+    };
+  },
+  motion: (() => {
+    const slots = Array.from({ length: CLOUD.tiles }, (_, i) => i);
+    const still = `translate(${CLOUD.cx} ${CLOUD.cy}) scale(1) translate(${-CLOUD.cx} ${-CLOUD.cy})`;
+    const tile = (i: number) => {
+      const s = CLOUD.tiers[tierOf(i)]!.size;
+      const h = s / 2;
+      const c = `{{c${(i % 6) + 1}}}`;
+      return `<g display="{{show${i}}}" transform="{{at${i}}}"><g id="logoCloudMove${i}"><g id="logoCloudTile${i}" transform="scale(0)"><rect x="${-h}" y="${-h + 3}" width="${s}" height="${s}" rx="${r1(s * 0.24)}" fill="#000000" opacity="0.08"/><rect x="${-h}" y="${-h}" width="${s}" height="${s}" rx="${r1(s * 0.24)}" fill="{{tile}}" stroke="{{ink}}" stroke-opacity="0.08"/><rect x="${-h}" y="${-h}" width="${s}" height="${s}" rx="${r1(s * 0.24)}" fill="${c}" opacity="{{plate${i}}}"/><rect x="${r1(-h * 0.62)}" y="${r1(-h * 0.62)}" width="${r1(s * 0.62)}" height="${r1(s * 0.62)}" rx="${r1(s * 0.16)}" fill="${c}" opacity="{{inner${i}}}"/><text x="0" y="{{base${i}}}" text-anchor="middle" font-size="{{size${i}}}" font-weight="800" fill="${c}" opacity="{{coloured${i}}}">{{text${i}}}</text><text x="0" y="{{base${i}}}" text-anchor="middle" font-size="{{size${i}}}" font-weight="800" fill="#FFFFFF" opacity="{{white${i}}}">{{text${i}}}</text></g></g></g>`;
+    };
+    const tier = (k: number, filter: string) => {
+      const t = CLOUD.tiers[k]!;
+      return `<g id="logoCloudTier${k}" transform="${still}"${filter ? ` filter="url(#${filter})"` : ""}>${slots.slice(t.from, t.to).map(tile).join("")}</g>`;
+    };
+    const hub = 64;
+    return {
+      svg: `<svg viewBox="0 0 640 360" font-family="${SANS}"><!-- {{labels: text default='${CLOUD_LABELS}' label='Tiles (comma-separated names, up to 12; each shows its initials)'}} {{background: color default=#F7F5F0 label='Background'}} {{backdrop: bool default=true label='Background'}} {{tile: color default=#FFFFFF label='Tiles'}} {{ink: color default=#1F2937 label='Edges'}} {{hubColor: color default=#8B5CF6 label='Hub'}} {{hubInk: color default=#FFFFFF label='Hub icon'}} {{c1: color default=#F59E0B label='Colour 1'}} {{c2: color default=#10B981 label='Colour 2'}} {{c3: color default=#3B82F6 label='Colour 3'}} {{c4: color default=#EC4899 label='Colour 4'}} {{c5: color default=#EF4444 label='Colour 5'}} {{c6: color default=#111827 label='Colour 6'}} {{blur: float min=0 max=8 default=3 step=0.5 label='Depth blur'}} {{drift: float min=0 max=0.3 default=0.12 step=0.01 label='Drift toward the viewer'}} {{seed: int min=0 max=99 default=5 label='Seed'}} --><defs><filter id="logoCloudBlurNear" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="{{blurNear}}"/></filter><filter id="logoCloudBlurFar" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="{{blurFar}}"/></filter></defs><g opacity="{{backdropOpacity}}"><rect width="640" height="360" fill="{{background}}"/></g>${tier(2, "logoCloudBlurFar")}${tier(1, "")}<g transform="translate(${CLOUD.cx} ${CLOUD.cy})"><circle id="logoCloudRipple" r="${hub / 2}" fill="none" stroke="{{hubColor}}" stroke-width="2" opacity="0"/><g id="logoCloudHub" transform="scale(0)"><rect x="${-hub / 2}" y="${-hub / 2 + 4}" width="${hub}" height="${hub}" rx="16" fill="#000000" opacity="0.12"/><rect x="${-hub / 2}" y="${-hub / 2}" width="${hub}" height="${hub}" rx="16" fill="{{hubColor}}"/><g fill="none" stroke="{{hubInk}}" stroke-width="2.6" stroke-linecap="round"><ellipse cx="0" cy="-11" rx="13" ry="5"/><path d="M-13 -11 V11 A13 5 0 0 0 13 11 V-11"/><path d="M-13 0 A13 5 0 0 0 13 0"/></g></g></g>${tier(0, "logoCloudBlurNear")}</svg>`,
+      animate: [
+        { id: "logoCloudHub", attrs: { transform: ["scale(0)", "scale(1.1)"] }, ms: 300, ease: "out" },
+        { id: "logoCloudHub", attrs: { transform: ["scale(1.1)", "scale(1)"] }, delay: 300, ms: 160 },
+        ...slots.flatMap((i): SvgAnimation[] => [
+          { id: `logoCloudTile${i}`, attrs: { transform: ["scale(0)", "scale(1.1)"] }, delay: n(`popAt${i}`), ms: 260, ease: "out" },
+          { id: `logoCloudTile${i}`, attrs: { transform: ["scale(1.1)", "scale(1)"] }, delay: n(`settleAt${i}`), ms: 160 },
+        ]),
+        ...CLOUD.tiers.map((_, k): SvgAnimation => ({ id: `logoCloudTier${k}`, attrs: { transform: [still, `{{tierTo${k}}}`] }, delay: 600, ms: CLOUD.gather - 600 + 400, ease: "in-out" })),
+        ...slots.map((i): SvgAnimation => ({ id: `logoCloudMove${i}`, attrs: { transform: ["translate(0 0) scale(1)", `{{to${i}}}`], opacity: [1, 0] }, delay: n(`gatherAt${i}`), ms: 480, ease: [0.55, 0, 0.9, 0.4] })),
+        { id: "logoCloudHub", attrs: { transform: ["scale(1)", "scale(1.14)"] }, delay: n("pulseAt"), ms: 180, ease: "out" },
+        { id: "logoCloudHub", attrs: { transform: ["scale(1.14)", "scale(1)"] }, delay: n("pulseEnd"), ms: 220 },
+        { id: "logoCloudRipple", attrs: { r: [hub / 2, hub * 1.6], opacity: [0.6, 0] }, delay: n("pulseAt"), ms: 700, ease: "out" },
+      ],
+    };
+  })(),
+};
+
+export const uiEffects: VectorEffect[] = [marquee, numberTicker, animatedBadge, swipeStack, packOpening, aiPromptBar, insightCards, detailPanel, logoCloud];

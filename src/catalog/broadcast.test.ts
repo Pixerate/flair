@@ -19,7 +19,7 @@ describe("broadcast and annotation effects", () => {
     expect(findEffects({ category: "broadcast" }).map((e) => e.id)).toEqual(broadcastEffects.map((e) => e.id));
     expect(findEffects({ category: "annotation" }).map((e) => e.id)).toEqual(annotationEffects.map((e) => e.id));
     expect(broadcastEffects.map((e) => e.id)).toEqual(["lower-third", "lower-third-stacked", "title-card", "logo-reveal", "logo-sting", "end-card", "countdown", "subscribe-button", "news-ticker", "scoreboard", "chapter-marker"]);
-    expect(annotationEffects.map((e) => e.id)).toEqual(["hand-circle", "hand-arrow", "callout", "bracket-note", "scribble-out", "redact-box", "step-badges", "focus-box", "fake-cursor", "tooltip-tour"]);
+    expect(annotationEffects.map((e) => e.id)).toEqual(["hand-circle", "hand-arrow", "callout", "bracket-note", "scribble-out", "redact-box", "step-badges", "focus-box", "fake-cursor", "tooltip-tour", "presence-cursors", "selection-frame"]);
     for (const e of effects) {
       expect(e.tags, e.id).toContain(e.category);
       expect(e.presets?.length, e.id).toBeGreaterThanOrEqual(2);
