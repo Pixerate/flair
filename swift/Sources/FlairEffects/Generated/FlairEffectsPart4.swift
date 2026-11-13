@@ -4328,7 +4328,7 @@ public struct PixelFire: FlairEffect, Codable, Sendable, Equatable {
     public static let tags: [String] = ["pixel", "retro", "fire", "flames", "doom", "demoscene", "loop"]
     public static let phase: Int = 1
     public static let functionName = "flair_pixel_fire_frag"
-    public static let uniformByteLength: Int = 1072
+    public static let uniformByteLength: Int = 1088
     public static let isTransparent: Bool = false
     public static let loopDuration: Double? = nil
     public static let controls: [FlairControlDescriptor] = [
@@ -4341,6 +4341,8 @@ public struct PixelFire: FlairEffect, Codable, Sendable, Equatable {
         FlairControlDescriptor(name: "uEmber", property: "ember", type: .vec3, label: "Embers", isColor: true, min: 0.0, max: 1.0, step: 0.005),
         FlairControlDescriptor(name: "uFlame", property: "flame", type: .vec3, label: "Flame", isColor: true, min: 0.0, max: 1.0, step: 0.005),
         FlairControlDescriptor(name: "uCore", property: "core", type: .vec3, label: "Core", isColor: true, min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uBackground", property: "background", type: .vec3, label: "Background", isColor: true, min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uBackgroundAlpha", property: "backgroundAlpha", type: .float, label: "Background opacity", min: 0.0, max: 1.0, step: 0.005),
     ]
     public static let presets: [String: PixelFire] = {
         var map: [String: PixelFire] = [:]
@@ -4368,6 +4370,10 @@ public struct PixelFire: FlairEffect, Codable, Sendable, Equatable {
     public var flame: SIMD3<Float> = flairVec3(0.94902, 0.337255, 0.054902)
     /// Core (`uCore`).
     public var core: SIMD3<Float> = flairVec3(1.0, 0.886275, 0.478431)
+    /// Background (`uBackground`).
+    public var background: SIMD3<Float> = flairVec3(0.019608, 0.011765, 0.011765)
+    /// Background opacity (`uBackgroundAlpha`).
+    public var backgroundAlpha: Float = 1.0
 
     public init() {}
 
@@ -4382,6 +4388,8 @@ public struct PixelFire: FlairEffect, Codable, Sendable, Equatable {
         FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(ember, min: 0.0, max: 1.0), to: buffer, at: 1024)
         FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(flame, min: 0.0, max: 1.0), to: buffer, at: 1040)
         FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(core, min: 0.0, max: 1.0), to: buffer, at: 1056)
+        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(background, min: 0.0, max: 1.0), to: buffer, at: 1072)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(backgroundAlpha, min: 0.0, max: 1.0), to: buffer, at: 1084)
     }
 
     public init(from decoder: Decoder) throws {
@@ -4395,6 +4403,8 @@ public struct PixelFire: FlairEffect, Codable, Sendable, Equatable {
         self.ember = bag.decodeVec3("uEmber", "ember", default: flairVec3(0.478431, 0.054902, 0.023529), isColor: true)
         self.flame = bag.decodeVec3("uFlame", "flame", default: flairVec3(0.94902, 0.337255, 0.054902), isColor: true)
         self.core = bag.decodeVec3("uCore", "core", default: flairVec3(1.0, 0.886275, 0.478431), isColor: true)
+        self.background = bag.decodeVec3("uBackground", "background", default: flairVec3(0.019608, 0.011765, 0.011765), isColor: true)
+        self.backgroundAlpha = bag.decodeFloat("uBackgroundAlpha", "backgroundAlpha", default: 1.0, min: 0.0, max: 1.0)
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -4408,6 +4418,8 @@ public struct PixelFire: FlairEffect, Codable, Sendable, Equatable {
         bag.encodeVec3(self.ember, for: "uEmber")
         bag.encodeVec3(self.flame, for: "uFlame")
         bag.encodeVec3(self.core, for: "uCore")
+        bag.encodeVec3(self.background, for: "uBackground")
+        bag.encodeFloat(self.backgroundAlpha, for: "uBackgroundAlpha")
         try bag.encode(to: encoder)
     }
 }
