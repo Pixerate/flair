@@ -278,9 +278,9 @@
     "animated": true,
     "duration": 6880,
     "module": "ui",
-    "addedAt": "2026-11-12T22:47:16.213Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-11-12T22:48:40Z",
+    "commitHash": "a2ec9ec06d9f8a9459e4763e64b4c3ab8ceb92c7",
+    "order": 681
   },
   {
     "id": "seed-head-burst",
