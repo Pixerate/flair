@@ -422,6 +422,7 @@ public enum FlairCatalog {
         AnyFlairEffect(WebShot()),
         AnyFlairEffect(PlexusWeb()),
         AnyFlairEffect(LiveNetwork()),
+        AnyFlairEffect(NetworkBloom()),
         AnyFlairEffect(OrbitSwoosh()),
         AnyFlairEffect(TickRingBurst()),
         AnyFlairEffect(SwooshUnderline()),

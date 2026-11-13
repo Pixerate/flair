@@ -6,6 +6,135 @@ import simd
 
 
 
+/// **Claw slash** (`claw-slash`, category: `horror`).
+/// Claw marks raked across a picture in a fast stroke, each tear ripping open along its length with ragged raw edges and the picture pulled apart round it, holding a moment, then closing up again. Loops; or turn Animate off and set Progress.
+public struct ClawSlash: FlairEffect, Codable, Sendable, Equatable {
+    public static let effectId = "claw-slash"
+    public static let effectName = "Claw slash"
+    public static let category = "horror"
+    public static let effectDescription = "Claw marks raked across a picture in a fast stroke, each tear ripping open along its length with ragged raw edges and the picture pulled apart round it, holding a moment, then closing up again. Loops; or turn Animate off and set Progress."
+    public static let tags: [String] = ["horror", "gore", "claw", "slash", "scratch", "tear", "rip", "image"]
+    public static let phase: Int = 2
+    public static let functionName = "flair_claw_slash_frag"
+    public static let uniformByteLength: Int = 1072
+    public static let isTransparent: Bool = false
+    public static let loopDuration: Double? = 4.0
+    public static let controls: [FlairControlDescriptor] = [
+        FlairControlDescriptor(name: "uImage", property: "image", type: .sampler2D, label: "Image", min: 0.0, max: 1.0, step: 0.005, filter: .linear, wrap: .clamp),
+        FlairControlDescriptor(name: "uInside", property: "inside", type: .vec3, label: "Inside the tear", isColor: true, min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uEdge", property: "edge", type: .vec3, label: "Raw edge", isColor: true, min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uClaws", property: "claws", type: .float, label: "Claws", min: 1.0, max: 5.0, step: 1.0),
+        FlairControlDescriptor(name: "uAngle", property: "angle", type: .float, label: "Angle (°)", min: -80.0, max: 80.0, step: 0.8),
+        FlairControlDescriptor(name: "uWidth", property: "width", type: .float, label: "Width", min: 4.0, max: 50.0, step: 0.23),
+        FlairControlDescriptor(name: "uSpacing", property: "spacing", type: .float, label: "Spacing", min: 0.03, max: 0.2, step: 0.00085),
+        FlairControlDescriptor(name: "uCycle", property: "cycle", type: .float, label: "Cycle (s)", min: 1.5, max: 10.0, step: 0.0425),
+        FlairControlDescriptor(name: "uAnimate", property: "animate", type: .bool, label: "Animate", min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uProgress", property: "progress", type: .float, label: "Progress (when still)", min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uBackdrop", property: "backdrop", type: .vec3, label: "Backdrop", isColor: true, min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uBackdropAlpha", property: "backdropAlpha", type: .float, label: "Backdrop opacity", min: 0.0, max: 1.0, step: 0.005),
+    ]
+    public static let samplerBindings: [FlairSamplerBinding] = [
+        FlairSamplerBinding(name: "uImage", property: "image", type: .sampler2D, binding: 1, filter: .linear, wrap: .clamp),
+    ]
+    public static let presets: [String: ClawSlash] = {
+        var map: [String: ClawSlash] = [:]
+        do { var p = ClawSlash(); p.claws = 3.0; p.width = 26.0; map["Three"] = p }
+        do { var p = ClawSlash(); p.angle = -80.0; map["Vertical"] = p }
+        do { var p = ClawSlash(); p.inside = flairVec3(0.01, 0.01, 0.02); p.edge = flairVec3(0.25, 0.2, 0.35); map["Shadow beast"] = p }
+        do { var p = ClawSlash(); p.animate = false; p.progress = 0.4; map["Torn open"] = p }
+        return map
+    }()
+
+    /// Image (`uImage`).
+    public var image: FlairTextureInput = .sample(.portrait)
+    /// Inside the tear (`uInside`).
+    public var inside: SIMD3<Float> = flairVec3(0.078431, 0.011765, 0.023529)
+    /// Raw edge (`uEdge`).
+    public var edge: SIMD3<Float> = flairVec3(0.541176, 0.05098, 0.086275)
+    /// Claws (`uClaws`).
+    public var claws: Float = 4.0
+    /// Angle (°) (`uAngle`).
+    public var angle: Float = -35.0
+    /// Width (`uWidth`).
+    public var width: Float = 18.0
+    /// Spacing (`uSpacing`).
+    public var spacing: Float = 0.085
+    /// Cycle (s) (`uCycle`).
+    public var cycle: Float = 4.0
+    /// Animate (`uAnimate`).
+    public var animate: Bool = true
+    /// Progress (when still) (`uProgress`).
+    public var progress: Float = 0.4
+    /// Backdrop (`uBackdrop`).
+    public var backdrop: SIMD3<Float> = flairVec3(1.0, 1.0, 1.0)
+    /// Backdrop opacity (`uBackdropAlpha`).
+    public var backdropAlpha: Float = 1.0
+
+    public init() {}
+
+    public func encodeUniforms(into buffer: UnsafeMutableRawPointer, state: FlairFrameState) {
+        state.encodeBuiltins(into: buffer)
+        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(inside, min: 0.0, max: 1.0), to: buffer, at: 992)
+        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(edge, min: 0.0, max: 1.0), to: buffer, at: 1008)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(claws, min: 1.0, max: 5.0), to: buffer, at: 1020)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(angle, min: -80.0, max: 80.0), to: buffer, at: 1024)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(width, min: 4.0, max: 50.0), to: buffer, at: 1028)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(spacing, min: 0.03, max: 0.2), to: buffer, at: 1032)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(cycle, min: 1.5, max: 10.0), to: buffer, at: 1036)
+        FlairUniformEncoder.writeBool(animate, to: buffer, at: 1040)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(progress, min: 0.0, max: 1.0), to: buffer, at: 1044)
+        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(backdrop, min: 0.0, max: 1.0), to: buffer, at: 1056)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(backdropAlpha, min: 0.0, max: 1.0), to: buffer, at: 1068)
+    }
+
+    public func textureInput(for binding: Int) -> FlairTextureInput {
+        switch binding {
+        case 1: return self.image
+        default: return .none
+        }
+    }
+
+    public mutating func setTextureInput(_ input: FlairTextureInput, for binding: Int) {
+        switch binding {
+        case 1: self.image = input
+        default: break
+        }
+    }
+
+    public init(from decoder: Decoder) throws {
+        let bag = try FlairJSONBag(from: decoder)
+        self.image = bag.decodeTexture("uImage", "image", default: .sample(.portrait), fit: .contain, margin: 0.1)
+        self.inside = bag.decodeVec3("uInside", "inside", default: flairVec3(0.078431, 0.011765, 0.023529), isColor: true)
+        self.edge = bag.decodeVec3("uEdge", "edge", default: flairVec3(0.541176, 0.05098, 0.086275), isColor: true)
+        self.claws = bag.decodeFloat("uClaws", "claws", default: 4.0, min: 1.0, max: 5.0)
+        self.angle = bag.decodeFloat("uAngle", "angle", default: -35.0, min: -80.0, max: 80.0)
+        self.width = bag.decodeFloat("uWidth", "width", default: 18.0, min: 4.0, max: 50.0)
+        self.spacing = bag.decodeFloat("uSpacing", "spacing", default: 0.085, min: 0.03, max: 0.2)
+        self.cycle = bag.decodeFloat("uCycle", "cycle", default: 4.0, min: 1.5, max: 10.0)
+        self.animate = bag.decodeBool("uAnimate", "animate", default: true)
+        self.progress = bag.decodeFloat("uProgress", "progress", default: 0.4, min: 0.0, max: 1.0)
+        self.backdrop = bag.decodeVec3("uBackdrop", "backdrop", default: flairVec3(1.0, 1.0, 1.0), isColor: true)
+        self.backdropAlpha = bag.decodeFloat("uBackdropAlpha", "backdropAlpha", default: 1.0, min: 0.0, max: 1.0)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var bag = FlairJSONBag()
+        bag.encodeTexture(self.image, for: "uImage")
+        bag.encodeVec3(self.inside, for: "uInside")
+        bag.encodeVec3(self.edge, for: "uEdge")
+        bag.encodeFloat(self.claws, for: "uClaws")
+        bag.encodeFloat(self.angle, for: "uAngle")
+        bag.encodeFloat(self.width, for: "uWidth")
+        bag.encodeFloat(self.spacing, for: "uSpacing")
+        bag.encodeFloat(self.cycle, for: "uCycle")
+        bag.encodeBool(self.animate, for: "uAnimate")
+        bag.encodeFloat(self.progress, for: "uProgress")
+        bag.encodeVec3(self.backdrop, for: "uBackdrop")
+        bag.encodeFloat(self.backdropAlpha, for: "uBackdropAlpha")
+        try bag.encode(to: encoder)
+    }
+}
+
 /// **Blood moon** (`blood-moon`, category: `horror`).
 /// A crimson full moon hanging over dark hills and a lone dead tree, its cratered face glowing through drifting clouds, the sky round it stained red and pricked with faint stars.
 public struct BloodMoon: FlairEffect, Codable, Sendable, Equatable {

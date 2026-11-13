@@ -3,8 +3,9 @@ import type { ShaderEffect } from "../types.js";
 
 /*
  * Webbing: a dewy orb web, cobwebs hung in the corners of a page, a web shot
- * at every click, a plexus of drifting points strung together and a live
- * knowledge graph with sparks running along its links. Each is
+ * at every click, a plexus of drifting points strung together, a live
+ * knowledge graph with sparks running along its links, and the same graph
+ * branching into being from its hub. Each is
  * tagged "web", so the family is easy to find together.
  *
  * The orb webs share one trick: a point's radius is measured to the straight
@@ -603,5 +604,179 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   ],
 };
 
+export const networkBloom: ShaderEffect = {
+  kind: "shader",
+  id: "network-bloom",
+  name: "Network bloom",
+  description:
+    "A knowledge graph branching into being: a gold hub flares, cold blue comets shoot out along its spokes and land as pink nodes in a flash, each throwing out smaller comets that land as leaves, and the spokes warm from blue to gold as the graph settles; it holds, fades and blooms again, an intro for the live network.",
+  category: "particles",
+  tags: ["background", "particles", "network", "graph", "web", "tech", "data", "hero", "intro", "burst"],
+  source: glsl(
+    `// Network bloom: the live network's layout grown over a cycle. Each spoke grows from the hub with a comet at its tip,
+// easing to a stop; landing, it pops its node and launches comets out to its leaves. Times are shares of the cycle.
+uniform vec3 uHub;      // @control color default=#F2C27A label="Hub"
+uniform vec3 uComet;    // @control color default=#4FC8FF label="Comets"
+uniform vec3 uSpoke;    // @control color default=#F0C88C label="Settled spokes"
+uniform vec3 uBranch;   // @control color default=#E58FB0 label="Branch nodes"
+uniform vec3 uLeafA;    // @control color default=#9C7CF5 label="Leaves 1"
+uniform vec3 uLeafB;    // @control color default=#4FC8A0 label="Leaves 2"
+uniform int uBranches;  // @control min=3 max=16 default=12 label="Branches"
+uniform int uLeaves;    // @control min=0 max=4 default=3 label="Leaves per branch"
+uniform float uSpread;  // @control min=0.15 max=0.6 default=0.44 label="Spread"
+uniform float uGlow;    // @control min=0 max=2 default=1 label="Glow"
+uniform float uSeed;    // @control min=0 max=100 default=7 step=1 label="Layout"
+uniform bool uAnimate;  // @control default=true label="Animate"
+uniform float uCycle;   // @control min=3 max=15 default=6 label="Cycle (s)"
+uniform float uProgress; // @control min=0 max=1 default=0.35 label="Progress (when still)"
+uniform vec3 uBackground;       // @control color default=#0B1A1E label="Background"
+uniform float uBackgroundAlpha; // @control min=0 max=1 default=1 label="Background opacity"`,
+    HASH,
+    OVER,
+    `const float TAU = 6.28318;
+
+float easeOut(float x) {
+  x = clamp(x, 0.0, 1.0);
+  return 1.0 - (1.0 - x) * (1.0 - x) * (1.0 - x);
+}
+
+// Distance from p to the segment a-b, and how far along it (0 to 1) the nearest point is.
+float seg(vec2 p, vec2 a, vec2 b, out float u) {
+  vec2 e = b - a;
+  u = clamp(dot(p - a, e) / max(dot(e, e), 1e-8), 0.0, 1.0);
+  return length(p - a - e * u);
+}
+
+// A small glossy ball of colour c and radius R at offset q: (colour, coverage).
+vec4 ball(vec2 q, float R, vec3 c, float px) {
+  float r = length(q);
+  float cover = clamp(0.5 - (r - R) / px, 0.0, 1.0);
+  float z = sqrt(max(0.0, 1.0 - min(r / max(R, 1e-4), 1.0) * min(r / max(R, 1e-4), 1.0)));
+  float hl = exp(-length(q / max(R, 1e-4) - vec2(-0.32, 0.38)) * 3.2);
+  return vec4(c * (0.45 + 0.65 * z) + vec3(0.9) * hl * 0.55, cover);
+}
+
+// A link grown from a toward b, e of the way (0 to 1): its line, the comet at its tip and the trail behind it.
+// Warm is how far it has settled from comet blue to its own colour.
+vec3 grow(vec2 p, vec2 a, vec2 b, float e, float warm, vec3 settled, float width, float px) {
+  if (e <= 0.0) return vec3(0.0);
+  vec2 tip = a + (b - a) * e;
+  float u;
+  float d = seg(p, a, tip, u);
+  float len = length(tip - a);
+  vec3 c = mix(uComet, settled, warm);
+  float core = exp(-d / (0.7 * px + 0.0004 * width));
+  float halo = exp(-d / (0.002 + 0.02 * width * (1.0 - u) * (1.0 - u))) * 0.55 * width * (1.0 - 0.6 * u) * warm;
+  // The comet: bright while it flies, gone once it lands.
+  float flying = 1.0 - smoothstep(0.9, 1.0, e);
+  float trail = exp(-(1.0 - u) * len / 0.06) * exp(-d / (0.003 + 0.002 * uGlow)) * flying;
+  float head = exp(-length(p - tip) / (0.006 + 0.004 * uGlow)) * flying * 1.8;
+  return c * (core * 0.7 + halo * uGlow) + uComet * (trail * 0.9 + head) * uGlow;
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  float px = 1.0 / iResolution.y;
+  vec2 p = (fragCoord - 0.5 * iResolution.xy) * px;
+  float aspect = iResolution.x / iResolution.y;
+  vec2 stretch = vec2(clamp(aspect * 0.85, 1.0, 1.8), 1.0);
+  float t = uAnimate ? fract(iTime / uCycle) : uProgress;
+  float shown = smoothstep(0.0, 0.03, t) * (1.0 - smoothstep(0.9, 1.0, t));
+  float n = float(uBranches);
+  float seed = uSeed * 1.37;
+  vec3 light = vec3(0.0);
+  vec4 acc = vec4(0.0);
+
+  // The hub swells in, then flares as the first comets leave.
+  float hubIn = easeOut(t / 0.08);
+  float flare = exp(-max(t - 0.08, 0.0) * 30.0) * step(0.08, t);
+  float R0 = 0.034 * hubIn;
+
+  for (int i = 0; i < 16; i++) {
+    if (i >= uBranches) break;
+    float fi = float(i);
+    float h1 = hash12(vec2(fi, seed + 3.1));
+    float h2 = hash12(vec2(fi, seed + 7.7));
+    float h3 = hash12(vec2(fi, seed + 12.9));
+    float a = (fi + 0.2 + 0.6 * h1) / n * TAU;
+    vec2 b = vec2(cos(a), sin(a)) * stretch * uSpread * (0.62 + 0.38 * h2);
+    float start = 0.08 + 0.1 * h3;
+    float e = easeOut((t - start) / (0.12 + 0.04 * h2));
+    float land = start + 0.12 + 0.04 * h2;
+    float warm = smoothstep(land, land + 0.12, t);
+    bool gold = h3 < 0.68;
+    light += grow(p, vec2(0.0), b, e, warm, gold ? uSpoke : uComet, gold ? 1.0 : 0.15, px);
+    if (e <= 0.0 || length(p - b) > uSpread * 0.3 + 0.1) continue;
+
+    // Leaves: comets out from the branch once it has landed, a little after one another.
+    for (int j = 0; j < 4; j++) {
+      if (j >= uLeaves) break;
+      float fj = float(j);
+      float k1 = hash12(vec2(fi * 7.0 + fj, seed + 21.3));
+      float k2 = hash12(vec2(fi * 7.0 + fj, seed + 33.1));
+      float a2 = a + (fj - 0.5 * float(uLeaves - 1)) * 1.1 + (k1 - 0.5) * 0.7;
+      vec2 l = b + vec2(cos(a2), sin(a2)) * uSpread * (0.12 + 0.16 * k2);
+      float ls = land + 0.01 + 0.025 * fj + 0.02 * k1;
+      float le = easeOut((t - ls) / 0.07);
+      if (le <= 0.0) continue;
+      float lw = smoothstep(ls + 0.07, ls + 0.17, t);
+      light += grow(p, b, l, le, lw, mix(uComet, vec3(0.85), 0.5) * 0.6, 0.0, px) * 0.7;
+      vec3 lc = k2 < 0.55 ? uLeafA : uLeafB;
+      float pop = smoothstep(0.85, 1.0, le);
+      float lr = (k2 < 0.3 ? 0.0105 : 0.0062) * pop * (1.0 + 0.4 * exp(-max(t - ls - 0.07, 0.0) * 40.0));
+      vec2 q = p - l;
+      vec4 lb = ball(q, lr, lc, px);
+      acc = over(acc, lb.rgb, lb.a);
+      light += mix(uComet, lc, lw) * exp(-length(q) / (0.006 + 0.004 * uGlow)) * 0.35 * pop * uGlow;
+    }
+
+    // The branch node pops in where its comet lands, with a flash.
+    float pop = smoothstep(0.85, 1.0, e);
+    float burst = exp(-max(t - land, 0.0) * 25.0) * step(land, t);
+    float br = 0.0145 * pop * (1.0 + 0.5 * burst);
+    vec2 q = p - b;
+    float rq = length(q);
+    vec4 bb = ball(q, br, uBranch, px);
+    acc = over(acc, uBranch, clamp(0.5 - abs(rq - br * 1.5) / px, 0.0, 1.0) * 0.5 * warm);
+    acc = over(acc, bb.rgb, bb.a);
+    light += mix(uComet, uBranch, warm) * exp(-rq / (0.012 + 0.008 * uGlow)) * (0.35 + 2.0 * burst) * pop * uGlow;
+  }
+
+  // The hub: a gold ball with engraved rings and a fringe of spines, flaring as the bloom begins.
+  float r = length(p);
+  float ang = atan(p.y, p.x);
+  if (R0 > 0.0) {
+    float x = clamp(r / R0, 0.0, 1.0);
+    float body = clamp(0.5 - (r - R0) / px, 0.0, 1.0);
+    vec3 hub = mix(vec3(1.0, 0.97, 0.88), uHub, smoothstep(0.0, 0.6, x));
+    hub *= 1.0 - 0.3 * smoothstep(0.6, 1.0, x) * (0.5 + 0.5 * cos(x * 90.0));
+    acc = over(acc, hub, body);
+    float cells = 120.0;
+    float ac = (ang / TAU + 0.5) * cells;
+    float slen = R0 * (0.1 + 0.3 * hash12(vec2(floor(ac), 4.2))) * (1.0 + 1.5 * flare);
+    float tang = (fract(ac) - 0.5) / cells * TAU * r;
+    float sd = max(abs(tang) - 0.5 * px, abs(r - R0 - slen * 0.5) - slen * 0.5);
+    acc = over(acc, uHub, clamp(0.5 - sd / px, 0.0, 1.0) * 0.8);
+  }
+  light += uHub * exp(-max(r - R0, 0.0) / (0.02 + 0.015 * uGlow + 0.05 * flare)) * (0.5 + 1.5 * flare) * uGlow * hubIn;
+
+  // Everything fades with the cycle; light is tone-mapped and laid over the nodes, then over the ground.
+  acc *= shown;
+  light = (1.0 - exp(-light)) * shown;
+  float la = max(light.r, max(light.g, light.b));
+  acc = vec4(acc.rgb + light * (1.0 - acc.a), acc.a + la * (1.0 - acc.a));
+  vec3 ground = uBackground * (1.0 + 0.35 * exp(-dot(p, p) * 4.0));
+  vec4 base = vec4(ground * uBackgroundAlpha, uBackgroundAlpha);
+  acc = vec4(acc.rgb + base.rgb * (1.0 - acc.a), acc.a + base.a * (1.0 - acc.a));
+  fragColor = unpremultiply(acc);
+}`,
+  ),
+  presets: [
+    { name: "Overlay", values: { uBackgroundAlpha: 0 } },
+    { name: "Still, mid-bloom", values: { uAnimate: false, uProgress: 0.24 } },
+    { name: "Ember", values: { uComet: [1, 0.55, 0.25], uHub: [1, 0.8, 0.5], uBranch: [1, 0.7, 0.4], uLeafA: [1, 0.85, 0.45], uLeafB: [0.95, 0.45, 0.3], uBackground: [0.07, 0.04, 0.03] } },
+    { name: "Sparse", values: { uBranches: 6, uLeaves: 2, uSpread: 0.32 } },
+  ],
+};
+
 /** The webbing shaders. */
-export const webShaders: ShaderEffect[] = [spiderWeb, cobwebCorners, webShot, plexusWeb, liveNetwork];
+export const webShaders: ShaderEffect[] = [spiderWeb, cobwebCorners, webShot, plexusWeb, liveNetwork, networkBloom];

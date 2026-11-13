@@ -2766,7 +2766,7 @@ public struct ShapeTiles: FlairEffect, Codable, Sendable, Equatable {
     public static let effectName = "Shape tiles"
     public static let category = "pattern"
     public static let effectDescription = "A grid of flat-coloured tiles, each holding a disc, quarter circle, half circle, diamond, ring or square that morphs into another and swaps colours on its own beat."
-    public static let tags: [String] = ["background", "tile", "grid", "geometric", "shape", "flat", "bold", "bauhaus", "recap", "story"]
+    public static let tags: [String] = ["background", "tiles", "grid", "geometric", "shape", "flat", "bold", "bauhaus", "recap", "story"]
     public static let phase: Int = 1
     public static let functionName = "flair_shape_tiles_frag"
     public static let uniformByteLength: Int = 1072
@@ -2849,7 +2849,7 @@ public struct SteppedGradient: FlairEffect, Codable, Sendable, Equatable {
     public static let effectName = "Stepped gradient"
     public static let category = "gradient"
     public static let effectDescription = "A three-colour gradient cut into flat steps, the edge between each pair broken into a ragged skyline of pixel stairs, swaying slowly."
-    public static let tags: [String] = ["background", "gradient", "step", "pixel", "block", "stairs", "flat", "bold", "recap", "story"]
+    public static let tags: [String] = ["background", "gradient", "steps", "pixel", "blocks", "stairs", "flat", "bold", "recap", "story"]
     public static let phase: Int = 1
     public static let functionName = "flair_stepped_gradient_frag"
     public static let uniformByteLength: Int = 1072
@@ -3444,7 +3444,7 @@ public struct TransitionColorBlocks: FlairEffect, Codable, Sendable, Equatable {
     public static let effectName = "Colour blocks"
     public static let category = "transition"
     public static let effectDescription = "Bands of flat colour sweep across in staggered rows, covering one picture and uncovering the next behind them. Loops back and forth; or turn Animate off and set Progress."
-    public static let tags: [String] = ["transition", "image", "slideshow", "block", "band", "wipe", "flat", "bold", "recap", "story"]
+    public static let tags: [String] = ["transition", "image", "slideshow", "blocks", "band", "wipe", "flat", "bold", "recap", "story"]
     public static let phase: Int = 2
     public static let functionName = "flair_transition_color_blocks_frag"
     public static let uniformByteLength: Int = 1104
