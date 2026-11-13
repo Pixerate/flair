@@ -1,5 +1,218 @@
 [
   {
+    "id": "network-bloom",
+    "name": "Network bloom",
+    "kind": "shader",
+    "category": "particles",
+    "description": "A knowledge graph branching into being: a gold hub flares, cold blue comets shoot out along its spokes and land as pink nodes in a flash, each throwing out smaller comets that land as leaves, and the spokes warm from blue to gold as the graph settles; it holds, fades and blooms again, an intro for the live network.",
+    "tags": [
+      "background",
+      "particles",
+      "network",
+      "graph",
+      "web",
+      "tech",
+      "data",
+      "hero",
+      "intro",
+      "burst"
+    ],
+    "controls": [
+      {
+        "n": "uHub",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            242,
+            194,
+            122
+          ]
+        },
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uComet",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            79,
+            200,
+            255
+          ]
+        },
+        "l": "Comets",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uSpoke",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            240,
+            200,
+            140
+          ]
+        },
+        "l": "Settled spokes",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uBranch",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            229,
+            143,
+            176
+          ]
+        },
+        "l": "Branch nodes",
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "uLeafA",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            156,
+            124,
+            245
+          ]
+        },
+        "l": "Leaves 1",
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "uLeafB",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            79,
+            200,
+            160
+          ]
+        },
+        "l": "Leaves 2",
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "uBranches",
+        "t": "int",
+        "d": 12,
+        "min": 3,
+        "max": 16,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uLeaves",
+        "t": "int",
+        "d": 3,
+        "l": "Leaves per branch",
+        "max": 4,
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uSpread",
+        "t": "float",
+        "d": 0.44,
+        "min": 0.15,
+        "max": 0.6,
+        "b": 3,
+        "line": 11
+      },
+      {
+        "n": "uGlow",
+        "t": "float",
+        "d": 1,
+        "max": 2,
+        "b": 3,
+        "line": 12
+      },
+      {
+        "n": "uSeed",
+        "t": "float",
+        "d": 7,
+        "l": "Layout",
+        "max": 100,
+        "s": 1,
+        "b": 3,
+        "line": 13
+      },
+      {
+        "n": "uAnimate",
+        "t": "bool",
+        "d": true,
+        "line": 14
+      },
+      {
+        "n": "uCycle",
+        "t": "float",
+        "d": 6,
+        "l": "Cycle (s)",
+        "min": 3,
+        "max": 15,
+        "b": 3,
+        "line": 15
+      },
+      {
+        "n": "uProgress",
+        "t": "float",
+        "d": 0.35,
+        "l": "Progress (when still)",
+        "b": 3,
+        "line": 16
+      },
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            11,
+            26,
+            30
+          ]
+        },
+        "c": 1,
+        "line": 17
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Background opacity",
+        "b": 3,
+        "line": 18
+      }
+    ],
+    "presets": [
+      "Overlay",
+      "Still, mid-bloom",
+      "Ember",
+      "Sparse"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "swiftReady": true,
+    "animated": true,
+    "module": "shaders/web",
+    "addedAt": "2026-11-13T16:44:56Z",
+    "commitHash": "a3283333efceb4e1a34cb1b07a8994e3bd17db11",
+    "order": 697
+  },
+  {
     "id": "metric-strip",
     "name": "Metric strip",
     "kind": "vector",
@@ -3607,184 +3820,5 @@
     "addedAt": "2026-11-12T20:51:27Z",
     "commitHash": "4e3538b11a401136b2233e39ac0ab0861fd8857e",
     "order": 678
-  },
-  {
-    "id": "ringed-orb",
-    "name": "Ringed orb",
-    "kind": "shader",
-    "category": "loader",
-    "description": "A glossy orb wrapped in a slowly turning ring of fine dashes and drifting specks, on a dark halo disk with a light sweeping round its rim; a hero icon or a thinking indicator.",
-    "tags": [
-      "loader",
-      "orbs",
-      "ring",
-      "glow",
-      "hero",
-      "thinking",
-      "ai",
-      "tech",
-      "overlay"
-    ],
-    "controls": [
-      {
-        "n": "uOrb",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            183,
-            164,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "uRim",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            123,
-            92,
-            255
-          ]
-        },
-        "l": "Orb rim",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uRing",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            156,
-            140,
-            245
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uAccent",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            94,
-            230,
-            216
-          ]
-        },
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uDisk",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            14,
-            43,
-            48
-          ]
-        },
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "uDiskAlpha",
-        "t": "float",
-        "d": 0.7,
-        "l": "Disk opacity",
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uSize",
-        "t": "float",
-        "d": 0.8,
-        "min": 0.3,
-        "max": 0.98,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uTicks",
-        "t": "int",
-        "d": 150,
-        "l": "Dashes",
-        "min": 40,
-        "max": 240,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 1,
-        "max": 3,
-        "b": 3,
-        "line": 10
-      },
-      {
-        "n": "uSweep",
-        "t": "float",
-        "d": 1,
-        "l": "Rim light speed",
-        "max": 3,
-        "b": 3,
-        "line": 11
-      },
-      {
-        "n": "uGlow",
-        "t": "float",
-        "d": 1,
-        "max": 2,
-        "b": 3,
-        "line": 12
-      },
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            15,
-            23,
-            42
-          ]
-        },
-        "c": 1,
-        "line": 13
-      },
-      {
-        "n": "uBackgroundAlpha",
-        "t": "float",
-        "d": 0,
-        "l": "Background opacity",
-        "b": 3,
-        "line": 14
-      }
-    ],
-    "presets": [
-      "With background",
-      "Gold",
-      "Cyan",
-      "No disk"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": true
-    },
-    "swiftReady": true,
-    "transparent": true,
-    "animated": true,
-    "module": "shaders/loaders",
-    "addedAt": "2026-11-12T20:06:30Z",
-    "commitHash": "3395927cebda31c797bb71f1f583fc3e72f5c7d3",
-    "order": 677
   }
 ]
