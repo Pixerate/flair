@@ -1,734 +1,5 @@
 [
   {
-    "id": "selection-frame",
-    "name": "Selection frame",
-    "kind": "vector",
-    "category": "annotation",
-    "description": "Two lines of a headline swinging in at a tilt, each caught in a design tool's selection box with corner handles and a collaborator's name tag, then straightening with a little overshoot before the boxes let go.",
-    "tags": [
-      "annotation",
-      "selection",
-      "design-tool",
-      "collaboration",
-      "headline",
-      "frame",
-      "product",
-      "product-demo"
-    ],
-    "controls": [
-      {
-        "n": "line1",
-        "t": "text",
-        "d": "Plan it out with",
-        "l": "First line",
-        "line": 1
-      },
-      {
-        "n": "line2",
-        "t": "text",
-        "d": "Shared whiteboards",
-        "l": "Second line",
-        "line": 2
-      },
-      {
-        "n": "tag1",
-        "t": "text",
-        "d": "Rosa",
-        "l": "First name tag",
-        "line": 3
-      },
-      {
-        "n": "tag2",
-        "t": "text",
-        "d": "Dev",
-        "l": "Second name tag",
-        "line": 4
-      },
-      {
-        "n": "x",
-        "t": "float",
-        "d": 50,
-        "l": "Centre x (%)",
-        "max": 100,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "y",
-        "t": "float",
-        "d": 50,
-        "l": "Centre y (%)",
-        "max": 100,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "size",
-        "t": "float",
-        "d": 104,
-        "l": "Text size",
-        "min": 32,
-        "max": 200,
-        "s": 1,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "tilt",
-        "t": "float",
-        "d": -7,
-        "l": "Entry tilt (°)",
-        "min": -20,
-        "max": 20,
-        "s": 0.5,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "ink",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            20,
-            20,
-            19
-          ]
-        },
-        "l": "Text colour",
-        "c": 1,
-        "line": 9
-      },
-      {
-        "n": "frame1Color",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            217,
-            119,
-            87
-          ]
-        },
-        "l": "First frame",
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "frame2Color",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            194,
-            71,
-            127
-          ]
-        },
-        "l": "Second frame",
-        "c": 1,
-        "line": 11
-      },
-      {
-        "n": "handle",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "l": "Handles",
-        "c": 1,
-        "line": 12
-      },
-      {
-        "n": "tagInk",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "l": "Name colour",
-        "c": 1,
-        "line": 13
-      },
-      {
-        "n": "keep",
-        "t": "bool",
-        "d": false,
-        "l": "Keep the frames",
-        "line": 14
-      },
-      {
-        "n": "hold",
-        "t": "float",
-        "d": 2,
-        "l": "Hold (s)",
-        "min": 0.5,
-        "max": 20,
-        "s": 0.5,
-        "b": 3,
-        "line": 15
-      },
-      {
-        "n": "font",
-        "t": "text",
-        "d": "'Tiempos Headline', Georgia, 'Times New Roman', serif",
-        "line": 16
-      }
-    ],
-    "presets": [
-      "Dark",
-      "Kept frames",
-      "Blue and violet"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "line1",
-          "label": "First line",
-          "holds": "copy",
-          "default": "Plan it out with"
-        },
-        {
-          "name": "line2",
-          "label": "Second line",
-          "holds": "copy",
-          "default": "Shared whiteboards"
-        },
-        {
-          "name": "tag1",
-          "label": "First name tag",
-          "holds": "copy",
-          "default": "Rosa"
-        },
-        {
-          "name": "tag2",
-          "label": "Second name tag",
-          "holds": "copy",
-          "default": "Dev"
-        },
-        {
-          "name": "font",
-          "label": "Font",
-          "holds": "font",
-          "default": "'Tiempos Headline', Georgia, 'Times New Roman', serif"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 300,
-    "animated": true,
-    "duration": 5350,
-    "module": "annotation",
-    "addedAt": "2026-11-13T18:10:32.694Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "logo-cloud",
-    "name": "Logo cloud",
-    "kind": "vector",
-    "category": "ui",
-    "description": "App tiles scattered in depth round a central hub, the near ones big and soft, the far ones small, each layer drifting toward the viewer at its own pace before every tile flies into the hub and it pulses: integrations, connectors or partners.",
-    "tags": [
-      "ui",
-      "logo",
-      "integration",
-      "connector",
-      "depth",
-      "parallax",
-      "saas",
-      "social-proof"
-    ],
-    "controls": [
-      {
-        "n": "labels",
-        "t": "text",
-        "d": "Atlas,Beacon,Cobalt,Delta,Ember,Flux,Grove,Helix,Ion,Juno,Kite,Lumen",
-        "l": "Tiles (comma-separated names, up to 12; each shows its initials)",
-        "line": 1
-      },
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            247,
-            245,
-            240
-          ]
-        },
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "backdrop",
-        "t": "bool",
-        "d": true,
-        "l": "Background",
-        "line": 3
-      },
-      {
-        "n": "tile",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "l": "Tiles",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "ink",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            31,
-            41,
-            55
-          ]
-        },
-        "l": "Edges",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "hubColor",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            139,
-            92,
-            246
-          ]
-        },
-        "l": "Hub",
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "hubInk",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "l": "Hub icon",
-        "c": 1,
-        "line": 7
-      },
-      {
-        "n": "c1",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            245,
-            158,
-            11
-          ]
-        },
-        "l": "Colour 1",
-        "c": 1,
-        "line": 8
-      },
-      {
-        "n": "c2",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            16,
-            185,
-            129
-          ]
-        },
-        "l": "Colour 2",
-        "c": 1,
-        "line": 9
-      },
-      {
-        "n": "c3",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            59,
-            130,
-            246
-          ]
-        },
-        "l": "Colour 3",
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "c4",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            236,
-            72,
-            153
-          ]
-        },
-        "l": "Colour 4",
-        "c": 1,
-        "line": 11
-      },
-      {
-        "n": "c5",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            239,
-            68,
-            68
-          ]
-        },
-        "l": "Colour 5",
-        "c": 1,
-        "line": 12
-      },
-      {
-        "n": "c6",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            17,
-            24,
-            39
-          ]
-        },
-        "l": "Colour 6",
-        "c": 1,
-        "line": 13
-      },
-      {
-        "n": "blur",
-        "t": "float",
-        "d": 3,
-        "l": "Depth blur",
-        "max": 8,
-        "s": 0.5,
-        "b": 3,
-        "line": 14
-      },
-      {
-        "n": "drift",
-        "t": "float",
-        "d": 0.12,
-        "l": "Drift toward the viewer",
-        "max": 0.3,
-        "s": 0.01,
-        "b": 3,
-        "line": 15
-      },
-      {
-        "n": "seed",
-        "t": "int",
-        "d": 5,
-        "max": 99,
-        "b": 3,
-        "line": 16
-      }
-    ],
-    "presets": [
-      "Dark",
-      "Sharp",
-      "Over the page"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "labels",
-          "label": "Tiles (comma-separated names, up to 12; each shows its initials)",
-          "holds": "copy",
-          "default": "Atlas,Beacon,Cobalt,Delta,Ember,Flux,Grove,Helix,Ion,Juno,Kite,Lumen"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 900,
-    "animated": true,
-    "duration": 5790,
-    "module": "ui",
-    "addedAt": "2026-11-13T18:10:32.694Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "sticky-board",
-    "name": "Sticky board",
-    "kind": "vector",
-    "category": "data",
-    "description": "A dotted whiteboard where a hand-drawn road winds across from left to right behind a collaborator's cursor, sticky notes popping up at each stop with a day pill on the road, as the view pulls back from the first note to the whole plan.",
-    "tags": [
-      "whiteboard",
-      "timeline",
-      "roadmap",
-      "sticky-note",
-      "plan",
-      "collaboration",
-      "product-demo"
-    ],
-    "controls": [
-      {
-        "n": "titles",
-        "t": "text",
-        "d": "Lock flavour,Plan forecast,Order supplies,First bake,Box up,Deliver",
-        "l": "Notes (comma-separated, up to 6)",
-        "line": 1
-      },
-      {
-        "n": "subtitles",
-        "t": "text",
-        "d": "Huckleberry,Pre-orders,Flour and fruit,Test batch,Gift boxes,Holiday rush",
-        "l": "Note details (comma-separated)",
-        "line": 2
-      },
-      {
-        "n": "days",
-        "t": "text",
-        "d": "Day 1,Day 3,Day 5,Day 7,Day 9,Day 12",
-        "l": "Day pills (comma-separated)",
-        "line": 3
-      },
-      {
-        "n": "heading",
-        "t": "text",
-        "d": "Launch timeline",
-        "line": 4
-      },
-      {
-        "n": "cursorName",
-        "t": "text",
-        "d": "Ada",
-        "line": 5
-      },
-      {
-        "n": "board",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            250,
-            247,
-            240
-          ]
-        },
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "backdrop",
-        "t": "bool",
-        "d": true,
-        "l": "Board",
-        "line": 7
-      },
-      {
-        "n": "dots",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            217,
-            211,
-            197
-          ]
-        },
-        "c": 1,
-        "line": 8
-      },
-      {
-        "n": "headingInk",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            43,
-            39,
-            34
-          ]
-        },
-        "l": "Heading colour",
-        "c": 1,
-        "line": 9
-      },
-      {
-        "n": "road",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            237,
-            192,
-            138
-          ]
-        },
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "note",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            252,
-            233,
-            168
-          ]
-        },
-        "l": "Notes",
-        "c": 1,
-        "line": 11
-      },
-      {
-        "n": "note2",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            248,
-            210,
-            190
-          ]
-        },
-        "l": "Every third note",
-        "c": 1,
-        "line": 12
-      },
-      {
-        "n": "noteInk",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            59,
-            51,
-            38
-          ]
-        },
-        "l": "Note text",
-        "c": 1,
-        "line": 13
-      },
-      {
-        "n": "pill",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            200,
-            85,
-            61
-          ]
-        },
-        "l": "Day pills",
-        "c": 1,
-        "line": 14
-      },
-      {
-        "n": "pillInk",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "l": "Day pill text",
-        "c": 1,
-        "line": 15
-      },
-      {
-        "n": "cursor",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            217,
-            119,
-            87
-          ]
-        },
-        "c": 1,
-        "line": 16
-      },
-      {
-        "n": "seed",
-        "t": "int",
-        "d": 4,
-        "max": 99,
-        "b": 3,
-        "line": 17
-      }
-    ],
-    "presets": [
-      "Dark board",
-      "Four stops",
-      "Over the page"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "titles",
-          "label": "Notes (comma-separated, up to 6)",
-          "holds": "copy",
-          "default": "Lock flavour,Plan forecast,Order supplies,First bake,Box up,Deliver"
-        },
-        {
-          "name": "subtitles",
-          "label": "Note details (comma-separated)",
-          "holds": "copy",
-          "default": "Huckleberry,Pre-orders,Flour and fruit,Test batch,Gift boxes,Holiday rush"
-        },
-        {
-          "name": "days",
-          "label": "Day pills (comma-separated)",
-          "holds": "copy",
-          "default": "Day 1,Day 3,Day 5,Day 7,Day 9,Day 12"
-        },
-        {
-          "name": "heading",
-          "label": "Heading",
-          "holds": "copy",
-          "default": "Launch timeline"
-        },
-        {
-          "name": "cursorName",
-          "label": "Cursor name",
-          "holds": "copy",
-          "default": "Ada"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 1600,
-    "animated": true,
-    "duration": 6270,
-    "module": "data",
-    "addedAt": "2026-11-13T18:10:32.694Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
     "id": "sheet-fill",
     "name": "Sheet fill",
     "kind": "vector",
@@ -1010,9 +281,738 @@
     "animated": true,
     "duration": 7500,
     "module": "data",
-    "addedAt": "2026-11-13T18:10:32.694Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-11-13T18:11:09Z",
+    "commitHash": "f70fc233b9445acd216e34b5ea019855f0097e1f",
+    "order": 702
+  },
+  {
+    "id": "sticky-board",
+    "name": "Sticky board",
+    "kind": "vector",
+    "category": "data",
+    "description": "A dotted whiteboard where a hand-drawn road winds across from left to right behind a collaborator's cursor, sticky notes popping up at each stop with a day pill on the road, as the view pulls back from the first note to the whole plan.",
+    "tags": [
+      "whiteboard",
+      "timeline",
+      "roadmap",
+      "sticky-note",
+      "plan",
+      "collaboration",
+      "product-demo"
+    ],
+    "controls": [
+      {
+        "n": "titles",
+        "t": "text",
+        "d": "Lock flavour,Plan forecast,Order supplies,First bake,Box up,Deliver",
+        "l": "Notes (comma-separated, up to 6)",
+        "line": 1
+      },
+      {
+        "n": "subtitles",
+        "t": "text",
+        "d": "Huckleberry,Pre-orders,Flour and fruit,Test batch,Gift boxes,Holiday rush",
+        "l": "Note details (comma-separated)",
+        "line": 2
+      },
+      {
+        "n": "days",
+        "t": "text",
+        "d": "Day 1,Day 3,Day 5,Day 7,Day 9,Day 12",
+        "l": "Day pills (comma-separated)",
+        "line": 3
+      },
+      {
+        "n": "heading",
+        "t": "text",
+        "d": "Launch timeline",
+        "line": 4
+      },
+      {
+        "n": "cursorName",
+        "t": "text",
+        "d": "Ada",
+        "line": 5
+      },
+      {
+        "n": "board",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            250,
+            247,
+            240
+          ]
+        },
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "backdrop",
+        "t": "bool",
+        "d": true,
+        "l": "Board",
+        "line": 7
+      },
+      {
+        "n": "dots",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            217,
+            211,
+            197
+          ]
+        },
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "headingInk",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            43,
+            39,
+            34
+          ]
+        },
+        "l": "Heading colour",
+        "c": 1,
+        "line": 9
+      },
+      {
+        "n": "road",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            237,
+            192,
+            138
+          ]
+        },
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "note",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            252,
+            233,
+            168
+          ]
+        },
+        "l": "Notes",
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "note2",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            248,
+            210,
+            190
+          ]
+        },
+        "l": "Every third note",
+        "c": 1,
+        "line": 12
+      },
+      {
+        "n": "noteInk",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            59,
+            51,
+            38
+          ]
+        },
+        "l": "Note text",
+        "c": 1,
+        "line": 13
+      },
+      {
+        "n": "pill",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            200,
+            85,
+            61
+          ]
+        },
+        "l": "Day pills",
+        "c": 1,
+        "line": 14
+      },
+      {
+        "n": "pillInk",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "l": "Day pill text",
+        "c": 1,
+        "line": 15
+      },
+      {
+        "n": "cursor",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            217,
+            119,
+            87
+          ]
+        },
+        "c": 1,
+        "line": 16
+      },
+      {
+        "n": "seed",
+        "t": "int",
+        "d": 4,
+        "max": 99,
+        "b": 3,
+        "line": 17
+      }
+    ],
+    "presets": [
+      "Dark board",
+      "Four stops",
+      "Over the page"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "titles",
+          "label": "Notes (comma-separated, up to 6)",
+          "holds": "copy",
+          "default": "Lock flavour,Plan forecast,Order supplies,First bake,Box up,Deliver"
+        },
+        {
+          "name": "subtitles",
+          "label": "Note details (comma-separated)",
+          "holds": "copy",
+          "default": "Huckleberry,Pre-orders,Flour and fruit,Test batch,Gift boxes,Holiday rush"
+        },
+        {
+          "name": "days",
+          "label": "Day pills (comma-separated)",
+          "holds": "copy",
+          "default": "Day 1,Day 3,Day 5,Day 7,Day 9,Day 12"
+        },
+        {
+          "name": "heading",
+          "label": "Heading",
+          "holds": "copy",
+          "default": "Launch timeline"
+        },
+        {
+          "name": "cursorName",
+          "label": "Cursor name",
+          "holds": "copy",
+          "default": "Ada"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 1600,
+    "animated": true,
+    "duration": 6270,
+    "module": "data",
+    "addedAt": "2026-11-13T18:11:09Z",
+    "commitHash": "f70fc233b9445acd216e34b5ea019855f0097e1f",
+    "order": 701
+  },
+  {
+    "id": "logo-cloud",
+    "name": "Logo cloud",
+    "kind": "vector",
+    "category": "ui",
+    "description": "App tiles scattered in depth round a central hub, the near ones big and soft, the far ones small, each layer drifting toward the viewer at its own pace before every tile flies into the hub and it pulses: integrations, connectors or partners.",
+    "tags": [
+      "ui",
+      "logo",
+      "integration",
+      "connector",
+      "depth",
+      "parallax",
+      "saas",
+      "social-proof"
+    ],
+    "controls": [
+      {
+        "n": "labels",
+        "t": "text",
+        "d": "Atlas,Beacon,Cobalt,Delta,Ember,Flux,Grove,Helix,Ion,Juno,Kite,Lumen",
+        "l": "Tiles (comma-separated names, up to 12; each shows its initials)",
+        "line": 1
+      },
+      {
+        "n": "background",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            247,
+            245,
+            240
+          ]
+        },
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "backdrop",
+        "t": "bool",
+        "d": true,
+        "l": "Background",
+        "line": 3
+      },
+      {
+        "n": "tile",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "l": "Tiles",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "ink",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            31,
+            41,
+            55
+          ]
+        },
+        "l": "Edges",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "hubColor",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            139,
+            92,
+            246
+          ]
+        },
+        "l": "Hub",
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "hubInk",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "l": "Hub icon",
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "c1",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            245,
+            158,
+            11
+          ]
+        },
+        "l": "Colour 1",
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "c2",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            16,
+            185,
+            129
+          ]
+        },
+        "l": "Colour 2",
+        "c": 1,
+        "line": 9
+      },
+      {
+        "n": "c3",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            59,
+            130,
+            246
+          ]
+        },
+        "l": "Colour 3",
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "c4",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            236,
+            72,
+            153
+          ]
+        },
+        "l": "Colour 4",
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "c5",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            239,
+            68,
+            68
+          ]
+        },
+        "l": "Colour 5",
+        "c": 1,
+        "line": 12
+      },
+      {
+        "n": "c6",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            17,
+            24,
+            39
+          ]
+        },
+        "l": "Colour 6",
+        "c": 1,
+        "line": 13
+      },
+      {
+        "n": "blur",
+        "t": "float",
+        "d": 3,
+        "l": "Depth blur",
+        "max": 8,
+        "s": 0.5,
+        "b": 3,
+        "line": 14
+      },
+      {
+        "n": "drift",
+        "t": "float",
+        "d": 0.12,
+        "l": "Drift toward the viewer",
+        "max": 0.3,
+        "s": 0.01,
+        "b": 3,
+        "line": 15
+      },
+      {
+        "n": "seed",
+        "t": "int",
+        "d": 5,
+        "max": 99,
+        "b": 3,
+        "line": 16
+      }
+    ],
+    "presets": [
+      "Dark",
+      "Sharp",
+      "Over the page"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "labels",
+          "label": "Tiles (comma-separated names, up to 12; each shows its initials)",
+          "holds": "copy",
+          "default": "Atlas,Beacon,Cobalt,Delta,Ember,Flux,Grove,Helix,Ion,Juno,Kite,Lumen"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 900,
+    "animated": true,
+    "duration": 5790,
+    "module": "ui",
+    "addedAt": "2026-11-13T18:11:09Z",
+    "commitHash": "f70fc233b9445acd216e34b5ea019855f0097e1f",
+    "order": 700
+  },
+  {
+    "id": "selection-frame",
+    "name": "Selection frame",
+    "kind": "vector",
+    "category": "annotation",
+    "description": "Two lines of a headline swinging in at a tilt, each caught in a design tool's selection box with corner handles and a collaborator's name tag, then straightening with a little overshoot before the boxes let go.",
+    "tags": [
+      "annotation",
+      "selection",
+      "design-tool",
+      "collaboration",
+      "headline",
+      "frame",
+      "product",
+      "product-demo"
+    ],
+    "controls": [
+      {
+        "n": "line1",
+        "t": "text",
+        "d": "Plan it out with",
+        "l": "First line",
+        "line": 1
+      },
+      {
+        "n": "line2",
+        "t": "text",
+        "d": "Shared whiteboards",
+        "l": "Second line",
+        "line": 2
+      },
+      {
+        "n": "tag1",
+        "t": "text",
+        "d": "Rosa",
+        "l": "First name tag",
+        "line": 3
+      },
+      {
+        "n": "tag2",
+        "t": "text",
+        "d": "Dev",
+        "l": "Second name tag",
+        "line": 4
+      },
+      {
+        "n": "x",
+        "t": "float",
+        "d": 50,
+        "l": "Centre x (%)",
+        "max": 100,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "y",
+        "t": "float",
+        "d": 50,
+        "l": "Centre y (%)",
+        "max": 100,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "size",
+        "t": "float",
+        "d": 104,
+        "l": "Text size",
+        "min": 32,
+        "max": 200,
+        "s": 1,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "tilt",
+        "t": "float",
+        "d": -7,
+        "l": "Entry tilt (°)",
+        "min": -20,
+        "max": 20,
+        "s": 0.5,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "ink",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            20,
+            20,
+            19
+          ]
+        },
+        "l": "Text colour",
+        "c": 1,
+        "line": 9
+      },
+      {
+        "n": "frame1Color",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            217,
+            119,
+            87
+          ]
+        },
+        "l": "First frame",
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "frame2Color",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            194,
+            71,
+            127
+          ]
+        },
+        "l": "Second frame",
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "handle",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "l": "Handles",
+        "c": 1,
+        "line": 12
+      },
+      {
+        "n": "tagInk",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "l": "Name colour",
+        "c": 1,
+        "line": 13
+      },
+      {
+        "n": "keep",
+        "t": "bool",
+        "d": false,
+        "l": "Keep the frames",
+        "line": 14
+      },
+      {
+        "n": "hold",
+        "t": "float",
+        "d": 2,
+        "l": "Hold (s)",
+        "min": 0.5,
+        "max": 20,
+        "s": 0.5,
+        "b": 3,
+        "line": 15
+      },
+      {
+        "n": "font",
+        "t": "text",
+        "d": "'Tiempos Headline', Georgia, 'Times New Roman', serif",
+        "line": 16
+      }
+    ],
+    "presets": [
+      "Dark",
+      "Kept frames",
+      "Blue and violet"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "line1",
+          "label": "First line",
+          "holds": "copy",
+          "default": "Plan it out with"
+        },
+        {
+          "name": "line2",
+          "label": "Second line",
+          "holds": "copy",
+          "default": "Shared whiteboards"
+        },
+        {
+          "name": "tag1",
+          "label": "First name tag",
+          "holds": "copy",
+          "default": "Rosa"
+        },
+        {
+          "name": "tag2",
+          "label": "Second name tag",
+          "holds": "copy",
+          "default": "Dev"
+        },
+        {
+          "name": "font",
+          "label": "Font",
+          "holds": "font",
+          "default": "'Tiempos Headline', Georgia, 'Times New Roman', serif"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 300,
+    "animated": true,
+    "duration": 5350,
+    "module": "annotation",
+    "addedAt": "2026-11-13T18:11:09Z",
+    "commitHash": "f70fc233b9445acd216e34b5ea019855f0097e1f",
+    "order": 699
   },
   {
     "id": "presence-cursors",
@@ -1252,9 +1252,9 @@
     "animated": true,
     "duration": 8435,
     "module": "annotation",
-    "addedAt": "2026-11-13T18:10:32.693Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-11-13T18:11:09Z",
+    "commitHash": "f70fc233b9445acd216e34b5ea019855f0097e1f",
+    "order": 698
   },
   {
     "id": "network-bloom",
