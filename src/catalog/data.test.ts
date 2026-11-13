@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { svgAnimatedMarkup } from "../vector/animated.js";
 import { svgFrame, svgMotionIssues, type SvgMotion } from "../vector/motion.js";
 import { svgDuration } from "../vector/svg.js";
-import { dataEffects, decimalsOf, fitLabel, parseLabels, parseNumberList, parseRace, parseSeries, parseShares, parseStat, sentimentMood, sentimentTile, statCards, yearScrubber } from "./data.js";
+import { branchMenu, dataEffects, decimalsOf, fitLabel, parseLabels, parseNumberList, parseRace, parseSeries, parseShares, parseStat, sentimentMood, sentimentTile, statCards, yearScrubber } from "./data.js";
 import { iconEffects } from "./icons.js";
 import { effectControls, effectDefaults, effectInputs, findEffects, getEffect, renderVectorEffect, type VectorEffect } from "./index.js";
 
@@ -23,7 +23,7 @@ const BAD = ["", "abc", ",,,", "-5,-2", "1e400", "Café 日本 🎉 & <b>", "$12
 describe("data and icon effects", () => {
   it("are all in the catalog, in their categories", () => {
     expect(findEffects({ category: "data" }).map((e) => e.id)).toEqual(
-      expect.arrayContaining(["donut-chart", "pie-chart", "gauge", "bar-race", "sparkline", "leaderboard", "area-chart", "kpi-tile", "rolodex", "year-scrubber", "sentiment-tile"]),
+      expect.arrayContaining(["donut-chart", "pie-chart", "gauge", "bar-race", "sparkline", "leaderboard", "area-chart", "kpi-tile", "rolodex", "year-scrubber", "sentiment-tile", "branch-menu"]),
     );
     expect(findEffects({ category: "icon" }).map((e) => e.id)).toEqual(
       expect.arrayContaining(["weather-icons", "notification-bell", "animated-arrows", "emoji-reactions", "bookmark-star", "trash-delete", "lock-unlock", "wifi-signal"]),
@@ -345,5 +345,42 @@ describe("sentiment tile", () => {
     // Taller bars reach higher.
     expect(Number(d.colTop2)).toBeLessThan(Number(d.colTop0));
     for (const values of BAD) clean(render("sentiment-tile", { values, label: values, caption: values, rating: values }));
+  });
+});
+
+describe("branch menu", () => {
+  const at = (values: Record<string, unknown>) => {
+    const all = { ...Object.fromEntries(effectControls(branchMenu).map((c) => [c.name, c.default])), ...values };
+    return branchMenu.derived!(all as never) as Record<string, string | number>;
+  };
+  const shown = (d: Record<string, string | number>) => Array.from({ length: 6 }, (_, i) => d[`show${i}`]).filter((s) => s === "inline").length;
+
+  it("stacks one tile per value, centred on the orb, each reached by its own curve", () => {
+    const d = at({});
+    expect(shown(d)).toBe(5);
+    expect(shown(at({ values: "1,2,3,4,5,6,7,8" }))).toBe(6);
+    // The stack is centred on the orb's height.
+    const middle = (Number(d.y0) + Number(d.y4) + Number(d.h4)) / 2;
+    expect(middle).toBeCloseTo(130, 0);
+    // Each curve ends at the middle of its tile's left edge.
+    expect(String(d.link2)).toMatch(new RegExp(`214 ${Number(d.y2) + Number(d.h2) / 2}$`));
+  });
+
+  it("lights only the chosen tile, keeps the choice in range and can choose none", () => {
+    expect([0, 1, 2, 3, 4].map((i) => at({})[`gold${i}`])).toEqual([0, 0, 1, 0, 0]);
+    const past = at({ values: "1,2", chosen: 6 });
+    expect([past.gold0, past.gold1]).toEqual([0, 1]);
+    expect(past.chosenLink).toBe(past.link1);
+    expect(at({ chosen: 0 }).chosenShow).toBe("none");
+  });
+
+  it("counts numbers with their prefix and suffix and shows text as it is", () => {
+    const d = at({ values: "$4.2M,Live" });
+    expect([d.val0, d.dec0, d.fmt0, d.fmt1]).toEqual([4.2, 1, "${n}M", "Live"]);
+    // The chosen tile lights only once every tile is in.
+    const motion = render("branch-menu");
+    const lastLand = Math.max(...motion.animate!.filter((a) => /^branchMenuTile\d$/.test(a.id ?? "")).map((a) => Number(a.delay)));
+    const gold = motion.animate!.find((a) => a.id === "branchMenuChosenLink" && a.draw)!;
+    expect(Number(gold.delay)).toBeGreaterThan(lastLand);
   });
 });
