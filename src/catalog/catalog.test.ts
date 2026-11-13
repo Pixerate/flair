@@ -7,7 +7,7 @@ import type { EffectCategory, ShaderEffect, VectorEffect } from "./types.js";
 import { CREDIT_SLOTS, parseCredits } from "./cinematic.js";
 import { parseTerminalLines, TERMINAL_LINES } from "./crt.js";
 import { EMERGENCY_MAX_RATE } from "./shaders/emergency.js";
-import { insightCards, wrapText } from "./ui.js";
+import { detailPanel, insightCards, wrapText } from "./ui.js";
 import {
   EFFECT_CATEGORIES,
   EFFECT_CATEGORY_GROUPS,
@@ -2195,7 +2195,7 @@ describe("scroll effects", () => {
 describe("ui effects", () => {
   const ui = findEffects({ category: "ui" });
   const shaders = ["border-beam", "gradient-border", "meteors", "background-beams", "grid-spotlight", "dot-grid", "glass-card", "liquid-glass", "noise-grain-bg", "dichroic-glass", "metal-card", "card-spotlight"];
-  const vectors = ["marquee", "number-ticker", "animated-badge", "app-window", "swipe-stack", "pack-opening", "ai-prompt-bar", "insight-cards"];
+  const vectors = ["marquee", "number-ticker", "animated-badge", "app-window", "swipe-stack", "pack-opening", "ai-prompt-bar", "insight-cards", "detail-panel"];
   const render = (id: string, values: Record<string, unknown> = {}) => {
     const effect = getEffect(id)!;
     if (effect.kind !== "vector") throw new Error("vector expected");
@@ -2223,7 +2223,7 @@ describe("ui effects", () => {
   });
 
   it("prefixes every vector id with the effect's name", () => {
-    for (const [id, prefix] of [["marquee", "marquee"], ["number-ticker", "numberTicker"], ["animated-badge", "animatedBadge"], ["swipe-stack", "swipeStack"], ["pack-opening", "packOpening"], ["ai-prompt-bar", "aiPromptBar"], ["insight-cards", "insightCards"]] as const)
+    for (const [id, prefix] of [["marquee", "marquee"], ["number-ticker", "numberTicker"], ["animated-badge", "animatedBadge"], ["swipe-stack", "swipeStack"], ["pack-opening", "packOpening"], ["ai-prompt-bar", "aiPromptBar"], ["insight-cards", "insightCards"], ["detail-panel", "detailPanel"]] as const)
       for (const [, name] of render(id).svg.matchAll(/\sid="([^"]+)"/g)) expect(name, id).toMatch(new RegExp(`^${prefix}`));
   });
 
@@ -2285,6 +2285,28 @@ describe("ui effects", () => {
     const lastText = Math.max(...motion.animate!.filter((a) => /^insightCardsText\d$/.test(a.id ?? "")).map((a) => Number(a.delay)));
     const flagDraw = motion.animate!.find((a) => a.id === "insightCardsFlag" && a.draw)!;
     expect(Number(flagDraw.delay)).toBeGreaterThan(lastText);
+  });
+
+  it("detail panel swings in from a shape it can morph from, and counts its stats with their prefixes and suffixes", () => {
+    const derive = (values: Record<string, unknown>) => {
+      const all = { ...Object.fromEntries(effectControls(detailPanel).map((c) => [c.name, c.default])), ...values };
+      return detailPanel.derived!(all as never) as Record<string, string | number>;
+    };
+    const d = derive({});
+    // The swing morphs one outline into the other, so both are drawn with the same commands.
+    const commands = (path: string | number) => String(path).replace(/[^A-Z]/g, "");
+    expect(commands(d.outlineOut)).toBe(commands(d.outlineIn));
+    expect(d.outlineOut).not.toBe(d.outlineIn);
+    const product = derive({ stats: "$4.2M,99.9%,Live,12" });
+    expect([product.statVal0, product.statFmt0, product.statVal1, product.statDec1, product.statFmt2]).toEqual([4.2, "${n}M", 99.9, 1, "Live"]);
+    // Long text is fitted, never left to run off the panel; an empty chip is hidden.
+    const long = derive({ title: "word ".repeat(40), rating: "" });
+    expect(String(long.titleText).length).toBeLessThan(80);
+    expect(long.ratingShow).toBe("none");
+    for (const text of ["", "x".repeat(300), "{n} & <b>"]) {
+      const motion = render("detail-panel", { title: text, stats: text, statLabels: text, noteBody: text });
+      expect(JSON.stringify(motion)).not.toMatch(/\{\{|NaN|undefined/);
+    }
   });
 
   it("marquee scrolls exactly one copy per loop, either way, for any words", () => {

@@ -220,7 +220,7 @@
     "module": "shaders/recap",
     "addedAt": "2026-11-13T15:35:59Z",
     "commitHash": "d06df57664d2ac130bc3a2af9fef78a818b98d95",
-    "order": 693
+    "order": 694
   },
   {
     "id": "stretch-text",
@@ -395,7 +395,7 @@
     "module": "shaders/recap",
     "addedAt": "2026-11-13T15:35:59Z",
     "commitHash": "d06df57664d2ac130bc3a2af9fef78a818b98d95",
-    "order": 692
+    "order": 693
   },
   {
     "id": "echo-text",
@@ -585,7 +585,7 @@
     "module": "shaders/recap",
     "addedAt": "2026-11-13T15:35:59Z",
     "commitHash": "d06df57664d2ac130bc3a2af9fef78a818b98d95",
-    "order": 691
+    "order": 692
   },
   {
     "id": "image-photocopy",
@@ -745,7 +745,7 @@
     "module": "shaders/recap",
     "addedAt": "2026-11-13T15:35:59Z",
     "commitHash": "d06df57664d2ac130bc3a2af9fef78a818b98d95",
-    "order": 690
+    "order": 691
   },
   {
     "id": "image-pixel-stretch",
@@ -881,7 +881,7 @@
     "module": "shaders/recap",
     "addedAt": "2026-11-13T15:35:59Z",
     "commitHash": "d06df57664d2ac130bc3a2af9fef78a818b98d95",
-    "order": 689
+    "order": 690
   },
   {
     "id": "shape-tiles",
@@ -1012,7 +1012,7 @@
     "module": "shaders/recap",
     "addedAt": "2026-11-13T15:35:59Z",
     "commitHash": "d06df57664d2ac130bc3a2af9fef78a818b98d95",
-    "order": 688
+    "order": 689
   },
   {
     "id": "concentric-shapes",
@@ -1188,7 +1188,7 @@
     "module": "shaders/recap",
     "addedAt": "2026-11-13T15:35:59Z",
     "commitHash": "d06df57664d2ac130bc3a2af9fef78a818b98d95",
-    "order": 687
+    "order": 688
   },
   {
     "id": "ribbon-bands",
@@ -1353,7 +1353,7 @@
     "module": "shaders/recap",
     "addedAt": "2026-11-13T15:35:59Z",
     "commitHash": "d06df57664d2ac130bc3a2af9fef78a818b98d95",
-    "order": 686
+    "order": 687
   },
   {
     "id": "stepped-gradient",
@@ -1495,6 +1495,306 @@
     "module": "shaders/recap",
     "addedAt": "2026-11-13T15:35:59Z",
     "commitHash": "d06df57664d2ac130bc3a2af9fef78a818b98d95",
+    "order": 686
+  },
+  {
+    "id": "detail-panel",
+    "name": "Detail panel",
+    "kind": "vector",
+    "category": "ui",
+    "description": "A record's detail panel swinging in from the edge of the screen in perspective, then filling in from the top: a category and a typed title, a status badge and a button, a headline metric counting up over rising bars, a grid of four icon stats counting up, and an AI note; a sheen sweeps across it to finish.",
+    "tags": [
+      "ui",
+      "panel",
+      "card",
+      "dashboard",
+      "detail",
+      "ai",
+      "product-demo",
+      "tech",
+      "stat"
+    ],
+    "controls": [
+      {
+        "n": "category",
+        "t": "text",
+        "d": "Healthcare",
+        "line": 1
+      },
+      {
+        "n": "title",
+        "t": "text",
+        "d": "Decree-Law No. 42 of 2022",
+        "line": 2
+      },
+      {
+        "n": "subtitle",
+        "t": "text",
+        "d": "Promulgating the Civil Procedure Code",
+        "line": 3
+      },
+      {
+        "n": "status",
+        "t": "text",
+        "d": "Active",
+        "l": "Status badge",
+        "line": 4
+      },
+      {
+        "n": "updated",
+        "t": "text",
+        "d": "Last updated 01 Oct 2024",
+        "l": "Status note",
+        "line": 5
+      },
+      {
+        "n": "button",
+        "t": "text",
+        "d": "Explore details",
+        "line": 6
+      },
+      {
+        "n": "metricLabel",
+        "t": "text",
+        "d": "Sentiment rate",
+        "line": 7
+      },
+      {
+        "n": "metric",
+        "t": "float",
+        "d": 45,
+        "min": -1000000,
+        "max": 1000000,
+        "s": 0.1,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "metricSuffix",
+        "t": "text",
+        "d": "%",
+        "line": 9
+      },
+      {
+        "n": "rating",
+        "t": "text",
+        "d": "Moderate",
+        "l": "Metric chip (empty hides it)",
+        "line": 10
+      },
+      {
+        "n": "stats",
+        "t": "text",
+        "d": "12,2,18,12",
+        "l": "Stats (comma-separated, four; prefixes and suffixes kept)",
+        "line": 11
+      },
+      {
+        "n": "statLabels",
+        "t": "text",
+        "d": "Public complaints,Related regulations,Services,Entities involved",
+        "l": "Stat labels (comma-separated)",
+        "line": 12
+      },
+      {
+        "n": "noteHeading",
+        "t": "text",
+        "d": "AI Analysis",
+        "line": 13
+      },
+      {
+        "n": "noteTitle",
+        "t": "text",
+        "d": "Propose deregulation",
+        "line": 14
+      },
+      {
+        "n": "noteBody",
+        "t": "text",
+        "d": "Several regulations are out of date.",
+        "l": "Note text",
+        "line": 15
+      },
+      {
+        "n": "background",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            11,
+            26,
+            30
+          ]
+        },
+        "c": 1,
+        "line": 16
+      },
+      {
+        "n": "backdrop",
+        "t": "bool",
+        "d": true,
+        "l": "Background",
+        "line": 17
+      },
+      {
+        "n": "panel",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            18,
+            42,
+            48
+          ]
+        },
+        "c": 1,
+        "line": 18
+      },
+      {
+        "n": "ink",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            227,
+            238,
+            240
+          ]
+        },
+        "l": "Text",
+        "c": 1,
+        "line": 19
+      },
+      {
+        "n": "accent",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            94,
+            200,
+            196
+          ]
+        },
+        "c": 1,
+        "line": 20
+      },
+      {
+        "n": "highlight",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            226,
+            109,
+            92
+          ]
+        },
+        "l": "Metric highlight",
+        "c": 1,
+        "line": 21
+      }
+    ],
+    "presets": [
+      "Light",
+      "Product",
+      "Gold"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "category",
+          "label": "Category",
+          "holds": "copy",
+          "default": "Healthcare"
+        },
+        {
+          "name": "title",
+          "label": "Title",
+          "holds": "copy",
+          "default": "Decree-Law No. 42 of 2022"
+        },
+        {
+          "name": "subtitle",
+          "label": "Subtitle",
+          "holds": "copy",
+          "default": "Promulgating the Civil Procedure Code"
+        },
+        {
+          "name": "status",
+          "label": "Status badge",
+          "holds": "copy",
+          "default": "Active"
+        },
+        {
+          "name": "updated",
+          "label": "Status note",
+          "holds": "copy",
+          "default": "Last updated 01 Oct 2024"
+        },
+        {
+          "name": "button",
+          "label": "Button",
+          "holds": "copy",
+          "default": "Explore details"
+        },
+        {
+          "name": "metricLabel",
+          "label": "Metric label",
+          "holds": "copy",
+          "default": "Sentiment rate"
+        },
+        {
+          "name": "metricSuffix",
+          "label": "Metric suffix",
+          "holds": "copy",
+          "default": "%"
+        },
+        {
+          "name": "rating",
+          "label": "Metric chip (empty hides it)",
+          "holds": "copy",
+          "default": "Moderate"
+        },
+        {
+          "name": "stats",
+          "label": "Stats (comma-separated, four; prefixes and suffixes kept)",
+          "holds": "copy",
+          "default": "12,2,18,12"
+        },
+        {
+          "name": "statLabels",
+          "label": "Stat labels (comma-separated)",
+          "holds": "copy",
+          "default": "Public complaints,Related regulations,Services,Entities involved"
+        },
+        {
+          "name": "noteHeading",
+          "label": "Note heading",
+          "holds": "copy",
+          "default": "AI Analysis"
+        },
+        {
+          "name": "noteTitle",
+          "label": "Note title",
+          "holds": "copy",
+          "default": "Propose deregulation"
+        },
+        {
+          "name": "noteBody",
+          "label": "Note text",
+          "holds": "copy",
+          "default": "Several regulations are out of date."
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 1800,
+    "animated": true,
+    "duration": 7100,
+    "module": "ui",
+    "addedAt": "2026-11-13T15:06:41Z",
+    "commitHash": "46e18da47514704a9d629ebe3c6f3a269ebdc926",
     "order": 685
   },
   {
@@ -3492,169 +3792,5 @@
     "addedAt": "2026-11-12T16:42:07Z",
     "commitHash": "ccddf399228c901c04168efc0e6f80c511836bdb",
     "order": 675
-  },
-  {
-    "id": "relief-emboss",
-    "name": "Embossed picture",
-    "kind": "shader",
-    "category": "relief",
-    "description": "A picture or video pressed into a sheet of paper: its light parts raised and its dark parts sunk (or the other way), lit from one side, keeping as much of its colour as you like.",
-    "tags": [
-      "relief",
-      "emboss",
-      "deboss",
-      "paper",
-      "image",
-      "video",
-      "filter",
-      "white",
-      "letterpress",
-      "plaster"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "portrait"
-        },
-        "l": "Picture",
-        "line": 2,
-        "x": {
-          "filter": "mipmap",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uDepth",
-        "t": "float",
-        "d": 0.6,
-        "l": "Depth (− sinks the light parts)",
-        "min": -1,
-        "b": 3,
-        "line": 3
-      },
-      {
-        "n": "uSmoothing",
-        "t": "float",
-        "d": 0.3,
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "uColour",
-        "t": "float",
-        "d": 0,
-        "l": "Picture colour",
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uSurface",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            243,
-            242,
-            239
-          ]
-        },
-        "l": "Paper",
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "uShade",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            156,
-            158,
-            163
-          ]
-        },
-        "c": 1,
-        "line": 7
-      },
-      {
-        "n": "uLight",
-        "t": "float",
-        "d": 135,
-        "l": "Light from (°)",
-        "max": 360,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uElevation",
-        "t": "float",
-        "d": 40,
-        "l": "Light height (°)",
-        "min": 10,
-        "max": 80,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uGrain",
-        "t": "float",
-        "d": 0.3,
-        "l": "Paper grain",
-        "b": 3,
-        "line": 10
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 11
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "b": 3,
-        "line": 12
-      }
-    ],
-    "presets": [
-      "Debossed",
-      "Plaster",
-      "Tinted",
-      "Landscape"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Picture",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "swiftReady": true,
-    "video": "filter",
-    "animated": false,
-    "module": "shaders/relief",
-    "addedAt": "2026-11-12T13:16:06Z",
-    "commitHash": "fbf8224156bd0335bf49053c57eb46202f417297",
-    "order": 674
   }
 ]

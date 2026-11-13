@@ -1,5 +1,5 @@
 import type { SvgAnimation, SvgMotion } from "../vector/motion.js";
-import { fitLabel } from "./data.js";
+import { fitLabel, parseLabels, parseStat } from "./data.js";
 import { textWidthEm } from "./images.js";
 import type { VectorEffect } from "./types.js";
 
@@ -656,4 +656,207 @@ export const insightCards: VectorEffect = {
   })(),
 };
 
-export const uiEffects: VectorEffect[] = [marquee, numberTicker, animatedBadge, swipeStack, packOpening, aiPromptBar, insightCards];
+// ── Detail panel ───────────────────────────────────────────────────────
+
+/**
+ * A 260×392 panel in a 300×420 frame that swings in from the right edge (its
+ * outline a trapezoid flattening into a rectangle), then fills in from the
+ * top: header, title, a status row, a metric with bars, a grid of four stats
+ * and an AI note. Times are in ms.
+ */
+const DETAIL = {
+  panel: { x: 20, y: 14, w: 260, h: 392, r: 14 },
+  swing: 1000,
+  header: 820,
+  title: 960,
+  status: 1350,
+  metric: 1650,
+  grid: 2050,
+  gridStagger: 140,
+  note: 2750,
+  finale: 3350,
+  bars: 16,
+};
+const DETAIL_ICONS = [
+  `<circle r="6" fill="none"/><path d="M-3 0 l2 2.2 l4 -4.2" fill="none"/>`,
+  `<rect x="-4.5" y="-6" width="9" height="12" rx="1.5" fill="none"/><path d="M-2 -2.5 h4 M-2 0.5 h4 M-2 3.5 h2.5" fill="none"/>`,
+  `<rect x="-6" y="-6" width="5" height="5" rx="1" fill="none"/><rect x="1" y="-6" width="5" height="5" rx="1" fill="none"/><rect x="-6" y="1" width="5" height="5" rx="1" fill="none"/><rect x="1" y="1" width="5" height="5" rx="1" fill="none"/>`,
+  `<circle cy="-2.5" r="2.8" fill="none"/><path d="M-5.5 6 C-5 2 5 2 5.5 6" fill="none"/>`,
+];
+
+/** A rounded quadrilateral through its four corners (top-left, top-right, bottom-right, bottom-left), corners cut by `r`; the same commands for any shape, so one morphs into another. */
+function quadOutline(c: readonly (readonly [number, number])[], r: number): string {
+  const [tl, tr, br, bl] = c as [readonly [number, number], readonly [number, number], readonly [number, number], readonly [number, number]];
+  const toward = (a: readonly [number, number], b: readonly [number, number]) => {
+    const dx = b[0] - a[0];
+    const dy = b[1] - a[1];
+    const l = Math.hypot(dx, dy) || 1;
+    return `${r1(a[0] + (dx / l) * r)} ${r1(a[1] + (dy / l) * r)}`;
+  };
+  const at = (q: readonly [number, number]) => `${r1(q[0])} ${r1(q[1])}`;
+  return `M${toward(tl, tr)} L${toward(tr, tl)} Q${at(tr)} ${toward(tr, br)} L${toward(br, tr)} Q${at(br)} ${toward(br, bl)} L${toward(bl, br)} Q${at(bl)} ${toward(bl, tl)} L${toward(tl, bl)} Q${at(tl)} ${toward(tl, tr)} Z`;
+}
+
+export const detailPanel: VectorEffect = {
+  kind: "vector",
+  id: "detail-panel",
+  name: "Detail panel",
+  description:
+    "A record's detail panel swinging in from the edge of the screen in perspective, then filling in from the top: a category and a typed title, a status badge and a button, a headline metric counting up over rising bars, a grid of four icon stats counting up, and an AI note; a sheen sweeps across it to finish.",
+  category: "ui",
+  tags: ["ui", "panel", "card", "dashboard", "detail", "ai", "product-demo", "tech", "stat"],
+  hold: 1800,
+  presets: [
+    { name: "Light", values: { background: [0.93, 0.95, 0.96], panel: [1, 1, 1], ink: [0.1, 0.14, 0.2], accent: [0.05, 0.55, 0.58], highlight: [0.86, 0.32, 0.27] } },
+    { name: "Product", values: { category: "Billing", title: "Enterprise plan", subtitle: "Annual contract, renewed in March", status: "Live", updated: "Last invoice sent 3 Jun", metricLabel: "Usage", metric: 82, rating: "High", stats: "48,6,1.2k,99.9%", statLabels: "Seats,Workspaces,API calls,Uptime", noteTitle: "Upsell opportunity", noteBody: "Usage is near the seat limit on two teams." } },
+    { name: "Gold", values: { background: [0.07, 0.06, 0.04], panel: [0.14, 0.12, 0.08], ink: [0.96, 0.92, 0.84], accent: [0.95, 0.76, 0.36] } },
+  ],
+  derived: (v) => {
+    const { x, w } = DETAIL.panel;
+    const left = x + 16;
+    const inner = w - 32;
+    const category = fitLabel(v.category, inner - 24, 10, 7);
+    const title = fitLabel(v.title, inner, 15, 9);
+    const subtitle = fitLabel(v.subtitle, inner, 12, 8);
+    const status = fitLabel(v.status, 60, 8, 6);
+    const button = fitLabel(v.button, 76, 8.5, 6);
+    const updated = fitLabel(v.updated, inner - 24 - button.length - 30, 8.5, 6);
+    const metricLabel = fitLabel(v.metricLabel, 120, 10, 7);
+    const rating = fitLabel(v.rating, 70, 8, 6);
+    const metric = Math.max(-1e9, Math.min(1e9, Number(v.metric) || 0));
+    const dec = Math.min(1, (String(metric).split(".")[1] ?? "").length);
+    const suffix = String(v.metricSuffix ?? "").replace(/[{}]/g, "");
+    const values = parseLabels(v.stats, 4);
+    const labels = parseLabels(v.statLabels, 4);
+    const noteHeading = fitLabel(v.noteHeading, inner - 20, 9, 7);
+    const noteTitle = fitLabel(v.noteTitle, inner - 24, 9.5, 7);
+    const noteBody = fitLabel(v.noteBody, inner - 24, 8.5, 6);
+    const out: Record<string, string | number> = {};
+    for (let i = 0; i < 4; i++) {
+      const stat = parseStat(String(values[i] ?? ""));
+      const numeric = Number.isFinite(stat.value);
+      const pre = String(stat.pre).replace(/[{}]/g, "");
+      const suf = String(stat.suf).replace(/[{}]/g, "");
+      const label = fitLabel(labels[i] ?? "", 90, 8.5, 6);
+      out[`statVal${i}`] = numeric ? stat.value : 0;
+      out[`statDec${i}`] = numeric ? stat.dec : 0;
+      out[`statFmt${i}`] = numeric ? `${pre}{n}${suf}` : String(values[i] ?? "").replace(/[{}]/g, "");
+      out[`statSize${i}`] = fitLabel(numeric ? `${pre}${stat.value.toFixed(stat.dec)}${suf}` : values[i] ?? "", 70, 15, 9).size;
+      out[`statLabel${i}`] = label.text;
+      out[`statLabelSize${i}`] = label.size;
+      out[`statLabelLength${i}`] = label.length;
+    }
+    const swungIn = [[x, 14], [x + w, 14], [x + w, 406], [x, 406]] as const;
+    const swungOut = [[236, 96], [298, 2], [298, 418], [236, 324]] as const;
+    return {
+      ...out,
+      categoryText: category.text,
+      categorySize: category.size,
+      categoryLength: category.length,
+      titleText: title.text,
+      titleSize: title.size,
+      titleMs: Math.max(300, title.text.length * 22),
+      subtitleText: subtitle.text,
+      subtitleSize: subtitle.size,
+      subtitleLength: subtitle.length,
+      statusText: status.text,
+      statusSize: status.size,
+      statusLength: status.length,
+      statusW: r1(status.length + 12),
+      buttonText: button.text,
+      buttonSize: button.size,
+      buttonLength: button.length,
+      buttonX: r1(left + inner - 8 - button.length - 22),
+      buttonW: r1(button.length + 22),
+      buttonTextX: r1(left + inner - 8 - button.length - 22 + 9),
+      buttonArrowX: r1(left + inner - 13),
+      updatedText: updated.text,
+      updatedSize: updated.size,
+      updatedLength: updated.length,
+      metricLabelText: metricLabel.text,
+      metricLabelSize: metricLabel.size,
+      metricLabelLength: metricLabel.length,
+      ratingText: rating.text,
+      ratingSize: rating.size,
+      ratingLength: rating.length,
+      ratingShow: rating.text ? "inline" : "none",
+      ratingX: r1(left + inner - 10 - rating.length - 12),
+      ratingW: r1(rating.length + 12),
+      ratingTextX: r1(left + inner - 10 - rating.length / 2 - 6),
+      metric: +metric.toFixed(dec),
+      metricDec: dec,
+      metricFmt: `{n}${suffix}`,
+      noteHeadingText: noteHeading.text,
+      noteTitleText: noteTitle.text,
+      noteTitleSize: noteTitle.size,
+      noteTitleLength: noteTitle.length,
+      noteBodyText: noteBody.text,
+      noteBodySize: noteBody.size,
+      noteBodyLength: noteBody.length,
+      outlineOut: quadOutline(swungOut, DETAIL.panel.r),
+      outlineIn: quadOutline(swungIn, DETAIL.panel.r),
+      backdropOpacity: v.backdrop ? 1 : 0,
+    };
+  },
+  motion: ((): SvgMotion => {
+    const { x, y, w, h } = DETAIL.panel;
+    const L = x + 16;
+    const W = w - 32;
+    const at = (name: string, i: number) => `{{${name}${i}}}` as unknown as number;
+    // Rows, top to bottom.
+    const statusY = 112;
+    const metricY = 164;
+    const gridY = 236;
+    const cardW = (W - 8) / 2;
+    const cardH = 46;
+    const noteY = 360;
+    const barsX0 = L + 112;
+    const barsX1 = L + W - 12;
+    const barBase = metricY + 54;
+    const barStep = (barsX1 - barsX0) / DETAIL.bars;
+    const bars = Array.from({ length: DETAIL.bars }, (_, k) => {
+      const t = k / (DETAIL.bars - 1);
+      const hgt = r1(4 + 20 * (0.35 + 0.65 * Math.exp(-((t - 0.62) ** 2) / 0.06)) * (0.75 + 0.25 * Math.sin(k * 2.3) ** 2));
+      return { x: r1(barsX0 + k * barStep), h: hgt, hot: t > 0.55 && t < 0.8 };
+    });
+    const card = (i: number) => ({ cx: r1(L + (i % 2) * (cardW + 8)), cy: r1(gridY + Math.floor(i / 2) * (cardH + 8)) });
+    const svg = `<svg viewBox="0 0 300 420" font-family="${SANS}"><!-- {{category: text default='Healthcare' label='Category'}} {{title: text default='Decree-Law No. 42 of 2022' label='Title'}} {{subtitle: text default='Promulgating the Civil Procedure Code' label='Subtitle'}} {{status: text default='Active' label='Status badge'}} {{updated: text default='Last updated 01 Oct 2024' label='Status note'}} {{button: text default='Explore details' label='Button'}} {{metricLabel: text default='Sentiment rate' label='Metric label'}} {{metric: float min=-1000000 max=1000000 default=45 step=0.1 label='Metric'}} {{metricSuffix: text default='%' label='Metric suffix'}} {{rating: text default='Moderate' label='Metric chip (empty hides it)'}} {{stats: text default='12,2,18,12' label='Stats (comma-separated, four; prefixes and suffixes kept)'}} {{statLabels: text default='Public complaints,Related regulations,Services,Entities involved' label='Stat labels (comma-separated)'}} {{noteHeading: text default='AI Analysis' label='Note heading'}} {{noteTitle: text default='Propose deregulation' label='Note title'}} {{noteBody: text default='Several regulations are out of date.' label='Note text'}} {{background: color default=#0B1A1E label='Background'}} {{backdrop: bool default=true label='Background'}} {{panel: color default=#122A30 label='Panel'}} {{ink: color default=#E3EEF0 label='Text'}} {{accent: color default=#5EC8C4 label='Accent'}} {{highlight: color default=#E26D5C label='Metric highlight'}} --><defs><linearGradient id="detailPanelFill" x1="0" y1="0" x2="0.3" y2="1"><stop offset="0" stop-color="{{panel}}"/><stop offset="1" stop-color="{{panel}}" stop-opacity="0.82"/></linearGradient><linearGradient id="detailPanelSheenFill" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0"/><stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0.09"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></linearGradient><linearGradient id="detailPanelMetricWashFill" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="{{highlight}}" stop-opacity="0.32"/><stop offset="1" stop-color="{{highlight}}" stop-opacity="0.04"/></linearGradient><clipPath id="detailPanelClip"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${DETAIL.panel.r}"/></clipPath></defs><g opacity="{{backdropOpacity}}"><rect width="300" height="420" fill="{{background}}"/></g><path id="detailPanelShape" d="{{outlineOut}}" fill="url(#detailPanelFill)" stroke="{{ink}}" stroke-opacity="0.16" opacity="0"/><g clip-path="url(#detailPanelClip)"><g id="detailPanelHeader" opacity="0"><g transform="translate(${L + 6} 40)" stroke="{{accent}}" stroke-width="1.3" stroke-linecap="round"><path d="M0 -6 V6 M-5 -3 C-2 -1 2 -1 5 -3 M-3.5 2 C-1.5 3.5 1.5 3.5 3.5 2" fill="none"/></g><text x="${L + 20}" y="43.5" font-size="{{categorySize}}" textLength="{{categoryLength}}" lengthAdjust="spacingAndGlyphs" fill="{{ink}}" fill-opacity="0.85">{{categoryText}}</text></g><text id="detailPanelTitle" x="${L}" y="72" font-size="{{titleSize}}" font-weight="600" fill="{{ink}}" opacity="0" xml:space="preserve"></text><text id="detailPanelSubtitle" x="${L}" y="91" font-size="{{subtitleSize}}" textLength="{{subtitleLength}}" lengthAdjust="spacingAndGlyphs" fill="{{ink}}" fill-opacity="0.75" opacity="0">{{subtitleText}}</text><g id="detailPanelStatus" opacity="0"><rect x="${L}" y="${statusY}" width="${W}" height="40" rx="8" fill="{{ink}}" fill-opacity="0.05" stroke="{{ink}}" stroke-opacity="0.08"/><rect x="${L + 8}" y="${statusY + 7}" width="{{statusW}}" height="13" rx="3.5" fill="{{accent}}" fill-opacity="0.15" stroke="{{accent}}" stroke-opacity="0.7"/><text x="${L + 14}" y="${statusY + 16.5}" font-size="{{statusSize}}" textLength="{{statusLength}}" lengthAdjust="spacingAndGlyphs" fill="{{ink}}">{{statusText}}</text><text x="${L + 8}" y="${statusY + 32}" font-size="{{updatedSize}}" textLength="{{updatedLength}}" lengthAdjust="spacingAndGlyphs" fill="{{ink}}" fill-opacity="0.6">{{updatedText}}</text><g id="detailPanelButton"><rect x="{{buttonX}}" y="${statusY + 9}" width="{{buttonW}}" height="22" rx="6" fill="{{ink}}" fill-opacity="0.09" stroke="{{ink}}" stroke-opacity="0.12"/><rect id="detailPanelButtonLit" x="{{buttonX}}" y="${statusY + 9}" width="{{buttonW}}" height="22" rx="6" fill="none" stroke="{{accent}}" stroke-width="1.2" opacity="0"/><text x="{{buttonTextX}}" y="${statusY + 23}" font-size="{{buttonSize}}" textLength="{{buttonLength}}" lengthAdjust="spacingAndGlyphs" fill="{{ink}}">{{buttonText}}</text><path d="M{{buttonArrowX}} ${statusY + 16.5} l3 3.5 l-3 3.5" fill="none" stroke="{{ink}}" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></g></g><g id="detailPanelMetric" opacity="0"><rect x="${L}" y="${metricY}" width="${W}" height="64" rx="8" fill="{{ink}}" fill-opacity="0.04"/><rect id="detailPanelMetricWash" x="${L}" y="${metricY}" width="${W}" height="64" rx="8" fill="url(#detailPanelMetricWashFill)" opacity="0"/><rect x="${L}" y="${metricY}" width="${W}" height="64" rx="8" fill="none" stroke="{{highlight}}" stroke-opacity="0.35"/><text x="${L + 10}" y="${metricY + 18}" font-size="{{metricLabelSize}}" textLength="{{metricLabelLength}}" lengthAdjust="spacingAndGlyphs" fill="{{ink}}" fill-opacity="0.85">{{metricLabelText}}</text><g display="{{ratingShow}}"><rect x="{{ratingX}}" y="${metricY + 8}" width="{{ratingW}}" height="14" rx="3.5" fill="{{ink}}" fill-opacity="0.08" stroke="{{ink}}" stroke-opacity="0.35"/><text x="{{ratingTextX}}" y="${metricY + 17.8}" text-anchor="middle" font-size="{{ratingSize}}" textLength="{{ratingLength}}" lengthAdjust="spacingAndGlyphs" fill="{{ink}}">{{ratingText}}</text></g><text id="detailPanelMetricValue" x="${L + 10}" y="${metricY + 52}" font-size="24" fill="{{ink}}">0{{metricSuffix}}</text>${bars
+      .map((b, k) => `<rect id="detailPanelBar${k}" x="${b.x}" y="${barBase}" width="${r1(barStep * 0.45)}" height="0" rx="0.8" fill="${b.hot ? "{{highlight}}" : "{{ink}}"}" fill-opacity="${b.hot ? 0.9 : 0.45}"/>`)
+      .join("")}</g>${[0, 1, 2, 3]
+      .map((i) => {
+        const { cx, cy } = card(i);
+        return `<g id="detailPanelStat${i}" opacity="0"><rect x="${cx}" y="${cy}" width="${r1(cardW)}" height="${cardH}" rx="8" fill="{{ink}}" fill-opacity="0.05" stroke="{{ink}}" stroke-opacity="0.08"/><g transform="translate(${r1(cx + 15)} ${cy + 16})" stroke="{{accent}}" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">${DETAIL_ICONS[i]}</g><text id="detailPanelStatValue${i}" x="${r1(cx + 28)}" y="${cy + 21.5}" font-size="{{statSize${i}}}" font-weight="500" fill="{{ink}}">{{statFmt${i}}}</text><text x="${r1(cx + 9)}" y="${cy + 37}" font-size="{{statLabelSize${i}}}" textLength="{{statLabelLength${i}}}" lengthAdjust="spacingAndGlyphs" fill="{{ink}}" fill-opacity="0.65">{{statLabel${i}}}</text></g>`;
+      })
+      .join("")}<g id="detailPanelNote" opacity="0"><path d="M0 -5 C0.7 -1 1 -0.7 5 0 C1 0.7 0.7 1 0 5 C-0.7 1 -1 0.7 -5 0 C-1 -0.7 -0.7 -1 0 -5Z" transform="translate(${L + 5} ${noteY - 6})" fill="{{accent}}"/><text x="${L + 15}" y="${noteY - 3}" font-size="9" font-weight="600" fill="{{ink}}" fill-opacity="0.85">{{noteHeadingText}}</text><rect x="${L}" y="${noteY + 4}" width="${W}" height="38" rx="8" fill="{{ink}}" fill-opacity="0.05"/><text x="${L + 10}" y="${noteY + 19}" font-size="{{noteTitleSize}}" textLength="{{noteTitleLength}}" lengthAdjust="spacingAndGlyphs" font-weight="600" fill="{{ink}}">{{noteTitleText}}</text><text x="${L + 10}" y="${noteY + 33}" font-size="{{noteBodySize}}" textLength="{{noteBodyLength}}" lengthAdjust="spacingAndGlyphs" fill="{{ink}}" fill-opacity="0.65">{{noteBodyText}}</text></g><rect id="detailPanelSheen" x="${x - 120}" y="${y}" width="120" height="${h}" fill="url(#detailPanelSheenFill)" transform="skewX(-14)" opacity="0"/></g></svg>`;
+    const animate: SvgAnimation[] = [
+      // The panel swings in from the edge: a narrow trapezoid flattening into the panel.
+      { id: "detailPanelShape", attrs: { opacity: [0, 1] }, ms: 260 },
+      { id: "detailPanelShape", attrs: { d: ["{{outlineOut}}", "{{outlineIn}}"] }, ms: DETAIL.swing, ease: [0.45, 0, 0.2, 1] },
+      // Header and title.
+      { id: "detailPanelHeader", attrs: { opacity: [0, 1], transform: ["translate(6 0)", "translate(0 0)"] }, delay: DETAIL.header, ms: 360, ease: "out" },
+      { id: "detailPanelTitle", attrs: { opacity: [0, 1] }, delay: DETAIL.title, ms: 1 },
+      { id: "detailPanelTitle", write: "{{titleText}}", delay: DETAIL.title, ms: n("titleMs") },
+      { id: "detailPanelSubtitle", attrs: { opacity: [0, 1], transform: ["translate(0 4)", "translate(0 0)"] }, delay: DETAIL.title + 300, ms: 420, ease: "out" },
+      // Status row, then the metric counting over its bars.
+      { id: "detailPanelStatus", attrs: { opacity: [0, 1], transform: ["translate(0 8)", "translate(0 0)"] }, delay: DETAIL.status, ms: 400, ease: "out" },
+      { id: "detailPanelMetric", attrs: { opacity: [0, 1], transform: ["translate(0 8)", "translate(0 0)"] }, delay: DETAIL.metric, ms: 400, ease: "out" },
+      { id: "detailPanelMetricWash", attrs: { opacity: [0, 1] }, delay: DETAIL.metric + 300, ms: 700, ease: "out" },
+      { id: "detailPanelMetricValue", count: [0, n("metric")], decimals: n("metricDec"), format: "{{metricFmt}}", delay: DETAIL.metric + 150, ms: 1100, ease: "out" },
+      ...bars.map((b, k): SvgAnimation => ({ id: `detailPanelBar${k}`, attrs: { y: [barBase, r1(barBase - b.h)], height: [0, b.h] }, delay: DETAIL.metric + 200 + k * 40, ms: 420, ease: "out" })),
+      // The stat grid, one card after another, each counting up.
+      ...[0, 1, 2, 3].flatMap((i): SvgAnimation[] => [
+        { id: `detailPanelStat${i}`, attrs: { opacity: [0, 1], transform: ["translate(0 8)", "translate(0 0)"] }, delay: DETAIL.grid + i * DETAIL.gridStagger, ms: 380, ease: "out" },
+        { id: `detailPanelStatValue${i}`, count: [0, at("statVal", i)], decimals: at("statDec", i), format: `{{statFmt${i}}}`, delay: DETAIL.grid + i * DETAIL.gridStagger + 80, ms: 900, ease: "out" },
+      ]),
+      // The note, then a sheen across the finished panel and the button lighting.
+      { id: "detailPanelNote", attrs: { opacity: [0, 1], transform: ["translate(0 8)", "translate(0 0)"] }, delay: DETAIL.note, ms: 420, ease: "out" },
+      { id: "detailPanelSheen", attrs: { opacity: [0, 1] }, delay: DETAIL.finale, ms: 1 },
+      { id: "detailPanelSheen", attrs: { x: [x - 120, x + w + 140] }, delay: DETAIL.finale, ms: 900, ease: "in-out" },
+      { id: "detailPanelButtonLit", attrs: { opacity: [0, 1] }, delay: DETAIL.finale + 450, ms: 300, ease: "out" },
+      { id: "detailPanelButtonLit", attrs: { opacity: [1, 0.35] }, delay: DETAIL.finale + 750, ms: 600, ease: "in-out", repeat: 2, alternate: true },
+    ];
+    return { svg, animate };
+  })(),
+};
+
+export const uiEffects: VectorEffect[] = [marquee, numberTicker, animatedBadge, swipeStack, packOpening, aiPromptBar, insightCards, detailPanel];
