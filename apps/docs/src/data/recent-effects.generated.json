@@ -1,5 +1,225 @@
 [
   {
+    "id": "sentiment-tile",
+    "name": "Sentiment tile",
+    "kind": "vector",
+    "category": "data",
+    "description": "A dashboard tile for a 0–100 score such as sentiment: the percentage counts up, a change badge slides in green or red by its sign, a mood chip (Negative, Moderate or Positive, picked from the score) pops in and tints the card, and a dot-matrix histogram rises column by column with the score's column lit.",
+    "tags": [
+      "kpi",
+      "sentiment",
+      "dashboard",
+      "metric",
+      "card",
+      "histogram",
+      "tech"
+    ],
+    "controls": [
+      {
+        "n": "label",
+        "t": "text",
+        "d": "Sentiment rate",
+        "line": 1
+      },
+      {
+        "n": "value",
+        "t": "float",
+        "d": 45,
+        "l": "Score (0 to 100)",
+        "max": 100,
+        "s": 1,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "suffix",
+        "t": "text",
+        "d": "%",
+        "line": 3
+      },
+      {
+        "n": "delta",
+        "t": "float",
+        "d": -4,
+        "l": "Change (points)",
+        "min": -100,
+        "max": 100,
+        "s": 0.5,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "caption",
+        "t": "text",
+        "d": "Last month",
+        "l": "Change caption",
+        "line": 5
+      },
+      {
+        "n": "rating",
+        "t": "text",
+        "d": "auto",
+        "l": "Mood chip (auto picks from the score; empty hides it)",
+        "line": 6
+      },
+      {
+        "n": "values",
+        "t": "text",
+        "d": "1,1,2,2,3,3,4,5,6,6,7,8,8,7,7,6,5,5,4,3,2,2",
+        "l": "Histogram, low to high scores (comma-separated, up to 24)",
+        "line": 7
+      },
+      {
+        "n": "background",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            11,
+            26,
+            30
+          ]
+        },
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "backdrop",
+        "t": "bool",
+        "d": true,
+        "l": "Background",
+        "line": 9
+      },
+      {
+        "n": "card",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            19,
+            40,
+            46
+          ]
+        },
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "ink",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            227,
+            238,
+            240
+          ]
+        },
+        "l": "Text and dots",
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "negative",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            240,
+            96,
+            94
+          ]
+        },
+        "c": 1,
+        "line": 12
+      },
+      {
+        "n": "neutral",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            227,
+            176,
+            90
+          ]
+        },
+        "l": "Moderate",
+        "c": 1,
+        "line": 13
+      },
+      {
+        "n": "positive",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            79,
+            208,
+            139
+          ]
+        },
+        "c": 1,
+        "line": 14
+      },
+      {
+        "n": "glow",
+        "t": "float",
+        "d": 2.5,
+        "max": 6,
+        "s": 0.5,
+        "b": 3,
+        "line": 15
+      }
+    ],
+    "presets": [
+      "Positive",
+      "Negative",
+      "Light"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "label",
+          "label": "Label",
+          "holds": "copy",
+          "default": "Sentiment rate"
+        },
+        {
+          "name": "suffix",
+          "label": "Suffix",
+          "holds": "copy",
+          "default": "%"
+        },
+        {
+          "name": "caption",
+          "label": "Change caption",
+          "holds": "copy",
+          "default": "Last month"
+        },
+        {
+          "name": "rating",
+          "label": "Mood chip (auto picks from the score; empty hides it)",
+          "holds": "copy",
+          "default": "auto"
+        },
+        {
+          "name": "values",
+          "label": "Histogram, low to high scores (comma-separated, up to 24)",
+          "holds": "copy",
+          "default": "1,1,2,2,3,3,4,5,6,6,7,8,8,7,7,6,5,5,4,3,2,2"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 1800,
+    "animated": true,
+    "duration": 5005,
+    "module": "data",
+    "addedAt": "2026-11-13T08:49:31.083Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
     "id": "year-scrubber",
     "name": "Year scrubber",
     "kind": "vector",
@@ -157,9 +377,9 @@
     "animated": true,
     "duration": 6120,
     "module": "data",
-    "addedAt": "2026-11-13T08:23:17.664Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-11-13T08:23:34Z",
+    "commitHash": "dfe6fafb691a14b633b2af0de55803a86016e1b1",
+    "order": 682
   },
   {
     "id": "insight-cards",
@@ -3355,146 +3575,5 @@
     "addedAt": "2026-11-10T15:17:55Z",
     "commitHash": "04bd8bc6d2ca1aba5d35f2311c0dcbce4a3cea4d",
     "order": 664
-  },
-  {
-    "id": "film-damage",
-    "name": "Film damage",
-    "kind": "shader",
-    "category": "film",
-    "description": "A picture as a battered old print: scratches running down it that come and go, dust and the odd hair flashing past for a frame, emulsion blotches, flicker and a faded colour, the frame jumping at bad splices and a cue mark blinking in the corner.",
-    "tags": [
-      "film",
-      "cinema",
-      "scratches",
-      "dust",
-      "damage",
-      "vintage",
-      "grain",
-      "projector",
-      "image"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "landscape"
-        },
-        "line": 4,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uScratches",
-        "t": "float",
-        "d": 0.6,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uDust",
-        "t": "float",
-        "d": 0.5,
-        "l": "Dust and hair",
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uBlotches",
-        "t": "float",
-        "d": 0.3,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uFlicker",
-        "t": "float",
-        "d": 0.4,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uJumps",
-        "t": "float",
-        "d": 0.3,
-        "l": "Splices and jumps",
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uCueMarks",
-        "t": "bool",
-        "d": true,
-        "line": 10
-      },
-      {
-        "n": "uFade",
-        "t": "float",
-        "d": 0.35,
-        "l": "Faded print",
-        "b": 3,
-        "line": 11
-      },
-      {
-        "n": "uGrain",
-        "t": "float",
-        "d": 0.35,
-        "b": 3,
-        "line": 12
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 13
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "b": 3,
-        "line": 14
-      }
-    ],
-    "presets": [
-      "Grindhouse",
-      "Archive",
-      "Light wear"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "swiftReady": true,
-    "video": "filter",
-    "animated": true,
-    "module": "shaders/film",
-    "addedAt": "2026-11-10T15:17:55Z",
-    "commitHash": "04bd8bc6d2ca1aba5d35f2311c0dcbce4a3cea4d",
-    "order": 663
   }
 ]
