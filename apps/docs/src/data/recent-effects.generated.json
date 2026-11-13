@@ -157,9 +157,9 @@
     "animated": true,
     "duration": 6120,
     "module": "data",
-    "addedAt": "2026-11-13T08:23:17.664Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-11-13T08:23:34Z",
+    "commitHash": "dfe6fafb691a14b633b2af0de55803a86016e1b1",
+    "order": 682
   },
   {
     "id": "insight-cards",
