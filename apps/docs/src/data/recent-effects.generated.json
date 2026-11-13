@@ -1,1138 +1,5 @@
 [
   {
-    "id": "ribbon-bands",
-    "name": "Ribbon bands",
-    "kind": "shader",
-    "category": "pattern",
-    "description": "Flat ribbons of clashing colour stacked across the frame, each edge riding its own slow wave so they overlap and part, with a soft shadow under every fold.",
-    "tags": [
-      "background",
-      "ribbon",
-      "stripe",
-      "wave",
-      "flat",
-      "bold",
-      "recap",
-      "story",
-      "loop"
-    ],
-    "controls": [
-      {
-        "n": "uColorA",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            240,
-            55,
-            165
-          ]
-        },
-        "l": "Colour A",
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "uColorB",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            205,
-            245,
-            100
-          ]
-        },
-        "l": "Colour B",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uColorC",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            65,
-            0,
-            245
-          ]
-        },
-        "l": "Colour C",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uColorD",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            70,
-            50
-          ]
-        },
-        "l": "Colour D",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uCount",
-        "t": "int",
-        "d": 8,
-        "l": "Ribbons",
-        "min": 3,
-        "max": 16,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uWave",
-        "t": "float",
-        "d": 0.55,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uFrequency",
-        "t": "float",
-        "d": 1.6,
-        "l": "Wave frequency",
-        "min": 0.5,
-        "max": 6,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uAngle",
-        "t": "float",
-        "d": -18,
-        "l": "Angle (°)",
-        "min": -180,
-        "max": 180,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 1,
-        "max": 3,
-        "b": 3,
-        "line": 10
-      },
-      {
-        "n": "uLines",
-        "t": "float",
-        "d": 0.35,
-        "l": "Pinstripes",
-        "b": 3,
-        "line": 11
-      },
-      {
-        "n": "uShadow",
-        "t": "float",
-        "d": 0.4,
-        "b": 3,
-        "line": 12
-      }
-    ],
-    "presets": [
-      "Clash",
-      "Sorbet",
-      "Ink and paper",
-      "Calm stack"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "swiftReady": true,
-    "loop": 8,
-    "animated": true,
-    "duration": 8000,
-    "paint": {
-      "map": "stroke",
-      "colors": [
-        "uColorA",
-        "uColorB"
-      ],
-      "live": true
-    },
-    "module": "shaders/recap",
-    "addedAt": "2026-11-13T15:44:31.433Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "concentric-shapes",
-    "name": "Concentric shapes",
-    "kind": "shader",
-    "category": "pattern",
-    "description": "Flat-coloured shapes nested inside one another, growing out of the centre (or sinking into it) as they turn and morph between circle, squircle, flower and star.",
-    "tags": [
-      "background",
-      "concentric",
-      "ring",
-      "tunnel",
-      "shape",
-      "flat",
-      "bold",
-      "recap",
-      "story",
-      "title"
-    ],
-    "controls": [
-      {
-        "n": "uColorA",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            240,
-            55,
-            165
-          ]
-        },
-        "l": "Colour A",
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "uColorB",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            205,
-            245,
-            100
-          ]
-        },
-        "l": "Colour B",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uColorC",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            65,
-            0,
-            245
-          ]
-        },
-        "l": "Colour C",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uColorD",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            70,
-            50
-          ]
-        },
-        "l": "Colour D",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uShape",
-        "t": "int",
-        "d": 4,
-        "l": "Shape (0 circle, 1 squircle, 2 flower, 3 star, 4 morphing)",
-        "max": 4,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uRings",
-        "t": "int",
-        "d": 9,
-        "min": 3,
-        "max": 20,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uPoints",
-        "t": "int",
-        "d": 6,
-        "l": "Petals or points",
-        "min": 3,
-        "max": 12,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 0.5,
-        "max": 3,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uInward",
-        "t": "bool",
-        "d": false,
-        "l": "Stream inward",
-        "line": 10
-      },
-      {
-        "n": "uTwist",
-        "t": "float",
-        "d": 0.4,
-        "min": -2,
-        "max": 2,
-        "b": 3,
-        "line": 11
-      },
-      {
-        "n": "uSpin",
-        "t": "float",
-        "d": 0.15,
-        "min": -2,
-        "max": 2,
-        "b": 3,
-        "line": 12
-      },
-      {
-        "n": "uCentre",
-        "t": "vec2",
-        "d": [
-          0.5,
-          0.5
-        ],
-        "b": 3,
-        "line": 13
-      }
-    ],
-    "presets": [
-      "Shapeshifter",
-      "Bloom",
-      "Bullseye",
-      "Star dive",
-      "Squircle stack"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "swiftReady": true,
-    "animated": true,
-    "paint": {
-      "map": "canvas",
-      "colors": [
-        "uColorA",
-        "uColorB"
-      ],
-      "live": true
-    },
-    "module": "shaders/recap",
-    "addedAt": "2026-11-13T15:44:31.433Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "shape-tiles",
-    "name": "Shape tiles",
-    "kind": "shader",
-    "category": "pattern",
-    "description": "A grid of flat-coloured tiles, each holding a disc, quarter circle, half circle, diamond, ring or square that morphs into another and swaps colours on its own beat.",
-    "tags": [
-      "background",
-      "tiles",
-      "grid",
-      "geometric",
-      "shape",
-      "flat",
-      "bold",
-      "bauhaus",
-      "recap",
-      "story"
-    ],
-    "controls": [
-      {
-        "n": "uColorA",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            240,
-            55,
-            165
-          ]
-        },
-        "l": "Colour A",
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "uColorB",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            205,
-            245,
-            100
-          ]
-        },
-        "l": "Colour B",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uColorC",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            65,
-            0,
-            245
-          ]
-        },
-        "l": "Colour C",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uColorD",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            70,
-            50
-          ]
-        },
-        "l": "Colour D",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uSize",
-        "t": "float",
-        "d": 170,
-        "l": "Tile size (px)",
-        "min": 40,
-        "max": 400,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uRate",
-        "t": "float",
-        "d": 0.45,
-        "l": "Changes per second",
-        "max": 2,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uStagger",
-        "t": "float",
-        "d": 1,
-        "b": 3,
-        "line": 8
-      }
-    ],
-    "presets": [
-      "Clash",
-      "Primary school",
-      "Two tone",
-      "All together"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "swiftReady": true,
-    "animated": true,
-    "paint": {
-      "map": "stroke",
-      "colors": [
-        "uColorA",
-        "uColorB"
-      ],
-      "live": true,
-      "repeat": "repeat"
-    },
-    "module": "shaders/recap",
-    "addedAt": "2026-11-13T15:44:31.433Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "image-pixel-stretch",
-    "name": "Pixel stretch",
-    "kind": "shader",
-    "category": "image",
-    "description": "A picture kept whole up to a line, then dragged out from it in long flat bars of its own edge colours, the line ragged and drifting.",
-    "tags": [
-      "image",
-      "stretch",
-      "smear",
-      "pixel",
-      "bar",
-      "glitch",
-      "editorial",
-      "recap",
-      "story"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "landscape"
-        },
-        "line": 2,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uDirection",
-        "t": "int",
-        "d": 3,
-        "l": "Direction (0 right, 1 left, 2 up, 3 down)",
-        "max": 3,
-        "b": 3,
-        "line": 3
-      },
-      {
-        "n": "uLine",
-        "t": "float",
-        "d": 0.5,
-        "l": "Stretch from",
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "uTravel",
-        "t": "float",
-        "d": 0.12,
-        "max": 0.5,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 0.7,
-        "max": 3,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uBands",
-        "t": "float",
-        "d": 22,
-        "l": "Bands (0 smooth)",
-        "max": 80,
-        "s": 1,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uRagged",
-        "t": "float",
-        "d": 0.22,
-        "l": "Ragged edge",
-        "max": 0.6,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 9
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "b": 3,
-        "line": 10
-      }
-    ],
-    "presets": [
-      "Bars",
-      "Clean pull",
-      "Sideways",
-      "Liquid edge"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "swiftReady": true,
-    "video": "filter",
-    "animated": true,
-    "module": "shaders/recap",
-    "addedAt": "2026-11-13T15:44:31.433Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "image-photocopy",
-    "name": "Photocopy",
-    "kind": "shader",
-    "category": "image",
-    "description": "A picture run through a tired photocopier: hard black toner on off-white paper, clumped grain, pale streaks down the page, burnt edges and a slight shift with every copy, like a zine page.",
-    "tags": [
-      "image",
-      "photocopy",
-      "xerox",
-      "zine",
-      "toner",
-      "grain",
-      "monochrome",
-      "collage",
-      "editorial",
-      "recap"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "landscape"
-        },
-        "line": 2,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uInk",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            20,
-            20,
-            20
-          ]
-        },
-        "l": "Toner",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uPaper",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            242,
-            239,
-            230
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uThreshold",
-        "t": "float",
-        "d": 0.4,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uHardness",
-        "t": "float",
-        "d": 6,
-        "min": 1,
-        "max": 12,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uGrain",
-        "t": "float",
-        "d": 0.5,
-        "l": "Toner grain",
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uStreaks",
-        "t": "float",
-        "d": 0.3,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uEdge",
-        "t": "float",
-        "d": 0.45,
-        "l": "Edge burn",
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uJitter",
-        "t": "float",
-        "d": 0.3,
-        "l": "Copy shift",
-        "b": 3,
-        "line": 10
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 11
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "b": 3,
-        "line": 12
-      }
-    ],
-    "presets": [
-      "Zine",
-      "Clean copy",
-      "Pink flyer",
-      "Blueprint",
-      "Tenth generation"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "swiftReady": true,
-    "video": "filter",
-    "animated": true,
-    "module": "shaders/recap",
-    "addedAt": "2026-11-13T15:44:31.433Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "echo-text",
-    "name": "Echo text",
-    "kind": "shader",
-    "category": "text",
-    "description": "A title trailed by copies of its own outline in two alternating colours, fanning out behind it and folding back in a ripple. Set the outline width to 0 for solid stacked copies.",
-    "tags": [
-      "text",
-      "title",
-      "echo",
-      "outline",
-      "trail",
-      "repeat",
-      "kinetic",
-      "bold",
-      "recap",
-      "story",
-      "loop"
-    ],
-    "controls": [
-      {
-        "n": "uText",
-        "t": "sampler2D",
-        "d": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201024%20256%22%20width%3D%221024%22%20height%3D%22256%22%3E%3Ctext%20x%3D%22512%22%20y%3D%22128%22%20dy%3D%220.35em%22%20text-anchor%3D%22middle%22%20textLength%3D%22651%22%20lengthAdjust%3D%22spacingAndGlyphs%22%20font-family%3D%22%26%2339%3BArial%20Black%26%2339%3B%2C%20%26%2339%3BHelvetica%20Neue%26%2339%3B%2C%20Helvetica%2C%20Arial%2C%20system-ui%2C%20sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%22199.7%22%20fill%3D%22%23fff%22%3EFLAIR%3C%2Ftext%3E%3C%2Fsvg%3E",
-        "line": 2,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            65,
-            0,
-            245
-          ]
-        },
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uInk",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "l": "Text",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uEchoA",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            240,
-            55,
-            165
-          ]
-        },
-        "l": "Echo A",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uEchoB",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            205,
-            245,
-            100
-          ]
-        },
-        "l": "Echo B",
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "uEchoes",
-        "t": "int",
-        "d": 7,
-        "min": 1,
-        "max": 12,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uSpread",
-        "t": "float",
-        "d": 0.04,
-        "max": 0.12,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uAngle",
-        "t": "float",
-        "d": -90,
-        "l": "Angle (°)",
-        "min": -180,
-        "max": 180,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uGrow",
-        "t": "float",
-        "d": 0.03,
-        "max": 0.3,
-        "b": 3,
-        "line": 10
-      },
-      {
-        "n": "uOutline",
-        "t": "float",
-        "d": 0.005,
-        "l": "Outline width (0 fills)",
-        "max": 0.012,
-        "b": 3,
-        "line": 11
-      },
-      {
-        "n": "uSize",
-        "t": "float",
-        "d": 0.7,
-        "l": "Text size",
-        "min": 0.3,
-        "b": 3,
-        "line": 12
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 1,
-        "max": 3,
-        "b": 3,
-        "line": 13
-      },
-      {
-        "n": "uBackgroundAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Background opacity",
-        "b": 3,
-        "line": 70
-      }
-    ],
-    "presets": [
-      "Outline trail",
-      "Solid stack",
-      "Zoom out",
-      "Ghost"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "svg",
-        "text",
-        "mask"
-      ],
-      "images": [
-        {
-          "name": "uText",
-          "label": "Text",
-          "wants": "text"
-        }
-      ],
-      "texts": [],
-      "video": "none",
-      "interactions": [],
-      "transparent": false
-    },
-    "swiftReady": true,
-    "video": "none",
-    "loop": 4,
-    "animated": true,
-    "duration": 4000,
-    "module": "shaders/recap",
-    "addedAt": "2026-11-13T15:44:31.433Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "stretch-text",
-    "name": "Stretch text",
-    "kind": "shader",
-    "category": "text",
-    "description": "A title whose letters are pulled tall along a cut line, the stretch travelling across the word in a wave, like type drawn on a variable-height axis.",
-    "tags": [
-      "text",
-      "title",
-      "stretch",
-      "variable",
-      "kinetic",
-      "wave",
-      "bold",
-      "recap",
-      "story",
-      "loop"
-    ],
-    "controls": [
-      {
-        "n": "uText",
-        "t": "sampler2D",
-        "d": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201024%20256%22%20width%3D%221024%22%20height%3D%22256%22%3E%3Ctext%20x%3D%22512%22%20y%3D%22128%22%20dy%3D%220.35em%22%20text-anchor%3D%22middle%22%20textLength%3D%22651%22%20lengthAdjust%3D%22spacingAndGlyphs%22%20font-family%3D%22%26%2339%3BArial%20Black%26%2339%3B%2C%20%26%2339%3BHelvetica%20Neue%26%2339%3B%2C%20Helvetica%2C%20Arial%2C%20system-ui%2C%20sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%22199.7%22%20fill%3D%22%23fff%22%3EFLAIR%3C%2Ftext%3E%3C%2Fsvg%3E",
-        "line": 2,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            205,
-            245,
-            100
-          ]
-        },
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uInk",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            18,
-            18,
-            18
-          ]
-        },
-        "l": "Text",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uBand",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            240,
-            55,
-            165
-          ]
-        },
-        "l": "Stretch colour",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uTint",
-        "t": "float",
-        "d": 0,
-        "l": "Stretch colour amount",
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uStretch",
-        "t": "float",
-        "d": 0.7,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uCut",
-        "t": "float",
-        "d": 0.5,
-        "l": "Cut height",
-        "min": 0.1,
-        "max": 0.9,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uWaves",
-        "t": "float",
-        "d": 1,
-        "l": "Waves across",
-        "max": 4,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uColumns",
-        "t": "int",
-        "d": 0,
-        "l": "Columns (0 smooth)",
-        "max": 24,
-        "b": 3,
-        "line": 10
-      },
-      {
-        "n": "uSize",
-        "t": "float",
-        "d": 0.34,
-        "l": "Text size",
-        "min": 0.15,
-        "max": 0.8,
-        "b": 3,
-        "line": 11
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 1,
-        "max": 3,
-        "b": 3,
-        "line": 12
-      },
-      {
-        "n": "uBackgroundAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Background opacity",
-        "b": 3,
-        "line": 48
-      }
-    ],
-    "presets": [
-      "Wave",
-      "Two tone",
-      "Equaliser",
-      "Breathe"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "svg",
-        "text",
-        "mask"
-      ],
-      "images": [
-        {
-          "name": "uText",
-          "label": "Text",
-          "wants": "text"
-        }
-      ],
-      "texts": [],
-      "video": "none",
-      "interactions": [],
-      "transparent": false
-    },
-    "swiftReady": true,
-    "video": "none",
-    "loop": 4,
-    "animated": true,
-    "duration": 4000,
-    "module": "shaders/recap",
-    "addedAt": "2026-11-13T15:44:31.433Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
     "id": "transition-color-blocks",
     "name": "Colour blocks",
     "kind": "shader",
@@ -1351,9 +218,1142 @@
     "animated": true,
     "duration": 4000,
     "module": "shaders/recap",
-    "addedAt": "2026-11-13T15:44:31.433Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-11-13T15:35:59Z",
+    "commitHash": "d06df57664d2ac130bc3a2af9fef78a818b98d95",
+    "order": 694
+  },
+  {
+    "id": "stretch-text",
+    "name": "Stretch text",
+    "kind": "shader",
+    "category": "text",
+    "description": "A title whose letters are pulled tall along a cut line, the stretch travelling across the word in a wave, like type drawn on a variable-height axis.",
+    "tags": [
+      "text",
+      "title",
+      "stretch",
+      "variable",
+      "kinetic",
+      "wave",
+      "bold",
+      "recap",
+      "story",
+      "loop"
+    ],
+    "controls": [
+      {
+        "n": "uText",
+        "t": "sampler2D",
+        "d": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201024%20256%22%20width%3D%221024%22%20height%3D%22256%22%3E%3Ctext%20x%3D%22512%22%20y%3D%22128%22%20dy%3D%220.35em%22%20text-anchor%3D%22middle%22%20textLength%3D%22651%22%20lengthAdjust%3D%22spacingAndGlyphs%22%20font-family%3D%22%26%2339%3BArial%20Black%26%2339%3B%2C%20%26%2339%3BHelvetica%20Neue%26%2339%3B%2C%20Helvetica%2C%20Arial%2C%20system-ui%2C%20sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%22199.7%22%20fill%3D%22%23fff%22%3EFLAIR%3C%2Ftext%3E%3C%2Fsvg%3E",
+        "line": 2,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            205,
+            245,
+            100
+          ]
+        },
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uInk",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            18,
+            18,
+            18
+          ]
+        },
+        "l": "Text",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uBand",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            240,
+            55,
+            165
+          ]
+        },
+        "l": "Stretch colour",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uTint",
+        "t": "float",
+        "d": 0,
+        "l": "Stretch colour amount",
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uStretch",
+        "t": "float",
+        "d": 0.7,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uCut",
+        "t": "float",
+        "d": 0.5,
+        "l": "Cut height",
+        "min": 0.1,
+        "max": 0.9,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uWaves",
+        "t": "float",
+        "d": 1,
+        "l": "Waves across",
+        "max": 4,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uColumns",
+        "t": "int",
+        "d": 0,
+        "l": "Columns (0 smooth)",
+        "max": 24,
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 0.34,
+        "l": "Text size",
+        "min": 0.15,
+        "max": 0.8,
+        "b": 3,
+        "line": 11
+      },
+      {
+        "n": "uSpeed",
+        "t": "float",
+        "d": 1,
+        "max": 3,
+        "b": 3,
+        "line": 12
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Background opacity",
+        "b": 3,
+        "line": 48
+      }
+    ],
+    "presets": [
+      "Wave",
+      "Two tone",
+      "Equaliser",
+      "Breathe"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "svg",
+        "text",
+        "mask"
+      ],
+      "images": [
+        {
+          "name": "uText",
+          "label": "Text",
+          "wants": "text"
+        }
+      ],
+      "texts": [],
+      "video": "none",
+      "interactions": [],
+      "transparent": false
+    },
+    "swiftReady": true,
+    "video": "none",
+    "loop": 4,
+    "animated": true,
+    "duration": 4000,
+    "module": "shaders/recap",
+    "addedAt": "2026-11-13T15:35:59Z",
+    "commitHash": "d06df57664d2ac130bc3a2af9fef78a818b98d95",
+    "order": 693
+  },
+  {
+    "id": "echo-text",
+    "name": "Echo text",
+    "kind": "shader",
+    "category": "text",
+    "description": "A title trailed by copies of its own outline in two alternating colours, fanning out behind it and folding back in a ripple. Set the outline width to 0 for solid stacked copies.",
+    "tags": [
+      "text",
+      "title",
+      "echo",
+      "outline",
+      "trail",
+      "repeat",
+      "kinetic",
+      "bold",
+      "recap",
+      "story",
+      "loop"
+    ],
+    "controls": [
+      {
+        "n": "uText",
+        "t": "sampler2D",
+        "d": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201024%20256%22%20width%3D%221024%22%20height%3D%22256%22%3E%3Ctext%20x%3D%22512%22%20y%3D%22128%22%20dy%3D%220.35em%22%20text-anchor%3D%22middle%22%20textLength%3D%22651%22%20lengthAdjust%3D%22spacingAndGlyphs%22%20font-family%3D%22%26%2339%3BArial%20Black%26%2339%3B%2C%20%26%2339%3BHelvetica%20Neue%26%2339%3B%2C%20Helvetica%2C%20Arial%2C%20system-ui%2C%20sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%22199.7%22%20fill%3D%22%23fff%22%3EFLAIR%3C%2Ftext%3E%3C%2Fsvg%3E",
+        "line": 2,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            65,
+            0,
+            245
+          ]
+        },
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uInk",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "l": "Text",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uEchoA",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            240,
+            55,
+            165
+          ]
+        },
+        "l": "Echo A",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uEchoB",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            205,
+            245,
+            100
+          ]
+        },
+        "l": "Echo B",
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "uEchoes",
+        "t": "int",
+        "d": 7,
+        "min": 1,
+        "max": 12,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uSpread",
+        "t": "float",
+        "d": 0.04,
+        "max": 0.12,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uAngle",
+        "t": "float",
+        "d": -90,
+        "l": "Angle (°)",
+        "min": -180,
+        "max": 180,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uGrow",
+        "t": "float",
+        "d": 0.03,
+        "max": 0.3,
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uOutline",
+        "t": "float",
+        "d": 0.005,
+        "l": "Outline width (0 fills)",
+        "max": 0.012,
+        "b": 3,
+        "line": 11
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 0.7,
+        "l": "Text size",
+        "min": 0.3,
+        "b": 3,
+        "line": 12
+      },
+      {
+        "n": "uSpeed",
+        "t": "float",
+        "d": 1,
+        "max": 3,
+        "b": 3,
+        "line": 13
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Background opacity",
+        "b": 3,
+        "line": 70
+      }
+    ],
+    "presets": [
+      "Outline trail",
+      "Solid stack",
+      "Zoom out",
+      "Ghost"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "svg",
+        "text",
+        "mask"
+      ],
+      "images": [
+        {
+          "name": "uText",
+          "label": "Text",
+          "wants": "text"
+        }
+      ],
+      "texts": [],
+      "video": "none",
+      "interactions": [],
+      "transparent": false
+    },
+    "swiftReady": true,
+    "video": "none",
+    "loop": 4,
+    "animated": true,
+    "duration": 4000,
+    "module": "shaders/recap",
+    "addedAt": "2026-11-13T15:35:59Z",
+    "commitHash": "d06df57664d2ac130bc3a2af9fef78a818b98d95",
+    "order": 692
+  },
+  {
+    "id": "image-photocopy",
+    "name": "Photocopy",
+    "kind": "shader",
+    "category": "image",
+    "description": "A picture run through a tired photocopier: hard black toner on off-white paper, clumped grain, pale streaks down the page, burnt edges and a slight shift with every copy, like a zine page.",
+    "tags": [
+      "image",
+      "photocopy",
+      "xerox",
+      "zine",
+      "toner",
+      "grain",
+      "monochrome",
+      "collage",
+      "editorial",
+      "recap"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "landscape"
+        },
+        "line": 2,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uInk",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            20,
+            20,
+            20
+          ]
+        },
+        "l": "Toner",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uPaper",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            242,
+            239,
+            230
+          ]
+        },
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uThreshold",
+        "t": "float",
+        "d": 0.4,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uHardness",
+        "t": "float",
+        "d": 6,
+        "min": 1,
+        "max": 12,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uGrain",
+        "t": "float",
+        "d": 0.5,
+        "l": "Toner grain",
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uStreaks",
+        "t": "float",
+        "d": 0.3,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uEdge",
+        "t": "float",
+        "d": 0.45,
+        "l": "Edge burn",
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uJitter",
+        "t": "float",
+        "d": 0.3,
+        "l": "Copy shift",
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 12
+      }
+    ],
+    "presets": [
+      "Zine",
+      "Clean copy",
+      "Pink flyer",
+      "Blueprint",
+      "Tenth generation"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "swiftReady": true,
+    "video": "filter",
+    "animated": true,
+    "module": "shaders/recap",
+    "addedAt": "2026-11-13T15:35:59Z",
+    "commitHash": "d06df57664d2ac130bc3a2af9fef78a818b98d95",
+    "order": 691
+  },
+  {
+    "id": "image-pixel-stretch",
+    "name": "Pixel stretch",
+    "kind": "shader",
+    "category": "image",
+    "description": "A picture kept whole up to a line, then dragged out from it in long flat bars of its own edge colours, the line ragged and drifting.",
+    "tags": [
+      "image",
+      "stretch",
+      "smear",
+      "pixel",
+      "bar",
+      "glitch",
+      "editorial",
+      "recap",
+      "story"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "landscape"
+        },
+        "line": 2,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uDirection",
+        "t": "int",
+        "d": 3,
+        "l": "Direction (0 right, 1 left, 2 up, 3 down)",
+        "max": 3,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "uLine",
+        "t": "float",
+        "d": 0.5,
+        "l": "Stretch from",
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uTravel",
+        "t": "float",
+        "d": 0.12,
+        "max": 0.5,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uSpeed",
+        "t": "float",
+        "d": 0.7,
+        "max": 3,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uBands",
+        "t": "float",
+        "d": 22,
+        "l": "Bands (0 smooth)",
+        "max": 80,
+        "s": 1,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uRagged",
+        "t": "float",
+        "d": 0.22,
+        "l": "Ragged edge",
+        "max": 0.6,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 9
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 10
+      }
+    ],
+    "presets": [
+      "Bars",
+      "Clean pull",
+      "Sideways",
+      "Liquid edge"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "swiftReady": true,
+    "video": "filter",
+    "animated": true,
+    "module": "shaders/recap",
+    "addedAt": "2026-11-13T15:35:59Z",
+    "commitHash": "d06df57664d2ac130bc3a2af9fef78a818b98d95",
+    "order": 690
+  },
+  {
+    "id": "shape-tiles",
+    "name": "Shape tiles",
+    "kind": "shader",
+    "category": "pattern",
+    "description": "A grid of flat-coloured tiles, each holding a disc, quarter circle, half circle, diamond, ring or square that morphs into another and swaps colours on its own beat.",
+    "tags": [
+      "background",
+      "tiles",
+      "grid",
+      "geometric",
+      "shape",
+      "flat",
+      "bold",
+      "bauhaus",
+      "recap",
+      "story"
+    ],
+    "controls": [
+      {
+        "n": "uColorA",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            240,
+            55,
+            165
+          ]
+        },
+        "l": "Colour A",
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "uColorB",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            205,
+            245,
+            100
+          ]
+        },
+        "l": "Colour B",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uColorC",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            65,
+            0,
+            245
+          ]
+        },
+        "l": "Colour C",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uColorD",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            70,
+            50
+          ]
+        },
+        "l": "Colour D",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 170,
+        "l": "Tile size (px)",
+        "min": 40,
+        "max": 400,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uRate",
+        "t": "float",
+        "d": 0.45,
+        "l": "Changes per second",
+        "max": 2,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uStagger",
+        "t": "float",
+        "d": 1,
+        "b": 3,
+        "line": 8
+      }
+    ],
+    "presets": [
+      "Clash",
+      "Primary school",
+      "Two tone",
+      "All together"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "swiftReady": true,
+    "animated": true,
+    "paint": {
+      "map": "stroke",
+      "colors": [
+        "uColorA",
+        "uColorB"
+      ],
+      "live": true,
+      "repeat": "repeat"
+    },
+    "module": "shaders/recap",
+    "addedAt": "2026-11-13T15:35:59Z",
+    "commitHash": "d06df57664d2ac130bc3a2af9fef78a818b98d95",
+    "order": 689
+  },
+  {
+    "id": "concentric-shapes",
+    "name": "Concentric shapes",
+    "kind": "shader",
+    "category": "pattern",
+    "description": "Flat-coloured shapes nested inside one another, growing out of the centre (or sinking into it) as they turn and morph between circle, squircle, flower and star.",
+    "tags": [
+      "background",
+      "concentric",
+      "ring",
+      "tunnel",
+      "shape",
+      "flat",
+      "bold",
+      "recap",
+      "story",
+      "title"
+    ],
+    "controls": [
+      {
+        "n": "uColorA",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            240,
+            55,
+            165
+          ]
+        },
+        "l": "Colour A",
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "uColorB",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            205,
+            245,
+            100
+          ]
+        },
+        "l": "Colour B",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uColorC",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            65,
+            0,
+            245
+          ]
+        },
+        "l": "Colour C",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uColorD",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            70,
+            50
+          ]
+        },
+        "l": "Colour D",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uShape",
+        "t": "int",
+        "d": 4,
+        "l": "Shape (0 circle, 1 squircle, 2 flower, 3 star, 4 morphing)",
+        "max": 4,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uRings",
+        "t": "int",
+        "d": 9,
+        "min": 3,
+        "max": 20,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uPoints",
+        "t": "int",
+        "d": 6,
+        "l": "Petals or points",
+        "min": 3,
+        "max": 12,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uSpeed",
+        "t": "float",
+        "d": 0.5,
+        "max": 3,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uInward",
+        "t": "bool",
+        "d": false,
+        "l": "Stream inward",
+        "line": 10
+      },
+      {
+        "n": "uTwist",
+        "t": "float",
+        "d": 0.4,
+        "min": -2,
+        "max": 2,
+        "b": 3,
+        "line": 11
+      },
+      {
+        "n": "uSpin",
+        "t": "float",
+        "d": 0.15,
+        "min": -2,
+        "max": 2,
+        "b": 3,
+        "line": 12
+      },
+      {
+        "n": "uCentre",
+        "t": "vec2",
+        "d": [
+          0.5,
+          0.5
+        ],
+        "b": 3,
+        "line": 13
+      }
+    ],
+    "presets": [
+      "Shapeshifter",
+      "Bloom",
+      "Bullseye",
+      "Star dive",
+      "Squircle stack"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "swiftReady": true,
+    "animated": true,
+    "paint": {
+      "map": "canvas",
+      "colors": [
+        "uColorA",
+        "uColorB"
+      ],
+      "live": true
+    },
+    "module": "shaders/recap",
+    "addedAt": "2026-11-13T15:35:59Z",
+    "commitHash": "d06df57664d2ac130bc3a2af9fef78a818b98d95",
+    "order": 688
+  },
+  {
+    "id": "ribbon-bands",
+    "name": "Ribbon bands",
+    "kind": "shader",
+    "category": "pattern",
+    "description": "Flat ribbons of clashing colour stacked across the frame, each edge riding its own slow wave so they overlap and part, with a soft shadow under every fold.",
+    "tags": [
+      "background",
+      "ribbon",
+      "stripe",
+      "wave",
+      "flat",
+      "bold",
+      "recap",
+      "story",
+      "loop"
+    ],
+    "controls": [
+      {
+        "n": "uColorA",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            240,
+            55,
+            165
+          ]
+        },
+        "l": "Colour A",
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "uColorB",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            205,
+            245,
+            100
+          ]
+        },
+        "l": "Colour B",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uColorC",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            65,
+            0,
+            245
+          ]
+        },
+        "l": "Colour C",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uColorD",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            70,
+            50
+          ]
+        },
+        "l": "Colour D",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uCount",
+        "t": "int",
+        "d": 8,
+        "l": "Ribbons",
+        "min": 3,
+        "max": 16,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uWave",
+        "t": "float",
+        "d": 0.55,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uFrequency",
+        "t": "float",
+        "d": 1.6,
+        "l": "Wave frequency",
+        "min": 0.5,
+        "max": 6,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uAngle",
+        "t": "float",
+        "d": -18,
+        "l": "Angle (°)",
+        "min": -180,
+        "max": 180,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uSpeed",
+        "t": "float",
+        "d": 1,
+        "max": 3,
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uLines",
+        "t": "float",
+        "d": 0.35,
+        "l": "Pinstripes",
+        "b": 3,
+        "line": 11
+      },
+      {
+        "n": "uShadow",
+        "t": "float",
+        "d": 0.4,
+        "b": 3,
+        "line": 12
+      }
+    ],
+    "presets": [
+      "Clash",
+      "Sorbet",
+      "Ink and paper",
+      "Calm stack"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "swiftReady": true,
+    "loop": 8,
+    "animated": true,
+    "duration": 8000,
+    "paint": {
+      "map": "stroke",
+      "colors": [
+        "uColorA",
+        "uColorB"
+      ],
+      "live": true
+    },
+    "module": "shaders/recap",
+    "addedAt": "2026-11-13T15:35:59Z",
+    "commitHash": "d06df57664d2ac130bc3a2af9fef78a818b98d95",
+    "order": 687
   },
   {
     "id": "stepped-gradient",
@@ -1493,9 +1493,9 @@
       ]
     },
     "module": "shaders/recap",
-    "addedAt": "2026-11-13T15:44:31.432Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-11-13T15:35:59Z",
+    "commitHash": "d06df57664d2ac130bc3a2af9fef78a818b98d95",
+    "order": 686
   },
   {
     "id": "detail-panel",
