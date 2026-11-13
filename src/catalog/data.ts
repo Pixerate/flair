@@ -1317,4 +1317,136 @@ export const statCards: VectorEffect = {
   })(),
 };
 
-export const dataEffects: VectorEffect[] = [donutChart, pieChart, gauge, barRace, sparkline, leaderboard, areaChart, kpiTile, rolodex, fanOutLinks, hubSpokeGraph, statCards];
+// ── Year scrubber ──────────────────────────────────────────────────────
+
+/**
+ * A vertical timeline in a 220×400 frame: a density trace hugging the left
+ * edge (up to `trace` wide), a column of year labels at `col` spread from
+ * `top` to `bottom` (up to `slots` of them, thinned for long ranges), and a
+ * year pill that pops in on the first year then glides to the chosen one.
+ * Times are in ms.
+ */
+const YEAR = { w: 220, h: 400, slots: 13, top: 48, bottom: 352, trace: 56, col: 112, pillW: 66, pillH: 28, step: 4, grow: 1000, pop: 900, glide: 1500, glideMs: 1800 };
+const YEAR_DEFAULT = [3, 4, 6, 5, 8, 12, 9, 7, 10, 14, 11, 8, 6, 9, 13, 10, 7, 5, 6, 4];
+const YEAR_ARRIVE = YEAR.glide + YEAR.glideMs;
+
+/** A repeatable jitter in [-1, 1] for sample `k`. */
+const jitter = (k: number) => {
+  const x = Math.sin(k * 12.9898 + 4.1) * 43758.5453;
+  return (x - Math.floor(x)) * 2 - 1;
+};
+
+/**
+ * The density trace: `values` spread from `top` to `bottom` (held flat
+ * beyond, tapering to nothing at the frame's top and bottom), roughened by
+ * `grain` (0 smooth, 1 spiky). The filled shape and its rim, as path data.
+ */
+export function densityTrace(values: number[], grain: number): { fill: string; rim: string } {
+  const hi = Math.max(...values.map((v) => Math.abs(v))) || 1;
+  const at = (y: number) => {
+    const u = Math.max(0, Math.min(1, (y - YEAR.top) / (YEAR.bottom - YEAR.top))) * (values.length - 1);
+    const i = Math.min(values.length - 2, Math.floor(u));
+    const f = u - i;
+    const ease = f * f * (3 - 2 * f);
+    return Math.abs(values[i]! + (values[i + 1]! - values[i]!) * ease) / hi;
+  };
+  const taper = (y: number) => {
+    const t = Math.max(0, Math.min(1, Math.min(y, YEAR.h - y) / 36));
+    return t * t * (3 - 2 * t);
+  };
+  const pts: string[] = [];
+  for (let y = 0, k = 0; y <= YEAR.h; y += YEAR.step, k++) {
+    const rough = 1 + grain * (0.32 * jitter(k) + 0.14 * jitter(k * 7 + 3));
+    const x = YEAR.trace * (0.12 + 0.88 * at(y)) * rough * taper(y);
+    pts.push(`${r1(Math.max(0, Math.min(YEAR.trace * 1.3, x)))} ${y}`);
+  }
+  const rim = `M${pts.join(" L")}`;
+  return { fill: `M0 0 L${pts.join(" L")} L0 ${YEAR.h}Z`, rim };
+}
+
+/** Whole years in range, `fallback` for anything unreadable. */
+const wholeYear = (v: unknown, fallback: number) => {
+  const x = Math.round(Number(v));
+  return Number.isFinite(x) ? Math.max(1, Math.min(9999, x)) : fallback;
+};
+
+export const yearScrubber: VectorEffect = {
+  kind: "vector",
+  id: "year-scrubber",
+  name: "Year scrubber",
+  description:
+    "A vertical timeline: a jagged density trace grows in down the left edge, a column of years fades in beside it, and a glowing year pill pops in on the first year and glides down to the chosen one, its number counting through the years and a highlight band riding the trace with it.",
+  category: "data",
+  tags: ["timeline", "year", "scrubber", "histogram", "dashboard", "sidebar", "tech"],
+  hold: 1600,
+  presets: [
+    { name: "Light", values: { background: [0.95, 0.96, 0.97], panel: [1, 1, 1], ink: [0.1, 0.15, 0.2], accent: [0.06, 0.52, 0.58] } },
+    { name: "Amber", values: { background: [0.07, 0.06, 0.04], panel: [0.15, 0.12, 0.07], ink: [0.95, 0.9, 0.8], accent: [0.96, 0.72, 0.3] } },
+    { name: "Decade", values: { from: 2015, to: 2025, year: 2023, values: "2,3,3,5,4,7,9,8,12,15,13", grain: 0.4 } },
+  ],
+  derived: (v) => {
+    let from = wholeYear(v.from, 2016);
+    let to = wholeYear(v.to, 2024);
+    if (to < from) [from, to] = [to, from];
+    const year = Math.max(from, Math.min(to, wholeYear(v.year, 2020)));
+    const span = to - from;
+    const yOf = (y: number) => r1(span === 0 ? (YEAR.top + YEAR.bottom) / 2 : YEAR.top + ((y - from) / span) * (YEAR.bottom - YEAR.top));
+    const stride = Math.max(1, Math.ceil(span / (YEAR.slots - 1)));
+    const read = parseNumberList(v.values, 64).filter((x) => Number.isFinite(x));
+    const values = read.length >= 2 ? read : read.length === 1 ? [read[0]!, read[0]!] : YEAR_DEFAULT;
+    const grain = Math.max(0, Math.min(1, Number(v.grain) || 0));
+    const { fill, rim } = densityTrace(values, grain);
+    const out: Record<string, string | number> = {};
+    for (let i = 0; i < YEAR.slots; i++) {
+      const y = from + i * stride;
+      const shown = y <= to && (i === 0 || span > 0);
+      out[`show${i}`] = shown ? "inline" : "none";
+      out[`label${i}`] = shown ? String(y) : "";
+      out[`ly${i}`] = shown ? r1(yOf(y) + 4) : 0;
+    }
+    const y0 = yOf(from);
+    const y1 = yOf(year);
+    return {
+      ...out,
+      fill,
+      rim,
+      from,
+      year,
+      cursorFrom: `translate(0 ${y0})`,
+      cursorTo: `translate(0 ${y1})`,
+      backdropOpacity: v.backdrop ? 1 : 0,
+    };
+  },
+  motion: (() => {
+    const slots = Array.from({ length: YEAR.slots }, (_, i) => i);
+    const { col, pillW, pillH, w, h } = YEAR;
+    const left = col - pillW / 2;
+    const right = col + pillW / 2;
+    const pill = (s: number) => `translate(${col} 0) scale(${s})`;
+    return {
+      svg: `<svg viewBox="0 0 ${w} ${h}" font-family="${SANS}"><!-- {{from: int min=1 max=9999 default=2016 label='First year'}} {{to: int min=1 max=9999 default=2024 label='Last year'}} {{year: int min=1 max=9999 default=2020 label='Chosen year'}} {{values: text default='${YEAR_DEFAULT.join(",")}' label='Density, top to bottom (comma-separated)'}} {{grain: float min=0 max=1 default=0.7 step=0.05 label='Roughness'}} {{background: color default=#0B1A1E label='Background'}} {{backdrop: bool default=true label='Background'}} {{panel: color default=#16323A label='Pill'}} {{ink: color default=#D7E3E6 label='Text and trace'}} {{accent: color default=#5EC8C4 label='Accent'}} {{glow: float min=0 max=6 default=3 step=0.5 label='Glow'}} --><defs><filter id="yearScrubberGlow" x="-40%" y="-80%" width="180%" height="260%"><feGaussianBlur stdDeviation="{{glow}}" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter><linearGradient id="yearScrubberTraceFill" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="{{ink}}" stop-opacity="0.04"/><stop offset="1" stop-color="{{ink}}" stop-opacity="0.2"/></linearGradient><linearGradient id="yearScrubberBandFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{{accent}}" stop-opacity="0"/><stop offset="0.5" stop-color="{{accent}}" stop-opacity="0.75"/><stop offset="1" stop-color="{{accent}}" stop-opacity="0"/></linearGradient><linearGradient id="yearScrubberTail" gradientUnits="userSpaceOnUse" x1="${right}" y1="0" x2="${w}" y2="0"><stop offset="0" stop-color="{{accent}}" stop-opacity="0.6"/><stop offset="1" stop-color="{{accent}}" stop-opacity="0"/></linearGradient><radialGradient id="yearScrubberVignette" cx="0.35" cy="0.5" r="0.8"><stop offset="0" stop-color="{{accent}}" stop-opacity="0.08"/><stop offset="1" stop-color="{{accent}}" stop-opacity="0"/></radialGradient><clipPath id="yearScrubberClip"><path d="{{fill}}"/></clipPath></defs><g opacity="{{backdropOpacity}}"><rect width="${w}" height="${h}" fill="{{background}}"/><rect width="${w}" height="${h}" fill="url(#yearScrubberVignette)"/></g><g id="yearScrubberTrace" transform="scale(0 1)"><path d="{{fill}}" fill="url(#yearScrubberTraceFill)"/><g clip-path="url(#yearScrubberClip)"><rect id="yearScrubberBand" x="0" y="-48" width="${YEAR.trace * 1.4}" height="96" fill="url(#yearScrubberBandFill)" transform="{{cursorFrom}}" opacity="0"/></g><path d="{{rim}}" fill="none" stroke="{{ink}}" stroke-opacity="0.55" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="0 3.4"/></g>${slots
+        .map((i) => `<text id="yearScrubberYear${i}" x="${col}" y="{{ly${i}}}" display="{{show${i}}}" text-anchor="middle" font-size="11" fill="{{ink}}" opacity="0">{{label${i}}}</text>`)
+        .join("")}<g id="yearScrubberCursor" transform="{{cursorFrom}}"><path id="yearScrubberLine" d="M0 0 H${left - 4}" fill="none" stroke="{{accent}}" stroke-opacity="0.7" stroke-width="1"/><path id="yearScrubberTailLine" d="M${right + 4} 0 H${w}" fill="none" stroke="url(#yearScrubberTail)" stroke-width="1"/><g id="yearScrubberPill" transform="${pill(0.6)}" opacity="0"><rect id="yearScrubberRing" x="${-pillW / 2}" y="${-pillH / 2}" width="${pillW}" height="${pillH}" rx="${pillH / 2}" fill="none" stroke="{{accent}}" stroke-width="1.4" opacity="0"/><rect x="${-pillW / 2}" y="${-pillH / 2}" width="${pillW}" height="${pillH}" rx="${pillH / 2}" fill="{{panel}}"/><rect id="yearScrubberEdge" x="${-pillW / 2}" y="${-pillH / 2}" width="${pillW}" height="${pillH}" rx="${pillH / 2}" fill="none" stroke="{{accent}}" stroke-width="1.2" filter="url(#yearScrubberGlow)" opacity="0.5"/><text id="yearScrubberValue" y="5" text-anchor="middle" font-size="15" font-weight="600" fill="{{ink}}">{{from}}</text></g></g></svg>`,
+      animate: [
+        // The trace grows out of the left edge, the years fade in down the column.
+        { id: "yearScrubberTrace", attrs: { transform: ["scale(0 1)", "scale(1 1)"] }, ms: YEAR.grow, ease: "out" },
+        ...slots.map((i): SvgAnimation => ({ id: `yearScrubberYear${i}`, attrs: { opacity: [0, 0.5], transform: ["translate(6 0)", "translate(0 0)"] }, delay: 150 + i * 60, ms: 420, ease: "out" })),
+        // The pill pops in on the first year, its line drawing out both ways.
+        { id: "yearScrubberPill", attrs: { opacity: [0, 1], transform: [pill(0.6), pill(1)] }, delay: YEAR.pop, ms: 420, ease: { spring: { stiffness: 260, damping: 16 } } },
+        { id: "yearScrubberLine", draw: true, delay: YEAR.pop, ms: 500, ease: "out" },
+        { id: "yearScrubberTailLine", draw: true, delay: YEAR.pop + 100, ms: 500, ease: "out" },
+        { id: "yearScrubberBand", attrs: { opacity: [0, 0.45] }, delay: YEAR.pop, ms: 400 },
+        // It glides to the chosen year, counting, the band riding the trace with it.
+        { id: "yearScrubberCursor", attrs: { transform: ["{{cursorFrom}}", "{{cursorTo}}"] }, delay: YEAR.glide, ms: YEAR.glideMs, ease: "in-out" },
+        { id: "yearScrubberBand", attrs: { transform: ["{{cursorFrom}}", "{{cursorTo}}"] }, delay: YEAR.glide, ms: YEAR.glideMs, ease: "in-out" },
+        { id: "yearScrubberValue", count: [n("from"), n("year")], decimals: 0, delay: YEAR.glide, ms: YEAR.glideMs, ease: "in-out" },
+        // Arrived: the pill and band brighten and a ring pulses out twice.
+        { id: "yearScrubberEdge", attrs: { opacity: [0.5, 1] }, delay: YEAR_ARRIVE, ms: 260, ease: "out" },
+        { id: "yearScrubberBand", attrs: { opacity: [0.45, 0.95] }, delay: YEAR_ARRIVE, ms: 300, ease: "out" },
+        ...[0, 1].map((k): SvgAnimation => ({ id: "yearScrubberRing", attrs: { opacity: [0.8, 0], transform: ["scale(1 1)", "scale(1.3 1.7)"] }, delay: YEAR_ARRIVE + k * 520, ms: 700, ease: "out" })),
+      ],
+    };
+  })(),
+};
+
+export const dataEffects: VectorEffect[] = [donutChart, pieChart, gauge, barRace, sparkline, leaderboard, areaChart, kpiTile, rolodex, fanOutLinks, hubSpokeGraph, statCards, yearScrubber];

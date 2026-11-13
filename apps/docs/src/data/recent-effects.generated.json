@@ -1,5 +1,167 @@
 [
   {
+    "id": "year-scrubber",
+    "name": "Year scrubber",
+    "kind": "vector",
+    "category": "data",
+    "description": "A vertical timeline: a jagged density trace grows in down the left edge, a column of years fades in beside it, and a glowing year pill pops in on the first year and glides down to the chosen one, its number counting through the years and a highlight band riding the trace with it.",
+    "tags": [
+      "timeline",
+      "year",
+      "scrubber",
+      "histogram",
+      "dashboard",
+      "sidebar",
+      "tech"
+    ],
+    "controls": [
+      {
+        "n": "from",
+        "t": "int",
+        "d": 2016,
+        "l": "First year",
+        "min": 1,
+        "max": 9999,
+        "b": 3,
+        "line": 1
+      },
+      {
+        "n": "to",
+        "t": "int",
+        "d": 2024,
+        "l": "Last year",
+        "min": 1,
+        "max": 9999,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "year",
+        "t": "int",
+        "d": 2020,
+        "l": "Chosen year",
+        "min": 1,
+        "max": 9999,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "values",
+        "t": "text",
+        "d": "3,4,6,5,8,12,9,7,10,14,11,8,6,9,13,10,7,5,6,4",
+        "l": "Density, top to bottom (comma-separated)",
+        "line": 4
+      },
+      {
+        "n": "grain",
+        "t": "float",
+        "d": 0.7,
+        "l": "Roughness",
+        "s": 0.05,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "background",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            11,
+            26,
+            30
+          ]
+        },
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "backdrop",
+        "t": "bool",
+        "d": true,
+        "l": "Background",
+        "line": 7
+      },
+      {
+        "n": "panel",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            22,
+            50,
+            58
+          ]
+        },
+        "l": "Pill",
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "ink",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            215,
+            227,
+            230
+          ]
+        },
+        "l": "Text and trace",
+        "c": 1,
+        "line": 9
+      },
+      {
+        "n": "accent",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            94,
+            200,
+            196
+          ]
+        },
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "glow",
+        "t": "float",
+        "d": 3,
+        "max": 6,
+        "s": 0.5,
+        "b": 3,
+        "line": 11
+      }
+    ],
+    "presets": [
+      "Light",
+      "Amber",
+      "Decade"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "values",
+          "label": "Density, top to bottom (comma-separated)",
+          "holds": "copy",
+          "default": "3,4,6,5,8,12,9,7,10,14,11,8,6,9,13,10,7,5,6,4"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 1600,
+    "animated": true,
+    "duration": 6120,
+    "module": "data",
+    "addedAt": "2026-11-13T08:23:17.664Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
     "id": "insight-cards",
     "name": "Insight cards",
     "kind": "vector",
@@ -3334,181 +3496,5 @@
     "addedAt": "2026-11-10T15:17:55Z",
     "commitHash": "04bd8bc6d2ca1aba5d35f2311c0dcbce4a3cea4d",
     "order": 663
-  },
-  {
-    "id": "film-strip",
-    "name": "Film strip",
-    "kind": "shader",
-    "category": "film",
-    "description": "A picture running through a strip of film: frame after frame of it sliding past between rows of sprocket holes, with frame lines, printed edge marks along the margin and a little dust and flicker, lit from behind as on a lightbox; upright or across, tilted if you like, or as an orange-based negative.",
-    "tags": [
-      "film",
-      "cinema",
-      "sprockets",
-      "film-strip",
-      "35mm",
-      "negative",
-      "vintage",
-      "image"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "landscape"
-        },
-        "line": 4,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uDirection",
-        "t": "int",
-        "d": 0,
-        "l": "Direction (0 runs up, 1 runs across)",
-        "max": 1,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 0.6,
-        "l": "Frames a second",
-        "min": -4,
-        "max": 4,
-        "s": 0.05,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uWidth",
-        "t": "float",
-        "d": 0.62,
-        "l": "Strip width",
-        "min": 0.3,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uAngle",
-        "t": "float",
-        "d": 0,
-        "l": "Tilt (degrees)",
-        "min": -45,
-        "max": 45,
-        "s": 1,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uFrameAspect",
-        "t": "float",
-        "d": 1.5,
-        "l": "Frame aspect ratio",
-        "min": 1,
-        "max": 2.4,
-        "s": 0.01,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uBase",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            23,
-            17,
-            14
-          ]
-        },
-        "l": "Film base",
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "uEdge",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            224,
-            150,
-            58
-          ]
-        },
-        "l": "Edge marks",
-        "c": 1,
-        "line": 11
-      },
-      {
-        "n": "uNegative",
-        "t": "bool",
-        "d": false,
-        "line": 12
-      },
-      {
-        "n": "uWear",
-        "t": "float",
-        "d": 0.35,
-        "b": 3,
-        "line": 13
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 14
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "b": 3,
-        "line": 15
-      }
-    ],
-    "presets": [
-      "Across",
-      "Negative",
-      "Tilted",
-      "Dark room",
-      "Overlay"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "swiftReady": true,
-    "video": "filter",
-    "animated": true,
-    "module": "shaders/film",
-    "addedAt": "2026-11-10T15:17:55Z",
-    "commitHash": "04bd8bc6d2ca1aba5d35f2311c0dcbce4a3cea4d",
-    "order": 662
   }
 ]
