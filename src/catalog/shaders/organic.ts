@@ -188,7 +188,8 @@ uniform vec3 uHot;      // @control color default=#FFF3B0 label="Hot"
 uniform vec3 uMid;      // @control color default=#FF7A00 label="Mid"
 uniform vec3 uCool;     // @control color default=#7A0000 label="Cool"
 uniform float uSpeed;   // @control min=0 max=3 default=1.2 label="Speed"
-uniform float uHeight;  // @control min=0.1 max=1.5 default=0.7 label="Height"`,
+uniform float uHeight;  // @control min=0.1 max=1.5 default=0.7 label="Height"
+uniform vec3 uBackground; // @control color default=#000000 label="Background"`,
     HASH,
     NOISE,
     FBM,
@@ -199,7 +200,7 @@ uniform float uHeight;  // @control min=0.1 max=1.5 default=0.7 label="Height"`,
   float n = fbm(vec2(p.x * 4.0, p.y * 3.0 - t * 1.5), 5);
   float heat = (1.0 - uv.y / uHeight) + (n - 0.5) * 1.1;
   heat = clamp(heat, 0.0, 1.0);
-  vec3 col = mix(vec3(0.0), uCool, smoothstep(0.05, 0.3, heat));
+  vec3 col = mix(uBackground, uCool, smoothstep(0.05, 0.3, heat));
   col = mix(col, uMid, smoothstep(0.3, 0.6, heat));
   col = mix(col, uHot, smoothstep(0.6, 0.95, heat));
   fragColor = vec4(col, 1.0);

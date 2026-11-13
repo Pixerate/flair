@@ -328,13 +328,14 @@ uniform float uFlicker;  // @control min=0 max=1 default=0.5 label="Flicker"
 uniform int uLevels;     // @control min=3 max=16 default=9 label="Palette steps"
 uniform vec3 uEmber;     // @control color default=#7A0E06 label="Embers"
 uniform vec3 uFlame;     // @control color default=#F2560E label="Flame"
-uniform vec3 uCore;      // @control color default=#FFE27A label="Core"`,
+uniform vec3 uCore;      // @control color default=#FFE27A label="Core"
+uniform vec3 uBackground; // @control color default=#050303 label="Background"`,
     HASH,
     NOISE,
     FBM,
-    `// Black → embers → flame → core → white.
+    `// Background → embers → flame → core → white.
 vec3 ramp(float t) {
-  vec3 c = mix(vec3(0.02, 0.01, 0.01), uEmber, smoothstep(0.0, 0.3, t));
+  vec3 c = mix(uBackground, uEmber, smoothstep(0.0, 0.3, t));
   c = mix(c, uFlame, smoothstep(0.3, 0.6, t));
   c = mix(c, uCore, smoothstep(0.6, 0.85, t));
   return mix(c, vec3(1.0, 1.0, 0.94), smoothstep(0.85, 1.0, t));
