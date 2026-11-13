@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, type ReactElement } from "react";
+import { act, useState, type ReactElement } from "react";
 import { createRoot, hydrateRoot, type Root } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -194,5 +194,43 @@ describe("FlairEffect", () => {
     render(<FlairEffect effect="aurora" autoplay={false} />);
     const canvas = container.querySelector("canvas")!;
     expect(canvas.style.width).toBe("100%");
+  });
+
+  it("drives a UI component: typed data, and a controlled switch whose change event round-trips through React state", () => {
+    const seen: boolean[] = [];
+    function Settings() {
+      const [checked, setChecked] = useState(false);
+      return (
+        <>
+          <FlairEffect
+            effect="toggle-switch"
+            className="wifi"
+            state={{ checked }}
+            label="Wi-Fi"
+            reducedMotion="always"
+            onEvent={(name, detail) => {
+              if (name !== "change") return;
+              seen.push(detail.checked as boolean);
+              setChecked(detail.checked as boolean);
+            }}
+          />
+          <FlairEffect effect="gauge" className="cpu" data={{ value: checked ? 90 : 10, max: 100, unit: "%", label: "CPU" }} reducedMotion="always" />
+        </>
+      );
+    }
+    render(<Settings />);
+    const host = container.querySelector<HTMLElement>("div.wifi")!;
+    const switchEl = host.querySelector<HTMLElement>("[role=switch]")!;
+    expect(switchEl.getAttribute("aria-checked")).toBe("false");
+    expect(container.querySelector("div.cpu [role=meter]")!.getAttribute("aria-valuenow")).toBe("10");
+    act(() => host.dispatchEvent(new MouseEvent("click", { bubbles: true })));
+    expect(seen).toEqual([true]);
+    expect(host.querySelector("[role=switch]")!.getAttribute("aria-checked")).toBe("true");
+    expect(host.querySelector("#slide")!.getAttribute("transform")).toBe("translate(70 0)");
+    expect(container.querySelector("div.cpu [role=meter]")!.getAttribute("aria-valuenow")).toBe("90");
+    act(() => host.querySelector<HTMLElement>("[role=switch]")!.dispatchEvent(new KeyboardEvent("keydown", { key: " ", bubbles: true })));
+    expect(seen).toEqual([true, false]);
+    expect(host.querySelector("[role=switch]")!.getAttribute("aria-checked")).toBe("false");
+    expect(host.querySelectorAll("svg")).toHaveLength(1);
   });
 });

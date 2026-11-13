@@ -508,6 +508,35 @@ Without React or Svelte, `svgFrameMarkup(motion, { at: "last" })` (from `@pixera
 - **Still**: `markup` is the still's layer and `style` the host's size from the viewBox, with the same rules as React. The action hides the still while the player runs and keeps it under `prefers-reduced-motion`. Without `vectorEffectStill` it makes its own still and sizes the element on the client.
 - **Attachments**: `{@attach fromAction(vectorEffect, () => params)}`, with `fromAction` from `svelte/attachments`.
 
+### Effects as UI components
+
+Some vector effects are UI components in all but name, and say so: their metadata (`effectMeta(effect).ui`, `getEffectMeta(id).ui` from `/catalog/lazy`) and `flairEffects()`' summaries and descriptions carry a `ui` field, `@pixerate/schemas`' `UiDescriptor` (what component type it `implements`, its `contract`: props as JSON Schema, controlled `state` and `events`, `a11y`, `colorRoles`, `sizing`; the `platforms` it renders on; an `example`; and a `contentHash` that changes whenever its output does, so a sync can tell). Next to it, `uiBindings` says which controls the contract drives: `props` (prop → control), `colors` (colour role → colour control, e.g. `{ "track-on": "on", "track-off": "off", surface: "background" }`, so a theme restyles it by role) and `state` (`{ checked: { interaction: "click" } }`: a boolean the click steps flip). Effects without `ui` are not meant as UI. The hints are `UI_HINTS` in `@pixerate/flair/catalog` (and `/catalog/lazy`); so far `toggle-switch` (`switch`), `progress-bar` (`progress`) and `gauge` (`gauge`, a `data-visual`).
+
+Hosts give them typed data and, for a switch, own its state:
+
+```ts
+import { mountEffect } from "@pixerate/flair/embed";
+
+mountEffect(el, "gauge", { data: { value: 88, max: 160, unit: " km/h", label: "Speed" } });
+const wifi = mountEffect(el2, "toggle-switch", {
+  state: { checked: false },
+  label: "Wi-Fi",
+  onEvent: (event, { checked }) => save(checked).then(() => wifi.setState!({ checked })),
+});
+```
+
+```tsx
+const [checked, setChecked] = useState(false);
+<FlairEffect effect="toggle-switch" state={{ checked }} onEvent={(_, d) => setChecked(d.checked as boolean)} label="Wi-Fi" />
+<FlairEffect effect="progress-bar" data={{ value: 40, label: "Uploading" }} />
+```
+
+- **Data** fills the controls `uiBindings.props` names (`setData` merges new data in); a prop that is unknown, mistyped or out of range is refused with a sentence. `uiValues(effect, data)` gives the control values for `renderVectorEffect`. Plain `values` (the text controls) still work, under the data.
+- **State**: given `state`, a click, Space or Enter fires `onEvent("change", { checked })` and nothing moves until the host passes the new state (`setState`, or the `state` prop/param); without it the switch flips itself and still fires `change`. `{ checked: true }` in `data` starts an uncontrolled switch on.
+- **Accessibility**: the element gets the contract's `role`, `tabindex` when it has keys, `aria-checked`, `aria-label` (from the `label` prop, or the `label` option) and `aria-valuenow` / `aria-valuemax` / `aria-valuetext`.
+- **Motion**: a component plays once to its rest point (`a11y.reducedMotionAt` of its play) and stays; under `prefers-reduced-motion` it shows that rest state still (`reducedMotion: "always"` or `"never"` overrides).
+- The Svelte `flairEffect` action takes the same `data`, `state`, `onEvent`, `label` and `reducedMotion` params.
+
 `shader-text` fills letters from a text image: set its `uText` control to `textImage("Your title", { weight: 900 })`, a transparent SVG `data:` URL of any Unicode text.
 
 A vector effect declares its controls in its picture, the way a shader declares its uniforms: the first `{{name: type …}}` declares a control (`float`, `int`, `bool`, `color` or `text`, with `@control`'s attributes; quote values with spaces in single quotes), and every `{{name}}` is filled with its value. Declarations can sit in an XML comment, which is dropped when the picture is filled in, and text is escaped, so any words are safe:
@@ -667,6 +696,7 @@ const frame = await renderer.render({ time: 0, progress: 0.5, inputs: { from: cl
   ```json
   { "map": "stroke", "colors": ["uLava", "uHot"], "values": {}, "live": true, "repeat": "mirror" }
   ```
+- **UI components.** `capabilities.uiHints` is true: effects that work as UI components carry `ui` (`@pixerate/schemas`' `UiDescriptor`, with a `contentHash`) and `uiBindings` (which controls its props, colour roles and state drive) on their summaries and descriptions, and the rest are not meant as UI. See [Effects as UI components](#effects-as-ui-components).
 - **Templates.** `capabilities.supportsTemplates` is true (editors from 0.233 use it). `listTemplates` and `describeTemplate` give Flair's sequence templates and their slots, shaped for a form. `instantiateTemplate(id, values, { name })` fills one and returns an `EffectSequence`: each shot's framing (where Flair's camera settles, dynamic framings worked out), its camera moves, its catalog effect layers and its transition. Values that do not fit are refused all at once, and subject slots left for the host come back in `openSlots`. What a sequence cannot carry (custom shader layers, element commands, behaviors, camera angles, effects left out by `kinds`) is dropped and named in `notes`, along with `validateScene`'s issues.
 
 ```ts

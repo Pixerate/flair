@@ -25,6 +25,7 @@ import { getEffect, effectDefaults, type EffectDefinition } from "../catalog/ind
 import { mountEffect, type EffectSubject, type MountedEffect } from "../embed/index.js";
 import { renderVectorEffect, type VectorEffect as VectorEffectDefinition } from "../catalog/types.js";
 import type { ControlValue } from "../shader/controls.js";
+import type { JsonValue } from "../catalog/ui-hints.js";
 import type { Clock } from "../time/clock.js";
 import type { SvgMotion } from "../vector/motion.js";
 import { svgFrameMarkup, svgInlineLayout, svgViewBox } from "../vector/static.js";
@@ -263,6 +264,24 @@ export interface FlairEffectProps extends Omit<HTMLAttributes<HTMLDivElement>, "
   autoplay?: boolean;
   /** Pause while scrolled out of view (default `true`). */
   pauseWhenHidden?: boolean;
+  /**
+   * For an effect offered as a UI component (one with `ui`): its typed data,
+   * by its contract's props (`{ value: 72, max: 100, unit: "%" }` for `gauge`).
+   * New data updates it by content.
+   */
+  data?: Record<string, unknown>;
+  /**
+   * For a UI component with controlled state: the state to show
+   * (`{ checked }` for `toggle-switch`). Given, the host owns it: clicks and
+   * keys only fire `onEvent`. Left out, the component keeps its own.
+   */
+  state?: Record<string, JsonValue>;
+  /** For a UI component: each event its contract names (`"change"`, `{ checked }`). */
+  onEvent?: (event: string, detail: Record<string, JsonValue>) => void;
+  /** For a UI component named by `aria-label` (the switch): its accessible name. */
+  label?: string;
+  /** For a UI component: when to show its rest state still (default `"user"`: under reduced motion). */
+  reducedMotion?: ReducedMotion;
 }
 
 /**
@@ -275,23 +294,34 @@ export interface FlairEffectProps extends Omit<HTMLAttributes<HTMLDivElement>, "
  * ```tsx
  * <FlairEffect effect="image-duotone" subject={{ image: "/team.jpg" }} preset="Spotify" style={{ aspectRatio: "16 / 9" }} />
  * <FlairEffect effect="typewriter" subject={{ text: "Hello there" }} />
+ * <FlairEffect effect="gauge" data={{ value: 72, max: 100, unit: "%", label: "CPU" }} />
+ * <FlairEffect effect="toggle-switch" state={{ checked }} onEvent={(_, d) => setChecked(d.checked as boolean)} label="Wi-Fi" />
  * ```
  */
 export function FlairEffect(props: FlairEffectProps) {
-  const { effect, subject, preset, values, autoplay, pauseWhenHidden, style, ...rest } = props;
+  const { effect, subject, preset, values, autoplay, pauseWhenHidden, data, state, onEvent, label, reducedMotion, style, ...rest } = props;
   const host = useRef<HTMLDivElement>(null);
   const mounted = useRef<MountedEffect | undefined>(undefined);
   const valuesKey = JSON.stringify(values ?? {});
+  const dataKey = JSON.stringify(data ?? {});
+  const stateKey = JSON.stringify(state ?? {});
+  // Whether the host owns the state: decided at mount, as React's own inputs do.
+  const controlled = state !== undefined;
   // What the running effect last took, so a re-render with the same subject or values changes nothing.
-  const applied = useRef<{ subject?: FlairEffectProps["subject"]; valuesKey: string }>({ valuesKey: "" });
-  const latest = useRef({ subject, values, valuesKey });
-  latest.current = { subject, values, valuesKey };
+  const applied = useRef<{ subject?: FlairEffectProps["subject"]; valuesKey: string; dataKey: string; stateKey: string }>({ valuesKey: "", dataKey: "", stateKey: "" });
+  const latest = useRef({ subject, values, valuesKey, data, dataKey, state, stateKey, onEvent });
+  latest.current = { subject, values, valuesKey, data, dataKey, state, stateKey, onEvent };
   useEffect(() => {
     const now = latest.current;
     const m = mountEffect(host.current!, effect, {
       ...(now.subject ? { subject: now.subject } : {}),
       ...(preset ? { preset } : {}),
       ...(now.values ? { values: now.values } : {}),
+      ...(now.data ? { data: now.data } : {}),
+      ...(controlled && now.state ? { state: now.state } : {}),
+      ...(label !== undefined ? { label } : {}),
+      ...(reducedMotion ? { reducedMotion } : {}),
+      onEvent: (name, detail) => latest.current.onEvent?.(name, detail),
       autoplay: autoplay ?? true,
       pauseWhenHidden: pauseWhenHidden ?? true,
     });
@@ -299,12 +329,22 @@ export function FlairEffect(props: FlairEffectProps) {
     m.element.style.width = "100%";
     m.element.style.height = "100%";
     mounted.current = m;
-    applied.current = { subject: now.subject, valuesKey: now.valuesKey };
+    applied.current = { subject: now.subject, valuesKey: now.valuesKey, dataKey: now.dataKey, stateKey: now.stateKey };
     return () => {
       m.dispose();
       mounted.current = undefined;
     };
-  }, [effect, preset, autoplay, pauseWhenHidden]);
+  }, [effect, preset, autoplay, pauseWhenHidden, controlled, label, reducedMotion]);
+  useEffect(() => {
+    if (!mounted.current || dataKey === applied.current.dataKey) return;
+    mounted.current.setData?.(latest.current.data ?? {});
+    applied.current.dataKey = dataKey;
+  }, [dataKey]);
+  useEffect(() => {
+    if (!mounted.current || !controlled || stateKey === applied.current.stateKey) return;
+    mounted.current.setState?.(latest.current.state ?? {});
+    applied.current.stateKey = stateKey;
+  }, [stateKey, controlled]);
   useEffect(() => {
     if (!mounted.current || !subject || subject === applied.current.subject) return;
     mounted.current.setSubject(subject);

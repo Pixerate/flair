@@ -250,4 +250,23 @@ describe("flairEffect", () => {
     action.destroy!();
     expect(node.style.position).toBe("absolute");
   });
+
+  it("drives a UI component: typed data, and a controlled switch that changes when its params do", () => {
+    const node = document.createElement("div");
+    const seen: unknown[] = [];
+    let params = { effect: "toggle-switch", state: { checked: false }, label: "Wi-Fi", reducedMotion: "always" as const, onEvent: (_: string, detail: unknown) => seen.push(detail) };
+    const action = flairEffect(node, params);
+    node.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    expect(seen).toEqual([{ checked: true }]);
+    expect(node.querySelector("[role=switch]")!.getAttribute("aria-checked")).toBe("false");
+    params = { ...params, state: { checked: true } };
+    action.update!(params);
+    expect(node.querySelector("[role=switch]")!.getAttribute("aria-checked")).toBe("true");
+    action.update!({ effect: "gauge", data: { value: 5, max: 10, unit: "", label: "Load" }, reducedMotion: "always" });
+    expect(node.querySelector("[role=meter]")!.getAttribute("aria-valuenow")).toBe("5");
+    action.update!({ effect: "gauge", data: { value: 7, max: 10, unit: "", label: "Load" }, reducedMotion: "always" });
+    expect(node.querySelector("[role=meter]")!.getAttribute("aria-valuenow")).toBe("7");
+    action.destroy!();
+  });
 });
+

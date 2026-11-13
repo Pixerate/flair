@@ -33,6 +33,8 @@ What an effect takes matters: `effectInputs(effect)` (or the index line) says wh
 
 The effect fills its element: size the element with CSS (an `aspect-ratio`, a height).
 
+**As a UI component.** Effects whose metadata has `ui` (`getEffectMeta(id).ui`, `UI_HINTS`) are components: `toggle-switch` (a switch), `progress-bar` (progress) and `gauge`. Give them typed `data` by the props in `ui.contract.props`, not text controls: `mountEffect(el, "gauge", { data: { value: 72, max: 100, unit: "%", label: "CPU" } })`, or `data={…}` on `<FlairEffect>`. Own a switch's state with `state: { checked }` and `onEvent` (it fires `"change"` with the asked-for `checked`, and moves only when you pass it back); give it a `label`. They set their ARIA role and keys, and show their rest state under reduced motion. Bad data is refused with a sentence. See the README's "Effects as UI components".
+
 ## 3. Set controls and presets
 
 Pass `preset` (a name from the index line) and `values` (control name → value). `effectControlSchema(id)` gives the controls' JSON Schema. A renderer quietly falls back to the default for a value it cannot use (a misspelt name, a wrong type), so check names and values against the schema rather than by eye. See [controls-and-presets.md](references/controls-and-presets.md), which also covers camera moves, timing effects and motion primitives.
