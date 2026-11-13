@@ -3,7 +3,8 @@ import type { ShaderEffect } from "../types.js";
 
 /*
  * Webbing: a dewy orb web, cobwebs hung in the corners of a page, a web shot
- * at every click and a plexus of drifting points strung together. Each is
+ * at every click, a plexus of drifting points strung together and a live
+ * knowledge graph with sparks running along its links. Each is
  * tagged "web", so the family is easy to find together.
  *
  * The orb webs share one trick: a point's radius is measured to the straight
@@ -401,5 +402,206 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   ],
 };
 
+export const liveNetwork: ShaderEffect = {
+  kind: "shader",
+  id: "live-network",
+  name: "Live network",
+  description:
+    "A living knowledge graph: a gold hub throws glowing spokes out to pink branch nodes, each strung to a few small leaves, while sparks of light run along the links and nodes flare in turn; it slowly turns and keeps moving on a loop, a backdrop for a data or AI story.",
+  category: "particles",
+  tags: ["background", "particles", "network", "graph", "web", "tech", "data", "hero", "glow", "dashboard"],
+  source: glsl(
+    `// Live network: a hub, branches round it and leaves round each, all placed by hash. Spokes and links are segments
+// lit by distance; a spark runs along each on its own phase, and each node flares now and then. Sizes are in shares
+// of the frame's height.
+uniform vec3 uHub;      // @control color default=#F2C27A label="Hub"
+uniform vec3 uSpoke;    // @control color default=#F0C88C label="Spokes"
+uniform vec3 uLink;     // @control color default=#6FD3DC label="Links"
+uniform vec3 uBranch;   // @control color default=#E58FB0 label="Branch nodes"
+uniform vec3 uLeafA;    // @control color default=#4FC8A0 label="Leaves 1"
+uniform vec3 uLeafB;    // @control color default=#E3A64C label="Leaves 2"
+uniform vec3 uLeafC;    // @control color default=#9C7CF5 label="Leaves 3"
+uniform vec3 uSpark;    // @control color default=#FFF3D6 label="Sparks and flares"
+uniform int uBranches;  // @control min=3 max=16 default=12 label="Branches"
+uniform int uLeaves;    // @control min=0 max=4 default=3 label="Leaves per branch"
+uniform float uSpread;  // @control min=0.15 max=0.6 default=0.44 label="Spread"
+uniform float uSpeed;   // @control min=0 max=3 default=1 label="Spark speed"
+uniform float uFlares;  // @control min=0 max=1 default=0.6 label="Flares"
+uniform float uDrift;   // @control min=0 max=1 default=0.25 label="Turn"
+uniform float uGlow;    // @control min=0 max=2 default=1 label="Glow"
+uniform float uSeed;    // @control min=0 max=100 default=7 step=1 label="Layout"
+uniform vec3 uBackground;       // @control color default=#0B1A1E label="Background"
+uniform float uBackgroundAlpha; // @control min=0 max=1 default=1 label="Background opacity"`,
+    HASH,
+    OVER,
+    `const float TAU = 6.28318;
+
+// Distance from p to the segment a-b, and how far along it (0 to 1) the nearest point is.
+float seg(vec2 p, vec2 a, vec2 b, out float u) {
+  vec2 e = b - a;
+  u = clamp(dot(p - a, e) / max(dot(e, e), 1e-6), 0.0, 1.0);
+  return length(p - a - e * u);
+}
+
+// A small glossy ball of colour c and radius R at offset q: (colour, coverage).
+vec4 ball(vec2 q, float R, vec3 c, float px) {
+  float r = length(q);
+  float cover = clamp(0.5 - (r - R) / px, 0.0, 1.0);
+  float z = sqrt(max(0.0, 1.0 - min(r / R, 1.0) * min(r / R, 1.0)));
+  float hl = exp(-length(q / R - vec2(-0.32, 0.38)) * 3.2);
+  return vec4(c * (0.45 + 0.65 * z) + vec3(0.9) * hl * 0.55, cover);
+}
+
+// A node's flare: mostly nothing, now and then a brief star glint.
+float flare(float h, float h2) {
+  float w = 0.5 + 0.5 * sin(iTime * (0.35 + 0.5 * h) + TAU * h2);
+  return pow(w, 90.0) * uFlares * 2.0;
+}
+
+vec3 glint(vec2 q, float f, float px) {
+  float r = length(q);
+  float cross1 = exp(-abs(q.y) / (1.2 * px + 0.0008)) * exp(-abs(q.x) / 0.05);
+  float cross2 = exp(-abs(q.x) / (1.2 * px + 0.0008)) * exp(-abs(q.y) / 0.035);
+  return uSpark * f * (exp(-r / 0.012) * 1.2 + (cross1 + cross2) * 0.9);
+}
+
+// A spark running along a-b (u along it, d across it), on phase ph: its head, trail and the fade at either end.
+float spark(float u, float d, float len, float ph, float px) {
+  float s = fract(iTime * uSpeed * 0.12 / max(len, 0.05) + ph);
+  float behind = s - u;
+  float trail = behind >= 0.0 ? exp(-behind * len / 0.04) : 0.0;
+  float fade = sin(3.14159 * s);
+  return fade * (trail * exp(-d / (0.9 * px + 0.0012)) * 0.9 + exp(-length(vec2((u - s) * len, d)) / 0.005) * 1.6);
+}
+
+// Branch i of n: its angle (in .z) and where it sits, stretched sideways on wide frames.
+vec3 branchAt(float fi, float n, float seed, vec2 stretch) {
+  float h1 = hash12(vec2(fi, seed + 3.1));
+  float h2 = hash12(vec2(fi, seed + 7.7));
+  float h3 = hash12(vec2(fi, seed + 12.9));
+  float a = (fi + 0.2 + 0.6 * h1) / n * TAU + iTime * uDrift * 0.03;
+  vec2 wob = 0.004 * vec2(sin(iTime * (0.4 + h2) + TAU * h3), cos(iTime * (0.3 + h3) + TAU * h1));
+  return vec3(vec2(cos(a), sin(a)) * stretch * uSpread * (0.62 + 0.38 * h2) + wob, a);
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  float px = 1.0 / iResolution.y;
+  vec2 p = (fragCoord - 0.5 * iResolution.xy) * px;
+  float aspect = iResolution.x / iResolution.y;
+  // Wider frames spread the graph sideways.
+  vec2 stretch = vec2(clamp(aspect * 0.85, 1.0, 1.8), 1.0);
+  float n = float(uBranches);
+  float seed = uSeed * 1.37;
+  vec3 light = vec3(0.0);
+  vec4 acc = vec4(0.0);
+  float R0 = 0.034;
+
+  for (int i = 0; i < 16; i++) {
+    if (i >= uBranches) break;
+    float fi = float(i);
+    float h1 = hash12(vec2(fi, seed + 3.1));
+    float h2 = hash12(vec2(fi, seed + 7.7));
+    float h3 = hash12(vec2(fi, seed + 12.9));
+    vec3 ba = branchAt(fi, n, seed, stretch);
+    vec2 b = ba.xy;
+    float a = ba.z;
+    float len = length(b);
+
+    // The spoke: gold and broad near the hub on most, a fine cyan line on a few.
+    float u;
+    float d = seg(p, vec2(0.0), b, u);
+    bool gold = h3 < 0.68;
+    vec3 sc = gold ? uSpoke : uLink;
+    float core = exp(-d / (0.7 * px + 0.0004));
+    float w = gold ? 0.002 + 0.02 * (1.0 - u) * (1.0 - u) : 0.0012;
+    float halo = exp(-d / w) * (gold ? 0.55 : 0.12) * (1.0 - 0.6 * u);
+    light += sc * (core * (gold ? 0.75 : 0.55) + halo * uGlow);
+    light += uSpark * spark(u, d, len, h1 + 0.37 * h2, px);
+
+    // A fine cyan cross-link to the next branch round, on some.
+    if (h2 > 0.45) {
+      vec2 b2 = branchAt(mod(fi + 1.0, n), n, seed, stretch).xy;
+      float cu;
+      float cd = seg(p, b, b2, cu);
+      light += uLink * exp(-cd / (0.6 * px + 0.0003)) * 0.3;
+      light += uSpark * 0.5 * spark(cu, cd, length(b2 - b), h3 + 0.5, px);
+    }
+
+    // Past the reach of everything round this branch, skip its leaves and node.
+    float near = length(p - b);
+    if (near > uSpread * 0.3 + 0.08) continue;
+
+    for (int j = 0; j < 4; j++) {
+      if (j >= uLeaves) break;
+      float fj = float(j);
+      float k1 = hash12(vec2(fi * 7.0 + fj, seed + 21.3));
+      float k2 = hash12(vec2(fi * 7.0 + fj, seed + 33.1));
+      float a2 = a + (fj - 0.5 * float(uLeaves - 1)) * 1.1 + (k1 - 0.5) * 0.7;
+      vec2 l = b + vec2(cos(a2), sin(a2)) * uSpread * (0.12 + 0.16 * k2);
+      float lu;
+      float ld = seg(p, b, l, lu);
+      float llen = length(l - b);
+      // Every other link dotted.
+      float dots = mod(fj + fi, 2.0) < 1.0 ? 1.0 : step(0.45, fract(lu * llen / 0.007));
+      light += mix(uLink, vec3(0.9), 0.4) * exp(-ld / (0.6 * px + 0.0003)) * 0.38 * dots;
+      if (k1 > 0.45) light += uSpark * 0.6 * spark(lu, ld, llen, k2, px);
+      // The leaf: green, gold or purple, the purple ones bigger.
+      vec3 lc = k2 < 0.4 ? uLeafA : k2 < 0.75 ? uLeafB : uLeafC;
+      float lr = k2 < 0.75 ? 0.0062 : 0.0105;
+      vec2 q = p - l;
+      vec4 lb = ball(q, lr, lc, px);
+      acc = over(acc, lb.rgb, lb.a);
+      if (k2 >= 0.75) acc = over(acc, lc, clamp(0.5 - abs(length(q) - lr * 1.45) / px, 0.0, 1.0) * 0.45);
+      light += lc * exp(-length(q) / (0.006 + 0.004 * uGlow)) * 0.25 * uGlow;
+      light += glint(q, flare(k1, k2 + fi), px);
+    }
+
+    // The branch node: a glossy pink ball in a fine ring.
+    vec2 q = p - b;
+    float br = 0.0145;
+    vec4 bb = ball(q, br, uBranch, px);
+    float rq = length(q);
+    acc = over(acc, uBranch, clamp(0.5 - abs(rq - br * 1.5) / px, 0.0, 1.0) * 0.5);
+    acc = over(acc, bb.rgb, bb.a);
+    light += uBranch * exp(-rq / (0.012 + 0.008 * uGlow)) * 0.35 * uGlow;
+    light += glint(q, flare(h2, h1 + 0.5), px);
+  }
+
+  // The hub: a gold ball with fine engraved rings, a fringe of short spines and a warm glow.
+  float r = length(p);
+  float ang = atan(p.y, p.x);
+  float x = clamp(r / R0, 0.0, 1.0);
+  float body = clamp(0.5 - (r - R0) / px, 0.0, 1.0);
+  float rings = 0.5 + 0.5 * cos(x * 90.0);
+  vec3 hub = mix(vec3(1.0, 0.97, 0.88), uHub, smoothstep(0.0, 0.6, x));
+  hub *= 1.0 - 0.3 * smoothstep(0.6, 1.0, x) * rings;
+  acc = over(acc, hub, body);
+  float cells = 120.0;
+  float ac = (ang / TAU + 0.5) * cells;
+  float s1 = hash12(vec2(floor(ac), 4.2));
+  float slen = R0 * (0.1 + 0.3 * s1);
+  float tang = (fract(ac) - 0.5) / cells * TAU * r;
+  float sd = max(abs(tang) - 0.5 * px, abs(r - R0 - slen * 0.5) - slen * 0.5);
+  acc = over(acc, uHub, clamp(0.5 - sd / px, 0.0, 1.0) * 0.8);
+  light += uHub * exp(-max(r - R0, 0.0) / (0.02 + 0.015 * uGlow)) * (0.6 + 0.1 * sin(iTime * 1.3)) * uGlow;
+
+  // Light is tone-mapped and laid over the nodes, then over the ground (a little brighter in the middle).
+  light = 1.0 - exp(-light);
+  float la = max(light.r, max(light.g, light.b));
+  acc = vec4(acc.rgb + light * (1.0 - acc.a), acc.a + la * (1.0 - acc.a));
+  vec3 ground = uBackground * (1.0 + 0.35 * exp(-dot(p, p) * 4.0));
+  vec4 base = vec4(ground * uBackgroundAlpha, uBackgroundAlpha);
+  acc = vec4(acc.rgb + base.rgb * (1.0 - acc.a), acc.a + base.a * (1.0 - acc.a));
+  fragColor = unpremultiply(acc);
+}`,
+  ),
+  presets: [
+    { name: "Overlay", values: { uBackgroundAlpha: 0 } },
+    { name: "Ice", values: { uHub: [0.75, 0.92, 1], uSpoke: [0.6, 0.85, 1], uBranch: [0.45, 0.7, 1], uLeafA: [0.4, 0.95, 0.9], uLeafB: [0.85, 0.9, 1], uLeafC: [0.6, 0.55, 1], uBackground: [0.02, 0.05, 0.1] } },
+    { name: "Sparse", values: { uBranches: 6, uLeaves: 2, uSpread: 0.32 } },
+    { name: "Busy", values: { uBranches: 16, uLeaves: 4, uSpread: 0.48, uSpeed: 1.6, uFlares: 0.9 } },
+  ],
+};
+
 /** The webbing shaders. */
-export const webShaders: ShaderEffect[] = [spiderWeb, cobwebCorners, webShot, plexusWeb];
+export const webShaders: ShaderEffect[] = [spiderWeb, cobwebCorners, webShot, plexusWeb, liveNetwork];

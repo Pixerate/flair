@@ -725,6 +725,155 @@ public struct PlexusWeb: FlairEffect, Codable, Sendable, Equatable {
     }
 }
 
+/// **Live network** (`live-network`, category: `particles`).
+/// A living knowledge graph: a gold hub throws glowing spokes out to pink branch nodes, each strung to a few small leaves, while sparks of light run along the links and nodes flare in turn; it slowly turns and keeps moving on a loop, a backdrop for a data or AI story.
+public struct LiveNetwork: FlairEffect, Codable, Sendable, Equatable {
+    public static let effectId = "live-network"
+    public static let effectName = "Live network"
+    public static let category = "particles"
+    public static let effectDescription = "A living knowledge graph: a gold hub throws glowing spokes out to pink branch nodes, each strung to a few small leaves, while sparks of light run along the links and nodes flare in turn; it slowly turns and keeps moving on a loop, a backdrop for a data or AI story."
+    public static let tags: [String] = ["background", "network", "graph", "web", "tech", "data", "hero", "glow", "dashboard"]
+    public static let phase: Int = 1
+    public static let functionName = "flair_live_network_frag"
+    public static let uniformByteLength: Int = 1168
+    public static let isTransparent: Bool = false
+    public static let loopDuration: Double? = nil
+    public static let controls: [FlairControlDescriptor] = [
+        FlairControlDescriptor(name: "uHub", property: "hub", type: .vec3, label: "Hub", isColor: true, min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uSpoke", property: "spoke", type: .vec3, label: "Spokes", isColor: true, min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uLink", property: "link", type: .vec3, label: "Links", isColor: true, min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uBranch", property: "branch", type: .vec3, label: "Branch nodes", isColor: true, min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uLeafA", property: "leafA", type: .vec3, label: "Leaves 1", isColor: true, min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uLeafB", property: "leafB", type: .vec3, label: "Leaves 2", isColor: true, min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uLeafC", property: "leafC", type: .vec3, label: "Leaves 3", isColor: true, min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uSpark", property: "spark", type: .vec3, label: "Sparks and flares", isColor: true, min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uBranches", property: "branches", type: .int, label: "Branches", min: 3.0, max: 16.0, step: 1.0),
+        FlairControlDescriptor(name: "uLeaves", property: "leaves", type: .int, label: "Leaves per branch", min: 0.0, max: 4.0, step: 1.0),
+        FlairControlDescriptor(name: "uSpread", property: "spread", type: .float, label: "Spread", min: 0.15, max: 0.6, step: 0.00225),
+        FlairControlDescriptor(name: "uSpeed", property: "speed", type: .float, label: "Spark speed", min: 0.0, max: 3.0, step: 0.015),
+        FlairControlDescriptor(name: "uFlares", property: "flares", type: .float, label: "Flares", min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uDrift", property: "drift", type: .float, label: "Turn", min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uGlow", property: "glow", type: .float, label: "Glow", min: 0.0, max: 2.0, step: 0.01),
+        FlairControlDescriptor(name: "uSeed", property: "seed", type: .float, label: "Layout", min: 0.0, max: 100.0, step: 1.0),
+        FlairControlDescriptor(name: "uBackground", property: "background", type: .vec3, label: "Background", isColor: true, min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uBackgroundAlpha", property: "backgroundAlpha", type: .float, label: "Background opacity", min: 0.0, max: 1.0, step: 0.005),
+    ]
+    public static let presets: [String: LiveNetwork] = {
+        var map: [String: LiveNetwork] = [:]
+        do { var p = LiveNetwork(); p.backgroundAlpha = 0.0; map["Overlay"] = p }
+        do { var p = LiveNetwork(); p.hub = flairVec3(0.75, 0.92, 1.0); p.spoke = flairVec3(0.6, 0.85, 1.0); p.branch = flairVec3(0.45, 0.7, 1.0); p.leafA = flairVec3(0.4, 0.95, 0.9); p.leafB = flairVec3(0.85, 0.9, 1.0); p.leafC = flairVec3(0.6, 0.55, 1.0); p.background = flairVec3(0.02, 0.05, 0.1); map["Ice"] = p }
+        do { var p = LiveNetwork(); p.branches = 6; p.leaves = 2; p.spread = 0.32; map["Sparse"] = p }
+        do { var p = LiveNetwork(); p.branches = 16; p.leaves = 4; p.spread = 0.48; p.speed = 1.6; p.flares = 0.9; map["Busy"] = p }
+        return map
+    }()
+
+    /// Hub (`uHub`).
+    public var hub: SIMD3<Float> = flairVec3(0.94902, 0.760784, 0.478431)
+    /// Spokes (`uSpoke`).
+    public var spoke: SIMD3<Float> = flairVec3(0.941176, 0.784314, 0.54902)
+    /// Links (`uLink`).
+    public var link: SIMD3<Float> = flairVec3(0.435294, 0.827451, 0.862745)
+    /// Branch nodes (`uBranch`).
+    public var branch: SIMD3<Float> = flairVec3(0.898039, 0.560784, 0.690196)
+    /// Leaves 1 (`uLeafA`).
+    public var leafA: SIMD3<Float> = flairVec3(0.309804, 0.784314, 0.627451)
+    /// Leaves 2 (`uLeafB`).
+    public var leafB: SIMD3<Float> = flairVec3(0.890196, 0.65098, 0.298039)
+    /// Leaves 3 (`uLeafC`).
+    public var leafC: SIMD3<Float> = flairVec3(0.611765, 0.486275, 0.960784)
+    /// Sparks and flares (`uSpark`).
+    public var spark: SIMD3<Float> = flairVec3(1.0, 0.952941, 0.839216)
+    /// Branches (`uBranches`).
+    public var branches: Int32 = 12
+    /// Leaves per branch (`uLeaves`).
+    public var leaves: Int32 = 3
+    /// Spread (`uSpread`).
+    public var spread: Float = 0.44
+    /// Spark speed (`uSpeed`).
+    public var speed: Float = 1.0
+    /// Flares (`uFlares`).
+    public var flares: Float = 0.6
+    /// Turn (`uDrift`).
+    public var drift: Float = 0.25
+    /// Glow (`uGlow`).
+    public var glow: Float = 1.0
+    /// Layout (`uSeed`).
+    public var seed: Float = 7.0
+    /// Background (`uBackground`).
+    public var background: SIMD3<Float> = flairVec3(0.043137, 0.101961, 0.117647)
+    /// Background opacity (`uBackgroundAlpha`).
+    public var backgroundAlpha: Float = 1.0
+
+    public init() {}
+
+    public func encodeUniforms(into buffer: UnsafeMutableRawPointer, state: FlairFrameState) {
+        state.encodeBuiltins(into: buffer)
+        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(hub, min: 0.0, max: 1.0), to: buffer, at: 992)
+        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(spoke, min: 0.0, max: 1.0), to: buffer, at: 1008)
+        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(link, min: 0.0, max: 1.0), to: buffer, at: 1024)
+        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(branch, min: 0.0, max: 1.0), to: buffer, at: 1040)
+        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(leafA, min: 0.0, max: 1.0), to: buffer, at: 1056)
+        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(leafB, min: 0.0, max: 1.0), to: buffer, at: 1072)
+        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(leafC, min: 0.0, max: 1.0), to: buffer, at: 1088)
+        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(spark, min: 0.0, max: 1.0), to: buffer, at: 1104)
+        FlairUniformEncoder.writeInt(FlairUniformEncoder.clampInt(branches, min: 3, max: 16), to: buffer, at: 1116)
+        FlairUniformEncoder.writeInt(FlairUniformEncoder.clampInt(leaves, min: 0, max: 4), to: buffer, at: 1120)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(spread, min: 0.15, max: 0.6), to: buffer, at: 1124)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(speed, min: 0.0, max: 3.0), to: buffer, at: 1128)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(flares, min: 0.0, max: 1.0), to: buffer, at: 1132)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(drift, min: 0.0, max: 1.0), to: buffer, at: 1136)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(glow, min: 0.0, max: 2.0), to: buffer, at: 1140)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(seed, min: 0.0, max: 100.0), to: buffer, at: 1144)
+        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(background, min: 0.0, max: 1.0), to: buffer, at: 1152)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(backgroundAlpha, min: 0.0, max: 1.0), to: buffer, at: 1164)
+    }
+
+    public init(from decoder: Decoder) throws {
+        let bag = try FlairJSONBag(from: decoder)
+        self.hub = bag.decodeVec3("uHub", "hub", default: flairVec3(0.94902, 0.760784, 0.478431), isColor: true)
+        self.spoke = bag.decodeVec3("uSpoke", "spoke", default: flairVec3(0.941176, 0.784314, 0.54902), isColor: true)
+        self.link = bag.decodeVec3("uLink", "link", default: flairVec3(0.435294, 0.827451, 0.862745), isColor: true)
+        self.branch = bag.decodeVec3("uBranch", "branch", default: flairVec3(0.898039, 0.560784, 0.690196), isColor: true)
+        self.leafA = bag.decodeVec3("uLeafA", "leafA", default: flairVec3(0.309804, 0.784314, 0.627451), isColor: true)
+        self.leafB = bag.decodeVec3("uLeafB", "leafB", default: flairVec3(0.890196, 0.65098, 0.298039), isColor: true)
+        self.leafC = bag.decodeVec3("uLeafC", "leafC", default: flairVec3(0.611765, 0.486275, 0.960784), isColor: true)
+        self.spark = bag.decodeVec3("uSpark", "spark", default: flairVec3(1.0, 0.952941, 0.839216), isColor: true)
+        self.branches = bag.decodeInt("uBranches", "branches", default: 12, min: 3, max: 16)
+        self.leaves = bag.decodeInt("uLeaves", "leaves", default: 3, min: 0, max: 4)
+        self.spread = bag.decodeFloat("uSpread", "spread", default: 0.44, min: 0.15, max: 0.6)
+        self.speed = bag.decodeFloat("uSpeed", "speed", default: 1.0, min: 0.0, max: 3.0)
+        self.flares = bag.decodeFloat("uFlares", "flares", default: 0.6, min: 0.0, max: 1.0)
+        self.drift = bag.decodeFloat("uDrift", "drift", default: 0.25, min: 0.0, max: 1.0)
+        self.glow = bag.decodeFloat("uGlow", "glow", default: 1.0, min: 0.0, max: 2.0)
+        self.seed = bag.decodeFloat("uSeed", "seed", default: 7.0, min: 0.0, max: 100.0)
+        self.background = bag.decodeVec3("uBackground", "background", default: flairVec3(0.043137, 0.101961, 0.117647), isColor: true)
+        self.backgroundAlpha = bag.decodeFloat("uBackgroundAlpha", "backgroundAlpha", default: 1.0, min: 0.0, max: 1.0)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var bag = FlairJSONBag()
+        bag.encodeVec3(self.hub, for: "uHub")
+        bag.encodeVec3(self.spoke, for: "uSpoke")
+        bag.encodeVec3(self.link, for: "uLink")
+        bag.encodeVec3(self.branch, for: "uBranch")
+        bag.encodeVec3(self.leafA, for: "uLeafA")
+        bag.encodeVec3(self.leafB, for: "uLeafB")
+        bag.encodeVec3(self.leafC, for: "uLeafC")
+        bag.encodeVec3(self.spark, for: "uSpark")
+        bag.encodeInt(self.branches, for: "uBranches")
+        bag.encodeInt(self.leaves, for: "uLeaves")
+        bag.encodeFloat(self.spread, for: "uSpread")
+        bag.encodeFloat(self.speed, for: "uSpeed")
+        bag.encodeFloat(self.flares, for: "uFlares")
+        bag.encodeFloat(self.drift, for: "uDrift")
+        bag.encodeFloat(self.glow, for: "uGlow")
+        bag.encodeFloat(self.seed, for: "uSeed")
+        bag.encodeVec3(self.background, for: "uBackground")
+        bag.encodeFloat(self.backgroundAlpha, for: "uBackgroundAlpha")
+        try bag.encode(to: encoder)
+    }
+}
+
 /// **Orbit swoosh** (`orbit-swoosh`, category: `light`).
 /// Glowing comet ribbons circling a title on tilted orbits, dimming and slipping behind it on the far side, shedding flecks of confetti that drift out and fade; a transparent overlay.
 public struct OrbitSwoosh: FlairEffect, Codable, Sendable, Equatable {
@@ -5601,94 +5750,6 @@ public struct TransitionWipe: FlairEffect, Codable, Sendable, Equatable {
         FlairSamplerBinding(name: "uTo", property: "to", type: .sampler2D, binding: 2, filter: .linear, wrap: .clamp),
     ]
     public static let presets: [String: TransitionWipe] = [:]
-
-    /// From image (`uFrom`).
-    public var from: FlairTextureInput = .sample(.landscape)
-    /// To image (`uTo`).
-    public var to: FlairTextureInput = .sample(.city)
-    /// Animate (`uAnimate`).
-    public var animate: Bool = true
-    /// Progress (when still) (`uProgress`).
-    public var progress: Float = 0.5
-    /// Backdrop (`uBackdrop`).
-    public var backdrop: SIMD3<Float> = flairVec3(1.0, 1.0, 1.0)
-    /// Backdrop opacity (`uBackdropAlpha`).
-    public var backdropAlpha: Float = 1.0
-
-    public init() {}
-
-    public func encodeUniforms(into buffer: UnsafeMutableRawPointer, state: FlairFrameState) {
-        state.encodeBuiltins(into: buffer)
-        FlairUniformEncoder.writeBool(animate, to: buffer, at: 992)
-        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(progress, min: 0.0, max: 1.0), to: buffer, at: 996)
-        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(backdrop, min: 0.0, max: 1.0), to: buffer, at: 1008)
-        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(backdropAlpha, min: 0.0, max: 1.0), to: buffer, at: 1020)
-    }
-
-    public func textureInput(for binding: Int) -> FlairTextureInput {
-        switch binding {
-        case 1: return self.from
-        case 2: return self.to
-        default: return .none
-        }
-    }
-
-    public mutating func setTextureInput(_ input: FlairTextureInput, for binding: Int) {
-        switch binding {
-        case 1: self.from = input
-        case 2: self.to = input
-        default: break
-        }
-    }
-
-    public init(from decoder: Decoder) throws {
-        let bag = try FlairJSONBag(from: decoder)
-        self.from = bag.decodeTexture("uFrom", "from", default: .sample(.landscape), fit: .contain, margin: 0.1)
-        self.to = bag.decodeTexture("uTo", "to", default: .sample(.city), fit: .contain, margin: 0.1)
-        self.animate = bag.decodeBool("uAnimate", "animate", default: true)
-        self.progress = bag.decodeFloat("uProgress", "progress", default: 0.5, min: 0.0, max: 1.0)
-        self.backdrop = bag.decodeVec3("uBackdrop", "backdrop", default: flairVec3(1.0, 1.0, 1.0), isColor: true)
-        self.backdropAlpha = bag.decodeFloat("uBackdropAlpha", "backdropAlpha", default: 1.0, min: 0.0, max: 1.0)
-    }
-
-    public func encode(to encoder: Encoder) throws {
-        var bag = FlairJSONBag()
-        bag.encodeTexture(self.from, for: "uFrom")
-        bag.encodeTexture(self.to, for: "uTo")
-        bag.encodeBool(self.animate, for: "uAnimate")
-        bag.encodeFloat(self.progress, for: "uProgress")
-        bag.encodeVec3(self.backdrop, for: "uBackdrop")
-        bag.encodeFloat(self.backdropAlpha, for: "uBackdropAlpha")
-        try bag.encode(to: encoder)
-    }
-}
-
-/// **Iris** (`transition-iris`, category: `transition`).
-/// A circle opening from the centre onto the next image. Loops back and forth; or turn Animate off and set Progress.
-public struct TransitionIris: FlairEffect, Codable, Sendable, Equatable {
-    public static let effectId = "transition-iris"
-    public static let effectName = "Iris"
-    public static let category = "transition"
-    public static let effectDescription = "A circle opening from the centre onto the next image. Loops back and forth; or turn Animate off and set Progress."
-    public static let tags: [String] = ["transition", "image", "slideshow"]
-    public static let phase: Int = 2
-    public static let functionName = "flair_transition_iris_frag"
-    public static let uniformByteLength: Int = 1024
-    public static let isTransparent: Bool = false
-    public static let loopDuration: Double? = 4.0
-    public static let controls: [FlairControlDescriptor] = [
-        FlairControlDescriptor(name: "uFrom", property: "from", type: .sampler2D, label: "From image", min: 0.0, max: 1.0, step: 0.005, filter: .linear, wrap: .clamp),
-        FlairControlDescriptor(name: "uTo", property: "to", type: .sampler2D, label: "To image", min: 0.0, max: 1.0, step: 0.005, filter: .linear, wrap: .clamp),
-        FlairControlDescriptor(name: "uAnimate", property: "animate", type: .bool, label: "Animate", min: 0.0, max: 1.0, step: 0.005),
-        FlairControlDescriptor(name: "uProgress", property: "progress", type: .float, label: "Progress (when still)", min: 0.0, max: 1.0, step: 0.005),
-        FlairControlDescriptor(name: "uBackdrop", property: "backdrop", type: .vec3, label: "Backdrop", isColor: true, min: 0.0, max: 1.0, step: 0.005),
-        FlairControlDescriptor(name: "uBackdropAlpha", property: "backdropAlpha", type: .float, label: "Backdrop opacity", min: 0.0, max: 1.0, step: 0.005),
-    ]
-    public static let samplerBindings: [FlairSamplerBinding] = [
-        FlairSamplerBinding(name: "uFrom", property: "from", type: .sampler2D, binding: 1, filter: .linear, wrap: .clamp),
-        FlairSamplerBinding(name: "uTo", property: "to", type: .sampler2D, binding: 2, filter: .linear, wrap: .clamp),
-    ]
-    public static let presets: [String: TransitionIris] = [:]
 
     /// From image (`uFrom`).
     public var from: FlairTextureInput = .sample(.landscape)

@@ -1,5 +1,246 @@
 [
   {
+    "id": "live-network",
+    "name": "Live network",
+    "kind": "shader",
+    "category": "particles",
+    "description": "A living knowledge graph: a gold hub throws glowing spokes out to pink branch nodes, each strung to a few small leaves, while sparks of light run along the links and nodes flare in turn; it slowly turns and keeps moving on a loop, a backdrop for a data or AI story.",
+    "tags": [
+      "background",
+      "particles",
+      "network",
+      "graph",
+      "web",
+      "tech",
+      "data",
+      "hero",
+      "glow",
+      "dashboard"
+    ],
+    "controls": [
+      {
+        "n": "uHub",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            242,
+            194,
+            122
+          ]
+        },
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uSpoke",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            240,
+            200,
+            140
+          ]
+        },
+        "l": "Spokes",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uLink",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            111,
+            211,
+            220
+          ]
+        },
+        "l": "Links",
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "uBranch",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            229,
+            143,
+            176
+          ]
+        },
+        "l": "Branch nodes",
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "uLeafA",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            79,
+            200,
+            160
+          ]
+        },
+        "l": "Leaves 1",
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "uLeafB",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            227,
+            166,
+            76
+          ]
+        },
+        "l": "Leaves 2",
+        "c": 1,
+        "line": 9
+      },
+      {
+        "n": "uLeafC",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            156,
+            124,
+            245
+          ]
+        },
+        "l": "Leaves 3",
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "uSpark",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            243,
+            214
+          ]
+        },
+        "l": "Sparks and flares",
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "uBranches",
+        "t": "int",
+        "d": 12,
+        "min": 3,
+        "max": 16,
+        "b": 3,
+        "line": 12
+      },
+      {
+        "n": "uLeaves",
+        "t": "int",
+        "d": 3,
+        "l": "Leaves per branch",
+        "max": 4,
+        "b": 3,
+        "line": 13
+      },
+      {
+        "n": "uSpread",
+        "t": "float",
+        "d": 0.44,
+        "min": 0.15,
+        "max": 0.6,
+        "b": 3,
+        "line": 14
+      },
+      {
+        "n": "uSpeed",
+        "t": "float",
+        "d": 1,
+        "l": "Spark speed",
+        "max": 3,
+        "b": 3,
+        "line": 15
+      },
+      {
+        "n": "uFlares",
+        "t": "float",
+        "d": 0.6,
+        "b": 3,
+        "line": 16
+      },
+      {
+        "n": "uDrift",
+        "t": "float",
+        "d": 0.25,
+        "l": "Turn",
+        "b": 3,
+        "line": 17
+      },
+      {
+        "n": "uGlow",
+        "t": "float",
+        "d": 1,
+        "max": 2,
+        "b": 3,
+        "line": 18
+      },
+      {
+        "n": "uSeed",
+        "t": "float",
+        "d": 7,
+        "l": "Layout",
+        "max": 100,
+        "s": 1,
+        "b": 3,
+        "line": 19
+      },
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            11,
+            26,
+            30
+          ]
+        },
+        "c": 1,
+        "line": 20
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Background opacity",
+        "b": 3,
+        "line": 21
+      }
+    ],
+    "presets": [
+      "Overlay",
+      "Ice",
+      "Sparse",
+      "Busy"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "swiftReady": true,
+    "animated": true,
+    "module": "shaders/web",
+    "addedAt": "2026-11-13T14:12:50Z",
+    "commitHash": "11bb3822e6b99a143ed5a8735d6184ed9416cbff",
+    "order": 684
+  },
+  {
     "id": "sentiment-tile",
     "name": "Sentiment tile",
     "kind": "vector",
@@ -3402,178 +3643,5 @@
     "addedAt": "2026-11-10T15:17:55Z",
     "commitHash": "04bd8bc6d2ca1aba5d35f2311c0dcbce4a3cea4d",
     "order": 665
-  },
-  {
-    "id": "dramatic-letterbox",
-    "name": "Dramatic letterbox",
-    "kind": "shader",
-    "category": "film",
-    "description": "A picture's big moment: cinema bars slam in from the top and bottom, bouncing and shaking the frame as they land, while the picture pushes slowly in and the grade turns moody, contrasty and teal and orange; then it all eases back. Loops; or turn Animate off and set Progress.",
-    "tags": [
-      "film",
-      "cinematic",
-      "letterbox",
-      "dramatic",
-      "trailer",
-      "aspect-ratio",
-      "grade",
-      "image"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "portrait"
-        },
-        "line": 4,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uAspect",
-        "t": "float",
-        "d": 2.39,
-        "l": "Aspect ratio (width ÷ height)",
-        "min": 1,
-        "max": 3,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uBar",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            0,
-            0,
-            0
-          ]
-        },
-        "l": "Bar colour",
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "uSlam",
-        "t": "float",
-        "d": 0.6,
-        "l": "Slam (bounce and shake)",
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uPush",
-        "t": "float",
-        "d": 0.08,
-        "l": "Push in",
-        "max": 0.25,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uGrade",
-        "t": "float",
-        "d": 0.7,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uShadowTint",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            15,
-            76,
-            92
-          ]
-        },
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "uHighlightTint",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            178,
-            107
-          ]
-        },
-        "c": 1,
-        "line": 11
-      },
-      {
-        "n": "uAnimate",
-        "t": "bool",
-        "d": true,
-        "line": 12
-      },
-      {
-        "n": "uProgress",
-        "t": "float",
-        "d": 1,
-        "l": "Progress (when still)",
-        "b": 3,
-        "line": 13
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 14
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "b": 3,
-        "line": 15
-      }
-    ],
-    "presets": [
-      "Scope slam",
-      "Ultra wide",
-      "Noir",
-      "Gentle"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "swiftReady": true,
-    "video": "filter",
-    "loop": 6,
-    "animated": true,
-    "duration": 6000,
-    "module": "shaders/film",
-    "addedAt": "2026-11-10T15:17:55Z",
-    "commitHash": "04bd8bc6d2ca1aba5d35f2311c0dcbce4a3cea4d",
-    "order": 664
   }
 ]
