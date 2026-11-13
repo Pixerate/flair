@@ -25,3 +25,14 @@ export function HeroBanner() {
   );
 }
 ```
+
+## UI components
+
+Effects offered as UI components take typed data and controlled state:
+
+```tsx
+const [checked, setChecked] = useState(false);
+
+<FlairEffect effect="toggle-switch" state={{ checked }} onEvent={(_, d) => setChecked(d.checked as boolean)} label="Wi-Fi" />
+<FlairEffect effect="gauge" data={{ value: 72, max: 100, unit: "%", label: "CPU" }} />
+```

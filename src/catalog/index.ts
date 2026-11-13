@@ -199,6 +199,27 @@ export {
 export { controlSchema, controlsSchema, controlUnit, type JsonSchema, type SchemaOptions } from "../shader/schema.js";
 export { SCENE_TEMPLATES, sceneTemplate } from "./templates.js";
 export { PAINT_HINTS, PAINT_MAPS, PAINT_REPEATS, paintHint, type EffectPaintHint, type PaintMap, type PaintRepeat } from "./paint.js";
+export {
+  effectUi,
+  UI_COLOR_ROLES,
+  UI_HINTS,
+  uiContentHash,
+  uiHint,
+  uiValues,
+  type EffectUiHint,
+  type JsonSchemaDocument,
+  type JsonValue,
+  type UiA11y,
+  type UiBindings,
+  type UiComponentContract,
+  type UiComponentGroup,
+  type UiDescriptor,
+  type UiEvent,
+  type UiInput,
+  type UiPlatformTarget,
+  type UiSizing,
+  type UiStateField,
+} from "./ui-hints.js";
 export { FBM, glsl, HASH, NOISE, OKLAB_MIX, PALETTE, PATH, ROTATE, SPECTRUM } from "./glsl.js";
 
 /** The catalog's shader effects. */

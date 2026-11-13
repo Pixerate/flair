@@ -12,18 +12,20 @@
  */
 
 import { CAMERA_PREVIEW_SOURCE, cameraPreviewLength, cameraPreviewValues } from "../catalog/camera.js";
-import { drawsAlpha, effectDefaults, effectInputs, getEffect, SAMPLE_IMAGES, textImage, type CameraEffect, type EffectDefinition, type ImageSlot, type TextSlot } from "../catalog/index.js";
+import { drawsAlpha, effectDefaults, effectInputs, getEffect, SAMPLE_IMAGES, textImage, type CameraEffect, type EffectDefinition, type ImageSlot, type TextSlot, type VectorEffect } from "../catalog/index.js";
 import { renderVectorEffect } from "../catalog/types.js";
+import { effectUi, uiValues, type EffectUiHint, type JsonValue } from "../catalog/ui-hints.js";
 import { resolveAsset as resolveOne } from "../scene/assets.js";
 import type { SubjectResolver } from "../scene/layers.js";
 import type { AudioSource } from "../shader/audio.js";
 import type { ControlValue } from "../shader/controls.js";
 import { ShaderRenderer } from "../shader/renderer.js";
 import { preloadImages, releaseImages, type LiveSource } from "../shader/textures.js";
-import { SvgPlayer } from "../vector/svg.js";
+import { SvgPlayer, svgDuration } from "../vector/svg.js";
 import { mountTiming } from "./timing.js";
 
 export { preloadImages, releaseImages };
+export { UI_HINTS, uiValues, type JsonValue, type UiDescriptor } from "../catalog/ui-hints.js";
 export { recordEffect, recordingPlan, type RecordFormat, type RecordOptions, type RecordPointer, type RecordingPlan } from "./record.js";
 export { PREVIEW_FOOTAGE_MS, previewFootage, videoFootage } from "./timing.js";
 export { checkShutter, FrameAverager, shutterTimes, DEFAULT_SHUTTER_SAMPLES, type Shutter, type ShutterOptions } from "../export/shutter.js";
@@ -157,6 +159,32 @@ export interface MountOptions {
   playOnEnter?: boolean;
   /** Duration in ms for one-shot playback. */
   duration?: number;
+  /**
+   * For an effect offered as a UI component (one with `ui`, see `UI_HINTS`):
+   * its typed data, by the props its `ui.contract.props` names
+   * (`{ value: 72, max: 100, unit: "%", label: "CPU" }` for `gauge`), filling
+   * the controls its bindings name over `preset` and `values`. Refused with
+   * a sentence when a prop is unknown or does not fit.
+   */
+  data?: Readonly<Record<string, unknown>>;
+  /**
+   * For a UI component with controlled state (`toggle-switch`'s `checked`):
+   * the state to show. Given, the host owns it: a click or key fires
+   * `onEvent("change", { checked })` and changes nothing until the host
+   * passes the new state (`setState`). Left out, the effect keeps its own
+   * state, still firing `change` as it flips.
+   */
+  state?: Readonly<Record<string, JsonValue>>;
+  /** For a UI component: called with each event its contract names (`"change"`, `{ checked: true }`). */
+  onEvent?: (event: string, detail: Record<string, JsonValue>) => void;
+  /** For a UI component whose name comes from `aria-label` (`ui.contract.a11y.labelFrom`): its accessible name. */
+  label?: string;
+  /**
+   * For a UI component: `"user"` (default) shows its rest state, still, when
+   * the visitor prefers reduced motion; `"always"` always does; `"never"`
+   * always animates.
+   */
+  reducedMotion?: "user" | "always" | "never";
 }
 
 /** A running effect, from {@link mountEffect}. */
@@ -174,6 +202,12 @@ export interface MountedEffect {
   setValues(values: Record<string, ControlValue>): void;
   play(): void;
   pause(): void;
+  /** For a UI component: new typed data (see `MountOptions.data`), merged over the last. */
+  setData?(data: Readonly<Record<string, unknown>>): void;
+  /** For a UI component with controlled state: the state to show, animating to it (see `MountOptions.state`). */
+  setState?(state: Readonly<Record<string, JsonValue>>): void;
+  /** For a UI component with state: the state it shows now. */
+  readonly state?: Readonly<Record<string, JsonValue>>;
   /** Stops it and removes what it drew. */
   dispose(): void;
   /** Settles once all textures/images and live sources are decoded and uploaded to the GPU. */
@@ -436,6 +470,10 @@ export function mountEffect(host: HTMLElement, effect: EffectDefinition | string
     };
   }
 
+  const ui = effectUi(def);
+  if (ui) return mountComponent(host, def, ui, values, options);
+  if (options.data || options.state) throw new Error(`"${def.id}" is not offered as a UI component, so it takes no data or state; give it values instead (UI_HINTS lists the effects that are).`);
+
   let player: SvgPlayer;
   const build = () => {
     player?.dispose();
@@ -466,6 +504,157 @@ export function mountEffect(host: HTMLElement, effect: EffectDefinition | string
     setValues(next) {
       values = { ...values, ...next };
       build();
+    },
+    play: () => player.play(),
+    pause: () => player.pause(),
+    dispose: () => player.dispose(),
+    ready: async () => {},
+  };
+}
+
+const KEYS: Record<string, string> = { " ": "Space", Spacebar: "Space", Enter: "Enter" };
+
+function prefersReducedMotion(): boolean {
+  return typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+/**
+ * A vector effect run as a UI component: typed data fills its bound
+ * controls, a click-bound boolean state (a switch's `checked`) is shown,
+ * flipped and reported through `onEvent`, its ARIA role, state and keys
+ * are set from its contract, it plays once to its rest point
+ * (`a11y.reducedMotionAt` of its play) and, under reduced motion, shows
+ * that rest point still.
+ */
+function mountComponent(host: HTMLElement, def: VectorEffect, hint: EffectUiHint, initial: Record<string, ControlValue>, options: MountOptions): MountedEffect {
+  const contract = hint.ui.contract ?? {};
+  const a11y = contract.a11y;
+  const still = options.reducedMotion === "always" || ((options.reducedMotion ?? "user") === "user" && prefersReducedMotion());
+  // The boolean state the effect's click steps flip, if it has one.
+  const [flag] = Object.entries(hint.bindings.state ?? {}).find(([, b]) => b.interaction === "click") ?? [];
+  const event = contract.state?.find((s) => s.name === flag)?.event;
+  let base = initial;
+  let data: Record<string, unknown> = {};
+  let values = initial;
+  const fill = (next: Record<string, unknown>) => {
+    const input = uiValues(def, next);
+    data = next;
+    values = { ...base, ...input.values };
+    return input.state;
+  };
+  const given = fill(options.data ?? {});
+  const controlled = !!flag && options.state !== undefined && flag in options.state;
+  let on = flag ? Boolean((controlled ? options.state![flag] : given[flag]) ?? false) : false;
+  const emit = (name: string, detail: Record<string, JsonValue>) => options.onEvent?.(name, detail);
+
+  let player: SvgPlayer;
+  /** Plays the next click step (or jumps to its end, still). */
+  const step = () => {
+    player.advance();
+    if (still) player.settle();
+  };
+  const toggle = () => {
+    if (!flag) return;
+    const next = !on;
+    if (!controlled) {
+      on = next;
+      step();
+      describe();
+    }
+    if (event) emit(event, { [flag]: next });
+  };
+  const onKey = (e: KeyboardEvent) => {
+    const action = a11y?.keyboard?.[KEYS[e.key] ?? e.key];
+    if (action !== "toggle") return;
+    e.preventDefault();
+    toggle();
+  };
+  /** The element's role, name, state and value, from the contract. */
+  const describe = () => {
+    const el = player.view.element;
+    if (a11y?.role) el.setAttribute("role", a11y.role);
+    if (a11y && Object.keys(a11y.keyboard ?? {}).length) el.tabIndex = 0;
+    const name = a11y?.labelFrom === "prop" ? values[hint.bindings.props.label ?? ""] : a11y?.labelFrom === "aria-label" ? options.label : undefined;
+    if (typeof name === "string" && name) el.setAttribute("aria-label", name);
+    if (flag) el.setAttribute("aria-checked", String(on));
+    const valueControl = hint.bindings.props.value;
+    if (valueControl !== undefined && typeof values[valueControl] === "number") {
+      const maxControl = hint.bindings.props.max;
+      const schemaMax = (contract.props?.properties as Record<string, { maximum?: number }> | undefined)?.value?.maximum;
+      const max = maxControl !== undefined && typeof values[maxControl] === "number" ? values[maxControl] : (schemaMax ?? 100);
+      const unit = hint.bindings.props.unit !== undefined ? values[hint.bindings.props.unit] : undefined;
+      el.setAttribute("aria-valuemin", "0");
+      el.setAttribute("aria-valuemax", String(max));
+      el.setAttribute("aria-valuenow", String(values[valueControl]));
+      if (typeof unit === "string" && unit) el.setAttribute("aria-valuetext", `${values[valueControl]}${unit}`);
+    }
+  };
+  const build = () => {
+    player?.dispose();
+    const motion = renderVectorEffect(def, values);
+    // Components play once to their rest point and stay there.
+    const rest = Math.max(1, Math.round((a11y?.reducedMotionAt ?? 1) * (svgDuration(motion) + (def.hold ?? 600))));
+    player = new SvgPlayer(host, motion, {
+      hold: def.hold,
+      loop: options.loop ?? false,
+      duration: options.duration ?? rest,
+      ...(options.playOnEnter !== undefined ? { playOnEnter: options.playOnEnter } : {}),
+      ...(def.trigger ? { trigger: def.trigger } : {}),
+      // A component's clicks go through its state, so a controlled one changes only when the host says.
+      ...(flag
+        ? {
+            onTrigger: () => {
+              toggle();
+              return false;
+            },
+          }
+        : {}),
+      autoplay: !still && (options.autoplay ?? true),
+      pauseWhenHidden: options.pauseWhenHidden ?? true,
+    });
+    if (options.className) player.view.element.className = options.className;
+    player.view.element.addEventListener("keydown", onKey);
+    if (flag && on) {
+      // Shown on from the start: the end of its first step, without playing it.
+      player.advance();
+      player.settle();
+    } else if (still && !def.trigger) player.settle();
+    describe();
+  };
+  build();
+  return {
+    effect: def,
+    get element() {
+      return player.view.element;
+    },
+    get player() {
+      return player;
+    },
+    get state() {
+      return flag ? { [flag]: on } : {};
+    },
+    setSubject(subject) {
+      const taken = subjectValues(def, subject).values;
+      base = { ...base, ...taken };
+      values = { ...values, ...taken };
+      build();
+    },
+    setValues(next) {
+      base = { ...base, ...next };
+      values = { ...values, ...next };
+      build();
+    },
+    setData(next) {
+      fill({ ...data, ...next });
+      build();
+    },
+    setState(next) {
+      if (!flag || !(flag in next)) return;
+      const want = Boolean(next[flag]);
+      if (want === on) return;
+      on = want;
+      step();
+      describe();
     },
     play: () => player.play(),
     pause: () => player.pause(),

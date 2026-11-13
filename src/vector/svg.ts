@@ -433,6 +433,13 @@ export interface SvgPlayerOptions extends SvgViewOptions {
   /** The element whose pointer events trigger it, or whose scrolling a scroll trigger follows (default the container). */
   triggerTarget?: HTMLElement;
   /**
+   * For a click trigger: called on each click before the next step plays.
+   * Return `false` to leave the picture where it is, for a host that owns
+   * the state it shows (a controlled switch) and plays it itself with
+   * `advance()` (and `settle()`).
+   */
+  onTrigger?: () => boolean | void;
+  /**
    * For a scroll trigger: the stretch of the target's progress through the
    * viewport (0 as its top comes in at the bottom, 1 as its bottom leaves at
    * the top) over which the picture plays from start to end (default
@@ -461,6 +468,7 @@ export class SvgPlayer {
   private readonly motion: SvgMotion;
   private readonly trigger?: SvgTrigger;
   private readonly triggerTarget?: HTMLElement;
+  private readonly onTrigger?: () => boolean | void;
   /** With a hover or press trigger: 1 playing to the end, -1 back to the start. */
   private direction = 1;
   /** With a click trigger: when each click came, in ms of playback. */
@@ -487,6 +495,7 @@ export class SvgPlayer {
     this.clock = options.clock ?? realClock;
     this.motion = motion;
     this.trigger = options.trigger;
+    this.onTrigger = options.onTrigger;
     this.steps = this.trigger ? [] : (options.steps ?? []);
     this.loop = this.trigger ? false : (options.loop ?? true);
     this.speed = options.speed ?? 1;
@@ -649,6 +658,19 @@ export class SvgPlayer {
     this.play();
   }
 
+  /**
+   * Jumps, without animating, to where the current play comes to rest: the
+   * end of the latest step for a click trigger, else the end. What a host
+   * shows under reduced motion, or for a state set before anyone looked.
+   */
+  settle(): void {
+    this.playing = false;
+    if (this.trigger === "click") {
+      this.time = Math.max(this.time, svgDuration(this.motion, this.steps));
+      this.view.draw(this.time, this.steps);
+    } else this.seek(this.length);
+  }
+
   dispose(): void {
     this.disposed = true;
     this.playing = false;
@@ -660,7 +682,10 @@ export class SvgPlayer {
 
   private onEnter = () => this.setActive(true);
   private onLeave = () => this.setActive(false);
-  private onClick = () => this.advance();
+  private onClick = () => {
+    if (this.onTrigger?.() === false) return;
+    this.advance();
+  };
 
   /** Seeks to where the trigger target is in the viewport. */
   private followScroll = () => {

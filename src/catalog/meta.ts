@@ -10,6 +10,7 @@ import { humanise, type ControlDef, type ControlValue } from "../shader/controls
 import type { EffectInputs } from "./inputs.js";
 import { SAMPLE_IMAGES } from "./images.js";
 import { paintHint, type EffectPaintHint } from "./paint.js";
+import { uiDescription, type UiBindings, type UiDescriptor } from "./ui-hints.js";
 import type { CameraRole, EffectCategory, EffectDefinition, VideoUse } from "./types.js";
 import type { SvgTrigger } from "../vector/svg.js";
 
@@ -54,6 +55,10 @@ export interface EffectMeta {
   swiftReady?: boolean;
   /** How it makes good paint in an editor that paints with effects; absent when it does not (see `PAINT_HINTS`). */
   paint?: EffectPaintHint;
+  /** How it works as a UI component (`@pixerate/schemas`' `UiDescriptor`); absent when it is not UI (see `UI_HINTS`). */
+  ui?: UiDescriptor;
+  /** With `ui`: which controls its props, colour roles and state drive. */
+  uiBindings?: UiBindings;
 }
 
 /** An effect's metadata, from its definition (given its controls and inputs, which the catalog works out). */
@@ -78,7 +83,14 @@ export function metaOf(effect: EffectDefinition, controls: readonly ControlDef[]
     animated: effect.kind !== "shader" || /\biTime\b/.test(effect.source),
     ...(duration !== undefined && { duration }),
     ...(paintOf(effect, controls) && { paint: paintHint(effect.id)! }),
+    ...uiOf(effect, controls),
   };
+}
+
+/** `ui` and `uiBindings` for an effect offered as a UI component, else nothing. */
+function uiOf(effect: EffectDefinition, controls: readonly ControlDef[]): Pick<EffectMeta, "ui" | "uiBindings"> {
+  const found = uiDescription(effect, controls);
+  return found ? { ui: found.ui, uiBindings: found.bindings } : {};
 }
 
 /**

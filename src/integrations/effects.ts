@@ -52,7 +52,7 @@ import {
 } from "@pixerate/editor/effects";
 import { cameraMoveControls, getCameraMove } from "../catalog/camera.js";
 import { getTimingEffect, timingControls, timingSample as flairTimingSample, MAX_TIMING_FRAMES } from "../catalog/timing.js";
-import { EFFECT_META, loadEffect, type EffectMeta } from "../catalog/lazy.js";
+import { EFFECT_META, loadEffect, type EffectMeta, type UiBindings, type UiDescriptor } from "../catalog/lazy.js";
 import { renderVectorEffect, type EffectDefinition, type ShaderEffect, type VectorEffect } from "../catalog/types.js";
 import { applyPrimitive } from "../motion/apply.js";
 import { getPrimitive, PRIMITIVES } from "../motion/library.js";
@@ -116,17 +116,31 @@ export interface EffectPaint {
   size?: number;
 }
 
-/** A Flair summary: the contract's, with its paint hint when the effect makes good paint. */
-export type FlairEffectSummary = EffectSummary & { paint?: EffectPaint };
+/**
+ * How an effect works as a UI component, as `flairEffects()` gives it on summaries and
+ * descriptions: `ui` is `@pixerate/schemas`' `UiDescriptor` (what it implements, its contract,
+ * platforms, an example and a `contentHash` that changes when its output does), and `uiBindings`
+ * says which of its controls the contract's props, colour roles and state drive. Only effects
+ * that work as components have them: with the provider's `uiHints` capability, an effect without
+ * `ui` is not meant as UI.
+ */
+export interface EffectUiFields {
+  ui?: UiDescriptor;
+  uiBindings?: UiBindings;
+}
 
-/** A Flair description: the contract's, with its paint hint when the effect makes good paint. */
-export type FlairEffectDescription = EffectDescription & { paint?: EffectPaint };
+/** A Flair summary: the contract's, with its paint hint and UI descriptor when it has them. */
+export type FlairEffectSummary = EffectSummary & { paint?: EffectPaint } & EffectUiFields;
+
+/** A Flair description: the contract's, with its paint hint and UI descriptor when it has them. */
+export type FlairEffectDescription = EffectDescription & { paint?: EffectPaint } & EffectUiFields;
 
 /**
- * Flair's capabilities: the contract's, and `paintHints` (effects that make good paint say how
- * with `paint`, and those without one are not meant as paint).
+ * Flair's capabilities: the contract's, `paintHints` (effects that make good paint say how
+ * with `paint`, and those without one are not meant as paint) and `uiHints` (effects that work
+ * as UI components say how with `ui`, and those without one are not meant as UI).
  */
-export type FlairEffectProviderCapabilities = EffectProviderCapabilities & { paintHints: true };
+export type FlairEffectProviderCapabilities = EffectProviderCapabilities & { paintHints: true; uiHints: true };
 
 /** The provider `flairEffects()` returns: an `EffectProvider` whose summaries and descriptions carry paint hints. */
 export type FlairEffectProvider = Omit<EffectProvider, "capabilities" | "list" | "search" | "describe"> & {
@@ -241,6 +255,15 @@ export function paintOf(plan: Plan): EffectPaint | undefined {
   };
 }
 
+/** The plan's UI descriptor and bindings, when the effect has them and its controls are still the bindings'. */
+export function uiOf(plan: Plan): EffectUiFields {
+  const { ui, uiBindings } = plan.meta;
+  if (!ui || !uiBindings) return {};
+  const controls = new Set(plan.controls.map((c) => c.name));
+  const named = [...Object.values(uiBindings.props), ...Object.values(uiBindings.colors)];
+  return named.every((name) => controls.has(name)) ? { ui, uiBindings } : {};
+}
+
 export function summaryOf(plan: Plan): FlairEffectSummary {
   const { meta } = plan;
   const paint = paintOf(plan);
@@ -263,6 +286,7 @@ export function summaryOf(plan: Plan): FlairEffectSummary {
     ...(plan.controls.some((c) => c.type === "path") && { accepts: ["path"] as const }),
     ...(move && { camera: { role: move.motion.role, durationMs: move.motion.duration, ...(move.motion.cut !== undefined && { cut: move.motion.cut }) } }),
     ...(paint && { paint }),
+    ...uiOf(plan),
   };
 }
 
@@ -742,6 +766,8 @@ export function flairEffects(options: FlairEffectsOptions = {}): FlairEffectProv
     supportsTemplates: true,
     // Effects that make good paint say how (`paint`); the rest are not meant as paint.
     paintHints: true,
+    // Effects that work as UI components say how (`ui`); the rest are not meant as UI.
+    uiHints: true,
   };
 
   // Templates (and their summaries, which fill each one to time it) load with the first call that needs them.

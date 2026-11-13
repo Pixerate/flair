@@ -30,6 +30,7 @@ import { getEffect, effectDefaults, type EffectDefinition } from "../catalog/ind
 import { mountEffect, type EffectSubject } from "../embed/index.js";
 import { renderVectorEffect, type VectorEffect as VectorEffectDefinition } from "../catalog/types.js";
 import type { ControlValue } from "../shader/controls.js";
+import type { JsonValue } from "../catalog/ui-hints.js";
 import type { Clock } from "../time/clock.js";
 import type { SvgMotion } from "../vector/motion.js";
 import { svgFrameMarkup, svgInlineLayout, svgViewBox } from "../vector/static.js";
@@ -387,6 +388,19 @@ export interface FlairEffectParams {
   playOnEnter?: boolean;
   /** Duration in ms for one-shot playback. */
   duration?: number;
+  /** For an effect offered as a UI component (one with `ui`): its typed data, by its contract's props. */
+  data?: Record<string, unknown>;
+  /**
+   * For a UI component with controlled state: the state to show (`{ checked }`).
+   * Given, the host owns it: clicks and keys only fire `onEvent`.
+   */
+  state?: Record<string, JsonValue>;
+  /** For a UI component: each event its contract names (`"change"`, `{ checked }`). */
+  onEvent?: (event: string, detail: Record<string, JsonValue>) => void;
+  /** For a UI component named by `aria-label` (the switch): its accessible name. */
+  label?: string;
+  /** For a UI component: when to show its rest state still (default `"user"`: under reduced motion). */
+  reducedMotion?: "user" | "always" | "never";
 }
 
 /**
@@ -397,6 +411,7 @@ export interface FlairEffectParams {
  *
  * ```svelte
  * <div use:flairEffect={{ effect: "image-duotone", subject: { image: "/team.jpg" } }} style="aspect-ratio: 16 / 9"></div>
+ * <div use:flairEffect={{ effect: "toggle-switch", state: { checked }, onEvent: (_, d) => (checked = d.checked), label: "Wi-Fi" }}></div>
  * ```
  */
 export function flairEffect(node: HTMLElement, initial: FlairEffectParams): ActionReturn<FlairEffectParams> {
@@ -416,6 +431,11 @@ export function flairEffect(node: HTMLElement, initial: FlairEffectParams): Acti
       ...(params.loop !== undefined ? { loop: params.loop } : {}),
       ...(params.playOnEnter !== undefined ? { playOnEnter: params.playOnEnter } : {}),
       ...(params.duration !== undefined ? { duration: params.duration } : {}),
+      ...(params.data ? { data: params.data } : {}),
+      ...(params.state ? { state: params.state } : {}),
+      ...(params.label !== undefined ? { label: params.label } : {}),
+      ...(params.reducedMotion ? { reducedMotion: params.reducedMotion } : {}),
+      onEvent: (name, detail) => params.onEvent?.(name, detail),
     });
     m.element.style.display = "block";
     m.element.style.width = "100%";
@@ -432,7 +452,12 @@ export function flairEffect(node: HTMLElement, initial: FlairEffectParams): Acti
         next.pauseWhenHidden !== params.pauseWhenHidden ||
         next.loop !== params.loop ||
         next.playOnEnter !== params.playOnEnter ||
-        next.duration !== params.duration;
+        next.duration !== params.duration ||
+        (next.state === undefined) !== (params.state === undefined) ||
+        next.label !== params.label ||
+        next.reducedMotion !== params.reducedMotion;
+      const dataChanged = JSON.stringify(next.data ?? {}) !== JSON.stringify(params.data ?? {});
+      const stateChanged = JSON.stringify(next.state ?? {}) !== JSON.stringify(params.state ?? {});
       const subjectChanged = next.subject !== params.subject;
       const valuesChanged = JSON.stringify(next.values ?? {}) !== JSON.stringify(params.values ?? {});
       params = next;
@@ -443,6 +468,8 @@ export function flairEffect(node: HTMLElement, initial: FlairEffectParams): Acti
       }
       if (subjectChanged && next.subject) mounted.setSubject(next.subject);
       if (valuesChanged && next.values) mounted.setValues(next.values);
+      if (dataChanged && next.data) mounted.setData?.(next.data);
+      if (stateChanged && next.state) mounted.setState?.(next.state);
     },
     destroy() {
       if (setPosition) node.style.position = "";
