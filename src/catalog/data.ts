@@ -1699,4 +1699,127 @@ export const branchMenu: VectorEffect = {
   })(),
 };
 
-export const dataEffects: VectorEffect[] = [donutChart, pieChart, gauge, barRace, sparkline, leaderboard, areaChart, kpiTile, rolodex, fanOutLinks, hubSpokeGraph, statCards, yearScrubber, sentimentTile, branchMenu];
+// ── Metric strip ───────────────────────────────────────────────────────
+
+/**
+ * A 480×96 strip of up to `cells` metrics side by side, each a label over an
+ * icon, a number and its unit. The numbers count up to the first row of
+ * values, then tick to each next row (up to `states`): a change starts
+ * `move + rest` after the last and takes `move`, an arrow shows each number's
+ * direction and a light sweeps the strip's bottom edge. Times are in ms.
+ */
+const STRIP = { cells: 4, states: 5, x: 12, y: 16, w: 456, h: 64, rx: 12, intro: 450, move: 900, rest: 1300 };
+const STRIP_DEFAULT = [
+  [85, 156, 143, 44],
+  [91, 160, 150, 49],
+  [98, 165, 165, 57],
+];
+const STRIP_ICONS = [
+  `<circle r="6" fill="none"/><path d="M0 -6 A6 6 0 0 1 0 6Z" stroke="none" fill="currentColor"/>`,
+  `<rect x="-5" y="-6" width="10" height="12" rx="1.5" fill="none"/><path d="M-2.5 -2.5 h5 M-2.5 0.5 h5 M-2.5 3.5 h3" fill="none"/>`,
+  `<rect x="-6" y="-5" width="12" height="10" rx="2" fill="none"/><path d="M-3 2 V0 M0 2 V-2 M3 2 V-1" fill="none"/>`,
+  `<path d="M-5 1 V5 M-2.5 5 H3 C4.5 5 5 4 5 3 L5.5 -0.5 C5.5 -1.5 5 -2 4 -2 H1 L1.5 -5 C1.5 -6 0 -6.5 -0.5 -5.5 L-2.5 -1 V5" fill="none"/>`,
+];
+const stripChange = (k: number) => STRIP.intro + 100 + k * (STRIP.move + STRIP.rest);
+
+export const metricStrip: VectorEffect = {
+  kind: "vector",
+  id: "metric-strip",
+  name: "Metric strip",
+  description:
+    "A dashboard strip of up to four labelled metrics that counts up and then keeps ticking from one set of values to the next, a small green or red arrow showing which way each number moved and a light sweeping along the strip at every change.",
+  category: "data",
+  tags: ["kpi", "metric", "dashboard", "counter", "ticker", "live", "tech", "report"],
+  hold: 1500,
+  presets: [
+    { name: "Light", values: { background: [0.94, 0.96, 0.97], strip: [1, 1, 1], ink: [0.1, 0.14, 0.2], accent: [0.05, 0.55, 0.58] } },
+    { name: "Sales", values: { labels: "Revenue,Orders,Conversion,Refunds", units: "K,,%,", states: "42.5,310,3.1,12; 47.8,355,3.4,9; 51.2,402,3.6,11" } },
+    { name: "Three", values: { labels: "Uptime,Latency,Errors", units: "%,ms,", states: "99.2,180,14; 99.6,142,6; 99.9,118,2" } },
+  ],
+  derived: (v) => {
+    const states = parseSeries(v.states, STRIP.states, STRIP.cells, STRIP_DEFAULT);
+    const cells = states[0]!.length;
+    const labels = parseLabels(v.labels, STRIP.cells);
+    const units = parseLabels(v.units, STRIP.cells);
+    const cellW = STRIP.w / cells;
+    const out: Record<string, string | number> = {};
+    for (let i = 0; i < STRIP.cells; i++) {
+      const shown = i < cells;
+      const column = states.map((row) => row[i] ?? 0);
+      const dec = decimalsOf(column);
+      const x = STRIP.x + i * cellW;
+      const label = fitLabel(labels[i] ?? "", cellW - 28, 10, 7);
+      const unit = fit(formatSafe(units[i] ?? ""), 30, 9);
+      const widest = Math.max(...column.map((c) => textWidthEm(formatCount(c, { decimals: dec }))));
+      const size = Math.min(19, (cellW - 70) / Math.max(1, widest));
+      out[`show${i}`] = shown ? "inline" : "none";
+      out[`labelX${i}`] = r1(x + 16);
+      out[`label${i}`] = label.text;
+      out[`labelSize${i}`] = label.size;
+      out[`labelLength${i}`] = label.length;
+      out[`iconX${i}`] = r1(x + 23);
+      out[`size${i}`] = r1(size);
+      out[`unitX${i}`] = r1(x + 36 + widest * size + 3);
+      // Numbers are right-aligned against their unit, so it follows them however wide they get.
+      out[`numRight${i}`] = r1(x + 36 + widest * size);
+      out[`unit${i}`] = formatSafe(units[i] ?? "");
+      out[`unitSize${i}`] = unit.size;
+      out[`arrowX${i}`] = r1(x + cellW - 16);
+      out[`dividerX${i}`] = r1(x);
+      out[`dividerShow${i}`] = shown && i > 0 ? "inline" : "none";
+      out[`dec${i}`] = dec;
+      for (let k = 0; k < STRIP.states; k++) {
+        const now = states[Math.min(k, states.length - 1)]![i] ?? 0;
+        const before = k === 0 ? 0 : (states[Math.min(k - 1, states.length - 1)]![i] ?? 0);
+        out[`v${i}_${k}`] = now;
+        out[`from${i}_${k}`] = before;
+        const up = now >= before;
+        out[`arrow${i}_${k}`] = up ? "M-4 3 L0 -3 L4 3Z" : "M-4 -3 L0 3 L4 -3Z";
+        out[`arrowColor${i}_${k}`] = paint(up ? v.up : v.down);
+        // An arrow only where the number moved, and only on changes that happen.
+        out[`arrowShow${i}_${k}`] = k > 0 && k < states.length && now !== before ? 1 : 0;
+      }
+    }
+    for (let k = 0; k < STRIP.states; k++) {
+      out[`stateShow${k}`] = k > 0 && k < states.length ? 1 : 0;
+      // Changes past the last set happen at the last one's time, doing nothing, so the loop ends there.
+      out[`stepAt${k}`] = stripChange(Math.min(k, states.length - 1));
+      out[`stepFade${k}`] = stripChange(Math.min(k, states.length - 1)) + STRIP.move + 500;
+    }
+    return { ...out, backdropOpacity: v.backdrop ? 1 : 0 };
+  },
+  motion: (() => {
+    const cells = Array.from({ length: STRIP.cells }, (_, i) => i);
+    const steps = Array.from({ length: STRIP.states }, (_, k) => k);
+    const { x, y, w, h, rx } = STRIP;
+    const at = (name: string) => `{{${name}}}` as unknown as number;
+    return {
+      svg: `<svg viewBox="0 0 480 96" font-family="${SANS}"><!-- {{states: text default='${STRIP_DEFAULT.map((r) => r.join(",")).join("; ")}' label='Values, one set per change (sets separated by semicolons, up to 5 sets of 4)'}} {{labels: text default='Compliance rate,Total laws,Public engagement,Implementation rate' label='Labels (comma-separated)'}} {{units: text default='%,K,K,%' label='Units (comma-separated)'}} {{background: color default=#0B1A1E label='Background'}} {{backdrop: bool default=true label='Background'}} {{strip: color default=#11252B label='Strip'}} {{ink: color default=#E3EEF0 label='Text'}} {{accent: color default=#5EC8C4 label='Accent'}} {{up: color default=#4FD08B label='Up'}} {{down: color default=#F0605E label='Down'}} --><defs><linearGradient id="metricStripSheen" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0.06"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></linearGradient><linearGradient id="metricStripSweepFill" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="{{accent}}" stop-opacity="0"/><stop offset="0.5" stop-color="{{accent}}" stop-opacity="0.9"/><stop offset="1" stop-color="{{accent}}" stop-opacity="0"/></linearGradient><linearGradient id="metricStripEdgeFill" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="{{accent}}" stop-opacity="0"/><stop offset="0.5" stop-color="{{accent}}" stop-opacity="0.45"/><stop offset="1" stop-color="{{accent}}" stop-opacity="0"/></linearGradient><clipPath id="metricStripClip"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}"/></clipPath></defs><g opacity="{{backdropOpacity}}"><rect width="480" height="96" fill="{{background}}"/></g><g id="metricStripBar" opacity="0"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}" fill="{{strip}}"/><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}" fill="url(#metricStripSheen)" stroke="{{ink}}" stroke-opacity="0.12"/><rect x="${x + 40}" y="${y + h - 1.5}" width="${w - 80}" height="1.5" fill="url(#metricStripEdgeFill)"/><g clip-path="url(#metricStripClip)"><rect id="metricStripSweep" x="${x - 140}" y="${y + h - 3}" width="140" height="3" fill="url(#metricStripSweepFill)" opacity="0"/></g>${cells
+        .map(
+          (i) =>
+            `<g display="{{show${i}}}"><line display="{{dividerShow${i}}}" x1="{{dividerX${i}}}" y1="${y + 14}" x2="{{dividerX${i}}}" y2="${y + h - 14}" stroke="{{ink}}" stroke-opacity="0.12"/><text x="{{labelX${i}}}" y="${y + 23}" font-size="{{labelSize${i}}}" textLength="{{labelLength${i}}}" lengthAdjust="spacingAndGlyphs" fill="{{ink}}" fill-opacity="0.7">{{label${i}}}</text><g transform="translate({{iconX${i}}} ${y + 43})" color="{{accent}}" stroke="{{accent}}" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">${STRIP_ICONS[i]}</g><text id="metricStripValue${i}" x="{{numRight${i}}}" y="${y + 50}" text-anchor="end" font-size="{{size${i}}}" fill="{{ink}}">0</text><text x="{{unitX${i}}}" y="${y + 50}" font-size="{{unitSize${i}}}" fill="{{ink}}" fill-opacity="0.55">{{unit${i}}}</text>${steps
+              .map((k) => `<path id="metricStripArrow${i}_${k}" d="{{arrow${i}_${k}}}" transform="translate({{arrowX${i}}} ${y + 44})" fill="{{arrowColor${i}_${k}}}" opacity="0"/>`)
+              .join("")}</g>`,
+        )
+        .join("")}</g></svg>`,
+      animate: [
+        { id: "metricStripBar", attrs: { opacity: [0, 1], transform: ["translate(0 8)", "translate(0 0)"] }, ms: STRIP.intro, ease: "out" },
+        ...cells.flatMap((i) =>
+          steps.flatMap((k): SvgAnimation[] => [
+            // Each number ticks from the last set to this one (from nothing, the first time)...
+            { id: `metricStripValue${i}`, count: [at(`from${i}_${k}`), at(`v${i}_${k}`)], decimals: at(`dec${i}`), delay: at(`stepAt${k}`), ms: STRIP.move, ease: "in-out" },
+            // ...with an arrow showing which way it went, on the changes that move it.
+            { id: `metricStripArrow${i}_${k}`, attrs: { opacity: [0, at(`arrowShow${i}_${k}`)], transform: [`translate({{arrowX${i}}} ${y + 48})`, `translate({{arrowX${i}}} ${y + 44})`] }, delay: at(`stepAt${k}`), ms: 300, ease: "out" },
+            { id: `metricStripArrow${i}_${k}`, attrs: { opacity: [at(`arrowShow${i}_${k}`), 0] }, delay: at(`stepFade${k}`), ms: 400 },
+          ]),
+        ),
+        // A light sweeps the bottom edge at every change.
+        ...steps.flatMap((k): SvgAnimation[] => [
+          { id: "metricStripSweep", attrs: { opacity: [0, at(`stateShow${k}`)], x: [x - 140, x + w] }, delay: at(`stepAt${k}`), ms: STRIP.move, ease: "in-out" },
+        ]),
+      ],
+    };
+  })(),
+};
+
+export const dataEffects: VectorEffect[] = [donutChart, pieChart, gauge, barRace, sparkline, leaderboard, areaChart, kpiTile, rolodex, fanOutLinks, hubSpokeGraph, statCards, yearScrubber, sentimentTile, branchMenu, metricStrip];

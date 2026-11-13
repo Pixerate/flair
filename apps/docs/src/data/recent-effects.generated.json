@@ -1,5 +1,171 @@
 [
   {
+    "id": "metric-strip",
+    "name": "Metric strip",
+    "kind": "vector",
+    "category": "data",
+    "description": "A dashboard strip of up to four labelled metrics that counts up and then keeps ticking from one set of values to the next, a small green or red arrow showing which way each number moved and a light sweeping along the strip at every change.",
+    "tags": [
+      "kpi",
+      "metric",
+      "dashboard",
+      "counter",
+      "ticker",
+      "live",
+      "tech",
+      "report"
+    ],
+    "controls": [
+      {
+        "n": "states",
+        "t": "text",
+        "d": "85,156,143,44; 91,160,150,49; 98,165,165,57",
+        "l": "Values, one set per change (sets separated by semicolons, up to 5 sets of 4)",
+        "line": 1
+      },
+      {
+        "n": "labels",
+        "t": "text",
+        "d": "Compliance rate,Total laws,Public engagement,Implementation rate",
+        "l": "Labels (comma-separated)",
+        "line": 2
+      },
+      {
+        "n": "units",
+        "t": "text",
+        "d": "%,K,K,%",
+        "l": "Units (comma-separated)",
+        "line": 3
+      },
+      {
+        "n": "background",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            11,
+            26,
+            30
+          ]
+        },
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "backdrop",
+        "t": "bool",
+        "d": true,
+        "l": "Background",
+        "line": 5
+      },
+      {
+        "n": "strip",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            17,
+            37,
+            43
+          ]
+        },
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "ink",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            227,
+            238,
+            240
+          ]
+        },
+        "l": "Text",
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "accent",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            94,
+            200,
+            196
+          ]
+        },
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "up",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            79,
+            208,
+            139
+          ]
+        },
+        "c": 1,
+        "line": 9
+      },
+      {
+        "n": "down",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            240,
+            96,
+            94
+          ]
+        },
+        "c": 1,
+        "line": 10
+      }
+    ],
+    "presets": [
+      "Light",
+      "Sales",
+      "Three"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "states",
+          "label": "Values, one set per change (sets separated by semicolons, up to 5 sets of 4)",
+          "holds": "copy",
+          "default": "85,156,143,44; 91,160,150,49; 98,165,165,57"
+        },
+        {
+          "name": "labels",
+          "label": "Labels (comma-separated)",
+          "holds": "copy",
+          "default": "Compliance rate,Total laws,Public engagement,Implementation rate"
+        },
+        {
+          "name": "units",
+          "label": "Units (comma-separated)",
+          "holds": "copy",
+          "default": "%,K,K,%"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 1500,
+    "animated": true,
+    "duration": 8250,
+    "module": "data",
+    "addedAt": "2026-11-13T16:39:03.494Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
     "id": "branch-menu",
     "name": "Branch menu",
     "kind": "vector",
@@ -3620,193 +3786,5 @@
     "addedAt": "2026-11-12T20:06:30Z",
     "commitHash": "3395927cebda31c797bb71f1f583fc3e72f5c7d3",
     "order": 677
-  },
-  {
-    "id": "hub-spoke-graph",
-    "name": "Hub-and-spoke graph",
-    "kind": "vector",
-    "category": "data",
-    "description": "A glowing hub igniting in a puff of dust, then spokes shooting out to glossy pearl nodes on comet heads, each node branching into small leaves and linking to its neighbours, with sparks running out along the spokes and the hub pulsing.",
-    "tags": [
-      "network",
-      "graph",
-      "hub",
-      "constellation",
-      "relations",
-      "dashboard",
-      "explainer",
-      "tech"
-    ],
-    "controls": [
-      {
-        "n": "hub",
-        "t": "text",
-        "d": "Platform",
-        "line": 1
-      },
-      {
-        "n": "labels",
-        "t": "text",
-        "d": "Research,Design,Engineering,Data,Security,Growth,Support",
-        "l": "Spokes (comma-separated, up to 8)",
-        "line": 2
-      },
-      {
-        "n": "leaves",
-        "t": "int",
-        "d": 3,
-        "l": "Leaves per spoke",
-        "max": 4,
-        "b": 3,
-        "line": 3
-      },
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            11,
-            26,
-            30
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "backdrop",
-        "t": "bool",
-        "d": true,
-        "l": "Background",
-        "line": 5
-      },
-      {
-        "n": "core",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            242,
-            196,
-            109
-          ]
-        },
-        "l": "Hub",
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "spoke",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            232,
-            196,
-            138
-          ]
-        },
-        "l": "Spokes",
-        "c": 1,
-        "line": 7
-      },
-      {
-        "n": "node",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            229,
-            143,
-            181
-          ]
-        },
-        "l": "Nodes",
-        "c": 1,
-        "line": 8
-      },
-      {
-        "n": "leaf",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            159,
-            140,
-            240
-          ]
-        },
-        "l": "Leaves",
-        "c": 1,
-        "line": 9
-      },
-      {
-        "n": "comet",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            111,
-            195,
-            255
-          ]
-        },
-        "l": "Comets",
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "ink",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            215,
-            227,
-            230
-          ]
-        },
-        "l": "Text",
-        "c": 1,
-        "line": 11
-      },
-      {
-        "n": "glow",
-        "t": "float",
-        "d": 2.5,
-        "max": 6,
-        "s": 0.5,
-        "b": 3,
-        "line": 12
-      }
-    ],
-    "presets": [
-      "Light",
-      "Neon",
-      "Solar system"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "hub",
-          "label": "Hub",
-          "holds": "copy",
-          "default": "Platform"
-        },
-        {
-          "name": "labels",
-          "label": "Spokes (comma-separated, up to 8)",
-          "holds": "copy",
-          "default": "Research,Design,Engineering,Data,Security,Growth,Support"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 1500,
-    "animated": true,
-    "duration": 6500,
-    "module": "data",
-    "addedAt": "2026-11-12T17:54:09Z",
-    "commitHash": "23404325f215083e35317a6d8fb9f8a9e279da67",
-    "order": 676
   }
 ]
