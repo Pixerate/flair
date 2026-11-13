@@ -1,4 +1,4 @@
-// flair-metal-hash: 1f15bb86
+// flair-metal-hash: 41aab6e1
 #pragma clang diagnostic ignored "-Wunused-variable"
 #pragma clang diagnostic ignored "-Wunused-const-variable"
 #pragma clang diagnostic ignored "-Wmissing-prototypes"
@@ -28,6 +28,9 @@ struct FlairUniforms
     packed_float3 uCool;
     float uSpeed;
     float uHeight;
+    char _m18_pad[12];
+    packed_float3 uBackground;
+    float uBackgroundAlpha;
 };
 
 struct flair_flames_frag_out
@@ -81,40 +84,88 @@ float fbm(thread float2& p, thread const int& octaves)
 }
 
 static inline __attribute__((always_inline))
-void mainImage(thread float4& fragColor, thread const float2& fragCoord, constant FlairUniforms& _182)
+void flair_opaqueImage(thread float4& fragColor, thread const float2& fragCoord, constant FlairUniforms& _192)
 {
-    float2 uv = fragCoord / float2(_182.iResolution[0], _182.iResolution[1]);
-    float2 p = float2(fragCoord.x / _182.iResolution[1u], uv.y);
-    float t = _182.iTime * _182.uSpeed;
+    float2 uv = fragCoord / float2(_192.iResolution[0], _192.iResolution[1]);
+    float2 p = float2(fragCoord.x / _192.iResolution[1u], uv.y);
+    float t = _192.iTime * _192.uSpeed;
     float2 param = float2(p.x * 4.0, (p.y * 3.0) - (t * 1.5));
     int param_1 = 5;
-    float _221 = fbm(param, param_1);
-    float n = _221;
-    float heat = (1.0 - (uv.y / _182.uHeight)) + ((n - 0.5) * 1.10000002384185791015625);
+    float _231 = fbm(param, param_1);
+    float n = _231;
+    float heat = (1.0 - (uv.y / _192.uHeight)) + ((n - 0.5) * 1.10000002384185791015625);
     heat = fast::clamp(heat, 0.0, 1.0);
-    float3 col = mix(float3(0.0), float3(_182.uCool), float3(smoothstep(0.0500000007450580596923828125, 0.300000011920928955078125, heat)));
-    col = mix(col, _182.uMid, float3(smoothstep(0.300000011920928955078125, 0.60000002384185791015625, heat)));
-    col = mix(col, _182.uHot, float3(smoothstep(0.60000002384185791015625, 0.949999988079071044921875, heat)));
+    float3 col = mix(float3(_192.uBackground), float3(_192.uCool), float3(smoothstep(0.0500000007450580596923828125, 0.300000011920928955078125, heat)));
+    col = mix(col, _192.uMid, float3(smoothstep(0.300000011920928955078125, 0.60000002384185791015625, heat)));
+    col = mix(col, _192.uHot, float3(smoothstep(0.60000002384185791015625, 0.949999988079071044921875, heat)));
     fragColor = float4(col, 1.0);
 }
 
-fragment flair_flames_frag_out flair_flames_frag(constant FlairUniforms& _182 [[buffer(0)]], float4 gl_FragCoord [[position]])
+static inline __attribute__((always_inline))
+float4 flair_backgroundOpacity(thread const float4& c, thread const float3& bg, thread const float& opacity)
 {
-    flair_flames_frag_out out = {};
-    float4 flair_color = float4(0.0, 0.0, 0.0, 1.0);
-    float _281;
-    if (_182.flair_flipY > 0.5)
+    if (opacity >= 1.0)
     {
-        _281 = _182.iResolution[1u] - gl_FragCoord.y;
+        return c;
+    }
+    float3 d = fast::clamp(c.xyz, float3(0.0), float3(1.0)) - bg;
+    float3 room = mix(bg, float3(1.0) - bg, step(float3(0.0), d));
+    float3 k = abs(d) / fast::max(room, float3(9.9999997473787516355514526367188e-05));
+    float a = fast::clamp(fast::max(k.x, fast::max(k.y, k.z)), 0.0, 1.0);
+    float3 _326;
+    if (a > 0.0)
+    {
+        _326 = bg + (d / float3(a));
     }
     else
     {
-        _281 = gl_FragCoord.y;
+        _326 = bg;
     }
-    float2 flair_coord = float2(gl_FragCoord.x, _281);
+    float3 fg = _326;
+    float alpha = a + (opacity * (1.0 - a));
+    float3 _348;
+    if (alpha > 0.0)
+    {
+        _348 = ((fg * a) + ((bg * opacity) * (1.0 - a))) / float3(alpha);
+    }
+    else
+    {
+        _348 = bg;
+    }
+    float3 col = _348;
+    return float4(col, alpha * c.w);
+}
+
+static inline __attribute__((always_inline))
+void mainImage(thread float4& fragColor, thread const float2& fragCoord, constant FlairUniforms& _192)
+{
+    float2 param_1 = fragCoord;
+    float4 param;
+    flair_opaqueImage(param, param_1, _192);
+    fragColor = param;
+    float4 param_2 = fragColor;
+    float3 param_3 = float3(_192.uBackground);
+    float param_4 = _192.uBackgroundAlpha;
+    fragColor = flair_backgroundOpacity(param_2, param_3, param_4);
+}
+
+fragment flair_flames_frag_out flair_flames_frag(constant FlairUniforms& _192 [[buffer(0)]], float4 gl_FragCoord [[position]])
+{
+    flair_flames_frag_out out = {};
+    float4 flair_color = float4(0.0, 0.0, 0.0, 1.0);
+    float _405;
+    if (_192.flair_flipY > 0.5)
+    {
+        _405 = _192.iResolution[1u] - gl_FragCoord.y;
+    }
+    else
+    {
+        _405 = gl_FragCoord.y;
+    }
+    float2 flair_coord = float2(gl_FragCoord.x, _405);
     float2 param_1 = flair_coord;
     float4 param;
-    mainImage(param, param_1, _182);
+    mainImage(param, param_1, _192);
     flair_color = param;
     out.flair_FragColor = flair_color;
     return out;
