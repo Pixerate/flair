@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { svgAnimatedMarkup } from "../vector/animated.js";
 import { svgFrame, svgMotionIssues, type SvgMotion } from "../vector/motion.js";
 import { svgDuration } from "../vector/svg.js";
-import { dataEffects, decimalsOf, fitLabel, parseLabels, parseNumberList, parseRace, parseSeries, parseShares, parseStat, statCards } from "./data.js";
+import { dataEffects, decimalsOf, fitLabel, parseLabels, parseNumberList, parseRace, parseSeries, parseShares, parseStat, statCards, yearScrubber } from "./data.js";
 import { iconEffects } from "./icons.js";
 import { effectControls, effectDefaults, effectInputs, findEffects, getEffect, renderVectorEffect, type VectorEffect } from "./index.js";
 
@@ -23,7 +23,7 @@ const BAD = ["", "abc", ",,,", "-5,-2", "1e400", "Café 日本 🎉 & <b>", "$12
 describe("data and icon effects", () => {
   it("are all in the catalog, in their categories", () => {
     expect(findEffects({ category: "data" }).map((e) => e.id)).toEqual(
-      expect.arrayContaining(["donut-chart", "pie-chart", "gauge", "bar-race", "sparkline", "leaderboard", "area-chart", "kpi-tile", "rolodex"]),
+      expect.arrayContaining(["donut-chart", "pie-chart", "gauge", "bar-race", "sparkline", "leaderboard", "area-chart", "kpi-tile", "rolodex", "year-scrubber"]),
     );
     expect(findEffects({ category: "icon" }).map((e) => e.id)).toEqual(
       expect.arrayContaining(["weather-icons", "notification-bell", "animated-arrows", "emoji-reactions", "bookmark-star", "trash-delete", "lock-unlock", "wifi-signal"]),
@@ -271,5 +271,44 @@ describe("stat cards", () => {
     expect(d).toMatchObject({ val0: 4.2, dec0: 1, fmt0: "$4.2M".replace("4.2", "{n}"), val1: 0, fmt1: "Live" });
     // Nothing readable falls back to the default stats.
     expect(at("").fmt0).toBe("{n}+");
+  });
+});
+
+describe("year scrubber", () => {
+  const at = (values: Record<string, unknown>) => {
+    const all = { ...Object.fromEntries(effectControls(yearScrubber).map((c) => [c.name, c.default])), ...values };
+    return yearScrubber.derived!(all as never) as Record<string, string | number>;
+  };
+  const labels = (d: Record<string, string | number>) => Array.from({ length: 13 }, (_, i) => d[`label${i}`]).filter((s) => s !== "");
+  const yOf = (t: string | number) => Number(/translate\(0 ([-\d.]+)\)/.exec(String(t))![1]);
+
+  it("labels every year of a short range and thins out a long one", () => {
+    expect(labels(at({}))).toEqual(["2016", "2017", "2018", "2019", "2020", "2021", "2022", "2023", "2024"]);
+    const long = labels(at({ from: 1900, to: 2020, year: 1990 }));
+    expect(long.length).toBeLessThanOrEqual(13);
+    expect(long[0]).toBe("1900");
+    expect(long.at(-1)).toBe("2020");
+  });
+
+  it("glides the pill down from the first year to the chosen one, kept in range", () => {
+    const d = at({});
+    expect(yOf(d.cursorTo)).toBeGreaterThan(yOf(d.cursorFrom));
+    // The chosen year sits level with its label.
+    expect(yOf(d.cursorTo) + 4).toBeCloseTo(Number(d.ly4), 1);
+    // A reversed range is put the right way round; a year outside it is pulled in.
+    const flipped = at({ from: 2024, to: 2016, year: 3000 });
+    expect([flipped.from, flipped.year]).toEqual([2016, 2024]);
+    // One year: a single label, mid-column, and nowhere to glide.
+    const one = at({ from: 2020, to: 2020, year: 2020 });
+    expect(labels(one)).toEqual(["2020"]);
+    expect(one.cursorFrom).toBe(one.cursorTo);
+  });
+
+  it("draws the trace from any density text, and counts the pill to the chosen year", () => {
+    for (const values of BAD) clean(render("year-scrubber", { values }));
+    clean(render("year-scrubber", { grain: 0, values: "5" }));
+    const motion = render("year-scrubber", { from: 2010, year: 2019 });
+    const count = motion.animate!.find((a) => a.id === "yearScrubberValue" && a.count)!;
+    expect(count.count).toEqual([2010, 2019]);
   });
 });
