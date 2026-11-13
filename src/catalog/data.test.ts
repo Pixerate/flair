@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { svgAnimatedMarkup } from "../vector/animated.js";
 import { svgFrame, svgMotionIssues, type SvgMotion } from "../vector/motion.js";
 import { svgDuration } from "../vector/svg.js";
-import { branchMenu, dataEffects, decimalsOf, fitLabel, parseLabels, parseNumberList, parseRace, parseSeries, parseShares, parseStat, sentimentMood, sentimentTile, statCards, yearScrubber } from "./data.js";
+import { branchMenu, dataEffects, metricStrip, decimalsOf, fitLabel, parseLabels, parseNumberList, parseRace, parseSeries, parseShares, parseStat, sentimentMood, sentimentTile, statCards, yearScrubber } from "./data.js";
 import { iconEffects } from "./icons.js";
 import { effectControls, effectDefaults, effectInputs, findEffects, getEffect, renderVectorEffect, type VectorEffect } from "./index.js";
 
@@ -23,7 +23,7 @@ const BAD = ["", "abc", ",,,", "-5,-2", "1e400", "Café 日本 🎉 & <b>", "$12
 describe("data and icon effects", () => {
   it("are all in the catalog, in their categories", () => {
     expect(findEffects({ category: "data" }).map((e) => e.id)).toEqual(
-      expect.arrayContaining(["donut-chart", "pie-chart", "gauge", "bar-race", "sparkline", "leaderboard", "area-chart", "kpi-tile", "rolodex", "year-scrubber", "sentiment-tile", "branch-menu"]),
+      expect.arrayContaining(["donut-chart", "pie-chart", "gauge", "bar-race", "sparkline", "leaderboard", "area-chart", "kpi-tile", "rolodex", "year-scrubber", "sentiment-tile", "branch-menu", "metric-strip"]),
     );
     expect(findEffects({ category: "icon" }).map((e) => e.id)).toEqual(
       expect.arrayContaining(["weather-icons", "notification-bell", "animated-arrows", "emoji-reactions", "bookmark-star", "trash-delete", "lock-unlock", "wifi-signal"]),
@@ -382,5 +382,30 @@ describe("branch menu", () => {
     const lastLand = Math.max(...motion.animate!.filter((a) => /^branchMenuTile\d$/.test(a.id ?? "")).map((a) => Number(a.delay)));
     const gold = motion.animate!.find((a) => a.id === "branchMenuChosenLink" && a.draw)!;
     expect(Number(gold.delay)).toBeGreaterThan(lastLand);
+  });
+});
+
+describe("metric strip", () => {
+  const at = (values: Record<string, unknown>) => {
+    const all = { ...Object.fromEntries(effectControls(metricStrip).map((c) => [c.name, c.default])), ...values };
+    return metricStrip.derived!(all as never) as Record<string, string | number>;
+  };
+
+  it("counts up to the first set, then ticks from each set to the next", () => {
+    const d = at({});
+    expect([d.from0_0, d.v0_0, d.from0_1, d.v0_1, d.from0_2, d.v0_2]).toEqual([0, 85, 85, 91, 91, 98]);
+    expect(at({ states: "1,2,3" }).show3).toBe("none");
+  });
+
+  it("points arrows the way each number moved, only where it moved and only on changes that happen", () => {
+    const d = at({ states: "10,5,7; 12,3,7" });
+    expect([d.arrowShow0_1, d.arrowShow1_1, d.arrowShow2_1]).toEqual([1, 1, 0]);
+    expect(d.arrow0_1).not.toBe(d.arrow1_1);
+    expect([d.arrowShow0_0, d.arrowShow0_2]).toEqual([0, 0]);
+  });
+
+  it("ends the loop at the last set, however few there are", () => {
+    const length = (states: string) => svgDuration(render("metric-strip", { states }));
+    expect(length("1,2; 3,4")).toBeLessThan(length("1,2; 3,4; 5,6; 7,8; 9,10"));
   });
 });
