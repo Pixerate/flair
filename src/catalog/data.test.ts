@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { svgAnimatedMarkup } from "../vector/animated.js";
 import { svgFrame, svgMotionIssues, type SvgMotion } from "../vector/motion.js";
 import { svgDuration } from "../vector/svg.js";
-import { dataEffects, decimalsOf, fitLabel, parseLabels, parseNumberList, parseRace, parseSeries, parseShares, parseStat, statCards, yearScrubber } from "./data.js";
+import { dataEffects, decimalsOf, fitLabel, parseLabels, parseNumberList, parseRace, parseSeries, parseShares, parseStat, sentimentMood, sentimentTile, statCards, yearScrubber } from "./data.js";
 import { iconEffects } from "./icons.js";
 import { effectControls, effectDefaults, effectInputs, findEffects, getEffect, renderVectorEffect, type VectorEffect } from "./index.js";
 
@@ -23,7 +23,7 @@ const BAD = ["", "abc", ",,,", "-5,-2", "1e400", "Café 日本 🎉 & <b>", "$12
 describe("data and icon effects", () => {
   it("are all in the catalog, in their categories", () => {
     expect(findEffects({ category: "data" }).map((e) => e.id)).toEqual(
-      expect.arrayContaining(["donut-chart", "pie-chart", "gauge", "bar-race", "sparkline", "leaderboard", "area-chart", "kpi-tile", "rolodex", "year-scrubber"]),
+      expect.arrayContaining(["donut-chart", "pie-chart", "gauge", "bar-race", "sparkline", "leaderboard", "area-chart", "kpi-tile", "rolodex", "year-scrubber", "sentiment-tile"]),
     );
     expect(findEffects({ category: "icon" }).map((e) => e.id)).toEqual(
       expect.arrayContaining(["weather-icons", "notification-bell", "animated-arrows", "emoji-reactions", "bookmark-star", "trash-delete", "lock-unlock", "wifi-signal"]),
@@ -310,5 +310,40 @@ describe("year scrubber", () => {
     const motion = render("year-scrubber", { from: 2010, year: 2019 });
     const count = motion.animate!.find((a) => a.id === "yearScrubberValue" && a.count)!;
     expect(count.count).toEqual([2010, 2019]);
+  });
+});
+
+describe("sentiment tile", () => {
+  const at = (values: Record<string, unknown>) => {
+    const all = { ...Object.fromEntries(effectControls(sentimentTile).map((c) => [c.name, c.default])), ...values };
+    return sentimentTile.derived!(all as never) as Record<string, string | number>;
+  };
+
+  it("picks the mood from the score, unless the chip is given or left empty", () => {
+    expect([sentimentMood(10).name, sentimentMood(45).name, sentimentMood(90).name]).toEqual(["Negative", "Moderate", "Positive"]);
+    expect(at({}).chipText).toBe("Moderate");
+    expect(at({ value: 80 }).chipText).toBe("Positive");
+    expect(at({ rating: "Mixed" }).chipText).toBe("Mixed");
+    expect(at({ rating: "" }).chipShow).toBe("none");
+  });
+
+  it("colours the change by its sign and keeps the score in range", () => {
+    const down = at({ delta: -4 });
+    expect(down.deltaText).toBe("\u22124%");
+    expect(at({ delta: -4, negative: [1, 0, 0] }).deltaColor).toMatch(/^#ff0000$/i);
+    expect(at({ delta: 4, positive: [0, 1, 0] }).deltaColor).toMatch(/^#00ff00$/i);
+    expect(at({ delta: 2.5 }).deltaText).toBe("+2.5%");
+    expect(at({ value: 250 }).value).toBe(100);
+    expect(at({ value: -5 }).value).toBe(0);
+  });
+
+  it("lights the column the score falls in, as tall as that column", () => {
+    const d = at({ value: 100, values: "1,2,4" });
+    expect(d.litX).toBe(d.colX2);
+    expect(d.litTop).toBe(d.colTop2);
+    expect([d.colShow2, d.colShow3]).toEqual(["inline", "none"]);
+    // Taller bars reach higher.
+    expect(Number(d.colTop2)).toBeLessThan(Number(d.colTop0));
+    for (const values of BAD) clean(render("sentiment-tile", { values, label: values, caption: values, rating: values }));
   });
 });

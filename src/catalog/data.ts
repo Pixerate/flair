@@ -1449,4 +1449,133 @@ export const yearScrubber: VectorEffect = {
   })(),
 };
 
-export const dataEffects: VectorEffect[] = [donutChart, pieChart, gauge, barRace, sparkline, leaderboard, areaChart, kpiTile, rolodex, fanOutLinks, hubSpokeGraph, statCards, yearScrubber];
+// ── Sentiment tile ─────────────────────────────────────────────────────
+
+/**
+ * A 400×150 tile: the headline score and its change on the left, a mood chip
+ * top right, and a dot-matrix histogram (up to `cols` columns of up to `rows`
+ * dots, `pitch` apart, standing on `base` between `x0` and `x1`) bottom
+ * right. The score's column lights up. Times are in ms.
+ */
+const SENTI = { cols: 24, rows: 8, pitch: 6, x0: 236, x1: 362, base: 116, card: { x: 16, y: 16, w: 368, h: 118, rx: 14 }, count: 300, countMs: 1200, rise: 500, riseStagger: 35, riseMs: 420 };
+const SENTI_DEFAULT = [1, 1, 2, 2, 3, 3, 4, 5, 6, 6, 7, 8, 8, 7, 7, 6, 5, 5, 4, 3, 2, 2];
+
+/** The mood a 0–100 score falls in: its name and which colour control paints it. */
+export function sentimentMood(score: number): { name: string; color: "negative" | "neutral" | "positive" } {
+  if (score < 35) return { name: "Negative", color: "negative" };
+  if (score <= 65) return { name: "Moderate", color: "neutral" };
+  return { name: "Positive", color: "positive" };
+}
+
+export const sentimentTile: VectorEffect = {
+  kind: "vector",
+  id: "sentiment-tile",
+  name: "Sentiment tile",
+  description:
+    "A dashboard tile for a 0–100 score such as sentiment: the percentage counts up, a change badge slides in green or red by its sign, a mood chip (Negative, Moderate or Positive, picked from the score) pops in and tints the card, and a dot-matrix histogram rises column by column with the score's column lit.",
+  category: "data",
+  tags: ["kpi", "sentiment", "dashboard", "metric", "card", "histogram", "tech"],
+  hold: 1800,
+  presets: [
+    { name: "Positive", values: { value: 78, delta: 6, values: "1,1,1,2,2,2,3,3,3,4,4,5,5,6,7,8,9,10,9,8,6,4" } },
+    { name: "Negative", values: { value: 22, delta: -9, values: "3,5,7,9,10,9,8,7,6,5,4,4,3,3,2,2,2,1,1,1,1,1" } },
+    { name: "Light", values: { background: [0.95, 0.96, 0.97], card: [1, 1, 1], ink: [0.1, 0.14, 0.2] } },
+  ],
+  derived: (v) => {
+    const score = Math.max(0, Math.min(100, Number(v.value) || 0));
+    const dec = Math.min(1, decimalsOf([score]));
+    const suf = formatSafe(v.suffix);
+    const shown = `${formatCount(score, { decimals: dec })}${suf}`;
+    const big = fit(shown, 150, 42);
+    const valueRight = 34 + textWidthEm(shown) * big.size;
+    const delta = Number(v.delta) || 0;
+    const up = delta >= 0;
+    const deltaText = `${up ? "+" : "\u2212"}${formatCount(Math.abs(delta), { decimals: Math.min(1, decimalsOf([Math.abs(delta)])) })}%`;
+    const deltaX = r1(valueRight + 10);
+    const deltaW = textWidthEm(deltaText) * 11;
+    const caption = fitLabel(v.caption, Math.max(20, SENTI.x0 - 10 - deltaX), 10, 7);
+    const label = fitLabel(v.label, 200, 13, 9);
+    const mood = sentimentMood(score);
+    const asked = String(v.rating ?? "").trim();
+    const chip = fitLabel(asked.toLowerCase() === "auto" ? mood.name : asked, 110, 10, 7);
+    const chipW = r1(Math.max(28, chip.length + 18));
+    const read = parseNumberList(v.values, SENTI.cols).filter((x) => Number.isFinite(x));
+    const values = (read.length >= 2 ? read : SENTI_DEFAULT).map((x) => Math.max(0, x));
+    const hi = Math.max(...values) || 1;
+    const cols = values.length;
+    const step = (SENTI.x1 - SENTI.x0) / Math.max(1, cols - 1);
+    const lit = Math.round((score / 100) * (cols - 1));
+    const out: Record<string, string | number> = {};
+    for (let i = 0; i < SENTI.cols; i++) {
+      const on = i < cols;
+      const dots = on ? Math.max(1, Math.round((values[i]! / hi) * SENTI.rows)) : 1;
+      const d = Math.abs(i - lit);
+      out[`colShow${i}`] = on ? "inline" : "none";
+      out[`colX${i}`] = on ? r1(SENTI.x0 + i * step) : 0;
+      // A dash pattern of dots: the line reaches a little past the last dot so it shows.
+      out[`colTop${i}`] = r1(SENTI.base - (dots - 1) * SENTI.pitch - 0.6);
+      out[`colOpacity${i}`] = i === lit ? 1 : r2(0.22 + 0.38 * Math.exp(-(d * d) / 10));
+    }
+    return {
+      ...out,
+      value: +score.toFixed(dec),
+      dec,
+      format: `{n}${suf}`,
+      size: big.size,
+      deltaX,
+      deltaText,
+      deltaColor: paint(up ? v.positive : v.negative),
+      arrowX: r1(deltaX + deltaW + 4),
+      arrow: up ? "M0 6 L4 2 L7 5 L11 0 M7.5 0 H11 V3.5" : "M0 0 L4 4 L7 1 L11 6 M7.5 6 H11 V2.5",
+      captionText: caption.text,
+      captionSize: caption.size,
+      captionLength: caption.length,
+      labelText: label.text,
+      labelSize: label.size,
+      labelLength: label.length,
+      chipText: chip.text,
+      chipSize: chip.size,
+      chipLength: chip.length,
+      chipShow: chip.text ? "inline" : "none",
+      chipX: r1(SENTI.card.x + SENTI.card.w - 18 - chipW),
+      chipW,
+      chipTextX: r1(SENTI.card.x + SENTI.card.w - 18 - chipW / 2),
+      mood: paint(v[mood.color]),
+      litX: out[`colX${lit}`]!,
+      litTop: out[`colTop${lit}`]!,
+      litAt: SENTI.rise + lit * SENTI.riseStagger + SENTI.riseMs,
+      finale: SENTI.rise + (cols - 1) * SENTI.riseStagger + SENTI.riseMs + 200,
+      finale2: SENTI.rise + (cols - 1) * SENTI.riseStagger + SENTI.riseMs + 460,
+      backdropOpacity: v.backdrop ? 1 : 0,
+    };
+  },
+  motion: (() => {
+    const cols = Array.from({ length: SENTI.cols }, (_, i) => i);
+    const { x, y, w, h, rx } = SENTI.card;
+    const at = (name: string, i: number) => `{{${name}${i}}}` as unknown as number;
+    const dotted = `stroke-linecap="round" stroke-dasharray="0 ${SENTI.pitch}"`;
+    return {
+      svg: `<svg viewBox="0 0 400 150" font-family="${SANS}"><!-- {{label: text default='Sentiment rate' label='Label'}} {{value: float min=0 max=100 default=45 step=1 label='Score (0 to 100)'}} {{suffix: text default='%' label='Suffix'}} {{delta: float min=-100 max=100 default=-4 step=0.5 label='Change (points)'}} {{caption: text default='Last month' label='Change caption'}} {{rating: text default='auto' label='Mood chip (auto picks from the score; empty hides it)'}} {{values: text default='${SENTI_DEFAULT.join(",")}' label='Histogram, low to high scores (comma-separated, up to 24)'}} {{background: color default=#0B1A1E label='Background'}} {{backdrop: bool default=true label='Background'}} {{card: color default=#13282E label='Card'}} {{ink: color default=#E3EEF0 label='Text and dots'}} {{negative: color default=#F0605E label='Negative'}} {{neutral: color default=#E3B05A label='Moderate'}} {{positive: color default=#4FD08B label='Positive'}} {{glow: float min=0 max=6 default=2.5 step=0.5 label='Glow'}} --><defs><filter id="sentimentTileGlow" filterUnits="userSpaceOnUse" x="0" y="0" width="400" height="150"><feGaussianBlur stdDeviation="{{glow}}" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter><radialGradient id="sentimentTileTint" cx="0.85" cy="0" r="0.9"><stop offset="0" stop-color="{{mood}}" stop-opacity="0.32"/><stop offset="1" stop-color="{{mood}}" stop-opacity="0"/></radialGradient><linearGradient id="sentimentTileSheen" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0.06"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></linearGradient></defs><g opacity="{{backdropOpacity}}"><rect width="400" height="150" fill="{{background}}"/></g><g id="sentimentTileCard" opacity="0"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}" fill="{{card}}"/><rect id="sentimentTileWash" x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}" fill="url(#sentimentTileTint)" opacity="0"/><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}" fill="url(#sentimentTileSheen)" stroke="{{ink}}" stroke-opacity="0.1"/><rect id="sentimentTileRim" x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}" fill="none" stroke="{{mood}}" stroke-width="1.2" opacity="0"/><text x="34" y="44" font-size="{{labelSize}}" textLength="{{labelLength}}" lengthAdjust="spacingAndGlyphs" fill="{{ink}}" opacity="0.8">{{labelText}}</text><g id="sentimentTileChip" display="{{chipShow}}" opacity="0"><rect x="{{chipX}}" y="28" width="{{chipW}}" height="20" rx="5" fill="{{mood}}" fill-opacity="0.12" stroke="{{mood}}" stroke-opacity="0.8"/><text x="{{chipTextX}}" y="41.5" text-anchor="middle" font-size="{{chipSize}}" textLength="{{chipLength}}" lengthAdjust="spacingAndGlyphs" fill="{{ink}}">{{chipText}}</text></g><text id="sentimentTileValue" x="34" y="110" font-size="{{size}}" font-weight="400" fill="{{ink}}">0{{suffix}}</text><g id="sentimentTileDelta" opacity="0"><text x="{{deltaX}}" y="93" font-size="11" font-weight="600" fill="{{deltaColor}}">{{deltaText}}</text><path id="sentimentTileArrow" d="{{arrow}}" transform="translate({{arrowX}} 84)" fill="none" stroke="{{deltaColor}}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><text x="{{deltaX}}" y="108" font-size="{{captionSize}}" textLength="{{captionLength}}" lengthAdjust="spacingAndGlyphs" fill="{{ink}}" opacity="0.5">{{captionText}}</text></g>${cols
+        .map((i) => `<line id="sentimentTileCol${i}" display="{{colShow${i}}}" x1="{{colX${i}}}" y1="${SENTI.base}" x2="{{colX${i}}}" y2="${SENTI.base}" stroke="{{ink}}" stroke-opacity="{{colOpacity${i}}}" stroke-width="2.6" ${dotted}/>`)
+        .join("")}<line id="sentimentTileLit" x1="{{litX}}" y1="${SENTI.base}" x2="{{litX}}" y2="{{litTop}}" stroke="{{mood}}" ${dotted} stroke-width="3.4" filter="url(#sentimentTileGlow)" opacity="0"/></g></svg>`,
+      animate: [
+        { id: "sentimentTileCard", attrs: { opacity: [0, 1], transform: ["translate(0 8)", "translate(0 0)"] }, ms: 450, ease: "out" },
+        // The score counts up; the change slides in once it lands.
+        { id: "sentimentTileValue", count: [0, n("value")], decimals: n("dec"), format: "{{format}}", delay: SENTI.count, ms: SENTI.countMs, ease: "out" },
+        { id: "sentimentTileDelta", attrs: { opacity: [0, 1], transform: ["translate(-6 0)", "translate(0 0)"] }, delay: SENTI.count + SENTI.countMs - 200, ms: 400, ease: "out" },
+        { id: "sentimentTileArrow", draw: true, delay: SENTI.count + SENTI.countMs - 100, ms: 400, ease: "in-out" },
+        // The histogram rises column by column, dot by dot.
+        ...cols.map((i): SvgAnimation => ({ id: `sentimentTileCol${i}`, attrs: { y2: [SENTI.base, at("colTop", i)] }, delay: SENTI.rise + i * SENTI.riseStagger, ms: SENTI.riseMs, ease: "out" })),
+        // The score's column lights in the mood colour; the chip pops in and tints the card.
+        { id: "sentimentTileLit", attrs: { opacity: [0, 1] }, delay: n("litAt"), ms: 300, ease: "out" },
+        { id: "sentimentTileChip", attrs: { opacity: [0, 1], transform: ["translate(0 -4)", "translate(0 0)"] }, delay: n("finale"), ms: 380, ease: { spring: { stiffness: 260, damping: 18 } } },
+        { id: "sentimentTileWash", attrs: { opacity: [0, 1] }, delay: n("finale"), ms: 700, ease: "out" },
+        { id: "sentimentTileRim", attrs: { opacity: [0, 0.7] }, delay: n("finale"), ms: 260, ease: "out" },
+        { id: "sentimentTileRim", attrs: { opacity: [0.7, 0.25] }, delay: n("finale2"), ms: 900, ease: "in-out" },
+        { id: "sentimentTileLit", attrs: { opacity: [1, 0.55] }, delay: n("finale"), ms: 450, ease: "in-out", repeat: 3, alternate: true },
+      ],
+    };
+  })(),
+};
+
+export const dataEffects: VectorEffect[] = [donutChart, pieChart, gauge, barRace, sparkline, leaderboard, areaChart, kpiTile, rolodex, fanOutLinks, hubSpokeGraph, statCards, yearScrubber, sentimentTile];
