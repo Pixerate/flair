@@ -1,5 +1,179 @@
 [
   {
+    "id": "branch-menu",
+    "name": "Branch menu",
+    "kind": "vector",
+    "category": "data",
+    "description": "A glowing orb reaching out to a stack of category tiles: curves draw out one after another with a spark running along each, every tile flashing bright as its spark lands and settling as its count ticks up, then the chosen one lights up in gold with its curve.",
+    "tags": [
+      "menu",
+      "branch",
+      "node-graph",
+      "card",
+      "dashboard",
+      "counter",
+      "tech",
+      "explainer"
+    ],
+    "controls": [
+      {
+        "n": "values",
+        "t": "text",
+        "d": "18,3,24,32,12",
+        "l": "Values (comma-separated, up to 6; prefixes and suffixes kept)",
+        "line": 1
+      },
+      {
+        "n": "labels",
+        "t": "text",
+        "d": "Services,Entities,Related laws,KPIs,Regulations",
+        "l": "Labels (comma-separated)",
+        "line": 2
+      },
+      {
+        "n": "chosen",
+        "t": "int",
+        "d": 3,
+        "l": "Chosen tile (0: none)",
+        "max": 6,
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "background",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            11,
+            26,
+            30
+          ]
+        },
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "backdrop",
+        "t": "bool",
+        "d": true,
+        "l": "Background",
+        "line": 5
+      },
+      {
+        "n": "tile",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            19,
+            40,
+            46
+          ]
+        },
+        "l": "Tiles",
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "ink",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            227,
+            238,
+            240
+          ]
+        },
+        "l": "Text and curves",
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "flash",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            63,
+            214,
+            224
+          ]
+        },
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "chosenColor",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            232,
+            194,
+            122
+          ]
+        },
+        "l": "Chosen",
+        "c": 1,
+        "line": 9
+      },
+      {
+        "n": "orbColor",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            156,
+            124,
+            245
+          ]
+        },
+        "l": "Orb",
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "glow",
+        "t": "float",
+        "d": 2.5,
+        "max": 6,
+        "s": 0.5,
+        "b": 3,
+        "line": 11
+      }
+    ],
+    "presets": [
+      "Light",
+      "Three",
+      "None chosen"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "values",
+          "label": "Values (comma-separated, up to 6; prefixes and suffixes kept)",
+          "holds": "copy",
+          "default": "18,3,24,32,12"
+        },
+        {
+          "name": "labels",
+          "label": "Labels (comma-separated)",
+          "holds": "copy",
+          "default": "Services,Entities,Related laws,KPIs,Regulations"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 1600,
+    "animated": true,
+    "duration": 6350,
+    "module": "data",
+    "addedAt": "2026-11-13T16:05:00Z",
+    "commitHash": "d568b16892772bdd64cfb524032685ba3b998b4e",
+    "order": 695
+  },
+  {
     "id": "transition-color-blocks",
     "name": "Colour blocks",
     "kind": "shader",
@@ -3634,163 +3808,5 @@
     "addedAt": "2026-11-12T17:54:09Z",
     "commitHash": "23404325f215083e35317a6d8fb9f8a9e279da67",
     "order": 676
-  },
-  {
-    "id": "fan-out-links",
-    "name": "Fan-out links",
-    "kind": "vector",
-    "category": "data",
-    "description": "One source card sending a fan of curved links out to a column of targets, each drawn by a glowing comet head that lands on its label, the card's count ticking up as they arrive, then sparks running along the links.",
-    "tags": [
-      "network",
-      "graph",
-      "one-to-many",
-      "relations",
-      "dashboard",
-      "explainer",
-      "tech"
-    ],
-    "controls": [
-      {
-        "n": "source",
-        "t": "text",
-        "d": "Related laws",
-        "line": 1
-      },
-      {
-        "n": "labels",
-        "t": "text",
-        "d": "Services,Entities,Regulations,Policies,Guidelines,Standards,Agencies",
-        "l": "Targets (comma-separated, up to 10)",
-        "line": 2
-      },
-      {
-        "n": "total",
-        "t": "int",
-        "d": 0,
-        "l": "Count on the card (0: one per target)",
-        "max": 99999,
-        "b": 3,
-        "line": 3
-      },
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            11,
-            26,
-            30
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "backdrop",
-        "t": "bool",
-        "d": true,
-        "l": "Background",
-        "line": 5
-      },
-      {
-        "n": "link",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            94,
-            200,
-            196
-          ]
-        },
-        "l": "Links",
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "head",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "l": "Comet heads",
-        "c": 1,
-        "line": 7
-      },
-      {
-        "n": "accent",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            242,
-            196,
-            109
-          ]
-        },
-        "c": 1,
-        "line": 8
-      },
-      {
-        "n": "ink",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            215,
-            227,
-            230
-          ]
-        },
-        "l": "Text",
-        "c": 1,
-        "line": 9
-      },
-      {
-        "n": "glow",
-        "t": "float",
-        "d": 2.5,
-        "max": 6,
-        "s": 0.5,
-        "b": 3,
-        "line": 10
-      }
-    ],
-    "presets": [
-      "Light",
-      "Neon",
-      "Team"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "source",
-          "label": "Source",
-          "holds": "copy",
-          "default": "Related laws"
-        },
-        {
-          "name": "labels",
-          "label": "Targets (comma-separated, up to 10)",
-          "holds": "copy",
-          "default": "Services,Entities,Regulations,Policies,Guidelines,Standards,Agencies"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 1500,
-    "animated": true,
-    "duration": 4830,
-    "module": "data",
-    "addedAt": "2026-11-12T16:42:07Z",
-    "commitHash": "ccddf399228c901c04168efc0e6f80c511836bdb",
-    "order": 675
   }
 ]

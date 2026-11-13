@@ -1578,4 +1578,125 @@ export const sentimentTile: VectorEffect = {
   })(),
 };
 
-export const dataEffects: VectorEffect[] = [donutChart, pieChart, gauge, barRace, sparkline, leaderboard, areaChart, kpiTile, rolodex, fanOutLinks, hubSpokeGraph, statCards, yearScrubber, sentimentTile];
+// ── Branch menu ────────────────────────────────────────────────────────
+
+/**
+ * A 400×260 frame: an orb at `orb` on the left, and up to `slots` tiles
+ * stacked at `tile.x` and centred on the orb's height, each reached by a
+ * curve. A spark runs out along each curve in turn, `stagger` apart from
+ * `start`; its tile flashes as it lands and settles, and the chosen one ends
+ * outlined. Times are in ms.
+ */
+const BRANCH = { slots: 6, orb: { x: 76, y: 130, r: 18 }, tile: { x: 214, w: 150, room: 224, gap: 8, rx: 8 }, start: 450, stagger: 230, run: 480 };
+const BRANCH_VALUES = ["18", "3", "24", "32", "12"];
+const BRANCH_LABELS = ["Services", "Entities", "Related laws", "KPIs", "Regulations"];
+
+export const branchMenu: VectorEffect = {
+  kind: "vector",
+  id: "branch-menu",
+  name: "Branch menu",
+  description:
+    "A glowing orb reaching out to a stack of category tiles: curves draw out one after another with a spark running along each, every tile flashing bright as its spark lands and settling as its count ticks up, then the chosen one lights up in gold with its curve.",
+  category: "data",
+  tags: ["menu", "branch", "node-graph", "card", "dashboard", "counter", "tech", "explainer"],
+  hold: 1600,
+  presets: [
+    { name: "Light", values: { background: [0.94, 0.96, 0.97], tile: [1, 1, 1], ink: [0.1, 0.14, 0.2], flash: [0.1, 0.65, 0.72], chosenColor: [0.85, 0.6, 0.15] } },
+    { name: "Three", values: { values: "128,42,7", labels: "Customers,Open deals,At risk", chosen: 3, chosenColor: [0.94, 0.38, 0.37] } },
+    { name: "None chosen", values: { chosen: 0 } },
+  ],
+  derived: (v) => {
+    const given = parseLabels(v.values, BRANCH.slots);
+    const tokens = given.some((x) => x !== "") ? given : BRANCH_VALUES;
+    const labels = parseLabels(v.labels, BRANCH.slots);
+    const count = Math.max(1, Math.min(BRANCH.slots, tokens.length));
+    const chosen = Math.max(0, Math.min(count, Math.round(Number(v.chosen)) || 0));
+    const { orb, tile } = BRANCH;
+    const h = Math.min(36, (tile.room - (count - 1) * tile.gap) / count);
+    const top = orb.y - (count * h + (count - 1) * tile.gap) / 2;
+    const out: Record<string, string | number> = {};
+    for (let i = 0; i < BRANCH.slots; i++) {
+      const shown = i < count;
+      const y = r1(top + i * (h + tile.gap));
+      const cy = r1(y + h / 2);
+      const stat = parseStat(String(tokens[i] ?? ""));
+      const numeric = Number.isFinite(stat.value);
+      const pre = formatSafe(stat.pre);
+      const suf = formatSafe(stat.suf);
+      const label = fitLabel(labels[i] ?? "", tile.w - 40, Math.min(8.5, h * 0.26), 6);
+      const big = fit(numeric ? `${pre}${formatCount(stat.value, { decimals: stat.dec })}${suf}` : formatSafe(tokens[i]), tile.w - 46, Math.min(15, h * 0.44));
+      const sx = orb.x + orb.r + 4;
+      const mid = r1((sx + tile.x) / 2);
+      out[`show${i}`] = shown ? "inline" : "none";
+      out[`y${i}`] = y;
+      out[`h${i}`] = r1(h);
+      out[`link${i}`] = `M${sx} ${orb.y} C${mid} ${orb.y} ${mid} ${cy} ${tile.x} ${cy}`;
+      out[`iconY${i}`] = r1(cy - (h > 26 ? 5 : 0));
+      out[`valueY${i}`] = r1(h > 26 ? cy - 1 : cy + big.size * 0.36);
+      out[`labelY${i}`] = r1(cy + label.size + 3);
+      out[`labelShow${i}`] = h > 26 ? "inline" : "none";
+      out[`size${i}`] = big.size;
+      out[`val${i}`] = numeric ? stat.value : 0;
+      out[`dec${i}`] = numeric ? stat.dec : 0;
+      out[`fmt${i}`] = numeric ? `${pre}{n}${suf}` : formatSafe(tokens[i]);
+      out[`label${i}`] = label.text;
+      out[`labelSize${i}`] = label.size;
+      out[`labelLength${i}`] = label.length;
+      out[`gold${i}`] = i === chosen - 1 ? 1 : 0;
+    }
+    const allIn = BRANCH.start + (count - 1) * BRANCH.stagger + BRANCH.run + 500;
+    return {
+      ...out,
+      chosenShow: chosen ? "inline" : "none",
+      chosenLink: chosen ? out[`link${chosen - 1}`]! : "M0 0",
+      chosenY: chosen ? out[`y${chosen - 1}`]! : 0,
+      chosenH: chosen ? out[`h${chosen - 1}`]! : 0,
+      chosenAt: allIn,
+      chosenPulse: allIn + 600,
+      backdropOpacity: v.backdrop ? 1 : 0,
+    };
+  },
+  motion: (() => {
+    const slots = Array.from({ length: BRANCH.slots }, (_, i) => i);
+    const { orb, tile } = BRANCH;
+    const at = (name: string, i: number) => `{{${name}${i}}}` as unknown as number;
+    const launch = (i: number) => BRANCH.start + i * BRANCH.stagger;
+    const land = (i: number) => launch(i) + BRANCH.run;
+    const glow = (id: string) => `<filter id="${id}" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="{{glow}}" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`;
+    return {
+      svg: `<svg viewBox="0 0 400 260" font-family="${SANS}"><!-- {{values: text default='${BRANCH_VALUES.join(",")}' label='Values (comma-separated, up to 6; prefixes and suffixes kept)'}} {{labels: text default='${BRANCH_LABELS.join(",")}' label='Labels (comma-separated)'}} {{chosen: int min=0 max=6 default=3 label='Chosen tile (0: none)'}} {{background: color default=#0B1A1E label='Background'}} {{backdrop: bool default=true label='Background'}} {{tile: color default=#13282E label='Tiles'}} {{ink: color default=#E3EEF0 label='Text and curves'}} {{flash: color default=#3FD6E0 label='Flash'}} {{chosenColor: color default=#E8C27A label='Chosen'}} {{orbColor: color default=#9C7CF5 label='Orb'}} {{glow: float min=0 max=6 default=2.5 step=0.5 label='Glow'}} --><defs>${glow("branchMenuGlow")}<radialGradient id="branchMenuOrbFill" cx="0.38" cy="0.35" r="0.75"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0.95"/><stop offset="0.35" stop-color="{{orbColor}}"/><stop offset="1" stop-color="{{orbColor}}" stop-opacity="0.55"/></radialGradient><radialGradient id="branchMenuHaze" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="{{orbColor}}" stop-opacity="0.35"/><stop offset="1" stop-color="{{orbColor}}" stop-opacity="0"/></radialGradient><linearGradient id="branchMenuFlashFill" x1="0" y1="0" x2="1" y2="0.4"><stop offset="0" stop-color="{{flash}}" stop-opacity="0.25"/><stop offset="1" stop-color="{{flash}}" stop-opacity="0.95"/></linearGradient><linearGradient id="branchMenuGoldFill" x1="0" y1="0" x2="1" y2="0.4"><stop offset="0" stop-color="{{chosenColor}}" stop-opacity="0.08"/><stop offset="1" stop-color="{{chosenColor}}" stop-opacity="0.32"/></linearGradient></defs><g opacity="{{backdropOpacity}}"><rect width="400" height="260" fill="{{background}}"/><rect x="${orb.x - 90}" y="${orb.y - 90}" width="180" height="180" fill="url(#branchMenuHaze)"/></g>${slots
+        .map((i) => `<path id="branchMenuLink${i}" display="{{show${i}}}" d="{{link${i}}}" fill="none" stroke="{{ink}}" stroke-opacity="0.35" stroke-width="1"/>`)
+        .join("")}<g display="{{chosenShow}}"><path id="branchMenuChosenLink" d="{{chosenLink}}" fill="none" stroke="{{chosenColor}}" stroke-width="1.6" filter="url(#branchMenuGlow)" opacity="0"/></g><g id="branchMenuOrb" opacity="0"><circle cx="${orb.x}" cy="${orb.y}" r="${orb.r + 9}" fill="none" stroke="{{orbColor}}" stroke-opacity="0.45" stroke-width="1" stroke-dasharray="1.5 2.5"/><circle id="branchMenuOrbRing" cx="${orb.x}" cy="${orb.y}" r="${orb.r + 4}" fill="none" stroke="{{orbColor}}" stroke-opacity="0.6" stroke-width="1.2"/><circle cx="${orb.x}" cy="${orb.y}" r="${orb.r}" fill="url(#branchMenuOrbFill)" filter="url(#branchMenuGlow)"/></g>${slots
+        .map(
+          (i) =>
+            `<g id="branchMenuTile${i}" display="{{show${i}}}" opacity="0"><rect x="${tile.x}" y="{{y${i}}}" width="${tile.w}" height="{{h${i}}}" rx="${tile.rx}" fill="{{tile}}" stroke="{{ink}}" stroke-opacity="0.14"/><rect id="branchMenuFlash${i}" x="${tile.x}" y="{{y${i}}}" width="${tile.w}" height="{{h${i}}}" rx="${tile.rx}" fill="url(#branchMenuFlashFill)" opacity="0"/><rect id="branchMenuGold${i}" x="${tile.x}" y="{{y${i}}}" width="${tile.w}" height="{{h${i}}}" rx="${tile.rx}" fill="url(#branchMenuGoldFill)" stroke="{{chosenColor}}" stroke-width="1.6" filter="url(#branchMenuGlow)" opacity="0"/><rect x="${tile.x + 10}" y="{{iconY${i}}}" width="9" height="9" rx="2" transform="translate(0 -4.5)" fill="none" stroke="{{ink}}" stroke-opacity="0.85" stroke-width="1.2"/><text id="branchMenuValue${i}" x="${tile.x + 26}" y="{{valueY${i}}}" font-size="{{size${i}}}" font-weight="500" fill="{{ink}}">{{fmt${i}}}</text><text display="{{labelShow${i}}}" x="${tile.x + 10}" y="{{labelY${i}}}" font-size="{{labelSize${i}}}" textLength="{{labelLength${i}}}" lengthAdjust="spacingAndGlyphs" fill="{{ink}}" fill-opacity="0.7">{{label${i}}}</text></g>`,
+        )
+        .join("")}${slots
+        .map((i) => `<g id="branchMenuSpark${i}" display="{{show${i}}}" opacity="0"><circle r="5" fill="{{flash}}" opacity="0.35" filter="url(#branchMenuGlow)"/><circle r="2.2" fill="#FFFFFF"/></g>`)
+        .join("")}</svg>`,
+      animate: [
+        { id: "branchMenuOrb", attrs: { opacity: [0, 1], transform: ["translate(-10 0)", "translate(0 0)"] }, ms: 420, ease: "out" },
+        { id: "branchMenuOrbRing", attrs: { "stroke-opacity": [0.6, 0.15] }, delay: 450, ms: 900, ease: "in-out", repeat: 3, alternate: true },
+        ...slots.flatMap((i): SvgAnimation[] => [
+          // A curve draws out with a spark at its tip...
+          { id: `branchMenuLink${i}`, draw: true, delay: launch(i), ms: BRANCH.run, ease: "in-out" },
+          { id: `branchMenuSpark${i}`, attrs: { opacity: [0, 1] }, delay: launch(i), ms: 120 },
+          { id: `branchMenuSpark${i}`, along: `branchMenuLink${i}`, delay: launch(i), ms: BRANCH.run, ease: "in-out" },
+          { id: `branchMenuSpark${i}`, attrs: { opacity: [1, 0] }, delay: land(i), ms: 260, ease: "out" },
+          // ...and its tile lands with a bright flash that settles as the count ticks up.
+          { id: `branchMenuTile${i}`, attrs: { opacity: [0, 1], transform: ["translate(-10 0)", "translate(0 0)"] }, delay: land(i) - 80, ms: 320, ease: "out" },
+          { id: `branchMenuFlash${i}`, attrs: { opacity: [0, 1] }, delay: land(i) - 40, ms: 160, ease: "out" },
+          { id: `branchMenuFlash${i}`, attrs: { opacity: [1, 0] }, delay: land(i) + 260, ms: 700, ease: "in-out" },
+          { id: `branchMenuValue${i}`, count: [0, at("val", i)], decimals: at("dec", i), format: `{{fmt${i}}}`, delay: land(i), ms: 800, ease: "out" },
+          // The chosen one lights up in gold, with its curve.
+          { id: `branchMenuGold${i}`, attrs: { opacity: [0, at("gold", i)] }, delay: n("chosenAt"), ms: 450, ease: "out" },
+        ]),
+        { id: "branchMenuChosenLink", attrs: { opacity: [0, 1] }, delay: n("chosenAt"), ms: 1 },
+        { id: "branchMenuChosenLink", draw: true, delay: n("chosenAt"), ms: 500, ease: "in-out" },
+        { id: "branchMenuChosenLink", attrs: { opacity: [1, 0.5] }, delay: n("chosenPulse"), ms: 600, ease: "in-out", repeat: 3, alternate: true },
+      ],
+    };
+  })(),
+};
+
+export const dataEffects: VectorEffect[] = [donutChart, pieChart, gauge, barRace, sparkline, leaderboard, areaChart, kpiTile, rolodex, fanOutLinks, hubSpokeGraph, statCards, yearScrubber, sentimentTile, branchMenu];
