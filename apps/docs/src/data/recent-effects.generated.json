@@ -236,9 +236,9 @@
     "swiftReady": true,
     "animated": true,
     "module": "shaders/web",
-    "addedAt": "2026-11-13T14:12:23.497Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-11-13T14:12:50Z",
+    "commitHash": "11bb3822e6b99a143ed5a8735d6184ed9416cbff",
+    "order": 684
   },
   {
     "id": "sentiment-tile",
