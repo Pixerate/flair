@@ -1,5 +1,7 @@
 import { morphPaths, morphSequence } from "../vector/morph.js";
-import type { SvgAnimation } from "../vector/motion.js";
+import type { SvgAnimation, SvgMotion } from "../vector/motion.js";
+import { after, fit, holds, holdControl, ms, outTimes, pop, r1, SANS } from "./broadcast.js";
+import { textWidthEm } from "./images.js";
 import type { VectorEffect } from "./types.js";
 
 /*
@@ -530,5 +532,168 @@ export const digitMorph: VectorEffect = {
   },
 };
 
+// ── Word to icons ──────────────────────────────────────────────────────
+
+/**
+ * Plain outline icons in a 24 box, drawn with a round-capped stroke: a
+ * document, a slideshow, a table, a palette, a chart, shapes and a list.
+ */
+const WORD_ICONS: readonly string[] = [
+  "M14 3 H7 A2 2 0 0 0 5 5 V19 A2 2 0 0 0 7 21 H17 A2 2 0 0 0 19 19 V8 Z M14 3 V8 H19 M9 13 H15 M9 17 H13",
+  "M2.5 4 H21.5 M4 4 V14.5 A1.5 1.5 0 0 0 5.5 16 H18.5 A1.5 1.5 0 0 0 20 14.5 V4 M12 16 V20 M8.5 21 L12 20 L15.5 21 M10.5 7.5 L14.5 10 L10.5 12.5 Z",
+  "M5 3 H19 A2 2 0 0 1 21 5 V19 A2 2 0 0 1 19 21 H5 A2 2 0 0 1 3 19 V5 A2 2 0 0 1 5 3 Z M3 9 H21 M3 15 H21 M9 3 V21",
+  "M12 3 A9 9 0 0 0 12 21 C13.1 21 13.8 20.2 13.8 19.2 C13.8 18.7 13.6 18.3 13.3 18 C13 17.7 12.8 17.3 12.8 16.8 C12.8 15.8 13.6 15 14.6 15 H16.5 A4.5 4.5 0 0 0 21 10.5 C21 6.4 17 3 12 3 Z M7.5 11.5 A1 1 0 1 0 7.5 11.49 M10.5 7.5 A1 1 0 1 0 10.5 7.49 M15.5 8.5 A1 1 0 1 0 15.5 8.49",
+  "M3 3 V21 H21 M8 17 V12 M13 17 V7 M18 17 V10",
+  "M7.5 3 L12 10.5 H3 Z M17 3 A4 4 0 1 0 17 11 A4 4 0 1 0 17 3 Z M14 13.5 H20 A1 1 0 0 1 21 14.5 V20 A1 1 0 0 1 20 21 H14 A1 1 0 0 1 13 20 V14.5 A1 1 0 0 1 14 13.5 Z M3 17 A4 4 0 1 0 11 17 A4 4 0 1 0 3 17 Z",
+  "M9 6 H21 M9 12 H21 M9 18 H21 M4 6 H4.01 M4 12 H4.01 M4 18 H4.01",
+];
+/** The icons' default colours, one each. */
+const WORD_ICON_COLORS = ["#3B82F6", "#F59E0B", "#10B981", "#EC4899", "#8B5CF6", "#F97316", "#14B8A6"];
+const WORD_ICON_NAMES = ["Document", "Slides", "Table", "Palette", "Chart", "Shapes", "List"];
+/** Letter slots: words up to this many letters. */
+const WORD_SLOTS = 16;
+/** Ms between typed letters, between collapsing letters and between icons popping in. */
+const TYPE_PACE = 75;
+const COLLAPSE_PACE = 55;
+const ICON_PACE = 110;
+/** Ms the typed word rests before its letters go. */
+const READ = 650;
+/** Letters collapse like this: slow, then quick (an ease-in). */
+const EASE_IN: [number, number, number, number] = [0.55, 0, 1, 0.45];
+
+const wordToIconsMotion: SvgMotion = {
+  svg: `<svg viewBox="0 0 1920 1080"><!-- {{word: text default='Workspace' label='Word'}} {{chip: text default='New in' label='Chip'}} {{count: int min=3 max=7 default=6 label='Icons (document, slides, table, palette, chart, shapes, list)'}} ${WORD_ICON_COLORS.map((c, k) => `{{color${k + 1}: color default=${c} label='${WORD_ICON_NAMES[k]} colour'}}`).join(" ")} {{line: float min=0.5 max=4 default=2 step=0.25 label='Icon line width'}} {{ink: color default=#111827 label='Text colour'}} {{chipFill: color default=#E9E5FF label='Chip'}} {{chipInk: color default=#4C1D95 label='Chip text'}} {{paper: color default=#F8F7F4 label='Background'}} {{paperOpacity: float min=0 max=1 default=1 step=0.05 label='Background opacity'}} {{size: float min=40 max=260 default=150 step=1 label='Size'}} {{x: float min=0 max=100 default=50 step=0.5 label='Centre x (%)'}} {{y: float min=0 max=100 default=50 step=0.5 label='Centre y (%)'}} ${holdControl(1.5)} {{font: text default="${SANS}" label='Font'}} --><rect width="1920" height="1080" fill="{{paper}}" opacity="{{paperOpacity}}"/><g transform="translate({{chipX}} {{mid}})" opacity="{{chipShow}}"><g id="wordToIconsChip" transform="scale(0)"><rect x="{{chipLeft}}" y="{{chipTop}}" width="{{chipW}}" height="{{chipH}}" rx="{{chipR}}" fill="{{chipFill}}"/><text x="0" y="{{chipBase}}" text-anchor="middle" font-family="{{font}}" font-size="{{chipSize}}" font-weight="600" textLength="{{chipTextW}}" lengthAdjust="spacingAndGlyphs" fill="{{chipInk}}">{{chip}}</text></g></g>${Array.from(
+    { length: WORD_SLOTS },
+    (_, i) =>
+      `<g transform="translate({{lx${i}}} {{mid}})"><g id="wordToIconsL${i}" transform="translate(0 0) scale(1)" opacity="0"><text x="0" y="{{capHalf}}" text-anchor="middle" font-family="{{font}}" font-size="{{wordSize}}" font-weight="700" fill="{{ink}}">{{ch${i}}}</text></g></g>`,
+  ).join("")}<rect id="wordToIconsCaret" x="{{caretX}}" y="{{caretY}}" width="{{caretW}}" height="{{caretH}}" rx="{{caretR}}" fill="{{ink}}" opacity="0"/>${WORD_ICONS.map(
+    (d, k) =>
+      `<g transform="translate({{ix${k}}} {{mid}})" opacity="{{iv${k}}}"><g id="wordToIconsI${k}" transform="scale(0)"><g transform="scale({{iconScale}}) translate(-12 -12)" fill="none" stroke="{{color${k + 1}}}" stroke-width="{{line}}" stroke-linecap="round" stroke-linejoin="round"><path d="${d}"/></g></g></g>`,
+  ).join("")}</svg>`,
+  animate: [
+    ...pop("wordToIconsChip", 0, 1.1),
+    // Typed: each letter shows in turn, the caret stepping after it, then blinking while the word rests.
+    // Hidden from the start first: an animated SVG holds a change's first value from 0 until it plays.
+    ...holds("wordToIconsCaret", "opacity", [[0, 0], [250, 1], [n("blinkOff"), 0], [n("blinkOn"), 1], [n("collapse"), 0]]),
+    ...holds("wordToIconsCaret", "x", [[0, "{{caretX}}"]]),
+    ...Array.from({ length: WORD_SLOTS }, (_, i): SvgAnimation[] => [
+      { id: `wordToIconsL${i}`, attrs: { opacity: [0, 0] }, ms: 0 },
+      { id: `wordToIconsL${i}`, attrs: { opacity: [1, 1] }, delay: n(`la${i}`), ms: 0 },
+      { id: "wordToIconsCaret", attrs: { x: [n(`cx${i}`), n(`cx${i}`)] }, delay: n(`la${i}`), ms: 0 },
+      // Then each shrinks away, sinking a little, one after another.
+      { id: `wordToIconsL${i}`, attrs: { transform: ["translate(0 0) scale(1)", "translate(0 {{sink}}) scale(0)"], opacity: [1, 0] }, delay: n(`lk${i}`), ms: 280, ease: EASE_IN },
+    ]).flat(),
+    // The icons pop in left to right where the word stood.
+    ...WORD_ICONS.map((_, k): SvgAnimation[] => [
+      { id: `wordToIconsI${k}`, attrs: { transform: ["scale(0)", "scale(1.18)"] }, delay: n(`ip${k}`), ms: 300, ease: "out" },
+      { id: `wordToIconsI${k}`, attrs: { transform: ["scale(1.18)", "scale(1)"] }, delay: n(`is${k}`), ms: 180, ease: "in-out" },
+      { id: `wordToIconsI${k}`, attrs: { transform: ["scale(1)", "scale(0)"] }, delay: after(k * 60), ms: 260, ease: EASE_IN },
+    ]).flat(),
+    { id: "wordToIconsChip", attrs: { transform: ["scale(1)", "scale(0)"] }, delay: after(420), ms: 280, ease: EASE_IN },
+  ],
+};
+
+export const wordToIcons: VectorEffect = {
+  kind: "vector",
+  id: "word-to-icons",
+  name: "Word to icons",
+  description: "A word typed beside a small 'New in' chip, its letters shrinking away one after another as a row of coloured outline icons pops in where it stood, then popping out.",
+  category: "morph",
+  tags: ["morph", "text", "icon", "product", "launch", "promo", "typing", "reveal"],
+  hold: 300,
+  presets: [
+    { name: "Launch", values: {} },
+    {
+      name: "Night",
+      values: { paper: [0.06, 0.07, 0.1], ink: [0.96, 0.96, 0.98], chipFill: [0.2, 0.18, 0.36], chipInk: [0.84, 0.8, 1], color1: [0.38, 0.65, 0.98], color3: [0.2, 0.83, 0.6], line: 2.25 },
+    },
+    {
+      name: "Mono overlay",
+      values: { paperOpacity: 0, count: 5, color1: [0.07, 0.09, 0.15], color2: [0.07, 0.09, 0.15], color3: [0.07, 0.09, 0.15], color4: [0.07, 0.09, 0.15], color5: [0.07, 0.09, 0.15], chipFill: [0.07, 0.09, 0.15], chipInk: [1, 1, 1], line: 1.5 },
+    },
+  ],
+  // The chip, then the word (or the icon row, whichever is wider), centred together on (x, y).
+  derived: (v) => {
+    const letters = Array.from(String(v.word ?? "")).slice(0, WORD_SLOTS);
+    const count = Math.min(WORD_ICONS.length, Math.max(1, Math.round(Number(v.count)) || 1));
+    const chipText = String(v.chip ?? "").trim();
+    const hasChip = chipText.length > 0;
+    const want = Math.max(20, Number(v.size) || 150);
+    const chipSize0 = Math.max(16, want * 0.3);
+    const chip = fit(chipText || " ", 600, chipSize0);
+    const chipPad = chip.size * 0.75;
+    const chipW = hasChip ? chip.width + chipPad * 2 : 0;
+    const chipH = chip.size * 1.9;
+    const room = 1760 - chipW - (hasChip ? want * 0.35 : 0);
+    const word = fit(letters.join("") || " ", room, want);
+    const wordSize = word.size;
+    const gap = hasChip ? wordSize * 0.35 : 0;
+    // Icons a little smaller than the type, with room between them; smaller still if the row would not fit.
+    const iconSize = Math.min(wordSize * 0.9, room / (count + (count - 1) * 0.5));
+    const pitch = iconSize * 1.5;
+    const rowW = count * iconSize + (count - 1) * (pitch - iconSize);
+    const region = Math.max(word.width, rowW);
+    const total = chipW + gap + region;
+    // Kept inside the frame when (x, y) is near an edge.
+    const left = Math.min(Math.max(80, (Number(v.x) / 100) * 1920 - total / 2), Math.max(80, 1840 - total));
+    const centre = left + chipW + gap + region / 2;
+    const mid = (Number(v.y) / 100) * 1080;
+
+    const typeStart = 380;
+    const typed = typeStart + letters.length * TYPE_PACE;
+    const collapse = typed + READ;
+    const iconsAt = collapse + 140;
+    const settled = iconsAt + (count - 1) * ICON_PACE + 480;
+    const out: Record<string, string | number> = {
+      ...outTimes(wordToIconsMotion, settled + ms(v.hold)),
+      mid: r1(mid),
+      wordSize,
+      capHalf: r1(wordSize * 0.36),
+      sink: r1(wordSize * 0.18),
+      chipShow: hasChip ? 1 : 0,
+      chipX: r1(left + chipW / 2),
+      chipSize: chip.size,
+      chipTextW: chip.width,
+      chipBase: r1(chip.size * 0.35),
+      chipLeft: r1(-chipW / 2),
+      chipTop: r1(-chipH / 2),
+      chipW: r1(chipW),
+      chipH: r1(chipH),
+      chipR: r1(chipH / 2),
+      caretX: r1(centre - word.width / 2),
+      caretY: r1(mid - wordSize * 0.5),
+      caretW: r1(Math.max(3, wordSize * 0.05)),
+      caretH: r1(wordSize),
+      caretR: r1(Math.max(1.5, wordSize * 0.025)),
+      blinkOff: typed + 220,
+      blinkOn: typed + 440,
+      collapse,
+      iconScale: +(iconSize / 24).toPrecision(4),
+    };
+    // Letters sit in their estimated advances, stretched to the word's fitted width.
+    const ems = letters.map((c) => textWidthEm(c));
+    const sum = Math.max(1e-6, ems.reduce((a, b) => a + b, 0));
+    let x = centre - word.width / 2;
+    for (let i = 0; i < WORD_SLOTS; i++) {
+      const w = i < letters.length ? (ems[i]! / sum) * word.width : 0;
+      out[`ch${i}`] = letters[i]?.trim() ?? "";
+      out[`lx${i}`] = r1(x + w / 2);
+      x += w;
+      out[`cx${i}`] = r1(x);
+      out[`la${i}`] = typeStart + Math.min(i, Math.max(0, letters.length - 1)) * TYPE_PACE;
+      out[`lk${i}`] = collapse + i * COLLAPSE_PACE;
+    }
+    for (let k = 0; k < WORD_ICONS.length; k++) {
+      const shown = k < count;
+      out[`iv${k}`] = shown ? 1 : 0;
+      out[`ix${k}`] = r1(centre - rowW / 2 + iconSize / 2 + Math.min(k, count - 1) * pitch);
+      out[`ip${k}`] = iconsAt + Math.min(k, count - 1) * ICON_PACE;
+      out[`is${k}`] = iconsAt + Math.min(k, count - 1) * ICON_PACE + 300;
+    }
+    return out;
+  },
+  motion: wordToIconsMotion,
+};
+
 /** Vector effects that turn one shape into another (see `morphPaths`). */
-export const morphEffects: VectorEffect[] = [shapeMorph, iconToggle, morphSequenceEffect, gooeyMorph, particleMorph, digitMorph];
+export const morphEffects: VectorEffect[] = [shapeMorph, iconToggle, morphSequenceEffect, gooeyMorph, particleMorph, digitMorph, wordToIcons];
