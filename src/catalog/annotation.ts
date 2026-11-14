@@ -1,5 +1,6 @@
 import type { SvgAnimation, SvgMotion } from "../vector/motion.js";
 import { after, CURSOR, fit, holdControl, ms, n, outTimes, pop, r1, SANS } from "./broadcast.js";
+import { textWidthEm } from "./images.js";
 import type { VectorEffect } from "./types.js";
 
 /*
@@ -720,5 +721,275 @@ export const tooltipTour: VectorEffect = {
   motion: tooltipTourMotion,
 };
 
+// ── Shared: collaborator cursors and name tags ─────────────────────────
+
+/** A display serif, for headlines edited live on screen. */
+const SERIF = `'Tiempos Headline', Georgia, 'Times New Roman', serif`;
+
+/** A name tag's size before its cursor's scale: 20-unit text in a 30-high pill. */
+const TAG = { size: 20, h: 30, pad: 11 };
+
+/** A name fitted to a tag: the name, its font size, its width and the pill's width (none for no name). */
+function nameTag(name: unknown) {
+  const text = String(name ?? "").trim();
+  const f = fit(text || "A", 200, TAG.size);
+  return { text, size: f.size, width: f.width, w: r1(f.width + TAG.pad * 2), show: text ? "inline" : "none" };
+}
+
+/**
+ * A collaborator's cursor, its tip at (0, 0), with a name tag hanging off
+ * its tail, scaled by `{{scale}}`; colours, name and sizes are placeholders
+ * named after `key` (`{{key}}`, `{{keyName}}`, `{{keyW}}`…).
+ */
+const presenceMark = (key: string, color: string) =>
+  `<g transform="scale({{cursorScale}})"><path d="${CURSOR}" fill="${color}" stroke="#FFFFFF" stroke-width="2.5" stroke-linejoin="round"/><g display="{{${key}Show}}" transform="translate(20 36)"><rect width="{{${key}W}}" height="${TAG.h}" rx="8" fill="${color}"/><text x="${TAG.pad}" y="21" font-family="${SANS}" font-size="{{${key}Size}}" font-weight="600" fill="{{flagInk}}" textLength="{{${key}Len}}" lengthAdjust="spacingAndGlyphs">{{${key}Name}}</text></g></g>`;
+
+// ── Presence cursors ───────────────────────────────────────────────────
+
+/** Up to three lead words in turn, up to three idle cursors; times in ms. */
+const PRESENCE = { words: 3, others: 3, intro: 700, reach: 450, drag: 450, pause: 260, shift: 220, rest: 650 };
+
+/**
+ * Where each idle cursor rests, as fractions of the headline's box (x
+ * across it, y from its cap height, 0, down to its baseline, 1), and how far
+ * off it flies in from.
+ */
+const PRESENCE_SPOTS: readonly { at: Point; from: Point }[] = [
+  { at: [0.03, 1.55], from: [-280, 220] },
+  { at: [0.84, -0.75], from: [260, -240] },
+  { at: [0.98, 1.35], from: [300, 240] },
+];
+
+const presenceCursorsMotion: SvgMotion = {
+  svg: `<svg viewBox="0 0 1920 1080"><!-- {{words: text default='Plan,Build,Work' label='Lead words, in turn (comma-separated, up to 3)'}} {{rest: text default='at the speed of thought' label='Rest of the headline'}} {{editor: text default='Ada' label='Editing cursor name'}} {{names: text default='Rosa,Dev,June' label='Other cursors (comma-separated, up to 3)'}} ${at("x", 50, "Centre", "x")} ${at("y", 50, "Centre", "y")} {{size: float min=32 max=200 default=104 step=1 label='Text size'}} {{ink: color default=#141413 label='Text colour'}} {{selection: color default=#B9D7EE label='Selection'}} {{editorColor: color default=#D97757 label='Editing cursor'}} {{c1: color default=#2F7D7A label='Cursor 1'}} {{c2: color default=#5B7FD6 label='Cursor 2'}} {{c3: color default=#6C9E3E label='Cursor 3'}} {{flagInk: color default=#FFFFFF label='Name colour'}} ${holdControl(2)} {{font: text default="${SERIF}" label='Font'}} --><g id="presenceCursorsAll"><g id="presenceCursorsHead" opacity="0">${[0, 1]
+    .map((i) => `<rect id="presenceCursorsSel${i}" x="{{wx${i}}}" y="{{selY}}" width="0" height="{{selH}}" rx="4" fill="{{selection}}" opacity="0"/>`)
+    .join("")}<text id="presenceCursorsLine" x="{{lineX0}}" y="{{base}}" font-family="{{font}}" font-size="{{fs}}" fill="{{ink}}" xml:space="preserve">${[0, 1, 2].map((i) => `<tspan id="presenceCursorsWord${i}">${i === 0 ? "{{w0}}" : ""}</tspan>`).join("")}<tspan>{{restText}}</tspan></text></g>${[0, 1, 2]
+    .map((j) => `<g display="{{oShow${j}}}"><g id="presenceCursorsOther${j}" transform="translate({{ofx${j}}} {{ofy${j}}})" opacity="0"><g id="presenceCursorsDrift${j}">${presenceMark(`o${j}`, `{{c${j + 1}}}`)}</g></g></g>`)
+    .join("")}<g id="presenceCursorsEditor" transform="translate({{ex0}} {{ey0}})" opacity="0">${presenceMark("ed", "{{editorColor}}")}</g></g></svg>`,
+  animate: [
+    { id: "presenceCursorsHead", attrs: { opacity: [0, 1], transform: ["translate(0 24)", "translate(0 0)"] }, ms: 500, ease: "out" },
+    ...[0, 1, 2].flatMap((j): SvgAnimation[] => [
+      { id: `presenceCursorsOther${j}`, attrs: { opacity: [0, 1], transform: [`translate({{ofx${j}}} {{ofy${j}}})`, `translate({{ox${j}}} {{oy${j}}})`] }, delay: 200 + j * 160, ms: 750, ease: "out" },
+      { id: `presenceCursorsDrift${j}`, attrs: { transform: ["translate(0 0)", "translate(16 10)"] }, delay: 950 + j * 160, ms: n("driftMs"), behavior: { type: "wriggle", frequency: 0.5, seed: 3 + j * 11 } },
+    ]),
+    { id: "presenceCursorsEditor", attrs: { opacity: [0, 1] }, delay: 300, ms: 300, ease: "out" },
+    // Each change: the editor reaches the word, drags across it, and the new word types in its place.
+    ...[1, 2].flatMap((k): SvgAnimation[] => [
+      { id: "presenceCursorsEditor", attrs: { transform: [`translate({{ax${k - 1}}} {{ay${k - 1}}})`, `translate({{gx${k}}} {{gy${k}}})`] }, delay: n(`reach${k}`), ms: PRESENCE.reach, ease: "in-out" },
+      { id: "presenceCursorsEditor", attrs: { transform: [`translate({{gx${k}}} {{gy${k}}})`, `translate({{dx${k}}} {{gy${k}}})`] }, delay: n(`drag${k}`), ms: PRESENCE.drag, ease: "in-out" },
+      { id: `presenceCursorsSel${k - 1}`, attrs: { opacity: [0, n(`on${k}`)], width: [0, n(`ww${k - 1}`)] }, delay: n(`drag${k}`), ms: PRESENCE.drag, ease: "in-out" },
+      { id: `presenceCursorsSel${k - 1}`, attrs: { opacity: [n(`on${k}`), 0] }, delay: n(`cut${k}`), ms: 0 },
+      { id: `presenceCursorsWord${k - 1}`, write: `{{left${k}}}`, delay: n(`cut${k}`), ms: 0 },
+      { id: "presenceCursorsLine", attrs: { x: [n(`lineX${k - 1}`), n(`lineX${k}`)] }, delay: n(`cut${k}`), ms: PRESENCE.shift, ease: "in-out" },
+      { id: "presenceCursorsEditor", attrs: { transform: [`translate({{dx${k}}} {{gy${k}}})`, `translate({{ax${k}}} {{ay${k}}})`] }, delay: n(`cut${k}`), ms: 420, ease: "in-out" },
+      { id: `presenceCursorsWord${k}`, write: `{{w${k}}}`, delay: n(`type${k}`), ms: n(`typeMs${k}`), ease: "linear" },
+    ]),
+    { id: "presenceCursorsAll", attrs: { opacity: [1, 0] }, delay: after(0), ms: 400 },
+  ],
+};
+
+export const presenceCursors: VectorEffect = {
+  kind: "vector",
+  id: "presence-cursors",
+  name: "Presence cursors",
+  description:
+    "A headline with collaborators' cursors drifting round it, each with a coloured name tag; one cursor drags a selection across the first word and types a new one in its place, up to twice, the rest of the line sliding to make room.",
+  category: "annotation",
+  tags: ["annotation", "cursor", "collaboration", "multiplayer", "typing", "headline", "product", "product-demo"],
+  hold: 300,
+  presets: [
+    { name: "Dark", values: { ink: [0.96, 0.95, 0.92], selection: [0.2, 0.36, 0.55], flagInk: [1, 1, 1] } },
+    { name: "Sans", values: { font: SANS, size: 92 } },
+    { name: "Two words", values: { words: "Build,Ship", rest: "together, in real time", names: "Rosa" } },
+  ],
+  derived: (v) => {
+    const list = String(v.words ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .slice(0, PRESENCE.words);
+    // One word is retyped as it is; none leaves only the rest of the line.
+    const words = list.length >= 2 ? list : [list[0] ?? "", list[0] ?? ""];
+    const rest = String(v.rest ?? "").trim();
+    const want = Number(v.size);
+    const lines = words.map((w) => [w, rest].filter(Boolean).join(" ") || "A");
+    const fs = Math.min(want, ...lines.map((l) => fit(l, 1760, want).size));
+    const em = (t: string) => (t ? Math.max(0.3, textWidthEm(t)) * fs : 0);
+    const space = 0.26 * fs;
+    const [cx, cy] = [px(v.x), py(v.y)];
+    const base = r1(cy + fs * 0.34);
+    const restW = em(rest);
+    const out: Record<string, string | number> = {
+      fs: r1(fs),
+      base,
+      selY: r1(base - fs * 0.82),
+      selH: r1(fs * 1.06),
+      cursorScale: r1(clamp(fs / 90, 0.7, 1.8) * 100) / 100,
+    };
+    // The words and the rest share one line of text, so the rest follows whatever word is there; the line is
+    // centred on each word's estimated width, and slides to the next centre as a word is cut.
+    out.restText = words[0] && rest ? ` ${rest}` : rest;
+    for (let i = 0; i < PRESENCE.words; i++) {
+      const w = words[Math.min(i, words.length - 1)]!;
+      const ww = em(w);
+      const left = cx - (ww + (w && rest ? space : 0) + restW) / 2;
+      out[`w${i}`] = i < words.length ? w : "";
+      out[`wx${i}`] = r1(left);
+      out[`ww${i}`] = r1(ww);
+      out[`lineX${i}`] = r1(left);
+    }
+    // The cursor's tip rests on the words' middle while it selects, and below the new word while it types.
+    const gy = r1(base - fs * 0.32);
+    const firstLeft = Number(out.wx0);
+    out.ex0 = r1(firstLeft - 140);
+    out.ey0 = r1(base + fs * 0.9);
+    out.ax0 = out.ex0;
+    out.ay0 = out.ey0;
+    let t = PRESENCE.intro + 300;
+    for (let k = 1; k < PRESENCE.words; k++) {
+      const used = k < words.length;
+      const prev = k - 1;
+      const typeMs = used ? writing(words[k], 75) : 0;
+      out[`reach${k}`] = t;
+      out[`drag${k}`] = t + (used ? PRESENCE.reach : 0);
+      out[`cut${k}`] = Number(out[`drag${k}`]) + (used ? PRESENCE.drag + PRESENCE.pause : 0);
+      out[`type${k}`] = Number(out[`cut${k}`]) + (used ? PRESENCE.shift : 0);
+      out[`typeMs${k}`] = Math.max(1, typeMs);
+      out[`on${k}`] = used ? 1 : 0;
+      // What's left of the old word once it's cut: nothing, or all of it for a change that doesn't happen.
+      out[`left${k}`] = used ? "" : String(out[`w${prev}`]);
+      // A change that doesn't happen keeps the cursor where it is.
+      out[`gx${k}`] = used ? r1(Number(out[`wx${prev}`]) - 4) : Number(out[`ax${prev}`]);
+      out[`dx${k}`] = used ? r1(Number(out[`wx${prev}`]) + Number(out[`ww${prev}`]) + 4) : Number(out[`ax${prev}`]);
+      out[`ax${k}`] = used ? r1(Number(out[`wx${k}`]) + Number(out[`ww${k}`]) * 0.6) : Number(out[`ax${prev}`]);
+      out[`ay${k}`] = used ? r1(base + fs * 0.45) : Number(out[`ay${prev}`]);
+      out[`gy${k}`] = used ? gy : Number(out[`ay${prev}`]);
+      if (used) t = Number(out[`type${k}`]) + typeMs + PRESENCE.rest;
+    }
+    // Every idle cursor rests round the first line, from just before it starts.
+    const right = Math.max(...[0, 1, 2].map((i) => Number(out[`wx${i}`]) + Number(out[`ww${i}`]) + space + restW));
+    const left = Math.min(...[0, 1, 2].map((i) => Number(out[`wx${i}`])));
+    const top = base - fs * 0.72;
+    const names = String(v.names ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .slice(0, PRESENCE.others);
+    PRESENCE_SPOTS.forEach(({ at: [fx, fy], from: [ox, oy] }, j) => {
+      const tag = nameTag(names[j]);
+      const x = r1(left + fx * (right - left));
+      const y = r1(top + fy * (base - top));
+      out[`ox${j}`] = x;
+      out[`oy${j}`] = y;
+      out[`ofx${j}`] = r1(x + ox);
+      out[`ofy${j}`] = r1(y + oy);
+      out[`oShow${j}`] = j < names.length ? "inline" : "none";
+      out[`o${j}Name`] = tag.text;
+      out[`o${j}Size`] = tag.size;
+      out[`o${j}Len`] = tag.width;
+      out[`o${j}W`] = tag.w;
+      out[`o${j}Show`] = tag.show;
+    });
+    const editor = nameTag(v.editor);
+    out.edName = editor.text;
+    out.edSize = editor.size;
+    out.edLen = editor.width;
+    out.edW = editor.w;
+    out.edShow = editor.show;
+    const end = t + ms(v.hold);
+    out.driftMs = Math.max(1, end - 950);
+    return { ...out, ...outTimes(presenceCursorsMotion, end) };
+  },
+  motion: presenceCursorsMotion,
+};
+
+// ── Selection frame ────────────────────────────────────────────────────
+
+/** Selection frame: when each line comes in, its box draws, it straightens; ms. */
+const FRAME = { line2: 750, box: 260, straighten: 900, settle: 700, handle: 12 };
+
+const frameLine = (k: 1 | 2) =>
+  `<g transform="translate({{cx}} {{cy${k}}})"><g id="selectionFrameLine${k}" opacity="0" transform="translate({{fx${k}}} 30) rotate({{tilt${k}}}) scale(0.9)"><text x="0" y="{{textY}}" text-anchor="middle" font-family="{{font}}" font-size="{{fs}}" fill="{{ink}}" textLength="{{len${k}}}" lengthAdjust="spacingAndGlyphs">{{line${k}}}</text><g id="selectionFrameBox${k}" opacity="0"><path id="selectionFramePath${k}" d="{{frame${k}}}" fill="none" stroke="{{frame${k}Color}}" stroke-width="3"/>${["-", "+"]
+    .flatMap((sx) => ["-", "+"].map((sy) => `<rect x="{{h${sx === "-" ? "L" : "R"}${k}}}" y="{{h${sy === "-" ? "T" : "B"}}}" width="${FRAME.handle}" height="${FRAME.handle}" fill="{{handle}}" stroke="{{frame${k}Color}}" stroke-width="2.5"/>`))
+    .join("")}<g display="{{tag${k}Show}}" transform="translate({{tagX${k}}} {{tagY${k}}})"><g id="selectionFrameTag${k}" transform="scale(0)"><rect width="{{tag${k}W}}" height="${TAG.h}" rx="6" fill="{{frame${k}Color}}"/><text x="${TAG.pad}" y="21" font-family="${SANS}" font-size="{{tag${k}Size}}" font-weight="600" fill="{{tagInk}}" textLength="{{tag${k}Len}}" lengthAdjust="spacingAndGlyphs">{{tag${k}Name}}</text></g></g></g></g></g>`;
+
+const frameIn = (k: 1 | 2, start: number): SvgAnimation[] => [
+  { id: `selectionFrameLine${k}`, attrs: { opacity: [0, 1], transform: [`translate({{fx${k}}} 30) rotate({{tilt${k}}}) scale(0.9)`, `translate(0 0) rotate({{tilt${k}}}) scale(1)`] }, delay: start, ms: 500, ease: "out" },
+  { id: `selectionFrameBox${k}`, attrs: { opacity: [0, 1] }, delay: start + FRAME.box, ms: 120 },
+  { id: `selectionFramePath${k}`, draw: true, delay: start + FRAME.box, ms: 380, ease: "out" },
+  ...pop(`selectionFrameTag${k}`, start + FRAME.box + 300, 1.15, 240),
+  { id: `selectionFrameLine${k}`, attrs: { transform: [`translate(0 0) rotate({{tilt${k}}}) scale(1)`, "translate(0 0) rotate(0) scale(1)"] }, delay: start + FRAME.straighten, ms: 650, behavior: { type: "overshoot", cycles: 2, damping: 5 } },
+];
+
+const selectionFrameMotion: SvgMotion = {
+  svg: `<svg viewBox="0 0 1920 1080"><!-- {{line1: text default='Plan it out with' label='First line'}} {{line2: text default='Shared whiteboards' label='Second line'}} {{tag1: text default='Rosa' label='First name tag'}} {{tag2: text default='Dev' label='Second name tag'}} ${at("x", 50, "Centre", "x")} ${at("y", 50, "Centre", "y")} {{size: float min=32 max=200 default=104 step=1 label='Text size'}} {{tilt: float min=-20 max=20 default=-7 step=0.5 label='Entry tilt (°)'}} {{ink: color default=#141413 label='Text colour'}} {{frame1Color: color default=#D97757 label='First frame'}} {{frame2Color: color default=#C2477F label='Second frame'}} {{handle: color default=#FFFFFF label='Handles'}} {{tagInk: color default=#FFFFFF label='Name colour'}} {{keep: bool default=false label='Keep the frames'}} ${holdControl(2)} {{font: text default="${SERIF}" label='Font'}} --><g id="selectionFrameAll">${frameLine(1)}${frameLine(2)}</g></svg>`,
+  animate: [
+    ...frameIn(1, 0),
+    ...frameIn(2, FRAME.line2),
+    // Once both are straight the frames let go of them, unless they are kept.
+    ...([1, 2] as const).map((k): SvgAnimation => ({ id: `selectionFrameBox${k}`, attrs: { opacity: [1, n("boxEnd")] }, delay: FRAME.line2 + FRAME.straighten + FRAME.settle, ms: 300 })),
+    { id: "selectionFrameAll", attrs: { opacity: [1, 0] }, delay: after(0), ms: 400 },
+  ],
+};
+
+export const selectionFrame: VectorEffect = {
+  kind: "vector",
+  id: "selection-frame",
+  name: "Selection frame",
+  description:
+    "Two lines of a headline swinging in at a tilt, each caught in a design tool's selection box with corner handles and a collaborator's name tag, then straightening with a little overshoot before the boxes let go.",
+  category: "annotation",
+  tags: ["annotation", "selection", "design-tool", "collaboration", "headline", "frame", "product", "product-demo"],
+  hold: 300,
+  presets: [
+    { name: "Dark", values: { ink: [0.96, 0.95, 0.92], handle: [0.08, 0.08, 0.08] } },
+    { name: "Kept frames", values: { keep: true, tilt: -4 } },
+    { name: "Blue and violet", values: { frame1Color: [0.23, 0.51, 0.96], frame2Color: [0.55, 0.36, 0.96], font: SANS } },
+  ],
+  derived: (v) => {
+    const want = Number(v.size);
+    const fs = Math.min(want, fit(v.line1, 1600, want).size, fit(v.line2, 1600, want).size);
+    const [cx, cy] = [px(v.x), py(v.y)];
+    const pad = fs * 0.2;
+    const hh = r1(fs * 0.6);
+    const hs = FRAME.handle / 2;
+    const tilt = Number(v.tilt);
+    const out: Record<string, string | number> = {
+      cx,
+      cy1: r1(cy - fs * 0.74),
+      cy2: r1(cy + fs * 0.74),
+      fs: r1(fs),
+      textY: r1(fs * 0.34),
+      tilt1: tilt,
+      tilt2: r1(-tilt * 0.8),
+      fx1: -80,
+      fx2: 80,
+      hT: r1(-hh - hs),
+      hB: r1(hh - hs),
+      boxEnd: v.keep ? 1 : 0,
+    };
+    ([1, 2] as const).forEach((k) => {
+      const text = String(v[`line${k}`] ?? "");
+      const len = text ? fit(text, 1600, fs).width : 0;
+      const hw = r1(Math.max(len, fs) / 2 + pad);
+      const tag = nameTag(v[`tag${k}`]);
+      out[`len${k}`] = Math.max(1, len);
+      out[`frame${k}`] = `M${-hw} ${-hh} H${hw} V${hh} H${-hw} Z`;
+      out[`hL${k}`] = r1(-hw - hs);
+      out[`hR${k}`] = r1(hw - hs);
+      // The first tag hangs above its frame, the second below, so neither hides under the other line.
+      out[`tagX${k}`] = r1(k === 1 ? -hw : hw - tag.w);
+      out[`tagY${k}`] = r1(k === 1 ? -hh - TAG.h - 6 : hh + 6);
+      out[`tag${k}Name`] = tag.text;
+      out[`tag${k}Size`] = tag.size;
+      out[`tag${k}Len`] = tag.width;
+      out[`tag${k}W`] = tag.w;
+      out[`tag${k}Show`] = tag.show;
+    });
+    return { ...out, ...outTimes(selectionFrameMotion, FRAME.line2 + FRAME.straighten + FRAME.settle + 300 + ms(v.hold)) };
+  },
+  motion: selectionFrameMotion,
+};
+
 /** Annotations and product-demo overlays, transparent over a screenshot or video. */
-export const annotationEffects: VectorEffect[] = [handCircle, handArrow, callout, bracketNote, scribbleOut, redactBox, stepBadges, focusBox, fakeCursor, tooltipTour];
+export const annotationEffects: VectorEffect[] = [handCircle, handArrow, callout, bracketNote, scribbleOut, redactBox, stepBadges, focusBox, fakeCursor, tooltipTour, presenceCursors, selectionFrame];

@@ -1822,4 +1822,326 @@ export const metricStrip: VectorEffect = {
   })(),
 };
 
-export const dataEffects: VectorEffect[] = [donutChart, pieChart, gauge, barRace, sparkline, leaderboard, areaChart, kpiTile, rolodex, fanOutLinks, hubSpokeGraph, statCards, yearScrubber, sentimentTile, branchMenu, metricStrip];
+// ── Shared: a collaborator's cursor ────────────────────────────────────
+
+/** A pointer arrow with its tip at (0, 0), 28 × 40. */
+const POINTER = "M0 0 L0 34 L9.5 25.5 L15.5 39.5 L21.5 37 L15.5 23.5 L27.5 23.5 Z";
+
+/** A name fitted to a 9-unit tag: the name, size, width, the pill's width, and `none` for no name. */
+function tagFor(name: unknown) {
+  const text = String(name ?? "").trim();
+  const f = fit(text || "A", 90, 9);
+  return { text, size: f.size, length: f.length, w: r1(f.length + 10), show: text ? "inline" : "none" };
+}
+
+/** A cursor at (0, 0) with a name tag, `{{key…}}` placeholders for its name. */
+const cursorMark = (key: string, color: string, ink: string) =>
+  `<g transform="scale(0.5)"><path d="${POINTER}" fill="${color}" stroke="#FFFFFF" stroke-width="2.5" stroke-linejoin="round"/></g><g display="{{${key}Show}}" transform="translate(10 18)"><rect width="{{${key}W}}" height="14" rx="4" fill="${color}"/><text x="5" y="10" font-size="{{${key}Size}}" font-weight="600" fill="${ink}" textLength="{{${key}Len}}" lengthAdjust="spacingAndGlyphs">{{${key}Name}}</text></g>`;
+
+/** A smooth open path through points (Catmull-Rom as cubic Béziers). */
+function smoothPath(pts: readonly (readonly [number, number])[]): string {
+  const p = (q: readonly [number, number]) => `${r1(q[0])} ${r1(q[1])}`;
+  let d = `M${p(pts[0]!)}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const [p0, p1, p2, p3] = [pts[i - 1] ?? pts[i]!, pts[i]!, pts[i + 1]!, pts[i + 2] ?? pts[i + 1]!];
+    d += ` C${p([p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6])} ${p([p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6])} ${p(p2)}`;
+  }
+  return d;
+}
+
+/** A repeatable 0–1 random sequence from a seed (mulberry32). */
+function seeded(seed: unknown): () => number {
+  let a = (Math.round(Number(seed)) || 0) * 7919 + 1;
+  return () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// ── Sticky board ───────────────────────────────────────────────────────
+
+/**
+ * A 640 × 360 whiteboard: up to `notes` sticky notes at waypoints of a road
+ * that draws itself left to right, each note above or below it in turn,
+ * with a day pill where the road meets it. Starts zoomed in on the first
+ * note and pulls back to the whole board. Times in ms.
+ */
+const STICKY = { notes: 6, left: 70, right: 570, road: 205, swing: 30, noteW: 96, noteH: 62, intro: 400, perNote: 520, lead: 500, zoom: 1.8 };
+
+export const stickyBoard: VectorEffect = {
+  kind: "vector",
+  id: "sticky-board",
+  name: "Sticky board",
+  description:
+    "A dotted whiteboard where a hand-drawn road winds across from left to right behind a collaborator's cursor, sticky notes popping up at each stop with a day pill on the road, as the view pulls back from the first note to the whole plan.",
+  category: "data",
+  tags: ["whiteboard", "timeline", "roadmap", "sticky-note", "plan", "collaboration", "product-demo"],
+  hold: 1600,
+  presets: [
+    { name: "Dark board", values: { board: [0.11, 0.11, 0.12], dots: [0.25, 0.25, 0.27], heading: "Q3 roadmap", headingInk: [0.95, 0.94, 0.9] } },
+    { name: "Four stops", values: { titles: "Kick-off,Design,Build,Launch", subtitles: "Goals agreed,Prototype,Beta,Go live", days: "Week 1,Week 3,Week 6,Week 9" } },
+    { name: "Over the page", values: { backdrop: false } },
+  ],
+  derived: (v) => {
+    const titles = parseLabels(v.titles, STICKY.notes);
+    const subs = parseLabels(v.subtitles, STICKY.notes);
+    const days = parseLabels(v.days, STICKY.notes);
+    const count = Math.max(1, titles.length);
+    const rand = seeded(v.seed);
+    const span = STICKY.right - STICKY.left;
+    const out: Record<string, string | number> = {};
+    const stops: [number, number][] = [];
+    for (let i = 0; i < STICKY.notes; i++) {
+      const shown = i < count;
+      const k = Math.min(i, count - 1);
+      const x = count === 1 ? 320 : STICKY.left + (span * k) / (count - 1);
+      const up = k % 2 === 0;
+      const y = STICKY.road + (up ? 1 : -1) * (STICKY.swing + (rand() - 0.5) * 12);
+      if (shown) stops.push([x, y]);
+      const noteY = up ? y - 46 - STICKY.noteH : y + 46;
+      const title = fitLabel(titles[i] ?? "", STICKY.noteW - 16, 11, 7);
+      const sub = fitLabel(subs[i] ?? "", STICKY.noteW - 16, 8.5, 6);
+      const day = fitLabel(days[i] ?? "", 60, 8.5, 6);
+      out[`show${i}`] = shown ? "inline" : "none";
+      out[`place${i}`] = `translate(${r1(x)} ${r1(noteY + STICKY.noteH / 2)}) rotate(${r1((rand() - 0.5) * 7)})`;
+      out[`title${i}`] = title.text;
+      out[`titleSize${i}`] = title.size;
+      out[`titleLen${i}`] = Math.max(1, title.length);
+      out[`sub${i}`] = sub.text;
+      out[`subSize${i}`] = sub.size;
+      out[`subLen${i}`] = Math.max(1, sub.length);
+      out[`fill${i}`] = paint(i % 3 === 2 ? v.note2 : v.note);
+      out[`stem${i}`] = `M${r1(x)} ${r1(up ? noteY + STICKY.noteH : noteY)} L${r1(x)} ${r1(y + (up ? -8 : 8))}`;
+      out[`day${i}`] = day.text;
+      out[`daySize${i}`] = day.size;
+      out[`dayLen${i}`] = Math.max(1, day.length);
+      out[`dayW${i}`] = r1(day.length + 12);
+      out[`dayAt${i}`] = `translate(${r1(x - (day.length + 12) / 2)} ${r1(y - 8)})`;
+      out[`dayShow${i}`] = shown && day.text ? "inline" : "none";
+    }
+    // The road leads in before the first stop and out past the last, wobbling a little like a pen.
+    const [first, last] = [stops[0]!, stops[stops.length - 1]!];
+    const pts: [number, number][] = [[first[0] - 50, first[1] + 10], ...stops, [last[0] + 50, last[1] - 10]];
+    const wobbly = pts.map(([x, y], i) => [x, y + (i > 0 && i < pts.length - 1 ? (rand() - 0.5) * 6 : 0)] as [number, number]);
+    const road = smoothPath(wobbly);
+    const drawMs = STICKY.lead + STICKY.perNote * count;
+    const roadStart = STICKY.intro + 200;
+    const reach = (x: number) => (x - (first[0] - 50)) / Math.max(1, last[0] + 50 - (first[0] - 50));
+    for (let i = 0; i < STICKY.notes; i++) {
+      const x = stops[Math.min(i, count - 1)]![0];
+      out[`at${i}`] = Math.round(roadStart + reach(x) * drawMs);
+      out[`settle${i}`] = Math.round(roadStart + reach(x) * drawMs + 260);
+      out[`dayIn${i}`] = Math.round(roadStart + reach(x) * drawMs + 160);
+    }
+    // Zoomed in on the first note, then pulling back to the whole board.
+    const z = STICKY.zoom;
+    const [fx, fy] = [first[0] + 40, STICKY.road - 10];
+    const cursor = tagFor(v.cursorName);
+    return {
+      ...out,
+      roadPath: road,
+      drawMs,
+      roadStart,
+      zoomFrom: `translate(${r1(320 - z * fx)} ${r1(180 - z * fy)}) scale(${z})`,
+      pullAt: Math.round(roadStart + drawMs * 0.3),
+      pullMs: Math.round(drawMs * 0.7 + 300),
+      cursorOut: roadStart + drawMs + 150,
+      curName: cursor.text,
+      curSize: cursor.size,
+      curLen: cursor.length,
+      curW: cursor.w,
+      curShow: cursor.show,
+      headingText: fitLabel(v.heading, 380, 18, 10).text,
+      headingSize: fitLabel(v.heading, 380, 18, 10).size,
+      backdropOpacity: v.backdrop ? 1 : 0,
+    };
+  },
+  motion: (() => {
+    const slots = Array.from({ length: STICKY.notes }, (_, i) => i);
+    const { noteW: w, noteH: h } = STICKY;
+    return {
+      svg: `<svg viewBox="0 0 640 360" font-family="${SANS}"><!-- {{titles: text default='Lock flavour,Plan forecast,Order supplies,First bake,Box up,Deliver' label='Notes (comma-separated, up to 6)'}} {{subtitles: text default='Huckleberry,Pre-orders,Flour and fruit,Test batch,Gift boxes,Holiday rush' label='Note details (comma-separated)'}} {{days: text default='Day 1,Day 3,Day 5,Day 7,Day 9,Day 12' label='Day pills (comma-separated)'}} {{heading: text default='Launch timeline' label='Heading'}} {{cursorName: text default='Ada' label='Cursor name'}} {{board: color default=#FAF7F0 label='Board'}} {{backdrop: bool default=true label='Board'}} {{dots: color default=#D9D3C5 label='Dots'}} {{headingInk: color default=#2B2722 label='Heading colour'}} {{road: color default=#EDC08A label='Road'}} {{note: color default=#FCE9A8 label='Notes'}} {{note2: color default=#F8D2BE label='Every third note'}} {{noteInk: color default=#3B3326 label='Note text'}} {{pill: color default=#C8553D label='Day pills'}} {{pillInk: color default=#FFFFFF label='Day pill text'}} {{cursor: color default=#D97757 label='Cursor'}} {{seed: int min=0 max=99 default=4 label='Seed'}} --><defs><pattern id="stickyBoardDots" width="14" height="14" patternUnits="userSpaceOnUse"><circle cx="7" cy="7" r="1.1" fill="{{dots}}"/></pattern><filter id="stickyBoardShadow" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.18"/></filter></defs><g id="stickyBoardCam" transform="{{zoomFrom}}"><g opacity="{{backdropOpacity}}"><rect width="640" height="360" fill="{{board}}"/><rect width="640" height="360" fill="url(#stickyBoardDots)"/></g><text id="stickyBoardHeading" x="40" y="52" font-size="{{headingSize}}" font-weight="700" fill="{{headingInk}}" opacity="0">{{headingText}}</text><path id="stickyBoardRoad" d="{{roadPath}}" fill="none" stroke="{{road}}" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>${slots
+        .map(
+          (i) =>
+            `<g display="{{show${i}}}"><path id="stickyBoardStem${i}" d="{{stem${i}}}" stroke="{{noteInk}}" stroke-opacity="0.35" stroke-width="1" stroke-dasharray="2 2" opacity="0"/><g transform="{{place${i}}}"><g id="stickyBoardNote${i}" transform="scale(0)"><rect x="${-w / 2}" y="${-h / 2}" width="${w}" height="${h}" rx="3" fill="{{fill${i}}}" filter="url(#stickyBoardShadow)"/><text x="${-w / 2 + 8}" y="${-h / 2 + 22}" font-size="{{titleSize${i}}}" font-weight="700" fill="{{noteInk}}" textLength="{{titleLen${i}}}" lengthAdjust="spacingAndGlyphs">{{title${i}}}</text><text x="${-w / 2 + 8}" y="${-h / 2 + 40}" font-size="{{subSize${i}}}" fill="{{noteInk}}" fill-opacity="0.7" textLength="{{subLen${i}}}" lengthAdjust="spacingAndGlyphs">{{sub${i}}}</text></g></g><g display="{{dayShow${i}}}" transform="{{dayAt${i}}}"><g id="stickyBoardDay${i}" opacity="0"><rect width="{{dayW${i}}}" height="16" rx="8" fill="{{pill}}"/><text x="6" y="11.5" font-size="{{daySize${i}}}" font-weight="600" fill="{{pillInk}}" textLength="{{dayLen${i}}}" lengthAdjust="spacingAndGlyphs">{{day${i}}}</text></g></g></g>`,
+        )
+        .join("")}<g id="stickyBoardCursor" opacity="0">${cursorMark("cur", "{{cursor}}", "#FFFFFF")}</g></g></svg>`,
+      animate: [
+        { id: "stickyBoardHeading", attrs: { opacity: [0, 1] }, delay: 200, ms: 400, ease: "out" },
+        { id: "stickyBoardRoad", draw: true, delay: n("roadStart"), ms: n("drawMs"), ease: "linear" },
+        { id: "stickyBoardCursor", attrs: { opacity: [0, 1] }, delay: STICKY.intro, ms: 200 },
+        { id: "stickyBoardCursor", along: "stickyBoardRoad", delay: n("roadStart"), ms: n("drawMs"), ease: "linear" },
+        { id: "stickyBoardCursor", attrs: { opacity: [1, 0] }, delay: n("cursorOut"), ms: 300 },
+        { id: "stickyBoardCam", attrs: { transform: ["{{zoomFrom}}", "translate(0 0) scale(1)"] }, delay: n("pullAt"), ms: n("pullMs"), ease: "in-out" },
+        ...slots.flatMap((i): SvgAnimation[] => [
+          { id: `stickyBoardNote${i}`, attrs: { transform: ["scale(0)", "scale(1.12)"] }, delay: n(`at${i}`), ms: 260, ease: "out" },
+          { id: `stickyBoardNote${i}`, attrs: { transform: ["scale(1.12)", "scale(1)"] }, delay: n(`settle${i}`), ms: 160, ease: "in-out" },
+          { id: `stickyBoardStem${i}`, attrs: { opacity: [0, 1] }, delay: n(`at${i}`), ms: 200 },
+          { id: `stickyBoardDay${i}`, attrs: { opacity: [0, 1], transform: ["translate(0 4)", "translate(0 0)"] }, delay: n(`dayIn${i}`), ms: 240, ease: "out" },
+        ]),
+      ],
+    };
+  })(),
+};
+
+// ── Sheet fill ─────────────────────────────────────────────────────────
+
+/**
+ * A 640 × 360 spreadsheet: a name column and two value columns typed in a
+ * cell at a time behind a moving selection ring, then a difference column
+ * filling in, green or red by sign, with a collaborator's ring on its last
+ * cell. Up to `rows` rows; times in ms.
+ */
+const SHEET = { rows: 6, x: 45, y: 92, row: 32, gutter: 30, name: 160, col: 120, start: 700, step: 380, diffStep: 110 };
+const SHEET_COLS = { a: SHEET.x + SHEET.gutter + SHEET.name, b: SHEET.x + SHEET.gutter + SHEET.name + SHEET.col, d: SHEET.x + SHEET.gutter + SHEET.name + SHEET.col * 2 };
+
+/** A number with thousands separators and `dec` decimals, a true minus sign, or a dash for none. */
+function grouped(v: number, dec: number, sign = false): string {
+  if (!Number.isFinite(v)) return "—";
+  const [whole, frac] = Math.abs(v).toFixed(dec).split(".");
+  const body = `${whole!.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}${frac ? `.${frac}` : ""}`;
+  return `${v < 0 ? "−" : sign && v > 0 ? "+" : ""}${body}`;
+}
+
+export const sheetFill: VectorEffect = {
+  kind: "vector",
+  id: "sheet-fill",
+  name: "Sheet fill",
+  description:
+    "A spreadsheet filling itself in: a selection ring steps down two columns as each value types into its cell, then a difference column fills top to bottom in green or red by sign, and a collaborator's ring and name tag settle on the last cell.",
+  category: "data",
+  tags: ["spreadsheet", "table", "forecast", "typing", "collaboration", "report", "product-demo"],
+  hold: 1600,
+  presets: [
+    { name: "Dark", values: { background: [0.07, 0.07, 0.08], sheet: [0.12, 0.12, 0.13], header: [0.16, 0.16, 0.18], grid: [0.24, 0.24, 0.26], ink: [0.93, 0.92, 0.89], muted: [0.6, 0.59, 0.56] } },
+    { name: "Budget", values: { title: "Budget vs actual", rows: "Rent,Payroll,Software,Travel", columnA: "Budget", columnB: "Actual", a: "4000,52000,3100,2500", b: "4000,54800,2700,3400" } },
+    { name: "Over the page", values: { backdrop: false } },
+  ],
+  derived: (v) => {
+    const names = parseLabels(v.rows, SHEET.rows);
+    const count = Math.max(1, names.length);
+    const a = parseNumberList(v.a, SHEET.rows);
+    const b = parseNumberList(v.b, SHEET.rows);
+    const dec = Math.min(2, decimalsOf([...a, ...b]));
+    const out: Record<string, string | number> = {};
+    const cellX = (c: number) => [SHEET_COLS.a, SHEET_COLS.b][c]!;
+    const rowY = (i: number) => SHEET.y + SHEET.row * (i + 1);
+    const number = (text: string) => {
+      const f = fit(text, SHEET.col - 18, 12.5);
+      return { size: f.size, length: Math.max(1, f.length) };
+    };
+    let last = 0;
+    for (let i = 0; i < SHEET.rows; i++) {
+      const shown = i < count;
+      const name = fitLabel(names[i] ?? "", SHEET.name - 18, 12.5, 8);
+      const [va, vb] = [a[i] ?? NaN, b[i] ?? NaN];
+      const diff = vb - va;
+      const ta = grouped(va, dec);
+      const tb = grouped(vb, dec);
+      const td = grouped(diff, dec, true);
+      out[`show${i}`] = shown ? "inline" : "none";
+      out[`name${i}`] = name.text;
+      out[`nameSize${i}`] = name.size;
+      out[`rowY${i}`] = rowY(i);
+      out[`base${i}`] = r1(rowY(i) + SHEET.row / 2 + 4.5);
+      out[`a${i}`] = ta;
+      out[`b${i}`] = tb;
+      out[`d${i}`] = td;
+      for (const [key, text] of [["a", ta], ["b", tb], ["d", td]] as const) {
+        const f = number(text);
+        out[`${key}Size${i}`] = f.size;
+      }
+      out[`dColor${i}`] = paint(!Number.isFinite(diff) || diff === 0 ? v.muted : diff > 0 ? v.up : v.down);
+      out[`dTint${i}`] = !Number.isFinite(diff) || diff === 0 ? 0 : 0.14;
+      out[`dFill${i}`] = paint(Number.isFinite(diff) && diff < 0 ? v.down : v.up);
+      // The ring steps down column A, then column B; cells past the last row wait where it ends.
+      for (const c of [0, 1]) {
+        // A slot past the last row moves nowhere, just after the last real move ends.
+        const q = shown ? c * count + i : c * count + count - 1;
+        const at = SHEET.start + q * SHEET.step + (shown ? 0 : 150);
+        out[`ring${c}_${i}`] = `translate(${cellX(c)} ${rowY(shown ? i : count - 1)})`;
+        out[`at${c}_${i}`] = at;
+        out[`type${c}_${i}`] = at + 140;
+        if (shown) last = Math.max(last, at);
+      }
+      out[`dAt${i}`] = 0;
+    }
+    const diffStart = last + SHEET.step + 300;
+    for (let i = 0; i < SHEET.rows; i++) out[`dAt${i}`] = diffStart + Math.min(i, count - 1) * SHEET.diffStep;
+    const mate = tagFor(v.collaborator);
+    const columns = (["columnA", "columnB", "columnD"] as const).map((k) => fitLabel(v[k], SHEET.col - 18, 11, 7));
+    const title = fitLabel(v.title, 360, 13, 8);
+    const gridLines = [
+      ...Array.from({ length: count + 2 }, (_, i) => `M${SHEET.x} ${SHEET.y + SHEET.row * i} H${SHEET.x + SHEET.gutter + SHEET.name + SHEET.col * 3}`),
+      ...[0, SHEET.gutter, SHEET.gutter + SHEET.name, SHEET.gutter + SHEET.name + SHEET.col, SHEET.gutter + SHEET.name + SHEET.col * 2, SHEET.gutter + SHEET.name + SHEET.col * 3].map(
+        (dx) => `M${SHEET.x + dx} ${SHEET.y - 22} V${SHEET.y + SHEET.row * (count + 1)}`,
+      ),
+    ].join(" ");
+    return {
+      ...out,
+      gridPath: gridLines,
+      cardH: SHEET.y + SHEET.row * (count + 1) + 22 - 22,
+      ringOut: last + SHEET.step,
+      mateAt: diffStart + count * SHEET.diffStep + 250,
+      mateRing: `translate(${SHEET_COLS.d} ${rowY(count - 1)})`,
+      mateName: mate.text,
+      mateSize: mate.size,
+      mateLen: mate.length,
+      mateW: mate.w,
+      mateShow: mate.show,
+      colA: columns[0]!.text,
+      colB: columns[1]!.text,
+      colD: columns[2]!.text,
+      colSize: Math.min(...columns.map((c) => c.size)),
+      titleText: title.text,
+      titleSize: title.size,
+      backdropOpacity: v.backdrop ? 1 : 0,
+    };
+  },
+  motion: (() => {
+    const slots = Array.from({ length: SHEET.rows }, (_, i) => i);
+    const right = (x: number) => x + SHEET.col - 10;
+    const letters = ["A", "B", "C", "D"].map((l, i) => `<text x="${SHEET.x + SHEET.gutter + (i === 0 ? SHEET.name / 2 : SHEET.name + SHEET.col * (i - 0.5))}" y="${SHEET.y - 7}" text-anchor="middle" font-size="9" fill="{{muted}}">${l}</text>`).join("");
+    return {
+      svg: `<svg viewBox="0 0 640 360" font-family="${SANS}"><!-- {{title: text default='Pre-orders forecast' label='Sheet name'}} {{rows: text default='Apple,Pumpkin,Pecan,Cherry,Huckleberry' label='Row names (comma-separated, up to 6)'}} {{columnA: text default='Last year' label='First column'}} {{columnB: text default='Forecast' label='Second column'}} {{columnD: text default='Difference' label='Difference column'}} {{a: text default='20000,14000,9000,6000,3500' label='First column values (comma-separated)'}} {{b: text default='23000,15400,8600,6900,5200' label='Second column values (comma-separated)'}} {{collaborator: text default='Rosa' label='Collaborator name'}} {{background: color default=#EFEDE6 label='Background'}} {{backdrop: bool default=true label='Background'}} {{sheet: color default=#FFFFFF label='Sheet'}} {{header: color default=#F5F3EE label='Header'}} {{grid: color default=#E2DFD8 label='Grid lines'}} {{ink: color default=#1F1E1B label='Text'}} {{muted: color default=#8A877F label='Muted text'}} {{accent: color default=#2F6FDE label='Selection'}} {{up: color default=#2E8B57 label='Up'}} {{down: color default=#C2413B label='Down'}} {{mate: color default=#2F7D7A label='Collaborator'}} --><g opacity="{{backdropOpacity}}"><rect width="640" height="360" fill="{{background}}"/></g><g id="sheetFillSheet" opacity="0"><rect x="30" y="22" width="580" height="{{cardH}}" rx="10" fill="{{sheet}}" stroke="{{grid}}"/><text x="${SHEET.x}" y="48" font-size="{{titleSize}}" font-weight="600" fill="{{ink}}">{{titleText}}</text><rect x="${SHEET.x}" y="${SHEET.y - 22}" width="${SHEET.gutter + SHEET.name + SHEET.col * 3}" height="${22 + SHEET.row}" fill="{{header}}"/>${letters}<path d="{{gridPath}}" stroke="{{grid}}" stroke-width="1" fill="none"/>${(
+        [
+          [SHEET_COLS.a, "colA"],
+          [SHEET_COLS.b, "colB"],
+          [SHEET_COLS.d, "colD"],
+        ] as const
+      )
+        .map(([x, key]) => `<text x="${right(x)}" y="${SHEET.y + SHEET.row / 2 + 4}" text-anchor="end" font-size="{{colSize}}" font-weight="600" fill="{{muted}}">{{${key}}}</text>`)
+        .join("")}${slots
+        .map(
+          (i) =>
+            `<g display="{{show${i}}}"><text x="${SHEET.x + SHEET.gutter / 2}" y="{{base${i}}}" text-anchor="middle" font-size="9" fill="{{muted}}">${i + 2}</text><text x="${SHEET.x + SHEET.gutter + 10}" y="{{base${i}}}" font-size="{{nameSize${i}}}" fill="{{ink}}">{{name${i}}}</text><text id="sheetFillA${i}" x="${right(SHEET_COLS.a)}" y="{{base${i}}}" text-anchor="end" font-size="{{aSize${i}}}" fill="{{ink}}" opacity="0">{{a${i}}}</text><text id="sheetFillB${i}" x="${right(SHEET_COLS.b)}" y="{{base${i}}}" text-anchor="end" font-size="{{bSize${i}}}" fill="{{ink}}" opacity="0">{{b${i}}}</text><rect id="sheetFillTint${i}" x="${SHEET_COLS.d + 1}" y="{{rowY${i}}}" width="${SHEET.col - 2}" height="${SHEET.row}" fill="{{dFill${i}}}" opacity="0"/><text id="sheetFillD${i}" x="${right(SHEET_COLS.d)}" y="{{base${i}}}" text-anchor="end" font-size="{{dSize${i}}}" font-weight="600" fill="{{dColor${i}}}" opacity="0">{{d${i}}}</text></g>`,
+        )
+        .join("")}<rect id="sheetFillRing" width="${SHEET.col}" height="${SHEET.row}" fill="{{accent}}" fill-opacity="0.06" stroke="{{accent}}" stroke-width="2.5" transform="{{ring0_0}}" opacity="0"/><g transform="{{mateRing}}"><g id="sheetFillMate" opacity="0"><rect width="${SHEET.col}" height="${SHEET.row}" fill="none" stroke="{{mate}}" stroke-width="2.5"/><g transform="translate(${SHEET.col - 30} ${SHEET.row - 6})">${cursorMark("mate", "{{mate}}", "#FFFFFF")}</g></g></g></g></svg>`,
+      animate: [
+        { id: "sheetFillSheet", attrs: { opacity: [0, 1], transform: ["translate(0 10)", "translate(0 0)"] }, ms: 450, ease: "out" },
+        { id: "sheetFillRing", attrs: { opacity: [0, 1] }, delay: SHEET.start - 150, ms: 150 },
+        ...[0, 1].flatMap((c) =>
+          slots.flatMap((i): SvgAnimation[] => {
+            const prev = c === 0 && i === 0 ? "{{ring0_0}}" : i === 0 ? `{{ring0_${SHEET.rows - 1}}}` : `{{ring${c}_${i - 1}}}`;
+            const cell = c === 0 ? `sheetFillA${i}` : `sheetFillB${i}`;
+            return [
+              { id: "sheetFillRing", attrs: { transform: [prev, `{{ring${c}_${i}}}`] }, delay: n(`at${c}_${i}`), ms: 140, ease: "in-out" },
+              { id: cell, attrs: { opacity: [0, 1] }, delay: n(`type${c}_${i}`), ms: 0 },
+              { id: cell, write: `{{${c === 0 ? "a" : "b"}${i}}}`, delay: n(`type${c}_${i}`), ms: 200, ease: "linear" },
+            ];
+          }),
+        ),
+        { id: "sheetFillRing", attrs: { opacity: [1, 0] }, delay: n("ringOut"), ms: 250 },
+        ...slots.flatMap((i): SvgAnimation[] => [
+          { id: `sheetFillD${i}`, attrs: { opacity: [0, 1], transform: ["translate(0 6)", "translate(0 0)"] }, delay: n(`dAt${i}`), ms: 280, ease: "out" },
+          { id: `sheetFillTint${i}`, attrs: { opacity: [0, n(`dTint${i}`)] }, delay: n(`dAt${i}`), ms: 400, ease: "out" },
+        ]),
+        { id: "sheetFillMate", attrs: { opacity: [0, 1], transform: ["translate(0 -6)", "translate(0 0)"] }, delay: n("mateAt"), ms: 300, ease: "out" },
+      ],
+    };
+  })(),
+};
+
+export const dataEffects: VectorEffect[] = [donutChart, pieChart, gauge, barRace, sparkline, leaderboard, areaChart, kpiTile, rolodex, fanOutLinks, hubSpokeGraph, statCards, yearScrubber, sentimentTile, branchMenu, metricStrip, stickyBoard, sheetFill];
