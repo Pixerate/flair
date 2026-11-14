@@ -485,6 +485,33 @@ describe("morph effects", () => {
     }
   });
 
+  it("word to icons types the word, collapses its letters and pops in the icons it is asked for", () => {
+    const effect = getEffect("word-to-icons") as VectorEffect;
+    const controls = new Set(effectControls(effect).map((c) => c.name));
+    expect(Object.keys(effect.derived!(effectDefaults(effect) as never)).filter((k) => controls.has(k))).toEqual([]);
+    for (const values of [{}, ...effect.presets!.map((p) => p.values), { word: "Café & <b>", chip: "" }, { word: "", count: 3 }, { word: "x".repeat(40), size: 260 }]) {
+      const motion = render("word-to-icons", values);
+      expect(svgMotionIssues(motion)).toEqual([]);
+      expect(JSON.stringify(motion)).not.toMatch(/\{\{|NaN|undefined/);
+    }
+    const motion = render("word-to-icons", { word: "Docs", count: 4 });
+    const letters = [...motion.svg.matchAll(/id="wordToIconsL\d+"[^>]*><text[^>]*>([^<]*)</g)].map((m) => m[1]);
+    expect(letters.slice(0, 5)).toEqual(["D", "o", "c", "s", ""]);
+    const shown = [...motion.svg.matchAll(/opacity="([01])"><g id="wordToIconsI\d+"/g)].map((m) => m[1]);
+    expect(shown).toEqual(["1", "1", "1", "1", "0", "0", "0"]);
+    // Letters go one after another, then the icons pop in left to right, each settling after its pop, and all leave after the hold.
+    const at = (id: string) => motion.animate!.filter((a) => a.id === id).map((a) => a.delay as number);
+    const [, , collapse0] = at("wordToIconsL0");
+    const [, , collapse1] = at("wordToIconsL1");
+    const [pop0, settle0, out0] = at("wordToIconsI0");
+    const [pop1] = at("wordToIconsI1");
+    expect(collapse1).toBeGreaterThan(collapse0!);
+    expect(pop1).toBeGreaterThan(pop0!);
+    expect(settle0).toBeGreaterThan(pop0!);
+    expect(out0! - settle0!).toBeGreaterThan(1500);
+    expect(render("word-to-icons", { chip: "" }).svg).toMatch(/opacity="0"><g id="wordToIconsChip"/);
+  });
+
   it("particle morph keeps one dot per element whatever the shapes", () => {
     for (const to of ["M0 0 H10 V10 H0 Z M20 0 H30 V10 H20 Z M40 0 H50 V10 H40 Z", "M0 0 L100 0", "nonsense"]) {
       const motion = render("particle-morph", { to });
