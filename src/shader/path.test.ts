@@ -178,7 +178,7 @@ describe("handwriting", () => {
 
 describe("effects that take a path as well as their own shape", () => {
   it("default to no path (\"\"), keep their look, and take one or go back with \"\"", () => {
-    for (const id of ["border-beam", "swoosh-underline", "comet-trail", "ribbon-trail", "sparkle-trail", "brush-trail", "ghost-trail", "light-painting"]) {
+    for (const id of ["border-beam", "swoosh-underline", "comet-trail", "ribbon-trail", "sparkle-trail", "pixerate-paint", "brush-trail", "ghost-trail", "light-painting"]) {
       const effect = getEffect(id)!;
       expect(effectInputs(effect).accepts, id).toContain("path");
       const control = parseControls((effect as { source: string }).source).find((c) => c.type === "path");

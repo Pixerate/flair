@@ -67,6 +67,7 @@ export const PAINT_HINTS: Readonly<Record<string, EffectPaintHint>> = {
   "comet-trail": { map: "path", colors: ["uTail", "uHead"], live: true },
   "ribbon-trail": { map: "path", colors: ["uColorA", "uColorB"], live: true },
   "sparkle-trail": { map: "path", colors: ["uColorA", "uColorB"], live: true },
+  "pixerate-paint": { map: "path", colors: ["uColorA", "uColorB"], live: true },
   "ghost-trail": { map: "path", colors: ["uColor"], live: true },
   "brush-trail": { map: "path", colors: ["uInk"], values: { uPaper: false }, live: true },
   "glass-tube": { map: "path", colors: ["uColorA", "uColorC"], values: { ...clear, uDrawOn: 0 } },

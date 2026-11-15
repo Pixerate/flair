@@ -6,6 +6,88 @@ import simd
 
 
 
+/// **Rising steam** (`rising-steam`, category: `atmosphere`).
+/// Wisps of steam curling up from a cup or vent, thinning and fading as they rise.
+public struct RisingSteam: FlairEffect, Codable, Sendable, Equatable {
+    public static let effectId = "rising-steam"
+    public static let effectName = "Rising steam"
+    public static let category = "atmosphere"
+    public static let effectDescription = "Wisps of steam curling up from a cup or vent, thinning and fading as they rise."
+    public static let tags: [String] = ["atmosphere", "steam", "overlay", "coffee", "warm"]
+    public static let phase: Int = 1
+    public static let functionName = "flair_rising_steam_frag"
+    public static let uniformByteLength: Int = 1040
+    public static let isTransparent: Bool = true
+    public static let loopDuration: Double? = nil
+    public static let controls: [FlairControlDescriptor] = [
+        FlairControlDescriptor(name: "uSource", property: "source", type: .vec2, label: "Source", min: -1.0, max: 1.0, step: 0.01),
+        FlairControlDescriptor(name: "uColor", property: "color", type: .vec3, label: "Colour", isColor: true, min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uWidth", property: "width", type: .float, label: "Width", min: 0.02, max: 0.6, step: 0.0029),
+        FlairControlDescriptor(name: "uHeight", property: "height", type: .float, label: "Height", min: 0.2, max: 1.5, step: 0.0065),
+        FlairControlDescriptor(name: "uSpeed", property: "speed", type: .float, label: "Speed", min: 0.0, max: 3.0, step: 0.015),
+        FlairControlDescriptor(name: "uTurbulence", property: "turbulence", type: .float, label: "Curl", min: 0.0, max: 2.0, step: 0.01),
+        FlairControlDescriptor(name: "uOpacity", property: "opacity", type: .float, label: "Opacity", min: 0.0, max: 1.0, step: 0.005),
+    ]
+    public static let presets: [String: RisingSteam] = {
+        var map: [String: RisingSteam] = [:]
+        do { var p = RisingSteam(); p.source = flairVec2(0.0, -0.5); p.width = 0.08; p.height = 0.6; p.speed = 0.7; p.turbulence = 1.0; p.opacity = 0.55; map["Coffee cup"] = p }
+        do { var p = RisingSteam(); p.source = flairVec2(0.0, -1.0); p.width = 0.3; p.height = 1.3; p.speed = 1.4; p.turbulence = 0.6; p.opacity = 0.8; map["Vent"] = p }
+        do { var p = RisingSteam(); p.source = flairVec2(-0.4, -0.3); p.width = 0.05; p.height = 1.1; p.speed = 2.6; p.turbulence = 1.8; p.opacity = 0.95; map["Kettle burst"] = p }
+        return map
+    }()
+
+    /// Source (`uSource`).
+    public var source: SIMD2<Float> = flairVec2(0.0, -0.6)
+    /// Colour (`uColor`).
+    public var color: SIMD3<Float> = flairVec3(1.0, 1.0, 1.0)
+    /// Width (`uWidth`).
+    public var width: Float = 0.12
+    /// Height (`uHeight`).
+    public var height: Float = 0.8
+    /// Speed (`uSpeed`).
+    public var speed: Float = 1.0
+    /// Curl (`uTurbulence`).
+    public var turbulence: Float = 0.8
+    /// Opacity (`uOpacity`).
+    public var opacity: Float = 0.7
+
+    public init() {}
+
+    public func encodeUniforms(into buffer: UnsafeMutableRawPointer, state: FlairFrameState) {
+        state.encodeBuiltins(into: buffer)
+        FlairUniformEncoder.writeVec2(FlairUniformEncoder.clampVec2(source, min: -1.0, max: 1.0), to: buffer, at: 992)
+        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(color, min: 0.0, max: 1.0), to: buffer, at: 1008)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(width, min: 0.02, max: 0.6), to: buffer, at: 1020)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(height, min: 0.2, max: 1.5), to: buffer, at: 1024)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(speed, min: 0.0, max: 3.0), to: buffer, at: 1028)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(turbulence, min: 0.0, max: 2.0), to: buffer, at: 1032)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(opacity, min: 0.0, max: 1.0), to: buffer, at: 1036)
+    }
+
+    public init(from decoder: Decoder) throws {
+        let bag = try FlairJSONBag(from: decoder)
+        self.source = bag.decodeVec2("uSource", "source", default: flairVec2(0.0, -0.6), min: -1.0, max: 1.0)
+        self.color = bag.decodeVec3("uColor", "color", default: flairVec3(1.0, 1.0, 1.0), isColor: true)
+        self.width = bag.decodeFloat("uWidth", "width", default: 0.12, min: 0.02, max: 0.6)
+        self.height = bag.decodeFloat("uHeight", "height", default: 0.8, min: 0.2, max: 1.5)
+        self.speed = bag.decodeFloat("uSpeed", "speed", default: 1.0, min: 0.0, max: 3.0)
+        self.turbulence = bag.decodeFloat("uTurbulence", "turbulence", default: 0.8, min: 0.0, max: 2.0)
+        self.opacity = bag.decodeFloat("uOpacity", "opacity", default: 0.7, min: 0.0, max: 1.0)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var bag = FlairJSONBag()
+        bag.encodeVec2(self.source, for: "uSource")
+        bag.encodeVec3(self.color, for: "uColor")
+        bag.encodeFloat(self.width, for: "uWidth")
+        bag.encodeFloat(self.height, for: "uHeight")
+        bag.encodeFloat(self.speed, for: "uSpeed")
+        bag.encodeFloat(self.turbulence, for: "uTurbulence")
+        bag.encodeFloat(self.opacity, for: "uOpacity")
+        try bag.encode(to: encoder)
+    }
+}
+
 /// **Mist over image** (`mist-over-image`, category: `atmosphere`).
 /// Slow mist drifting over a picture, thickest low down and in the distance, with light softly scattering through it.
 public struct MistOverImage: FlairEffect, Codable, Sendable, Equatable {
@@ -5354,106 +5436,6 @@ public struct PlasmaGlobe: FlairEffect, Codable, Sendable, Equatable {
         bag.encodeVec3(self.background, for: "uBackground")
         bag.encodeBool(self.demo, for: "uDemo")
         bag.encodeFloat(self.backgroundAlpha, for: "uBackgroundAlpha")
-        try bag.encode(to: encoder)
-    }
-}
-
-/// **Pulsar** (`pulsar`, category: `audio`).
-/// A spinning neutron star wrapped in loops of magnetic field, one to a band of the spectrum, sweeping two lighthouse beams round; each beat whites out the frame as a beam crosses it.
-public struct Pulsar: FlairEffect, Codable, Sendable, Equatable {
-    public static let effectId = "pulsar"
-    public static let effectName = "Pulsar"
-    public static let category = "audio"
-    public static let effectDescription = "A spinning neutron star wrapped in loops of magnetic field, one to a band of the spectrum, sweeping two lighthouse beams round; each beat whites out the frame as a beam crosses it."
-    public static let tags: [String] = ["audio", "music", "pulsar", "neutron-star", "space", "beam", "magnetic", "visualizer", "beat"]
-    public static let phase: Int = 4
-    public static let functionName = "flair_pulsar_frag"
-    public static let uniformByteLength: Int = 1088
-    public static let isTransparent: Bool = false
-    public static let loopDuration: Double? = nil
-    public static let controls: [FlairControlDescriptor] = [
-        FlairControlDescriptor(name: "uSpin", property: "spin", type: .float, label: "Spin", min: 0.0, max: 3.0, step: 0.015),
-        FlairControlDescriptor(name: "uTilt", property: "tilt", type: .float, label: "Magnetic tilt", min: 0.1, max: 1.4, step: 0.0065),
-        FlairControlDescriptor(name: "uField", property: "field", type: .float, label: "Field lines", min: 0.0, max: 2.0, step: 0.01),
-        FlairControlDescriptor(name: "uBeam", property: "beam", type: .float, label: "Beams", min: 0.0, max: 2.0, step: 0.01),
-        FlairControlDescriptor(name: "uFlash", property: "flash", type: .float, label: "Beat flash", min: 0.0, max: 2.0, step: 0.01),
-        FlairControlDescriptor(name: "uStar", property: "star", type: .vec3, label: "Star", isColor: true, min: 0.0, max: 1.0, step: 0.005),
-        FlairControlDescriptor(name: "uFieldColor", property: "fieldColor", type: .vec3, label: "Field", isColor: true, min: 0.0, max: 1.0, step: 0.005),
-        FlairControlDescriptor(name: "uBeamColor", property: "beamColor", type: .vec3, label: "Beam", isColor: true, min: 0.0, max: 1.0, step: 0.005),
-        FlairControlDescriptor(name: "uSpace", property: "space", type: .vec3, label: "Space", isColor: true, min: 0.0, max: 1.0, step: 0.005),
-        FlairControlDescriptor(name: "uDemo", property: "demo", type: .bool, label: "Demo when silent", min: 0.0, max: 1.0, step: 0.005),
-    ]
-    public static let presets: [String: Pulsar] = {
-        var map: [String: Pulsar] = [:]
-        do { var p = Pulsar(); p.tilt = 1.1; p.field = 1.6; p.fieldColor = flairVec3(1.0, 0.35, 0.2); p.beamColor = flairVec3(1.0, 0.85, 0.6); map["Magnetar"] = p }
-        do { var p = Pulsar(); p.spin = 2.6; p.beam = 1.4; map["Millisecond"] = p }
-        do { var p = Pulsar(); p.beam = 0.0; p.flash = 0.3; map["Field only"] = p }
-        return map
-    }()
-
-    /// Spin (`uSpin`).
-    public var spin: Float = 0.8
-    /// Magnetic tilt (`uTilt`).
-    public var tilt: Float = 0.7
-    /// Field lines (`uField`).
-    public var field: Float = 1.0
-    /// Beams (`uBeam`).
-    public var beam: Float = 1.0
-    /// Beat flash (`uFlash`).
-    public var flash: Float = 1.0
-    /// Star (`uStar`).
-    public var star: SIMD3<Float> = flairVec3(0.866667, 0.921569, 1.0)
-    /// Field (`uFieldColor`).
-    public var fieldColor: SIMD3<Float> = flairVec3(0.545098, 0.360784, 1.0)
-    /// Beam (`uBeamColor`).
-    public var beamColor: SIMD3<Float> = flairVec3(0.623529, 0.905882, 1.0)
-    /// Space (`uSpace`).
-    public var space: SIMD3<Float> = flairVec3(0.011765, 0.011765, 0.039216)
-    /// Demo when silent (`uDemo`).
-    public var demo: Bool = true
-
-    public init() {}
-
-    public func encodeUniforms(into buffer: UnsafeMutableRawPointer, state: FlairFrameState) {
-        state.encodeBuiltins(into: buffer)
-        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(spin, min: 0.0, max: 3.0), to: buffer, at: 992)
-        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(tilt, min: 0.1, max: 1.4), to: buffer, at: 996)
-        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(field, min: 0.0, max: 2.0), to: buffer, at: 1000)
-        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(beam, min: 0.0, max: 2.0), to: buffer, at: 1004)
-        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(flash, min: 0.0, max: 2.0), to: buffer, at: 1008)
-        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(star, min: 0.0, max: 1.0), to: buffer, at: 1024)
-        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(fieldColor, min: 0.0, max: 1.0), to: buffer, at: 1040)
-        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(beamColor, min: 0.0, max: 1.0), to: buffer, at: 1056)
-        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(space, min: 0.0, max: 1.0), to: buffer, at: 1072)
-        FlairUniformEncoder.writeBool(demo, to: buffer, at: 1084)
-    }
-
-    public init(from decoder: Decoder) throws {
-        let bag = try FlairJSONBag(from: decoder)
-        self.spin = bag.decodeFloat("uSpin", "spin", default: 0.8, min: 0.0, max: 3.0)
-        self.tilt = bag.decodeFloat("uTilt", "tilt", default: 0.7, min: 0.1, max: 1.4)
-        self.field = bag.decodeFloat("uField", "field", default: 1.0, min: 0.0, max: 2.0)
-        self.beam = bag.decodeFloat("uBeam", "beam", default: 1.0, min: 0.0, max: 2.0)
-        self.flash = bag.decodeFloat("uFlash", "flash", default: 1.0, min: 0.0, max: 2.0)
-        self.star = bag.decodeVec3("uStar", "star", default: flairVec3(0.866667, 0.921569, 1.0), isColor: true)
-        self.fieldColor = bag.decodeVec3("uFieldColor", "fieldColor", default: flairVec3(0.545098, 0.360784, 1.0), isColor: true)
-        self.beamColor = bag.decodeVec3("uBeamColor", "beamColor", default: flairVec3(0.623529, 0.905882, 1.0), isColor: true)
-        self.space = bag.decodeVec3("uSpace", "space", default: flairVec3(0.011765, 0.011765, 0.039216), isColor: true)
-        self.demo = bag.decodeBool("uDemo", "demo", default: true)
-    }
-
-    public func encode(to encoder: Encoder) throws {
-        var bag = FlairJSONBag()
-        bag.encodeFloat(self.spin, for: "uSpin")
-        bag.encodeFloat(self.tilt, for: "uTilt")
-        bag.encodeFloat(self.field, for: "uField")
-        bag.encodeFloat(self.beam, for: "uBeam")
-        bag.encodeFloat(self.flash, for: "uFlash")
-        bag.encodeVec3(self.star, for: "uStar")
-        bag.encodeVec3(self.fieldColor, for: "uFieldColor")
-        bag.encodeVec3(self.beamColor, for: "uBeamColor")
-        bag.encodeVec3(self.space, for: "uSpace")
-        bag.encodeBool(self.demo, for: "uDemo")
         try bag.encode(to: encoder)
     }
 }

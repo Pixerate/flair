@@ -254,6 +254,7 @@ public enum FlairCatalog {
         AnyFlairEffect(CometTrail()),
         AnyFlairEffect(RibbonTrail()),
         AnyFlairEffect(SparkleTrail()),
+        AnyFlairEffect(PixeratePaint()),
         AnyFlairEffect(BrushTrail()),
         AnyFlairEffect(GhostTrail()),
         AnyFlairEffect(LightPainting()),

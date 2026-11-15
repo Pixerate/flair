@@ -399,6 +399,166 @@ uniform bool uDemo;       // @control default=true label="Demo when idle"`,
   ],
 };
 
+export const pixeratePaint: ShaderEffect = {
+  kind: "shader",
+  id: "pixerate-paint",
+  name: "Pixerate paint",
+  description:
+    "A glowing neon ribbon along the pointer's path, solid at its head and breaking apart towards its tail into glowing square pixels that scatter, drift and twinkle.",
+  category: "path",
+  tags: ["trail", "interactive", "hover", "cursor", "overlay", "glow", "neon", "pixel", "particles", "path"],
+  transparent: true,
+  source: glsl(
+    `// Pixerate paint: a neon ribbon through the trail points that, over the last uBreak of its length, turns blocky, comes
+// apart cell by cell and sheds glowing squares. The squares live on two grids (small and large) that drift slowly, so
+// a square is a grid cell lit by how near the broken part of the ribbon it is; each cell fades in and out on a cycle of
+// its own. Everything is seeded by where cells are, never by when trail points were laid, so a painted stroke (whose
+// point times move on every frame) keeps its pixels.
+uniform vec3 uColorA;     // @control color default=#FF2BC7 label="Ribbon colour"
+uniform vec3 uColorB;     // @control color default=#8040FF label="Pixel colour"
+uniform float uWidth;     // @control min=0.004 max=0.3 default=0.03 label="Width"
+uniform float uPixel;     // @control min=0.2 max=2 default=0.85 label="Pixel size (x width)"
+uniform float uBreak;     // @control min=0 max=1 default=0.55 label="Break-up"
+uniform float uScatter;   // @control min=0 max=8 default=3.5 label="Scatter (x width)"
+uniform float uDensity;   // @control min=0 max=1 default=0.4 label="Pixel density"
+uniform float uDrift;     // @control min=0 max=3 default=0.6 label="Drift"
+uniform float uGlow;      // @control min=0 max=3 default=1.2 label="Glow"
+uniform float uLife;      // @control min=0.1 max=3 default=1.2 label="Fade time"
+uniform float uIntensity; // @control min=0.2 max=3 default=1 label="Intensity"
+uniform bool uDemo;       // @control default=true label="Demo when idle"`,
+    HASH,
+    trailHelper(1 / 40, 1.4, true),
+    SEGMENT,
+    GLOW,
+    `// How broken the ribbon is at u (0 at the head, 1 at the tail): 0 before the break-up starts, 1 at the very end.
+float brokenAt(float u) {
+  return clamp((u - (1.0 - uBreak)) / max(uBreak, 1e-3), 0.0, 1.0);
+}
+// How much of this pixel is solid ribbon or square (opaque even on light paper; only their glow is see-through).
+float gSolid;
+// A square of a grid of cells g wide: the cell's centre c (its index ci), how far it is from the trail (d) and how
+// far along (u). Light from its square, if the cell has one this cycle.
+vec3 pixelCell(vec2 p, vec2 c, vec2 ci, float g, float d, float u, float wr, float px) {
+  float e = brokenAt(u);
+  if (e <= 0.0) return vec3(0.0);
+  // Further into the break-up, squares are found further off the ribbon.
+  float reach = wr + uScatter * uWidth * e + 1e-5;
+  float near = 1.0 - smoothstep(0.25 * reach, reach, d - wr * 0.5);
+  float chance = uDensity * sqrt(e) * near;
+  if (chance <= 0.0) return vec3(0.0);
+  // Each cell fades in and out on a cycle of its own; a new cycle draws it again.
+  float phase = iTime * uDrift * 0.5 + hash12(ci * 0.731 + 3.1);
+  float cycle = floor(phase);
+  vec2 h = hash22(ci * 1.37 + cycle * 11.7);
+  if (h.x >= chance) return vec3(0.0);
+  float env = uDrift > 0.0 ? sin(3.1415927 * fract(phase)) : 1.0;
+  // Smaller and dimmer further out.
+  float s = g * mix(0.24, 0.4, h.y) * mix(1.0, 0.6, clamp(d / reach, 0.0, 1.0));
+  vec2 jitter = (hash22(ci * 0.917 + cycle * 5.3 + 7.0) - 0.5) * max(g * 0.7 - 2.0 * s, 0.0);
+  vec2 q = abs(p - c - jitter);
+  float sq = max(q.x, q.y) - s;
+  float body = 1.0 - smoothstep(-px, px, sq);
+  // A soft glow round the square, kept inside its cell.
+  vec2 r = abs(p - c);
+  float halo = exp(-max(sq, 0.0) / (s * 0.5 + px)) * smoothstep(0.5 * g, 0.36 * g, max(r.x, r.y));
+  float pick = hash12(h * 17.3 + 1.0);
+  vec3 tint = pick < 0.45 ? uColorA : pick < 0.8 ? uColorB : mix(mix(uColorA, uColorB, 0.5), vec3(1.0), 0.3);
+  float dim = mix(1.0, 0.45, clamp(d / reach, 0.0, 1.0)) * env;
+  gSolid = max(gSolid, body * dim);
+  return (mix(tint, vec3(1.0), 0.18) * body * 1.8 + tint * halo * uGlow) * dim;
+}
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  float px = 1.0 / trailUnit();
+  vec2 p = fragCoord * px;
+  bool live = trailLive(uDemo);
+  vec4 a = trailAt(0, live);
+  if (a.w < 0.5) {
+    fragColor = vec4(0.0);
+    return;
+  }
+  gSolid = 0.0;
+  // The ribbon's cells (still) and the small and large squares' cells (drifting up and a little sideways).
+  float g1 = max(uWidth * uPixel, 2.0 * px);
+  float g2 = g1 * 2.2;
+  float t = iTime * uDrift;
+  vec2 o1 = vec2(0.25, 1.0) * t * g1 * 0.5;
+  vec2 o2 = vec2(0.35, 1.0) * t * g2 * 0.3;
+  vec2 csi = floor(p / g1);
+  vec2 cs = (csi + 0.5) * g1;
+  vec2 c1i = floor((p - o1) / g1);
+  vec2 c1 = (c1i + 0.5) * g1 + o1;
+  vec2 c2i = floor((p - o2) / g2);
+  vec2 c2 = (c2i + 0.5) * g2 + o2;
+  // Nearest point of the trail to this pixel and to each cell's centre: distance (x) and how far along (y).
+  vec2 nP = vec2(1e9, 0.0);
+  vec2 nS = vec2(1e9, 0.0);
+  vec2 n1 = vec2(1e9, 0.0);
+  vec2 n2 = vec2(1e9, 0.0);
+  float fadeP = 1.0;
+  float reach = uWidth * (1.6 + uScatter) + g2 + 2.0 * px;
+  trailFrom(1, live);
+  for (int k = 0; k < TRAIL_POINTS - 1; k++) {
+    vec4 b = trailNext(live);
+    if (b.w < 0.5 || trailJump(a, b)) break;
+    vec2 pa = a.xy * px;
+    vec2 pb = b.xy * px;
+    vec2 lo = min(pa, pb) - reach;
+    vec2 hi = max(pa, pb) + reach;
+    if (all(greaterThan(p, lo)) && all(lessThan(p, hi))) {
+      float u0 = float(k) / float(TRAIL_POINTS - 1);
+      float du = 1.0 / float(TRAIL_POINTS - 1);
+      vec2 s = segment(p, pa, pb);
+      if (s.x < nP.x) {
+        nP = vec2(s.x, u0 + s.y * du);
+        // A trail left still fades with age (a painted stroke's points are never old enough to).
+        fadeP = clamp(2.0 * (1.0 - (iTime - mix(a.z, b.z, s.y)) / uLife), 0.0, 1.0);
+      }
+      s = segment(cs, pa, pb);
+      if (s.x < nS.x) nS = vec2(s.x, u0 + s.y * du);
+      s = segment(c1, pa, pb);
+      if (s.x < n1.x) n1 = vec2(s.x, u0 + s.y * du);
+      s = segment(c2, pa, pb);
+      if (s.x < n2.x) n2 = vec2(s.x, u0 + s.y * du);
+    }
+    a = b;
+  }
+  if (nP.x > reach) {
+    fragColor = vec4(0.0);
+    return;
+  }
+  // The ribbon: smooth before the break-up, then made of its cells, fewer of them the more broken it is.
+  float taper = mix(1.0, 0.7, nP.y);
+  float wr = uWidth * taper * fadeP;
+  float smoothCover = 1.0 - smoothstep(-px, px, nP.x - wr);
+  float eS = brokenAt(nS.y);
+  vec2 cq = abs(p - cs);
+  float inCell = 1.0 - smoothstep(-px, px, max(cq.x, cq.y) - g1 * 0.44);
+  float kept = step(eS * 1.15, hash12(csi * 1.13 + 41.0));
+  float blockCover = step(nS.x, uWidth * mix(1.0, 0.7, nS.y) * fadeP) * inCell * kept;
+  float eP = brokenAt(nP.y);
+  float cover = mix(smoothCover, blockCover, smoothstep(0.0, 0.12, eP));
+  // The ribbon colour in the middle, shading to the pixel colour at its edges and towards its tail, a hot line along
+  // the middle.
+  float mid = 1.0 - clamp(nP.x / max(wr, 1e-5), 0.0, 1.0);
+  vec3 tint = mix(uColorA, uColorB, smoothstep(0.3, 1.0, nP.y));
+  vec3 body = mix(mix(uColorB, tint, 0.35), tint, smoothstep(0.0, 0.6, mid));
+  vec3 col = mix(body, vec3(1.0), 0.3 * pow(mid, 4.0)) * cover * 1.7;
+  float halo = exp(-max(nP.x - wr, 0.0) / (uWidth * 0.9 + px)) * fadeP * (1.0 - 0.6 * eP);
+  col += tint * halo * uGlow * 0.6;
+  // The squares it breaks into.
+  col += pixelCell(p, c1, c1i, g1, n1.x, n1.y, wr, px) * fadeP;
+  col += pixelCell(p, c2, c2i + 101.0, g2, n2.x, n2.y, wr, px) * fadeP;
+  fragColor = glow(col * uIntensity);
+  fragColor.a = max(fragColor.a, max(cover, gSolid * fadeP));
+}`,
+  ),
+  presets: [
+    { name: "Cyber", values: { uColorA: [0.24, 0.94, 1], uColorB: [0.6, 1, 0.35] } },
+    { name: "Ember", values: { uColorA: [1, 0.48, 0.1], uColorB: [1, 0.83, 0.29], uDrift: 1.2 } },
+    { name: "Glitch", values: { uBreak: 0.85, uScatter: 4, uDensity: 0.7, uPixel: 0.8 } },
+  ],
+};
+
 export const brushTrail: ShaderEffect = {
   kind: "shader",
   id: "brush-trail",
@@ -692,4 +852,4 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 };
 
 /** Trails: comets, ribbons and brush strokes following the pointer (iTrail) or a path. */
-export const trailShaders: ShaderEffect[] = [cometTrail, ribbonTrail, sparkleTrail, brushTrail, ghostTrail, lightPainting];
+export const trailShaders: ShaderEffect[] = [cometTrail, ribbonTrail, sparkleTrail, pixeratePaint, brushTrail, ghostTrail, lightPainting];
