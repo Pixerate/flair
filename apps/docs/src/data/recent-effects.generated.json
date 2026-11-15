@@ -568,7 +568,7 @@
     "name": "Shimmer",
     "kind": "text-treatment",
     "category": "treatment",
-    "description": "A pale tint with a glint of colour gliding across behind the words, like a loading shimmer, while they are checked; a pale selection; and a last glint over what changed as its tint fades.",
+    "description": "A loading skeleton: the words sit on rounded pills while a bright glint streaks across them twice as they are checked, a pill selection, and a last glint across what changed.",
     "tags": [
       "agent",
       "writing",
@@ -576,7 +576,8 @@
       "shimmer",
       "skeleton",
       "shine",
-      "light",
+      "loading",
+      "pill",
       "caret",
       "selection"
     ],
@@ -586,9 +587,9 @@
         "t": "vec3",
         "d": {
           "c255": [
-            139,
-            124,
-            246
+            100,
+            116,
+            139
           ]
         },
         "l": "Agent colour",
@@ -624,7 +625,7 @@
       {
         "n": "checkMs",
         "t": "float",
-        "d": 700,
+        "d": 1100,
         "l": "Check (ms)",
         "min": 80,
         "max": 2000,
@@ -656,9 +657,9 @@
       {
         "n": "base",
         "t": "float",
-        "d": 0.08,
-        "l": "Base tint",
-        "max": 0.5,
+        "d": 0.2,
+        "l": "Pill tint",
+        "max": 0.6,
         "s": 0.01,
         "b": 3,
         "line": 8
@@ -666,16 +667,32 @@
       {
         "n": "shine",
         "t": "float",
-        "d": 0.3,
+        "d": 0.9,
+        "l": "Glint",
         "s": 0.01,
         "b": 3,
         "line": 9
+      },
+      {
+        "n": "light",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "l": "Glint colour",
+        "c": 1,
+        "s": 0.01,
+        "line": 10
       }
     ],
     "presets": [
+      "Slate",
       "Violet",
-      "Silver",
-      "Bright"
+      "Dark theme"
     ],
     "inputs": {
       "accepts": [

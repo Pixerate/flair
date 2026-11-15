@@ -27,6 +27,9 @@
 
   $: isOverlay = showsOverPicture(meta);
   $: lightGround = meta.kind === "vector" && !isOverlay;
+  // A text treatment plays over a paragraph: on paper, or on a dark page for a preset made for dark themes.
+  $: treatment = meta.kind === "text-treatment";
+  $: darkPage = treatment && !!effect && effectDefaults(effect, preset ? { preset } : {}).darkTheme === true;
   // A timing effect retimes a video; without one it plays Flair's preview clip.
   $: snippet = meta.kind === "text-treatment" ? `import { mountTextTreatment, rangeRects } from "@pixerate/flair/embed";\n\nconst editor = document.querySelector("#editor");\nconst overlay = mountTextTreatment(editor, "${meta.id}"${preset ? `, { preset: "${preset}" }` : ""});\noverlay.play("checking", { lines: rangeRects(sentenceRange, editor) });` : `import { mountEffect } from "@pixerate/flair/embed";\n\nmountEffect(document.querySelector("#hero"), "${meta.id}"${meta.kind === "timing" ? `, { subject: { video: document.querySelector("video") }${preset ? `, preset: "${preset}"` : ""} }` : preset ? `, { preset: "${preset}" }` : ""});`;
   $: load(meta.id);
@@ -42,7 +45,7 @@
       const next = await loadEffect(id);
       if (showing !== id || !stage) return;
       effect = next;
-      mounted = mountEffect(stage, next, { className: "absolute inset-0 h-full w-full" });
+      mounted = mountEffect(stage, next, next.kind === "text-treatment" ? {} : { className: "absolute inset-0 h-full w-full" });
       if (mounted.renderer && !mounted.renderer.supported) failure = "This preview needs WebGL2.";
       else if (mounted.renderer && !mounted.renderer.status.ok) failure = "This preview could not start.";
     } catch (err) {
@@ -96,11 +99,11 @@
     aria-label={meta.name}
     class="glass-strong relative max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-t-3xl p-3 shadow-2xl outline-none md:rounded-3xl"
   >
-    <div class="relative aspect-video overflow-hidden rounded-2xl {lightGround ? 'bg-[#f1f1f5]' : 'bg-[#0d0d14]'}">
+    <div class="relative aspect-video overflow-hidden rounded-2xl transition-colors {treatment ? (darkPage ? 'bg-[#111827] text-[#e5e7eb]' : 'bg-[#fbfaf7] text-[#1f2937]') : lightGround ? 'bg-[#f1f1f5]' : 'bg-[#0d0d14]'}">
       {#if isOverlay}
         <img src={SAMPLE_IMAGES.city} alt="" class="absolute inset-0 h-full w-full object-cover" />
       {/if}
-      <div bind:this={stage} class="absolute {lightGround ? 'inset-[10%]' : 'inset-0'}"></div>
+      <div bind:this={stage} class="absolute {treatment ? 'inset-x-[6%] inset-y-0 flex items-center text-[clamp(15px,2.6vw,22px)]' : lightGround ? 'inset-[10%]' : 'inset-0'}" style={treatment ? "font-family: Georgia, 'Times New Roman', serif" : undefined}></div>
       {#if failure}
         <span class="absolute inset-0 grid place-items-center text-sm text-white/60">{failure}</span>
       {/if}

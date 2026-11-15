@@ -1010,36 +1010,48 @@ export const glowUnderline: TextTreatmentEffect = {
   ],
 };
 
-/** Shimmer: from `skeleton-shimmer`, `shine-sweep` and `animated-badge`'s shimmer: a pale base with a brighter glint gliding over it, behind the words so they stay legible. */
+/** Two passes of a glint across the range (keys at the same progress jump it back to the start). */
+const twoPasses = track([[0, 0], [0.5, 1], [0.5, 0], [1, 1]], "ease-in-out");
+
+/**
+ * Shimmer: a loading skeleton, from `skeleton-shimmer`, `shine-sweep` and
+ * `animated-badge`'s shimmer. The words sit on rounded pills while a bright
+ * glint streaks across them twice, behind the text so it stays legible.
+ */
 export const shimmer: TextTreatmentEffect = {
   kind: "text-treatment",
   id: "shimmer",
   name: "Shimmer",
-  description: "A pale tint with a glint of colour gliding across behind the words, like a loading shimmer, while they are checked; a pale selection; and a last glint over what changed as its tint fades.",
+  description: "A loading skeleton: the words sit on rounded pills while a bright glint streaks across them twice as they are checked, a pill selection, and a last glint across what changed.",
   category: "treatment",
-  tags: ["agent", "writing", "edit", "shimmer", "skeleton", "shine", "light", "caret", "selection"],
-  controls: [...commonControls("#8B7CF6", { checkMs: 700 }), numberControl("base", 0.08, 0, 0.5, "Base tint", 0.01), numberControl("shine", 0.3, 0, 1, "Shine", 0.01)],
+  tags: ["agent", "writing", "edit", "shimmer", "skeleton", "shine", "loading", "pill", "caret", "selection"],
+  controls: [
+    ...commonControls("#64748B", { checkMs: 1100 }),
+    numberControl("base", 0.2, 0, 0.6, "Pill tint", 0.01),
+    numberControl("shine", 0.9, 0, 1, "Glint", 0.01),
+    colorControl("light", "#FFFFFF", "Glint colour"),
+  ],
   stages: {
     caret: caretStage(),
     checking: {
       duration: "{{checkMs}}",
-      perPixel: 0.6,
+      perPixel: 0.5,
       layers: [
-        { type: "fill", alpha: "{{base}}", radius: 4, padX: 2, opacity: track([[0, 0], [0.15, 1], [0.85, 1], [1, 0]]) },
-        { type: "band", alpha: "{{shine}}", width: 0.3, widthPx: 24, padX: 2, radius: 4, position: track([[0, 0], [1, 1]], "ease-in-out") },
+        { type: "fill", alpha: "{{base}}", radius: 999, padX: 4, padY: -1, opacity: track([[0, 0], [0.1, 1], [0.9, 1], [1, 0]]) },
+        { type: "band", color: "{{light}}", alpha: "{{shine}}", width: 0.12, widthPx: 22, padX: 4, padY: -1, radius: 999, position: twoPasses },
       ],
     },
     selecting: {
       duration: "{{selectMs}}",
-      layers: [{ type: "fill", alpha: 0.2, radius: 4, padX: 1, opacity: track([[0, 0], [1, 1]], "ease-out") }, ...caretLayers()],
+      layers: [{ type: "fill", alpha: "{{base}}", radius: 999, padX: 4, padY: -1, reveal: track([[0, 0], [1, 1]], "ease-out") }, ...caretLayers()],
     },
     typing: {
       duration: 900,
       loop: true,
       layers: [
         { type: "cover" },
-        { type: "fill", z: "above", alpha: "{{base}}", radius: 4, padX: 1 },
-        { type: "band", z: "above", alpha: "{{shine}}", width: 0.5, widthPx: 16, radius: 4, position: track([[0, 0], [1, 1]], "ease-in-out") },
+        { type: "fill", z: "above", alpha: "{{base}}", radius: 999, padX: 4, padY: -1 },
+        { type: "band", z: "above", color: "{{light}}", alpha: "{{shine}}", width: 0.3, widthPx: 14, padX: 4, padY: -1, radius: 999, position: track([[0, 0], [1, 1]], "ease-in-out") },
         { type: "ghost" },
         ...caretLayers(),
       ],
@@ -1047,15 +1059,15 @@ export const shimmer: TextTreatmentEffect = {
     landed: {
       duration: "{{landMs}}",
       layers: [
-        { type: "fill", alpha: 0.18, radius: 4, padX: 1, opacity: holdThenFade(0.5) },
-        { type: "band", alpha: "{{shine}}", width: 0.4, widthPx: 16, radius: 4, position: track([[0, 0], [0.6, 1]], "ease-out") },
+        { type: "fill", alpha: "{{base}}", radius: 999, padX: 4, padY: -1, opacity: holdThenFade(0.5) },
+        { type: "band", color: "{{light}}", alpha: "{{shine}}", width: 0.2, widthPx: 18, padX: 4, padY: -1, radius: 999, position: track([[0, 0], [0.5, 1]], "ease-in-out") },
       ],
     },
   },
   presets: [
-    { name: "Violet", values: { color: [139 / 255, 124 / 255, 246 / 255] } },
-    { name: "Silver", values: { color: [0.55, 0.6, 0.68], base: 0.12, shine: 0.4 } },
-    { name: "Bright", values: { base: 0.12, shine: 0.5 } },
+    { name: "Slate", values: { color: [100 / 255, 116 / 255, 139 / 255] } },
+    { name: "Violet", values: { color: [139 / 255, 124 / 255, 246 / 255], base: 0.22 } },
+    { name: "Dark theme", values: { color: [148 / 255, 163 / 255, 184 / 255], base: 0.28, light: [226 / 255, 232 / 255, 240 / 255], shine: 0.55 } },
   ],
 };
 
