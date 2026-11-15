@@ -327,6 +327,46 @@ For agents, `catalog.search` takes `kind: "timing"`, and the `catalog.timing` co
 
 In Node, `exportEffect` (and `flair render <id> --video clip.mp4 -o out.mp4`) retimes a video file with no browser. ffmpeg decodes the clip once to raw frames in a temporary folder (`width × height × 4` bytes a frame, deleted afterwards). The output takes the video's own size and frame rate unless you set them, and lasts as long as the retimed clip. The clip's own sound would not follow a retime, so it is left out; pass `audio` (`--audio`) to mux another track. `shutterAngle` adds motion blur as usual.
 
+#### Text treatments: how edits to text look
+
+Text treatments (`kind: "text-treatment"`, category `treatment`) are the look of edits to a range of someone's text, as an agent (or a collaborator) makes them. A treatment never changes the text: the host passes its line rectangles (a range that wraps has several, and they may change while a stage plays), and the treatment draws in an overlay behind or above them. Each has five stages, each with its own timing, easing and colours:
+
+- `caret`: the agent's insertion point, with a name tag when the host gives a `label` (loops until stopped; `blink` makes it blink).
+- `checking`: a sweep across the word or line being looked at.
+- `selecting`: the selection appearing over what will be replaced.
+- `typing`: the word being typed (the host's `text`), drawn over the one it replaces in the host's font, with the caret at its end.
+- `landed`: what changed, tinted, then fading.
+
+Every stage has a version without motion for Reduce Motion: its values are held at one moment and it fades instead (`reduced`, with a default for each stage). `color` is always the agent's colour, so several agents can be told apart.
+
+| Treatment | Looks like | Adapted from |
+| --- | --- | --- |
+| `soft-sweep` (the default) | The writing partner's look: a soft gradient sweeping across each line, a selection growing in the agent's colour, a tint on what changed that fades. | Swash's `WritingPartnerOverlay` |
+| `marker-swipe` | A highlighter swiping behind the words (multiplied, like ink). | `highlighter` |
+| `glow-underline` | A glowing underline sweeping on and wiping away from its tail, and a glowing caret. | `swoosh-underline`, `cursor-glow` |
+| `shimmer` | A pale tint with a glint gliding across behind the words, like a loading shimmer. | `skeleton-shimmer`, `shine-sweep`, `animated-badge` |
+| `scan-line` | A bright scanning line with a fading trail. | `scanline-sweep` |
+| `presence` | A collaborator in a shared document: a blinking caret with a coloured name tag, an outline pulsing round what is checked. | `presence-cursors`, `typewriter` |
+| `design-frame` | A design tool's selection: a thin box with square corner handles. | `selection-frame` |
+
+A treatment's stages are data (fills, bands, carets, tags, covers, the typed word and corner handles, with `"{{control}}"` placeholders), so the web and Swift draw the same thing. `textTreatmentPlan` turns a stage at a moment into a layer plan: rectangles, gradients, text, colours and opacities in the host's coordinates (y down), and whether each goes behind or above the text. It is pure, so the same treatment, values, stage, time and target give the same plan everywhere. Swift's `FlairTextTreatments.plan` computes it with the same arithmetic from the same data, and the Swift tests check that it matches plans written by TypeScript (`pnpm swift:meta`).
+
+```ts
+import { caretAt, mountTextTreatment, rangeRects } from "@pixerate/flair/embed";
+
+// An SVG behind the editor's text and one above it.
+const overlay = mountTextTreatment(editor, "soft-sweep", { values: { color: "#af52de" } });
+const caret = overlay.play("caret", () => ({ caret: caretAt(node, offset, editor), label: "Partner" })); // followed every frame
+await overlay.play("checking", { lines: rangeRects(sentence, editor) }).finished;
+overlay.play("selecting", { lines: rangeRects(word, editor), caret: caretAt(node, end, editor) });
+// While typing over it: cover the old word and draw what has been typed, in the text's font.
+const typing = overlay.play("typing", () => ({ lines: rangeRects(word, editor), text: typed, caret: typedCaret, background: "#fff", font: getComputedStyle(editor).font }));
+```
+
+`rangeRects(range, container)` gives a DOM `Range`'s lines in the container's coordinates (from the text it holds, rectangles on a line merged), and `caretAt(textNode, offset, container)` the insertion point. Several stages, and several agents' overlays, can play at once; `play` returns a playback to `update`, `stop` or await (`finished`). `reducedMotion` is `"user"` by default (the visitor's setting), or `"always"` / `"never"`; a host that draws its own frames passes `clock` and `autoplay: false` and calls `render()`. `mountEffect(el, "presence")` (and the docs gallery) plays a treatment's scripted edit on a paragraph of its own: the caret arrives, a sentence is checked and two words are fixed (`previewTextTreatment`). Recording, exporting and the effect editor refuse treatments, saying what to use instead.
+
+For agents, `catalog.search` takes `kind: "text-treatment"`, and the `catalog.treatment` command shows what a stage draws over a range at given times, with or without motion (over a sample phrase when no range is given). The `@pixerate/editor` effects contract has no text treatments yet, so `flairEffects()` does not offer them ([Pixerate/editor#887](https://github.com/Pixerate/editor/issues/887) adds them).
+
 #### Pixels in and out, and Web Workers
 
 Image controls also take pictures that are not on the page: an `ImageBitmap`, a WebCodecs `VideoFrame`, an `ImageData` or an `OffscreenCanvas`. A canvas is uploaded on every frame; a still is uploaded once, so pass the next picture to `setLiveSource` before each frame that should show it (the same object again uploads its changed pixels). A `VideoFrame` stays yours to `close()` once the frame that shows it has been rendered.
@@ -1077,6 +1117,7 @@ Every catalog shader effect compiles to Metal Shading Language (MSL 2.1) and shi
 - **Multi-pass & feedback**: `FlairPipeline` executes multi-pass chains (`passes`, `inputs`) and ping-pongs double-buffered `feedback` targets across frames.
 - **Interactive built-ins**: `iPointer`, `iClicks`, `iTrail` (`FlairPointerTracker`), `iAudio`, `iSpectrum`, `iBeat` (`FlairAudioTracker`), and `iScroll` (`FlairScrollTracker`).
 - **SwiftUI & MetalKit**: `FlairEffectView`, `.flairBackground(...)`, `.flairOverlay(...)`, and offscreen `FlairRenderer` (`renderImage(effect:size:)`).
+- **Text treatments**: `FlairTextTreatments` has the catalog's text treatments as data (`all`, `treatment(id:)`, `defaultID`) and plans a stage over line rectangles exactly as `textTreatmentPlan` does (`plan(_:stage:time:target:preset:values:reduceMotion:)`); `FlairTextTreatmentRenderer` draws plans with Core Animation layers (`behindLayer` under the text, `aboveLayer` over it), with no Metal. The host drives time and passes `FlairTextTreatments.systemReduceMotion`.
 
 The repository root has a `Package.swift` too, so a Swift app can depend on this repository directly. Each release commit carries a plain semver tag (`0.110.0`, from 0.110.0 on) next to npm's `@pixerate/flair@x.y.z`, so SwiftPM resolves Flair by version:
 

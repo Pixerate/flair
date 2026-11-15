@@ -30,6 +30,7 @@ What an effect takes matters: `effectInputs(effect)` (or the index line) says wh
 | Only list or search effects, load few (bundle size) | `@pixerate/flair/catalog/lazy` | [entry-points.md](references/entry-points.md) |
 | A video, GIF or PNG frames | `recordEffect` (browser) or `npx flair render` / `exportEffect` (Node) | [entry-points.md](references/entry-points.md) |
 | Several shots with layers, transitions and camera moves | a scene | [scenes.md](references/scenes.md) |
+| Show an agent's edits over someone's text (checking, selecting, typing, landed, its caret) | `mountTextTreatment(el, id)` from `@pixerate/flair/embed`, with `rangeRects` | [controls-and-presets.md](references/controls-and-presets.md) |
 
 The effect fills its element: size the element with CSS (an `aspect-ratio`, a height).
 
@@ -37,7 +38,7 @@ The effect fills its element: size the element with CSS (an `aspect-ratio`, a he
 
 ## 3. Set controls and presets
 
-Pass `preset` (a name from the index line) and `values` (control name → value). `effectControlSchema(id)` gives the controls' JSON Schema. A renderer quietly falls back to the default for a value it cannot use (a misspelt name, a wrong type), so check names and values against the schema rather than by eye. See [controls-and-presets.md](references/controls-and-presets.md), which also covers camera moves, timing effects and motion primitives.
+Pass `preset` (a name from the index line) and `values` (control name → value). `effectControlSchema(id)` gives the controls' JSON Schema. A renderer quietly falls back to the default for a value it cannot use (a misspelt name, a wrong type), so check names and values against the schema rather than by eye. See [controls-and-presets.md](references/controls-and-presets.md), which also covers camera moves, timing effects, text treatments and motion primitives.
 
 ## 4. Check the work
 

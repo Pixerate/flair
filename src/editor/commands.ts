@@ -11,6 +11,8 @@ import { getPrimitive, listPrimitives, PRIMITIVE_KINDS, PRIMITIVES, primitiveTag
 import { didYouMean } from "../motion/params.js";
 import { EFFECT_INPUTS, EFFECT_INTERACTIONS, effectInputs, effectTags, findEffects, getEffect, normaliseTag, type EffectInput, type EffectInteraction, type EffectQuery } from "../catalog/index.js";
 import { DEFAULT_FOOTAGE_FPS, timingEffects, timingLength, timingSample, timingValues } from "../catalog/timing.js";
+import { checkStage, TEXT_TREATMENT_STAGE_NOTES, TEXT_TREATMENT_STAGES, textTreatmentPlan, textTreatments, textTreatmentValues, type TextTreatmentTarget, type TreatmentPlanLayer } from "../catalog/treatment.js";
+import { rgbToHex } from "../shader/controls.js";
 import type { EditResult, EffectEditor } from "./editor.js";
 import { editorControlSchema, holdsPath, isTextMask } from "./textmask.js";
 import { EASING_PRESETS, type Easing } from "./timeline.js";
@@ -66,9 +68,9 @@ const catalogFilters = {
   },
   kind: {
     type: "string",
-    enum: ["shader", "vector", "camera", "timing"],
+    enum: ["shader", "vector", "camera", "timing", "text-treatment"],
     description:
-      "shader (WebGL), vector (animated SVG), camera (a move for a scene's camera, used in a shot's camera.in or camera.during rather than loaded here) or timing (a retime of video footage: see what it does with catalog.timing rather than loading it here).",
+      "shader (WebGL), vector (animated SVG), camera (a move for a scene's camera, used in a shot's camera.in or camera.during rather than loaded here), timing (a retime of video footage: see what it does with catalog.timing rather than loading it here) or text-treatment (the look of edits to a range of text: see what each stage draws with catalog.treatment rather than loading it here).",
   },
   tags: {
     type: "array",
@@ -147,6 +149,92 @@ function describeTiming(p: { id: string; footage: number; times?: number[]; fps?
     }),
   };
 }
+
+/** Times `catalog.treatment` answers for in one call. */
+export const TREATMENT_TIMES_LIMIT = 20;
+
+/** Layers `catalog.treatment` lists for one time before it leaves the rest out. */
+const TREATMENT_LAYERS_LISTED = 16;
+
+/** The range `catalog.treatment` draws over when it is not given one: a phrase wrapping onto a second line, the caret at its end. */
+export const SAMPLE_TREATMENT_TARGET: TextTreatmentTarget = {
+  lines: [
+    { x: 40, y: 0, width: 120, height: 20 },
+    { x: 0, y: 24, width: 64, height: 20 },
+  ],
+  caret: { x: 64, y: 24, height: 20 },
+  text: "word",
+  label: "Agent",
+  color: "#1d1d1f",
+  background: "#ffffff",
+};
+
+const round2 = (v: number) => Math.round(v * 100) / 100;
+
+/** A plan layer, compactly, for agents. */
+function compactLayer(l: TreatmentPlanLayer) {
+  return {
+    kind: l.kind,
+    source: l.source,
+    z: l.z,
+    rect: [round2(l.x), round2(l.y), round2(l.width), round2(l.height)],
+    color: rgbToHex(l.color),
+    alpha: round2(l.color[3]),
+    opacity: round2(l.opacity),
+    ...(l.gradient && { gradient: { from: round2(l.gradient.x0), to: round2(l.gradient.x1), alphas: l.gradient.stops.map((s) => round2(s.color[3])) } }),
+    ...(l.radius > 0 && { radius: round2(l.radius) }),
+    ...(l.stroke && { stroke: l.stroke }),
+    ...(l.glow && { glow: l.glow }),
+    ...(l.blend !== "normal" && { blend: l.blend }),
+    ...(l.text !== undefined && { text: l.text }),
+  };
+}
+
+/** What a text treatment draws for a stage, for `catalog.treatment`; refuses an id that is not a treatment, a bad stage, target, time or value. */
+function describeTreatment(p: { id: string; stage: string; times?: number[]; target?: TextTreatmentTarget; preset?: string; values?: Record<string, unknown>; reduceMotion?: boolean }) {
+  const effect = getEffect(p.id);
+  const ids = textTreatments.map((e) => e.id);
+  if (!effect) throw new Error(`There is no effect ${JSON.stringify(p.id)}.${didYouMean(p.id, ids)} The text treatments are ${ids.join(", ")}.`);
+  if (effect.kind !== "text-treatment") throw new Error(`"${effect.id}" is a ${effect.kind} effect, not a text treatment; the text treatments are ${ids.join(", ")} (catalog.search with kind "text-treatment").`);
+  const stage = checkStage(p.stage);
+  const checked = textTreatmentValues(effect, { ...(p.preset !== undefined && { preset: p.preset }), ...(p.values && { values: p.values }) });
+  if (checked.issues.length) throw new Error(checked.issues.join(" "));
+  const target = p.target ?? SAMPLE_TREATMENT_TARGET;
+  const options = { stage, target, values: checked.values, reduceMotion: p.reduceMotion ?? false };
+  const first = textTreatmentPlan(effect, { ...options, time: 0 });
+  const times = p.times ?? [0, first.duration / 2, first.duration];
+  times.forEach((t, i) => {
+    if (typeof t !== "number" || !Number.isFinite(t) || t < 0) throw new Error(`times[${i}] is ms into the stage, 0 or more; it was ${String(t)}.`);
+  });
+  const loop = effect.stages[stage].loop === true;
+  return {
+    id: effect.id,
+    stage,
+    about: TEXT_TREATMENT_STAGE_NOTES[stage],
+    duration: round2(first.duration),
+    ...(loop && { loop: true }),
+    ...(options.reduceMotion && { reduced: true }),
+    ...(!p.target && { target: "a sample: a phrase wrapping onto a second line, with the caret at its end; pass target for your own" }),
+    samples: times.map((time) => {
+      const plan = textTreatmentPlan(effect, { ...options, time });
+      const listed = plan.layers.slice(0, TREATMENT_LAYERS_LISTED).map(compactLayer);
+      return {
+        time,
+        ...(plan.done && { done: true }),
+        count: plan.layers.length,
+        layers: listed,
+        ...(plan.layers.length > listed.length && { note: `${plan.layers.length - listed.length} more layers are left out.` }),
+      };
+    }),
+  };
+}
+
+const treatmentRectSchema = {
+  type: "object",
+  properties: { x: { type: "number" }, y: { type: "number" }, width: { type: "number", minimum: 0 }, height: { type: "number", minimum: 0 } },
+  required: ["x", "y", "width", "height"],
+  additionalProperties: false,
+} as const;
 
 /** What an agent should know about the compile: the report, or why there is none yet. */
 function compileStatus(editor: EffectEditor) {
@@ -274,6 +362,40 @@ export function effectCommands(): CommandSpec<EffectEditor>[] {
         additionalProperties: false,
       },
       run: (_, p: { id: string; footage: number; times?: number[]; fps?: number; preset?: string; values?: Record<string, unknown> }) => describeTiming(p),
+    },
+    {
+      id: "catalog.treatment",
+      label: "Text treatment stage",
+      group: "Catalog",
+      description: `What a text treatment (kind "text-treatment" in catalog.search: the look of edits to a range of text) draws for one stage over a range of text, with its defaults, a preset and/or values: {duration} the stage's ms over that range, and for each of \`times\` (ms into the stage, at most ${TREATMENT_TIMES_LIMIT}; default its start, middle and end) the layers it draws, back to front: rectangles ([x, y, width, height] in the host's px, y down), colours, alphas, opacities, gradients, and whether each is behind or above the text. Stages: ${TEXT_TREATMENT_STAGES.map((s) => `${s} (${TEXT_TREATMENT_STAGE_NOTES[s]})`).join("; ")}. Without a target it draws over a sample phrase that wraps onto a second line. reduceMotion shows the stage without motion (held, and faded). Treatments play over a page's text with mountTextTreatment, and in Swift with FlairTextTreatmentRenderer; effect.load refuses them.`,
+      readOnly: true,
+      params: {
+        type: "object",
+        properties: {
+          id: { type: "string", description: "A text treatment's id (catalog.search with kind \"text-treatment\")." },
+          stage: { type: "string", enum: TEXT_TREATMENT_STAGES, description: "The stage to draw." },
+          times: { type: "array", items: { type: "number", minimum: 0 }, maxItems: TREATMENT_TIMES_LIMIT, description: "Ms into the stage to show the layers at." },
+          target: {
+            type: "object",
+            description: "The range it draws over: its line rectangles in reading order, the caret, and for some stages what has been typed (typing), a name tag (caret) and the text's colours.",
+            properties: {
+              lines: { type: "array", items: treatmentRectSchema, maxItems: 50 },
+              caret: { type: "object", properties: { x: { type: "number" }, y: { type: "number" }, height: { type: "number", minimum: 0 } }, required: ["x", "y", "height"], additionalProperties: false },
+              text: { type: "string" },
+              label: { type: "string" },
+              color: { type: "string", description: "The text's colour, #rrggbb." },
+              background: { type: "string", description: "The colour behind the text, #rrggbb (the typing stage's cover needs it)." },
+            },
+            additionalProperties: false,
+          },
+          preset: { type: "string", description: "One of the treatment's presets, by name." },
+          values: { type: "object", description: "Control values over the defaults (and the preset), by control name; color is the agent's colour." },
+          reduceMotion: { type: "boolean", description: "Show the stage as it plays without motion (default false)." },
+        },
+        required: ["id", "stage"],
+        additionalProperties: false,
+      },
+      run: (_, p: { id: string; stage: string; times?: number[]; target?: TextTreatmentTarget; preset?: string; values?: Record<string, unknown>; reduceMotion?: boolean }) => describeTreatment(p),
     },
     {
       id: "catalog.tags",

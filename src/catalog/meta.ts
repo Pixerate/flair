@@ -42,13 +42,14 @@ export interface EffectMeta {
   trigger?: SvgTrigger;
   /** What a camera move is for: getting into a shot (`transition`) or moving while it holds (`hold`). */
   role?: CameraRole;
-  /** Whether it moves over time (a shader reading `iTime`, or any vector effect, camera move or timing effect), rather than a still treatment. */
+  /** Whether it moves over time (a shader reading `iTime`, or any vector effect, camera move, timing effect or text treatment), rather than a still treatment. */
   animated: boolean;
   /**
    * Ms of one play: a shader's `loop`, a vector effect's picture (at its
    * default values) plus its `hold`, or a camera move's own length.
-   * Undefined for a shader with no loop, and for a timing effect (its
-   * length is its footage's).
+   * Undefined for a shader with no loop, for a timing effect (its
+   * length is its footage's) and for a text treatment (each stage takes its
+   * own time over the host's text).
    */
   duration?: number;
   /** Whether this effect is compiled into the `FlairEffects` Swift/Metal package. */

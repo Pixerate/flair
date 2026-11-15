@@ -1,5 +1,889 @@
 [
   {
+    "id": "marker-swipe",
+    "name": "Marker swipe",
+    "kind": "text-treatment",
+    "category": "treatment",
+    "description": "A highlighter pen swiping behind the words: a light pass while checking, a firm swipe over the selection, and a fresh stroke on what changed that dries away.",
+    "tags": [
+      "agent",
+      "writing",
+      "edit",
+      "highlighter",
+      "marker",
+      "pen",
+      "caret",
+      "selection"
+    ],
+    "controls": [
+      {
+        "n": "color",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            210,
+            63
+          ]
+        },
+        "l": "Agent colour",
+        "c": 1,
+        "s": 0.01,
+        "line": 1
+      },
+      {
+        "n": "caretWidth",
+        "t": "float",
+        "d": 2,
+        "min": 1,
+        "max": 6,
+        "s": 0.5,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "nameTag",
+        "t": "bool",
+        "d": true,
+        "s": 0.01,
+        "line": 3
+      },
+      {
+        "n": "blink",
+        "t": "bool",
+        "d": false,
+        "l": "Blink caret",
+        "s": 0.01,
+        "line": 4
+      },
+      {
+        "n": "checkMs",
+        "t": "float",
+        "d": 420,
+        "l": "Check (ms)",
+        "min": 80,
+        "max": 2000,
+        "s": 10,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "selectMs",
+        "t": "float",
+        "d": 220,
+        "l": "Select (ms)",
+        "max": 1000,
+        "s": 10,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "landMs",
+        "t": "float",
+        "d": 900,
+        "l": "Land (ms)",
+        "min": 100,
+        "max": 4000,
+        "s": 10,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "markAlpha",
+        "t": "float",
+        "d": 0.55,
+        "l": "Marker opacity",
+        "s": 0.01,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "markTop",
+        "t": "float",
+        "d": 0.38,
+        "l": "Marker top",
+        "max": 0.9,
+        "s": 0.01,
+        "b": 3,
+        "line": 9
+      }
+    ],
+    "presets": [
+      "Yellow",
+      "Pink",
+      "Mint",
+      "Full height"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "treatment",
+    "addedAt": "2026-11-15T10:38:14.130Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "glow-underline",
+    "name": "Glow underline",
+    "kind": "text-treatment",
+    "category": "treatment",
+    "description": "A glowing underline sweeping on beneath the words being checked and wiping away from its tail, a lit underline under the selection, and a glowing caret.",
+    "tags": [
+      "agent",
+      "writing",
+      "edit",
+      "underline",
+      "glow",
+      "neon",
+      "caret",
+      "selection"
+    ],
+    "controls": [
+      {
+        "n": "color",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            91,
+            140,
+            255
+          ]
+        },
+        "l": "Agent colour",
+        "c": 1,
+        "s": 0.01,
+        "line": 1
+      },
+      {
+        "n": "caretWidth",
+        "t": "float",
+        "d": 2,
+        "min": 1,
+        "max": 6,
+        "s": 0.5,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "nameTag",
+        "t": "bool",
+        "d": true,
+        "s": 0.01,
+        "line": 3
+      },
+      {
+        "n": "blink",
+        "t": "bool",
+        "d": false,
+        "l": "Blink caret",
+        "s": 0.01,
+        "line": 4
+      },
+      {
+        "n": "checkMs",
+        "t": "float",
+        "d": 520,
+        "l": "Check (ms)",
+        "min": 80,
+        "max": 2000,
+        "s": 10,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "selectMs",
+        "t": "float",
+        "d": 180,
+        "l": "Select (ms)",
+        "max": 1000,
+        "s": 10,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "landMs",
+        "t": "float",
+        "d": 900,
+        "l": "Land (ms)",
+        "min": 100,
+        "max": 4000,
+        "s": 10,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "glow",
+        "t": "float",
+        "d": 6,
+        "l": "Glow (px)",
+        "max": 16,
+        "s": 0.5,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "thickness",
+        "t": "float",
+        "d": 0.1,
+        "min": 0.04,
+        "max": 0.3,
+        "s": 0.01,
+        "b": 3,
+        "line": 9
+      }
+    ],
+    "presets": [
+      "Blue",
+      "Hot pink",
+      "Gold",
+      "No glow"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "treatment",
+    "addedAt": "2026-11-15T10:38:14.130Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "shimmer",
+    "name": "Shimmer",
+    "kind": "text-treatment",
+    "category": "treatment",
+    "description": "A pale tint with a glint of colour gliding across behind the words, like a loading shimmer, while they are checked; a pale selection; and a last glint over what changed as its tint fades.",
+    "tags": [
+      "agent",
+      "writing",
+      "edit",
+      "shimmer",
+      "skeleton",
+      "shine",
+      "light",
+      "caret",
+      "selection"
+    ],
+    "controls": [
+      {
+        "n": "color",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            139,
+            124,
+            246
+          ]
+        },
+        "l": "Agent colour",
+        "c": 1,
+        "s": 0.01,
+        "line": 1
+      },
+      {
+        "n": "caretWidth",
+        "t": "float",
+        "d": 2,
+        "min": 1,
+        "max": 6,
+        "s": 0.5,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "nameTag",
+        "t": "bool",
+        "d": true,
+        "s": 0.01,
+        "line": 3
+      },
+      {
+        "n": "blink",
+        "t": "bool",
+        "d": false,
+        "l": "Blink caret",
+        "s": 0.01,
+        "line": 4
+      },
+      {
+        "n": "checkMs",
+        "t": "float",
+        "d": 700,
+        "l": "Check (ms)",
+        "min": 80,
+        "max": 2000,
+        "s": 10,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "selectMs",
+        "t": "float",
+        "d": 180,
+        "l": "Select (ms)",
+        "max": 1000,
+        "s": 10,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "landMs",
+        "t": "float",
+        "d": 900,
+        "l": "Land (ms)",
+        "min": 100,
+        "max": 4000,
+        "s": 10,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "base",
+        "t": "float",
+        "d": 0.08,
+        "l": "Base tint",
+        "max": 0.5,
+        "s": 0.01,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "shine",
+        "t": "float",
+        "d": 0.3,
+        "s": 0.01,
+        "b": 3,
+        "line": 9
+      }
+    ],
+    "presets": [
+      "Violet",
+      "Silver",
+      "Bright"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "treatment",
+    "addedAt": "2026-11-15T10:38:14.130Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "scan-line",
+    "name": "Scan line",
+    "kind": "text-treatment",
+    "category": "treatment",
+    "description": "A bright scanning line with a fading trail passing over the words being checked, a scanned selection, and a final pass over what changed.",
+    "tags": [
+      "agent",
+      "writing",
+      "edit",
+      "scan",
+      "scanner",
+      "line",
+      "trail",
+      "tech",
+      "caret",
+      "selection"
+    ],
+    "controls": [
+      {
+        "n": "color",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            34,
+            211,
+            166
+          ]
+        },
+        "l": "Agent colour",
+        "c": 1,
+        "s": 0.01,
+        "line": 1
+      },
+      {
+        "n": "caretWidth",
+        "t": "float",
+        "d": 2,
+        "min": 1,
+        "max": 6,
+        "s": 0.5,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "nameTag",
+        "t": "bool",
+        "d": true,
+        "s": 0.01,
+        "line": 3
+      },
+      {
+        "n": "blink",
+        "t": "bool",
+        "d": false,
+        "l": "Blink caret",
+        "s": 0.01,
+        "line": 4
+      },
+      {
+        "n": "checkMs",
+        "t": "float",
+        "d": 460,
+        "l": "Check (ms)",
+        "min": 80,
+        "max": 2000,
+        "s": 10,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "selectMs",
+        "t": "float",
+        "d": 180,
+        "l": "Select (ms)",
+        "max": 1000,
+        "s": 10,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "landMs",
+        "t": "float",
+        "d": 900,
+        "l": "Land (ms)",
+        "min": 100,
+        "max": 4000,
+        "s": 10,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "trail",
+        "t": "float",
+        "d": 0.35,
+        "s": 0.01,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "glow",
+        "t": "float",
+        "d": 4,
+        "l": "Glow (px)",
+        "max": 12,
+        "s": 0.5,
+        "b": 3,
+        "line": 9
+      }
+    ],
+    "presets": [
+      "Mint",
+      "Hologram",
+      "Barcode red"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "treatment",
+    "addedAt": "2026-11-15T10:38:14.130Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "presence",
+    "name": "Presence",
+    "kind": "text-treatment",
+    "category": "treatment",
+    "description": "A collaborator's presence, as in a shared document: a caret with a coloured name tag, an outline pulsing round what is being checked, and a selection and change tint in the collaborator's colour.",
+    "tags": [
+      "agent",
+      "writing",
+      "edit",
+      "collaboration",
+      "multiplayer",
+      "cursor",
+      "name-tag",
+      "caret",
+      "selection"
+    ],
+    "controls": [
+      {
+        "n": "color",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            242,
+            85,
+            90
+          ]
+        },
+        "l": "Agent colour",
+        "c": 1,
+        "s": 0.01,
+        "line": 1
+      },
+      {
+        "n": "caretWidth",
+        "t": "float",
+        "d": 2,
+        "min": 1,
+        "max": 6,
+        "s": 0.5,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "nameTag",
+        "t": "bool",
+        "d": true,
+        "s": 0.01,
+        "line": 3
+      },
+      {
+        "n": "blink",
+        "t": "bool",
+        "d": true,
+        "l": "Blink caret",
+        "s": 0.01,
+        "line": 4
+      },
+      {
+        "n": "checkMs",
+        "t": "float",
+        "d": 900,
+        "l": "Check (ms)",
+        "min": 80,
+        "max": 2000,
+        "s": 10,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "selectMs",
+        "t": "float",
+        "d": 180,
+        "l": "Select (ms)",
+        "max": 1000,
+        "s": 10,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "landMs",
+        "t": "float",
+        "d": 900,
+        "l": "Land (ms)",
+        "min": 100,
+        "max": 4000,
+        "s": 10,
+        "b": 3,
+        "line": 7
+      }
+    ],
+    "presets": [
+      "Coral",
+      "Indigo",
+      "Green",
+      "Steady"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "treatment",
+    "addedAt": "2026-11-15T10:38:14.130Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "design-frame",
+    "name": "Design frame",
+    "kind": "text-treatment",
+    "category": "treatment",
+    "description": "A design tool's selection: a thin box with square corner handles tracing round what is checked and selected, and the box lingering round what changed before it fades.",
+    "tags": [
+      "agent",
+      "writing",
+      "edit",
+      "design-tool",
+      "selection",
+      "frame",
+      "handles",
+      "outline",
+      "caret"
+    ],
+    "controls": [
+      {
+        "n": "color",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            13,
+            153,
+            255
+          ]
+        },
+        "l": "Agent colour",
+        "c": 1,
+        "s": 0.01,
+        "line": 1
+      },
+      {
+        "n": "caretWidth",
+        "t": "float",
+        "d": 2,
+        "min": 1,
+        "max": 6,
+        "s": 0.5,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "nameTag",
+        "t": "bool",
+        "d": true,
+        "s": 0.01,
+        "line": 3
+      },
+      {
+        "n": "blink",
+        "t": "bool",
+        "d": false,
+        "l": "Blink caret",
+        "s": 0.01,
+        "line": 4
+      },
+      {
+        "n": "checkMs",
+        "t": "float",
+        "d": 520,
+        "l": "Check (ms)",
+        "min": 80,
+        "max": 2000,
+        "s": 10,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "selectMs",
+        "t": "float",
+        "d": 180,
+        "l": "Select (ms)",
+        "max": 1000,
+        "s": 10,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "landMs",
+        "t": "float",
+        "d": 900,
+        "l": "Land (ms)",
+        "min": 100,
+        "max": 4000,
+        "s": 10,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "handle",
+        "t": "float",
+        "d": 6,
+        "l": "Handle (px)",
+        "min": 3,
+        "max": 12,
+        "s": 0.5,
+        "b": 3,
+        "line": 8
+      }
+    ],
+    "presets": [
+      "Blue",
+      "Magenta",
+      "Large handles"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "treatment",
+    "addedAt": "2026-11-15T10:38:14.130Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "soft-sweep",
+    "name": "Soft sweep",
+    "kind": "text-treatment",
+    "category": "treatment",
+    "description": "A soft gradient sweeping across the word being checked, a selection growing over it in the agent's colour, the new word typed over the old with the caret at its end, then a tint on what changed that fades.",
+    "tags": [
+      "agent",
+      "writing",
+      "edit",
+      "sweep",
+      "gradient",
+      "caret",
+      "selection",
+      "subtle"
+    ],
+    "controls": [
+      {
+        "n": "color",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            175,
+            82,
+            222
+          ]
+        },
+        "l": "Agent colour",
+        "c": 1,
+        "s": 0.01,
+        "line": 1
+      },
+      {
+        "n": "caretWidth",
+        "t": "float",
+        "d": 2,
+        "min": 1,
+        "max": 6,
+        "s": 0.5,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "nameTag",
+        "t": "bool",
+        "d": true,
+        "s": 0.01,
+        "line": 3
+      },
+      {
+        "n": "blink",
+        "t": "bool",
+        "d": false,
+        "l": "Blink caret",
+        "s": 0.01,
+        "line": 4
+      },
+      {
+        "n": "checkMs",
+        "t": "float",
+        "d": 320,
+        "l": "Check (ms)",
+        "min": 80,
+        "max": 2000,
+        "s": 10,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "selectMs",
+        "t": "float",
+        "d": 180,
+        "l": "Select (ms)",
+        "max": 1000,
+        "s": 10,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "landMs",
+        "t": "float",
+        "d": 900,
+        "l": "Land (ms)",
+        "min": 100,
+        "max": 4000,
+        "s": 10,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "sweepAlpha",
+        "t": "float",
+        "d": 0.22,
+        "l": "Sweep opacity",
+        "s": 0.01,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "tintAlpha",
+        "t": "float",
+        "d": 0.16,
+        "l": "Tint opacity",
+        "s": 0.01,
+        "b": 3,
+        "line": 9
+      }
+    ],
+    "presets": [
+      "Purple",
+      "Blue",
+      "Teal",
+      "Orange",
+      "Quiet"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "treatment",
+    "addedAt": "2026-11-15T10:38:14.129Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
     "id": "word-to-icons",
     "name": "Word to icons",
     "kind": "vector",
@@ -2856,1296 +3740,5 @@
     "addedAt": "2026-11-13T15:35:59Z",
     "commitHash": "d06df57664d2ac130bc3a2af9fef78a818b98d95",
     "order": 691
-  },
-  {
-    "id": "image-pixel-stretch",
-    "name": "Pixel stretch",
-    "kind": "shader",
-    "category": "image",
-    "description": "A picture kept whole up to a line, then dragged out from it in long flat bars of its own edge colours, the line ragged and drifting.",
-    "tags": [
-      "image",
-      "stretch",
-      "smear",
-      "pixel",
-      "bar",
-      "glitch",
-      "editorial",
-      "recap",
-      "story"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "landscape"
-        },
-        "line": 2,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uDirection",
-        "t": "int",
-        "d": 3,
-        "l": "Direction (0 right, 1 left, 2 up, 3 down)",
-        "max": 3,
-        "b": 3,
-        "line": 3
-      },
-      {
-        "n": "uLine",
-        "t": "float",
-        "d": 0.5,
-        "l": "Stretch from",
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "uTravel",
-        "t": "float",
-        "d": 0.12,
-        "max": 0.5,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 0.7,
-        "max": 3,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uBands",
-        "t": "float",
-        "d": 22,
-        "l": "Bands (0 smooth)",
-        "max": 80,
-        "s": 1,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uRagged",
-        "t": "float",
-        "d": 0.22,
-        "l": "Ragged edge",
-        "max": 0.6,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 9
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "b": 3,
-        "line": 10
-      }
-    ],
-    "presets": [
-      "Bars",
-      "Clean pull",
-      "Sideways",
-      "Liquid edge"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "swiftReady": true,
-    "video": "filter",
-    "animated": true,
-    "module": "shaders/recap",
-    "addedAt": "2026-11-13T15:35:59Z",
-    "commitHash": "d06df57664d2ac130bc3a2af9fef78a818b98d95",
-    "order": 690
-  },
-  {
-    "id": "shape-tiles",
-    "name": "Shape tiles",
-    "kind": "shader",
-    "category": "pattern",
-    "description": "A grid of flat-coloured tiles, each holding a disc, quarter circle, half circle, diamond, ring or square that morphs into another and swaps colours on its own beat.",
-    "tags": [
-      "background",
-      "tiles",
-      "grid",
-      "geometric",
-      "shape",
-      "flat",
-      "bold",
-      "bauhaus",
-      "recap",
-      "story"
-    ],
-    "controls": [
-      {
-        "n": "uColorA",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            240,
-            55,
-            165
-          ]
-        },
-        "l": "Colour A",
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "uColorB",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            205,
-            245,
-            100
-          ]
-        },
-        "l": "Colour B",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uColorC",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            65,
-            0,
-            245
-          ]
-        },
-        "l": "Colour C",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uColorD",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            70,
-            50
-          ]
-        },
-        "l": "Colour D",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uSize",
-        "t": "float",
-        "d": 170,
-        "l": "Tile size (px)",
-        "min": 40,
-        "max": 400,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uRate",
-        "t": "float",
-        "d": 0.45,
-        "l": "Changes per second",
-        "max": 2,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uStagger",
-        "t": "float",
-        "d": 1,
-        "b": 3,
-        "line": 8
-      }
-    ],
-    "presets": [
-      "Clash",
-      "Primary school",
-      "Two tone",
-      "All together"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "swiftReady": true,
-    "animated": true,
-    "paint": {
-      "map": "stroke",
-      "colors": [
-        "uColorA",
-        "uColorB"
-      ],
-      "live": true,
-      "repeat": "repeat"
-    },
-    "module": "shaders/recap",
-    "addedAt": "2026-11-13T15:35:59Z",
-    "commitHash": "d06df57664d2ac130bc3a2af9fef78a818b98d95",
-    "order": 689
-  },
-  {
-    "id": "concentric-shapes",
-    "name": "Concentric shapes",
-    "kind": "shader",
-    "category": "pattern",
-    "description": "Flat-coloured shapes nested inside one another, growing out of the centre (or sinking into it) as they turn and morph between circle, squircle, flower and star.",
-    "tags": [
-      "background",
-      "concentric",
-      "ring",
-      "tunnel",
-      "shape",
-      "flat",
-      "bold",
-      "recap",
-      "story",
-      "title"
-    ],
-    "controls": [
-      {
-        "n": "uColorA",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            240,
-            55,
-            165
-          ]
-        },
-        "l": "Colour A",
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "uColorB",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            205,
-            245,
-            100
-          ]
-        },
-        "l": "Colour B",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uColorC",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            65,
-            0,
-            245
-          ]
-        },
-        "l": "Colour C",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uColorD",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            70,
-            50
-          ]
-        },
-        "l": "Colour D",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uShape",
-        "t": "int",
-        "d": 4,
-        "l": "Shape (0 circle, 1 squircle, 2 flower, 3 star, 4 morphing)",
-        "max": 4,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uRings",
-        "t": "int",
-        "d": 9,
-        "min": 3,
-        "max": 20,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uPoints",
-        "t": "int",
-        "d": 6,
-        "l": "Petals or points",
-        "min": 3,
-        "max": 12,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 0.5,
-        "max": 3,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uInward",
-        "t": "bool",
-        "d": false,
-        "l": "Stream inward",
-        "line": 10
-      },
-      {
-        "n": "uTwist",
-        "t": "float",
-        "d": 0.4,
-        "min": -2,
-        "max": 2,
-        "b": 3,
-        "line": 11
-      },
-      {
-        "n": "uSpin",
-        "t": "float",
-        "d": 0.15,
-        "min": -2,
-        "max": 2,
-        "b": 3,
-        "line": 12
-      },
-      {
-        "n": "uCentre",
-        "t": "vec2",
-        "d": [
-          0.5,
-          0.5
-        ],
-        "b": 3,
-        "line": 13
-      }
-    ],
-    "presets": [
-      "Shapeshifter",
-      "Bloom",
-      "Bullseye",
-      "Star dive",
-      "Squircle stack"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "swiftReady": true,
-    "animated": true,
-    "paint": {
-      "map": "canvas",
-      "colors": [
-        "uColorA",
-        "uColorB"
-      ],
-      "live": true
-    },
-    "module": "shaders/recap",
-    "addedAt": "2026-11-13T15:35:59Z",
-    "commitHash": "d06df57664d2ac130bc3a2af9fef78a818b98d95",
-    "order": 688
-  },
-  {
-    "id": "ribbon-bands",
-    "name": "Ribbon bands",
-    "kind": "shader",
-    "category": "pattern",
-    "description": "Flat ribbons of clashing colour stacked across the frame, each edge riding its own slow wave so they overlap and part, with a soft shadow under every fold.",
-    "tags": [
-      "background",
-      "ribbon",
-      "stripe",
-      "wave",
-      "flat",
-      "bold",
-      "recap",
-      "story",
-      "loop"
-    ],
-    "controls": [
-      {
-        "n": "uColorA",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            240,
-            55,
-            165
-          ]
-        },
-        "l": "Colour A",
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "uColorB",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            205,
-            245,
-            100
-          ]
-        },
-        "l": "Colour B",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uColorC",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            65,
-            0,
-            245
-          ]
-        },
-        "l": "Colour C",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uColorD",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            70,
-            50
-          ]
-        },
-        "l": "Colour D",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uCount",
-        "t": "int",
-        "d": 8,
-        "l": "Ribbons",
-        "min": 3,
-        "max": 16,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uWave",
-        "t": "float",
-        "d": 0.55,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uFrequency",
-        "t": "float",
-        "d": 1.6,
-        "l": "Wave frequency",
-        "min": 0.5,
-        "max": 6,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uAngle",
-        "t": "float",
-        "d": -18,
-        "l": "Angle (°)",
-        "min": -180,
-        "max": 180,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 1,
-        "max": 3,
-        "b": 3,
-        "line": 10
-      },
-      {
-        "n": "uLines",
-        "t": "float",
-        "d": 0.35,
-        "l": "Pinstripes",
-        "b": 3,
-        "line": 11
-      },
-      {
-        "n": "uShadow",
-        "t": "float",
-        "d": 0.4,
-        "b": 3,
-        "line": 12
-      }
-    ],
-    "presets": [
-      "Clash",
-      "Sorbet",
-      "Ink and paper",
-      "Calm stack"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "swiftReady": true,
-    "loop": 8,
-    "animated": true,
-    "duration": 8000,
-    "paint": {
-      "map": "stroke",
-      "colors": [
-        "uColorA",
-        "uColorB"
-      ],
-      "live": true
-    },
-    "module": "shaders/recap",
-    "addedAt": "2026-11-13T15:35:59Z",
-    "commitHash": "d06df57664d2ac130bc3a2af9fef78a818b98d95",
-    "order": 687
-  },
-  {
-    "id": "stepped-gradient",
-    "name": "Stepped gradient",
-    "kind": "shader",
-    "category": "gradient",
-    "description": "A three-colour gradient cut into flat steps, the edge between each pair broken into a ragged skyline of pixel stairs, swaying slowly.",
-    "tags": [
-      "background",
-      "gradient",
-      "steps",
-      "pixel",
-      "blocks",
-      "stairs",
-      "flat",
-      "bold",
-      "recap",
-      "story"
-    ],
-    "controls": [
-      {
-        "n": "uColorA",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            65,
-            0,
-            245
-          ]
-        },
-        "l": "Colour A",
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "uColorB",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            240,
-            55,
-            165
-          ]
-        },
-        "l": "Colour B",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uColorC",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            205,
-            245,
-            100
-          ]
-        },
-        "l": "Colour C",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uSteps",
-        "t": "int",
-        "d": 7,
-        "min": 2,
-        "max": 24,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uBlock",
-        "t": "float",
-        "d": 40,
-        "l": "Block size (px)",
-        "min": 4,
-        "max": 160,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uStairs",
-        "t": "float",
-        "d": 0.75,
-        "l": "Pixel stairs",
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uAngle",
-        "t": "float",
-        "d": 90,
-        "l": "Angle (°)",
-        "min": -180,
-        "max": 180,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uWave",
-        "t": "float",
-        "d": 0.45,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 0.35,
-        "max": 2,
-        "b": 3,
-        "line": 10
-      }
-    ],
-    "presets": [
-      "Clash",
-      "Sunset blocks",
-      "Clean steps",
-      "Big pixels",
-      "Mono"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "swiftReady": true,
-    "animated": true,
-    "paint": {
-      "map": "stroke",
-      "colors": [
-        "uColorA",
-        "uColorC"
-      ]
-    },
-    "module": "shaders/recap",
-    "addedAt": "2026-11-13T15:35:59Z",
-    "commitHash": "d06df57664d2ac130bc3a2af9fef78a818b98d95",
-    "order": 686
-  },
-  {
-    "id": "detail-panel",
-    "name": "Detail panel",
-    "kind": "vector",
-    "category": "ui",
-    "description": "A record's detail panel swinging in from the edge of the screen in perspective, then filling in from the top: a category and a typed title, a status badge and a button, a headline metric counting up over rising bars, a grid of four icon stats counting up, and an AI note; a sheen sweeps across it to finish.",
-    "tags": [
-      "ui",
-      "panel",
-      "card",
-      "dashboard",
-      "detail",
-      "ai",
-      "product-demo",
-      "tech",
-      "stat"
-    ],
-    "controls": [
-      {
-        "n": "category",
-        "t": "text",
-        "d": "Healthcare",
-        "line": 1
-      },
-      {
-        "n": "title",
-        "t": "text",
-        "d": "Decree-Law No. 42 of 2022",
-        "line": 2
-      },
-      {
-        "n": "subtitle",
-        "t": "text",
-        "d": "Promulgating the Civil Procedure Code",
-        "line": 3
-      },
-      {
-        "n": "status",
-        "t": "text",
-        "d": "Active",
-        "l": "Status badge",
-        "line": 4
-      },
-      {
-        "n": "updated",
-        "t": "text",
-        "d": "Last updated 01 Oct 2024",
-        "l": "Status note",
-        "line": 5
-      },
-      {
-        "n": "button",
-        "t": "text",
-        "d": "Explore details",
-        "line": 6
-      },
-      {
-        "n": "metricLabel",
-        "t": "text",
-        "d": "Sentiment rate",
-        "line": 7
-      },
-      {
-        "n": "metric",
-        "t": "float",
-        "d": 45,
-        "min": -1000000,
-        "max": 1000000,
-        "s": 0.1,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "metricSuffix",
-        "t": "text",
-        "d": "%",
-        "line": 9
-      },
-      {
-        "n": "rating",
-        "t": "text",
-        "d": "Moderate",
-        "l": "Metric chip (empty hides it)",
-        "line": 10
-      },
-      {
-        "n": "stats",
-        "t": "text",
-        "d": "12,2,18,12",
-        "l": "Stats (comma-separated, four; prefixes and suffixes kept)",
-        "line": 11
-      },
-      {
-        "n": "statLabels",
-        "t": "text",
-        "d": "Public complaints,Related regulations,Services,Entities involved",
-        "l": "Stat labels (comma-separated)",
-        "line": 12
-      },
-      {
-        "n": "noteHeading",
-        "t": "text",
-        "d": "AI Analysis",
-        "line": 13
-      },
-      {
-        "n": "noteTitle",
-        "t": "text",
-        "d": "Propose deregulation",
-        "line": 14
-      },
-      {
-        "n": "noteBody",
-        "t": "text",
-        "d": "Several regulations are out of date.",
-        "l": "Note text",
-        "line": 15
-      },
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            11,
-            26,
-            30
-          ]
-        },
-        "c": 1,
-        "line": 16
-      },
-      {
-        "n": "backdrop",
-        "t": "bool",
-        "d": true,
-        "l": "Background",
-        "line": 17
-      },
-      {
-        "n": "panel",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            18,
-            42,
-            48
-          ]
-        },
-        "c": 1,
-        "line": 18
-      },
-      {
-        "n": "ink",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            227,
-            238,
-            240
-          ]
-        },
-        "l": "Text",
-        "c": 1,
-        "line": 19
-      },
-      {
-        "n": "accent",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            94,
-            200,
-            196
-          ]
-        },
-        "c": 1,
-        "line": 20
-      },
-      {
-        "n": "highlight",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            226,
-            109,
-            92
-          ]
-        },
-        "l": "Metric highlight",
-        "c": 1,
-        "line": 21
-      }
-    ],
-    "presets": [
-      "Light",
-      "Product",
-      "Gold"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "category",
-          "label": "Category",
-          "holds": "copy",
-          "default": "Healthcare"
-        },
-        {
-          "name": "title",
-          "label": "Title",
-          "holds": "copy",
-          "default": "Decree-Law No. 42 of 2022"
-        },
-        {
-          "name": "subtitle",
-          "label": "Subtitle",
-          "holds": "copy",
-          "default": "Promulgating the Civil Procedure Code"
-        },
-        {
-          "name": "status",
-          "label": "Status badge",
-          "holds": "copy",
-          "default": "Active"
-        },
-        {
-          "name": "updated",
-          "label": "Status note",
-          "holds": "copy",
-          "default": "Last updated 01 Oct 2024"
-        },
-        {
-          "name": "button",
-          "label": "Button",
-          "holds": "copy",
-          "default": "Explore details"
-        },
-        {
-          "name": "metricLabel",
-          "label": "Metric label",
-          "holds": "copy",
-          "default": "Sentiment rate"
-        },
-        {
-          "name": "metricSuffix",
-          "label": "Metric suffix",
-          "holds": "copy",
-          "default": "%"
-        },
-        {
-          "name": "rating",
-          "label": "Metric chip (empty hides it)",
-          "holds": "copy",
-          "default": "Moderate"
-        },
-        {
-          "name": "stats",
-          "label": "Stats (comma-separated, four; prefixes and suffixes kept)",
-          "holds": "copy",
-          "default": "12,2,18,12"
-        },
-        {
-          "name": "statLabels",
-          "label": "Stat labels (comma-separated)",
-          "holds": "copy",
-          "default": "Public complaints,Related regulations,Services,Entities involved"
-        },
-        {
-          "name": "noteHeading",
-          "label": "Note heading",
-          "holds": "copy",
-          "default": "AI Analysis"
-        },
-        {
-          "name": "noteTitle",
-          "label": "Note title",
-          "holds": "copy",
-          "default": "Propose deregulation"
-        },
-        {
-          "name": "noteBody",
-          "label": "Note text",
-          "holds": "copy",
-          "default": "Several regulations are out of date."
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 1800,
-    "animated": true,
-    "duration": 7100,
-    "module": "ui",
-    "addedAt": "2026-11-13T15:06:41Z",
-    "commitHash": "46e18da47514704a9d629ebe3c6f3a269ebdc926",
-    "order": 685
-  },
-  {
-    "id": "live-network",
-    "name": "Live network",
-    "kind": "shader",
-    "category": "particles",
-    "description": "A living knowledge graph: a gold hub throws glowing spokes out to pink branch nodes, each strung to a few small leaves, while sparks of light run along the links and nodes flare in turn; it slowly turns and keeps moving on a loop, a backdrop for a data or AI story.",
-    "tags": [
-      "background",
-      "particles",
-      "network",
-      "graph",
-      "web",
-      "tech",
-      "data",
-      "hero",
-      "glow",
-      "dashboard"
-    ],
-    "controls": [
-      {
-        "n": "uHub",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            242,
-            194,
-            122
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uSpoke",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            240,
-            200,
-            140
-          ]
-        },
-        "l": "Spokes",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uLink",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            111,
-            211,
-            220
-          ]
-        },
-        "l": "Links",
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "uBranch",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            229,
-            143,
-            176
-          ]
-        },
-        "l": "Branch nodes",
-        "c": 1,
-        "line": 7
-      },
-      {
-        "n": "uLeafA",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            79,
-            200,
-            160
-          ]
-        },
-        "l": "Leaves 1",
-        "c": 1,
-        "line": 8
-      },
-      {
-        "n": "uLeafB",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            227,
-            166,
-            76
-          ]
-        },
-        "l": "Leaves 2",
-        "c": 1,
-        "line": 9
-      },
-      {
-        "n": "uLeafC",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            156,
-            124,
-            245
-          ]
-        },
-        "l": "Leaves 3",
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "uSpark",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            243,
-            214
-          ]
-        },
-        "l": "Sparks and flares",
-        "c": 1,
-        "line": 11
-      },
-      {
-        "n": "uBranches",
-        "t": "int",
-        "d": 12,
-        "min": 3,
-        "max": 16,
-        "b": 3,
-        "line": 12
-      },
-      {
-        "n": "uLeaves",
-        "t": "int",
-        "d": 3,
-        "l": "Leaves per branch",
-        "max": 4,
-        "b": 3,
-        "line": 13
-      },
-      {
-        "n": "uSpread",
-        "t": "float",
-        "d": 0.44,
-        "min": 0.15,
-        "max": 0.6,
-        "b": 3,
-        "line": 14
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 1,
-        "l": "Spark speed",
-        "max": 3,
-        "b": 3,
-        "line": 15
-      },
-      {
-        "n": "uFlares",
-        "t": "float",
-        "d": 0.6,
-        "b": 3,
-        "line": 16
-      },
-      {
-        "n": "uDrift",
-        "t": "float",
-        "d": 0.25,
-        "l": "Turn",
-        "b": 3,
-        "line": 17
-      },
-      {
-        "n": "uGlow",
-        "t": "float",
-        "d": 1,
-        "max": 2,
-        "b": 3,
-        "line": 18
-      },
-      {
-        "n": "uSeed",
-        "t": "float",
-        "d": 7,
-        "l": "Layout",
-        "max": 100,
-        "s": 1,
-        "b": 3,
-        "line": 19
-      },
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            11,
-            26,
-            30
-          ]
-        },
-        "c": 1,
-        "line": 20
-      },
-      {
-        "n": "uBackgroundAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Background opacity",
-        "b": 3,
-        "line": 21
-      }
-    ],
-    "presets": [
-      "Overlay",
-      "Ice",
-      "Sparse",
-      "Busy"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "swiftReady": true,
-    "animated": true,
-    "module": "shaders/web",
-    "addedAt": "2026-11-13T14:12:50Z",
-    "commitHash": "11bb3822e6b99a143ed5a8735d6184ed9416cbff",
-    "order": 684
   }
 ]

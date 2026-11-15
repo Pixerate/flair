@@ -6,6 +6,7 @@ import { EFFECT_META, loadEffect } from "../catalog/lazy.js";
 import { attachFlairMetal, documentGlsl } from "../export/metal-document.js";
 import { metalToolsAvailable } from "../export/metal.js";
 import { flairEffects, planOf } from "./effects.js";
+import { DEFAULT_TEXT_TREATMENT, TEXT_TREATMENT_STAGES, textTreatmentControls, textTreatmentDuration, textTreatmentPlan, textTreatments, type TextTreatmentTarget } from "../catalog/treatment.js";
 
 /**
  * The Swift adapter (`FlairEditorEffects`, the `EffectProvider` of the editor's Swift package)
@@ -25,6 +26,8 @@ const SHADERS_DIR = resolve("swift/Sources/FlairEffects/Shaders");
 const OUT_FILE = resolve("swift/Sources/FlairEditorEffects/Resources/flair-effects.json");
 const DOCUMENT_FIXTURE = resolve("swift/Tests/FlairEditorEffectsTests/Fixtures/aurora-ts-document.json");
 const METAL_FIXTURE = resolve("swift/Tests/FlairEditorEffectsTests/Fixtures/aurora-edited-metal-document.json");
+const TREATMENTS_FILE = resolve("swift/Sources/FlairEffects/Resources/flair-text-treatments.json");
+const TREATMENT_FIXTURE = resolve("swift/Tests/FlairEffectsTests/Fixtures/text-treatment-plans.json");
 const EDIT = "\n// Edited on the web: a comment, so it draws as the catalog's Aurora.\n";
 
 /** The shader effects the Metal package has: one `.metal` file each. */
@@ -77,6 +80,80 @@ async function tsDocument(edit?: string): Promise<string> {
     session.dispose();
   }
 }
+
+/**
+ * The text treatments as data for `FlairTextTreatments` (Swift), which plans them with the same
+ * arithmetic as `textTreatmentPlan`: their controls, presets and stages, placeholders and all.
+ */
+function treatmentsFile(): string {
+  const lines = textTreatments.map((t) =>
+    JSON.stringify({
+      id: t.id,
+      name: t.name,
+      description: t.description,
+      tags: t.tags,
+      controls: textTreatmentControls(t).map((c) => ({ name: c.name, type: c.type, label: c.label, color: c.color, default: c.default, min: c.min, max: c.max })),
+      presets: t.presets ?? [],
+      stages: t.stages,
+    }),
+  );
+  return `{"generatedBy":"pnpm swift:meta (src/integrations/swift-effects.test.ts)","default":${JSON.stringify(DEFAULT_TEXT_TREATMENT)},"treatments":[\n${lines.join(",\n")}\n]}\n`;
+}
+
+/**
+ * Plans the Swift tests compute again and compare (conformance): every treatment's every stage, at
+ * several moments, with and without motion, over a wrapped range with a caret, a typed word, a name
+ * tag and colours; and with a preset, a colour value and the caret blinking, over one line.
+ */
+function treatmentFixture(): string {
+  const wrapped: TextTreatmentTarget = {
+    lines: [
+      { x: 40, y: 0, width: 120, height: 20 },
+      { x: 0, y: 24, width: 64.5, height: 20 },
+    ],
+    caret: { x: 64.5, y: 24, height: 20 },
+    text: "word",
+    label: "Agent",
+    color: "#1d1d1f",
+    background: "#ffffff",
+  };
+  const single: TextTreatmentTarget = { lines: [{ x: 12, y: 30, width: 88, height: 17 }], caret: { x: 100, y: 30, height: 17 }, label: "Claude", background: "#202124" };
+  const cases: unknown[] = [];
+  for (const t of textTreatments) {
+    for (const stage of TEXT_TREATMENT_STAGES) {
+      for (const reduceMotion of [false, true]) {
+        const d = textTreatmentDuration(t, stage, wrapped, { reduceMotion });
+        for (const f of [0.1, 0.35, 0.5, 0.8, 1.3]) {
+          const time = Math.round(d * f * 1000) / 1000;
+          const plan = textTreatmentPlan(t, { stage, time, target: wrapped, reduceMotion });
+          cases.push({ id: t.id, stage, time, reduceMotion, target: wrapped, plan });
+        }
+      }
+      const preset = t.presets![1]!.name;
+      const values = { color: "#3366cc", blink: true };
+      const d = textTreatmentDuration(t, stage, single, { preset, values });
+      for (const f of [0.3, 0.6]) {
+        const time = Math.round(d * f * 1000) / 1000;
+        cases.push({ id: t.id, stage, time, reduceMotion: false, preset, values, target: single, plan: textTreatmentPlan(t, { stage, time, target: single, preset, values }) });
+      }
+    }
+  }
+  return `{"generatedBy":"pnpm swift:meta (src/integrations/swift-effects.test.ts)","cases":[\n${cases.map((c) => JSON.stringify(c)).join(",\n")}\n]}\n`;
+}
+
+describe("the Swift text treatments", () => {
+  it("are the catalog's, as data (pnpm swift:meta writes them)", () => {
+    const text = treatmentsFile();
+    if (process.env.UPDATE_SWIFT_EFFECTS) writeFileSync(TREATMENTS_FILE, text);
+    expect(existsSync(TREATMENTS_FILE) && readFileSync(TREATMENTS_FILE, "utf8") === text, "Run `pnpm swift:meta`: the text treatments have changed.").toBe(true);
+  });
+
+  it("come with plans for the Swift tests to match (pnpm swift:meta writes them)", () => {
+    const text = treatmentFixture();
+    if (process.env.UPDATE_SWIFT_EFFECTS) writeFileSync(TREATMENT_FIXTURE, text);
+    expect(existsSync(TREATMENT_FIXTURE) && readFileSync(TREATMENT_FIXTURE, "utf8") === text, "Run `pnpm swift:meta`: the text treatments' plans have changed.").toBe(true);
+  });
+});
 
 describe("the Swift adapter's effect descriptions", () => {
   it("cover every Metal effect, as flairEffects() describes it (pnpm swift:meta writes them)", async () => {

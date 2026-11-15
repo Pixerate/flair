@@ -14,6 +14,7 @@ import {
 import { mountEffect } from "@pixerate/flair/embed";
 import { showsOverPicture } from "../overPicture";
 import { CameraMoves } from "./CameraMoves";
+import { TextTreatments } from "./TextTreatments";
 
 let overlayPool: ThumbnailPool | undefined;
 
@@ -88,6 +89,22 @@ function TimingThumb({ effect, hovered }: { effect: Extract<EffectDefinition, { 
     else mounted.current?.pause();
   }, [hovered]);
   return <div ref={host} className="absolute inset-0" />;
+}
+
+/** A text treatment playing its scripted edit on a small paragraph; with reduced motion, only while hovered. */
+function TreatmentThumb({ effect, hovered }: { effect: Extract<EffectDefinition, { kind: "text-treatment" }>; hovered: boolean }) {
+  const host = useRef<HTMLDivElement>(null);
+  const mounted = useRef<ReturnType<typeof mountEffect> | undefined>(undefined);
+  useEffect(() => {
+    mounted.current = mountEffect(host.current!, effect, { autoplay: !prefersReducedMotion() });
+    return () => mounted.current!.dispose();
+  }, [effect]);
+  useEffect(() => {
+    if (!prefersReducedMotion()) return;
+    if (hovered) mounted.current?.play();
+    else mounted.current?.pause();
+  }, [hovered]);
+  return <div ref={host} className="absolute inset-0 flex items-center text-[13px] text-slate-900" style={{ fontFamily: "Georgia, serif" }} />;
 }
 
 const prefersReducedMotion = () => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -236,7 +253,7 @@ function EffectCard({ effect, onOpen }: { effect: EffectDefinition; onOpen: () =
       onPointerLeave={() => setHovered(false)}
       className="group text-left rounded-xl border border-slate-800 bg-slate-900 overflow-hidden hover:border-violet-500/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet-500 transition"
     >
-      <div className={`relative aspect-video ${effect.kind === "vector" && !showsOverPicture(effect) ? "bg-slate-100" : "bg-black"}`}>
+      <div className={`relative aspect-video ${effect.kind === "text-treatment" ? "bg-white" : effect.kind === "vector" && !showsOverPicture(effect) ? "bg-slate-100" : "bg-black"}`}>
         {showsOverPicture(effect) && <img src={SAMPLE_IMAGES.city} alt="" className="absolute inset-0 h-full w-full object-cover" />}
         {effect.kind === "shader" ? (
           <ShaderThumb effect={effect} hovered={hovered} />
@@ -244,6 +261,8 @@ function EffectCard({ effect, onOpen }: { effect: EffectDefinition; onOpen: () =
           <CameraThumb effect={effect} hovered={hovered} />
         ) : effect.kind === "timing" ? (
           <TimingThumb effect={effect} hovered={hovered} />
+        ) : effect.kind === "text-treatment" ? (
+          <TreatmentThumb effect={effect} hovered={hovered} />
         ) : (
           <VectorThumb effect={effect} hovered={hovered} />
         )}
@@ -325,6 +344,7 @@ preview.setValues(effectDefaults(aurora, { preset: "Ember" }));`}</code>
       )}
 
       {group === "all" && !text && <CameraMoves />}
+      {!text && (group === "all" || category === "treatment" || (group === "Type & titles" && category === "all")) && <TextTreatments />}
 
       {effects.length === 0 ? (
         <p className="text-slate-400">No effects match.</p>

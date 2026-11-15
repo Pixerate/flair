@@ -52,7 +52,7 @@ import {
 } from "@pixerate/editor/effects";
 import { cameraMoveControls, getCameraMove } from "../catalog/camera.js";
 import { getTimingEffect, timingControls, timingSample as flairTimingSample, MAX_TIMING_FRAMES } from "../catalog/timing.js";
-import { EFFECT_META, loadEffect, type EffectMeta, type UiBindings, type UiDescriptor } from "../catalog/lazy.js";
+import { EFFECT_META, getEffectMeta, loadEffect, type EffectMeta, type UiBindings, type UiDescriptor } from "../catalog/lazy.js";
 import { renderVectorEffect, type EffectDefinition, type ShaderEffect, type VectorEffect } from "../catalog/types.js";
 import { applyPrimitive } from "../motion/apply.js";
 import { getPrimitive, PRIMITIVES } from "../motion/library.js";
@@ -266,6 +266,7 @@ export function uiOf(plan: Plan): EffectUiFields {
 
 export function summaryOf(plan: Plan): FlairEffectSummary {
   const { meta } = plan;
+  if (meta.kind === "text-treatment") throw new Error(`"${meta.id}" is a text treatment, which the effects contract cannot describe yet.`);
   const paint = paintOf(plan);
   const duration = playOf(meta);
   const move = meta.kind === "camera" ? getCameraMove(meta.id) : undefined;
@@ -747,7 +748,8 @@ class VectorRenderer extends BaseRenderer {
  */
 export function flairEffects(options: FlairEffectsOptions = {}): FlairEffectProvider {
   const kinds = new Set<EffectKind>(options.kinds ?? ["shader", "vector", "motion", "camera", "timing"]);
-  const plans = new Map(EFFECT_META.filter((m) => kinds.has(m.kind)).map((m) => [m.id, planOf(m)]));
+  // Text treatments are not in the effects contract yet (Pixerate/editor#887), so they are not offered.
+  const plans = new Map(EFFECT_META.filter((m) => m.kind !== "text-treatment" && kinds.has(m.kind)).map((m) => [m.id, planOf(m)]));
   const primitives = kinds.has("motion") ? PRIMITIVES : [];
   const summaries: FlairEffectSummary[] = [...[...plans.values()].map(summaryOf), ...primitives.map(primitiveSummary)];
   const descriptions = new Map<string, Promise<FlairEffectDescription>>();
@@ -786,7 +788,10 @@ export function flairEffects(options: FlairEffectsOptions = {}): FlairEffectProv
   }
   const offered = (id: string) => plans.has(id);
 
-  const unknown = (id: string) => new UnknownEffectError(String(id), "Flair");
+  const unknown = (id: string) =>
+    getEffectMeta(String(id))?.kind === "text-treatment"
+      ? new EffectUnsupportedError(`"${id}" is a text treatment, which draws over a host's text rather than a picture; the effects contract has no text treatments yet, so this provider does not offer them. Use Flair directly: textTreatmentPlan (or catalog.treatment) for what a stage draws, mountTextTreatment on the web, FlairTextTreatmentRenderer in Swift.`, String(id))
+      : new UnknownEffectError(String(id), "Flair");
 
   /** A catalog effect: its plan, definition and description (loading its source once). */
   async function catalogEffect(id: string): Promise<{ plan: Plan; effect: EffectDefinition; description: EffectDescription }> {
@@ -910,6 +915,7 @@ export function flairEffects(options: FlairEffectsOptions = {}): FlairEffectProv
       if (effect.kind === "shader") return new ShaderRenderer(plan, description, effect, width, height, depth);
       if (effect.kind === "camera") throw new EffectUnsupportedError(`"${id}" is a camera move, which moves a scene's camera rather than drawing a picture: use cameraView (or sampleCameraMove) for where it puts the camera.`, id);
       if (effect.kind === "timing") throw new EffectUnsupportedError(`"${id}" is a timing effect, which retimes footage rather than drawing a picture: use timingSample for the footage frames each moment shows (and timingLength for how long the retime lasts).`, id);
+      if (effect.kind === "text-treatment") throw unknown(id);
       if (!rasterize) {
         throw new EffectUnsupportedError(
           `"${id}" is a vector effect, and a Worker has no DOM to draw SVG in: render it on the page, pass rasterizeSvg to flairEffects, or use applyVectorEffect for the animated SVG.`,

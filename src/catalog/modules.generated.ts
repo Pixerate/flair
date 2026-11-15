@@ -105,6 +105,7 @@ export const EFFECT_MODULES: Record<string, () => Promise<Record<string, unknown
   "timewarp": () => import("./timewarp.js"),
   "timing": () => import("./timing.js"),
   "trail": () => import("./trail.js"),
+  "treatment": () => import("./treatment.js"),
   "ui": () => import("./ui.js"),
   "vector": () => import("./vector.js"),
   "web": () => import("./web.js"),

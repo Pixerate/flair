@@ -2,6 +2,7 @@
 // type-checks these sources through the `workspace` condition.
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="../shader/gifenc.d.ts" />
+import { textTreatmentRefusal } from "../catalog/treatment.js";
 import { CAMERA_PREVIEW_SOURCE, cameraPreviewLength, cameraPreviewValues } from "../catalog/camera.js";
 import { drawsAlpha, effectDefaults, effectInputs, getEffect, SAMPLE_IMAGES, type EffectDefinition } from "../catalog/index.js";
 import { renderVectorEffect, type ShaderEffect, type TimingEffect } from "../catalog/types.js";
@@ -222,6 +223,7 @@ const even = (n: number) => Math.max(2, Math.ceil(n / 2) * 2);
  */
 export async function recordingPlan(effect: EffectDefinition | string, options: RecordOptions = {}): Promise<RecordingPlan> {
   const def = resolveEffect(effect);
+  if (def.kind === "text-treatment") throw new Error(textTreatmentRefusal(def.id));
   if (options.preset && !def.presets?.some((p) => p.name === options.preset)) {
     const names = def.presets?.map((p) => `"${p.name}"`).join(", ");
     throw new Error(`"${def.id}" has no preset "${options.preset}"${names ? `; it has ${names}` : ""}.`);
@@ -322,7 +324,7 @@ export async function negotiateOutput(options: OutputOptions, fps: number, drawn
 function defaultDuration(def: EffectDefinition, options: RecordOptions): number {
   if (def.kind === "shader") return def.loop ?? DEFAULT_SECONDS;
   if (def.kind === "camera") return cameraPreviewLength(def) / 1000;
-  if (def.kind === "timing") return DEFAULT_SECONDS;
+  if (def.kind === "timing" || def.kind === "text-treatment") return DEFAULT_SECONDS;
   const motion = renderVectorEffect(def, effectValues(def, options).values);
   return (svgDuration(motion, options.steps ?? []) + (def.hold ?? 600)) / 1000;
 }

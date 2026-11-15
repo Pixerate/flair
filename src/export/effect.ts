@@ -53,6 +53,7 @@ import {
 import { checkShutter, FrameAverager, shutterTimes, type Shutter, type ShutterOptions } from './shutter.js';
 import { decodeFootage, probeFootage } from './timing.js';
 import { TimingRenderer } from '../catalog/timing.js';
+import { textTreatmentRefusal } from '../catalog/treatment.js';
 import type { TimingEffect } from '../catalog/types.js';
 
 /**
@@ -667,6 +668,9 @@ export async function exportEffect(effect: string | EffectDefinition, options: E
   if (def.kind === 'camera') {
     throw new Error(`"${def.id}" is a camera move, which moves a scene's camera rather than drawing a picture; use it in a scene shot's camera ("in" or "during") and export the scene (flair scene html, lottie, motn, fcp7 or edl), or record a preview of it on a picture in a browser with recordEffect.`);
   }
+  if (def.kind === 'text-treatment') {
+    throw new Error(textTreatmentRefusal(def.id));
+  }
   if (options.preset && !def.presets?.some((p) => p.name === options.preset)) {
     const names = def.presets?.map((p) => `"${p.name}"`).join(', ');
     throw new Error(`"${def.id}" has no preset "${options.preset}"; ${names ? `its presets are ${names}` : 'it has no presets'}.`);
@@ -1069,12 +1073,12 @@ export function effectQueryFromFlags(flags: { accepts?: readonly string[]; inter
   if (flags.category && !(EFFECT_CATEGORIES as readonly string[]).includes(flags.category)) {
     throw new Error(`--category takes one of ${EFFECT_CATEGORIES.join(', ')}; not "${flags.category}".`);
   }
-  if (flags.kind && !['shader', 'vector', 'camera', 'timing'].includes(flags.kind)) throw new Error(`--kind takes shader, vector, camera or timing; not "${flags.kind}".`);
+  if (flags.kind && !['shader', 'vector', 'camera', 'timing', 'text-treatment'].includes(flags.kind)) throw new Error(`--kind takes shader, vector, camera, timing or text-treatment; not "${flags.kind}".`);
   return {
     ...(accepts ? { accepts } : {}),
     ...(interaction ? { interaction } : {}),
     ...(flags.category ? { category: flags.category as EffectCategory } : {}),
-    ...(flags.kind ? { kind: flags.kind as 'shader' | 'vector' | 'camera' | 'timing' } : {}),
+    ...(flags.kind ? { kind: flags.kind as 'shader' | 'vector' | 'camera' | 'timing' | 'text-treatment' } : {}),
     ...(flags.search ? { text: flags.search } : {}),
     ...(tags ? { tags } : {}),
     ...(flags.transparent !== undefined ? { transparent: flags.transparent } : {}),
