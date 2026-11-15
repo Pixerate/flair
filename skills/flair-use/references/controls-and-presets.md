@@ -1,4 +1,4 @@
-# Controls, presets, camera moves, timing and motion
+# Controls, presets, camera moves, timing, text treatments and motion
 
 ## Controls
 
@@ -55,6 +55,21 @@ const slowMo = await recordEffect("retime-speed", { subject: { video }, values: 
 ```
 
 Without a video they play on a preview clip of Flair's own. In Node, `flair render long-exposure --video clip.mp4 -o out.mp4` (or `exportEffect` with `subject: { video: "clip.mp4" }`) retimes a video file with ffmpeg and no browser; the video's own sound is left out, and `--audio` muxes another track. `timingLength(effect, footageMs, values)` gives how long the retimed clip is, and `timingSample(effect, { time, footage }, values)` gives the footage frames one moment shows. A speed change of 0.5 doubles the length; a freeze adds its hold. They are not editor documents (`createEffectDocument` refuses them). In a scene, a layer with a video subject takes one as its `timing`: `{ "subject": { "video": "surf.mp4" }, "timing": { "effect": "retime-speed", "preset": "Slow motion" } }` (see [scenes.md](scenes.md)).
+
+
+## Text treatments (agents' edits over text)
+
+Text treatments are catalog effects of kind `text-treatment` (the `treatment` category in [type-titles.md](effects/type-titles.md)): `soft-sweep` (the default), `marker-swipe`, `glow-underline`, `shimmer`, `scan-line`, `presence`, `design-frame` and `ribbon-curl` (a gradient ribbon curling past the caret as an edit lands; `darkTheme: true` for dark pages). They draw over a host's own text, from its line rectangles, and never change it. Each has the stages `caret`, `checking`, `selecting`, `typing` and `landed`; `color` is the agent's colour.
+
+```ts
+import { caretAt, mountTextTreatment, rangeRects } from "@pixerate/flair/embed";
+
+const overlay = mountTextTreatment(editorEl, "soft-sweep", { values: { color: "#0a84ff" } });
+overlay.play("caret", () => ({ caret: caretAt(textNode, offset, editorEl), label: "Claude" }));
+await overlay.play("checking", { lines: rangeRects(range, editorEl) }).finished;
+```
+
+`play` throws a sentence for an unknown stage or a bad target. Stages play without motion when the visitor prefers it (`reducedMotion: "user"`, the default). `textTreatmentPlan(effect, { stage, time, target })` gives the layers a stage draws (to check a result without a browser), and Swift draws the same plan with `FlairTextTreatmentRenderer`. `mountEffect` plays a treatment's scripted preview on a paragraph of its own; it takes no subject. They are not editor documents (`createEffectDocument` refuses them), and scenes, recordings and `flair render` refuse them too.
 
 ## Motion primitives (animating your own SVG)
 

@@ -79,6 +79,19 @@
         };
         raf = requestAnimationFrame(step);
         stopDemo = () => cancelAnimationFrame(raf);
+      } else if (effect.kind === "text-treatment") {
+        // A text treatment plays its scripted edit (check a sentence, fix two words) on a paragraph of its own.
+        const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const mounted = mountEffect(timingHostEl, effect, { autoplay: !reduced || hovered });
+        timingHover = (on) => {
+          if (!reduced) return;
+          if (on) mounted.play();
+          else mounted.pause();
+        };
+        stopDemo = () => {
+          timingHover = null;
+          mounted.dispose();
+        };
       } else if (effect.kind === "timing") {
         // A timing effect retimes Flair's preview clip, whose clock shows the footage's own time.
         const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -213,6 +226,8 @@
 
   {#if effectMeta.kind === "timing"}
     <div bind:this={timingHostEl} class="pointer-events-none absolute inset-0"></div>
+  {:else if effectMeta.kind === "text-treatment"}
+    <div bind:this={timingHostEl} class="pointer-events-none absolute inset-0 flex items-center bg-white text-[13px] text-[#0d0d14]" style="font-family: Georgia, serif"></div>
   {:else if effectMeta.kind !== "vector"}
     <canvas bind:this={canvasEl} class="pointer-events-none absolute inset-0 h-full w-full"></canvas>
     {#if webglFailed && !loadFailed}

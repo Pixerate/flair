@@ -138,6 +138,7 @@ import { dataEffects } from "./data.js";
 import { iconEffects } from "./icons.js";
 import { cameraEffects } from "./camera.js";
 import { timingEffects } from "./timing.js";
+import { textTreatments } from "./treatment.js";
 
 export {
   colorControl,
@@ -163,6 +164,19 @@ export {
   type EffectDefinition,
   type EffectPreset,
   type ShaderEffect,
+  type TextTreatmentEffect,
+  type TextTreatmentStage,
+  type TextTreatmentStages,
+  type TreatmentBlend,
+  type TreatmentColor,
+  type TreatmentEase,
+  type TreatmentLayer,
+  type TreatmentLayerType,
+  type TreatmentNumber,
+  type TreatmentReduced,
+  type TreatmentStage,
+  type TreatmentTrack,
+  type TreatmentValue,
   type TimingBlend,
   type TimingContext,
   type TimingEffect,
@@ -197,6 +211,33 @@ export {
   TimingRenderer,
   type TimingFootage,
 } from "./timing.js";
+export {
+  checkStage,
+  cubicBezier,
+  DEFAULT_REDUCED,
+  DEFAULT_TEXT_TREATMENT,
+  getTextTreatment,
+  planResolvedStage,
+  resolveTextTreatment,
+  TEXT_TREATMENT_STAGE_NOTES,
+  TEXT_TREATMENT_STAGES,
+  textTreatmentControls,
+  textTreatmentDuration,
+  textTreatmentIssues,
+  textTreatmentPlan,
+  textTreatmentRefusal,
+  textTreatments,
+  textTreatmentValues,
+  TREATMENT_LAYER_TYPES,
+  type TextTreatmentPlan,
+  type TextTreatmentPlanOptions,
+  type TextTreatmentTarget,
+  type TreatmentCaret,
+  type TreatmentGradient,
+  type TreatmentPlanLayer,
+  type TreatmentRect,
+  type TreatmentRGBA,
+} from "./treatment.js";
 export { controlSchema, controlsSchema, controlUnit, type JsonSchema, type SchemaOptions } from "../shader/schema.js";
 export { SCENE_TEMPLATES, sceneTemplate } from "./templates.js";
 export { PAINT_HINTS, PAINT_MAPS, PAINT_REPEATS, paintHint, type EffectPaintHint, type PaintMap, type PaintRepeat } from "./paint.js";
@@ -334,7 +375,7 @@ export const SHADER_EFFECTS: readonly ShaderEffect[] = [
 ];
 
 /** Every effect in the catalog, shaders first, grouped by category. */
-export const EFFECTS: readonly EffectDefinition[] = [...SHADER_EFFECTS, ...vectorEffects, ...textEffects, ...morphEffects, ...interactionEffects, ...pyroEffects, ...timewarpEffects, ...meltEffects, ...electricEffects, ...fireEffects, ...hologramEffects, ...pixelEffects, ...splatterEffects, ...bubbleEffects, ...stickerEffects, ...trailEffects, ...impactEffects, ...comicEffects, ...animeEffects, ...emergencyEffects, ...filmEffects, ...crtEffects, ...glowEffects, ...shadowEffects, ...lightingEffects, ...scrollEffects, ...broadcastEffects, ...annotationEffects, ...uiEffects, ...loaderEffects, ...dataEffects, ...iconEffects, ...webEffects, ...promoEffects, ...horrorEffects, ...beautyEffects, ...memeEffects, ...cinematicEffects, ...cameraEffects, ...timingEffects].sort(
+export const EFFECTS: readonly EffectDefinition[] = [...SHADER_EFFECTS, ...vectorEffects, ...textEffects, ...morphEffects, ...interactionEffects, ...pyroEffects, ...timewarpEffects, ...meltEffects, ...electricEffects, ...fireEffects, ...hologramEffects, ...pixelEffects, ...splatterEffects, ...bubbleEffects, ...stickerEffects, ...trailEffects, ...impactEffects, ...comicEffects, ...animeEffects, ...emergencyEffects, ...filmEffects, ...crtEffects, ...glowEffects, ...shadowEffects, ...lightingEffects, ...scrollEffects, ...broadcastEffects, ...annotationEffects, ...uiEffects, ...loaderEffects, ...dataEffects, ...iconEffects, ...webEffects, ...promoEffects, ...horrorEffects, ...beautyEffects, ...memeEffects, ...cinematicEffects, ...cameraEffects, ...timingEffects, ...textTreatments].sort(
   (a, b) => EFFECT_CATEGORIES.indexOf(a.category) - EFFECT_CATEGORIES.indexOf(b.category),
 );
 
@@ -365,11 +406,13 @@ export function effectMeta(effect: EffectDefinition): EffectMeta {
  * Ms of one play of an effect: a shader's `loop`, a vector effect's
  * picture at its default values plus its `hold` (default 600), or a camera
  * move's own length (0 for a cut). Undefined for a shader with no loop,
- * and for a timing effect, whose length is its footage's (see `timingLength`).
+ * for a timing effect, whose length is its footage's (see `timingLength`),
+ * and for a text treatment, whose stages each take their own time over the
+ * host's text (see `textTreatmentDuration`).
  */
 export function effectDuration(effect: EffectDefinition): number | undefined {
   if (effect.kind === "shader") return effect.loop === undefined ? undefined : Math.round(effect.loop * 1000);
-  if (effect.kind === "timing") return undefined;
+  if (effect.kind === "timing" || effect.kind === "text-treatment") return undefined;
   if (effect.kind === "camera") return effect.motion.duration;
   return Math.round(svgDuration(renderVectorEffect(effect, effectDefaults(effect))) + (effect.hold ?? 600));
 }
@@ -557,9 +600,9 @@ export function effectStack(layers: readonly StackLayer[], options: { source?: L
   });
 }
 
-/** An effect's controls: a shader's `@control` uniforms, or a vector effect's, camera move's or timing effect's declared controls. */
+/** An effect's controls: a shader's `@control` uniforms, or a vector effect's, camera move's, timing effect's or text treatment's declared controls. */
 export function effectControls(effect: EffectDefinition): ControlDef[] {
-  if (effect.kind === "camera" || effect.kind === "timing") return effect.controls.map((c, i) => vectorControlDef(c, i + 1));
+  if (effect.kind === "camera" || effect.kind === "timing" || effect.kind === "text-treatment") return effect.controls.map((c, i) => vectorControlDef(c, i + 1));
   return effect.kind === "shader" ? parseControls(effect.source) : vectorEffectControls(effect);
 }
 

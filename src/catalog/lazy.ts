@@ -73,7 +73,7 @@ const loadingModules = new Map<string, Promise<void>>();
 
 /** Every effect a module exports, alone or in lists. */
 function effectsIn(module: Record<string, unknown>): EffectDefinition[] {
-  const isEffect = (v: unknown): v is EffectDefinition => !!v && typeof v === "object" && "id" in v && "kind" in v && ["shader", "vector", "camera", "timing"].includes((v as { kind: string }).kind);
+  const isEffect = (v: unknown): v is EffectDefinition => !!v && typeof v === "object" && "id" in v && "kind" in v && ["shader", "vector", "camera", "timing", "text-treatment"].includes((v as { kind: string }).kind);
   return Object.values(module).flatMap((v) => (Array.isArray(v) ? v.filter(isEffect) : isEffect(v) ? [v] : []));
 }
 

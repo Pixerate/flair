@@ -142,6 +142,11 @@ export function inputsOf(effect: EffectDefinition, controls: readonly ControlDef
   if (effect.kind === "timing") {
     return { accepts: ["video"], images: [{ name: "footage", label: "Footage", wants: "picture" }], texts: [], interactions: [], transparent: false };
   }
+  // A text treatment draws over a range of the host's text, in an overlay.
+  if (effect.kind === "text-treatment") {
+    // Not an overlay to lay over a picture (`transparent`): it only makes sense over the host's text.
+    return { accepts: ["text"], images: [], texts: [], interactions: [], transparent: false };
+  }
   const accepts = new Set<EffectInput>();
   const images: ImageSlot[] = [];
   const texts: TextSlot[] = [];

@@ -510,7 +510,7 @@ async function runSceneTool(scene: Scene, toolName: string, input: Record<string
       const accepts: string[] = input.accepts ?? [];
       const limit = Math.min(50, input.limit ?? 10);
       const offset = input.offset ?? 0;
-      const matches = EFFECT_META.filter((m) => m.kind !== 'camera')
+      const matches = EFFECT_META.filter((m) => m.kind !== 'camera' && m.kind !== 'text-treatment')
         .filter((m) => !input.kind || m.kind === input.kind)
         .filter((m) => input.transition === undefined || (input.transition ? m.video === 'transition' : m.video !== 'transition' && m.kind !== 'timing'))
         .filter((m) => input.transparent === undefined || !!m.transparent === input.transparent)

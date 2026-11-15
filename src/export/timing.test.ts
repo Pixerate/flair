@@ -67,6 +67,6 @@ describe('timing effects in Node', () => {
 
   it('finds timing effects (and camera moves) by kind', () => {
     expect(effectQueryFromFlags({ kind: 'timing' })).toEqual({ kind: 'timing' });
-    expect(() => effectQueryFromFlags({ kind: 'sound' })).toThrow(/--kind takes shader, vector, camera or timing/);
+    expect(() => effectQueryFromFlags({ kind: 'sound' })).toThrow(/--kind takes shader, vector, camera, timing or text-treatment/);
   });
 });

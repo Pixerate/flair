@@ -27,6 +27,7 @@ export type EffectCategory =
   | "beauty"
   | "overlay"
   | "text"
+  | "treatment"
   | "morph"
   | "interaction"
   | "pyrotechnics"
@@ -84,6 +85,7 @@ export const EFFECT_CATEGORIES: readonly EffectCategory[] = [
   "beauty",
   "overlay",
   "text",
+  "treatment",
   "morph",
   "interaction",
   "pyrotechnics",
@@ -138,7 +140,7 @@ export const EFFECT_CATEGORY_GROUPS: readonly EffectCategoryGroup[] = [
   { name: "Light", categories: ["light", "lighting", "glow", "shadow", "electric", "fire", "hologram"] },
   { name: "Pictures", categories: ["image", "cinematic", "film", "beauty", "distortion", "retro", "crt", "comic", "anime", "horror", "emergency", "meme", "timewarp", "timing", "melt"] },
   { name: "Particles & FX", categories: ["overlay", "splatter", "bubble", "particles", "trail", "debris", "impact", "pyrotechnics"] },
-  { name: "Type & titles", categories: ["text", "morph", "broadcast", "annotation", "sticker"] },
+  { name: "Type & titles", categories: ["text", "treatment", "morph", "broadcast", "annotation", "sticker"] },
   { name: "Paths", categories: ["path"] },
   { name: "Inputs", categories: ["interaction", "audio", "scroll"] },
   { name: "Interface", categories: ["ui", "icon", "data"] },
@@ -371,7 +373,188 @@ export interface TimingEffect extends EffectBase {
   motion: TimingMotion;
 }
 
-export type EffectDefinition = ShaderEffect | VectorEffect | CameraEffect | TimingEffect;
+/** A stage of a text treatment: what an agent (or anyone) is doing to the range it draws over. */
+export type TextTreatmentStage = "checking" | "selecting" | "typing" | "landed" | "caret";
+
+/**
+ * How a value eases between two keys: a CSS timing function's name, or a
+ * cubic Bézier's control points `[x1, y1, x2, y2]` (x within 0 to 1).
+ */
+export type TreatmentEase = "linear" | "ease" | "ease-in" | "ease-out" | "ease-in-out" | readonly [number, number, number, number];
+
+/** A number, or a control's value written `"{{name}}"`. */
+export type TreatmentNumber = number | string;
+
+/**
+ * A value that changes through a stage: keys of `[progress, value]`,
+ * progress 0 to 1 in order, eased between each pair.
+ */
+export interface TreatmentTrack {
+  keys: readonly (readonly [number, TreatmentNumber])[];
+  /** Default `linear`. */
+  ease?: TreatmentEase;
+}
+
+/** A fixed value or one that changes through the stage. */
+export type TreatmentValue = TreatmentNumber | TreatmentTrack;
+
+/**
+ * A colour: `#rrggbb`, a colour control written `"{{name}}"`, `"text"` (the
+ * host text's colour) or `"background"` (the colour behind the text; a
+ * layer in it is left out when the host does not say).
+ */
+export type TreatmentColor = string;
+
+/**
+ * What a treatment layer draws:
+ * - `fill`: a rectangle on each line of the range (a tint, a marker, an
+ *   underline with `top` and `height`), revealed and erased from its leading
+ *   edge, solid or with `stops` across the line, or an outline with `stroke`.
+ * - `band`: a soft band crossing the range at `position` (a sweep, a shimmer, a scan).
+ * - `caret`: an insertion point at the host's caret.
+ * - `tag`: a name tag above the caret (the host's `label`).
+ * - `cover`: the background colour over each line, hiding the text under it (the word being typed over).
+ * - `ghost`: the text being typed (the host's `text`), in the host's font, over the first line.
+ * - `handles`: small squares at the corners of the range, as a design tool's selection.
+ * - `ribbon`: a tapering ribbon along a curve (`points`, from the caret, in caret
+ *   heights), drawn on and wiped away along its length with `reveal` and `erase`,
+ *   its colour changing along it (`colorStops`): a flourish, a swoosh, a curl.
+ * - `sparkles`: `count` soft dots shed along the drawn part of a curve (`points`),
+ *   scattered `spread` either side, drifting down and twinkling.
+ */
+export type TreatmentLayerType = "fill" | "band" | "caret" | "tag" | "cover" | "ghost" | "handles" | "ribbon" | "sparkles";
+
+/** How a layer mixes with what is under it. */
+export type TreatmentBlend = "normal" | "multiply" | "screen" | "plus-lighter";
+
+/**
+ * One layer of a treatment stage, as data a renderer draws with plain
+ * rectangles, gradients and text (Core Animation layers, SVG). Numbers may
+ * be controls (`"{{name}}"`); `opacity`, `reveal`, `erase` and `position`
+ * may change through the stage.
+ */
+export interface TreatmentLayer {
+  type: TreatmentLayerType;
+  /** Under the text or over it. Default: `behind` for `fill` and `band`, `above` for the rest. */
+  z?: "behind" | "above";
+  /** A bool control written `"{{name}}"`: the layer is drawn only while it is on. */
+  if?: string;
+  /** A bool control written `"{{name}}"`: the layer is drawn only while it is off. */
+  unless?: string;
+  /** Default `"{{color}}"` (`"background"` for `cover`, `"text"` for `ghost`). */
+  color?: TreatmentColor;
+  /** The colour's opacity, 0 to 1 (default 1). */
+  alpha?: TreatmentNumber;
+  /** The layer's opacity through the stage, 0 to 1 (default 1). */
+  opacity?: TreatmentValue;
+  /** Px each line's rectangle grows by on the left and right (negative shrinks). */
+  padX?: TreatmentNumber;
+  /** Px each line's rectangle grows by at the top and bottom (negative shrinks). */
+  padY?: TreatmentNumber;
+  /** Where the layer starts down each line (or the caret), as a share of its height (default 0). */
+  top?: TreatmentNumber;
+  /** How much of each line's (or the caret's) height it covers (default 1). */
+  height?: TreatmentNumber;
+  /** Corner radius in px. */
+  radius?: TreatmentNumber;
+  /** `fill`: how far across the range it is drawn from the leading edge, 0 to 1 (default 1). */
+  reveal?: TreatmentValue;
+  /** `fill`: how far across the range it is wiped away from the leading edge, 0 to 1 (default 0). */
+  erase?: TreatmentValue;
+  /**
+   * `fill`: opacities across each line, `[offset, alpha]` with offsets 0 to 1,
+   * instead of a solid colour. `band`: across the band (default soft both
+   * sides: `[[0, 0], [0.5, 1], [1, 0]]`).
+   */
+  stops?: readonly (readonly [number, TreatmentNumber])[];
+  /** `band`: its width as a share of the range's (default 0.4); `caret`: px (default 2); `handles`: each square's side in px (default 6); `ribbon`: at its head, in caret heights (default 0.3). */
+  width?: TreatmentNumber;
+  /** `band`: px added to its width. */
+  widthPx?: TreatmentNumber;
+  /** `band`: where it is, from wholly before the range (0) to wholly past it (1). */
+  position?: TreatmentValue;
+  /** Px of soft glow round the layer, in its colour. */
+  glow?: TreatmentNumber;
+  /** `fill`: draws an outline this many px wide instead of filling. */
+  stroke?: TreatmentNumber;
+  blend?: TreatmentBlend;
+  /** `tag`: the label's text size in px (default 11); `sparkles`: each dot's largest size, in caret heights (default 0.12). */
+  size?: TreatmentNumber;
+  /** `tag`: px between the caret's top and the tag (default 2). */
+  gap?: TreatmentNumber;
+  /** `tag`: the label's colour (default `#ffffff`). */
+  textColor?: TreatmentColor;
+  /**
+   * `ribbon` and `sparkles`: the curve, as `[x, y]` points from the caret's top
+   * in caret heights (y down): a start point, then three points for each cubic
+   * Bézier segment (two control points and its end).
+   */
+  points?: readonly (readonly [TreatmentNumber, TreatmentNumber])[];
+  /** `ribbon`: its colours along its length, `[offset, colour]` or `[offset, colour, alpha]`, offsets 0 (tail) to 1 (head). Default the layer's colour throughout. */
+  colorStops?: readonly (readonly [number, TreatmentColor] | readonly [number, TreatmentColor, TreatmentNumber])[];
+  /** `ribbon`: its width at the tail as a share of its width at the head (`width`, in caret heights), default 0.1. */
+  taper?: TreatmentNumber;
+  /** `sparkles`: how many (default 12). */
+  count?: TreatmentNumber;
+  /** `sparkles`: how far either side of the curve they scatter, in caret heights (default 0.4). */
+  spread?: TreatmentNumber;
+  /** `sparkles`: how far they drift down through the stage, in caret heights (default 0.3). */
+  drift?: TreatmentNumber;
+  /** `sparkles`: picks a different scatter (default 0). */
+  seed?: TreatmentNumber;
+}
+
+/**
+ * How a stage moves without motion, for Reduce Motion: every value is held
+ * where it is `at` (0 to 1 through the stage) and the stage fades instead.
+ */
+export interface TreatmentReduced {
+  at?: number;
+  fade?: "in" | "out" | "in-out" | "none";
+  /** Ms the fade takes (default the stage's own length). */
+  duration?: TreatmentNumber;
+}
+
+/**
+ * One stage of a treatment: its timing and layers. With `flow: "sequence"`
+ * (the default) the stage crosses the range's lines as one strip, in
+ * `duration` plus `perPixel` ms for each px of it; with `flow: "each"` every
+ * line plays it on its own, `stagger` ms after the line before, taking
+ * `duration` plus `perPixel` for each px of that line.
+ */
+export interface TreatmentStage {
+  duration: TreatmentNumber;
+  perPixel?: TreatmentNumber;
+  stagger?: TreatmentNumber;
+  flow?: "each" | "sequence";
+  /** Starts again at the end until stopped (a blinking caret). */
+  loop?: boolean;
+  /** Its version without motion (see {@link TreatmentReduced}); each stage has a default. */
+  reduced?: TreatmentReduced;
+  layers: readonly TreatmentLayer[];
+}
+
+/** Every stage of a treatment, described as data. */
+export type TextTreatmentStages = Readonly<Record<TextTreatmentStage, TreatmentStage>>;
+
+/**
+ * A look for edits to a range of text: a sweep across a word being checked,
+ * a selection appearing over what will be replaced, the word being typed
+ * over it, a tint on what changed, and the insertion point with a name tag.
+ * It draws in an overlay above or behind the host's text, from the host's
+ * line rectangles, and never changes the text. Its stages are data (see
+ * {@link TreatmentStage}), so the web (`mountTextTreatment` in `/embed`) and
+ * Swift (`FlairTextTreatmentRenderer`) draw the same layer plan
+ * (`textTreatmentPlan`). Its controls are declared in a list, and its
+ * stages name them as `"{{name}}"`; `color` is the agent's colour.
+ */
+export interface TextTreatmentEffect extends EffectBase {
+  kind: "text-treatment";
+  controls: readonly VectorControl[];
+  stages: TextTreatmentStages;
+}
+
+export type EffectDefinition = ShaderEffect | VectorEffect | CameraEffect | TimingEffect | TextTreatmentEffect;
 
 /** The types a vector effect's `{{name: type …}}` placeholder can declare. */
 export const VECTOR_CONTROL_TYPES = ["float", "int", "bool", "color", "text"] as const;

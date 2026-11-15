@@ -33,6 +33,7 @@ let package = Package(
             path: "swift/Sources/FlairEffects",
             resources: [
                 .process("Shaders"),
+                .copy("Resources/flair-text-treatments.json"),
             ]
         ),
         .target(

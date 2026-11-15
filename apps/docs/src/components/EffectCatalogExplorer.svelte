@@ -20,7 +20,7 @@
   let tags: string[] = [];
   let group = "All";
   let category: EffectCategory | "all" = "all";
-  let kind: "all" | "shader" | "vector" | "camera" | "timing" = "all";
+  let kind: "all" | "shader" | "vector" | "camera" | "timing" | "text-treatment" = "all";
   let limit = PAGE;
   let hoveredId: string | null = null;
   let selected: EffectMeta | null = null;
@@ -33,7 +33,7 @@
   /** Tag suggestions shown for what is typed. */
   const SUGGESTED = 6;
 
-  const KINDS: [typeof kind, string][] = [["all", "All"], ["shader", "Shaders"], ["vector", "SVG"], ["camera", "Camera"], ["timing", "Timing"]];
+  const KINDS: [typeof kind, string][] = [["all", "All"], ["shader", "Shaders"], ["vector", "SVG"], ["camera", "Camera"], ["timing", "Timing"], ["text-treatment", "Text"]];
   const groups = ["All", NEW, ...EFFECT_CATEGORY_GROUPS.map((g) => g.name)];
 
   function query(g: string, c: EffectCategory | "all" = "all"): EffectMeta[] {

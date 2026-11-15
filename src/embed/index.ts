@@ -23,11 +23,40 @@ import { ShaderRenderer } from "../shader/renderer.js";
 import { preloadImages, releaseImages, type LiveSource } from "../shader/textures.js";
 import { SvgPlayer, svgDuration } from "../vector/svg.js";
 import { mountTiming } from "./timing.js";
+import { previewTextTreatment } from "./treatment.js";
 
 export { preloadImages, releaseImages };
 export { UI_HINTS, uiValues, type JsonValue, type UiDescriptor } from "../catalog/ui-hints.js";
 export { recordEffect, recordingPlan, type RecordFormat, type RecordOptions, type RecordPointer, type RecordingPlan } from "./record.js";
 export { PREVIEW_FOOTAGE_MS, previewFootage, videoFootage } from "./timing.js";
+export {
+  caretAt,
+  drawTextTreatmentPlans,
+  mountTextTreatment,
+  previewTextTreatment,
+  rangeRects,
+  TREATMENT_PREVIEW_SCRIPT,
+  treatmentOf,
+  type TextTreatmentOverlay,
+  type TextTreatmentOverlayOptions,
+  type TreatmentPlayback,
+  type TreatmentPreview,
+  type TreatmentPreviewOptions,
+  type TreatmentTargetSource,
+} from "./treatment.js";
+export {
+  DEFAULT_TEXT_TREATMENT,
+  getTextTreatment,
+  TEXT_TREATMENT_STAGES,
+  textTreatmentDuration,
+  textTreatmentPlan,
+  textTreatments,
+  type TextTreatmentPlan,
+  type TextTreatmentTarget,
+  type TreatmentCaret,
+  type TreatmentPlanLayer,
+  type TreatmentRect,
+} from "../catalog/treatment.js";
 export { checkShutter, FrameAverager, shutterTimes, DEFAULT_SHUTTER_SAMPLES, type Shutter, type ShutterOptions } from "../export/shutter.js";
 
 /**
@@ -98,6 +127,8 @@ export function subjectValues(effect: EffectDefinition, subject: EffectSubject |
   const out: SubjectValues = { values: {}, live: {} };
   const inputs = effectInputs(effect);
   const used = new Set<string>();
+  if (effect.kind === "text-treatment")
+    throw new Error(`"${effect.id}" is a text treatment: it draws over a host's own text, so it takes no subject. Put it over your text with mountTextTreatment(container, "${effect.id}") and play stages over rangeRects(range, container); mountEffect plays its scripted preview on a paragraph of its own.`);
   for (const s of Array.isArray(subject) ? subject : [subject as EffectSubject]) {
     const kind = kindOf(s);
     if (kind === "asset")
@@ -270,7 +301,9 @@ function resolvingAssets(mounted: MountedEffect, resolve: SubjectResolver, first
  * (a picture standing in for a scene's board: a transition moves from the
  * whole picture to a detail, a hold plays across it), or a timing effect
  * retiming a `{ video }` subject (paused and sought frame by frame, put back
- * as it was on `dispose`; without one, a preview clip of Flair's own). Shaders that read `iScroll` follow the
+ * as it was on `dispose`; without one, a preview clip of Flair's own), or a
+ * text treatment's scripted edit on a paragraph of its own (see
+ * `previewTextTreatment`; over your own text, use `mountTextTreatment`). Shaders that read `iScroll` follow the
  * page's scrolling, and audio-reactive shaders hear an `{ audio }` subject.
  * Throws a sentence when the effect is unknown or takes no such subject.
  *
@@ -307,6 +340,25 @@ export function mountEffect(host: HTMLElement, effect: EffectDefinition | string
   apply(options.subject);
 
   if (def.kind === "camera") return mountCameraMove(host, def, values, live, options);
+  if (def.kind === "text-treatment") {
+    const preview = previewTextTreatment(host, def, {
+      values,
+      ...(options.loop !== undefined && { loop: options.loop }),
+      ...(options.autoplay !== undefined && { autoplay: options.autoplay }),
+      ...(options.reducedMotion && { reducedMotion: options.reducedMotion }),
+    });
+    if (options.className) preview.element.className += ` ${options.className}`;
+    return {
+      effect: def,
+      element: preview.element,
+      setSubject: (subject) => void subjectValues(def, subject),
+      setValues: (next) => preview.setValues(next),
+      play: () => preview.play(),
+      pause: () => preview.pause(),
+      dispose: () => preview.dispose(),
+      ready: () => Promise.resolve(),
+    };
+  }
   if (def.kind === "timing") {
     const timing = mountTiming(host, def, values, live, options);
     return {

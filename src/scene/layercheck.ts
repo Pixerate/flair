@@ -1,5 +1,6 @@
 import { getCameraMove } from '../catalog/camera.js';
 import { getTimingEffect, timingEffects, timingValues } from '../catalog/timing.js';
+import { getTextTreatment } from '../catalog/treatment.js';
 import { layerEffect, layerEffectIds } from '../catalog/layer-index.js';
 import { didYouMean } from '../motion/params.js';
 import { checkControlValue, parseControls, type ControlDef } from '../shader/controls.js';
@@ -66,6 +67,7 @@ function effectIdIssue(id: unknown, where: string): string | undefined {
   if (typeof id !== 'string') return `${where} "effect" is a catalog effect's id, like "aurora"; find_layer_effects lists them.`;
   if (layerEffect(id)) return undefined;
   if (getCameraMove(id)) return `${where} names "${id}", a camera move: it goes in the shot's camera "in" or "during", not in layers.`;
+  if (getTextTreatment(id)) return `${where} names "${id}", a text treatment, which draws over a host's text (an agent's edits) rather than a picture a shot can show; it has no place in a scene. Use find_layer_effects for effects a layer can use.`;
   if (getTimingEffect(id)) return `${where} names "${id}", a timing effect, which retimes the layer's video: it goes in the layer's "timing": "${id}" (with a { "video": url } subject), not in "effect".`;
   return `There is no catalog effect "${id}" for ${where.toLowerCase()}.${didYouMean(id, layerEffectIds())} find_layer_effects lists the effects a layer can use.`;
 }

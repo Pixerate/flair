@@ -86,7 +86,7 @@ export function App() {
         {tab === "gallery" && (
           <GalleryTab
             onOpen={(id) => {
-              // Camera moves are for scenes and timing effects retime footage: the effect editor refuses both.
+              // Camera moves are for scenes, timing effects retime footage and text treatments draw over a host's text: the effect editor refuses them.
               if (editor.load(id).ok) go("editor");
             }}
           />

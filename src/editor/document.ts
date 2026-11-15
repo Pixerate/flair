@@ -11,6 +11,7 @@ import { controlValue, parseControls, type ControlDef, type ControlValue } from 
 import { svgMotionIssues, type SvgMotion } from "../vector/motion.js";
 import { svgDuration } from "../vector/svg.js";
 import { checkEditorValue } from "./textmask.js";
+import { textTreatmentRefusal } from "../catalog/treatment.js";
 import { evaluateTrack, isEasing, normalizeKeyframes, type Track } from "./timeline.js";
 
 /**
@@ -65,6 +66,7 @@ export function createEffectDocument(from?: string | EffectDefinition | { source
   if (!effect) throw new Error(`There is no effect "${String(from)}" in the catalog.`);
   if (effect.kind === "camera") throw new Error(cameraMoveRefusal(effect.id));
   if (effect.kind === "timing") throw new Error(timingRefusal(effect.id));
+  if (effect.kind === "text-treatment") throw new Error(textTreatmentRefusal(effect.id));
   return {
     version: 1,
     name: effect.name,
