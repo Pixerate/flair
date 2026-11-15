@@ -562,23 +562,30 @@ public enum FlairTextTreatments {
                         let half = head * (taper + (1 - taper) * (q.s / total)) / 2
                         return (CGPoint(x: q.x + nx * half, y: q.y + ny * half), CGPoint(x: q.x - nx * half, y: q.y - ny * half), q.s)
                     }
-                    var segments: [FlairTreatmentSegment] = []
+                    // Pieces in a `behind` stretch go under the text, the rest over it, so the ribbon weaves through the words.
+                    var groups: [(z: String, segments: [FlairTreatmentSegment], xs: [Double], ys: [Double])] = []
                     if edges.count > 1 {
                         for i in 0..<(edges.count - 1) {
                             let j = min(i + 2, edges.count - 1)
                             let mid = (edges[i].s + edges[i + 1].s) / 2 / total
-                            segments.append(FlairTreatmentSegment(points: [edges[i].l, edges[j].l, edges[j].r, edges[i].r],
-                                                                  color: stopColour(layer["colorStops"], mid, FlairRGBA(color.r, color.g, color.b, 1), target)))
+                            let pz = isBehind(layer["behind"], mid) ? "behind" : z
+                            if groups.last?.z != pz { groups.append((pz, [], [], [])) }
+                            let corners = [edges[i].l, edges[j].l, edges[j].r, edges[i].r]
+                            groups[groups.count - 1].segments.append(FlairTreatmentSegment(points: corners,
+                                                                                           color: stopColour(layer["colorStops"], mid, FlairRGBA(color.r, color.g, color.b, 1), target)))
+                            groups[groups.count - 1].xs += corners.map { Double($0.x) }
+                            groups[groups.count - 1].ys += corners.map { Double($0.y) }
                         }
                     }
-                    if segments.isEmpty { continue }
-                    let xs = edges.flatMap { [Double($0.l.x), Double($0.r.x)] }, ys = edges.flatMap { [Double($0.l.y), Double($0.r.y)] }
-                    let left = xs.min()!, top = ys.min()!
-                    var l = make(.path, left, top, xs.max()! - left, ys.max()! - top, radius: 0, p: p)
-                    l.opacity *= color.a
-                    l.color = FlairRGBA(color.r, color.g, color.b, 1)
-                    l.segments = segments
-                    push(l)
+                    for group in groups {
+                        let left = group.xs.min()!, top = group.ys.min()!
+                        var l = make(.path, left, top, group.xs.max()! - left, group.ys.max()! - top, radius: 0, p: p)
+                        l.z = group.z
+                        l.opacity *= color.a
+                        l.color = FlairRGBA(color.r, color.g, color.b, 1)
+                        l.segments = group.segments
+                        push(l)
+                    }
                 } else {
                     let count = max(0, min(200, Int((n(layer["count"], 12) + 0.5).rounded(.down))))
                     let spread = n(layer["spread"], 0.4) * h
@@ -601,6 +608,7 @@ public enum FlairTextTreatments {
                         let twinkle = 1 - 0.6 * since * hash(k + 4)
                         var l = make(.rect, cx - d / 2, cy - d / 2, d, d, radius: d / 2, p: p)
                         l.opacity *= twinkle
+                        if isBehind(layer["behind"], u) { l.z = "behind" }
                         push(l)
                     }
                 }
@@ -645,6 +653,15 @@ public enum FlairTextTreatments {
             }
         }
         return out
+    }
+
+    /// Whether `u` (0 to 1 along a curve) falls in one of a layer's `behind` stretches.
+    static func isBehind(_ behind: FlairJSON?, _ u: Double) -> Bool {
+        guard let ranges = behind?.array else { return false }
+        return ranges.contains { r in
+            guard let a = r.array, a.count == 2 else { return false }
+            return u >= n(a[0], 2) && u < n(a[1], -1)
+        }
     }
 
     static let curveSteps = 16

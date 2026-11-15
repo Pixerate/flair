@@ -259,14 +259,21 @@ describe("the ribbon curl", () => {
   const target = { lines: [{ x: 100, y: 40, width: 60, height: 20 }], caret: { x: 160, y: 40, height: 20 } };
   const ribbons = (time: number, o: { preset?: string; reduceMotion?: boolean } = {}) =>
     textTreatmentPlan(curl, { stage: "landed", time, target, ...o }).layers.filter((l) => l.source === "ribbon");
+  /** The main ribbon (glow 2), its woven pieces joined back up in order, and their layers. */
+  const main = (time: number, o: { reduceMotion?: boolean } = {}) => {
+    const parts = ribbons(time, o).filter((l) => l.glow === 2);
+    return { parts, segments: parts.flatMap((l) => l.segments!), opacity: parts[0]?.opacity ?? 0 };
+  };
+  /** The frost (glow 6 on light pages, 10 with the dark theme), joined up. */
+  const frost = (time: number, o: { preset?: string } = {}) => ribbons(time, o).filter((l) => l.glow === 6 || l.glow === 10);
 
   it("draws its ribbon on from the tail, thickening and turning from the tail colour to the agent's", () => {
-    const early = ribbons(150).at(-2)!;
-    const drawn = ribbons(1000).at(-2)!;
-    expect(early.kind).toBe("path");
-    expect(early.segments!.length).toBeLessThan(drawn.segments!.length);
-    const first = drawn.segments![0]!;
-    const last = drawn.segments!.at(-1)!;
+    const early = main(150);
+    const drawn = main(1000);
+    expect(early.parts[0]!.kind).toBe("path");
+    expect(early.segments.length).toBeLessThan(drawn.segments.length);
+    const first = drawn.segments[0]!;
+    const last = drawn.segments.at(-1)!;
     // Peach at the tail, violet at the head.
     const [r, , b] = first.color.map((c) => Math.round(c * 255));
     expect(r).toBe(255);
@@ -275,25 +282,35 @@ describe("the ribbon curl", () => {
     const width = (seg: { points: [number, number][] }) => Math.hypot(seg.points[0]![0] - seg.points[3]![0], seg.points[0]![1] - seg.points[3]![1]);
     expect(width(last)).toBeGreaterThan(width(first) * 4);
     // It stays on the changed word: its line runs from x 100 to 160, y 40 to 60.
-    const xs = drawn.segments!.flatMap((seg) => seg.points.map((q) => q[0]));
-    const ys = drawn.segments!.flatMap((seg) => seg.points.map((q) => q[1]));
+    const xs = drawn.segments.flatMap((seg) => seg.points.map((q) => q[0]));
+    const ys = drawn.segments.flatMap((seg) => seg.points.map((q) => q[1]));
     expect(Math.min(...xs)).toBeGreaterThan(100 - 3);
     expect(Math.max(...xs)).toBeLessThan(160 + 3);
     expect(Math.min(...ys)).toBeGreaterThan(40 - 0.25 * 20);
     expect(Math.max(...ys)).toBeLessThan(60 + 0.25 * 20);
-    // Translucent: the group is drawn at the ribbon's opacity.
+    // Translucent: each woven piece is drawn at the ribbon's opacity.
     expect(drawn.opacity).toBeLessThanOrEqual(0.7);
     expect(drawn.opacity).toBeGreaterThan(0.6);
   });
 
+  it("weaves through the word: under the letters along the tail and the downstroke, over them on the loop and the arc", () => {
+    const drawn = main(1000);
+    expect(drawn.parts.map((l) => l.z)).toEqual(["behind", "above", "behind", "above"]);
+    // The pieces are the curve in order, with nothing lost at the crossings.
+    expect(drawn.segments.length).toBe(main(1000).parts.reduce((n, l) => n + l.segments!.length, 0));
+    // Sparkles in an under-stretch go under too.
+    const sparkles = textTreatmentPlan(curl, { stage: "landed", time: 1000, target }).layers.filter((l) => l.source === "sparkles");
+    expect(new Set(sparkles.map((l) => l.z))).toEqual(new Set(["behind", "above"]));
+  });
+
   it("dissolves into frost: pale on light pages, a glowing screen-blended lilac with the dark theme", () => {
-    expect(ribbons(150).length).toBe(2);
-    const light = ribbons(1450);
-    expect(light.length).toBe(1);
-    expect(light[0]!.blend).toBe("normal");
-    expect(light[0]!.glow).toBe(6);
-    const dark = ribbons(1450, { preset: "Dark theme" });
-    expect(dark[0]!.blend).toBe("screen");
+    expect(frost(150)).toEqual([]);
+    expect(main(1450).parts).toEqual([]);
+    const light = frost(1450);
+    expect(light.length).toBeGreaterThan(0);
+    expect(light.every((l) => l.blend === "normal" && l.glow === 6)).toBe(true);
+    const dark = frost(1450, { preset: "Dark theme" });
+    expect(dark.every((l) => l.blend === "screen")).toBe(true);
     expect(dark[0]!.color.slice(0, 3).map((c) => Math.round(c * 255))).toEqual([0xb9, 0xa6, 0xff]);
     expect(ribbons(1900)).toEqual([]);
   });
@@ -304,13 +321,14 @@ describe("the ribbon curl", () => {
     expect(sparkles(700)).toEqual(sparkles(700));
     expect(treatmentHash(0)).toBe(treatmentHash(0));
     expect(new Set(Array.from({ length: 50 }, (_, i) => treatmentHash(i))).size).toBe(50);
-    const still = ribbons(950, { reduceMotion: true });
-    expect(still.at(-2)!.segments!.length).toBe(ribbons(1000).at(-2)!.segments!.length);
+    expect(main(950, { reduceMotion: true }).segments.length).toBe(main(1000).segments.length);
   });
 
   it("refuses a curve with the wrong number of points", () => {
     const bad: TextTreatmentEffect = { ...curl, id: "bad-curl", stages: { ...curl.stages, landed: { duration: 100, layers: [{ type: "ribbon", points: [[0, 0], [1, 1]] }] } } };
     expect(textTreatmentIssues(bad).join(" ")).toMatch(/points are a start point and then three/);
+    const tangled: TextTreatmentEffect = { ...curl, id: "tangled", stages: { ...curl.stages, landed: { duration: 100, layers: [{ type: "ribbon", points: [[0, 0], [1, 1], [2, 2], [3, 3]], behind: [[0.6, 0.2]] }] } } };
+    expect(textTreatmentIssues(tangled).join(" ")).toMatch(/behind is a list of \[from, to\] stretches/);
   });
 });
 

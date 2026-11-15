@@ -497,6 +497,12 @@ export interface TreatmentLayer {
    * and drifts are then in its line heights.
    */
   anchor?: "caret" | "range";
+  /**
+   * `ribbon` and `sparkles`: stretches along the curve, `[from, to]` from 0 (its start) to 1 (its
+   * end), drawn under the text; the rest is drawn at `z`. Alternate them where the curve crosses the
+   * letters and it weaves through the words.
+   */
+  behind?: readonly (readonly [number, number])[];
   /** `ribbon`: its colours along its length, `[offset, colour]` or `[offset, colour, alpha]`, offsets 0 (tail) to 1 (head). Default the layer's colour throughout. */
   colorStops?: readonly (readonly [number, TreatmentColor] | readonly [number, TreatmentColor, TreatmentNumber])[];
   /** `ribbon`: its width at the tail as a share of its width at the head (`width`, in caret heights), default 0.1. */
