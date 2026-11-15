@@ -156,6 +156,19 @@ describe("drawTextTreatmentPlans", () => {
   });
 });
 
+describe("ribbons", () => {
+  it("draw as one group of polygons, so the overlapping pieces share its opacity, glow and blend", () => {
+    const { overlay, at } = setup();
+    overlay.setEffect("ribbon-curl");
+    overlay.setValues({ darkTheme: true });
+    overlay.play("landed", { lines: [line], caret: { x: 110, y: 20, height: 18 } });
+    at(1450);
+    const frost = overlay.above.querySelector('g[data-source="ribbon"]')!;
+    expect(frost.querySelectorAll("polygon").length).toBeGreaterThan(3);
+    expect(frost.getAttribute("style")).toMatch(/mix-blend-mode: screen.*drop-shadow/);
+  });
+});
+
 describe("rangeRects and caretAt", () => {
   it("give a range's lines in the container's coordinates, one per line, from its text", () => {
     const container = document.createElement("div");

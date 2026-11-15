@@ -143,7 +143,7 @@ public struct FlairTreatmentGradient: Equatable, Sendable {
 /// One thing to draw (see the TypeScript `TreatmentPlanLayer`): a `rect` filled (or outlined
 /// `stroke` px wide), a `text` in the host's font, or a `tag` pill whose width the renderer measures.
 public struct FlairTreatmentPlanLayer: Equatable, Sendable {
-    public enum Kind: String, Sendable { case rect, text, tag }
+    public enum Kind: String, Sendable { case rect, text, tag, path }
     public var kind: Kind
     /// The layer type it came from: fill, band, caret, tag, cover, ghost or handles.
     public var source: String
@@ -162,8 +162,16 @@ public struct FlairTreatmentPlanLayer: Equatable, Sendable {
     public var size: Double?
     public var padX: Double?
     public var textColor: FlairRGBA?
+    /// `path`: the ribbon's pieces, each a polygon in one colour, drawn as one group at `opacity`.
+    public var segments: [FlairTreatmentSegment]?
 
     public var frame: CGRect { CGRect(x: x, y: y, width: width, height: height) }
+}
+
+/// A piece of a ribbon: a polygon filled in one colour.
+public struct FlairTreatmentSegment: Equatable, Sendable {
+    public var points: [CGPoint]
+    public var color: FlairRGBA
 }
 
 /// A stage at a moment, ready to draw.
@@ -323,7 +331,7 @@ public enum FlairTextTreatments {
 
     // MARK: Resolution
 
-    static let agentColoured: Set<String> = ["fill", "band", "caret", "tag", "handles"]
+    static let agentColoured: Set<String> = ["fill", "band", "caret", "tag", "handles", "ribbon", "sparkles"]
 
     /// A control value as the stages read it: colours as `#rrggbb` (rounded as TypeScript's `rgbToHex`).
     static func written(_ control: FlairTreatmentControl, _ value: FlairJSON) -> FlairJSON {
@@ -458,7 +466,7 @@ public enum FlairTextTreatments {
             func make(_ kind: FlairTreatmentPlanLayer.Kind, _ x: Double, _ y: Double, _ w: Double, _ h: Double, radius: Double, p: Double) -> FlairTreatmentPlanLayer {
                 FlairTreatmentPlanLayer(kind: kind, source: type, z: z, x: x, y: y, width: w, height: h, radius: radius,
                                         opacity: clamp01(valueAt(layer["opacity"], p, 1)) * fade, color: color, gradient: nil,
-                                        stroke: nil, glow: glow > 0 ? glow : nil, blend: blend, text: nil, size: nil, padX: nil, textColor: nil)
+                                        stroke: nil, glow: glow > 0 ? glow : nil, blend: blend, text: nil, size: nil, padX: nil, textColor: nil, segments: nil)
             }
             func push(_ l: FlairTreatmentPlanLayer) {
                 if l.opacity > 0 && l.color.a > 0 { out.append(l) }
@@ -513,6 +521,72 @@ public enum FlairTextTreatments {
             }
 
             let p = progress(-1)
+            if type == "ribbon" || type == "sparkles" {
+                guard let caret = target.caret, caret.height > 0 else { continue }
+                let samples = sampleCurve(layer["points"], caret)
+                let total = samples.last?.s ?? 0
+                if total <= 0 { continue }
+                let reveal = clamp01(valueAt(layer["reveal"], p, 1))
+                let erase = clamp01(valueAt(layer["erase"], p, 0))
+                if reveal - erase <= 0.001 { continue }
+                let h = caret.height
+                if type == "ribbon" {
+                    let from = erase * total, to = reveal * total
+                    let part = [pointAt(samples, from)] + samples.filter { $0.s > from && $0.s < to } + [pointAt(samples, to)]
+                    let head = max(0, n(layer["width"], 0.3)) * h
+                    let taper = clamp01(n(layer["taper"], 0.1))
+                    let edges = part.enumerated().map { i, q -> (l: CGPoint, r: CGPoint, s: Double) in
+                        let a = part[max(0, i - 1)], b = part[min(part.count - 1, i + 1)]
+                        var len = hypot(b.x - a.x, b.y - a.y)
+                        if len == 0 { len = 1 }
+                        let nx = -(b.y - a.y) / len, ny = (b.x - a.x) / len
+                        let half = head * (taper + (1 - taper) * (q.s / total)) / 2
+                        return (CGPoint(x: q.x + nx * half, y: q.y + ny * half), CGPoint(x: q.x - nx * half, y: q.y - ny * half), q.s)
+                    }
+                    var segments: [FlairTreatmentSegment] = []
+                    if edges.count > 1 {
+                        for i in 0..<(edges.count - 1) {
+                            let j = min(i + 2, edges.count - 1)
+                            let mid = (edges[i].s + edges[i + 1].s) / 2 / total
+                            segments.append(FlairTreatmentSegment(points: [edges[i].l, edges[j].l, edges[j].r, edges[i].r],
+                                                                  color: stopColour(layer["colorStops"], mid, FlairRGBA(color.r, color.g, color.b, 1), target)))
+                        }
+                    }
+                    if segments.isEmpty { continue }
+                    let xs = edges.flatMap { [Double($0.l.x), Double($0.r.x)] }, ys = edges.flatMap { [Double($0.l.y), Double($0.r.y)] }
+                    let left = xs.min()!, top = ys.min()!
+                    var l = make(.path, left, top, xs.max()! - left, ys.max()! - top, radius: 0, p: p)
+                    l.opacity *= color.a
+                    l.color = FlairRGBA(color.r, color.g, color.b, 1)
+                    l.segments = segments
+                    push(l)
+                } else {
+                    let count = max(0, min(200, Int((n(layer["count"], 12) + 0.5).rounded(.down))))
+                    let spread = n(layer["spread"], 0.4) * h
+                    let drift = n(layer["drift"], 0.3) * h
+                    let size = max(0, n(layer["size"], 0.12)) * h
+                    let seed = Int((n(layer["seed"], 0) + 0.5).rounded(.down)) * 1000
+                    for i in 0..<count {
+                        let k = seed + i * 5
+                        let u = hash(k)
+                        if u < erase || u > reveal { continue }
+                        let q = pointAt(samples, u * total)
+                        let a = pointAt(samples, max(0, u * total - 1)), b = pointAt(samples, min(total, u * total + 1))
+                        var len = hypot(b.x - a.x, b.y - a.y)
+                        if len == 0 { len = 1 }
+                        let off = (hash(k + 1) - 0.5) * 2 * spread
+                        let d = size * (0.35 + 0.65 * hash(k + 2))
+                        let since = p
+                        let cx = q.x - ((b.y - a.y) / len) * off
+                        let cy = q.y + ((b.x - a.x) / len) * off + drift * since * (0.5 + hash(k + 3))
+                        let twinkle = 1 - 0.6 * since * hash(k + 4)
+                        var l = make(.rect, cx - d / 2, cy - d / 2, d, d, radius: d / 2, p: p)
+                        l.opacity *= twinkle
+                        push(l)
+                    }
+                }
+                continue
+            }
             if type == "caret" || type == "tag" {
                 guard let caret = target.caret, caret.height > 0 else { continue }
                 if type == "caret" {
@@ -552,6 +626,73 @@ public enum FlairTextTreatments {
             }
         }
         return out
+    }
+
+    static let curveSteps = 16
+
+    /// A curve's points (caret heights from the caret) sampled in the host's px, with the arc length to each.
+    static func sampleCurve(_ points: FlairJSON?, _ caret: FlairTreatmentCaret) -> [(x: Double, y: Double, s: Double)] {
+        guard let pts = points?.array, pts.count >= 4 else { return [] }
+        let h = caret.height
+        func pt(_ i: Int) -> (Double, Double) {
+            let q = pts[i].array
+            return (caret.x + n(q?.first, 0) * h, caret.y + n(q.flatMap { $0.count > 1 ? $0[1] : nil }, 0) * h)
+        }
+        let (x0, y0) = pt(0)
+        var out: [(x: Double, y: Double, s: Double)] = [(x0, y0, 0)]
+        var k = 0
+        while k + 3 < pts.count {
+            let (ax, ay) = pt(k), (bx, by) = pt(k + 1), (cx, cy) = pt(k + 2), (dx, dy) = pt(k + 3)
+            for j in 1...curveSteps {
+                let t = Double(j) / Double(curveSteps), u = 1 - t
+                let x = u * u * u * ax + 3 * u * u * t * bx + 3 * u * t * t * cx + t * t * t * dx
+                let y = u * u * u * ay + 3 * u * u * t * by + 3 * u * t * t * cy + t * t * t * dy
+                let last = out[out.count - 1]
+                out.append((x, y, last.s + hypot(x - last.x, y - last.y)))
+            }
+            k += 3
+        }
+        return out
+    }
+
+    static func pointAt(_ samples: [(x: Double, y: Double, s: Double)], _ at: Double) -> (x: Double, y: Double, s: Double) {
+        for i in 1..<samples.count {
+            let a = samples[i - 1], b = samples[i]
+            if at <= b.s {
+                let f = b.s - a.s <= 0 ? 0 : (at - a.s) / (b.s - a.s)
+                return (a.x + (b.x - a.x) * f, a.y + (b.y - a.y) * f, at)
+            }
+        }
+        return samples[samples.count - 1]
+    }
+
+    static func stopColour(_ stops: FlairJSON?, _ u: Double, _ fallback: FlairRGBA, _ target: FlairTreatmentTarget) -> FlairRGBA {
+        guard let list = stops?.array, !list.isEmpty else { return fallback }
+        let parsed: [(at: Double, c: FlairRGBA)] = list.compactMap { st in
+            guard let a = st.array, a.count >= 2, let c = colourOf(a[1], target) else { return nil }
+            return (n(a[0], 0), FlairRGBA(c.r, c.g, c.b, c.a * clamp01(n(a.count > 2 ? a[2] : nil, 1))))
+        }
+        guard let first = parsed.first else { return fallback }
+        if u <= first.at { return first.c }
+        for i in 1..<parsed.count {
+            let a = parsed[i - 1], b = parsed[i]
+            if u <= b.at {
+                let f = b.at - a.at <= 0 ? 1 : (u - a.at) / (b.at - a.at)
+                return FlairRGBA(a.c.r + (b.c.r - a.c.r) * f, a.c.g + (b.c.g - a.c.g) * f, a.c.b + (b.c.b - a.c.b) * f, a.c.a + (b.c.a - a.c.a) * f)
+            }
+        }
+        return parsed[parsed.count - 1].c
+    }
+
+    /// A number from 0 to 1 for `i`: the same integer hash as TypeScript's `treatmentHash`.
+    public static func hash(_ i: Int) -> Double {
+        var h = UInt32(truncatingIfNeeded: i + 1) &* 0x9E37_79B1
+        h ^= h >> 16
+        h = h &* 0x85EB_CA6B
+        h ^= h >> 13
+        h = h &* 0xC2B2_AE35
+        h ^= h >> 16
+        return Double(h) / 4_294_967_296
     }
 
     static func fadeAt(_ fade: String, _ u: Double) -> Double {

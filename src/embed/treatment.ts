@@ -144,6 +144,15 @@ function drawLayer(svg: SVGSVGElement, defs: SVGDefsElement, layer: TreatmentPla
   const common: Record<string, string> = { opacity: num(layer.opacity), "data-source": layer.source };
   if (style.length) common.style = style.join("; ");
 
+  if (layer.kind === "path") {
+    // One group, so the overlapping pieces composite before its opacity, glow and blend apply.
+    const g = el(doc, "g", common);
+    for (const seg of layer.segments ?? []) {
+      g.appendChild(el(doc, "polygon", { points: seg.points.map(([x, y]) => `${num(x)},${num(y)}`).join(" "), fill: rgb(seg.color), "fill-opacity": num(seg.color[3]) }));
+    }
+    svg.appendChild(g);
+    return;
+  }
   if (layer.kind === "text") {
     const text = el(doc, "text", { ...common, x: num(layer.x), y: num(layer.y + layer.height / 2), "dominant-baseline": "central", fill: rgb(layer.color), "fill-opacity": num(layer.color[3]), "xml:space": "preserve" });
     text.style.whiteSpace = "pre";
@@ -253,7 +262,7 @@ export interface TextTreatmentOverlay {
   play(stage: TextTreatmentStage, target: TreatmentTargetSource, options?: { onDone?: () => void }): TreatmentPlayback;
   /** Changes control values (merged over the current ones); refuses bad ones with a sentence. */
   setValues(values: Record<string, ControlValue>): void;
-  /** Switches to another treatment, keeping what plays (and values its controls share). */
+  /** Switches to another treatment, keeping what plays (and the values you set that its controls share; the rest are its defaults). */
   setEffect(effect: TextTreatmentEffect | string): void;
   /** Whether stages started now play without motion. */
   readonly reduceMotion: boolean;
@@ -310,6 +319,8 @@ export function mountTextTreatment(container: HTMLElement, effect: TextTreatment
     return checked.values;
   };
   let values = checkValues(def, options.values, options.preset);
+  // What the host set itself, which carries over to another treatment (its defaults do not).
+  let given: Record<string, ControlValue> = { ...options.values };
   let resolved = resolveTextTreatment(def, values);
 
   const restore = { position: container.style.position, isolation: container.style.isolation };
@@ -411,12 +422,13 @@ export function mountTextTreatment(container: HTMLElement, effect: TextTreatment
     },
     setValues(next) {
       values = checkValues(def, { ...values, ...next });
+      given = { ...given, ...next };
       resolved = resolveTextTreatment(def, values);
     },
     setEffect(next) {
       const d = treatmentOf(next);
       const names = new Set(d.controls.map((c) => c.name));
-      const kept = Object.fromEntries(Object.entries(values).filter(([k]) => names.has(k)));
+      const kept = Object.fromEntries(Object.entries(given).filter(([k]) => names.has(k)));
       def = d;
       values = checkValues(d, kept);
       resolved = resolveTextTreatment(d, values);

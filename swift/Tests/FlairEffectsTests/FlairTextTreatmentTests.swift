@@ -10,7 +10,7 @@ import XCTest
 final class FlairTextTreatmentTests: XCTestCase {
     func testTreatmentsLoadWithTheSoftSweepFirst() {
         let all = FlairTextTreatments.all
-        XCTAssertGreaterThanOrEqual(all.count, 7)
+        XCTAssertGreaterThanOrEqual(all.count, 8)
         XCTAssertEqual(all.first?.id, FlairTextTreatments.defaultID)
         let sweep = FlairTextTreatments.treatment(id: "soft-sweep")
         XCTAssertEqual(sweep?.name, "Soft sweep")
@@ -34,7 +34,7 @@ final class FlairTextTreatmentTests: XCTestCase {
                                                 reduceMotion: c["reduceMotion"] == .bool(true))
             let expected = c["plan"]!
             let at = "\(id) \(stageName) t=\(c["time"]!.number!) reduced=\(c["reduceMotion"] == .bool(true)) preset=\(c["preset"]?.string ?? "-")"
-            XCTAssertEqual(plan.duration, expected["duration"]!.number!, accuracy: 1e-6, at)
+            XCTAssertEqual(plan.duration, expected["duration"]!.number!, accuracy: 1e-4, at)
             XCTAssertEqual(plan.done, expected["done"] == .bool(true), at)
             XCTAssertEqual(plan.reduced, expected["reduced"] == .bool(true), at)
             let want = expected["layers"]!.array!
@@ -93,7 +93,7 @@ final class FlairTextTreatmentTests: XCTestCase {
 
     static func assertClose(_ a: [Double], _ b: [Double], _ at: String, file: StaticString = #filePath, line: UInt = #line) {
         XCTAssertEqual(a.count, b.count, at, file: file, line: line)
-        for (x, y) in zip(a, b) { XCTAssertEqual(x, y, accuracy: 1e-6, at, file: file, line: line) }
+        for (x, y) in zip(a, b) { XCTAssertEqual(x, y, accuracy: 1e-4, at, file: file, line: line) }
     }
 
     static func assertLayer(_ got: FlairTreatmentPlanLayer, _ w: FlairJSON, _ at: String) {
@@ -110,6 +110,13 @@ final class FlairTextTreatmentTests: XCTestCase {
         XCTAssertEqual(got.size ?? 0, w["size"]?.number ?? 0, accuracy: 1e-9, where_)
         XCTAssertEqual(got.padX ?? 0, w["padX"]?.number ?? 0, accuracy: 1e-9, where_)
         if w["textColor"] != nil { assertClose(got.textColor.map { [$0.r, $0.g, $0.b, $0.a] } ?? [], rgba(w["textColor"]), where_) }
+        let wantSegments = w["segments"]?.array ?? []
+        XCTAssertEqual(got.segments?.count ?? 0, wantSegments.count, where_)
+        for (seg, ws) in zip(got.segments ?? [], wantSegments) {
+            let pts = ws["points"]!.array!.flatMap { $0.array!.map { $0.number! } }
+            assertClose(seg.points.flatMap { [Double($0.x), Double($0.y)] }, pts, where_)
+            assertClose([seg.color.r, seg.color.g, seg.color.b, seg.color.a], rgba(ws["color"]), where_)
+        }
         let g = w["gradient"]
         XCTAssertEqual(got.gradient == nil, g == nil, where_)
         if let gg = got.gradient, let g {

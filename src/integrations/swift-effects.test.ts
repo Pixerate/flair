@@ -129,6 +129,13 @@ function treatmentFixture(): string {
           cases.push({ id: t.id, stage, time, reduceMotion, target: wrapped, plan });
         }
       }
+      if (stage === "landed") {
+        // Every preset, mid-landing (the curl's dark-theme frost, the marker's full height, …).
+        for (const { name } of t.presets ?? []) {
+          const time = Math.round(textTreatmentDuration(t, stage, single, { preset: name }) * 0.55 * 1000) / 1000;
+          cases.push({ id: t.id, stage, time, reduceMotion: false, preset: name, target: single, plan: textTreatmentPlan(t, { stage, time, target: single, preset: name }) });
+        }
+      }
       const preset = t.presets![1]!.name;
       const values = { color: "#3366cc", blink: true };
       const d = textTreatmentDuration(t, stage, single, { preset, values });
@@ -138,7 +145,7 @@ function treatmentFixture(): string {
       }
     }
   }
-  return `{"generatedBy":"pnpm swift:meta (src/integrations/swift-effects.test.ts)","cases":[\n${cases.map((c) => JSON.stringify(c)).join(",\n")}\n]}\n`;
+  return `{"generatedBy":"pnpm swift:meta (src/integrations/swift-effects.test.ts)","cases":[\n${cases.map((c) => JSON.stringify(c, (_, v) => (typeof v === "number" ? Math.round(v * 1e5) / 1e5 : v))).join(",\n")}\n]}\n`;
 }
 
 describe("the Swift text treatments", () => {

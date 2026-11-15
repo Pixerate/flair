@@ -99,6 +99,22 @@ public final class FlairTextTreatmentRenderer {
             label.actions = Self.noActions
             pill.addSublayer(label)
             out = pill
+        case .path:
+            // One container, so the overlapping pieces composite before its opacity, glow and blend apply.
+            let group = CALayer()
+            group.frame = .zero
+            group.masksToBounds = false
+            for seg in layer.segments ?? [] {
+                let shape = CAShapeLayer()
+                let path = CGMutablePath()
+                path.addLines(between: seg.points)
+                path.closeSubpath()
+                shape.path = path
+                shape.fillColor = seg.color.cgColor
+                shape.actions = Self.noActions
+                group.addSublayer(shape)
+            }
+            out = group
         case .rect:
             if let g = layer.gradient, layer.width > 0, layer.height > 0 {
                 let gradient = CAGradientLayer()

@@ -416,8 +416,13 @@ export type TreatmentColor = string;
  * - `cover`: the background colour over each line, hiding the text under it (the word being typed over).
  * - `ghost`: the text being typed (the host's `text`), in the host's font, over the first line.
  * - `handles`: small squares at the corners of the range, as a design tool's selection.
+ * - `ribbon`: a tapering ribbon along a curve (`points`, from the caret, in caret
+ *   heights), drawn on and wiped away along its length with `reveal` and `erase`,
+ *   its colour changing along it (`colorStops`): a flourish, a swoosh, a curl.
+ * - `sparkles`: `count` soft dots shed along the drawn part of a curve (`points`),
+ *   scattered `spread` either side, drifting down and twinkling.
  */
-export type TreatmentLayerType = "fill" | "band" | "caret" | "tag" | "cover" | "ghost" | "handles";
+export type TreatmentLayerType = "fill" | "band" | "caret" | "tag" | "cover" | "ghost" | "handles" | "ribbon" | "sparkles";
 
 /** How a layer mixes with what is under it. */
 export type TreatmentBlend = "normal" | "multiply" | "screen" | "plus-lighter";
@@ -462,7 +467,7 @@ export interface TreatmentLayer {
    * sides: `[[0, 0], [0.5, 1], [1, 0]]`).
    */
   stops?: readonly (readonly [number, TreatmentNumber])[];
-  /** `band`: its width as a share of the range's (default 0.4); `caret`: px (default 2); `handles`: each square's side in px (default 6). */
+  /** `band`: its width as a share of the range's (default 0.4); `caret`: px (default 2); `handles`: each square's side in px (default 6); `ribbon`: at its head, in caret heights (default 0.3). */
   width?: TreatmentNumber;
   /** `band`: px added to its width. */
   widthPx?: TreatmentNumber;
@@ -473,12 +478,30 @@ export interface TreatmentLayer {
   /** `fill`: draws an outline this many px wide instead of filling. */
   stroke?: TreatmentNumber;
   blend?: TreatmentBlend;
-  /** `tag`: the label's text size in px (default 11). */
+  /** `tag`: the label's text size in px (default 11); `sparkles`: each dot's largest size, in caret heights (default 0.12). */
   size?: TreatmentNumber;
   /** `tag`: px between the caret's top and the tag (default 2). */
   gap?: TreatmentNumber;
   /** `tag`: the label's colour (default `#ffffff`). */
   textColor?: TreatmentColor;
+  /**
+   * `ribbon` and `sparkles`: the curve, as `[x, y]` points from the caret's top
+   * in caret heights (y down): a start point, then three points for each cubic
+   * Bézier segment (two control points and its end).
+   */
+  points?: readonly (readonly [TreatmentNumber, TreatmentNumber])[];
+  /** `ribbon`: its colours along its length, `[offset, colour]` or `[offset, colour, alpha]`, offsets 0 (tail) to 1 (head). Default the layer's colour throughout. */
+  colorStops?: readonly (readonly [number, TreatmentColor] | readonly [number, TreatmentColor, TreatmentNumber])[];
+  /** `ribbon`: its width at the tail as a share of its width at the head (`width`, in caret heights), default 0.1. */
+  taper?: TreatmentNumber;
+  /** `sparkles`: how many (default 12). */
+  count?: TreatmentNumber;
+  /** `sparkles`: how far either side of the curve they scatter, in caret heights (default 0.4). */
+  spread?: TreatmentNumber;
+  /** `sparkles`: how far they drift down through the stage, in caret heights (default 0.3). */
+  drift?: TreatmentNumber;
+  /** `sparkles`: picks a different scatter (default 0). */
+  seed?: TreatmentNumber;
 }
 
 /**

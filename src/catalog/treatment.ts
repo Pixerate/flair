@@ -54,7 +54,7 @@ export const DEFAULT_REDUCED: Readonly<Record<TextTreatmentStage, Required<Omit<
 };
 
 /** Layer types, for checks and sentences. */
-export const TREATMENT_LAYER_TYPES: readonly TreatmentLayerType[] = ["fill", "band", "caret", "tag", "cover", "ghost", "handles"];
+export const TREATMENT_LAYER_TYPES: readonly TreatmentLayerType[] = ["fill", "band", "caret", "tag", "cover", "ghost", "handles", "ribbon", "sparkles"];
 
 // ---------------------------------------------------------------------------
 // The host's side: where the text is.
@@ -121,9 +121,12 @@ export interface TreatmentGradient {
  * - `tag`: a pill `height` tall whose bottom-left corner is `x`, `y + height`,
  *   holding `text` (`size` px, `textColor`), `padX` px either side of it: the
  *   renderer measures the text, so the plan has no width (`width` is 0).
+ * - `path`: a ribbon, as `segments` (filled polygons, each in one colour, each
+ *   overlapping the next) drawn together as one group at `opacity`, so the
+ *   overlaps do not show; `x`, `y`, `width`, `height` are their bounds.
  */
 export interface TreatmentPlanLayer {
-  kind: "rect" | "text" | "tag";
+  kind: "rect" | "text" | "tag" | "path";
   /** The layer type of the stage it came from. */
   source: TreatmentLayerType;
   z: "behind" | "above";
@@ -143,6 +146,13 @@ export interface TreatmentPlanLayer {
   size?: number;
   padX?: number;
   textColor?: TreatmentRGBA;
+  segments?: TreatmentSegment[];
+}
+
+/** A piece of a ribbon: a polygon (`[x, y]` corners) filled in one colour. */
+export interface TreatmentSegment {
+  points: [number, number][];
+  color: TreatmentRGBA;
 }
 
 /** A stage at a moment, ready to draw. */
@@ -281,7 +291,7 @@ export function resolveTextTreatment(effect: TextTreatmentEffect, values: Readon
 }
 
 /** Layer types drawn in the agent's colour (`"{{color}}"`) unless they say otherwise. */
-const AGENT_COLOURED: readonly TreatmentLayerType[] = ["fill", "band", "caret", "tag", "handles"];
+const AGENT_COLOURED: readonly TreatmentLayerType[] = ["fill", "band", "caret", "tag", "handles", "ribbon", "sparkles"];
 
 /** Stages with each layer's colour filled in where it is left out: the agent's colour, the background for a cover, the text's colour for a ghost. */
 function withDefaultColours(stages: TextTreatmentEffect["stages"]): TextTreatmentEffect["stages"] {
@@ -302,10 +312,10 @@ function placeholders(v: unknown, where: string, out: { name: string; where: str
   return out;
 }
 
-const NUMBER_FIELDS = ["alpha", "padX", "padY", "top", "height", "radius", "width", "widthPx", "glow", "stroke", "size", "gap"] as const;
+const NUMBER_FIELDS = ["alpha", "padX", "padY", "top", "height", "radius", "width", "widthPx", "glow", "stroke", "size", "gap", "taper", "count", "spread", "drift", "seed"] as const;
 const ANIMATED_FIELDS = ["opacity", "reveal", "erase", "position"] as const;
 const COLOR_FIELDS = ["color", "textColor"] as const;
-const LAYER_FIELDS = new Set<string>(["type", "z", "if", "unless", "stops", "blend", ...NUMBER_FIELDS, ...ANIMATED_FIELDS, ...COLOR_FIELDS]);
+const LAYER_FIELDS = new Set<string>(["type", "z", "if", "unless", "stops", "blend", "points", "colorStops", ...NUMBER_FIELDS, ...ANIMATED_FIELDS, ...COLOR_FIELDS]);
 const STAGE_FIELDS = new Set(["duration", "perPixel", "stagger", "flow", "loop", "reduced", "layers"]);
 const BLENDS: readonly TreatmentBlend[] = ["normal", "multiply", "screen", "plus-lighter"];
 
@@ -333,6 +343,8 @@ export function textTreatmentIssues(effect: TextTreatmentEffect): string[] {
       const where = `${at} layer ${i} (${layer.type})`;
       if (!TREATMENT_LAYER_TYPES.includes(layer.type)) issues.push(`${where}: a layer's type is one of ${TREATMENT_LAYER_TYPES.join(", ")}.`);
       for (const k of Object.keys(layer)) if (!LAYER_FIELDS.has(k)) issues.push(`${where}: a layer has no field "${k}".`);
+      if ((layer.type === "ribbon" || layer.type === "sparkles") && (!Array.isArray(layer.points) || layer.points.length < 4 || (layer.points.length - 1) % 3 !== 0))
+        issues.push(`${where}: points are a start point and then three [x, y] points for each cubic segment (4, 7, 10, … points).`);
       if (layer.blend !== undefined && !BLENDS.includes(layer.blend)) issues.push(`${where}: blend is one of ${BLENDS.join(", ")}.`);
       if (layer.z !== undefined && layer.z !== "behind" && layer.z !== "above") issues.push(`${where}: z is "behind" or "above".`);
       for (const f of ANIMATED_FIELDS) {
@@ -351,7 +363,7 @@ export function textTreatmentIssues(effect: TextTreatmentEffect): string[] {
         continue;
       }
       const field = where.split(".").pop()!.replace(/\[\d+\]/g, "");
-      const wantsColour = (COLOR_FIELDS as readonly string[]).includes(field);
+      const wantsColour = (COLOR_FIELDS as readonly string[]).includes(field) || /colorStops\[\d+\]\[1\]$/.test(where);
       if (wantsColour !== control.color) issues.push(`${where} names "${name}", ${control.color ? "a colour control, where a number goes" : "not a colour control, where a colour goes"}.`);
       else if ((field === "if" || field === "unless") && control.type !== "bool") issues.push(`${where} names "${name}"; "${field}" takes a bool control.`);
       else if (field !== "if" && field !== "unless" && !wantsColour && control.type !== "float" && control.type !== "int") issues.push(`${where} names "${name}", which is not a number control.`);
@@ -444,6 +456,84 @@ function lineBox(line: TreatmentRect, layer: TreatmentLayer): TreatmentRect {
 
 const radiusFor = (r: number, w: number, h: number) => Math.max(0, Math.min(r, w / 2, h / 2));
 
+/** Samples each cubic segment of a curve is cut into. */
+const CURVE_STEPS = 16;
+
+/** A curve's points (caret heights from the caret) sampled in the host's px, with the arc length up to each sample. */
+function sampleCurve(points: unknown, caret: TreatmentCaret): { x: number; y: number; s: number }[] {
+  if (!Array.isArray(points) || points.length < 4) return [];
+  const h = caret.height;
+  const pt = (i: number): [number, number] => {
+    const q = points[i] as unknown[];
+    return [caret.x + n(q?.[0], 0) * h, caret.y + n(q?.[1], 0) * h];
+  };
+  const out: { x: number; y: number; s: number }[] = [];
+  const [x0, y0] = pt(0);
+  out.push({ x: x0, y: y0, s: 0 });
+  for (let k = 0; k + 3 < points.length; k += 3) {
+    const [ax, ay] = pt(k);
+    const [bx, by] = pt(k + 1);
+    const [cx, cy] = pt(k + 2);
+    const [dx, dy] = pt(k + 3);
+    for (let j = 1; j <= CURVE_STEPS; j++) {
+      const t = j / CURVE_STEPS;
+      const u = 1 - t;
+      const x = u * u * u * ax + 3 * u * u * t * bx + 3 * u * t * t * cx + t * t * t * dx;
+      const y = u * u * u * ay + 3 * u * u * t * by + 3 * u * t * t * cy + t * t * t * dy;
+      const last = out[out.length - 1]!;
+      out.push({ x, y, s: last.s + Math.hypot(x - last.x, y - last.y) });
+    }
+  }
+  return out;
+}
+
+/** The point at arc length `at` along samples. */
+function pointAt(samples: readonly { x: number; y: number; s: number }[], at: number): { x: number; y: number; s: number } {
+  for (let i = 1; i < samples.length; i++) {
+    const a = samples[i - 1]!;
+    const b = samples[i]!;
+    if (at <= b.s) {
+      const f = b.s - a.s <= 0 ? 0 : (at - a.s) / (b.s - a.s);
+      return { x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f, s: at };
+    }
+  }
+  return samples[samples.length - 1]!;
+}
+
+/** A colour along `colorStops` at `u` (0 tail to 1 head), interpolated channel by channel; undefined stops give `fallback`. */
+function stopColour(stops: unknown, u: number, fallback: TreatmentRGBA, target: TextTreatmentTarget): TreatmentRGBA {
+  if (!Array.isArray(stops) || stops.length === 0) return fallback;
+  const parsed = stops
+    .map((st) => {
+      const a = st as unknown[];
+      const c = colourOf(a?.[1], target);
+      return c ? { at: n(a[0], 0), c: [c[0], c[1], c[2], c[3] * clamp01(n(a[2], 1))] as TreatmentRGBA } : undefined;
+    })
+    .filter((x): x is { at: number; c: TreatmentRGBA } => x !== undefined);
+  if (!parsed.length) return fallback;
+  if (u <= parsed[0]!.at) return parsed[0]!.c;
+  for (let i = 1; i < parsed.length; i++) {
+    const a = parsed[i - 1]!;
+    const b = parsed[i]!;
+    if (u <= b.at) {
+      const f = b.at - a.at <= 0 ? 1 : (u - a.at) / (b.at - a.at);
+      return [0, 1, 2, 3].map((k) => a.c[k]! + (b.c[k]! - a.c[k]!) * f) as TreatmentRGBA;
+    }
+  }
+  return parsed[parsed.length - 1]!.c;
+}
+
+/** A number from 0 to 1 for `i`, the same in Swift (an integer hash, no floating-point trigonometry). */
+export function treatmentHash(i: number): number {
+  let h = Math.imul((i + 1) >>> 0, 0x9e3779b1) >>> 0;
+  h ^= h >>> 16;
+  h = Math.imul(h, 0x85ebca6b) >>> 0;
+  h ^= h >>> 13;
+  h = Math.imul(h, 0xc2b2ae35) >>> 0;
+  h ^= h >>> 16;
+  return (h >>> 0) / 4294967296;
+}
+
 /**
  * The layers of one resolved stage at a moment: `progress(i)` is how far
  * line `i` is through the stage (or the whole stage, for `-1`); `fade`
@@ -522,6 +612,73 @@ function planLayers(
     }
 
     const p = progress(-1);
+    if (layer.type === "ribbon" || layer.type === "sparkles") {
+      const caret = target.caret;
+      if (!caret || !(caret.height > 0)) continue;
+      const samples = sampleCurve(layer.points, caret);
+      const total = samples.length ? samples[samples.length - 1]!.s : 0;
+      if (total <= 0) continue;
+      const reveal = clamp01(valueAt(layer.reveal, p, 1));
+      const erase = clamp01(valueAt(layer.erase, p, 0));
+      if (reveal - erase <= 0.001) continue;
+      const h = caret.height;
+      if (layer.type === "ribbon") {
+        // The drawn part, cut at its ends.
+        const from = erase * total;
+        const to = reveal * total;
+        const part = [pointAt(samples, from), ...samples.filter((q) => q.s > from && q.s < to), pointAt(samples, to)];
+        const head = Math.max(0, n(layer.width, 0.3)) * h;
+        const taper = clamp01(n(layer.taper, 0.1));
+        const edges = part.map((q, i) => {
+          const a = part[Math.max(0, i - 1)]!;
+          const b = part[Math.min(part.length - 1, i + 1)]!;
+          const len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+          const nx = -(b.y - a.y) / len;
+          const ny = (b.x - a.x) / len;
+          const half = (head * (taper + (1 - taper) * (q.s / total))) / 2;
+          return { l: [q.x + nx * half, q.y + ny * half] as [number, number], r: [q.x - nx * half, q.y - ny * half] as [number, number], s: q.s };
+        });
+        const segments: TreatmentSegment[] = [];
+        for (let i = 0; i + 1 < edges.length; i++) {
+          // Each piece reaches over the next one, so no seam shows between them.
+          const j = Math.min(i + 2, edges.length - 1);
+          const mid = (edges[i]!.s + edges[i + 1]!.s) / 2 / total;
+          segments.push({ points: [edges[i]!.l, edges[j]!.l, edges[j]!.r, edges[i]!.r], color: stopColour(layer.colorStops, mid, [color[0], color[1], color[2], 1], target) });
+        }
+        if (!segments.length) continue;
+        const xs = edges.flatMap((e) => [e.l[0], e.r[0]]);
+        const ys = edges.flatMap((e) => [e.l[1], e.r[1]]);
+        const left = Math.min(...xs);
+        const top = Math.min(...ys);
+        const b = base(p);
+        // The layer's alpha goes on the group, so overlapping pieces do not darken.
+        push({ kind: "path", source: "ribbon", x: left, y: top, width: Math.max(...xs) - left, height: Math.max(...ys) - top, radius: 0, ...b, opacity: b.opacity * color[3], color: [color[0], color[1], color[2], 1], segments });
+      } else {
+        const count = Math.max(0, Math.min(200, Math.round(n(layer.count, 12))));
+        const spread = n(layer.spread, 0.4) * h;
+        const drift = n(layer.drift, 0.3) * h;
+        const size = Math.max(0, n(layer.size, 0.12)) * h;
+        const seed = Math.round(n(layer.seed, 0)) * 1000;
+        for (let i = 0; i < count; i++) {
+          const u = treatmentHash(seed + i * 5);
+          if (u < erase || u > reveal) continue;
+          const q = pointAt(samples, u * total);
+          const a = pointAt(samples, Math.max(0, u * total - 1));
+          const bq = pointAt(samples, Math.min(total, u * total + 1));
+          const len = Math.hypot(bq.x - a.x, bq.y - a.y) || 1;
+          const off = (treatmentHash(seed + i * 5 + 1) - 0.5) * 2 * spread;
+          const d = size * (0.35 + 0.65 * treatmentHash(seed + i * 5 + 2));
+          // They drift and dim through the stage.
+          const since = p;
+          const cx = q.x - ((bq.y - a.y) / len) * off;
+          const cy = q.y + ((bq.x - a.x) / len) * off + drift * since * (0.5 + treatmentHash(seed + i * 5 + 3));
+          const twinkle = 1 - 0.6 * since * treatmentHash(seed + i * 5 + 4);
+          const b = base(p);
+          push({ kind: "rect", source: "sparkles", x: cx - d / 2, y: cy - d / 2, width: d, height: d, radius: d / 2, ...b, opacity: b.opacity * twinkle });
+        }
+      }
+      continue;
+    }
     if (layer.type === "caret" || layer.type === "tag") {
       const caret = target.caret;
       if (!caret || !(caret.height > 0)) continue;
@@ -1034,8 +1191,116 @@ export const designFrame: TextTreatmentEffect = {
   ],
 };
 
+/** The curl's curve, in caret heights from the caret: in under the word, up past the caret and round in a loop, then a flick away. */
+const CURL: readonly (readonly [number, number])[] = [
+  [-4, 1.15],
+  [-2.6, 1.55],
+  [-1.1, 1.25],
+  [0.1, 0.55],
+  [1.1, 0],
+  [2, -1],
+  [1.4, -1.45],
+  [0.8, -1.85],
+  [-0.1, -1.15],
+  [0.5, -0.5],
+  [0.95, 0],
+  [1.9, -0.15],
+  [2.4, -0.7],
+];
+
+/** A short wisp trailing the caret while it types. */
+const WISP: readonly (readonly [number, number])[] = [
+  [-2.2, 1.05],
+  [-1.5, 1.25],
+  [-0.6, 1.1],
+  [0, 0.85],
+];
+
+/** Draws on over the first part of the stage. */
+const drawOn = track([[0, 0], [0.4, 1]], "ease-out");
+
+/** The frost rises as the ribbon fades, then melts away from the tail. */
+const frostIn = track([[0, 0], [0.5, 0], [0.62, 1], [1, 0]], "ease-in-out");
+const frostErase = track([[0.62, 0], [1, 1]], "ease-in");
+
+/**
+ * Ribbon curl: when an edit lands, a glossy ribbon sweeps in under the new
+ * word from its tail, thickening and changing colour as it goes, and curls
+ * up past the caret into a loop, shedding sparkles; then it dissolves into
+ * frost that melts away. Frost is pale blue on light pages; `darkTheme`
+ * swaps in a glowing lilac frost that reads on dark ones.
+ */
+export const ribbonCurl: TextTreatmentEffect = {
+  kind: "text-treatment",
+  id: "ribbon-curl",
+  name: "Ribbon curl",
+  description: "A glossy gradient ribbon sweeping in under what changed and curling up past the caret into a loop, shedding sparkles, then dissolving into frost; a wisp of it trails the caret while typing.",
+  category: "treatment",
+  tags: ["agent", "writing", "edit", "ribbon", "swoosh", "curl", "flourish", "gradient", "sparkle", "frost", "caret"],
+  controls: [
+    ...commonControls("#8B5CF6", { landMs: 1900 }),
+    colorControl("tail", "#FFB38A", "Tail colour"),
+    colorControl("mid", "#F472B6", "Middle colour"),
+    numberControl("ribbonWidth", 0.38, 0.08, 0.8, "Ribbon width", 0.01),
+    numberControl("sparkles", 14, 0, 40, "Sparkles", 1),
+    { name: "darkTheme", type: "bool", default: false, label: "Dark theme" },
+    colorControl("frost", "#DCE4FF", "Frost (light)"),
+    colorControl("frostDark", "#B9A6FF", "Frost (dark)"),
+  ],
+  stages: {
+    caret: caretStage(),
+    checking: {
+      duration: "{{checkMs}}",
+      perPixel: 1.2,
+      layers: [{ type: "band", color: "{{mid}}", alpha: 0.24, padX: 2, padY: -1, radius: 3, width: 0.35, position: track([[0, 0], [1, 1]], "ease-in-out") }],
+    },
+    selecting: {
+      duration: "{{selectMs}}",
+      layers: [{ type: "fill", alpha: 0.18, radius: 2, reveal: track([[0, 0], [1, 1]], "ease-out") }, ...caretLayers()],
+    },
+    typing: {
+      duration: 1060,
+      loop: true,
+      layers: [
+        { type: "cover" },
+        { type: "fill", z: "above", padX: 1, alpha: 0.1, radius: 2 },
+        { type: "ghost" },
+        { type: "ribbon", points: WISP, width: 0.12, taper: 0.05, alpha: 0.75, colorStops: [[0, "{{tail}}"], [1, "{{mid}}"]], opacity: track([[0, 0.8], [0.5, 1], [1, 0.8]], "ease-in-out") },
+        ...caretLayers(),
+      ],
+    },
+    landed: {
+      duration: "{{landMs}}",
+      reduced: { at: 0.45, fade: "in-out" },
+      layers: [
+        { type: "fill", alpha: 0.14, radius: 2, opacity: holdThenFade(0.5) },
+        { type: "ribbon", unless: "{{darkTheme}}", points: CURL, color: "{{frost}}", alpha: 0.85, width: 0.56, taper: 0.2, glow: 8, reveal: drawOn, erase: frostErase, opacity: frostIn },
+        { type: "ribbon", if: "{{darkTheme}}", points: CURL, color: "{{frostDark}}", alpha: 0.7, width: 0.6, taper: 0.2, glow: 14, blend: "screen", reveal: drawOn, erase: frostErase, opacity: frostIn },
+        {
+          type: "ribbon",
+          points: CURL,
+          width: "{{ribbonWidth}}",
+          taper: 0.08,
+          glow: 3,
+          colorStops: [[0, "{{tail}}", 0.9], [0.5, "{{mid}}"], [1, "{{color}}"]],
+          reveal: drawOn,
+          opacity: track([[0, 1], [0.5, 1], [0.72, 0]], "ease-in"),
+        },
+        { type: "ribbon", points: CURL, color: "#ffffff", alpha: 0.5, width: 0.1, taper: 0.3, reveal: drawOn, opacity: track([[0, 1], [0.45, 1], [0.65, 0]], "ease-in") },
+        { type: "sparkles", points: CURL, color: "{{mid}}", alpha: 0.9, glow: 3, count: "{{sparkles}}", spread: 0.55, drift: 0.5, size: 0.17, reveal: drawOn, opacity: track([[0, 1], [0.6, 1], [1, 0]]) },
+      ],
+    },
+  },
+  presets: [
+    { name: "Sunset", values: { tail: [1, 179 / 255, 138 / 255], mid: [244 / 255, 114 / 255, 182 / 255], color: [139 / 255, 92 / 255, 246 / 255] } },
+    { name: "Ocean", values: { tail: [125 / 255, 211 / 255, 252 / 255], mid: [56 / 255, 189 / 255, 248 / 255], color: [79 / 255, 70 / 255, 229 / 255] } },
+    { name: "Dark theme", values: { darkTheme: true } },
+    { name: "Dark ocean", values: { darkTheme: true, tail: [125 / 255, 211 / 255, 252 / 255], mid: [56 / 255, 189 / 255, 248 / 255], color: [129 / 255, 140 / 255, 248 / 255], frostDark: [147 / 255, 197 / 255, 253 / 255] } },
+  ],
+};
+
 /** The catalog's text treatments, the default first. */
-export const textTreatments: readonly TextTreatmentEffect[] = [softSweep, markerSwipe, glowUnderline, shimmer, scanLine, presence, designFrame];
+export const textTreatments: readonly TextTreatmentEffect[] = [softSweep, markerSwipe, glowUnderline, shimmer, scanLine, presence, designFrame, ribbonCurl];
 
 /** A catalog text treatment by id, or undefined. */
 export function getTextTreatment(id: string): TextTreatmentEffect | undefined {

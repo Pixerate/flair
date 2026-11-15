@@ -1,19 +1,22 @@
 [
   {
-    "id": "marker-swipe",
-    "name": "Marker swipe",
+    "id": "ribbon-curl",
+    "name": "Ribbon curl",
     "kind": "text-treatment",
     "category": "treatment",
-    "description": "A highlighter pen swiping behind the words: a light pass while checking, a firm swipe over the selection, and a fresh stroke on what changed that dries away.",
+    "description": "A glossy gradient ribbon sweeping in under what changed and curling up past the caret into a loop, shedding sparkles, then dissolving into frost; a wisp of it trails the caret while typing.",
     "tags": [
       "agent",
       "writing",
       "edit",
-      "highlighter",
-      "marker",
-      "pen",
-      "caret",
-      "selection"
+      "ribbon",
+      "swoosh",
+      "curl",
+      "flourish",
+      "gradient",
+      "sparkle",
+      "frost",
+      "caret"
     ],
     "controls": [
       {
@@ -21,9 +24,9 @@
         "t": "vec3",
         "d": {
           "c255": [
-            255,
-            210,
-            63
+            139,
+            92,
+            246
           ]
         },
         "l": "Agent colour",
@@ -59,7 +62,7 @@
       {
         "n": "checkMs",
         "t": "float",
-        "d": 420,
+        "d": 320,
         "l": "Check (ms)",
         "min": 80,
         "max": 2000,
@@ -70,7 +73,205 @@
       {
         "n": "selectMs",
         "t": "float",
-        "d": 220,
+        "d": 180,
+        "l": "Select (ms)",
+        "max": 1000,
+        "s": 10,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "landMs",
+        "t": "float",
+        "d": 1900,
+        "l": "Land (ms)",
+        "min": 100,
+        "max": 4000,
+        "s": 10,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "tail",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            179,
+            138
+          ]
+        },
+        "l": "Tail colour",
+        "c": 1,
+        "s": 0.01,
+        "line": 8
+      },
+      {
+        "n": "mid",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            244,
+            114,
+            182
+          ]
+        },
+        "l": "Middle colour",
+        "c": 1,
+        "s": 0.01,
+        "line": 9
+      },
+      {
+        "n": "ribbonWidth",
+        "t": "float",
+        "d": 0.38,
+        "min": 0.08,
+        "max": 0.8,
+        "s": 0.01,
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "sparkles",
+        "t": "float",
+        "d": 14,
+        "max": 40,
+        "s": 1,
+        "b": 3,
+        "line": 11
+      },
+      {
+        "n": "darkTheme",
+        "t": "bool",
+        "d": false,
+        "s": 0.01,
+        "line": 12
+      },
+      {
+        "n": "frost",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            220,
+            228,
+            255
+          ]
+        },
+        "l": "Frost (light)",
+        "c": 1,
+        "s": 0.01,
+        "line": 13
+      },
+      {
+        "n": "frostDark",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            185,
+            166,
+            255
+          ]
+        },
+        "l": "Frost (dark)",
+        "c": 1,
+        "s": 0.01,
+        "line": 14
+      }
+    ],
+    "presets": [
+      "Sunset",
+      "Ocean",
+      "Dark theme",
+      "Dark ocean"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "treatment",
+    "addedAt": "2026-11-15T10:53:38.756Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "design-frame",
+    "name": "Design frame",
+    "kind": "text-treatment",
+    "category": "treatment",
+    "description": "A design tool's selection: a thin box with square corner handles tracing round what is checked and selected, and the box lingering round what changed before it fades.",
+    "tags": [
+      "agent",
+      "writing",
+      "edit",
+      "design-tool",
+      "selection",
+      "frame",
+      "handles",
+      "outline",
+      "caret"
+    ],
+    "controls": [
+      {
+        "n": "color",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            13,
+            153,
+            255
+          ]
+        },
+        "l": "Agent colour",
+        "c": 1,
+        "s": 0.01,
+        "line": 1
+      },
+      {
+        "n": "caretWidth",
+        "t": "float",
+        "d": 2,
+        "min": 1,
+        "max": 6,
+        "s": 0.5,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "nameTag",
+        "t": "bool",
+        "d": true,
+        "s": 0.01,
+        "line": 3
+      },
+      {
+        "n": "blink",
+        "t": "bool",
+        "d": false,
+        "l": "Blink caret",
+        "s": 0.01,
+        "line": 4
+      },
+      {
+        "n": "checkMs",
+        "t": "float",
+        "d": 520,
+        "l": "Check (ms)",
+        "min": 80,
+        "max": 2000,
+        "s": 10,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "selectMs",
+        "t": "float",
+        "d": 180,
         "l": "Select (ms)",
         "max": 1000,
         "s": 10,
@@ -89,30 +290,21 @@
         "line": 7
       },
       {
-        "n": "markAlpha",
+        "n": "handle",
         "t": "float",
-        "d": 0.55,
-        "l": "Marker opacity",
-        "s": 0.01,
+        "d": 6,
+        "l": "Handle (px)",
+        "min": 3,
+        "max": 12,
+        "s": 0.5,
         "b": 3,
         "line": 8
-      },
-      {
-        "n": "markTop",
-        "t": "float",
-        "d": 0.38,
-        "l": "Marker top",
-        "max": 0.9,
-        "s": 0.01,
-        "b": 3,
-        "line": 9
       }
     ],
     "presets": [
-      "Yellow",
-      "Pink",
-      "Mint",
-      "Full height"
+      "Blue",
+      "Magenta",
+      "Large handles"
     ],
     "inputs": {
       "accepts": [
@@ -125,9 +317,380 @@
     },
     "animated": true,
     "module": "treatment",
-    "addedAt": "2026-11-15T10:38:14.130Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-11-15T10:39:44Z",
+    "commitHash": "e68f0b7f39b452e540b245f6bab92c9a33ac5b74",
+    "order": 710
+  },
+  {
+    "id": "presence",
+    "name": "Presence",
+    "kind": "text-treatment",
+    "category": "treatment",
+    "description": "A collaborator's presence, as in a shared document: a caret with a coloured name tag, an outline pulsing round what is being checked, and a selection and change tint in the collaborator's colour.",
+    "tags": [
+      "agent",
+      "writing",
+      "edit",
+      "collaboration",
+      "multiplayer",
+      "cursor",
+      "name-tag",
+      "caret",
+      "selection"
+    ],
+    "controls": [
+      {
+        "n": "color",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            242,
+            85,
+            90
+          ]
+        },
+        "l": "Agent colour",
+        "c": 1,
+        "s": 0.01,
+        "line": 1
+      },
+      {
+        "n": "caretWidth",
+        "t": "float",
+        "d": 2,
+        "min": 1,
+        "max": 6,
+        "s": 0.5,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "nameTag",
+        "t": "bool",
+        "d": true,
+        "s": 0.01,
+        "line": 3
+      },
+      {
+        "n": "blink",
+        "t": "bool",
+        "d": true,
+        "l": "Blink caret",
+        "s": 0.01,
+        "line": 4
+      },
+      {
+        "n": "checkMs",
+        "t": "float",
+        "d": 900,
+        "l": "Check (ms)",
+        "min": 80,
+        "max": 2000,
+        "s": 10,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "selectMs",
+        "t": "float",
+        "d": 180,
+        "l": "Select (ms)",
+        "max": 1000,
+        "s": 10,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "landMs",
+        "t": "float",
+        "d": 900,
+        "l": "Land (ms)",
+        "min": 100,
+        "max": 4000,
+        "s": 10,
+        "b": 3,
+        "line": 7
+      }
+    ],
+    "presets": [
+      "Coral",
+      "Indigo",
+      "Green",
+      "Steady"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "treatment",
+    "addedAt": "2026-11-15T10:39:44Z",
+    "commitHash": "e68f0b7f39b452e540b245f6bab92c9a33ac5b74",
+    "order": 709
+  },
+  {
+    "id": "scan-line",
+    "name": "Scan line",
+    "kind": "text-treatment",
+    "category": "treatment",
+    "description": "A bright scanning line with a fading trail passing over the words being checked, a scanned selection, and a final pass over what changed.",
+    "tags": [
+      "agent",
+      "writing",
+      "edit",
+      "scan",
+      "scanner",
+      "line",
+      "trail",
+      "tech",
+      "caret",
+      "selection"
+    ],
+    "controls": [
+      {
+        "n": "color",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            34,
+            211,
+            166
+          ]
+        },
+        "l": "Agent colour",
+        "c": 1,
+        "s": 0.01,
+        "line": 1
+      },
+      {
+        "n": "caretWidth",
+        "t": "float",
+        "d": 2,
+        "min": 1,
+        "max": 6,
+        "s": 0.5,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "nameTag",
+        "t": "bool",
+        "d": true,
+        "s": 0.01,
+        "line": 3
+      },
+      {
+        "n": "blink",
+        "t": "bool",
+        "d": false,
+        "l": "Blink caret",
+        "s": 0.01,
+        "line": 4
+      },
+      {
+        "n": "checkMs",
+        "t": "float",
+        "d": 460,
+        "l": "Check (ms)",
+        "min": 80,
+        "max": 2000,
+        "s": 10,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "selectMs",
+        "t": "float",
+        "d": 180,
+        "l": "Select (ms)",
+        "max": 1000,
+        "s": 10,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "landMs",
+        "t": "float",
+        "d": 900,
+        "l": "Land (ms)",
+        "min": 100,
+        "max": 4000,
+        "s": 10,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "trail",
+        "t": "float",
+        "d": 0.35,
+        "s": 0.01,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "glow",
+        "t": "float",
+        "d": 4,
+        "l": "Glow (px)",
+        "max": 12,
+        "s": 0.5,
+        "b": 3,
+        "line": 9
+      }
+    ],
+    "presets": [
+      "Mint",
+      "Hologram",
+      "Barcode red"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "treatment",
+    "addedAt": "2026-11-15T10:39:44Z",
+    "commitHash": "e68f0b7f39b452e540b245f6bab92c9a33ac5b74",
+    "order": 708
+  },
+  {
+    "id": "shimmer",
+    "name": "Shimmer",
+    "kind": "text-treatment",
+    "category": "treatment",
+    "description": "A pale tint with a glint of colour gliding across behind the words, like a loading shimmer, while they are checked; a pale selection; and a last glint over what changed as its tint fades.",
+    "tags": [
+      "agent",
+      "writing",
+      "edit",
+      "shimmer",
+      "skeleton",
+      "shine",
+      "light",
+      "caret",
+      "selection"
+    ],
+    "controls": [
+      {
+        "n": "color",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            139,
+            124,
+            246
+          ]
+        },
+        "l": "Agent colour",
+        "c": 1,
+        "s": 0.01,
+        "line": 1
+      },
+      {
+        "n": "caretWidth",
+        "t": "float",
+        "d": 2,
+        "min": 1,
+        "max": 6,
+        "s": 0.5,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "nameTag",
+        "t": "bool",
+        "d": true,
+        "s": 0.01,
+        "line": 3
+      },
+      {
+        "n": "blink",
+        "t": "bool",
+        "d": false,
+        "l": "Blink caret",
+        "s": 0.01,
+        "line": 4
+      },
+      {
+        "n": "checkMs",
+        "t": "float",
+        "d": 700,
+        "l": "Check (ms)",
+        "min": 80,
+        "max": 2000,
+        "s": 10,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "selectMs",
+        "t": "float",
+        "d": 180,
+        "l": "Select (ms)",
+        "max": 1000,
+        "s": 10,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "landMs",
+        "t": "float",
+        "d": 900,
+        "l": "Land (ms)",
+        "min": 100,
+        "max": 4000,
+        "s": 10,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "base",
+        "t": "float",
+        "d": 0.08,
+        "l": "Base tint",
+        "max": 0.5,
+        "s": 0.01,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "shine",
+        "t": "float",
+        "d": 0.3,
+        "s": 0.01,
+        "b": 3,
+        "line": 9
+      }
+    ],
+    "presets": [
+      "Violet",
+      "Silver",
+      "Bright"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false
+    },
+    "animated": true,
+    "module": "treatment",
+    "addedAt": "2026-11-15T10:39:44Z",
+    "commitHash": "e68f0b7f39b452e540b245f6bab92c9a33ac5b74",
+    "order": 707
   },
   {
     "id": "glow-underline",
@@ -256,24 +819,23 @@
     },
     "animated": true,
     "module": "treatment",
-    "addedAt": "2026-11-15T10:38:14.130Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-11-15T10:39:44Z",
+    "commitHash": "e68f0b7f39b452e540b245f6bab92c9a33ac5b74",
+    "order": 706
   },
   {
-    "id": "shimmer",
-    "name": "Shimmer",
+    "id": "marker-swipe",
+    "name": "Marker swipe",
     "kind": "text-treatment",
     "category": "treatment",
-    "description": "A pale tint with a glint of colour gliding across behind the words, like a loading shimmer, while they are checked; a pale selection; and a last glint over what changed as its tint fades.",
+    "description": "A highlighter pen swiping behind the words: a light pass while checking, a firm swipe over the selection, and a fresh stroke on what changed that dries away.",
     "tags": [
       "agent",
       "writing",
       "edit",
-      "shimmer",
-      "skeleton",
-      "shine",
-      "light",
+      "highlighter",
+      "marker",
+      "pen",
       "caret",
       "selection"
     ],
@@ -283,9 +845,9 @@
         "t": "vec3",
         "d": {
           "c255": [
-            139,
-            124,
-            246
+            255,
+            210,
+            63
           ]
         },
         "l": "Agent colour",
@@ -321,7 +883,7 @@
       {
         "n": "checkMs",
         "t": "float",
-        "d": 700,
+        "d": 420,
         "l": "Check (ms)",
         "min": 80,
         "max": 2000,
@@ -332,7 +894,7 @@
       {
         "n": "selectMs",
         "t": "float",
-        "d": 180,
+        "d": 220,
         "l": "Select (ms)",
         "max": 1000,
         "s": 10,
@@ -351,158 +913,30 @@
         "line": 7
       },
       {
-        "n": "base",
+        "n": "markAlpha",
         "t": "float",
-        "d": 0.08,
-        "l": "Base tint",
-        "max": 0.5,
+        "d": 0.55,
+        "l": "Marker opacity",
         "s": 0.01,
         "b": 3,
         "line": 8
       },
       {
-        "n": "shine",
+        "n": "markTop",
         "t": "float",
-        "d": 0.3,
+        "d": 0.38,
+        "l": "Marker top",
+        "max": 0.9,
         "s": 0.01,
         "b": 3,
         "line": 9
       }
     ],
     "presets": [
-      "Violet",
-      "Silver",
-      "Bright"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "treatment",
-    "addedAt": "2026-11-15T10:38:14.130Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "scan-line",
-    "name": "Scan line",
-    "kind": "text-treatment",
-    "category": "treatment",
-    "description": "A bright scanning line with a fading trail passing over the words being checked, a scanned selection, and a final pass over what changed.",
-    "tags": [
-      "agent",
-      "writing",
-      "edit",
-      "scan",
-      "scanner",
-      "line",
-      "trail",
-      "tech",
-      "caret",
-      "selection"
-    ],
-    "controls": [
-      {
-        "n": "color",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            34,
-            211,
-            166
-          ]
-        },
-        "l": "Agent colour",
-        "c": 1,
-        "s": 0.01,
-        "line": 1
-      },
-      {
-        "n": "caretWidth",
-        "t": "float",
-        "d": 2,
-        "min": 1,
-        "max": 6,
-        "s": 0.5,
-        "b": 3,
-        "line": 2
-      },
-      {
-        "n": "nameTag",
-        "t": "bool",
-        "d": true,
-        "s": 0.01,
-        "line": 3
-      },
-      {
-        "n": "blink",
-        "t": "bool",
-        "d": false,
-        "l": "Blink caret",
-        "s": 0.01,
-        "line": 4
-      },
-      {
-        "n": "checkMs",
-        "t": "float",
-        "d": 460,
-        "l": "Check (ms)",
-        "min": 80,
-        "max": 2000,
-        "s": 10,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "selectMs",
-        "t": "float",
-        "d": 180,
-        "l": "Select (ms)",
-        "max": 1000,
-        "s": 10,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "landMs",
-        "t": "float",
-        "d": 900,
-        "l": "Land (ms)",
-        "min": 100,
-        "max": 4000,
-        "s": 10,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "trail",
-        "t": "float",
-        "d": 0.35,
-        "s": 0.01,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "glow",
-        "t": "float",
-        "d": 4,
-        "l": "Glow (px)",
-        "max": 12,
-        "s": 0.5,
-        "b": 3,
-        "line": 9
-      }
-    ],
-    "presets": [
+      "Yellow",
+      "Pink",
       "Mint",
-      "Hologram",
-      "Barcode red"
+      "Full height"
     ],
     "inputs": {
       "accepts": [
@@ -515,243 +949,9 @@
     },
     "animated": true,
     "module": "treatment",
-    "addedAt": "2026-11-15T10:38:14.130Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "presence",
-    "name": "Presence",
-    "kind": "text-treatment",
-    "category": "treatment",
-    "description": "A collaborator's presence, as in a shared document: a caret with a coloured name tag, an outline pulsing round what is being checked, and a selection and change tint in the collaborator's colour.",
-    "tags": [
-      "agent",
-      "writing",
-      "edit",
-      "collaboration",
-      "multiplayer",
-      "cursor",
-      "name-tag",
-      "caret",
-      "selection"
-    ],
-    "controls": [
-      {
-        "n": "color",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            242,
-            85,
-            90
-          ]
-        },
-        "l": "Agent colour",
-        "c": 1,
-        "s": 0.01,
-        "line": 1
-      },
-      {
-        "n": "caretWidth",
-        "t": "float",
-        "d": 2,
-        "min": 1,
-        "max": 6,
-        "s": 0.5,
-        "b": 3,
-        "line": 2
-      },
-      {
-        "n": "nameTag",
-        "t": "bool",
-        "d": true,
-        "s": 0.01,
-        "line": 3
-      },
-      {
-        "n": "blink",
-        "t": "bool",
-        "d": true,
-        "l": "Blink caret",
-        "s": 0.01,
-        "line": 4
-      },
-      {
-        "n": "checkMs",
-        "t": "float",
-        "d": 900,
-        "l": "Check (ms)",
-        "min": 80,
-        "max": 2000,
-        "s": 10,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "selectMs",
-        "t": "float",
-        "d": 180,
-        "l": "Select (ms)",
-        "max": 1000,
-        "s": 10,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "landMs",
-        "t": "float",
-        "d": 900,
-        "l": "Land (ms)",
-        "min": 100,
-        "max": 4000,
-        "s": 10,
-        "b": 3,
-        "line": 7
-      }
-    ],
-    "presets": [
-      "Coral",
-      "Indigo",
-      "Green",
-      "Steady"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "treatment",
-    "addedAt": "2026-11-15T10:38:14.130Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "design-frame",
-    "name": "Design frame",
-    "kind": "text-treatment",
-    "category": "treatment",
-    "description": "A design tool's selection: a thin box with square corner handles tracing round what is checked and selected, and the box lingering round what changed before it fades.",
-    "tags": [
-      "agent",
-      "writing",
-      "edit",
-      "design-tool",
-      "selection",
-      "frame",
-      "handles",
-      "outline",
-      "caret"
-    ],
-    "controls": [
-      {
-        "n": "color",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            13,
-            153,
-            255
-          ]
-        },
-        "l": "Agent colour",
-        "c": 1,
-        "s": 0.01,
-        "line": 1
-      },
-      {
-        "n": "caretWidth",
-        "t": "float",
-        "d": 2,
-        "min": 1,
-        "max": 6,
-        "s": 0.5,
-        "b": 3,
-        "line": 2
-      },
-      {
-        "n": "nameTag",
-        "t": "bool",
-        "d": true,
-        "s": 0.01,
-        "line": 3
-      },
-      {
-        "n": "blink",
-        "t": "bool",
-        "d": false,
-        "l": "Blink caret",
-        "s": 0.01,
-        "line": 4
-      },
-      {
-        "n": "checkMs",
-        "t": "float",
-        "d": 520,
-        "l": "Check (ms)",
-        "min": 80,
-        "max": 2000,
-        "s": 10,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "selectMs",
-        "t": "float",
-        "d": 180,
-        "l": "Select (ms)",
-        "max": 1000,
-        "s": 10,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "landMs",
-        "t": "float",
-        "d": 900,
-        "l": "Land (ms)",
-        "min": 100,
-        "max": 4000,
-        "s": 10,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "handle",
-        "t": "float",
-        "d": 6,
-        "l": "Handle (px)",
-        "min": 3,
-        "max": 12,
-        "s": 0.5,
-        "b": 3,
-        "line": 8
-      }
-    ],
-    "presets": [
-      "Blue",
-      "Magenta",
-      "Large handles"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "treatment",
-    "addedAt": "2026-11-15T10:38:14.130Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-11-15T10:39:44Z",
+    "commitHash": "e68f0b7f39b452e540b245f6bab92c9a33ac5b74",
+    "order": 705
   },
   {
     "id": "soft-sweep",
@@ -879,9 +1079,9 @@
     },
     "animated": true,
     "module": "treatment",
-    "addedAt": "2026-11-15T10:38:14.129Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-11-15T10:39:44Z",
+    "commitHash": "e68f0b7f39b452e540b245f6bab92c9a33ac5b74",
+    "order": 704
   },
   {
     "id": "word-to-icons",
@@ -3580,165 +3780,5 @@
     "addedAt": "2026-11-13T15:35:59Z",
     "commitHash": "d06df57664d2ac130bc3a2af9fef78a818b98d95",
     "order": 692
-  },
-  {
-    "id": "image-photocopy",
-    "name": "Photocopy",
-    "kind": "shader",
-    "category": "image",
-    "description": "A picture run through a tired photocopier: hard black toner on off-white paper, clumped grain, pale streaks down the page, burnt edges and a slight shift with every copy, like a zine page.",
-    "tags": [
-      "image",
-      "photocopy",
-      "xerox",
-      "zine",
-      "toner",
-      "grain",
-      "monochrome",
-      "collage",
-      "editorial",
-      "recap"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "landscape"
-        },
-        "line": 2,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uInk",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            20,
-            20,
-            20
-          ]
-        },
-        "l": "Toner",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uPaper",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            242,
-            239,
-            230
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uThreshold",
-        "t": "float",
-        "d": 0.4,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uHardness",
-        "t": "float",
-        "d": 6,
-        "min": 1,
-        "max": 12,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uGrain",
-        "t": "float",
-        "d": 0.5,
-        "l": "Toner grain",
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uStreaks",
-        "t": "float",
-        "d": 0.3,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uEdge",
-        "t": "float",
-        "d": 0.45,
-        "l": "Edge burn",
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uJitter",
-        "t": "float",
-        "d": 0.3,
-        "l": "Copy shift",
-        "b": 3,
-        "line": 10
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 11
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "b": 3,
-        "line": 12
-      }
-    ],
-    "presets": [
-      "Zine",
-      "Clean copy",
-      "Pink flyer",
-      "Blueprint",
-      "Tenth generation"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "swiftReady": true,
-    "video": "filter",
-    "animated": true,
-    "module": "shaders/recap",
-    "addedAt": "2026-11-13T15:35:59Z",
-    "commitHash": "d06df57664d2ac130bc3a2af9fef78a818b98d95",
-    "order": 691
   }
 ]

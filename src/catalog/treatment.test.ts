@@ -14,6 +14,7 @@ import {
   textTreatmentIssues,
   textTreatmentPlan,
   textTreatments,
+  treatmentHash,
   type TextTreatmentTarget,
 } from "./treatment.js";
 import type { TextTreatmentEffect } from "./types.js";
@@ -250,6 +251,58 @@ describe("planning a stage", () => {
     expect(ease([0, 0, 1, 1], 0.25)).toBeCloseTo(0.25, 6);
     expect(ease("ease-out", 0)).toBe(0);
     expect(ease("ease-out", 1)).toBe(1);
+  });
+});
+
+describe("the ribbon curl", () => {
+  const curl = getTextTreatment("ribbon-curl")!;
+  const target = { lines: [{ x: 100, y: 40, width: 60, height: 20 }], caret: { x: 160, y: 40, height: 20 } };
+  const ribbons = (time: number, o: { preset?: string; reduceMotion?: boolean } = {}) =>
+    textTreatmentPlan(curl, { stage: "landed", time, target, ...o }).layers.filter((l) => l.source === "ribbon");
+
+  it("draws its ribbon on from the tail, thickening and turning from the tail colour to the agent's", () => {
+    const early = ribbons(150).at(-2)!;
+    const drawn = ribbons(1000).at(-2)!;
+    expect(early.kind).toBe("path");
+    expect(early.segments!.length).toBeLessThan(drawn.segments!.length);
+    const first = drawn.segments![0]!;
+    const last = drawn.segments!.at(-1)!;
+    // Peach at the tail, violet at the head.
+    const [r, , b] = first.color.map((c) => Math.round(c * 255));
+    expect(r).toBe(255);
+    expect(b).toBeLessThan(150);
+    expect(last.color[2]).toBeGreaterThan(last.color[0]);
+    const width = (seg: { points: [number, number][] }) => Math.hypot(seg.points[0]![0] - seg.points[3]![0], seg.points[0]![1] - seg.points[3]![1]);
+    expect(width(last)).toBeGreaterThan(width(first) * 4);
+    // Starts left of and under the word, in caret heights from the caret.
+    expect(first.points[0]![0]).toBeCloseTo(160 - 4 * 20, 0);
+  });
+
+  it("dissolves into frost: pale on light pages, a glowing screen-blended lilac with the dark theme", () => {
+    expect(ribbons(150).length).toBe(2);
+    const light = ribbons(1450);
+    expect(light.length).toBe(1);
+    expect(light[0]!.blend).toBe("normal");
+    expect(light[0]!.glow).toBe(8);
+    const dark = ribbons(1450, { preset: "Dark theme" });
+    expect(dark[0]!.blend).toBe("screen");
+    expect(dark[0]!.color.slice(0, 3).map((c) => Math.round(c * 255))).toEqual([0xb9, 0xa6, 0xff]);
+    expect(ribbons(1900)).toEqual([]);
+  });
+
+  it("sheds the same sparkles every time, and holds the drawn curl without motion", () => {
+    const sparkles = (t: number) => textTreatmentPlan(curl, { stage: "landed", time: t, target }).layers.filter((l) => l.source === "sparkles");
+    expect(sparkles(700).length).toBeGreaterThan(5);
+    expect(sparkles(700)).toEqual(sparkles(700));
+    expect(treatmentHash(0)).toBe(treatmentHash(0));
+    expect(new Set(Array.from({ length: 50 }, (_, i) => treatmentHash(i))).size).toBe(50);
+    const still = ribbons(950, { reduceMotion: true });
+    expect(still.at(-2)!.segments!.length).toBe(ribbons(1000).at(-2)!.segments!.length);
+  });
+
+  it("refuses a curve with the wrong number of points", () => {
+    const bad: TextTreatmentEffect = { ...curl, id: "bad-curl", stages: { ...curl.stages, landed: { duration: 100, layers: [{ type: "ribbon", points: [[0, 0], [1, 1]] }] } } };
+    expect(textTreatmentIssues(bad).join(" ")).toMatch(/points are a start point and then three/);
   });
 });
 

@@ -59,7 +59,7 @@ Without a video they play on a preview clip of Flair's own. In Node, `flair rend
 
 ## Text treatments (agents' edits over text)
 
-Text treatments are catalog effects of kind `text-treatment` (the `treatment` category in [type-titles.md](effects/type-titles.md)): `soft-sweep` (the default), `marker-swipe`, `glow-underline`, `shimmer`, `scan-line`, `presence` and `design-frame`. They draw over a host's own text, from its line rectangles, and never change it. Each has the stages `caret`, `checking`, `selecting`, `typing` and `landed`; `color` is the agent's colour.
+Text treatments are catalog effects of kind `text-treatment` (the `treatment` category in [type-titles.md](effects/type-titles.md)): `soft-sweep` (the default), `marker-swipe`, `glow-underline`, `shimmer`, `scan-line`, `presence`, `design-frame` and `ribbon-curl` (a gradient ribbon curling past the caret as an edit lands; `darkTheme: true` for dark pages). They draw over a host's own text, from its line rectangles, and never change it. Each has the stages `caret`, `checking`, `selecting`, `typing` and `landed`; `color` is the agent's colour.
 
 ```ts
 import { caretAt, mountTextTreatment, rangeRects } from "@pixerate/flair/embed";
