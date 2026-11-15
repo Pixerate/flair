@@ -1301,14 +1301,6 @@ const CURL_UNDER: readonly (readonly [number, number])[] = [
   [0.5, 0.66],
 ];
 
-/** A short wisp trailing the caret while it types. */
-const WISP: readonly (readonly [number, number])[] = [
-  [-2.2, 1.05],
-  [-1.5, 1.25],
-  [-0.6, 1.1],
-  [0, 0.85],
-];
-
 /** Draws on over the first part of the stage. */
 const drawOn = track([[0, 0], [0.4, 1]], "ease-out");
 
@@ -1322,14 +1314,15 @@ const frostErase = track([[0.62, 0], [1, 1]], "ease-in");
  * its end, staying on the word and weaving through it (under the letters
  * along the baseline and on the downstroke, over them on the loop and the
  * arc), shedding sparkles; then it dissolves into
- * frost that melts away. Frost is pale blue on light pages; `darkTheme`
+ * frost that melts away. No ribbon is drawn while the word is typed: the
+ * typing stage is a tint, the typed text and the caret. Frost is pale blue on light pages; `darkTheme`
  * swaps in a glowing lilac frost that reads on dark ones.
  */
 export const ribbonCurl: TextTreatmentEffect = {
   kind: "text-treatment",
   id: "ribbon-curl",
   name: "Ribbon curl",
-  description: "A translucent gradient swash woven through what changed: a thin tail runs under the letters, loops over them and swells into an arc that hooks over the end of the word, shedding sparkles, then dissolves into frost; a wisp of it trails the caret while typing.",
+  description: "A translucent gradient swash woven through what changed: a thin tail runs under the letters, loops over them and swells into an arc that hooks over the end of the word, shedding sparkles, then dissolves into frost. It is drawn only once the edit has landed; while the word is typed there is just a tint.",
   category: "treatment",
   tags: ["agent", "writing", "edit", "ribbon", "swoosh", "curl", "flourish", "gradient", "sparkle", "frost", "caret"],
   controls: [
@@ -1361,7 +1354,6 @@ export const ribbonCurl: TextTreatmentEffect = {
         { type: "cover" },
         { type: "fill", z: "above", padX: 1, alpha: 0.1, radius: 2 },
         { type: "ghost" },
-        { type: "ribbon", points: WISP, width: 0.1, taper: 0.05, alpha: 0.45, colorStops: [[0, "{{tail}}"], [1, "{{mid}}"]], opacity: track([[0, 0.8], [0.5, 1], [1, 0.8]], "ease-in-out") },
         ...caretLayers(),
       ],
     },
