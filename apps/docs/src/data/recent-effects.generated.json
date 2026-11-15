@@ -254,9 +254,9 @@
     "animated": true,
     "duration": 4000,
     "module": "shaders/text",
-    "addedAt": "2026-11-15T13:53:06.452Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-11-15T13:53:58Z",
+    "commitHash": "16b78c9f873022cd0f69a3eb8ff5e28f9a3510e4",
+    "order": 712
   },
   {
     "id": "ribbon-curl",
