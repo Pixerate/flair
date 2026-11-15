@@ -259,13 +259,16 @@ describe("the ribbon curl", () => {
   const target = { lines: [{ x: 100, y: 40, width: 60, height: 20 }], caret: { x: 160, y: 40, height: 20 } };
   const ribbons = (time: number, o: { preset?: string; reduceMotion?: boolean } = {}) =>
     textTreatmentPlan(curl, { stage: "landed", time, target, ...o }).layers.filter((l) => l.source === "ribbon");
-  /** The main ribbon (glow 2), its woven pieces joined back up in order, and their layers. */
+  /** The curl's line height here: 3.2 line heights wide, scaled down to fit the 60 px word. */
+  const uy = 20 * Math.min(1, 60 / (3.2 * 20));
+  const near = (a: number | undefined, b: number) => a !== undefined && Math.abs(a - b) < 1e-9;
+  /** The main ribbon (glow 0.05 line heights), its woven pieces joined back up in order, and their layers. */
   const main = (time: number, o: { reduceMotion?: boolean } = {}) => {
-    const parts = ribbons(time, o).filter((l) => l.glow === 2);
+    const parts = ribbons(time, o).filter((l) => near(l.glow, 0.05 * uy));
     return { parts, segments: parts.flatMap((l) => l.segments!), opacity: parts[0]?.opacity ?? 0 };
   };
-  /** The frost (glow 6 on light pages, 10 with the dark theme), joined up. */
-  const frost = (time: number, o: { preset?: string } = {}) => ribbons(time, o).filter((l) => l.glow === 6 || l.glow === 10);
+  /** The frost (glow 0.12 line heights on light pages, 0.2 with the dark theme), joined up. */
+  const frost = (time: number, o: { preset?: string } = {}) => ribbons(time, o).filter((l) => near(l.glow, 0.12 * uy) || near(l.glow, 0.2 * uy));
 
   it("draws its ribbon on from the tail, thickening and turning from the tail colour to the agent's", () => {
     const early = main(150);
@@ -280,7 +283,8 @@ describe("the ribbon curl", () => {
     expect(b).toBeLessThan(150);
     expect(last.color[2]).toBeGreaterThan(last.color[0]);
     const width = (seg: { points: [number, number][] }) => Math.hypot(seg.points[0]![0] - seg.points[3]![0], seg.points[0]![1] - seg.points[3]![1]);
-    expect(width(last)).toBeGreaterThan(width(first) * 4);
+    // It swells from the tail (then narrows to a point at the head).
+    expect(Math.max(...drawn.segments.map(width))).toBeGreaterThan(width(first) * 4);
     // It stays on the changed word: its line runs from x 100 to 160, y 40 to 60.
     const xs = drawn.segments.flatMap((seg) => seg.points.map((q) => q[0]));
     const ys = drawn.segments.flatMap((seg) => seg.points.map((q) => q[1]));
@@ -291,6 +295,31 @@ describe("the ribbon curl", () => {
     // Translucent: each woven piece is drawn at the ribbon's opacity.
     expect(drawn.opacity).toBeLessThanOrEqual(0.7);
     expect(drawn.opacity).toBeGreaterThan(0.6);
+  });
+
+  it("keeps its shape and scales with the text: on the end of a long word, scaled down evenly to fit a short one, its glow and head in proportion", () => {
+    const at = (lines: { x: number; y: number; width: number; height: number }[]) =>
+      textTreatmentPlan(curl, { stage: "landed", time: 1000, target: { lines } }).layers.filter((l) => l.source === "ribbon" && l.segments!.length > 3);
+    const bounds = (layers: ReturnType<typeof at>) => {
+      const xs = layers.flatMap((l) => l.segments!.flatMap((g) => g.points.map((q) => q[0])));
+      return { left: Math.min(...xs), right: Math.max(...xs), glow: Math.max(...layers.map((l) => l.glow ?? 0)) };
+    };
+    // A long word 20 px tall: the curl is 64 px wide, on its end.
+    const long = bounds(at([{ x: 0, y: 0, width: 300, height: 20 }]));
+    expect(long.right).toBeGreaterThan(290);
+    expect(long.left).toBeGreaterThan(300 - 64 - 3);
+    // The same word at half the size: everything halves, glow included.
+    const small = bounds(at([{ x: 0, y: 0, width: 150, height: 10 }]));
+    expect(small.right - small.left).toBeCloseTo((long.right - long.left) / 2, 0);
+    expect(small.glow).toBeCloseTo(long.glow / 2, 6);
+    // A short word: scaled down (not squeezed) to fit, centred on it once it can shrink no further.
+    const short = bounds(at([{ x: 100, y: 0, width: 20, height: 20 }]));
+    expect(short.right - short.left).toBeLessThan(0.45 * 64 + 4);
+    expect((short.left + short.right) / 2).toBeCloseTo(110, -1);
+    // The head narrows to a point.
+    const segs = at([{ x: 0, y: 0, width: 300, height: 20 }]).flatMap((l) => l.segments!);
+    const width = (g: { points: [number, number][] }) => Math.hypot(g.points[0]![0] - g.points[3]![0], g.points[0]![1] - g.points[3]![1]);
+    expect(width(segs.at(-1)!)).toBeLessThan(0.5 * Math.max(...segs.map(width)));
   });
 
   it("weaves through the word: under the letters along the tail and the downstroke, over them on the loop and the arc", () => {
@@ -308,7 +337,7 @@ describe("the ribbon curl", () => {
     expect(main(1450).parts).toEqual([]);
     const light = frost(1450);
     expect(light.length).toBeGreaterThan(0);
-    expect(light.every((l) => l.blend === "normal" && l.glow === 6)).toBe(true);
+    expect(light.every((l) => l.blend === "normal" && near(l.glow, 0.12 * uy))).toBe(true);
     const dark = frost(1450, { preset: "Dark theme" });
     expect(dark.every((l) => l.blend === "screen")).toBe(true);
     expect(dark[0]!.color.slice(0, 3).map((c) => Math.round(c * 255))).toEqual([0xb9, 0xa6, 0xff]);

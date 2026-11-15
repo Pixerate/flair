@@ -473,7 +473,7 @@ export interface TreatmentLayer {
   widthPx?: TreatmentNumber;
   /** `band`: where it is, from wholly before the range (0) to wholly past it (1). */
   position?: TreatmentValue;
-  /** Px of soft glow round the layer, in its colour. */
+  /** Px of soft glow round the layer, in its colour (in line heights for a curve with `anchor: "range"`). */
   glow?: TreatmentNumber;
   /** `fill`: draws an outline this many px wide instead of filling. */
   stroke?: TreatmentNumber;
@@ -497,6 +497,14 @@ export interface TreatmentLayer {
    * and drifts are then in its line heights.
    */
   anchor?: "caret" | "range";
+  /**
+   * `ribbon` and `sparkles` with `anchor: "range"`: the curve's own width in line heights, so it
+   * keeps its shape: it sits on the end of a longer line and is scaled down evenly to fit a shorter
+   * one. Without it, the curve stretches to the line's width.
+   */
+  aspect?: TreatmentNumber;
+  /** `ribbon`: the share of its length, at the head, over which it narrows to a point. */
+  endTaper?: TreatmentNumber;
   /**
    * `ribbon` and `sparkles`: stretches along the curve, `[from, to]` from 0 (its start) to 1 (its
    * end), drawn under the text; the rest is drawn at `z`. Alternate them where the curve crosses the
