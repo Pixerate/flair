@@ -1,6 +1,7 @@
 import { checkEffectProvider, checkEffectSequence, isEffectError, type EffectPixels, type EffectProvider } from "@pixerate/editor/effects";
 import { getCameraMove } from "../catalog/camera.js";
 import { getTimingEffect, timingLength, timingSample } from "../catalog/timing.js";
+import { getTextTreatment, textTreatmentPlan, textTreatments } from "../catalog/treatment.js";
 import { EFFECTS } from "../catalog/index.js";
 import { SCENE_TEMPLATES } from "../catalog/templates.js";
 import type { Scene } from "../scene/types.js";
@@ -42,10 +43,9 @@ describe("flairEffects conforms to @pixerate/editor/effects", () => {
   it("lists every effect and primitive once, with search('') the same as list()", async () => {
     const { provider } = setup();
     const list = await provider.list();
-    // Text treatments are not in the effects contract yet (Pixerate/editor#887).
-    expect(list).toHaveLength(EFFECTS.filter((e) => e.kind !== "text-treatment").length + PRIMITIVES.length);
+    expect(list).toHaveLength(EFFECTS.length + PRIMITIVES.length);
     expect(await provider.search("")).toEqual(list);
-    expect(provider).toMatchObject({ id: "flair", name: "Flair", capabilities: { supportsHostImages: true, supportsVector: true, supportsMask: true, supportsFloat: true, supportsCamera: true, supportsTiming: true } });
+    expect(provider).toMatchObject({ id: "flair", name: "Flair", capabilities: { supportsHostImages: true, supportsVector: true, supportsMask: true, supportsFloat: true, supportsCamera: true, supportsTiming: true, supportsTextTreatments: true, defaultTextTreatment: "soft-sweep" } });
   });
 });
 
@@ -416,6 +416,55 @@ describe("timing effects", () => {
     expect(without.capabilities.supportsTiming).toBe(false);
     expect((await without.list()).some((e) => e.kind === "timing")).toBe(false);
     expect(await failure(() => without.timingSample!("retime-speed", { time: 0, footage: 1000 }))).toMatchObject({ code: "unknown_effect" });
+  });
+});
+
+describe("text treatments", () => {
+  let provider: EffectProvider;
+  beforeEach(() => {
+    provider = setup().provider;
+  });
+  const target = { lines: [{ x: 10, y: 20, width: 100, height: 18 }], caret: { x: 110, y: 20, height: 18 }, label: "Agent" };
+
+  it("lists every treatment with the use text-treatment, no inputs, and the agent's colour as a string control", async () => {
+    const listed = await provider.list({ kind: "text-treatment" });
+    expect(listed.map((m) => m.id)).toEqual(textTreatments.map((e) => e.id));
+    for (const t of listed) expect(t).toMatchObject({ kind: "text-treatment", uses: ["text-treatment"] });
+    const sweep = await provider.describe("soft-sweep");
+    expect(sweep.inputs).toEqual([]);
+    expect(sweep.controls.properties.color).toMatchObject({ type: "string", pattern: "^#[0-9A-Fa-f]{6}$" });
+    expect(sweep.defaults.color).toBe("#af52de");
+    expect(sweep.presets.map((p) => p.name)).toContain("Blue");
+  });
+
+  it("plans exactly what Flair's own textTreatmentPlan plans, with colours as #rrggbb", () => {
+    const curl = getTextTreatment("ribbon-curl")!;
+    const request = { stage: "landed" as const, time: 700, target };
+    const plan = provider.textTreatmentPlan!("ribbon-curl", request, { color: "#3366cc", darkTheme: true });
+    expect(plan).toEqual(textTreatmentPlan(curl, { ...request, values: { color: [0x33 / 255, 0x66 / 255, 0xcc / 255], darkTheme: true } }));
+    expect(plan.layers.some((l) => l.kind === "path" && l.segments!.length > 3)).toBe(true);
+    expect(provider.textTreatmentPlan!("soft-sweep", { stage: "caret", time: 0, target, reduceMotion: true }).reduced).toBe(true);
+  });
+
+  it("refuses an unknown id, another kind, a bad request or bad values, saying what to do", async () => {
+    const request = { stage: "caret" as const, time: 0, target };
+    expect(await failure(() => provider.textTreatmentPlan!("no-such-look", request))).toMatchObject({ code: "unknown_effect" });
+    expect(await failure(() => provider.textTreatmentPlan!("aurora", request))).toMatchObject({ code: "unsupported", message: expect.stringContaining('list({ kind: "text-treatment" })') });
+    expect(await failure(() => provider.textTreatmentPlan!("soft-sweep", { ...request, stage: "wiggling" as "caret" }))).toMatchObject({ code: "unsupported", message: expect.stringContaining("checking") });
+    expect(await failure(() => provider.textTreatmentPlan!("soft-sweep", { ...request, time: -1 }))).toMatchObject({ code: "unsupported" });
+    expect(await failure(() => provider.textTreatmentPlan!("soft-sweep", { ...request, target: { lines: [{ x: 0, y: 0, width: -1, height: 10 }] } }))).toMatchObject({ code: "unsupported" });
+    expect(await failure(() => provider.textTreatmentPlan!("soft-sweep", request, { nope: 1 }))).toMatchObject({ code: "invalid_values" });
+    expect(await failure(() => provider.textTreatmentPlan!("soft-sweep", request, { color: "purple-ish" }))).toMatchObject({ code: "invalid_values" });
+    expect(await failure(() => provider.createRenderer("soft-sweep", { width: 8, height: 8 }))).toMatchObject({ code: "unsupported", message: expect.stringContaining("textTreatmentPlan") });
+    expect(await failure(() => provider.openAuthoring!({ effectId: "soft-sweep" }))).toMatchObject({ code: "unsupported", message: expect.stringContaining("textTreatmentPlan") });
+  });
+
+  it("leaves them out when the text-treatment kind is not asked for", async () => {
+    const without = setup({ kinds: ["shader", "vector", "motion", "camera", "timing"] }).provider;
+    expect(without.capabilities.supportsTextTreatments).toBe(false);
+    expect(without.capabilities.defaultTextTreatment).toBeUndefined();
+    expect((await without.list()).some((e) => e.kind === "text-treatment")).toBe(false);
+    expect(await failure(() => without.textTreatmentPlan!("soft-sweep", { stage: "caret", time: 0, target }))).toMatchObject({ code: "unknown_effect" });
   });
 });
 

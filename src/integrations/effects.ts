@@ -48,9 +48,12 @@ import {
   type EffectVectorMotion,
   type EffectVectorTarget,
   type TimingSample,
+  type TextTreatmentPlan as ContractTreatmentPlan,
+  type TextTreatmentPlanRequest,
   type TimingSampleRequest,
 } from "@pixerate/editor/effects";
 import { cameraMoveControls, getCameraMove } from "../catalog/camera.js";
+import { DEFAULT_TEXT_TREATMENT, getTextTreatment, textTreatmentControls, textTreatmentPlan as flairTreatmentPlan } from "../catalog/treatment.js";
 import { getTimingEffect, timingControls, timingSample as flairTimingSample, MAX_TIMING_FRAMES } from "../catalog/timing.js";
 import { EFFECT_META, getEffectMeta, loadEffect, type EffectMeta, type UiBindings, type UiDescriptor } from "../catalog/lazy.js";
 import { renderVectorEffect, type EffectDefinition, type ShaderEffect, type VectorEffect } from "../catalog/types.js";
@@ -189,6 +192,9 @@ export function planOf(meta: EffectMeta): Plan {
   // A timing effect retimes footage the host decodes: it has no inputs and only the use "timing".
   const retime = meta.kind === "timing" ? getTimingEffect(meta.id) : undefined;
   if (retime) return { meta, uses: ["timing"], inputs: [], controls: timingControls(retime), transition: false };
+  // A text treatment draws over the host's text: no inputs, only the use "text-treatment", and `color` is the agent's colour.
+  const treatment = meta.kind === "text-treatment" ? getTextTreatment(meta.id) : undefined;
+  if (treatment) return { meta, uses: ["text-treatment"], inputs: [], controls: textTreatmentControls(treatment), transition: false };
   const transition = meta.video === "transition";
   const uses = new Set<EffectUse>();
   const images = meta.inputs.images;
@@ -266,7 +272,6 @@ export function uiOf(plan: Plan): EffectUiFields {
 
 export function summaryOf(plan: Plan): FlairEffectSummary {
   const { meta } = plan;
-  if (meta.kind === "text-treatment") throw new Error(`"${meta.id}" is a text treatment, which the effects contract cannot describe yet.`);
   const paint = paintOf(plan);
   const duration = playOf(meta);
   const move = meta.kind === "camera" ? getCameraMove(meta.id) : undefined;
@@ -326,8 +331,14 @@ export function contractValue(control: ControlDef, value: ControlValue): Control
 
 export function controlSchemaOf(plan: Plan): EffectDescription["controls"] {
   const schema = controlsSchema(plan.controls, { title: `${plan.meta.name} controls`, description: plan.meta.description, currentColor: plan.meta.kind === "vector" });
+  const treatment = plan.meta.kind === "text-treatment";
   for (const control of plan.controls) {
-    if (control.color) schema.properties![control.name] = { ...schema.properties![control.name], default: hex(control.default) };
+    if (!control.color) continue;
+    const prop = schema.properties![control.name]!;
+    // A text treatment's colours are "#rrggbb" strings, as the contract has them (its `color` is the agent's colour).
+    schema.properties![control.name] = treatment
+      ? { type: "string", title: prop.title, description: `${control.label}: a colour, "#rrggbb" (default ${hex(control.default)}).`, pattern: "^#[0-9A-Fa-f]{6}$", default: hex(control.default) }
+      : { ...prop, default: hex(control.default) };
   }
   return schema as unknown as EffectDescription["controls"];
 }
@@ -747,11 +758,11 @@ class VectorRenderer extends BaseRenderer {
  *   out and named in `notes`, with `validateScene`'s issues.
  */
 export function flairEffects(options: FlairEffectsOptions = {}): FlairEffectProvider {
-  const kinds = new Set<EffectKind>(options.kinds ?? ["shader", "vector", "motion", "camera", "timing"]);
-  // Text treatments are not in the effects contract yet (Pixerate/editor#887), so they are not offered.
-  const plans = new Map(EFFECT_META.filter((m) => m.kind !== "text-treatment" && kinds.has(m.kind)).map((m) => [m.id, planOf(m)]));
+  const kinds = new Set<EffectKind>(options.kinds ?? ["shader", "vector", "motion", "camera", "timing", "text-treatment"]);
+  const plans = new Map(EFFECT_META.filter((m) => kinds.has(m.kind)).map((m) => [m.id, planOf(m)]));
   const primitives = kinds.has("motion") ? PRIMITIVES : [];
-  const summaries: FlairEffectSummary[] = [...[...plans.values()].map(summaryOf), ...primitives.map(primitiveSummary)];
+  // Primitives have no paint hint, so they are Flair summaries as they are.
+  const summaries: FlairEffectSummary[] = [...[...plans.values()].map(summaryOf), ...primitives.map((p) => primitiveSummary(p) as FlairEffectSummary)];
   const descriptions = new Map<string, Promise<FlairEffectDescription>>();
   const inWorker = typeof document === "undefined";
   const rasterize = options.rasterizeSvg ?? (inWorker ? undefined : pageRasterizer);
@@ -765,6 +776,8 @@ export function flairEffects(options: FlairEffectsOptions = {}): FlairEffectProv
     supportsAuthoring: kinds.has("shader") || kinds.has("vector"),
     supportsCamera: kinds.has("camera"),
     supportsTiming: kinds.has("timing"),
+    supportsTextTreatments: kinds.has("text-treatment"),
+    ...(kinds.has("text-treatment") && { defaultTextTreatment: DEFAULT_TEXT_TREATMENT }),
     supportsTemplates: true,
     // Effects that make good paint say how (`paint`); the rest are not meant as paint.
     paintHints: true,
@@ -788,10 +801,7 @@ export function flairEffects(options: FlairEffectsOptions = {}): FlairEffectProv
   }
   const offered = (id: string) => plans.has(id);
 
-  const unknown = (id: string) =>
-    getEffectMeta(String(id))?.kind === "text-treatment"
-      ? new EffectUnsupportedError(`"${id}" is a text treatment, which draws over a host's text rather than a picture; the effects contract has no text treatments yet, so this provider does not offer them. Use Flair directly: textTreatmentPlan (or catalog.treatment) for what a stage draws, mountTextTreatment on the web, FlairTextTreatmentRenderer in Swift.`, String(id))
-      : new UnknownEffectError(String(id), "Flair");
+  const unknown = (id: string) => new UnknownEffectError(String(id), "Flair");
 
   /** A catalog effect: its plan, definition and description (loading its source once). */
   async function catalogEffect(id: string): Promise<{ plan: Plan; effect: EffectDefinition; description: EffectDescription }> {
@@ -877,12 +887,35 @@ export function flairEffects(options: FlairEffectsOptions = {}): FlairEffectProv
     return { frames: sample.frames.slice(0, MAX_TIMING_FRAMES).map((f) => ({ time: f.time, weight: f.weight })), blend: sample.blend };
   }
 
+  const treatmentDescriptions = new Map<string, FlairEffectDescription>();
+
+  /** What text treatment `id` draws for `request.stage` at `request.time` over `request.target`: Flair's own plan. */
+  function textTreatmentPlan(id: string, request: TextTreatmentPlanRequest, values?: EffectValues): ContractTreatmentPlan {
+    const plan = plans.get(id);
+    const treatment = plan && getTextTreatment(id);
+    if (!plan || !treatment) {
+      if (!plan && !(kinds.has("motion") && getPrimitive(id))) throw unknown(id);
+      throw new EffectUnsupportedError(`"${id}" is not a text treatment, so it draws nothing over text; list the text treatments with list({ kind: "text-treatment" }).`, id);
+    }
+    // Flair's planner checks the stage, time and target (editors before 0.330 have no checkTextTreatmentRequest to import).
+    if (!request || typeof request !== "object") throw new EffectUnsupportedError("A text treatment request is { stage, time, target, reduceMotion? }.", id);
+    if (request.reduceMotion !== undefined && typeof request.reduceMotion !== "boolean") throw new EffectUnsupportedError("reduceMotion is true or false.", id);
+    let description = treatmentDescriptions.get(id);
+    if (!description) treatmentDescriptions.set(id, (description = describePlan(plan, treatment.presets ?? [])));
+    const resolved = flairValues(plan.controls, resolveEffectValues(description, values));
+    try {
+      return flairTreatmentPlan(treatment, { stage: request.stage, time: request.time, target: request.target, values: resolved, reduceMotion: request.reduceMotion ?? false });
+    } catch (err) {
+      throw new EffectUnsupportedError(err instanceof Error ? err.message : String(err), id);
+    }
+  }
+
   function describe(id: string): Promise<FlairEffectDescription> {
     let found = descriptions.get(id);
     if (!found) {
       const primitive = kinds.has("motion") ? getPrimitive(id) : undefined;
       const plan = plans.get(id);
-      if (primitive) found = Promise.resolve(describePrimitive(primitive));
+      if (primitive) found = Promise.resolve(describePrimitive(primitive) as FlairEffectDescription);
       else if (plan) found = describeCatalog(plan);
       else return Promise.reject(unknown(id));
       descriptions.set(id, found);
@@ -915,7 +948,7 @@ export function flairEffects(options: FlairEffectsOptions = {}): FlairEffectProv
       if (effect.kind === "shader") return new ShaderRenderer(plan, description, effect, width, height, depth);
       if (effect.kind === "camera") throw new EffectUnsupportedError(`"${id}" is a camera move, which moves a scene's camera rather than drawing a picture: use cameraView (or sampleCameraMove) for where it puts the camera.`, id);
       if (effect.kind === "timing") throw new EffectUnsupportedError(`"${id}" is a timing effect, which retimes footage rather than drawing a picture: use timingSample for the footage frames each moment shows (and timingLength for how long the retime lasts).`, id);
-      if (effect.kind === "text-treatment") throw unknown(id);
+      if (effect.kind === "text-treatment") throw new EffectUnsupportedError(`"${id}" is a text treatment, which draws over a host's text rather than a picture: use textTreatmentPlan for the layers each stage draws over the text's line rectangles.`, id);
       if (!rasterize) {
         throw new EffectUnsupportedError(
           `"${id}" is a vector effect, and a Worker has no DOM to draw SVG in: render it on the page, pass rasterizeSvg to flairEffects, or use applyVectorEffect for the animated SVG.`,
@@ -928,6 +961,7 @@ export function flairEffects(options: FlairEffectsOptions = {}): FlairEffectProv
     cameraView,
     timingLength,
     timingSample,
+    textTreatmentPlan,
 
     async listTemplates(searchOptions?: EffectTemplateSearchOptions): Promise<readonly EffectTemplateSummary[]> {
       return searchTemplateSummaries((await loadTemplates()).summaries, searchOptions);

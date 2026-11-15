@@ -134,6 +134,10 @@ public struct FlairTreatmentGradient: Equatable, Sendable {
     public var x0: Double, y0: Double, x1: Double, y1: Double
     public var stops: [(offset: Double, color: FlairRGBA)]
 
+    public init(x0: Double, y0: Double, x1: Double, y1: Double, stops: [(offset: Double, color: FlairRGBA)]) {
+        self.x0 = x0; self.y0 = y0; self.x1 = x1; self.y1 = y1; self.stops = stops
+    }
+
     public static func == (a: Self, b: Self) -> Bool {
         a.x0 == b.x0 && a.y0 == b.y0 && a.x1 == b.x1 && a.y1 == b.y1
             && a.stops.count == b.stops.count && zip(a.stops, b.stops).allSatisfy { $0.offset == $1.offset && $0.color == $1.color }
@@ -165,6 +169,14 @@ public struct FlairTreatmentPlanLayer: Equatable, Sendable {
     /// `path`: the ribbon's pieces, each a polygon in one colour, drawn as one group at `opacity`.
     public var segments: [FlairTreatmentSegment]?
 
+    public init(kind: Kind, source: String, z: String, x: Double, y: Double, width: Double, height: Double, radius: Double, opacity: Double,
+                color: FlairRGBA, gradient: FlairTreatmentGradient? = nil, stroke: Double? = nil, glow: Double? = nil, blend: String = "normal",
+                text: String? = nil, size: Double? = nil, padX: Double? = nil, textColor: FlairRGBA? = nil, segments: [FlairTreatmentSegment]? = nil) {
+        self.kind = kind; self.source = source; self.z = z; self.x = x; self.y = y; self.width = width; self.height = height
+        self.radius = radius; self.opacity = opacity; self.color = color; self.gradient = gradient; self.stroke = stroke; self.glow = glow
+        self.blend = blend; self.text = text; self.size = size; self.padX = padX; self.textColor = textColor; self.segments = segments
+    }
+
     public var frame: CGRect { CGRect(x: x, y: y, width: width, height: height) }
 }
 
@@ -172,6 +184,9 @@ public struct FlairTreatmentPlanLayer: Equatable, Sendable {
 public struct FlairTreatmentSegment: Equatable, Sendable {
     public var points: [CGPoint]
     public var color: FlairRGBA
+    public init(points: [CGPoint], color: FlairRGBA) {
+        self.points = points; self.color = color
+    }
 }
 
 /// A stage at a moment, ready to draw.
@@ -185,6 +200,10 @@ public struct FlairTextTreatmentPlan: Equatable, Sendable {
     public var reduced: Bool
     /// Back to front.
     public var layers: [FlairTreatmentPlanLayer]
+
+    public init(stage: FlairTextTreatmentStage, time: Double, duration: Double, done: Bool, reduced: Bool, layers: [FlairTreatmentPlanLayer]) {
+        self.stage = stage; self.time = time; self.duration = duration; self.done = done; self.reduced = reduced; self.layers = layers
+    }
 }
 
 // MARK: - Treatments
