@@ -195,9 +195,9 @@
     },
     "animated": true,
     "module": "treatment",
-    "addedAt": "2026-11-15T10:53:38.756Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-11-15T10:53:57Z",
+    "commitHash": "8617942a1d2cbe230eab8ec856e6039d24ed383e",
+    "order": 711
   },
   {
     "id": "design-frame",
