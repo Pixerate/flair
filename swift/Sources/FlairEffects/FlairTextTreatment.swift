@@ -541,14 +541,14 @@ public enum FlairTextTreatments {
 
             let p = progress(-1)
             if type == "ribbon" || type == "sparkles" {
-                guard let caret = target.caret, caret.height > 0 else { continue }
-                let samples = sampleCurve(layer["points"], caret)
+                guard let frame = curveFrame(layer, target, lines) else { continue }
+                let samples = sampleCurve(layer["points"], frame)
                 let total = samples.last?.s ?? 0
                 if total <= 0 { continue }
                 let reveal = clamp01(valueAt(layer["reveal"], p, 1))
                 let erase = clamp01(valueAt(layer["erase"], p, 0))
                 if reveal - erase <= 0.001 { continue }
-                let h = caret.height
+                let h = frame.uy
                 if type == "ribbon" {
                     let from = erase * total, to = reveal * total
                     let part = [pointAt(samples, from)] + samples.filter { $0.s > from && $0.s < to } + [pointAt(samples, to)]
@@ -649,13 +649,22 @@ public enum FlairTextTreatments {
 
     static let curveSteps = 16
 
-    /// A curve's points (caret heights from the caret) sampled in the host's px, with the arc length to each.
-    static func sampleCurve(_ points: FlairJSON?, _ caret: FlairTreatmentCaret) -> [(x: Double, y: Double, s: Double)] {
+    /// A curve layer's frame: the caret in caret heights, or (`anchor: "range"`) the range's last line, x across its width and y down its height.
+    static func curveFrame(_ layer: FlairJSON, _ target: FlairTreatmentTarget, _ lines: [CGRect]) -> (x: Double, y: Double, ux: Double, uy: Double)? {
+        if layer["anchor"]?.string == "range" {
+            guard let last = lines.last else { return nil }
+            return (Double(last.minX), Double(last.minY), Double(last.width), Double(last.height))
+        }
+        guard let caret = target.caret, caret.height > 0 else { return nil }
+        return (caret.x, caret.y, caret.height, caret.height)
+    }
+
+    /// A curve's points sampled in the host's px (from `frame`), with the arc length to each.
+    static func sampleCurve(_ points: FlairJSON?, _ frame: (x: Double, y: Double, ux: Double, uy: Double)) -> [(x: Double, y: Double, s: Double)] {
         guard let pts = points?.array, pts.count >= 4 else { return [] }
-        let h = caret.height
         func pt(_ i: Int) -> (Double, Double) {
             let q = pts[i].array
-            return (caret.x + n(q?.first, 0) * h, caret.y + n(q.flatMap { $0.count > 1 ? $0[1] : nil }, 0) * h)
+            return (frame.x + n(q?.first, 0) * frame.ux, frame.y + n(q.flatMap { $0.count > 1 ? $0[1] : nil }, 0) * frame.uy)
         }
         let (x0, y0) = pt(0)
         var out: [(x: Double, y: Double, s: Double)] = [(x0, y0, 0)]

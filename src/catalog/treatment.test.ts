@@ -274,8 +274,16 @@ describe("the ribbon curl", () => {
     expect(last.color[2]).toBeGreaterThan(last.color[0]);
     const width = (seg: { points: [number, number][] }) => Math.hypot(seg.points[0]![0] - seg.points[3]![0], seg.points[0]![1] - seg.points[3]![1]);
     expect(width(last)).toBeGreaterThan(width(first) * 4);
-    // Starts left of and under the word, in caret heights from the caret.
-    expect(first.points[0]![0]).toBeCloseTo(160 - 4 * 20, 0);
+    // It stays on the changed word: its line runs from x 100 to 160, y 40 to 60.
+    const xs = drawn.segments!.flatMap((seg) => seg.points.map((q) => q[0]));
+    const ys = drawn.segments!.flatMap((seg) => seg.points.map((q) => q[1]));
+    expect(Math.min(...xs)).toBeGreaterThan(100 - 3);
+    expect(Math.max(...xs)).toBeLessThan(160 + 3);
+    expect(Math.min(...ys)).toBeGreaterThan(40 - 0.25 * 20);
+    expect(Math.max(...ys)).toBeLessThan(60 + 0.25 * 20);
+    // Translucent: the group is drawn at the ribbon's opacity.
+    expect(drawn.opacity).toBeLessThanOrEqual(0.7);
+    expect(drawn.opacity).toBeGreaterThan(0.6);
   });
 
   it("dissolves into frost: pale on light pages, a glowing screen-blended lilac with the dark theme", () => {
@@ -283,7 +291,7 @@ describe("the ribbon curl", () => {
     const light = ribbons(1450);
     expect(light.length).toBe(1);
     expect(light[0]!.blend).toBe("normal");
-    expect(light[0]!.glow).toBe(8);
+    expect(light[0]!.glow).toBe(6);
     const dark = ribbons(1450, { preset: "Dark theme" });
     expect(dark[0]!.blend).toBe("screen");
     expect(dark[0]!.color.slice(0, 3).map((c) => Math.round(c * 255))).toEqual([0xb9, 0xa6, 0xff]);

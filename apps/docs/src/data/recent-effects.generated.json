@@ -4,7 +4,7 @@
     "name": "Ribbon curl",
     "kind": "text-treatment",
     "category": "treatment",
-    "description": "A glossy gradient ribbon sweeping in under what changed and curling up past the caret into a loop, shedding sparkles, then dissolving into frost; a wisp of it trails the caret while typing.",
+    "description": "A translucent gradient swash drawn across what changed: a thin tail loops once and swells into an arc that hooks over the end of the word, shedding sparkles, then dissolves into frost; a wisp of it trails the caret while typing.",
     "tags": [
       "agent",
       "writing",
@@ -124,28 +124,38 @@
       {
         "n": "ribbonWidth",
         "t": "float",
-        "d": 0.38,
-        "min": 0.08,
-        "max": 0.8,
+        "d": 0.17,
+        "min": 0.05,
+        "max": 0.5,
         "s": 0.01,
         "b": 3,
         "line": 10
       },
       {
+        "n": "ribbonAlpha",
+        "t": "float",
+        "d": 0.7,
+        "l": "Ribbon opacity",
+        "min": 0.2,
+        "s": 0.01,
+        "b": 3,
+        "line": 11
+      },
+      {
         "n": "sparkles",
         "t": "float",
-        "d": 14,
+        "d": 12,
         "max": 40,
         "s": 1,
         "b": 3,
-        "line": 11
+        "line": 12
       },
       {
         "n": "darkTheme",
         "t": "bool",
         "d": false,
         "s": 0.01,
-        "line": 12
+        "line": 13
       },
       {
         "n": "frost",
@@ -160,7 +170,7 @@
         "l": "Frost (light)",
         "c": 1,
         "s": 0.01,
-        "line": 13
+        "line": 14
       },
       {
         "n": "frostDark",
@@ -175,7 +185,7 @@
         "l": "Frost (dark)",
         "c": 1,
         "s": 0.01,
-        "line": 14
+        "line": 15
       }
     ],
     "presets": [
