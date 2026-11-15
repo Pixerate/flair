@@ -353,6 +353,16 @@ describe("the ribbon curl", () => {
     expect(main(950, { reduceMotion: true }).segments.length).toBe(main(1000).segments.length);
   });
 
+  it("draws no ribbon or sparkles while the word is typed, only once the edit has landed", () => {
+    const flourish = (stage: "typing" | "landed", time: number) =>
+      textTreatmentPlan(curl, { stage, time, target: { ...target, text: "wor", background: "#ffffff" } }).layers.filter((l) => l.source === "ribbon" || l.source === "sparkles");
+    expect(curl.stages.typing!.layers.map((l) => l.type)).toEqual(["cover", "fill", "ghost", "caret", "tag"]);
+    for (const time of [0, 265, 530, 800, 1059]) expect(flourish("typing", time)).toEqual([]);
+    const landed = flourish("landed", 700).map((l) => l.source);
+    expect(landed).toContain("ribbon");
+    expect(landed).toContain("sparkles");
+  });
+
   it("refuses a curve with the wrong number of points", () => {
     const bad: TextTreatmentEffect = { ...curl, id: "bad-curl", stages: { ...curl.stages, landed: { duration: 100, layers: [{ type: "ribbon", points: [[0, 0], [1, 1]] }] } } };
     expect(textTreatmentIssues(bad).join(" ")).toMatch(/points are a start point and then three/);
