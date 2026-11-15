@@ -549,6 +549,7 @@ public enum FlairTextTreatments {
                 let erase = clamp01(valueAt(layer["erase"], p, 0))
                 if reveal - erase <= 0.001 { continue }
                 let h = frame.uy
+                let glowPx = layer["anchor"]?.string == "range" ? n(layer["glow"], 0) * h : n(layer["glow"], 0)
                 if type == "ribbon" {
                     let from = erase * total, to = reveal * total
                     let part = [pointAt(samples, from)] + samples.filter { $0.s > from && $0.s < to } + [pointAt(samples, to)]
@@ -559,7 +560,10 @@ public enum FlairTextTreatments {
                         var len = hypot(b.x - a.x, b.y - a.y)
                         if len == 0 { len = 1 }
                         let nx = -(b.y - a.y) / len, ny = (b.x - a.x) / len
-                        let half = head * (taper + (1 - taper) * (q.s / total)) / 2
+                        let u = q.s / total
+                        let endTaper = n(layer["endTaper"], 0)
+                        let lift = endTaper > 0 ? 0.15 + 0.85 * smooth01((1 - u) / endTaper) : 1
+                        let half = head * (taper + (1 - taper) * u) * lift / 2
                         return (CGPoint(x: q.x + nx * half, y: q.y + ny * half), CGPoint(x: q.x - nx * half, y: q.y - ny * half), q.s)
                     }
                     // Pieces in a `behind` stretch go under the text, the rest over it, so the ribbon weaves through the words.
@@ -581,6 +585,7 @@ public enum FlairTextTreatments {
                         let left = group.xs.min()!, top = group.ys.min()!
                         var l = make(.path, left, top, group.xs.max()! - left, group.ys.max()! - top, radius: 0, p: p)
                         l.z = group.z
+                        l.glow = glowPx > 0 ? glowPx : nil
                         l.opacity *= color.a
                         l.color = FlairRGBA(color.r, color.g, color.b, 1)
                         l.segments = group.segments
@@ -608,6 +613,7 @@ public enum FlairTextTreatments {
                         let twinkle = 1 - 0.6 * since * hash(k + 4)
                         var l = make(.rect, cx - d / 2, cy - d / 2, d, d, radius: d / 2, p: p)
                         l.opacity *= twinkle
+                        l.glow = glowPx > 0 ? glowPx : nil
                         if isBehind(layer["behind"], u) { l.z = "behind" }
                         push(l)
                     }
@@ -665,12 +671,25 @@ public enum FlairTextTreatments {
     }
 
     static let curveSteps = 16
+    /// The smallest a curve with an `aspect` is scaled to, to fit a short word.
+    static let minCurveScale = 0.4
+
+    static func smooth01(_ x: Double) -> Double {
+        let c = clamp01(x)
+        return c * c * (3 - 2 * c)
+    }
 
     /// A curve layer's frame: the caret in caret heights, or (`anchor: "range"`) the range's last line, x across its width and y down its height.
     static func curveFrame(_ layer: FlairJSON, _ target: FlairTreatmentTarget, _ lines: [CGRect]) -> (x: Double, y: Double, ux: Double, uy: Double)? {
         if layer["anchor"]?.string == "range" {
             guard let last = lines.last else { return nil }
-            return (Double(last.minX), Double(last.minY), Double(last.width), Double(last.height))
+            let (lx, ly, lw, lh) = (Double(last.minX), Double(last.minY), Double(last.width), Double(last.height))
+            let aspect = n(layer["aspect"], 0)
+            guard aspect > 0 else { return (lx, ly, lw, lh) }
+            let scale = min(1, max(minCurveScale, lw / (aspect * lh)))
+            let ux = aspect * lh * scale, uy = lh * scale
+            let x = ux <= lw ? lx + lw - ux : lx + (lw - ux) / 2
+            return (x, ly + (lh - uy) / 2, ux, uy)
         }
         guard let caret = target.caret, caret.height > 0 else { return nil }
         return (caret.x, caret.y, caret.height, caret.height)

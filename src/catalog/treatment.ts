@@ -312,7 +312,7 @@ function placeholders(v: unknown, where: string, out: { name: string; where: str
   return out;
 }
 
-const NUMBER_FIELDS = ["alpha", "padX", "padY", "top", "height", "radius", "width", "widthPx", "glow", "stroke", "size", "gap", "taper", "count", "spread", "drift", "seed"] as const;
+const NUMBER_FIELDS = ["alpha", "padX", "padY", "top", "height", "radius", "width", "widthPx", "glow", "stroke", "size", "gap", "taper", "count", "spread", "drift", "seed", "aspect", "endTaper"] as const;
 const ANIMATED_FIELDS = ["opacity", "reveal", "erase", "position"] as const;
 const COLOR_FIELDS = ["color", "textColor"] as const;
 const LAYER_FIELDS = new Set<string>(["type", "z", "if", "unless", "stops", "blend", "points", "colorStops", "anchor", "behind", ...NUMBER_FIELDS, ...ANIMATED_FIELDS, ...COLOR_FIELDS]);
@@ -383,6 +383,12 @@ export function textTreatmentIssues(effect: TextTreatmentEffect): string[] {
 // ---------------------------------------------------------------------------
 
 const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
+
+/** Smoothstep from 0 to 1. */
+const smooth01 = (x: number) => {
+  const c = clamp01(x);
+  return c * c * (3 - 2 * c);
+};
 
 /** A resolved number field, or its fallback. */
 const n = (v: unknown, fallback: number): number => (typeof v === "number" && Number.isFinite(v) ? v : fallback);
@@ -479,11 +485,22 @@ interface CurveFrame {
 function curveFrame(layer: TreatmentLayer, target: TextTreatmentTarget, lines: readonly TreatmentRect[]): CurveFrame | undefined {
   if (layer.anchor === "range") {
     const last = lines[lines.length - 1];
-    return last ? { x: last.x, y: last.y, ux: last.width, uy: last.height } : undefined;
+    if (!last) return undefined;
+    const aspect = n(layer.aspect, 0);
+    if (!(aspect > 0)) return { x: last.x, y: last.y, ux: last.width, uy: last.height };
+    // Its own shape, `aspect` line heights wide: on the end of a long line, scaled down evenly (to 40% at the least) to fit a short one.
+    const scale = Math.min(1, Math.max(MIN_CURVE_SCALE, last.width / (aspect * last.height)));
+    const ux = aspect * last.height * scale;
+    const uy = last.height * scale;
+    const x = ux <= last.width ? last.x + last.width - ux : last.x + (last.width - ux) / 2;
+    return { x, y: last.y + (last.height - uy) / 2, ux, uy };
   }
   const caret = target.caret;
   return caret && caret.height > 0 ? { x: caret.x, y: caret.y, ux: caret.height, uy: caret.height } : undefined;
 }
+
+/** The smallest a curve with an `aspect` is scaled to, to fit a short word (it overflows the word a little past that). */
+const MIN_CURVE_SCALE = 0.4;
 
 function sampleCurve(points: unknown, frame: CurveFrame): { x: number; y: number; s: number }[] {
   if (!Array.isArray(points) || points.length < 4) return [];
@@ -651,8 +668,10 @@ function planLayers(
       const reveal = clamp01(valueAt(layer.reveal, p, 1));
       const erase = clamp01(valueAt(layer.erase, p, 0));
       if (reveal - erase <= 0.001) continue;
-      // Widths, spreads and drifts are in line (or caret) heights.
+      // Widths, spreads and drifts are in line (or caret) heights; so is glow, over the text, so it keeps to the text's size.
       const h = frame.uy;
+      const glowPx = layer.anchor === "range" ? n(layer.glow, 0) * h : n(layer.glow, 0);
+      const glowed = glowPx > 0 ? { glow: glowPx } : {};
       if (layer.type === "ribbon") {
         // The drawn part, cut at its ends.
         const from = erase * total;
@@ -666,7 +685,11 @@ function planLayers(
           const len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
           const nx = -(b.y - a.y) / len;
           const ny = (b.x - a.x) / len;
-          const half = (head * (taper + (1 - taper) * (q.s / total))) / 2;
+          const u = q.s / total;
+          // With `endTaper`, the last stretch narrows to a point, as a brush stroke lifts.
+          const endTaper = n(layer.endTaper, 0);
+          const lift = endTaper > 0 ? 0.15 + 0.85 * smooth01((1 - u) / endTaper) : 1;
+          const half = (head * (taper + (1 - taper) * u) * lift) / 2;
           return { l: [q.x + nx * half, q.y + ny * half] as [number, number], r: [q.x - nx * half, q.y - ny * half] as [number, number], s: q.s };
         });
         // Pieces in a `behind` stretch go under the text, the rest over it, so the ribbon weaves through the words.
@@ -690,7 +713,7 @@ function planLayers(
           const left = Math.min(...group.xs);
           const top = Math.min(...group.ys);
           // The layer's alpha goes on the group, so overlapping pieces do not darken.
-          push({ kind: "path", source: "ribbon", x: left, y: top, width: Math.max(...group.xs) - left, height: Math.max(...group.ys) - top, radius: 0, ...b, z: group.z, opacity: b.opacity * color[3], color: [color[0], color[1], color[2], 1], segments: group.segments });
+          push({ kind: "path", source: "ribbon", x: left, y: top, width: Math.max(...group.xs) - left, height: Math.max(...group.ys) - top, radius: 0, ...b, ...glowed, z: group.z, opacity: b.opacity * color[3], color: [color[0], color[1], color[2], 1], segments: group.segments });
         }
       } else {
         const count = Math.max(0, Math.min(200, Math.round(n(layer.count, 12))));
@@ -713,7 +736,7 @@ function planLayers(
           const cy = q.y + ((bq.x - a.x) / len) * off + drift * since * (0.5 + treatmentHash(seed + i * 5 + 3));
           const twinkle = 1 - 0.6 * since * treatmentHash(seed + i * 5 + 4);
           const b = base(p);
-          push({ kind: "rect", source: "sparkles", x: cx - d / 2, y: cy - d / 2, width: d, height: d, radius: d / 2, ...b, ...(isBehind(layer.behind, u) && { z: "behind" as const }), opacity: b.opacity * twinkle });
+          push({ kind: "rect", source: "sparkles", x: cx - d / 2, y: cy - d / 2, width: d, height: d, radius: d / 2, ...b, ...glowed, ...(isBehind(layer.behind, u) && { z: "behind" as const }), opacity: b.opacity * twinkle });
         }
       }
       continue;
@@ -1269,6 +1292,9 @@ const CURL: readonly (readonly [number, number])[] = [
   [0.99, 0.18],
 ];
 
+/** The curl's own width, in line heights: it keeps this shape on any word, scaled down to fit a short one. */
+const CURL_ASPECT = 3.2;
+
 /** Where the curl goes under the letters: its tail along the baseline, and the downstroke after the loop (the loop and the rising arc stay over them). */
 const CURL_UNDER: readonly (readonly [number, number])[] = [
   [0, 0.27],
@@ -1344,24 +1370,26 @@ export const ribbonCurl: TextTreatmentEffect = {
       reduced: { at: 0.45, fade: "in-out" },
       layers: [
         { type: "fill", alpha: 0.12, radius: 2, opacity: holdThenFade(0.5) },
-        { type: "ribbon", anchor: "range", behind: CURL_UNDER, unless: "{{darkTheme}}", points: CURL, color: "{{frost}}", alpha: 0.5, width: 0.3, taper: 0.15, glow: 6, reveal: drawOn, erase: frostErase, opacity: frostIn },
-        { type: "ribbon", anchor: "range", behind: CURL_UNDER, if: "{{darkTheme}}", points: CURL, color: "{{frostDark}}", alpha: 0.45, width: 0.32, taper: 0.15, glow: 10, blend: "screen", reveal: drawOn, erase: frostErase, opacity: frostIn },
+        { type: "ribbon", anchor: "range", aspect: CURL_ASPECT, behind: CURL_UNDER, unless: "{{darkTheme}}", points: CURL, color: "{{frost}}", alpha: 0.5, width: 0.3, taper: 0.15, glow: 0.12, reveal: drawOn, erase: frostErase, opacity: frostIn },
+        { type: "ribbon", anchor: "range", aspect: CURL_ASPECT, behind: CURL_UNDER, if: "{{darkTheme}}", points: CURL, color: "{{frostDark}}", alpha: 0.45, width: 0.32, taper: 0.15, glow: 0.2, blend: "screen", reveal: drawOn, erase: frostErase, opacity: frostIn },
         {
           type: "ribbon",
           anchor: "range",
+          aspect: CURL_ASPECT,
           behind: CURL_UNDER,
           points: CURL,
           alpha: "{{ribbonAlpha}}",
           width: "{{ribbonWidth}}",
           taper: 0.08,
-          glow: 2,
+          endTaper: 0.12,
+          glow: 0.05,
           colorStops: [[0, "{{tail}}", 0], [0.18, "{{tail}}", 0.7], [0.45, "{{mid}}"], [1, "{{color}}"]],
           reveal: drawOn,
           opacity: track([[0, 1], [0.5, 1], [0.72, 0]], "ease-in"),
         },
-        { type: "ribbon", anchor: "range", behind: CURL_UNDER, points: CURL, color: "#ffffff", alpha: 0.35, width: 0.05, taper: 0.3, reveal: drawOn, opacity: track([[0, 1], [0.45, 1], [0.65, 0]], "ease-in") },
-        { type: "sparkles", anchor: "range", behind: CURL_UNDER, points: CURL, color: "{{mid}}", alpha: 0.85, glow: 2, count: "{{sparkles}}", spread: 0.55, drift: 0.3, size: 0.09, reveal: drawOn, opacity: track([[0, 1], [0.6, 1], [1, 0]]) },
-        { type: "sparkles", anchor: "range", behind: CURL_UNDER, points: CURL, color: "#ffffff", alpha: 1, glow: 3, count: 8, seed: 1, spread: 0.7, drift: 0.2, size: 0.07, reveal: drawOn, opacity: track([[0, 1], [0.55, 1], [0.9, 0]]) },
+        { type: "ribbon", anchor: "range", aspect: CURL_ASPECT, behind: CURL_UNDER, points: CURL, color: "#ffffff", alpha: 0.35, width: 0.05, taper: 0.3, endTaper: 0.2, reveal: drawOn, opacity: track([[0, 1], [0.45, 1], [0.65, 0]], "ease-in") },
+        { type: "sparkles", anchor: "range", aspect: CURL_ASPECT, behind: CURL_UNDER, points: CURL, color: "{{mid}}", alpha: 0.85, glow: 0.05, count: "{{sparkles}}", spread: 0.55, drift: 0.3, size: 0.09, reveal: drawOn, opacity: track([[0, 1], [0.6, 1], [1, 0]]) },
+        { type: "sparkles", anchor: "range", aspect: CURL_ASPECT, behind: CURL_UNDER, points: CURL, color: "#ffffff", alpha: 1, glow: 0.07, count: 8, seed: 1, spread: 0.7, drift: 0.2, size: 0.07, reveal: drawOn, opacity: track([[0, 1], [0.55, 1], [0.9, 0]]) },
       ],
     },
   },
