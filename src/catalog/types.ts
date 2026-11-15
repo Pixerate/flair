@@ -485,11 +485,24 @@ export interface TreatmentLayer {
   /** `tag`: the label's colour (default `#ffffff`). */
   textColor?: TreatmentColor;
   /**
-   * `ribbon` and `sparkles`: the curve, as `[x, y]` points from the caret's top
-   * in caret heights (y down): a start point, then three points for each cubic
-   * Bézier segment (two control points and its end).
+   * `ribbon` and `sparkles`: the curve, as `[x, y]` points (y down; see `anchor`
+   * for what they are measured from): a start point, then three points for each
+   * cubic Bézier segment (two control points and its end).
    */
   points?: readonly (readonly [TreatmentNumber, TreatmentNumber])[];
+  /**
+   * `ribbon` and `sparkles`: what `points` are measured from. `caret` (default): the caret's top, in
+   * caret heights. `range`: the last line of the range (where the change ends), x as a share of its
+   * width and y of its height, so the curve covers only the text it is drawn over; widths, spreads
+   * and drifts are then in its line heights.
+   */
+  anchor?: "caret" | "range";
+  /**
+   * `ribbon` and `sparkles`: stretches along the curve, `[from, to]` from 0 (its start) to 1 (its
+   * end), drawn under the text; the rest is drawn at `z`. Alternate them where the curve crosses the
+   * letters and it weaves through the words.
+   */
+  behind?: readonly (readonly [number, number])[];
   /** `ribbon`: its colours along its length, `[offset, colour]` or `[offset, colour, alpha]`, offsets 0 (tail) to 1 (head). Default the layer's colour throughout. */
   colorStops?: readonly (readonly [number, TreatmentColor] | readonly [number, TreatmentColor, TreatmentNumber])[];
   /** `ribbon`: its width at the tail as a share of its width at the head (`width`, in caret heights), default 0.1. */

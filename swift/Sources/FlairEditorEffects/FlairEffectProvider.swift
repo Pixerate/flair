@@ -83,6 +83,9 @@ public final class FlairEffectProvider: AuthoringEffectProvider {
         ]
     }
 
+    /// Whether `id` is one of the effects this provider offers.
+    func hasEffect(_ id: String) -> Bool { entries[id] != nil }
+
     private func entry(_ id: String) throws -> FlairEditorEffect {
         guard let e = entries[id] else { throw EffectError.unknown(id, in: "Flair") }
         return e

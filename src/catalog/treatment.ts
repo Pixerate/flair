@@ -315,7 +315,7 @@ function placeholders(v: unknown, where: string, out: { name: string; where: str
 const NUMBER_FIELDS = ["alpha", "padX", "padY", "top", "height", "radius", "width", "widthPx", "glow", "stroke", "size", "gap", "taper", "count", "spread", "drift", "seed"] as const;
 const ANIMATED_FIELDS = ["opacity", "reveal", "erase", "position"] as const;
 const COLOR_FIELDS = ["color", "textColor"] as const;
-const LAYER_FIELDS = new Set<string>(["type", "z", "if", "unless", "stops", "blend", "points", "colorStops", ...NUMBER_FIELDS, ...ANIMATED_FIELDS, ...COLOR_FIELDS]);
+const LAYER_FIELDS = new Set<string>(["type", "z", "if", "unless", "stops", "blend", "points", "colorStops", "anchor", "behind", ...NUMBER_FIELDS, ...ANIMATED_FIELDS, ...COLOR_FIELDS]);
 const STAGE_FIELDS = new Set(["duration", "perPixel", "stagger", "flow", "loop", "reduced", "layers"]);
 const BLENDS: readonly TreatmentBlend[] = ["normal", "multiply", "screen", "plus-lighter"];
 
@@ -345,6 +345,9 @@ export function textTreatmentIssues(effect: TextTreatmentEffect): string[] {
       for (const k of Object.keys(layer)) if (!LAYER_FIELDS.has(k)) issues.push(`${where}: a layer has no field "${k}".`);
       if ((layer.type === "ribbon" || layer.type === "sparkles") && (!Array.isArray(layer.points) || layer.points.length < 4 || (layer.points.length - 1) % 3 !== 0))
         issues.push(`${where}: points are a start point and then three [x, y] points for each cubic segment (4, 7, 10, … points).`);
+      if (layer.behind !== undefined && (!Array.isArray(layer.behind) || layer.behind.some((r) => !Array.isArray(r) || r.length !== 2 || !(r[0] >= 0 && r[1] <= 1 && r[0] < r[1]))))
+        issues.push(`${where}: behind is a list of [from, to] stretches along the curve, from 0 (its start) to 1 (its end), each from before to.`);
+      if (layer.anchor !== undefined && layer.anchor !== "caret" && layer.anchor !== "range") issues.push(`${where}: anchor is "caret" or "range".`);
       if (layer.blend !== undefined && !BLENDS.includes(layer.blend)) issues.push(`${where}: blend is one of ${BLENDS.join(", ")}.`);
       if (layer.z !== undefined && layer.z !== "behind" && layer.z !== "above") issues.push(`${where}: z is "behind" or "above".`);
       for (const f of ANIMATED_FIELDS) {
@@ -460,12 +463,33 @@ const radiusFor = (r: number, w: number, h: number) => Math.max(0, Math.min(r, w
 const CURVE_STEPS = 16;
 
 /** A curve's points (caret heights from the caret) sampled in the host's px, with the arc length up to each sample. */
-function sampleCurve(points: unknown, caret: TreatmentCaret): { x: number; y: number; s: number }[] {
+/** Where a curve's points are measured from, and its units across and down: from the caret in caret heights, or across the range's last line. */
+interface CurveFrame {
+  x: number;
+  y: number;
+  ux: number;
+  uy: number;
+}
+
+/**
+ * A curve layer's frame: with `anchor: "caret"` (the default) the caret, in caret heights; with
+ * `anchor: "range"` the last line of the range (where the change ends), x as a share of its width
+ * and y as a share of its height, so the curve covers only the text it is drawn over.
+ */
+function curveFrame(layer: TreatmentLayer, target: TextTreatmentTarget, lines: readonly TreatmentRect[]): CurveFrame | undefined {
+  if (layer.anchor === "range") {
+    const last = lines[lines.length - 1];
+    return last ? { x: last.x, y: last.y, ux: last.width, uy: last.height } : undefined;
+  }
+  const caret = target.caret;
+  return caret && caret.height > 0 ? { x: caret.x, y: caret.y, ux: caret.height, uy: caret.height } : undefined;
+}
+
+function sampleCurve(points: unknown, frame: CurveFrame): { x: number; y: number; s: number }[] {
   if (!Array.isArray(points) || points.length < 4) return [];
-  const h = caret.height;
   const pt = (i: number): [number, number] => {
     const q = points[i] as unknown[];
-    return [caret.x + n(q?.[0], 0) * h, caret.y + n(q?.[1], 0) * h];
+    return [frame.x + n(q?.[0], 0) * frame.ux, frame.y + n(q?.[1], 0) * frame.uy];
   };
   const out: { x: number; y: number; s: number }[] = [];
   const [x0, y0] = pt(0);
@@ -521,6 +545,12 @@ function stopColour(stops: unknown, u: number, fallback: TreatmentRGBA, target: 
     }
   }
   return parsed[parsed.length - 1]!.c;
+}
+
+/** Whether `u` (0 to 1 along a curve) falls in one of a layer's `behind` stretches. */
+function isBehind(behind: unknown, u: number): boolean {
+  if (!Array.isArray(behind)) return false;
+  return behind.some((r) => Array.isArray(r) && u >= n(r[0], 2) && u < n(r[1], -1));
 }
 
 /** A number from 0 to 1 for `i`, the same in Swift (an integer hash, no floating-point trigonometry). */
@@ -613,15 +643,16 @@ function planLayers(
 
     const p = progress(-1);
     if (layer.type === "ribbon" || layer.type === "sparkles") {
-      const caret = target.caret;
-      if (!caret || !(caret.height > 0)) continue;
-      const samples = sampleCurve(layer.points, caret);
+      const frame = curveFrame(layer, target, lines);
+      if (!frame) continue;
+      const samples = sampleCurve(layer.points, frame);
       const total = samples.length ? samples[samples.length - 1]!.s : 0;
       if (total <= 0) continue;
       const reveal = clamp01(valueAt(layer.reveal, p, 1));
       const erase = clamp01(valueAt(layer.erase, p, 0));
       if (reveal - erase <= 0.001) continue;
-      const h = caret.height;
+      // Widths, spreads and drifts are in line (or caret) heights.
+      const h = frame.uy;
       if (layer.type === "ribbon") {
         // The drawn part, cut at its ends.
         const from = erase * total;
@@ -638,21 +669,29 @@ function planLayers(
           const half = (head * (taper + (1 - taper) * (q.s / total))) / 2;
           return { l: [q.x + nx * half, q.y + ny * half] as [number, number], r: [q.x - nx * half, q.y - ny * half] as [number, number], s: q.s };
         });
-        const segments: TreatmentSegment[] = [];
+        // Pieces in a `behind` stretch go under the text, the rest over it, so the ribbon weaves through the words.
+        const groups: { z: "behind" | "above"; segments: TreatmentSegment[]; xs: number[]; ys: number[] }[] = [];
         for (let i = 0; i + 1 < edges.length; i++) {
           // Each piece reaches over the next one, so no seam shows between them.
           const j = Math.min(i + 2, edges.length - 1);
           const mid = (edges[i]!.s + edges[i + 1]!.s) / 2 / total;
-          segments.push({ points: [edges[i]!.l, edges[j]!.l, edges[j]!.r, edges[i]!.r], color: stopColour(layer.colorStops, mid, [color[0], color[1], color[2], 1], target) });
+          const pz = isBehind(layer.behind, mid) ? "behind" : z;
+          let group = groups[groups.length - 1];
+          if (!group || group.z !== pz) groups.push((group = { z: pz, segments: [], xs: [], ys: [] }));
+          const corners: [number, number][] = [edges[i]!.l, edges[j]!.l, edges[j]!.r, edges[i]!.r];
+          group.segments.push({ points: corners, color: stopColour(layer.colorStops, mid, [color[0], color[1], color[2], 1], target) });
+          for (const [x, y] of corners) {
+            group.xs.push(x);
+            group.ys.push(y);
+          }
         }
-        if (!segments.length) continue;
-        const xs = edges.flatMap((e) => [e.l[0], e.r[0]]);
-        const ys = edges.flatMap((e) => [e.l[1], e.r[1]]);
-        const left = Math.min(...xs);
-        const top = Math.min(...ys);
         const b = base(p);
-        // The layer's alpha goes on the group, so overlapping pieces do not darken.
-        push({ kind: "path", source: "ribbon", x: left, y: top, width: Math.max(...xs) - left, height: Math.max(...ys) - top, radius: 0, ...b, opacity: b.opacity * color[3], color: [color[0], color[1], color[2], 1], segments });
+        for (const group of groups) {
+          const left = Math.min(...group.xs);
+          const top = Math.min(...group.ys);
+          // The layer's alpha goes on the group, so overlapping pieces do not darken.
+          push({ kind: "path", source: "ribbon", x: left, y: top, width: Math.max(...group.xs) - left, height: Math.max(...group.ys) - top, radius: 0, ...b, z: group.z, opacity: b.opacity * color[3], color: [color[0], color[1], color[2], 1], segments: group.segments });
+        }
       } else {
         const count = Math.max(0, Math.min(200, Math.round(n(layer.count, 12))));
         const spread = n(layer.spread, 0.4) * h;
@@ -674,7 +713,7 @@ function planLayers(
           const cy = q.y + ((bq.x - a.x) / len) * off + drift * since * (0.5 + treatmentHash(seed + i * 5 + 3));
           const twinkle = 1 - 0.6 * since * treatmentHash(seed + i * 5 + 4);
           const b = base(p);
-          push({ kind: "rect", source: "sparkles", x: cx - d / 2, y: cy - d / 2, width: d, height: d, radius: d / 2, ...b, opacity: b.opacity * twinkle });
+          push({ kind: "rect", source: "sparkles", x: cx - d / 2, y: cy - d / 2, width: d, height: d, radius: d / 2, ...b, ...(isBehind(layer.behind, u) && { z: "behind" as const }), opacity: b.opacity * twinkle });
         }
       }
       continue;
@@ -1203,21 +1242,37 @@ export const designFrame: TextTreatmentEffect = {
   ],
 };
 
-/** The curl's curve, in caret heights from the caret: in under the word, up past the caret and round in a loop, then a flick away. */
+/**
+ * The curl's curve, across the changed text's line (x as a share of its width, y of its height):
+ * a thin tail in along the baseline, a small loop, then down and up into an arc that hooks over
+ * at the end of the word, as a swash flourish does.
+ */
 const CURL: readonly (readonly [number, number])[] = [
-  [-4, 1.15],
-  [-2.6, 1.55],
-  [-1.1, 1.25],
-  [0.1, 0.55],
-  [1.1, 0],
-  [2, -1],
-  [1.4, -1.45],
-  [0.8, -1.85],
-  [-0.1, -1.15],
-  [0.5, -0.5],
-  [0.95, 0],
-  [1.9, -0.15],
-  [2.4, -0.7],
+  [0, 0.8],
+  [0.18, 0.86],
+  [0.36, 0.74],
+  [0.44, 0.42],
+  [0.49, 0.18],
+  [0.41, -0.06],
+  [0.34, 0.1],
+  [0.28, 0.26],
+  [0.4, 0.58],
+  [0.5, 0.76],
+  [0.57, 0.9],
+  [0.65, 0.92],
+  [0.71, 0.66],
+  [0.77, 0.4],
+  [0.83, -0.12],
+  [0.91, -0.14],
+  [0.97, -0.16],
+  [1.01, -0.02],
+  [0.99, 0.18],
+];
+
+/** Where the curl goes under the letters: its tail along the baseline, and the downstroke after the loop (the loop and the rising arc stay over them). */
+const CURL_UNDER: readonly (readonly [number, number])[] = [
+  [0, 0.27],
+  [0.5, 0.66],
 ];
 
 /** A short wisp trailing the caret while it types. */
@@ -1236,9 +1291,11 @@ const frostIn = track([[0, 0], [0.5, 0], [0.62, 1], [1, 0]], "ease-in-out");
 const frostErase = track([[0.62, 0], [1, 1]], "ease-in");
 
 /**
- * Ribbon curl: when an edit lands, a glossy ribbon sweeps in under the new
- * word from its tail, thickening and changing colour as it goes, and curls
- * up past the caret into a loop, shedding sparkles; then it dissolves into
+ * Ribbon curl: when an edit lands, a translucent ribbon sweeps across the new
+ * word from a thin tail, loops once and swells into an arc that hooks over at
+ * its end, staying on the word and weaving through it (under the letters
+ * along the baseline and on the downstroke, over them on the loop and the
+ * arc), shedding sparkles; then it dissolves into
  * frost that melts away. Frost is pale blue on light pages; `darkTheme`
  * swaps in a glowing lilac frost that reads on dark ones.
  */
@@ -1246,15 +1303,16 @@ export const ribbonCurl: TextTreatmentEffect = {
   kind: "text-treatment",
   id: "ribbon-curl",
   name: "Ribbon curl",
-  description: "A glossy gradient ribbon sweeping in under what changed and curling up past the caret into a loop, shedding sparkles, then dissolving into frost; a wisp of it trails the caret while typing.",
+  description: "A translucent gradient swash woven through what changed: a thin tail runs under the letters, loops over them and swells into an arc that hooks over the end of the word, shedding sparkles, then dissolves into frost; a wisp of it trails the caret while typing.",
   category: "treatment",
   tags: ["agent", "writing", "edit", "ribbon", "swoosh", "curl", "flourish", "gradient", "sparkle", "frost", "caret"],
   controls: [
     ...commonControls("#8B5CF6", { landMs: 1900 }),
     colorControl("tail", "#FFB38A", "Tail colour"),
     colorControl("mid", "#F472B6", "Middle colour"),
-    numberControl("ribbonWidth", 0.38, 0.08, 0.8, "Ribbon width", 0.01),
-    numberControl("sparkles", 14, 0, 40, "Sparkles", 1),
+    numberControl("ribbonWidth", 0.17, 0.05, 0.5, "Ribbon width", 0.01),
+    numberControl("ribbonAlpha", 0.7, 0.2, 1, "Ribbon opacity", 0.01),
+    numberControl("sparkles", 12, 0, 40, "Sparkles", 1),
     { name: "darkTheme", type: "bool", default: false, label: "Dark theme" },
     colorControl("frost", "#DCE4FF", "Frost (light)"),
     colorControl("frostDark", "#B9A6FF", "Frost (dark)"),
@@ -1277,7 +1335,7 @@ export const ribbonCurl: TextTreatmentEffect = {
         { type: "cover" },
         { type: "fill", z: "above", padX: 1, alpha: 0.1, radius: 2 },
         { type: "ghost" },
-        { type: "ribbon", points: WISP, width: 0.12, taper: 0.05, alpha: 0.75, colorStops: [[0, "{{tail}}"], [1, "{{mid}}"]], opacity: track([[0, 0.8], [0.5, 1], [1, 0.8]], "ease-in-out") },
+        { type: "ribbon", points: WISP, width: 0.1, taper: 0.05, alpha: 0.45, colorStops: [[0, "{{tail}}"], [1, "{{mid}}"]], opacity: track([[0, 0.8], [0.5, 1], [1, 0.8]], "ease-in-out") },
         ...caretLayers(),
       ],
     },
@@ -1285,21 +1343,25 @@ export const ribbonCurl: TextTreatmentEffect = {
       duration: "{{landMs}}",
       reduced: { at: 0.45, fade: "in-out" },
       layers: [
-        { type: "fill", alpha: 0.14, radius: 2, opacity: holdThenFade(0.5) },
-        { type: "ribbon", unless: "{{darkTheme}}", points: CURL, color: "{{frost}}", alpha: 0.85, width: 0.56, taper: 0.2, glow: 8, reveal: drawOn, erase: frostErase, opacity: frostIn },
-        { type: "ribbon", if: "{{darkTheme}}", points: CURL, color: "{{frostDark}}", alpha: 0.7, width: 0.6, taper: 0.2, glow: 14, blend: "screen", reveal: drawOn, erase: frostErase, opacity: frostIn },
+        { type: "fill", alpha: 0.12, radius: 2, opacity: holdThenFade(0.5) },
+        { type: "ribbon", anchor: "range", behind: CURL_UNDER, unless: "{{darkTheme}}", points: CURL, color: "{{frost}}", alpha: 0.5, width: 0.3, taper: 0.15, glow: 6, reveal: drawOn, erase: frostErase, opacity: frostIn },
+        { type: "ribbon", anchor: "range", behind: CURL_UNDER, if: "{{darkTheme}}", points: CURL, color: "{{frostDark}}", alpha: 0.45, width: 0.32, taper: 0.15, glow: 10, blend: "screen", reveal: drawOn, erase: frostErase, opacity: frostIn },
         {
           type: "ribbon",
+          anchor: "range",
+          behind: CURL_UNDER,
           points: CURL,
+          alpha: "{{ribbonAlpha}}",
           width: "{{ribbonWidth}}",
           taper: 0.08,
-          glow: 3,
-          colorStops: [[0, "{{tail}}", 0.9], [0.5, "{{mid}}"], [1, "{{color}}"]],
+          glow: 2,
+          colorStops: [[0, "{{tail}}", 0], [0.18, "{{tail}}", 0.7], [0.45, "{{mid}}"], [1, "{{color}}"]],
           reveal: drawOn,
           opacity: track([[0, 1], [0.5, 1], [0.72, 0]], "ease-in"),
         },
-        { type: "ribbon", points: CURL, color: "#ffffff", alpha: 0.5, width: 0.1, taper: 0.3, reveal: drawOn, opacity: track([[0, 1], [0.45, 1], [0.65, 0]], "ease-in") },
-        { type: "sparkles", points: CURL, color: "{{mid}}", alpha: 0.9, glow: 3, count: "{{sparkles}}", spread: 0.55, drift: 0.5, size: 0.17, reveal: drawOn, opacity: track([[0, 1], [0.6, 1], [1, 0]]) },
+        { type: "ribbon", anchor: "range", behind: CURL_UNDER, points: CURL, color: "#ffffff", alpha: 0.35, width: 0.05, taper: 0.3, reveal: drawOn, opacity: track([[0, 1], [0.45, 1], [0.65, 0]], "ease-in") },
+        { type: "sparkles", anchor: "range", behind: CURL_UNDER, points: CURL, color: "{{mid}}", alpha: 0.85, glow: 2, count: "{{sparkles}}", spread: 0.55, drift: 0.3, size: 0.09, reveal: drawOn, opacity: track([[0, 1], [0.6, 1], [1, 0]]) },
+        { type: "sparkles", anchor: "range", behind: CURL_UNDER, points: CURL, color: "#ffffff", alpha: 1, glow: 3, count: 8, seed: 1, spread: 0.7, drift: 0.2, size: 0.07, reveal: drawOn, opacity: track([[0, 1], [0.55, 1], [0.9, 0]]) },
       ],
     },
   },

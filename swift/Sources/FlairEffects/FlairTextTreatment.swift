@@ -134,6 +134,10 @@ public struct FlairTreatmentGradient: Equatable, Sendable {
     public var x0: Double, y0: Double, x1: Double, y1: Double
     public var stops: [(offset: Double, color: FlairRGBA)]
 
+    public init(x0: Double, y0: Double, x1: Double, y1: Double, stops: [(offset: Double, color: FlairRGBA)]) {
+        self.x0 = x0; self.y0 = y0; self.x1 = x1; self.y1 = y1; self.stops = stops
+    }
+
     public static func == (a: Self, b: Self) -> Bool {
         a.x0 == b.x0 && a.y0 == b.y0 && a.x1 == b.x1 && a.y1 == b.y1
             && a.stops.count == b.stops.count && zip(a.stops, b.stops).allSatisfy { $0.offset == $1.offset && $0.color == $1.color }
@@ -165,6 +169,14 @@ public struct FlairTreatmentPlanLayer: Equatable, Sendable {
     /// `path`: the ribbon's pieces, each a polygon in one colour, drawn as one group at `opacity`.
     public var segments: [FlairTreatmentSegment]?
 
+    public init(kind: Kind, source: String, z: String, x: Double, y: Double, width: Double, height: Double, radius: Double, opacity: Double,
+                color: FlairRGBA, gradient: FlairTreatmentGradient? = nil, stroke: Double? = nil, glow: Double? = nil, blend: String = "normal",
+                text: String? = nil, size: Double? = nil, padX: Double? = nil, textColor: FlairRGBA? = nil, segments: [FlairTreatmentSegment]? = nil) {
+        self.kind = kind; self.source = source; self.z = z; self.x = x; self.y = y; self.width = width; self.height = height
+        self.radius = radius; self.opacity = opacity; self.color = color; self.gradient = gradient; self.stroke = stroke; self.glow = glow
+        self.blend = blend; self.text = text; self.size = size; self.padX = padX; self.textColor = textColor; self.segments = segments
+    }
+
     public var frame: CGRect { CGRect(x: x, y: y, width: width, height: height) }
 }
 
@@ -172,6 +184,9 @@ public struct FlairTreatmentPlanLayer: Equatable, Sendable {
 public struct FlairTreatmentSegment: Equatable, Sendable {
     public var points: [CGPoint]
     public var color: FlairRGBA
+    public init(points: [CGPoint], color: FlairRGBA) {
+        self.points = points; self.color = color
+    }
 }
 
 /// A stage at a moment, ready to draw.
@@ -185,6 +200,10 @@ public struct FlairTextTreatmentPlan: Equatable, Sendable {
     public var reduced: Bool
     /// Back to front.
     public var layers: [FlairTreatmentPlanLayer]
+
+    public init(stage: FlairTextTreatmentStage, time: Double, duration: Double, done: Bool, reduced: Bool, layers: [FlairTreatmentPlanLayer]) {
+        self.stage = stage; self.time = time; self.duration = duration; self.done = done; self.reduced = reduced; self.layers = layers
+    }
 }
 
 // MARK: - Treatments
@@ -522,14 +541,14 @@ public enum FlairTextTreatments {
 
             let p = progress(-1)
             if type == "ribbon" || type == "sparkles" {
-                guard let caret = target.caret, caret.height > 0 else { continue }
-                let samples = sampleCurve(layer["points"], caret)
+                guard let frame = curveFrame(layer, target, lines) else { continue }
+                let samples = sampleCurve(layer["points"], frame)
                 let total = samples.last?.s ?? 0
                 if total <= 0 { continue }
                 let reveal = clamp01(valueAt(layer["reveal"], p, 1))
                 let erase = clamp01(valueAt(layer["erase"], p, 0))
                 if reveal - erase <= 0.001 { continue }
-                let h = caret.height
+                let h = frame.uy
                 if type == "ribbon" {
                     let from = erase * total, to = reveal * total
                     let part = [pointAt(samples, from)] + samples.filter { $0.s > from && $0.s < to } + [pointAt(samples, to)]
@@ -543,23 +562,30 @@ public enum FlairTextTreatments {
                         let half = head * (taper + (1 - taper) * (q.s / total)) / 2
                         return (CGPoint(x: q.x + nx * half, y: q.y + ny * half), CGPoint(x: q.x - nx * half, y: q.y - ny * half), q.s)
                     }
-                    var segments: [FlairTreatmentSegment] = []
+                    // Pieces in a `behind` stretch go under the text, the rest over it, so the ribbon weaves through the words.
+                    var groups: [(z: String, segments: [FlairTreatmentSegment], xs: [Double], ys: [Double])] = []
                     if edges.count > 1 {
                         for i in 0..<(edges.count - 1) {
                             let j = min(i + 2, edges.count - 1)
                             let mid = (edges[i].s + edges[i + 1].s) / 2 / total
-                            segments.append(FlairTreatmentSegment(points: [edges[i].l, edges[j].l, edges[j].r, edges[i].r],
-                                                                  color: stopColour(layer["colorStops"], mid, FlairRGBA(color.r, color.g, color.b, 1), target)))
+                            let pz = isBehind(layer["behind"], mid) ? "behind" : z
+                            if groups.last?.z != pz { groups.append((pz, [], [], [])) }
+                            let corners = [edges[i].l, edges[j].l, edges[j].r, edges[i].r]
+                            groups[groups.count - 1].segments.append(FlairTreatmentSegment(points: corners,
+                                                                                           color: stopColour(layer["colorStops"], mid, FlairRGBA(color.r, color.g, color.b, 1), target)))
+                            groups[groups.count - 1].xs += corners.map { Double($0.x) }
+                            groups[groups.count - 1].ys += corners.map { Double($0.y) }
                         }
                     }
-                    if segments.isEmpty { continue }
-                    let xs = edges.flatMap { [Double($0.l.x), Double($0.r.x)] }, ys = edges.flatMap { [Double($0.l.y), Double($0.r.y)] }
-                    let left = xs.min()!, top = ys.min()!
-                    var l = make(.path, left, top, xs.max()! - left, ys.max()! - top, radius: 0, p: p)
-                    l.opacity *= color.a
-                    l.color = FlairRGBA(color.r, color.g, color.b, 1)
-                    l.segments = segments
-                    push(l)
+                    for group in groups {
+                        let left = group.xs.min()!, top = group.ys.min()!
+                        var l = make(.path, left, top, group.xs.max()! - left, group.ys.max()! - top, radius: 0, p: p)
+                        l.z = group.z
+                        l.opacity *= color.a
+                        l.color = FlairRGBA(color.r, color.g, color.b, 1)
+                        l.segments = group.segments
+                        push(l)
+                    }
                 } else {
                     let count = max(0, min(200, Int((n(layer["count"], 12) + 0.5).rounded(.down))))
                     let spread = n(layer["spread"], 0.4) * h
@@ -582,6 +608,7 @@ public enum FlairTextTreatments {
                         let twinkle = 1 - 0.6 * since * hash(k + 4)
                         var l = make(.rect, cx - d / 2, cy - d / 2, d, d, radius: d / 2, p: p)
                         l.opacity *= twinkle
+                        if isBehind(layer["behind"], u) { l.z = "behind" }
                         push(l)
                     }
                 }
@@ -628,15 +655,33 @@ public enum FlairTextTreatments {
         return out
     }
 
+    /// Whether `u` (0 to 1 along a curve) falls in one of a layer's `behind` stretches.
+    static func isBehind(_ behind: FlairJSON?, _ u: Double) -> Bool {
+        guard let ranges = behind?.array else { return false }
+        return ranges.contains { r in
+            guard let a = r.array, a.count == 2 else { return false }
+            return u >= n(a[0], 2) && u < n(a[1], -1)
+        }
+    }
+
     static let curveSteps = 16
 
-    /// A curve's points (caret heights from the caret) sampled in the host's px, with the arc length to each.
-    static func sampleCurve(_ points: FlairJSON?, _ caret: FlairTreatmentCaret) -> [(x: Double, y: Double, s: Double)] {
+    /// A curve layer's frame: the caret in caret heights, or (`anchor: "range"`) the range's last line, x across its width and y down its height.
+    static func curveFrame(_ layer: FlairJSON, _ target: FlairTreatmentTarget, _ lines: [CGRect]) -> (x: Double, y: Double, ux: Double, uy: Double)? {
+        if layer["anchor"]?.string == "range" {
+            guard let last = lines.last else { return nil }
+            return (Double(last.minX), Double(last.minY), Double(last.width), Double(last.height))
+        }
+        guard let caret = target.caret, caret.height > 0 else { return nil }
+        return (caret.x, caret.y, caret.height, caret.height)
+    }
+
+    /// A curve's points sampled in the host's px (from `frame`), with the arc length to each.
+    static func sampleCurve(_ points: FlairJSON?, _ frame: (x: Double, y: Double, ux: Double, uy: Double)) -> [(x: Double, y: Double, s: Double)] {
         guard let pts = points?.array, pts.count >= 4 else { return [] }
-        let h = caret.height
         func pt(_ i: Int) -> (Double, Double) {
             let q = pts[i].array
-            return (caret.x + n(q?.first, 0) * h, caret.y + n(q.flatMap { $0.count > 1 ? $0[1] : nil }, 0) * h)
+            return (frame.x + n(q?.first, 0) * frame.ux, frame.y + n(q.flatMap { $0.count > 1 ? $0[1] : nil }, 0) * frame.uy)
         }
         let (x0, y0) = pt(0)
         var out: [(x: Double, y: Double, s: Double)] = [(x0, y0, 0)]

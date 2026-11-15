@@ -26,8 +26,8 @@ importers:
         specifier: ^2.27.12
         version: 2.31.1(@types/node@24.19.2)
       '@pixerate/editor':
-        specifier: ^0.279.1
-        version: 0.279.1(f6ebd0fad4c3f13ab19f4dbc48b0e402)
+        specifier: ^0.330.0
+        version: 0.330.0(f6ebd0fad4c3f13ab19f4dbc48b0e402)
       '@types/node':
         specifier: ^24.19.2
         version: 24.19.2
@@ -68,11 +68,11 @@ importers:
   apps/demo:
     dependencies:
       '@pixerate/editor':
-        specifier: ^0.279.1
-        version: 0.279.1(f6ebd0fad4c3f13ab19f4dbc48b0e402)
+        specifier: ^0.330.0
+        version: 0.330.0(f6ebd0fad4c3f13ab19f4dbc48b0e402)
       '@pixerate/editor-react':
         specifier: ^0.193.0
-        version: 0.193.0(@pixerate/editor@0.279.1(f6ebd0fad4c3f13ab19f4dbc48b0e402))(@tiptap/core@2.27.3(@tiptap/pm@2.27.3))(@tiptap/extension-bubble-menu@2.27.3(@tiptap/core@2.27.3(@tiptap/pm@2.27.3))(@tiptap/pm@2.27.3))(@tiptap/extension-placeholder@2.27.3(@tiptap/core@2.27.3(@tiptap/pm@2.27.3))(@tiptap/pm@2.27.3))(@tiptap/pm@2.27.3)(@tiptap/react@2.27.3(@tiptap/core@2.27.3(@tiptap/pm@2.27.3))(@tiptap/pm@2.27.3)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@tiptap/starter-kit@2.27.3)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        version: 0.193.0(@pixerate/editor@0.330.0(f6ebd0fad4c3f13ab19f4dbc48b0e402))(@tiptap/core@2.27.3(@tiptap/pm@2.27.3))(@tiptap/extension-bubble-menu@2.27.3(@tiptap/core@2.27.3(@tiptap/pm@2.27.3))(@tiptap/pm@2.27.3))(@tiptap/extension-placeholder@2.27.3(@tiptap/core@2.27.3(@tiptap/pm@2.27.3))(@tiptap/pm@2.27.3))(@tiptap/pm@2.27.3)(@tiptap/react@2.27.3(@tiptap/core@2.27.3(@tiptap/pm@2.27.3))(@tiptap/pm@2.27.3)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@tiptap/starter-kit@2.27.3)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       react:
         specifier: ^19.0.0
         version: 19.3.1
@@ -1184,8 +1184,8 @@ packages:
       '@xyflow/react':
         optional: true
 
-  '@pixerate/editor@0.279.1':
-    resolution: {integrity: sha512-S98N9WNm8uPAPY7WLIx9XEt/V3u+ad8ymF5/2RGkD7NRspa+h/FXIkJjHIVCJ7Hp1ZYBKhgklmREcxhx92uClQ==}
+  '@pixerate/editor@0.330.0':
+    resolution: {integrity: sha512-UK/9jL+eJcbyp4Pe6HTPJJNMIsP/BM9mCJzY3/Es5s48kyovXQzF2gHq3JsRMD7W/USDREO8dmokjawuWB2h5w==}
     hasBin: true
     peerDependencies:
       '@dagrejs/dagre': ^1.1.8
@@ -1215,6 +1215,7 @@ packages:
       markdown-it: ^15.0.3
       markdown-it-task-lists: ^2.1.1
       prosemirror-markdown: ^1.13.9
+      three: '>=0.184.0'
     peerDependenciesMeta:
       '@dagrejs/dagre':
         optional: true
@@ -1269,6 +1270,8 @@ packages:
       markdown-it-task-lists:
         optional: true
       prosemirror-markdown:
+        optional: true
+      three:
         optional: true
 
   '@popperjs/core@2.11.8':
@@ -5056,9 +5059,9 @@ snapshots:
   '@pagefind/windows-x64@1.5.2':
     optional: true
 
-  '@pixerate/editor-react@0.193.0(@pixerate/editor@0.279.1(f6ebd0fad4c3f13ab19f4dbc48b0e402))(@tiptap/core@2.27.3(@tiptap/pm@2.27.3))(@tiptap/extension-bubble-menu@2.27.3(@tiptap/core@2.27.3(@tiptap/pm@2.27.3))(@tiptap/pm@2.27.3))(@tiptap/extension-placeholder@2.27.3(@tiptap/core@2.27.3(@tiptap/pm@2.27.3))(@tiptap/pm@2.27.3))(@tiptap/pm@2.27.3)(@tiptap/react@2.27.3(@tiptap/core@2.27.3(@tiptap/pm@2.27.3))(@tiptap/pm@2.27.3)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@tiptap/starter-kit@2.27.3)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
+  '@pixerate/editor-react@0.193.0(@pixerate/editor@0.330.0(f6ebd0fad4c3f13ab19f4dbc48b0e402))(@tiptap/core@2.27.3(@tiptap/pm@2.27.3))(@tiptap/extension-bubble-menu@2.27.3(@tiptap/core@2.27.3(@tiptap/pm@2.27.3))(@tiptap/pm@2.27.3))(@tiptap/extension-placeholder@2.27.3(@tiptap/core@2.27.3(@tiptap/pm@2.27.3))(@tiptap/pm@2.27.3))(@tiptap/pm@2.27.3)(@tiptap/react@2.27.3(@tiptap/core@2.27.3(@tiptap/pm@2.27.3))(@tiptap/pm@2.27.3)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@tiptap/starter-kit@2.27.3)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
     dependencies:
-      '@pixerate/editor': 0.279.1(f6ebd0fad4c3f13ab19f4dbc48b0e402)
+      '@pixerate/editor': 0.330.0(f6ebd0fad4c3f13ab19f4dbc48b0e402)
       react: 19.3.1
       react-dom: 19.3.1(react@19.3.1)
     optionalDependencies:
@@ -5069,7 +5072,7 @@ snapshots:
       '@tiptap/react': 2.27.3(@tiptap/core@2.27.3(@tiptap/pm@2.27.3))(@tiptap/pm@2.27.3)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@tiptap/starter-kit': 2.27.3
 
-  '@pixerate/editor@0.279.1(f6ebd0fad4c3f13ab19f4dbc48b0e402)':
+  '@pixerate/editor@0.330.0(f6ebd0fad4c3f13ab19f4dbc48b0e402)':
     optionalDependencies:
       '@tiptap/core': 2.27.3(@tiptap/pm@2.27.3)
       '@tiptap/extension-character-count': 2.27.3(@tiptap/core@2.27.3(@tiptap/pm@2.27.3))(@tiptap/pm@2.27.3)
