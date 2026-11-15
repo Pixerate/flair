@@ -4,7 +4,7 @@
     "name": "Pixerate paint",
     "kind": "shader",
     "category": "path",
-    "description": "A glowing neon ribbon along the pointer's path, solid at its head and breaking apart towards its tail into glowing square pixels that scatter, drift and twinkle.",
+    "description": "A glossy, bristle-streaked neon paint stroke along the pointer's path, two-toned and twisting, solid at its head and breaking apart towards its tail into glowing square pixels that scatter, drift and twinkle.",
     "tags": [
       "trail",
       "interactive",
@@ -13,6 +13,8 @@
       "overlay",
       "glow",
       "neon",
+      "paint",
+      "brush",
       "pixel",
       "particles",
       "path"
@@ -30,7 +32,7 @@
         },
         "l": "Ribbon colour",
         "c": 1,
-        "line": 6
+        "line": 7
       },
       {
         "n": "uColorB",
@@ -44,7 +46,7 @@
         },
         "l": "Pixel colour",
         "c": 1,
-        "line": 7
+        "line": 8
       },
       {
         "n": "uWidth",
@@ -53,7 +55,7 @@
         "min": 0.004,
         "max": 0.3,
         "b": 3,
-        "line": 8
+        "line": 9
       },
       {
         "n": "uPixel",
@@ -63,7 +65,7 @@
         "min": 0.2,
         "max": 2,
         "b": 3,
-        "line": 9
+        "line": 10
       },
       {
         "n": "uBreak",
@@ -71,7 +73,7 @@
         "d": 0.55,
         "l": "Break-up",
         "b": 3,
-        "line": 10
+        "line": 11
       },
       {
         "n": "uScatter",
@@ -80,7 +82,7 @@
         "l": "Scatter (x width)",
         "max": 8,
         "b": 3,
-        "line": 11
+        "line": 12
       },
       {
         "n": "uDensity",
@@ -88,7 +90,7 @@
         "d": 0.4,
         "l": "Pixel density",
         "b": 3,
-        "line": 12
+        "line": 13
       },
       {
         "n": "uDrift",
@@ -96,7 +98,15 @@
         "d": 0.6,
         "max": 3,
         "b": 3,
-        "line": 13
+        "line": 14
+      },
+      {
+        "n": "uTexture",
+        "t": "float",
+        "d": 1,
+        "l": "Paint texture",
+        "b": 3,
+        "line": 15
       },
       {
         "n": "uGlow",
@@ -104,7 +114,7 @@
         "d": 1.2,
         "max": 3,
         "b": 3,
-        "line": 14
+        "line": 16
       },
       {
         "n": "uLife",
@@ -114,7 +124,7 @@
         "min": 0.1,
         "max": 3,
         "b": 3,
-        "line": 15
+        "line": 17
       },
       {
         "n": "uIntensity",
@@ -123,14 +133,14 @@
         "min": 0.2,
         "max": 3,
         "b": 3,
-        "line": 16
+        "line": 18
       },
       {
         "n": "uDemo",
         "t": "bool",
         "d": true,
         "l": "Demo when idle",
-        "line": 17
+        "line": 19
       },
       {
         "n": "uPath",
@@ -141,7 +151,7 @@
           "margin": 0.1
         },
         "l": "Path when idle",
-        "line": 30
+        "line": 43
       },
       {
         "n": "uUnit",
@@ -150,7 +160,7 @@
         "l": "Size unit (px, 0 = frame height)",
         "max": 16384,
         "b": 3,
-        "line": 31
+        "line": 44
       }
     ],
     "presets": [
