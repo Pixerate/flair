@@ -189,9 +189,9 @@
       "live": true
     },
     "module": "shaders/trail",
-    "addedAt": "2026-11-15T18:36:45.239Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-11-15T18:37:09Z",
+    "commitHash": "3b00a0ab56af4ad828d39325106025649ab7fef6",
+    "order": 713
   },
   {
     "id": "swash-text",
