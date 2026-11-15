@@ -1284,9 +1284,9 @@ describe("particle effects", () => {
 
 describe("trail effects", () => {
   const trails = findEffects({ tags: ["trail"] });
-  const shaders = ["comet-trail", "ribbon-trail", "sparkle-trail", "brush-trail", "ghost-trail", "light-painting"];
+  const shaders = ["comet-trail", "ribbon-trail", "sparkle-trail", "pixerate-paint", "brush-trail", "ghost-trail", "light-painting"];
 
-  it("has the comet, ribbon, sparkle, brush, ghost, light painting, streak and dotted trails, the ones taking a path under paths", () => {
+  it("has the comet, ribbon, sparkle, Pixerate paint, brush, ghost, light painting, streak and dotted trails, the ones taking a path under paths", () => {
     const ids = trails.map((e) => e.id);
     for (const id of [...shaders, "motion-streak", "dotted-trail"]) expect(ids).toContain(id);
     for (const id of shaders) expect(getEffect(id)!.category, id).toBe("path");

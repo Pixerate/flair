@@ -6,6 +6,123 @@ import simd
 
 
 
+/// **Heartbeat vignette** (`heartbeat-vignette`, category: `horror`).
+/// A deep red edge round a picture pulsing like a heartbeat, quickening and closing in as the pointer gets nearer a target spot, from a resting pulse up to at most 120 beats a minute; while idle, it drifts nearer and away on its own.
+public struct HeartbeatVignette: FlairEffect, Codable, Sendable, Equatable {
+    public static let effectId = "heartbeat-vignette"
+    public static let effectName = "Heartbeat vignette"
+    public static let category = "horror"
+    public static let effectDescription = "A deep red edge round a picture pulsing like a heartbeat, quickening and closing in as the pointer gets nearer a target spot, from a resting pulse up to at most 120 beats a minute; while idle, it drifts nearer and away on its own."
+    public static let tags: [String] = ["horror", "shock", "heartbeat", "pulse", "vignette", "tension", "interactive", "hover", "image"]
+    public static let phase: Int = 4
+    public static let functionName = "flair_heartbeat_vignette_frag"
+    public static let uniformByteLength: Int = 1056
+    public static let isTransparent: Bool = false
+    public static let loopDuration: Double? = nil
+    public static let controls: [FlairControlDescriptor] = [
+        FlairControlDescriptor(name: "uImage", property: "image", type: .sampler2D, label: "Image", min: 0.0, max: 1.0, step: 0.005, filter: .linear, wrap: .clamp),
+        FlairControlDescriptor(name: "uColor", property: "color", type: .vec3, label: "Pulse", isColor: true, min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uTargetX", property: "targetX", type: .float, label: "Target across", min: -0.5, max: 0.5, step: 0.005),
+        FlairControlDescriptor(name: "uTargetY", property: "targetY", type: .float, label: "Target up", min: -0.5, max: 0.5, step: 0.005),
+        FlairControlDescriptor(name: "uRest", property: "rest", type: .float, label: "Resting pulse (bpm)", min: 40.0, max: 110.0, step: 1.0),
+        FlairControlDescriptor(name: "uFastest", property: "fastest", type: .float, label: "Fastest pulse (bpm)", min: 60.0, max: 120.0, step: 1.0),
+        FlairControlDescriptor(name: "uStrength", property: "strength", type: .float, label: "Strength", min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uDemo", property: "demo", type: .bool, label: "Drift nearer while idle", min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uBackdrop", property: "backdrop", type: .vec3, label: "Backdrop", isColor: true, min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uBackdropAlpha", property: "backdropAlpha", type: .float, label: "Backdrop opacity", min: 0.0, max: 1.0, step: 0.005),
+    ]
+    public static let samplerBindings: [FlairSamplerBinding] = [
+        FlairSamplerBinding(name: "uImage", property: "image", type: .sampler2D, binding: 1, filter: .linear, wrap: .clamp),
+    ]
+    public static let presets: [String: HeartbeatVignette] = {
+        var map: [String: HeartbeatVignette] = [:]
+        do { var p = HeartbeatVignette(); p.fastest = 90.0; p.strength = 0.45; map["Calm"] = p }
+        do { var p = HeartbeatVignette(); p.rest = 90.0; p.fastest = 120.0; p.strength = 1.0; map["Panic"] = p }
+        do { var p = HeartbeatVignette(); p.color = flairVec3(0.08, 0.12, 0.3); map["Cold dread"] = p }
+        do { var p = HeartbeatVignette(); p.demo = false; map["Pointer only"] = p }
+        return map
+    }()
+
+    /// Image (`uImage`).
+    public var image: FlairTextureInput = .sample(.landscape)
+    /// Pulse (`uColor`).
+    public var color: SIMD3<Float> = flairVec3(0.619608, 0.054902, 0.094118)
+    /// Target across (`uTargetX`).
+    public var targetX: Float = 0.2
+    /// Target up (`uTargetY`).
+    public var targetY: Float = 0.08
+    /// Resting pulse (bpm) (`uRest`).
+    public var rest: Float = 60.0
+    /// Fastest pulse (bpm) (`uFastest`).
+    public var fastest: Float = 115.0
+    /// Strength (`uStrength`).
+    public var strength: Float = 0.7
+    /// Drift nearer while idle (`uDemo`).
+    public var demo: Bool = true
+    /// Backdrop (`uBackdrop`).
+    public var backdrop: SIMD3<Float> = flairVec3(1.0, 1.0, 1.0)
+    /// Backdrop opacity (`uBackdropAlpha`).
+    public var backdropAlpha: Float = 1.0
+
+    public init() {}
+
+    public func encodeUniforms(into buffer: UnsafeMutableRawPointer, state: FlairFrameState) {
+        state.encodeBuiltins(into: buffer)
+        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(color, min: 0.0, max: 1.0), to: buffer, at: 992)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(targetX, min: -0.5, max: 0.5), to: buffer, at: 1004)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(targetY, min: -0.5, max: 0.5), to: buffer, at: 1008)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(rest, min: 40.0, max: 110.0), to: buffer, at: 1012)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(fastest, min: 60.0, max: 120.0), to: buffer, at: 1016)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(strength, min: 0.0, max: 1.0), to: buffer, at: 1020)
+        FlairUniformEncoder.writeBool(demo, to: buffer, at: 1024)
+        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(backdrop, min: 0.0, max: 1.0), to: buffer, at: 1040)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(backdropAlpha, min: 0.0, max: 1.0), to: buffer, at: 1052)
+    }
+
+    public func textureInput(for binding: Int) -> FlairTextureInput {
+        switch binding {
+        case 1: return self.image
+        default: return .none
+        }
+    }
+
+    public mutating func setTextureInput(_ input: FlairTextureInput, for binding: Int) {
+        switch binding {
+        case 1: self.image = input
+        default: break
+        }
+    }
+
+    public init(from decoder: Decoder) throws {
+        let bag = try FlairJSONBag(from: decoder)
+        self.image = bag.decodeTexture("uImage", "image", default: .sample(.landscape), fit: .contain, margin: 0.1)
+        self.color = bag.decodeVec3("uColor", "color", default: flairVec3(0.619608, 0.054902, 0.094118), isColor: true)
+        self.targetX = bag.decodeFloat("uTargetX", "targetX", default: 0.2, min: -0.5, max: 0.5)
+        self.targetY = bag.decodeFloat("uTargetY", "targetY", default: 0.08, min: -0.5, max: 0.5)
+        self.rest = bag.decodeFloat("uRest", "rest", default: 60.0, min: 40.0, max: 110.0)
+        self.fastest = bag.decodeFloat("uFastest", "fastest", default: 115.0, min: 60.0, max: 120.0)
+        self.strength = bag.decodeFloat("uStrength", "strength", default: 0.7, min: 0.0, max: 1.0)
+        self.demo = bag.decodeBool("uDemo", "demo", default: true)
+        self.backdrop = bag.decodeVec3("uBackdrop", "backdrop", default: flairVec3(1.0, 1.0, 1.0), isColor: true)
+        self.backdropAlpha = bag.decodeFloat("uBackdropAlpha", "backdropAlpha", default: 1.0, min: 0.0, max: 1.0)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var bag = FlairJSONBag()
+        bag.encodeTexture(self.image, for: "uImage")
+        bag.encodeVec3(self.color, for: "uColor")
+        bag.encodeFloat(self.targetX, for: "uTargetX")
+        bag.encodeFloat(self.targetY, for: "uTargetY")
+        bag.encodeFloat(self.rest, for: "uRest")
+        bag.encodeFloat(self.fastest, for: "uFastest")
+        bag.encodeFloat(self.strength, for: "uStrength")
+        bag.encodeBool(self.demo, for: "uDemo")
+        bag.encodeVec3(self.backdrop, for: "uBackdrop")
+        bag.encodeFloat(self.backdropAlpha, for: "uBackdropAlpha")
+        try bag.encode(to: encoder)
+    }
+}
+
 /// **Blood drip border** (`blood-drip-border`, category: `horror`).
 /// A glossy band of blood along the top of the frame, drips creeping down from it at their own pace, swelling at their tips and letting drops fall, then thinning away as new ones start; a transparent overlay.
 public struct BloodDripBorder: FlairEffect, Codable, Sendable, Equatable {
