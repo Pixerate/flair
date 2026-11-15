@@ -397,12 +397,23 @@ export function mountTextTreatment(container: HTMLElement, effect: TextTreatment
       const stage = checkStage(stageName);
       // Checks the target (and stage) up front, so a bad one throws here rather than in a frame.
       const first = typeof target === "function" ? target() : target;
-      textTreatmentPlan(def, { stage, time: 0, target: first, values });
+      const reduce = reduceNow();
+      const length = textTreatmentPlan(def, { stage, time: 0, target: first, values, reduceMotion: reduce }).duration;
       let done!: () => void;
       const finished = new Promise<void>((resolve) => (done = resolve));
-      const p: Playing = { stage, start: clock(), target, reduce: reduceNow(), done, ...(playOptions.onDone && { onDone: playOptions.onDone }) };
+      const p: Playing = { stage, start: clock(), target, reduce, done, ...(playOptions.onDone && { onDone: playOptions.onDone }) };
       playing.add(p);
       schedule();
+      // Animation frames stop in a background tab (and never come without a page); a timer at the stage's
+      // end still finishes it, so `finished` settles and scripts waiting on it carry on.
+      if (autoplay && !def.stages[stage].loop) {
+        const check = () => {
+          if (!playing.has(p)) return;
+          render();
+          if (playing.has(p)) setTimeout(check, 250);
+        };
+        setTimeout(check, length + 30);
+      }
       return {
         stage,
         finished,
@@ -546,7 +557,8 @@ export function previewTextTreatment(host: HTMLElement, effect: TextTreatmentEff
   let pausedAt: number | undefined;
   let offset = 0;
   const clock = () => (pausedAt ?? base()) - offset;
-  const overlay = mountTextTreatment(element, effect, { ...options, clock });
+  // The preview's `autoplay` says whether the script starts; the overlay always draws its frames.
+  const overlay = mountTextTreatment(element, effect, { ...options, clock, autoplay: true });
   const typeMs = options.typeMs ?? 70;
   const label = options.label ?? TREATMENT_PREVIEW_SCRIPT.label;
   let run = 0;
@@ -647,7 +659,9 @@ export function previewTextTreatment(host: HTMLElement, effect: TextTreatmentEff
       await wait(typeMs * 2, id);
       word.data = part.fix;
       typing.stop();
-      overlay.play("landed", target({ lines: rangeRects(rangeOver(word, 0, word, word.length), element) }));
+      // The caret at the end of the new word: flourishes (a ribbon, sparkles) are placed from it.
+      const end = caretAt(word, word.length, element);
+      overlay.play("landed", target({ lines: rangeRects(rangeOver(word, 0, word, word.length), element), ...(end && { caret: end }) }));
       caretAtNode = { node: word, offset: word.length };
       caret = overlay.play("caret", caretTarget);
       await wait(320, id);

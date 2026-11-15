@@ -344,7 +344,7 @@ Every stage has a version without motion for Reduce Motion: its values are held 
 | `soft-sweep` (the default) | The writing partner's look: a soft gradient sweeping across each line, a selection growing in the agent's colour, a tint on what changed that fades. | Swash's `WritingPartnerOverlay` |
 | `marker-swipe` | A highlighter swiping behind the words (multiplied, like ink). | `highlighter` |
 | `glow-underline` | A glowing underline sweeping on and wiping away from its tail, and a glowing caret. | `swoosh-underline`, `cursor-glow` |
-| `shimmer` | A pale tint with a glint gliding across behind the words, like a loading shimmer. | `skeleton-shimmer`, `shine-sweep`, `animated-badge` |
+| `shimmer` | A loading skeleton: the words sit on rounded pills while a bright glint streaks across them twice. | `skeleton-shimmer`, `shine-sweep`, `animated-badge` |
 | `scan-line` | A bright scanning line with a fading trail. | `scanline-sweep` |
 | `presence` | A collaborator in a shared document: a blinking caret with a coloured name tag, an outline pulsing round what is checked. | `presence-cursors`, `typewriter` |
 | `design-frame` | A design tool's selection: a thin box with square corner handles. | `selection-frame` |

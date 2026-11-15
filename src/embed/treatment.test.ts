@@ -204,6 +204,34 @@ describe("rangeRects and caretAt", () => {
 });
 
 describe("the scripted preview", () => {
+  it("gives every stage what it draws from: the landing gets the caret at the end of the new word, for flourishes", async () => {
+    vi.useFakeTimers();
+    onTestFinished(() => {
+      vi.useRealTimers();
+      delete (Range.prototype as Partial<Range>).getClientRects;
+    });
+    // jsdom has no layout: every piece of text is one 8 px-a-letter run on one line.
+    Range.prototype.getClientRects = function (this: Range) {
+      const width = Math.max(1, this.endOffset - this.startOffset) * 8;
+      return [{ left: this.startOffset * 8, top: 0, width, height: 20, right: this.startOffset * 8 + width }] as unknown as DOMRectList;
+    };
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const preview = previewTextTreatment(host, "ribbon-curl", { clock: () => Date.now(), reducedMotion: "never", loop: false, autoplay: false });
+    const played: { stage: string; caret: boolean; lines: number }[] = [];
+    const play = preview.overlay.play.bind(preview.overlay);
+    preview.overlay.play = (stage, target, o) => {
+      const t = typeof target === "function" ? target() : target;
+      played.push({ stage, caret: !!t.caret, lines: t.lines?.length ?? 0 });
+      return play(stage, target, o);
+    };
+    preview.play();
+    await vi.advanceTimersByTimeAsync(20_000);
+    expect(played.map((p) => p.stage)).toEqual(["caret", "checking", "selecting", "typing", "landed", "caret", "selecting", "typing", "landed", "caret"]);
+    for (const p of played.filter((x) => x.stage === "landed")) expect(p).toMatchObject({ caret: true, lines: 1 });
+    preview.dispose();
+  });
+
   it("plays the edit on a paragraph of its own, and is what mountEffect mounts for a treatment", async () => {
     const host = document.createElement("div");
     document.body.appendChild(host);
