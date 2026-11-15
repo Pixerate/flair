@@ -6,6 +6,101 @@ import simd
 
 
 
+/// **Blood drip border** (`blood-drip-border`, category: `horror`).
+/// A glossy band of blood along the top of the frame, drips creeping down from it at their own pace, swelling at their tips and letting drops fall, then thinning away as new ones start; a transparent overlay.
+public struct BloodDripBorder: FlairEffect, Codable, Sendable, Equatable {
+    public static let effectId = "blood-drip-border"
+    public static let effectName = "Blood drip border"
+    public static let category = "horror"
+    public static let effectDescription = "A glossy band of blood along the top of the frame, drips creeping down from it at their own pace, swelling at their tips and letting drops fall, then thinning away as new ones start; a transparent overlay."
+    public static let tags: [String] = ["horror", "gore", "blood", "drip", "border", "overlay", "halloween"]
+    public static let phase: Int = 1
+    public static let functionName = "flair_blood_drip_border_frag"
+    public static let uniformByteLength: Int = 1056
+    public static let isTransparent: Bool = true
+    public static let loopDuration: Double? = nil
+    public static let controls: [FlairControlDescriptor] = [
+        FlairControlDescriptor(name: "uColor", property: "color", type: .vec3, label: "Blood", isColor: true, min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uShine", property: "shine", type: .vec3, label: "Shine", isColor: true, min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uBand", property: "band", type: .float, label: "Band", min: 0.0, max: 0.3, step: 0.0015),
+        FlairControlDescriptor(name: "uDrips", property: "drips", type: .float, label: "Drips", min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uLength", property: "length", type: .float, label: "Drip length", min: 0.1, max: 1.0, step: 0.0045),
+        FlairControlDescriptor(name: "uWidth", property: "width", type: .float, label: "Drip width", min: 0.3, max: 2.5, step: 0.011),
+        FlairControlDescriptor(name: "uSpeed", property: "speed", type: .float, label: "Speed", min: 0.1, max: 2.0, step: 0.0095),
+        FlairControlDescriptor(name: "uBackground", property: "background", type: .vec3, label: "Background", isColor: true, min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uBackgroundAlpha", property: "backgroundAlpha", type: .float, label: "Background opacity", min: 0.0, max: 1.0, step: 0.005),
+    ]
+    public static let presets: [String: BloodDripBorder] = {
+        var map: [String: BloodDripBorder] = [:]
+        do { var p = BloodDripBorder(); p.backgroundAlpha = 1.0; map["Paper"] = p }
+        do { var p = BloodDripBorder(); p.band = 0.09; p.drips = 1.0; p.length = 0.8; p.width = 1.8; map["Heavy"] = p }
+        do { var p = BloodDripBorder(); p.color = flairVec3(0.04, 0.03, 0.05); p.shine = flairVec3(0.55, 0.55, 0.65); map["Ink"] = p }
+        do { var p = BloodDripBorder(); p.color = flairVec3(0.35, 0.75, 0.1); p.shine = flairVec3(0.85, 1.0, 0.6); map["Slime"] = p }
+        return map
+    }()
+
+    /// Blood (`uColor`).
+    public var color: SIMD3<Float> = flairVec3(0.494118, 0.027451, 0.066667)
+    /// Shine (`uShine`).
+    public var shine: SIMD3<Float> = flairVec3(1.0, 0.541176, 0.541176)
+    /// Band (`uBand`).
+    public var band: Float = 0.05
+    /// Drips (`uDrips`).
+    public var drips: Float = 0.7
+    /// Drip length (`uLength`).
+    public var length: Float = 0.5
+    /// Drip width (`uWidth`).
+    public var width: Float = 1.0
+    /// Speed (`uSpeed`).
+    public var speed: Float = 0.6
+    /// Background (`uBackground`).
+    public var background: SIMD3<Float> = flairVec3(0.956863, 0.937255, 0.901961)
+    /// Background opacity (`uBackgroundAlpha`).
+    public var backgroundAlpha: Float = 0.0
+
+    public init() {}
+
+    public func encodeUniforms(into buffer: UnsafeMutableRawPointer, state: FlairFrameState) {
+        state.encodeBuiltins(into: buffer)
+        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(color, min: 0.0, max: 1.0), to: buffer, at: 992)
+        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(shine, min: 0.0, max: 1.0), to: buffer, at: 1008)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(band, min: 0.0, max: 0.3), to: buffer, at: 1020)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(drips, min: 0.0, max: 1.0), to: buffer, at: 1024)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(length, min: 0.1, max: 1.0), to: buffer, at: 1028)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(width, min: 0.3, max: 2.5), to: buffer, at: 1032)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(speed, min: 0.1, max: 2.0), to: buffer, at: 1036)
+        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(background, min: 0.0, max: 1.0), to: buffer, at: 1040)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(backgroundAlpha, min: 0.0, max: 1.0), to: buffer, at: 1052)
+    }
+
+    public init(from decoder: Decoder) throws {
+        let bag = try FlairJSONBag(from: decoder)
+        self.color = bag.decodeVec3("uColor", "color", default: flairVec3(0.494118, 0.027451, 0.066667), isColor: true)
+        self.shine = bag.decodeVec3("uShine", "shine", default: flairVec3(1.0, 0.541176, 0.541176), isColor: true)
+        self.band = bag.decodeFloat("uBand", "band", default: 0.05, min: 0.0, max: 0.3)
+        self.drips = bag.decodeFloat("uDrips", "drips", default: 0.7, min: 0.0, max: 1.0)
+        self.length = bag.decodeFloat("uLength", "length", default: 0.5, min: 0.1, max: 1.0)
+        self.width = bag.decodeFloat("uWidth", "width", default: 1.0, min: 0.3, max: 2.5)
+        self.speed = bag.decodeFloat("uSpeed", "speed", default: 0.6, min: 0.1, max: 2.0)
+        self.background = bag.decodeVec3("uBackground", "background", default: flairVec3(0.956863, 0.937255, 0.901961), isColor: true)
+        self.backgroundAlpha = bag.decodeFloat("uBackgroundAlpha", "backgroundAlpha", default: 0.0, min: 0.0, max: 1.0)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var bag = FlairJSONBag()
+        bag.encodeVec3(self.color, for: "uColor")
+        bag.encodeVec3(self.shine, for: "uShine")
+        bag.encodeFloat(self.band, for: "uBand")
+        bag.encodeFloat(self.drips, for: "uDrips")
+        bag.encodeFloat(self.length, for: "uLength")
+        bag.encodeFloat(self.width, for: "uWidth")
+        bag.encodeFloat(self.speed, for: "uSpeed")
+        bag.encodeVec3(self.background, for: "uBackground")
+        bag.encodeFloat(self.backgroundAlpha, for: "uBackgroundAlpha")
+        try bag.encode(to: encoder)
+    }
+}
+
 /// **Claw slash** (`claw-slash`, category: `horror`).
 /// Claw marks raked across a picture in a fast stroke, each tear ripping open along its length with ragged raw edges and the picture pulled apart round it, holding a moment, then closing up again. Loops; or turn Animate off and set Progress.
 public struct ClawSlash: FlairEffect, Codable, Sendable, Equatable {

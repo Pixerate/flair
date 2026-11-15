@@ -6,6 +6,133 @@ import simd
 
 
 
+/// **Game Boy screen** (`gameboy-screen`, category: `retro`).
+/// An image on a handheld's green dot-matrix LCD: four shades, a visible pixel grid and smeary ghosting, inset in an olive bezel.
+public struct GameboyScreen: FlairEffect, Codable, Sendable, Equatable {
+    public static let effectId = "gameboy-screen"
+    public static let effectName = "Game Boy screen"
+    public static let category = "retro"
+    public static let effectDescription = "An image on a handheld's green dot-matrix LCD: four shades, a visible pixel grid and smeary ghosting, inset in an olive bezel."
+    public static let tags: [String] = ["pixel", "retro", "image", "game-boy", "lcd", "handheld", "screen"]
+    public static let phase: Int = 2
+    public static let functionName = "flair_gameboy_screen_frag"
+    public static let uniformByteLength: Int = 1104
+    public static let isTransparent: Bool = false
+    public static let loopDuration: Double? = nil
+    public static let controls: [FlairControlDescriptor] = [
+        FlairControlDescriptor(name: "uImage", property: "image", type: .sampler2D, label: "Image", min: 0.0, max: 1.0, step: 0.005, filter: .linear, wrap: .repeat),
+        FlairControlDescriptor(name: "uLines", property: "lines", type: .float, label: "Screen lines", min: 36.0, max: 144.0, step: 1.0),
+        FlairControlDescriptor(name: "uPan", property: "pan", type: .float, label: "Pan speed", min: -0.3, max: 0.3, step: 0.003),
+        FlairControlDescriptor(name: "uGhost", property: "ghost", type: .float, label: "Ghosting", min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uGrid", property: "grid", type: .float, label: "Pixel grid", min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uDither", property: "dither", type: .bool, label: "Dither", min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uDark", property: "dark", type: .vec3, label: "Darkest shade", isColor: true, min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uLight", property: "light", type: .vec3, label: "Lightest shade", isColor: true, min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uBezel", property: "bezel", type: .vec3, label: "Bezel", isColor: true, min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uCase", property: "case", type: .vec3, label: "Case", isColor: true, min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uBackdrop", property: "backdrop", type: .vec3, label: "Backdrop", isColor: true, min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uBackdropAlpha", property: "backdropAlpha", type: .float, label: "Backdrop opacity", min: 0.0, max: 1.0, step: 0.005),
+    ]
+    public static let samplerBindings: [FlairSamplerBinding] = [
+        FlairSamplerBinding(name: "uImage", property: "image", type: .sampler2D, binding: 1, filter: .linear, wrap: .repeat),
+    ]
+    public static let presets: [String: GameboyScreen] = {
+        var map: [String: GameboyScreen] = [:]
+        do { var p = GameboyScreen(); p.lines = 72.0; map["Chunky"] = p }
+        do { var p = GameboyScreen(); p.dark = flairVec3(0.16, 0.16, 0.14); p.light = flairVec3(0.77, 0.79, 0.72); p.bezel = flairVec3(0.42, 0.42, 0.4); p.`case` = flairVec3(0.78, 0.78, 0.76); map["Pocket"] = p }
+        return map
+    }()
+
+    /// Image (`uImage`).
+    public var image: FlairTextureInput = .sample(.landscape)
+    /// Screen lines (`uLines`).
+    public var lines: Float = 144.0
+    /// Pan speed (`uPan`).
+    public var pan: Float = 0.04
+    /// Ghosting (`uGhost`).
+    public var ghost: Float = 0.5
+    /// Pixel grid (`uGrid`).
+    public var grid: Float = 0.6
+    /// Dither (`uDither`).
+    public var dither: Bool = true
+    /// Darkest shade (`uDark`).
+    public var dark: SIMD3<Float> = flairVec3(0.058824, 0.219608, 0.058824)
+    /// Lightest shade (`uLight`).
+    public var light: SIMD3<Float> = flairVec3(0.607843, 0.737255, 0.058824)
+    /// Bezel (`uBezel`).
+    public var bezel: SIMD3<Float> = flairVec3(0.305882, 0.321569, 0.211765)
+    /// Case (`uCase`).
+    public var `case`: SIMD3<Float> = flairVec3(0.788235, 0.776471, 0.737255)
+    /// Backdrop (`uBackdrop`).
+    public var backdrop: SIMD3<Float> = flairVec3(1.0, 1.0, 1.0)
+    /// Backdrop opacity (`uBackdropAlpha`).
+    public var backdropAlpha: Float = 1.0
+
+    public init() {}
+
+    public func encodeUniforms(into buffer: UnsafeMutableRawPointer, state: FlairFrameState) {
+        state.encodeBuiltins(into: buffer)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(lines, min: 36.0, max: 144.0), to: buffer, at: 992)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(pan, min: -0.3, max: 0.3), to: buffer, at: 996)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(ghost, min: 0.0, max: 1.0), to: buffer, at: 1000)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(grid, min: 0.0, max: 1.0), to: buffer, at: 1004)
+        FlairUniformEncoder.writeBool(dither, to: buffer, at: 1008)
+        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(dark, min: 0.0, max: 1.0), to: buffer, at: 1024)
+        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(light, min: 0.0, max: 1.0), to: buffer, at: 1040)
+        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(bezel, min: 0.0, max: 1.0), to: buffer, at: 1056)
+        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(`case`, min: 0.0, max: 1.0), to: buffer, at: 1072)
+        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(backdrop, min: 0.0, max: 1.0), to: buffer, at: 1088)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(backdropAlpha, min: 0.0, max: 1.0), to: buffer, at: 1100)
+    }
+
+    public func textureInput(for binding: Int) -> FlairTextureInput {
+        switch binding {
+        case 1: return self.image
+        default: return .none
+        }
+    }
+
+    public mutating func setTextureInput(_ input: FlairTextureInput, for binding: Int) {
+        switch binding {
+        case 1: self.image = input
+        default: break
+        }
+    }
+
+    public init(from decoder: Decoder) throws {
+        let bag = try FlairJSONBag(from: decoder)
+        self.image = bag.decodeTexture("uImage", "image", default: .sample(.landscape), fit: .contain, margin: 0.1)
+        self.lines = bag.decodeFloat("uLines", "lines", default: 144.0, min: 36.0, max: 144.0)
+        self.pan = bag.decodeFloat("uPan", "pan", default: 0.04, min: -0.3, max: 0.3)
+        self.ghost = bag.decodeFloat("uGhost", "ghost", default: 0.5, min: 0.0, max: 1.0)
+        self.grid = bag.decodeFloat("uGrid", "grid", default: 0.6, min: 0.0, max: 1.0)
+        self.dither = bag.decodeBool("uDither", "dither", default: true)
+        self.dark = bag.decodeVec3("uDark", "dark", default: flairVec3(0.058824, 0.219608, 0.058824), isColor: true)
+        self.light = bag.decodeVec3("uLight", "light", default: flairVec3(0.607843, 0.737255, 0.058824), isColor: true)
+        self.bezel = bag.decodeVec3("uBezel", "bezel", default: flairVec3(0.305882, 0.321569, 0.211765), isColor: true)
+        self.`case` = bag.decodeVec3("uCase", "case", default: flairVec3(0.788235, 0.776471, 0.737255), isColor: true)
+        self.backdrop = bag.decodeVec3("uBackdrop", "backdrop", default: flairVec3(1.0, 1.0, 1.0), isColor: true)
+        self.backdropAlpha = bag.decodeFloat("uBackdropAlpha", "backdropAlpha", default: 1.0, min: 0.0, max: 1.0)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var bag = FlairJSONBag()
+        bag.encodeTexture(self.image, for: "uImage")
+        bag.encodeFloat(self.lines, for: "uLines")
+        bag.encodeFloat(self.pan, for: "uPan")
+        bag.encodeFloat(self.ghost, for: "uGhost")
+        bag.encodeFloat(self.grid, for: "uGrid")
+        bag.encodeBool(self.dither, for: "uDither")
+        bag.encodeVec3(self.dark, for: "uDark")
+        bag.encodeVec3(self.light, for: "uLight")
+        bag.encodeVec3(self.bezel, for: "uBezel")
+        bag.encodeVec3(self.`case`, for: "uCase")
+        bag.encodeVec3(self.backdrop, for: "uBackdrop")
+        bag.encodeFloat(self.backdropAlpha, for: "uBackdropAlpha")
+        try bag.encode(to: encoder)
+    }
+}
+
 /// **Pixel fire** (`pixel-fire`, category: `retro`).
 /// Chunky Doom-style pixel fire licking up from the bottom through a stepped black, red, orange, yellow and white ramp.
 public struct PixelFire: FlairEffect, Codable, Sendable, Equatable {
@@ -5056,127 +5183,6 @@ public struct GhostTrail: FlairEffect, Codable, Sendable, Equatable {
         bag.encodeFloat(self.life, for: "uLife")
         bag.encodeBool(self.shrink, for: "uShrink")
         bag.encodeBool(self.demo, for: "uDemo")
-        bag.encodeTexture(self.path, for: "uPath")
-        bag.encodeFloat(self.unit, for: "uUnit")
-        try bag.encode(to: encoder)
-    }
-}
-
-/// **Light painting** (`light-painting`, category: `path`).
-/// Long-exposure light painting in the dark: the pointer leaves neon tubes with white-hot cores that cycle through colour along the stroke and fade slowly.
-public struct LightPainting: FlairEffect, Codable, Sendable, Equatable {
-    public static let effectId = "light-painting"
-    public static let effectName = "Light painting"
-    public static let category = "path"
-    public static let effectDescription = "Long-exposure light painting in the dark: the pointer leaves neon tubes with white-hot cores that cycle through colour along the stroke and fade slowly."
-    public static let tags: [String] = ["trail", "interactive", "hover", "cursor", "neon", "glow", "long-exposure", "light", "path"]
-    public static let phase: Int = 4
-    public static let functionName = "flair_light_painting_frag"
-    public static let uniformByteLength: Int = 1040
-    public static let isTransparent: Bool = false
-    public static let loopDuration: Double? = nil
-    public static let controls: [FlairControlDescriptor] = [
-        FlairControlDescriptor(name: "uBackground", property: "background", type: .vec3, label: "Background", isColor: true, min: 0.0, max: 1.0, step: 0.005),
-        FlairControlDescriptor(name: "uWidth", property: "width", type: .float, label: "Tube width", min: 0.002, max: 0.03, step: 0.00014),
-        FlairControlDescriptor(name: "uGlow", property: "glow", type: .float, label: "Glow", min: 0.0, max: 3.0, step: 0.015),
-        FlairControlDescriptor(name: "uCycle", property: "cycle", type: .float, label: "Colour cycle", min: 0.0, max: 2.0, step: 0.01),
-        FlairControlDescriptor(name: "uHue", property: "hue", type: .float, label: "Hue", min: 0.0, max: 1.0, step: 0.005),
-        FlairControlDescriptor(name: "uLife", property: "life", type: .float, label: "Fade time", min: 0.5, max: 10.0, step: 0.0475),
-        FlairControlDescriptor(name: "uFlicker", property: "flicker", type: .float, label: "Flicker", min: 0.0, max: 1.0, step: 0.005),
-        FlairControlDescriptor(name: "uDemo", property: "demo", type: .bool, label: "Demo when idle", min: 0.0, max: 1.0, step: 0.005),
-        FlairControlDescriptor(name: "uBackgroundAlpha", property: "backgroundAlpha", type: .float, label: "Background opacity", min: 0.0, max: 1.0, step: 0.005),
-        FlairControlDescriptor(name: "uPath", property: "path", type: .path, label: "Path when idle", min: 0.0, max: 1.0, step: 0.005, pathFit: .contain, pathMargin: 0.1),
-        FlairControlDescriptor(name: "uUnit", property: "unit", type: .float, label: "Size unit (px, 0 = frame height)", min: 0.0, max: 16384.0, step: 81.92),
-    ]
-    public static let samplerBindings: [FlairSamplerBinding] = [
-        FlairSamplerBinding(name: "uPath", property: "path", type: .path, binding: 1, filter: .nearest, wrap: .clamp, pathFit: .contain, pathMargin: 0.1),
-    ]
-    public static let presets: [String: LightPainting] = {
-        var map: [String: LightPainting] = [:]
-        do { var p = LightPainting(); p.width = 0.004; p.glow = 2.0; p.cycle = 0.0; p.hue = 0.08; p.flicker = 0.8; map["Sparkler writing"] = p }
-        do { var p = LightPainting(); p.width = 0.012; p.glow = 0.8; p.cycle = 1.0; p.flicker = 0.0; map["Neon tubes"] = p }
-        return map
-    }()
-
-    /// Background (`uBackground`).
-    public var background: SIMD3<Float> = flairVec3(0.019608, 0.023529, 0.047059)
-    /// Tube width (`uWidth`).
-    public var width: Float = 0.007
-    /// Glow (`uGlow`).
-    public var glow: Float = 1.2
-    /// Colour cycle (`uCycle`).
-    public var cycle: Float = 0.4
-    /// Hue (`uHue`).
-    public var hue: Float = 0.0
-    /// Fade time (`uLife`).
-    public var life: Float = 4.0
-    /// Flicker (`uFlicker`).
-    public var flicker: Float = 0.25
-    /// Demo when idle (`uDemo`).
-    public var demo: Bool = true
-    /// Background opacity (`uBackgroundAlpha`).
-    public var backgroundAlpha: Float = 1.0
-    /// Path when idle (`uPath`).
-    public var path: FlairTextureInput = .none
-    /// Size unit (px, 0 = frame height) (`uUnit`).
-    public var unit: Float = 0.0
-
-    public init() {}
-
-    public func encodeUniforms(into buffer: UnsafeMutableRawPointer, state: FlairFrameState) {
-        state.encodeBuiltins(into: buffer)
-        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(background, min: 0.0, max: 1.0), to: buffer, at: 992)
-        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(width, min: 0.002, max: 0.03), to: buffer, at: 1004)
-        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(glow, min: 0.0, max: 3.0), to: buffer, at: 1008)
-        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(cycle, min: 0.0, max: 2.0), to: buffer, at: 1012)
-        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(hue, min: 0.0, max: 1.0), to: buffer, at: 1016)
-        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(life, min: 0.5, max: 10.0), to: buffer, at: 1020)
-        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(flicker, min: 0.0, max: 1.0), to: buffer, at: 1024)
-        FlairUniformEncoder.writeBool(demo, to: buffer, at: 1028)
-        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(backgroundAlpha, min: 0.0, max: 1.0), to: buffer, at: 1032)
-        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(unit, min: 0.0, max: 16384.0), to: buffer, at: 1036)
-    }
-
-    public func textureInput(for binding: Int) -> FlairTextureInput {
-        switch binding {
-        case 1: return self.path
-        default: return .none
-        }
-    }
-
-    public mutating func setTextureInput(_ input: FlairTextureInput, for binding: Int) {
-        switch binding {
-        case 1: self.path = input
-        default: break
-        }
-    }
-
-    public init(from decoder: Decoder) throws {
-        let bag = try FlairJSONBag(from: decoder)
-        self.background = bag.decodeVec3("uBackground", "background", default: flairVec3(0.019608, 0.023529, 0.047059), isColor: true)
-        self.width = bag.decodeFloat("uWidth", "width", default: 0.007, min: 0.002, max: 0.03)
-        self.glow = bag.decodeFloat("uGlow", "glow", default: 1.2, min: 0.0, max: 3.0)
-        self.cycle = bag.decodeFloat("uCycle", "cycle", default: 0.4, min: 0.0, max: 2.0)
-        self.hue = bag.decodeFloat("uHue", "hue", default: 0.0, min: 0.0, max: 1.0)
-        self.life = bag.decodeFloat("uLife", "life", default: 4.0, min: 0.5, max: 10.0)
-        self.flicker = bag.decodeFloat("uFlicker", "flicker", default: 0.25, min: 0.0, max: 1.0)
-        self.demo = bag.decodeBool("uDemo", "demo", default: true)
-        self.backgroundAlpha = bag.decodeFloat("uBackgroundAlpha", "backgroundAlpha", default: 1.0, min: 0.0, max: 1.0)
-        self.path = bag.decodeTexture("uPath", "path", default: .none, fit: .contain, margin: 0.1)
-        self.unit = bag.decodeFloat("uUnit", "unit", default: 0.0, min: 0.0, max: 16384.0)
-    }
-
-    public func encode(to encoder: Encoder) throws {
-        var bag = FlairJSONBag()
-        bag.encodeVec3(self.background, for: "uBackground")
-        bag.encodeFloat(self.width, for: "uWidth")
-        bag.encodeFloat(self.glow, for: "uGlow")
-        bag.encodeFloat(self.cycle, for: "uCycle")
-        bag.encodeFloat(self.hue, for: "uHue")
-        bag.encodeFloat(self.life, for: "uLife")
-        bag.encodeFloat(self.flicker, for: "uFlicker")
-        bag.encodeBool(self.demo, for: "uDemo")
-        bag.encodeFloat(self.backgroundAlpha, for: "uBackgroundAlpha")
         bag.encodeTexture(self.path, for: "uPath")
         bag.encodeFloat(self.unit, for: "uUnit")
         try bag.encode(to: encoder)

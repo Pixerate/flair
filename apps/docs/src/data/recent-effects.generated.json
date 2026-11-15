@@ -1,5 +1,264 @@
 [
   {
+    "id": "swash-text",
+    "name": "Swash text",
+    "kind": "shader",
+    "category": "text",
+    "description": "A title with a glossy gradient ribbon swashing through it: in under the letters along the baseline, a loop over them, then an arc hooking over the end, rounded and twisting, shedding star sparkles, then eroding into frost.",
+    "tags": [
+      "text",
+      "title",
+      "swash",
+      "ribbon",
+      "flourish",
+      "curl",
+      "gradient",
+      "sparkle",
+      "frost",
+      "calligraphy",
+      "overlay"
+    ],
+    "controls": [
+      {
+        "n": "uText",
+        "t": "sampler2D",
+        "d": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201024%20256%22%20width%3D%221024%22%20height%3D%22256%22%3E%3Ctext%20x%3D%22512%22%20y%3D%22128%22%20dy%3D%220.35em%22%20text-anchor%3D%22middle%22%20textLength%3D%22826.7%22%20lengthAdjust%3D%22spacingAndGlyphs%22%20font-family%3D%22%26%2339%3BArial%20Black%26%2339%3B%2C%20%26%2339%3BHelvetica%20Neue%26%2339%3B%2C%20Helvetica%2C%20Arial%2C%20system-ui%2C%20sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%22199.7%22%20fill%3D%22%23fff%22%3EFlourish%3C%2Ftext%3E%3C%2Fsvg%3E",
+        "line": 2,
+        "x": {
+          "filter": "mipmap",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uInk",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            244,
+            241,
+            234
+          ]
+        },
+        "l": "Text colour",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            16,
+            16,
+            24
+          ]
+        },
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 0,
+        "l": "Background opacity",
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 0.6,
+        "l": "Text size",
+        "min": 0.3,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uLength",
+        "t": "float",
+        "d": 0.84,
+        "l": "Swash length",
+        "min": 0.3,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uTail",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            179,
+            138
+          ]
+        },
+        "l": "Tail colour",
+        "c": 1,
+        "line": 8
+      },
+      {
+        "n": "uMid",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            244,
+            114,
+            182
+          ]
+        },
+        "l": "Middle colour",
+        "c": 1,
+        "line": 9
+      },
+      {
+        "n": "uHead",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            139,
+            92,
+            246
+          ]
+        },
+        "l": "Head colour",
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "uWidth",
+        "t": "float",
+        "d": 0.085,
+        "l": "Ribbon width",
+        "min": 0.01,
+        "max": 0.15,
+        "b": 3,
+        "line": 11
+      },
+      {
+        "n": "uOpacity",
+        "t": "float",
+        "d": 0.85,
+        "l": "Ribbon opacity",
+        "min": 0.2,
+        "b": 3,
+        "line": 12
+      },
+      {
+        "n": "uTwist",
+        "t": "float",
+        "d": 1.5,
+        "l": "Twists",
+        "max": 4,
+        "b": 3,
+        "line": 13
+      },
+      {
+        "n": "uGlow",
+        "t": "float",
+        "d": 0.5,
+        "b": 3,
+        "line": 14
+      },
+      {
+        "n": "uSparkle",
+        "t": "float",
+        "d": 0.8,
+        "l": "Sparkles",
+        "b": 3,
+        "line": 15
+      },
+      {
+        "n": "uWeave",
+        "t": "bool",
+        "d": true,
+        "l": "Weave through the letters",
+        "line": 16
+      },
+      {
+        "n": "uFrost",
+        "t": "float",
+        "d": 0.8,
+        "l": "Frost dissolve",
+        "b": 3,
+        "line": 17
+      },
+      {
+        "n": "uFrostColor",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            220,
+            228,
+            255
+          ]
+        },
+        "l": "Frost colour",
+        "c": 1,
+        "line": 18
+      },
+      {
+        "n": "uCycle",
+        "t": "float",
+        "d": 4,
+        "l": "Seconds per swash",
+        "min": 2,
+        "max": 12,
+        "b": 3,
+        "line": 19
+      },
+      {
+        "n": "uAnimate",
+        "t": "bool",
+        "d": true,
+        "line": 20
+      },
+      {
+        "n": "uProgress",
+        "t": "float",
+        "d": 0.45,
+        "l": "Progress (when still)",
+        "b": 3,
+        "line": 21
+      }
+    ],
+    "presets": [
+      "Light page",
+      "Dark page",
+      "Ocean",
+      "Gold leaf",
+      "Flat ribbon"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "svg",
+        "text",
+        "mask"
+      ],
+      "images": [
+        {
+          "name": "uText",
+          "label": "Text",
+          "wants": "text"
+        }
+      ],
+      "texts": [],
+      "video": "none",
+      "interactions": [],
+      "transparent": true
+    },
+    "swiftReady": true,
+    "video": "none",
+    "transparent": true,
+    "loop": 4,
+    "animated": true,
+    "duration": 4000,
+    "module": "shaders/text",
+    "addedAt": "2026-11-15T13:53:06.452Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
     "id": "ribbon-curl",
     "name": "Ribbon curl",
     "kind": "text-treatment",
@@ -3607,195 +3866,5 @@
     "addedAt": "2026-11-13T15:35:59Z",
     "commitHash": "d06df57664d2ac130bc3a2af9fef78a818b98d95",
     "order": 693
-  },
-  {
-    "id": "echo-text",
-    "name": "Echo text",
-    "kind": "shader",
-    "category": "text",
-    "description": "A title trailed by copies of its own outline in two alternating colours, fanning out behind it and folding back in a ripple. Set the outline width to 0 for solid stacked copies.",
-    "tags": [
-      "text",
-      "title",
-      "echo",
-      "outline",
-      "trail",
-      "repeat",
-      "kinetic",
-      "bold",
-      "recap",
-      "story",
-      "loop"
-    ],
-    "controls": [
-      {
-        "n": "uText",
-        "t": "sampler2D",
-        "d": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201024%20256%22%20width%3D%221024%22%20height%3D%22256%22%3E%3Ctext%20x%3D%22512%22%20y%3D%22128%22%20dy%3D%220.35em%22%20text-anchor%3D%22middle%22%20textLength%3D%22651%22%20lengthAdjust%3D%22spacingAndGlyphs%22%20font-family%3D%22%26%2339%3BArial%20Black%26%2339%3B%2C%20%26%2339%3BHelvetica%20Neue%26%2339%3B%2C%20Helvetica%2C%20Arial%2C%20system-ui%2C%20sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%22199.7%22%20fill%3D%22%23fff%22%3EFLAIR%3C%2Ftext%3E%3C%2Fsvg%3E",
-        "line": 2,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            65,
-            0,
-            245
-          ]
-        },
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uInk",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "l": "Text",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uEchoA",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            240,
-            55,
-            165
-          ]
-        },
-        "l": "Echo A",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uEchoB",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            205,
-            245,
-            100
-          ]
-        },
-        "l": "Echo B",
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "uEchoes",
-        "t": "int",
-        "d": 7,
-        "min": 1,
-        "max": 12,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uSpread",
-        "t": "float",
-        "d": 0.04,
-        "max": 0.12,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uAngle",
-        "t": "float",
-        "d": -90,
-        "l": "Angle (°)",
-        "min": -180,
-        "max": 180,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uGrow",
-        "t": "float",
-        "d": 0.03,
-        "max": 0.3,
-        "b": 3,
-        "line": 10
-      },
-      {
-        "n": "uOutline",
-        "t": "float",
-        "d": 0.005,
-        "l": "Outline width (0 fills)",
-        "max": 0.012,
-        "b": 3,
-        "line": 11
-      },
-      {
-        "n": "uSize",
-        "t": "float",
-        "d": 0.7,
-        "l": "Text size",
-        "min": 0.3,
-        "b": 3,
-        "line": 12
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 1,
-        "max": 3,
-        "b": 3,
-        "line": 13
-      },
-      {
-        "n": "uBackgroundAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Background opacity",
-        "b": 3,
-        "line": 70
-      }
-    ],
-    "presets": [
-      "Outline trail",
-      "Solid stack",
-      "Zoom out",
-      "Ghost"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "svg",
-        "text",
-        "mask"
-      ],
-      "images": [
-        {
-          "name": "uText",
-          "label": "Text",
-          "wants": "text"
-        }
-      ],
-      "texts": [],
-      "video": "none",
-      "interactions": [],
-      "transparent": false
-    },
-    "swiftReady": true,
-    "video": "none",
-    "loop": 4,
-    "animated": true,
-    "duration": 4000,
-    "module": "shaders/recap",
-    "addedAt": "2026-11-13T15:35:59Z",
-    "commitHash": "d06df57664d2ac130bc3a2af9fef78a818b98d95",
-    "order": 692
   }
 ]
