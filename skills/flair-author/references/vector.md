@@ -24,7 +24,7 @@ A vector effect is an `SvgMotion`: one self-contained `<svg>` with a `viewBox`, 
 
 ## Changes: `animate`
 
-Each change names an element `id` (it must exist in the SVG) and when it plays: `delay` and `ms` (milliseconds), `ease` (`linear`, `out` or `in-out`, the only named eases; a `[x1, y1, x2, y2]` cubic-bezier for any other curve, such as `[0.4, 0, 1, 1]` to ease in; or `{ "spring": { … } }`), `repeat`, `alternate`, and `step` (for click-triggered pictures). What it changes:
+Each change names an element `id` (it must exist in the SVG) and when it plays: `delay` and `ms` (milliseconds), `ease` (`linear`, `out` or `in-out`, the only named eases; a `[x1, y1, x2, y2]` cubic-bezier for any other curve, such as `[0.4, 0, 1, 1]` to ease in; or `{ "spring": { … } }`), `repeat` (how many whole cycles the change plays, 1 or more; there is no endless repeat, since the whole picture loops by itself after `hold`), `alternate`, and `step` (for click-triggered pictures). What it changes:
 
 | Field | Does |
 | --- | --- |
