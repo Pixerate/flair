@@ -3,15 +3,15 @@
  * Runs the effect-drafting eval: `node src/cli.ts --model anthropic:claude-opus-5-5 --judge anthropic:claude-opus-5-5`.
  * `--help` lists the options.
  */
-import { mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { parseArgs } from "node:util";
 import { createModel } from "./models.ts";
 import { renderAvailable } from "./render.ts";
 import { groups, markdownReport } from "./report.ts";
-import { runAll } from "./run.ts";
+import { runAll, runSample } from "./run.ts";
 import { BUILTIN_TASKS, loadTaskFile, selectTasks } from "./tasks.ts";
-import { EFFECT_TYPES, type TaskMode } from "./types.ts";
+import { EFFECT_TYPES, type SampleResult, type TaskMode } from "./types.ts";
 
 const HELP = `Flair effect-drafting eval
 
@@ -36,6 +36,7 @@ Options:
   --software            draw with software GL: the same frames on every machine
   --no-render           static checks only (no Chrome)
   --out <folder>        where results go (default results/<time>-<model>)
+  --redo-errors         with --out naming an earlier run (same --model and --judge): rerun only its samples that ended in an error, and rewrite its results
   --list                list the tasks and exit
 `;
 
@@ -67,6 +68,7 @@ async function main() {
       "no-render": { type: "boolean", default: false },
       out: { type: "string" },
       list: { type: "boolean", default: false },
+      "redo-errors": { type: "boolean", default: false },
       help: { type: "boolean", short: "h", default: false },
     },
   });
@@ -102,18 +104,42 @@ async function main() {
   const out = path.resolve(values.out ?? path.join("results", `${started.toISOString().replace(/[:.]/g, "-").slice(0, 19)}-${slug}`));
   mkdirSync(out, { recursive: true });
 
-  console.log(`${tasks.length} task(s) × ${samples} sample(s) with ${model.name}${judge ? `, judged by ${judge.name}` : ""} → ${out}`);
-  const results = await runAll(tasks, samples, concurrency, {
-    model,
-    judge,
-    out,
-    turns,
-    noRender,
-    render: { frames, software: values.software },
-    log: (line) => console.log(line),
-  });
+  const ctx = { model, judge, out, turns, noRender, render: { frames, software: values.software }, log: (line: string) => console.log(line) };
+  let results: SampleResult[];
+  let meta = { model: model.name, judge: judge?.name, turns, samples, started: started.toISOString(), finished: "" };
+  if (values["redo-errors"]) {
+    const file = path.join(out, "results.json");
+    if (!values.out || !existsSync(file)) throw new Error("--redo-errors needs --out to name an earlier run's folder (one holding results.json).");
+    const earlier = JSON.parse(readFileSync(file, "utf8")) as { meta: typeof meta; results: SampleResult[] };
+    if (earlier.meta.model !== model.name || earlier.meta.judge !== judge?.name)
+      throw new Error(`That run was made with --model ${earlier.meta.model}${earlier.meta.judge ? ` --judge ${earlier.meta.judge}` : " and no judge"}; redo its errors with the same.`);
+    meta = { ...earlier.meta, finished: "" };
+    results = earlier.results;
+    const failed = results.filter((r) => r.error);
+    console.log(`Redoing ${failed.length} sample(s) that ended in an error, in ${out}`);
+    for (const r of failed) {
+      const task = all.find((t) => t.id === r.task);
+      if (!task) throw new Error(`The run has task "${r.task}", which is not among the tasks (pass the same --tasks file).`);
+      const redone = await runSample(task, r.sample, ctx);
+      console.log(`${r.task}#${r.sample}: ${redone.overall}/100${redone.error ? ` (${redone.error})` : ""}`);
+      results = results.map((x) => (x === r ? redone : x));
+    }
+  } else {
+    console.log(`${tasks.length} task(s) × ${samples} sample(s) with ${model.name}${judge ? `, judged by ${judge.name}` : ""} → ${out}`);
+    results = await runAll(tasks, samples, concurrency, ctx);
+  }
 
-  const meta = { model: model.name, judge: judge?.name, turns, samples, started: started.toISOString(), finished: new Date().toISOString() };
+  // A replayed run is named after the model that wrote the answers, and keeps its drafting tokens and time.
+  const source = values.model.startsWith("replay:") ? path.join(path.dirname(path.resolve(values.model.slice("replay:".length))), "results.json") : undefined;
+  if (source && existsSync(source)) {
+    const original = JSON.parse(readFileSync(source, "utf8")) as { meta: { model: string }; results: SampleResult[] };
+    meta = { ...meta, model: original.meta.model, replayOf: path.dirname(source) } as typeof meta;
+    results = results.map((r) => {
+      const was = original.results.find((o) => o.task === r.task && o.sample === r.sample);
+      return was ? { ...r, model: original.meta.model, usage: was.usage, ms: { ...r.ms, generate: was.ms.generate } } : r;
+    });
+  }
+  meta.finished = new Date().toISOString();
   writeFileSync(path.join(out, "results.json"), JSON.stringify({ meta, summary: groups(results), results }, null, 2));
   const report = markdownReport(results, meta);
   writeFileSync(path.join(out, "report.md"), report);
