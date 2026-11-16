@@ -1,5 +1,11 @@
 # @pixerate/flair
 
+## 0.137.1
+
+### Patch Changes
+
+- 1276b50: The flair-author skill lists every effect category (`EFFECT_CATEGORIES`), names only the eases that exist (`linear`, `out`, `in-out`; a cubic-bezier for any other curve), and says that `write` takes the text to type. Models drafting effects tripped on all three in the drafting evals.
+
 ## 0.137.0
 
 ### Minor Changes
