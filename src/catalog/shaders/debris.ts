@@ -925,5 +925,245 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   ],
 };
 
-/** Debris: rubble, shards, crumbling, shreds, leaves and dust. */
-export const debrisShaders: ShaderEffect[] = [rubbleFall, glassShatter, crumblingText, paperShreds, leavesBlowing, sandErosion];
+const CLICKS = `
+vec4 clickAt(int i, bool demo, float period) {
+  if (!demo || iClicks[0].w > 0.5) return iClicks[i];
+  float k = floor(iTime / period) - float(i);
+  vec2 h = hash22(vec2(k * 1.37 + 0.5, 3.7));
+  return vec4((0.2 + 0.6 * h) * iResolution.xy, k * period, 1.0);
+}`.trim();
+
+export const moneyRain: ShaderEffect = {
+  kind: "shader",
+  id: "money-rain",
+  name: "Money rain",
+  description: "Spinning metallic coins with moving glints and fluttering banknotes raining down, piling at the bottom and bursting wherever you click.",
+  category: "debris",
+  tags: ["debris", "money", "coin", "cash", "rain", "jackpot", "overlay", "interactive", "click"],
+  transparent: true,
+  source: glsl(
+    `// Money rain: spinning metallic coins and fluttering banknotes raining down, piling up and bursting on click.
+uniform int uMode;       // @control min=0 max=2 default=2 label="Mode (0 coins, 1 bills, 2 both)"
+uniform vec3 uMetal;     // @control color default=#F5C542 label="Metal colour"
+uniform vec3 uBill;      // @control color default=#4E9A51 label="Bill colour"
+uniform float uDensity;  // @control min=0 max=1 default=0.7 label="Density"
+uniform float uSize;     // @control min=0.5 max=2 default=1 label="Size"
+uniform float uSpin;     // @control min=0 max=3 default=1 label="Spin"
+uniform float uGlint;    // @control min=0 max=2 default=1 label="Glint"
+uniform bool uPile;      // @control default=true label="Pile at bottom"
+uniform bool uDemo;      // @control default=true label="Demo clicks when idle"`,
+    HASH,
+    NOISE,
+    ROTATE,
+    OVER,
+    CLICKS,
+    `const float TAU = 6.2831853;
+
+float sdBox(vec2 p, vec2 b) {
+  vec2 d = abs(p) - b;
+  return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0);
+}
+
+// Draw a 3D-spinning metallic coin at local offset dp, radius r.
+vec4 paintCoin(vec4 acc, vec2 dp, float r, float spin, float flip, float depthDim, float fade, float px) {
+  float c = cos(flip);
+  float ac = abs(c);
+  float squash = max(ac, 0.1);
+  vec2 q = rot(spin) * dp;
+  // Rim thickness appears as the coin turns edge-on.
+  float edgeOff = (1.0 - ac) * 0.14 * r * sign(c == 0.0 ? 1.0 : c);
+  vec2 qFront = vec2(q.x / squash, q.y);
+  vec2 qBack = vec2((q.x - edgeOff) / squash, q.y);
+  float dFront = length(qFront) - r;
+  float dBack = length(qBack) - r;
+  float sd = min(dFront, dBack);
+  float cover = 1.0 - smoothstep(-px, px / squash, sd);
+  if (cover <= 0.001) return acc;
+
+  vec2 u = qFront / max(r, 1e-5);
+  float rad = length(u);
+  bool onEdge = dFront > 0.0 && dBack <= 0.0;
+
+  vec3 darkMetal = uMetal * vec3(0.34, 0.27, 0.18);
+  vec3 hiMetal = mix(uMetal, vec3(1.0, 0.98, 0.88), 0.72);
+  vec3 col;
+  if (onEdge) {
+    // Milled/reeded coin edge.
+    float ridges = 0.5 + 0.5 * sin(atan(qBack.y, qBack.x) * 28.0);
+    col = mix(darkMetal, uMetal * 0.85, ridges * 0.75);
+  } else {
+    // Embossed rim and inner emblem.
+    float rim = smoothstep(0.74, 0.82, rad) * (1.0 - smoothstep(0.95, 1.0, rad));
+    float groove = exp(-pow((rad - 0.76) / 0.045, 2.0));
+    float bar = smoothstep(0.18, 0.12, abs(u.x)) * smoothstep(0.52, 0.45, abs(u.y));
+    float ring = exp(-pow((rad - 0.42) / 0.07, 2.0)) * step(0.1, abs(u.x));
+    float emboss = clamp(rim + max(bar, ring) * 0.75 - groove * 0.8, 0.0, 1.0);
+
+    vec2 n2 = u * (0.7 + 0.5 * rim) + vec2(0.0, emboss * 0.35);
+    vec3 n = normalize(vec3(n2.x * c, n2.y, max(ac, 0.15)));
+    vec3 ldir = normalize(vec3(-0.45, 0.65, 0.62));
+    float diff = clamp(dot(n, ldir), 0.0, 1.0);
+    vec3 hvec = normalize(ldir + vec3(0.0, 0.0, 1.0));
+    float spec = pow(max(dot(n, hvec), 0.0), 18.0);
+    // Moving glint sweep as the coin rotates.
+    float sweep = pow(max(0.0, 1.0 - abs(sin(flip * 1.0 + 0.4)) * 3.5), 2.0);
+    float glint = (spec * 1.1 + sweep * 0.9 * (1.0 - groove)) * uGlint;
+
+    col = mix(darkMetal, uMetal, 0.35 + 0.75 * diff);
+    col = mix(col, darkMetal, groove * 0.45);
+    col += hiMetal * glint;
+  }
+  return over(acc, min(col * depthDim, vec3(1.2)), cover * fade);
+}
+
+// Draw a fluttering, curling banknote at local offset dp, half-width r.
+vec4 paintBill(vec4 acc, vec2 dp, float r, float spin, float flutter, float seed, float depthDim, float fade, float px) {
+  float squash = 0.28 + 0.72 * abs(cos(flutter));
+  vec2 q = rot(spin) * dp;
+  float curl = 0.22 * r * sin(q.x / max(r, 1e-5) * 3.2 + seed * 6.0 + iTime * 2.8);
+  q.y += curl;
+  q.y /= squash;
+
+  vec2 halfSize = vec2(r * 1.35, r * 0.64);
+  float sd = sdBox(q, halfSize);
+  float cover = 1.0 - smoothstep(-px, px / squash, sd);
+  if (cover <= 0.001) return acc;
+
+  vec2 uv = q / halfSize;
+  float border = max(smoothstep(0.76, 0.84, abs(uv.x)), smoothstep(0.66, 0.76, abs(uv.y)));
+  float innerLine = max(exp(-pow((abs(uv.x) - 0.82) / 0.03, 2.0)), exp(-pow((abs(uv.y) - 0.72) / 0.04, 2.0)));
+  float oval = 1.0 - smoothstep(0.36, 0.44, length(vec2(uv.x * 1.25, uv.y * 1.35)));
+  // Central emblem & corner pips.
+  float emblem = (1.0 - smoothstep(0.14, 0.2, length(vec2(uv.x * 1.5, uv.y)))) * oval;
+  float corners = step(0.68, abs(uv.x)) * step(0.55, abs(uv.y)) * (1.0 - border * 0.5);
+
+  vec3 paper = mix(uBill, vec3(0.92, 0.94, 0.86), 0.42);
+  vec3 ink = uBill * 0.42;
+  vec3 col = mix(paper, uBill * 0.72, border * 0.75);
+  col = mix(col, ink, clamp(innerLine * 0.55 + emblem * 0.65 + corners * 0.35, 0.0, 1.0));
+  col = mix(col, paper * 1.06, oval * 0.35 * (1.0 - emblem));
+
+  // Curl lighting & edge sheen.
+  float curlShade = 0.82 + 0.18 * cos(q.x / max(r, 1e-5) * 3.2 + seed * 6.0 + iTime * 2.8);
+  float tiltShade = (0.65 + 0.35 * abs(cos(flutter))) * (cos(flutter) < 0.0 ? 0.85 : 1.0);
+  col *= curlShade * tiltShade;
+  col += vec3(0.12) * uGlint * pow(1.0 - abs(cos(flutter)), 3.0);
+  return over(acc, min(col * depthDim, vec3(1.1)), cover * fade);
+}
+
+vec4 paintPiece(vec4 acc, vec2 dp, float r, float spin, float flip, float seed, bool isBill, float depthDim, float fade, float px) {
+  if (isBill) return paintBill(acc, dp, r, spin, flip, seed, depthDim, fade, px);
+  return paintCoin(acc, dp, r, spin, flip, depthDim, fade, px);
+}
+
+bool pickBill(float h) {
+  if (uMode == 0) return false;
+  if (uMode == 1) return true;
+  return h > 0.55;
+}
+
+float heapTop(float x) {
+  return -0.5 + 0.13 * uSize * (0.42 + 0.58 * vnoise(vec2(x * 3.1, 2.3)));
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  float px = 1.0 / iResolution.y;
+  vec2 p = (fragCoord - 0.5 * iResolution.xy) * px;
+  vec4 acc = vec4(0.0);
+
+  // 1. Optional pile at the bottom.
+  if (uPile && uDensity > 0.01 && p.y < -0.5 + 0.19 * uSize) {
+    float gs = 0.045 * uSize;
+    vec2 gc = floor(p / gs);
+    for (int j = -1; j <= 1; j++) {
+      for (int i = -1; i <= 1; i++) {
+        vec2 c = gc + vec2(float(i), float(j));
+        vec2 h = hash22(c + 11.7);
+        vec2 site = (c + 0.25 + 0.5 * h) * gs;
+        float top = heapTop(site.x);
+        if (site.y > top) continue;
+        float r = gs * (0.58 + 0.22 * h.y);
+        if (length(p - site) > r * 1.5) continue;
+        float depth = clamp((top - site.y) / max(0.12 * uSize, 0.02), 0.0, 1.0);
+        float dim = 1.0 - 0.55 * depth;
+        bool isBill = pickBill(fract(h.x * 5.7));
+        float flip = (h.y - 0.5) * 1.2 + sin(iTime * 0.8 * uSpin + h.x * 12.0) * 0.15;
+        acc = paintPiece(acc, p - site, r, h.x * TAU, flip, c.x * 3.1 + c.y, isBill, dim, 1.0, px);
+      }
+    }
+  }
+
+  // 2. Continuous falling rain in 2 depth layers.
+  if (uDensity > 0.001) {
+    for (int l = 1; l >= 0; l--) {
+      float fl = float(l);
+      float sc = 1.0 - 0.28 * fl;
+      float dim = 1.0 - 0.2 * fl;
+      float cs = 0.13 * uSize * sc;
+      float fallSpeed = (0.38 + 0.12 * (1.0 - fl));
+      vec2 q = (p + vec2(fl * 0.37, iTime * fallSpeed)) / cs;
+      vec2 gc = floor(q);
+      for (int j = -1; j <= 1; j++) {
+        for (int i = -1; i <= 1; i++) {
+          vec2 id = gc + vec2(float(i), float(j));
+          vec4 h = vec4(hash22(id + fl * 19.3), hash22(id * 2.1 + fl * 7.7));
+          if (h.x > uDensity) continue;
+          bool isBill = pickBill(h.y);
+          float sway = (isBill ? 0.35 : 0.12) * sin(iTime * (1.6 + 1.2 * h.z) + h.w * TAU);
+          vec2 center = (id + 0.2 + 0.6 * h.zw + vec2(sway, 0.0)) * cs;
+          vec2 dp = (q * cs) - center;
+          float r = 0.032 * uSize * sc * (0.82 + 0.35 * h.y);
+          if (length(dp) > r * 1.5) continue;
+          float spin = h.w * TAU + iTime * uSpin * (isBill ? 1.2 : 2.2) * (h.z < 0.5 ? 1.0 : -1.0);
+          float flip = h.z * TAU + iTime * uSpin * (isBill ? 3.2 : 4.8) * (0.7 + 0.6 * h.y);
+          acc = paintPiece(acc, dp, r, spin, flip, id.x * 5.3 + id.y, isBill, dim, 1.0, px);
+        }
+      }
+    }
+  }
+
+  // 3. Click bursts (up to 4 active clicks, plus demo clicks when idle).
+  const float LIFE = 3.2;
+  const float k = 2.4;
+  for (int i = 3; i >= 0; i--) {
+    vec4 c = clickAt(i, uDemo, 3.0);
+    if (c.w < 0.5) continue;
+    float age = iTime - c.z;
+    if (age < 0.0 || age > LIFE) continue;
+    vec2 origin = (c.xy - 0.5 * iResolution.xy) * px;
+    float e = (1.0 - exp(-k * age)) / k;
+    float drop = 0.42 * (age - e);
+    float maxReach = 0.95 * e + drop + 0.1 * uSize;
+    if (length(p - origin + vec2(0.0, drop * 0.5)) > maxReach) continue;
+
+    float fade = 1.0 - smoothstep(LIFE - 0.7, LIFE, age);
+    for (int j = 0; j < 18; j++) {
+      float fj = float(j);
+      vec4 h = vec4(hash22(vec2(fj * 3.7 + 1.0, c.z)), hash22(vec2(c.z * 1.9, fj * 7.1)));
+      float ang = h.x * TAU;
+      float speed = 0.45 + 0.55 * h.y;
+      vec2 v0 = vec2(cos(ang), sin(ang) * 0.8 + 0.35) * speed;
+      vec2 pos = origin + v0 * e - vec2(0.0, (0.35 + 0.15 * h.z) * (age - e));
+      vec2 dp = p - pos;
+      float r = 0.03 * uSize * (0.8 + 0.35 * h.w);
+      if (abs(dp.x) > r * 1.5 || abs(dp.y) > r * 1.5) continue;
+      bool isBill = pickBill(h.z);
+      float spin = h.w * TAU + age * uSpin * 3.0 * (h.x < 0.5 ? 1.0 : -1.0);
+      float flip = h.z * TAU + age * uSpin * 6.0;
+      acc = paintPiece(acc, dp, r, spin, flip, fj + c.z, isBill, 1.0, fade, px);
+    }
+  }
+
+  fragColor = unpremultiply(acc);
+}`,
+  ),
+  presets: [
+    { name: "Jackpot", values: { uMode: 0, uMetal: [0.98, 0.78, 0.22], uDensity: 1, uPile: true, uGlint: 1.5, uSpin: 1.4 } },
+    { name: "Cash", values: { uMode: 1, uBill: [0.3, 0.62, 0.32], uDensity: 0.8 } },
+    { name: "Silver", values: { uMode: 0, uMetal: [0.82, 0.85, 0.9], uGlint: 1.4 } },
+    { name: "Burst only", values: { uDensity: 0, uPile: false } },
+  ],
+};
+
+/** Debris: rubble, shards, crumbling, shreds, leaves, dust and money rain. */
+export const debrisShaders: ShaderEffect[] = [rubbleFall, glassShatter, crumblingText, paperShreds, leavesBlowing, sandErosion, moneyRain];

@@ -1581,18 +1581,18 @@ describe("debris effects", () => {
     return effect.kind === "shader" ? effect.source : "";
   };
 
-  it("has rubble, glass, crumbling text, shreds, leaves and sand", () => {
+  it("has rubble, glass, crumbling text, shreds, leaves, sand and money rain", () => {
     const ids = debris.map((e) => e.id);
-    for (const id of ["rubble-fall", "glass-shatter", "crumbling-text", "paper-shreds", "leaves-blowing", "sand-erosion"]) expect(ids).toContain(id);
+    for (const id of ["rubble-fall", "glass-shatter", "crumbling-text", "paper-shreds", "leaves-blowing", "sand-erosion", "money-rain"]) expect(ids).toContain(id);
     for (const effect of debris) expect(effect.tags).toContain("debris");
   });
 
   it("draws the falling debris as transparent overlays, and says how pictures take video", () => {
-    for (const id of ["rubble-fall", "paper-shreds", "leaves-blowing", "crumbling-text", "sand-erosion"]) expect(getEffect(id), id).toMatchObject({ transparent: true });
+    for (const id of ["rubble-fall", "paper-shreds", "leaves-blowing", "crumbling-text", "sand-erosion", "money-rain"]) expect(getEffect(id), id).toMatchObject({ transparent: true });
     expect(getEffect("glass-shatter")).toMatchObject({ video: "interactive" });
     expect(getEffect("crumbling-text")).toMatchObject({ video: "none", loop: 8 });
     expect(getEffect("sand-erosion")).toMatchObject({ video: "none", loop: 8 });
-    for (const id of ["rubble-fall", "paper-shreds", "leaves-blowing"]) expect(getEffect(id), id).not.toHaveProperty("video");
+    for (const id of ["rubble-fall", "paper-shreds", "leaves-blowing", "money-rain"]) expect(getEffect(id), id).not.toHaveProperty("video");
   });
 
   it("shatters glass at clicks, with a demo while idle, and reads the built-in without declaring it", () => {
@@ -1612,6 +1612,14 @@ describe("debris effects", () => {
     const wind = effectControls(getEffect("leaves-blowing")!).find((c) => c.name === "uWind")!;
     expect(wind.min).toBeLessThan(0);
     expect(wind.max).toBeGreaterThan(0);
+  });
+
+  it("bursts money rain on click with an idle demo and expected presets", () => {
+    const money = getEffect("money-rain")!;
+    expect(source("money-rain")).toMatch(/\biClicks\[/);
+    expect(source("money-rain")).not.toMatch(/uniform\s+vec4\s+iClicks/);
+    expect(effectControls(money).find((c) => c.name === "uDemo")).toMatchObject({ type: "bool", default: true });
+    expect(money.presets?.map((p) => p.name)).toEqual(["Jackpot", "Cash", "Silver", "Burst only"]);
   });
 });
 
