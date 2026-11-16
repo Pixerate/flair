@@ -1,4 +1,4 @@
-// flair-metal-hash: e0a254ad
+// flair-metal-hash: 72ace565
 #pragma clang diagnostic ignored "-Wunused-variable"
 #pragma clang diagnostic ignored "-Wunused-const-variable"
 #pragma clang diagnostic ignored "-Wmissing-prototypes"
@@ -79,12 +79,16 @@ void mainImage(thread float4& fragColor, thread const float2& fragCoord, constan
         }
         float phase = (_97.iTime * (0.4000000059604644775390625 + (0.60000002384185791015625 * h.x))) + (h.y * 6.28318023681640625);
         float2 centre = ((h - float2(0.5)) * 0.300000011920928955078125) + float2(sin(phase) * 0.119999997317790985107421875, cos(phase * 0.699999988079071044921875) * 0.0500000007450580596923828125);
-        float d = length((fract(q) - float2(0.5)) - centre);
+        float2 dp = (fract(q) - float2(0.5)) - centre;
+        float d = length(dp);
         float2 param_2 = id + float2(9.1000003814697265625);
-        float r = (0.0599999986588954925537109375 * _97.uSize) * (0.60000002384185791015625 + (0.800000011920928955078125 * hash12(param_2)));
-        float soft = fast::max((px * scale) * 1.5, r * mix(0.89999997615814208984375, 0.300000011920928955078125, depth));
-        float flake = 1.0 - smoothstep(r - soft, r, d);
-        a = fast::max(a, flake * mix(0.449999988079071044921875, 1.0, depth));
+        float r = (0.064999997615814208984375 * _97.uSize) * (0.550000011920928955078125 + (0.85000002384185791015625 * hash12(param_2)));
+        float glow = exp(((-d) * d) / fast::max((r * r) * 0.64999997615814208984375, 9.9999997473787516355514526367188e-06));
+        float soft = fast::max((px * scale) * 1.60000002384185791015625, r * mix(0.949999988079071044921875, 0.550000011920928955078125, depth));
+        float core = 1.0 - smoothstep(r * 0.25, r + (soft * 0.4000000059604644775390625), d);
+        float crystal = mix(1.0, 0.86000001430511474609375 + (0.14000000059604644775390625 * cos((precise::atan2(dp.y, dp.x) * 6.0) + phase)), smoothstep(0.449999988079071044921875, 1.0, depth));
+        float flake = fast::clamp(mix(core, glow, 0.550000011920928955078125) * crystal, 0.0, 1.0);
+        a = fast::max(a, flake * mix(0.37999999523162841796875, 0.949999988079071044921875, depth));
     }
     fragColor = float4(_97.uColor[0], _97.uColor[1], _97.uColor[2], a);
 }
@@ -93,16 +97,16 @@ fragment flair_snowfall_frag_out flair_snowfall_frag(constant FlairUniforms& _97
 {
     flair_snowfall_frag_out out = {};
     float4 flair_color = float4(0.0, 0.0, 0.0, 1.0);
-    float _306;
+    float _351;
     if (_97.flair_flipY > 0.5)
     {
-        _306 = _97.iResolution[1u] - gl_FragCoord.y;
+        _351 = _97.iResolution[1u] - gl_FragCoord.y;
     }
     else
     {
-        _306 = gl_FragCoord.y;
+        _351 = gl_FragCoord.y;
     }
-    float2 flair_coord = float2(gl_FragCoord.x, _306);
+    float2 flair_coord = float2(gl_FragCoord.x, _351);
     float2 param_1 = flair_coord;
     float4 param;
     mainImage(param, param_1, _97);

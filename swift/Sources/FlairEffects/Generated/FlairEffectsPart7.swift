@@ -6,6 +6,75 @@ import simd
 
 
 
+/// **Fog banks** (`fog-banks`, category: `atmosphere`).
+/// Horizontal banks of fog drifting at different depths and speeds, thickest near the ground, to lay over any scene.
+public struct FogBanks: FlairEffect, Codable, Sendable, Equatable {
+    public static let effectId = "fog-banks"
+    public static let effectName = "Fog banks"
+    public static let category = "atmosphere"
+    public static let effectDescription = "Horizontal banks of fog drifting at different depths and speeds, thickest near the ground, to lay over any scene."
+    public static let tags: [String] = ["atmosphere", "fog", "overlay", "moody", "weather"]
+    public static let phase: Int = 1
+    public static let functionName = "flair_fog_banks_frag"
+    public static let uniformByteLength: Int = 1024
+    public static let isTransparent: Bool = true
+    public static let loopDuration: Double? = nil
+    public static let controls: [FlairControlDescriptor] = [
+        FlairControlDescriptor(name: "uColor", property: "color", type: .vec3, label: "Colour", isColor: true, min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uDensity", property: "density", type: .float, label: "Density", min: 0.0, max: 1.5, step: 0.0075),
+        FlairControlDescriptor(name: "uHeight", property: "height", type: .float, label: "Height", min: 0.1, max: 1.0, step: 0.0045),
+        FlairControlDescriptor(name: "uSpeed", property: "speed", type: .float, label: "Speed", min: 0.0, max: 3.0, step: 0.015),
+        FlairControlDescriptor(name: "uLayers", property: "layers", type: .int, label: "Layers", min: 1.0, max: 6.0, step: 1.0),
+    ]
+    public static let presets: [String: FogBanks] = {
+        var map: [String: FogBanks] = [:]
+        do { var p = FogBanks(); p.color = flairVec3(0.96, 0.93, 0.88); p.density = 0.7; p.height = 0.45; p.speed = 0.6; map["Valley morning"] = p }
+        do { var p = FogBanks(); p.color = flairVec3(0.66, 0.72, 0.75); p.density = 1.2; p.height = 0.8; p.speed = 1.4; p.layers = 6; map["Moor"] = p }
+        return map
+    }()
+
+    /// Colour (`uColor`).
+    public var color: SIMD3<Float> = flairVec3(0.862745, 0.890196, 0.917647)
+    /// Density (`uDensity`).
+    public var density: Float = 0.8
+    /// Height (`uHeight`).
+    public var height: Float = 0.55
+    /// Speed (`uSpeed`).
+    public var speed: Float = 1.0
+    /// Layers (`uLayers`).
+    public var layers: Int32 = 4
+
+    public init() {}
+
+    public func encodeUniforms(into buffer: UnsafeMutableRawPointer, state: FlairFrameState) {
+        state.encodeBuiltins(into: buffer)
+        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(color, min: 0.0, max: 1.0), to: buffer, at: 992)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(density, min: 0.0, max: 1.5), to: buffer, at: 1004)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(height, min: 0.1, max: 1.0), to: buffer, at: 1008)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(speed, min: 0.0, max: 3.0), to: buffer, at: 1012)
+        FlairUniformEncoder.writeInt(FlairUniformEncoder.clampInt(layers, min: 1, max: 6), to: buffer, at: 1016)
+    }
+
+    public init(from decoder: Decoder) throws {
+        let bag = try FlairJSONBag(from: decoder)
+        self.color = bag.decodeVec3("uColor", "color", default: flairVec3(0.862745, 0.890196, 0.917647), isColor: true)
+        self.density = bag.decodeFloat("uDensity", "density", default: 0.8, min: 0.0, max: 1.5)
+        self.height = bag.decodeFloat("uHeight", "height", default: 0.55, min: 0.1, max: 1.0)
+        self.speed = bag.decodeFloat("uSpeed", "speed", default: 1.0, min: 0.0, max: 3.0)
+        self.layers = bag.decodeInt("uLayers", "layers", default: 4, min: 1, max: 6)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var bag = FlairJSONBag()
+        bag.encodeVec3(self.color, for: "uColor")
+        bag.encodeFloat(self.density, for: "uDensity")
+        bag.encodeFloat(self.height, for: "uHeight")
+        bag.encodeFloat(self.speed, for: "uSpeed")
+        bag.encodeInt(self.layers, for: "uLayers")
+        try bag.encode(to: encoder)
+    }
+}
+
 /// **Rising steam** (`rising-steam`, category: `atmosphere`).
 /// Wisps of steam curling up from a cup or vent, thinning and fading as they rise.
 public struct RisingSteam: FlairEffect, Codable, Sendable, Equatable {
@@ -5342,100 +5411,6 @@ public struct SolarProminence: FlairEffect, Codable, Sendable, Equatable {
         bag.encodeVec3(self.corona, for: "uCorona")
         bag.encodeVec3(self.space, for: "uSpace")
         bag.encodeBool(self.demo, for: "uDemo")
-        try bag.encode(to: encoder)
-    }
-}
-
-/// **Plasma globe** (`plasma-globe`, category: `audio`).
-/// A plasma lamp: lightning filaments crackling from the centre to the glass, one to a band of the spectrum, jagged with the treble; on each beat they all leap to one spot on the glass as if a finger touched it.
-public struct PlasmaGlobe: FlairEffect, Codable, Sendable, Equatable {
-    public static let effectId = "plasma-globe"
-    public static let effectName = "Plasma globe"
-    public static let category = "audio"
-    public static let effectDescription = "A plasma lamp: lightning filaments crackling from the centre to the glass, one to a band of the spectrum, jagged with the treble; on each beat they all leap to one spot on the glass as if a finger touched it."
-    public static let tags: [String] = ["audio", "music", "plasma", "lightning", "electric", "lamp", "neon", "visualizer", "beat"]
-    public static let phase: Int = 4
-    public static let functionName = "flair_plasma_globe_frag"
-    public static let uniformByteLength: Int = 1088
-    public static let isTransparent: Bool = false
-    public static let loopDuration: Double? = nil
-    public static let controls: [FlairControlDescriptor] = [
-        FlairControlDescriptor(name: "uFilaments", property: "filaments", type: .int, label: "Filaments", min: 4.0, max: 16.0, step: 1.0),
-        FlairControlDescriptor(name: "uJag", property: "jag", type: .float, label: "Jaggedness", min: 0.0, max: 2.0, step: 0.01),
-        FlairControlDescriptor(name: "uTouch", property: "touch", type: .float, label: "Beat touch", min: 0.0, max: 1.0, step: 0.005),
-        FlairControlDescriptor(name: "uFilament", property: "filament", type: .vec3, label: "Filament", isColor: true, min: 0.0, max: 1.0, step: 0.005),
-        FlairControlDescriptor(name: "uCore", property: "core", type: .vec3, label: "Core", isColor: true, min: 0.0, max: 1.0, step: 0.005),
-        FlairControlDescriptor(name: "uGlass", property: "glass", type: .vec3, label: "Glass", isColor: true, min: 0.0, max: 1.0, step: 0.005),
-        FlairControlDescriptor(name: "uBackground", property: "background", type: .vec3, label: "Background", isColor: true, min: 0.0, max: 1.0, step: 0.005),
-        FlairControlDescriptor(name: "uDemo", property: "demo", type: .bool, label: "Demo when silent", min: 0.0, max: 1.0, step: 0.005),
-        FlairControlDescriptor(name: "uBackgroundAlpha", property: "backgroundAlpha", type: .float, label: "Background opacity", min: 0.0, max: 1.0, step: 0.005),
-    ]
-    public static let presets: [String: PlasmaGlobe] = {
-        var map: [String: PlasmaGlobe] = [:]
-        do { var p = PlasmaGlobe(); p.filament = flairVec3(0.4, 0.6, 1.0); p.core = flairVec3(0.9, 0.95, 1.0); p.glass = flairVec3(0.6, 0.7, 1.0); map["Tesla"] = p }
-        do { var p = PlasmaGlobe(); p.filament = flairVec3(1.0, 0.35, 0.1); p.core = flairVec3(1.0, 0.9, 0.6); p.glass = flairVec3(1.0, 0.6, 0.4); map["Inferno"] = p }
-        do { var p = PlasmaGlobe(); p.filaments = 14; p.jag = 1.8; map["Wild"] = p }
-        return map
-    }()
-
-    /// Filaments (`uFilaments`).
-    public var filaments: Int32 = 9
-    /// Jaggedness (`uJag`).
-    public var jag: Float = 1.0
-    /// Beat touch (`uTouch`).
-    public var touch: Float = 1.0
-    /// Filament (`uFilament`).
-    public var filament: SIMD3<Float> = flairVec3(0.847059, 0.419608, 1.0)
-    /// Core (`uCore`).
-    public var core: SIMD3<Float> = flairVec3(0.72549, 0.901961, 1.0)
-    /// Glass (`uGlass`).
-    public var glass: SIMD3<Float> = flairVec3(0.603922, 0.647059, 1.0)
-    /// Background (`uBackground`).
-    public var background: SIMD3<Float> = flairVec3(0.019608, 0.015686, 0.035294)
-    /// Demo when silent (`uDemo`).
-    public var demo: Bool = true
-    /// Background opacity (`uBackgroundAlpha`).
-    public var backgroundAlpha: Float = 1.0
-
-    public init() {}
-
-    public func encodeUniforms(into buffer: UnsafeMutableRawPointer, state: FlairFrameState) {
-        state.encodeBuiltins(into: buffer)
-        FlairUniformEncoder.writeInt(FlairUniformEncoder.clampInt(filaments, min: 4, max: 16), to: buffer, at: 992)
-        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(jag, min: 0.0, max: 2.0), to: buffer, at: 996)
-        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(touch, min: 0.0, max: 1.0), to: buffer, at: 1000)
-        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(filament, min: 0.0, max: 1.0), to: buffer, at: 1008)
-        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(core, min: 0.0, max: 1.0), to: buffer, at: 1024)
-        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(glass, min: 0.0, max: 1.0), to: buffer, at: 1040)
-        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(background, min: 0.0, max: 1.0), to: buffer, at: 1056)
-        FlairUniformEncoder.writeBool(demo, to: buffer, at: 1068)
-        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(backgroundAlpha, min: 0.0, max: 1.0), to: buffer, at: 1072)
-    }
-
-    public init(from decoder: Decoder) throws {
-        let bag = try FlairJSONBag(from: decoder)
-        self.filaments = bag.decodeInt("uFilaments", "filaments", default: 9, min: 4, max: 16)
-        self.jag = bag.decodeFloat("uJag", "jag", default: 1.0, min: 0.0, max: 2.0)
-        self.touch = bag.decodeFloat("uTouch", "touch", default: 1.0, min: 0.0, max: 1.0)
-        self.filament = bag.decodeVec3("uFilament", "filament", default: flairVec3(0.847059, 0.419608, 1.0), isColor: true)
-        self.core = bag.decodeVec3("uCore", "core", default: flairVec3(0.72549, 0.901961, 1.0), isColor: true)
-        self.glass = bag.decodeVec3("uGlass", "glass", default: flairVec3(0.603922, 0.647059, 1.0), isColor: true)
-        self.background = bag.decodeVec3("uBackground", "background", default: flairVec3(0.019608, 0.015686, 0.035294), isColor: true)
-        self.demo = bag.decodeBool("uDemo", "demo", default: true)
-        self.backgroundAlpha = bag.decodeFloat("uBackgroundAlpha", "backgroundAlpha", default: 1.0, min: 0.0, max: 1.0)
-    }
-
-    public func encode(to encoder: Encoder) throws {
-        var bag = FlairJSONBag()
-        bag.encodeInt(self.filaments, for: "uFilaments")
-        bag.encodeFloat(self.jag, for: "uJag")
-        bag.encodeFloat(self.touch, for: "uTouch")
-        bag.encodeVec3(self.filament, for: "uFilament")
-        bag.encodeVec3(self.core, for: "uCore")
-        bag.encodeVec3(self.glass, for: "uGlass")
-        bag.encodeVec3(self.background, for: "uBackground")
-        bag.encodeBool(self.demo, for: "uDemo")
-        bag.encodeFloat(self.backgroundAlpha, for: "uBackgroundAlpha")
         try bag.encode(to: encoder)
     }
 }

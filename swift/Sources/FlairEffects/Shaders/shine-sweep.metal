@@ -1,4 +1,4 @@
-// flair-metal-hash: eb19b111
+// flair-metal-hash: 530e76c1
 #pragma clang diagnostic ignored "-Wunused-variable"
 #pragma clang diagnostic ignored "-Wunused-const-variable"
 #pragma clang diagnostic ignored "-Wmissing-prototypes"
@@ -60,7 +60,8 @@ void mainImage(thread float4& fragColor, thread const float2& fragCoord, constan
     float k = fast::clamp(mod(_30.iTime, _30.uInterval) / 0.89999997615814208984375, 0.0, 1.0);
     k = (k * k) * (3.0 - (2.0 * k));
     float d = (s - mix(-reach, reach, k)) / _30.uWidth;
-    float band = (exp(((-d) * d) * 4.0) * 0.699999988079071044921875) + (exp(((-d) * d) * 60.0) * 0.5);
+    float d2 = d - 0.550000011920928955078125;
+    float band = ((exp(((-d) * d) * 5.0) * 0.7200000286102294921875) + (exp(((-d) * d) * 70.0) * 0.550000011920928955078125)) + (exp(((-d2) * d2) * 24.0) * 0.319999992847442626953125);
     fragColor = float4(_30.uColor, fast::clamp(band * _30.uIntensity, 0.0, 1.0));
 }
 
@@ -68,16 +69,16 @@ fragment flair_shine_sweep_frag_out flair_shine_sweep_frag(constant FlairUniform
 {
     flair_shine_sweep_frag_out out = {};
     float4 flair_color = float4(0.0, 0.0, 0.0, 1.0);
-    float _155;
+    float _169;
     if (_30.flair_flipY > 0.5)
     {
-        _155 = _30.iResolution[1u] - gl_FragCoord.y;
+        _169 = _30.iResolution[1u] - gl_FragCoord.y;
     }
     else
     {
-        _155 = gl_FragCoord.y;
+        _169 = gl_FragCoord.y;
     }
-    float2 flair_coord = float2(gl_FragCoord.x, _155);
+    float2 flair_coord = float2(gl_FragCoord.x, _169);
     float2 param_1 = flair_coord;
     float4 param;
     mainImage(param, param_1, _30);

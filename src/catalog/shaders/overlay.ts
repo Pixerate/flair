@@ -40,20 +40,20 @@ uniform float uSize;      // @control min=0.5 max=2 default=1 label="Drop size"
 uniform vec3 uTint;       // @control color default=#CFE3F0 label="Tint"`,
     HASH,
     OVER,
-    `// One drop of radius r at offset d: a faint tinted body, a darker rim and a bright highlight.
+    `// One drop of radius r at offset d: a glassy body, crisp meniscus rim, bottom caustic and bright pinpoint highlight.
 vec4 paintDrop(vec4 acc, vec2 d, float r, float px) {
   float dist = length(d);
   if (dist > r + px) return acc;
-  float m = (1.0 - smoothstep(r - 1.5 * px, r, dist)) * smoothstep(0.0, 2.0 * px, r);
+  float m = (1.0 - smoothstep(r - 1.4 * px, r, dist)) * smoothstep(0.0, 1.8 * px, r);
   vec2 n = d / max(r, 1e-5);
   float l = length(n);
-  float rim = smoothstep(0.45, 1.0, l) * m;
-  float spec = (1.0 - smoothstep(0.0, 0.3, length(n - vec2(-0.3, 0.38)))) * m;
-  float caustic = (1.0 - smoothstep(0.0, 0.5, length(n - vec2(0.15, -0.5)))) * m;
-  acc = over(acc, uTint, m * 0.2);
-  acc = over(acc, vec3(0.0, 0.02, 0.05), rim * 0.5);
-  acc = over(acc, mix(uTint, vec3(1.0), 0.6), caustic * 0.3);
-  return over(acc, vec3(1.0), spec * 0.9);
+  float rim = smoothstep(0.55, 0.96, l) * m;
+  float spec = pow(max(0.0, 1.0 - length(n - vec2(-0.32, 0.36)) * 3.2), 2.0) * m;
+  float caustic = pow(max(0.0, 1.0 - length(n - vec2(0.18, -0.48)) * 2.0), 2.0) * m;
+  acc = over(acc, uTint * 0.85, m * 0.16);
+  acc = over(acc, vec3(0.0, 0.03, 0.08), rim * 0.55);
+  acc = over(acc, mix(uTint, vec3(1.0), 0.72), caustic * 0.48);
+  return over(acc, vec3(1.0), spec * 0.95);
 }
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
@@ -62,16 +62,21 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   float t = iTime * uSpeed;
   vec4 acc = vec4(0.0);
 
-  // Condensation: still beads slowly forming and drying up.
-  float beads = 30.0 / uSize;
-  vec2 bq = p * beads;
-  vec2 bid = floor(bq);
-  vec2 bh = hash22(bid);
-  float life = fract(iTime * 0.04 + bh.x * 7.0);
-  float br = (0.12 + 0.18 * bh.y) / beads * sin(3.14159 * life);
-  if (hash12(bid + 5.0) < uDensity) acc = paintDrop(acc, (fract(bq) - 0.5 - (bh - 0.5) * 0.4) / beads, br, px);
+  // Condensation: still beads slowly forming and drying up in two sizes.
+  for (int cLayer = 0; cLayer < 2; cLayer++) {
+    float cl = float(cLayer);
+    float beads = (cLayer == 0 ? 34.0 : 19.0) / uSize;
+    vec2 bq = p * beads + cl * 5.3;
+    vec2 bid = floor(bq);
+    vec2 bh = hash22(bid + cl * 11.1);
+    float life = fract(iTime * 0.04 + bh.x * 7.0);
+    float br = (0.14 + 0.2 * bh.y) / beads * sin(3.14159 * life);
+    if (hash12(bid + 5.0 + cl * 7.0) < uDensity * (cLayer == 0 ? 1.0 : 0.45)) {
+      acc = paintDrop(acc, (fract(bq) - 0.5 - (bh - 0.5) * 0.42) / beads, br, px);
+    }
+  }
 
-  // Running drops: one per cell at most, sliding down a wavy path with a trail above.
+  // Running drops: one per cell at most, sliding down a wavy path with a glistening streak and beaded trail.
   for (int i = 0; i < 2; i++) {
     float fi = float(i);
     vec2 cell = vec2(0.12, 0.3) * uSize * (1.0 - 0.3 * fi);
@@ -88,18 +93,25 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     float wobble = h.x * 6.28318;
     float x = base + 0.03 * sin(y * 9.0 + wobble);
     float aspect = cell.x / cell.y;
-    float r = cell.y * (0.05 + 0.04 * fract(h.x * 13.7));
+    float r = cell.y * (0.055 + 0.042 * fract(h.x * 13.7));
     vec2 d = vec2((f.x - x) * aspect, f.y - y) * cell.y;
-    d.y *= d.y > 0.0 ? 0.8 : 1.0;
+    // Teardrop taper: slightly elongated at the top, plump at the bottom.
+    d.x *= 1.0 + 0.22 * clamp(d.y / max(r, 1e-5), 0.0, 1.0);
+    d.y *= d.y > 0.0 ? 0.68 : 1.05;
     acc = paintDrop(acc, d, r, px);
     if (f.y > y) {
-      float rows = 10.0;
+      float txPath = base + 0.03 * sin(f.y * 9.0 + wobble);
+      float streakDist = abs((f.x - txPath) * aspect) * cell.y;
+      float fade = 1.0 - clamp((f.y - y) / (0.5 - y), 0.0, 1.0);
+      float streak = exp(-streakDist / max(r * 0.28, px)) * fade * 0.22;
+      acc = over(acc, mix(uTint, vec3(1.0), 0.45), streak);
+
+      float rows = 11.0;
       float row = floor(f.y * rows);
       float tx = base + 0.03 * sin((row + 0.5) / rows * 9.0 + wobble);
       vec2 bd = vec2((f.x - tx) * aspect, (fract(f.y * rows) - 0.5) / rows) * cell.y;
-      float fade = 1.0 - clamp((f.y - y) / (0.5 - y), 0.0, 1.0);
-      float keep = step(0.35, hash12(id * 3.1 + vec2(row, fi)));
-      acc = paintDrop(acc, bd, r * 0.35 * fade * keep, px);
+      float keep = step(0.3, hash12(id * 3.1 + vec2(row, fi)));
+      acc = paintDrop(acc, bd, r * 0.36 * fade * keep, px);
     }
   }
   fragColor = unpremultiply(acc);
@@ -145,11 +157,16 @@ uniform int uLayers;      // @control min=1 max=6 default=4 label="Layers"`,
     if (hash12(id + 3.7) > uDensity) continue;
     float phase = iTime * (0.4 + 0.6 * h.x) + h.y * 6.28318;
     vec2 centre = (h - 0.5) * 0.3 + vec2(sin(phase) * 0.12, cos(phase * 0.7) * 0.05);
-    float d = length(fract(q) - 0.5 - centre);
-    float r = 0.06 * uSize * (0.6 + 0.8 * hash12(id + 9.1));
-    float soft = max(px * scale * 1.5, r * mix(0.9, 0.3, depth));
-    float flake = 1.0 - smoothstep(r - soft, r, d);
-    a = max(a, flake * mix(0.45, 1.0, depth));
+    vec2 dp = fract(q) - 0.5 - centre;
+    float d = length(dp);
+    float r = 0.065 * uSize * (0.55 + 0.85 * hash12(id + 9.1));
+    // Soft downy bokeh falloff with subtle 6-fold crystalline shimmer on closer flakes.
+    float glow = exp(-d * d / max(r * r * 0.65, 1e-5));
+    float soft = max(px * scale * 1.6, r * mix(0.95, 0.55, depth));
+    float core = 1.0 - smoothstep(r * 0.25, r + soft * 0.4, d);
+    float crystal = mix(1.0, 0.86 + 0.14 * cos(atan(dp.y, dp.x) * 6.0 + phase), smoothstep(0.45, 1.0, depth));
+    float flake = clamp(mix(core, glow, 0.55) * crystal, 0.0, 1.0);
+    a = max(a, flake * mix(0.38, 0.95, depth));
   }
   fragColor = vec4(uColor, a);
 }`,
@@ -184,22 +201,29 @@ uniform float uIntensity; // @control min=0 max=2 default=1 label="Intensity"`,
     : uSource * vec2(aspect, 1.0) * 0.5;
   vec2 d = p - src;
   float r = length(d);
-  vec3 col = uColor * (exp(-r * 20.0) * 1.5 + 0.015 / (r + 0.015) * 0.3);
+  float ang = atan(d.y, d.x);
+  // Subtle 6-point optical starburst around the bright source.
+  float spikes = pow(max(0.0, cos(ang * 3.0)), 14.0) * exp(-r * 10.0) * 0.45;
+  vec3 col = uColor * (exp(-r * 20.0) * 1.5 + 0.015 / (r + 0.015) * 0.3 + spikes);
   // The anamorphic streak: a bright thin line and a wider, fainter one, blue-shifted.
   vec3 streakColor = mix(uColor, vec3(0.45, 0.65, 1.0), 0.6);
   float len = uStreak + 1e-3;
   col += streakColor * exp(-abs(d.y) * 220.0) * exp(-abs(d.x) / (0.5 * len));
   col += streakColor * 0.4 * exp(-abs(d.y) * 60.0) * exp(-abs(d.x) / (0.25 * len));
-  // Ghosts sit on the line from the source through the centre, mostly on the far side.
+  // Ghosts sit on the line from the source through the centre, with chromatic iris rings.
   for (int i = 0; i < 7; i++) {
     float fi = float(i);
     float along = mix(-1.6, 0.6, hash12(vec2(fi, 1.7)));
     float gr = mix(0.015, 0.11, hash12(vec2(fi, 4.1)));
     float gd = length(p - src * along);
     vec3 tint = mix(uColor, vec3(0.4, 0.85, 1.0), hash12(vec2(fi, 8.3)));
-    float disc = (1.0 - smoothstep(gr * 0.6, gr, gd)) * 0.12;
-    float ring = exp(-abs(gd - gr) * 90.0) * 0.18;
-    col += tint * (hash12(vec2(fi, 2.9)) > 0.6 ? ring : disc);
+    float disc = (1.0 - smoothstep(gr * 0.55, gr, gd)) * (0.09 + 0.05 * smoothstep(gr * 0.4, gr * 0.9, gd));
+    vec3 chromRing = vec3(
+      exp(-abs(gd - gr * 1.04) * 95.0),
+      exp(-abs(gd - gr) * 95.0),
+      exp(-abs(gd - gr * 0.96) * 95.0)
+    ) * 0.2;
+    col += hash12(vec2(fi, 2.9)) > 0.55 ? mix(tint, vec3(1.0), 0.25) * chromRing : tint * disc;
   }
   fragColor = glow(col * uIntensity);
 }`,
@@ -237,8 +261,11 @@ uniform float uGrainSize; // @control min=1 max=4 default=1.5 label="Grain size 
   float dark = smoothstep(1.25 - uSoftness * 1.2, 1.3, dist) * uStrength;
   vec4 acc = over(vec4(0.0), vec3(0.0), dark);
   float frame = mod(floor(iTime * 24.0), 64.0);
-  float g = hash12(floor(fragCoord / uGrainSize) + frame * vec2(17.31, 31.73)) - 0.5;
-  acc = over(acc, vec3(step(0.0, g)), abs(g) * uGrain * 2.0);
+  vec2 gc = floor(fragCoord / uGrainSize) + frame * vec2(17.31, 31.73);
+  // Triangular-distributed film grain (softer than raw uniform salt-and-pepper noise).
+  float g = (hash12(gc) + hash12(gc + 41.7) - 1.0) * 0.5;
+  vec3 grainCol = g > 0.0 ? vec3(0.95, 0.93, 0.88) : vec3(0.04, 0.04, 0.06);
+  acc = over(acc, grainCol, abs(g) * uGrain * 2.1);
   fragColor = unpremultiply(acc);
 }`,
   ),
@@ -279,10 +306,12 @@ uniform float uTrail;     // @control min=0 max=1 default=0.5 label="Trail"`,
   float k = mod(iTime, sweep + uInterval) / sweep;
   float d = s - mix(-reach, reach, k);
   float core = 1.0 - smoothstep(uWidth * 0.5, uWidth * 0.5 + px, abs(d));
-  float halo = exp(-abs(d) / (uWidth * 3.0)) * 0.6;
-  float trail = d < 0.0 ? exp(d / trailLength) * 0.35 * uTrail : 0.0;
-  trail *= 0.75 + 0.25 * sin(fragCoord.y * 2.0);
-  fragColor = glow(uColor * (core * 1.5 + halo + trail));
+  float halo = exp(-abs(d) / (uWidth * 3.5)) * 0.65;
+  float trail = d < 0.0 ? exp(d / trailLength) * 0.4 * uTrail : 0.0;
+  float shimmer = 0.72 + 0.28 * sin(fragCoord.y * 2.0) * (0.85 + 0.15 * sin(fragCoord.x * 0.4 + iTime * 10.0));
+  trail *= shimmer;
+  vec3 beam = mix(uColor, vec3(1.0), core * 0.6) * (core * 1.6 + halo) + uColor * trail;
+  fragColor = glow(beam);
 }`,
   ),
   presets: [
@@ -316,7 +345,10 @@ uniform vec3 uShade;      // @control color default=#05050A label="Shade"`,
     : vec2(sin(t * 2.0) * 0.32 * aspect, sin(t * 3.0 + 0.5) * 0.28);
   float r = length(p - centre);
   float dark = smoothstep(uRadius * (1.0 - uSoftness) - px, uRadius + px, r);
-  fragColor = vec4(uShade, dark * uDarkness);
+  // Subtle warm volumetric rim glow around the beam edge.
+  float rim = exp(-pow((r - uRadius * 0.9) / max(uRadius * (0.18 + 0.25 * uSoftness), 0.025), 2.0)) * 0.08 * uDarkness;
+  vec3 col = mix(uShade, vec3(0.95, 0.92, 0.85), rim / max(dark * uDarkness + rim, 1e-4));
+  fragColor = vec4(col, clamp(dark * uDarkness + rim * 0.6, 0.0, 1.0));
 }`,
   ),
   presets: [
@@ -344,29 +376,37 @@ uniform float uSize;      // @control min=0.3 max=3 default=1 label="Size"`,
     `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 p = fragCoord / iResolution.y;
   float aspect = iResolution.x / iResolution.y;
-  vec3 col = vec3(0.0);
+  // Subtle warm heat glow rising from the bottom edge.
+  vec3 col = uHeat * exp(-p.y * 5.0) * 0.14;
   for (int i = 0; i < 80; i++) {
     if (i >= uCount) break;
     float fi = float(i);
     vec2 h = hash22(vec2(fi, 1.3));
-    float clock = iTime * uSpeed * 0.18 * (0.6 + 0.8 * h.y) + h.x;
+    float clock = iTime * uSpeed * 0.22 * (0.6 + 0.8 * h.y) + h.x;
     float life = fract(clock);
     // Each life starts somewhere new along the bottom.
     vec2 seed = vec2(fi, floor(clock));
-    float x = hash12(seed) * aspect + 0.04 * sin(life * 8.0 + fi) + life * 0.15 * (hash12(seed + 2.0) - 0.5);
-    float y = life * (0.5 + 0.7 * hash12(seed + 4.0)) - 0.02;
-    float r = 0.005 * uSize * (0.5 + hash12(seed + 6.0));
+    float drift = (hash12(seed + 2.0) - 0.5) * 0.22;
+    float sway = 0.045 * sin(life * 9.0 + fi * 1.7);
+    float x = hash12(seed) * aspect + sway + life * drift;
+    float y = life * (0.65 + 0.55 * hash12(seed + 4.0)) - 0.03;
+    float r = 0.006 * uSize * (0.55 + 0.95 * hash12(seed + 6.0));
     vec2 d = p - vec2(x, y);
-    d.y *= 0.6;
-    float dist = length(d);
+    // Stretch slightly along the rising path for a motion-streaked spark look.
+    float vx = drift + 0.045 * 9.0 * cos(life * 9.0 + fi * 1.7);
+    float vy = 0.8;
+    vec2 dir = normalize(vec2(vx, vy));
+    vec2 perp = vec2(-dir.y, dir.x);
+    vec2 ld = vec2(dot(d, perp), dot(d, dir) * 0.45);
+    float dist = length(ld);
     if (dist > r * 14.0) continue;
-    float fade = smoothstep(0.0, 0.08, life) * (1.0 - smoothstep(0.45, 1.0, life));
-    float flicker = 0.6 + 0.4 * sin(iTime * 17.0 + fi * 3.7) * sin(iTime * 7.3 + fi);
-    vec3 heat = mix(vec3(1.0, 0.95, 0.75), uHeat, smoothstep(0.0, 0.5, life));
-    heat = mix(heat, uHeat * vec3(0.8, 0.25, 0.1), smoothstep(0.5, 1.0, life));
-    float core = 1.0 - smoothstep(r * 0.4, r, dist);
-    float halo = exp(-dist / (r * 2.5)) * 0.35;
-    col += heat * (core * 1.5 + halo) * fade * flicker;
+    float fade = smoothstep(0.0, 0.07, life) * (1.0 - smoothstep(0.5, 1.0, life));
+    float flicker = 0.45 + 0.55 * pow(0.5 + 0.5 * sin(iTime * 19.0 + fi * 3.7) * sin(iTime * 8.3 + fi), 1.5);
+    vec3 heat = mix(vec3(1.0, 0.97, 0.82), uHeat, smoothstep(0.0, 0.45, life));
+    heat = mix(heat, uHeat * vec3(0.85, 0.22, 0.08), smoothstep(0.45, 1.0, life));
+    float core = 1.0 - smoothstep(r * 0.35, r, dist);
+    float halo = exp(-dist / (r * 3.2)) * 0.48;
+    col += heat * (core * 2.1 + halo) * fade * flicker;
   }
   fragColor = glow(col);
 }`,
@@ -402,7 +442,8 @@ uniform vec3 uColor;      // @control color default=#FFFFFF label="Colour"`,
   float k = clamp(mod(iTime, uInterval) / 0.9, 0.0, 1.0);
   k = k * k * (3.0 - 2.0 * k);
   float d = (s - mix(-reach, reach, k)) / uWidth;
-  float band = exp(-d * d * 4.0) * 0.7 + exp(-d * d * 60.0) * 0.5;
+  float d2 = d - 0.55;
+  float band = exp(-d * d * 5.0) * 0.72 + exp(-d * d * 70.0) * 0.55 + exp(-d2 * d2 * 24.0) * 0.32;
   fragColor = vec4(uColor, clamp(band * uIntensity, 0.0, 1.0));
 }`,
   ),
@@ -456,26 +497,31 @@ vec4 voronoi(vec2 q) {
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 p = fragCoord / iResolution.y;
   float coverage = uAnimate ? 0.5 - 0.5 * cos(iTime * 6.28318 / 8.0) : uCoverage;
-  // Distance in from the nearest edge, roughened by noise and stepped per crystal.
+  // Distance in from the nearest edge, roughened by feathered dendritic fbm plumes.
   float edge = min(min(fragCoord.x, iResolution.x - fragCoord.x), min(fragCoord.y, iResolution.y - fragCoord.y)) / iResolution.y;
-  vec4 v = voronoi(p * uScale * 3.0);
-  float n = fbm(p * uScale * 0.8, 5);
-  float g = edge + (n - 0.5) * 0.3 + (hash12(v.zw) - 0.5) * 0.04;
-  float front = mix(-0.25, 0.75, coverage);
-  float frost = 1.0 - smoothstep(front - 0.06, front, g);
-  if (frost <= 0.0) {
+  vec2 warp = vec2(fbm(p * uScale * 1.6, 3), fbm(p * uScale * 1.6 + 5.2, 3)) - 0.5;
+  float plume = fbm(p * uScale * 2.4 + warp * 1.2, 5);
+  float n = fbm(p * uScale * 0.85, 4);
+  float g = edge + (n - 0.5) * 0.28 + (plume - 0.5) * 0.14;
+  float front = mix(-0.22, 0.72, coverage);
+  float frost = 1.0 - smoothstep(front - 0.12, front, g);
+  if (frost <= 0.001) {
     fragColor = vec4(0.0);
     return;
   }
-  // Facets catch the light differently; their edges and fine needles glint.
+  // Feathery crystalline needles, fine frost grain, and delicate ice sparkle.
+  vec4 v = voronoi(p * uScale * 5.0 + warp * 0.8);
   float facet = hash12(v.zw + 3.1);
-  float ridges = 1.0 - smoothstep(0.0, 0.06, v.y - v.x);
-  float needles = smoothstep(0.55, 0.8, fbm(p * uScale * vec2(6.0, 1.5) + v.zw, 3));
-  float fresh = 1.0 - smoothstep(0.0, 0.35, front - g);
-  float rim = smoothstep(front - 0.06, front - 0.015, g);
-  vec3 col = mix(uColor * vec3(0.8, 0.9, 1.0), vec3(1.0), facet * 0.4 + ridges * 0.6 + rim * 0.5 + needles * 0.4);
-  float alpha = frost * clamp(0.35 + 0.25 * (1.0 - fresh) + 0.2 * facet + 0.35 * ridges + 0.25 * needles + 0.3 * rim, 0.0, 1.0);
-  fragColor = vec4(min(col, 1.0), alpha);
+  float feather = smoothstep(0.32, 0.78, plume);
+  float needles = pow(fbm(p * uScale * vec2(7.0, 2.2) + warp * 2.0, 4), 1.6);
+  float needles2 = pow(fbm(p * uScale * vec2(2.2, 7.0) - warp * 2.0, 4), 1.6);
+  float crystal = clamp((needles + needles2) * 0.85, 0.0, 1.0);
+  vec2 sp = p * uScale * 42.0;
+  float sparkle = smoothstep(0.84, 0.99, hash12(floor(sp))) * (1.0 - smoothstep(0.0, 0.45, length(fract(sp) - 0.5))) * crystal;
+  float rim = smoothstep(front - 0.1, front - 0.02, g) * feather;
+  vec3 iceBase = mix(uColor * vec3(0.75, 0.88, 1.0), vec3(1.0), 0.35 * facet + 0.45 * crystal + 0.35 * feather + 0.5 * sparkle);
+  float alpha = frost * clamp(0.18 + 0.32 * feather + 0.38 * crystal + 0.14 * facet + 0.25 * rim + 0.2 * sparkle, 0.0, 0.96);
+  fragColor = vec4(min(iceBase, 1.0), alpha);
 }`,
   ),
   presets: [
