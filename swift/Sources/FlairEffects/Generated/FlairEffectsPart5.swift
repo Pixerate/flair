@@ -4941,13 +4941,13 @@ public struct SparkleTrail: FlairEffect, Codable, Sendable, Equatable {
 }
 
 /// **Pixerate paint** (`pixerate-paint`, category: `path`).
-/// A glowing neon ribbon along the pointer's path, solid at its head and breaking apart towards its tail into glowing square pixels that scatter, drift and twinkle.
+/// A glossy, bristle-streaked neon paint stroke along the pointer's path, two-toned and twisting, solid at its head and breaking apart towards its tail into glowing square pixels that scatter, drift and twinkle.
 public struct PixeratePaint: FlairEffect, Codable, Sendable, Equatable {
     public static let effectId = "pixerate-paint"
     public static let effectName = "Pixerate paint"
     public static let category = "path"
-    public static let effectDescription = "A glowing neon ribbon along the pointer's path, solid at its head and breaking apart towards its tail into glowing square pixels that scatter, drift and twinkle."
-    public static let tags: [String] = ["trail", "interactive", "hover", "cursor", "overlay", "glow", "neon", "pixel", "particles", "path"]
+    public static let effectDescription = "A glossy, bristle-streaked neon paint stroke along the pointer's path, two-toned and twisting, solid at its head and breaking apart towards its tail into glowing square pixels that scatter, drift and twinkle."
+    public static let tags: [String] = ["trail", "interactive", "hover", "cursor", "overlay", "glow", "neon", "paint", "brush", "pixel", "particles", "path"]
     public static let phase: Int = 4
     public static let functionName = "flair_pixerate_paint_frag"
     public static let uniformByteLength: Int = 1072
@@ -4962,6 +4962,7 @@ public struct PixeratePaint: FlairEffect, Codable, Sendable, Equatable {
         FlairControlDescriptor(name: "uScatter", property: "scatter", type: .float, label: "Scatter (x width)", min: 0.0, max: 8.0, step: 0.04),
         FlairControlDescriptor(name: "uDensity", property: "density", type: .float, label: "Pixel density", min: 0.0, max: 1.0, step: 0.005),
         FlairControlDescriptor(name: "uDrift", property: "drift", type: .float, label: "Drift", min: 0.0, max: 3.0, step: 0.015),
+        FlairControlDescriptor(name: "uTexture", property: "texture", type: .float, label: "Paint texture", min: 0.0, max: 1.0, step: 0.005),
         FlairControlDescriptor(name: "uGlow", property: "glow", type: .float, label: "Glow", min: 0.0, max: 3.0, step: 0.015),
         FlairControlDescriptor(name: "uLife", property: "life", type: .float, label: "Fade time", min: 0.1, max: 3.0, step: 0.0145),
         FlairControlDescriptor(name: "uIntensity", property: "intensity", type: .float, label: "Intensity", min: 0.2, max: 3.0, step: 0.014),
@@ -4996,6 +4997,8 @@ public struct PixeratePaint: FlairEffect, Codable, Sendable, Equatable {
     public var density: Float = 0.4
     /// Drift (`uDrift`).
     public var drift: Float = 0.6
+    /// Paint texture (`uTexture`).
+    public var texture: Float = 1.0
     /// Glow (`uGlow`).
     public var glow: Float = 1.2
     /// Fade time (`uLife`).
@@ -5021,11 +5024,12 @@ public struct PixeratePaint: FlairEffect, Codable, Sendable, Equatable {
         FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(scatter, min: 0.0, max: 8.0), to: buffer, at: 1032)
         FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(density, min: 0.0, max: 1.0), to: buffer, at: 1036)
         FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(drift, min: 0.0, max: 3.0), to: buffer, at: 1040)
-        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(glow, min: 0.0, max: 3.0), to: buffer, at: 1044)
-        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(life, min: 0.1, max: 3.0), to: buffer, at: 1048)
-        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(intensity, min: 0.2, max: 3.0), to: buffer, at: 1052)
-        FlairUniformEncoder.writeBool(demo, to: buffer, at: 1056)
-        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(unit, min: 0.0, max: 16384.0), to: buffer, at: 1060)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(texture, min: 0.0, max: 1.0), to: buffer, at: 1044)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(glow, min: 0.0, max: 3.0), to: buffer, at: 1048)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(life, min: 0.1, max: 3.0), to: buffer, at: 1052)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(intensity, min: 0.2, max: 3.0), to: buffer, at: 1056)
+        FlairUniformEncoder.writeBool(demo, to: buffer, at: 1060)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(unit, min: 0.0, max: 16384.0), to: buffer, at: 1064)
     }
 
     public func textureInput(for binding: Int) -> FlairTextureInput {
@@ -5052,6 +5056,7 @@ public struct PixeratePaint: FlairEffect, Codable, Sendable, Equatable {
         self.scatter = bag.decodeFloat("uScatter", "scatter", default: 3.5, min: 0.0, max: 8.0)
         self.density = bag.decodeFloat("uDensity", "density", default: 0.4, min: 0.0, max: 1.0)
         self.drift = bag.decodeFloat("uDrift", "drift", default: 0.6, min: 0.0, max: 3.0)
+        self.texture = bag.decodeFloat("uTexture", "texture", default: 1.0, min: 0.0, max: 1.0)
         self.glow = bag.decodeFloat("uGlow", "glow", default: 1.2, min: 0.0, max: 3.0)
         self.life = bag.decodeFloat("uLife", "life", default: 1.2, min: 0.1, max: 3.0)
         self.intensity = bag.decodeFloat("uIntensity", "intensity", default: 1.0, min: 0.2, max: 3.0)
@@ -5070,6 +5075,7 @@ public struct PixeratePaint: FlairEffect, Codable, Sendable, Equatable {
         bag.encodeFloat(self.scatter, for: "uScatter")
         bag.encodeFloat(self.density, for: "uDensity")
         bag.encodeFloat(self.drift, for: "uDrift")
+        bag.encodeFloat(self.texture, for: "uTexture")
         bag.encodeFloat(self.glow, for: "uGlow")
         bag.encodeFloat(self.life, for: "uLife")
         bag.encodeFloat(self.intensity, for: "uIntensity")

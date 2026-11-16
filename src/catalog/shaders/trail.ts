@@ -404,12 +404,13 @@ export const pixeratePaint: ShaderEffect = {
   id: "pixerate-paint",
   name: "Pixerate paint",
   description:
-    "A glowing neon ribbon along the pointer's path, solid at its head and breaking apart towards its tail into glowing square pixels that scatter, drift and twinkle.",
+    "A glossy, bristle-streaked neon paint stroke along the pointer's path, two-toned and twisting, solid at its head and breaking apart towards its tail into glowing square pixels that scatter, drift and twinkle.",
   category: "path",
-  tags: ["trail", "interactive", "hover", "cursor", "overlay", "glow", "neon", "pixel", "particles", "path"],
+  tags: ["trail", "interactive", "hover", "cursor", "overlay", "glow", "neon", "paint", "brush", "pixel", "particles", "path"],
   transparent: true,
   source: glsl(
-    `// Pixerate paint: a neon ribbon through the trail points that, over the last uBreak of its length, turns blocky, comes
+    `// Pixerate paint: a neon paint stroke through the trail points (bristle strands along it, two colours twisting across
+// it, glossy streaks and wavy edges) that, over the last uBreak of its length, turns blocky, comes
 // apart cell by cell and sheds glowing squares. The squares live on two grids (small and large) that drift slowly, so
 // a square is a grid cell lit by how near the broken part of the ribbon it is; each cell fades in and out on a cycle of
 // its own. Everything is seeded by where cells are, never by when trail points were laid, so a painted stroke (whose
@@ -422,11 +423,13 @@ uniform float uBreak;     // @control min=0 max=1 default=0.55 label="Break-up"
 uniform float uScatter;   // @control min=0 max=8 default=3.5 label="Scatter (x width)"
 uniform float uDensity;   // @control min=0 max=1 default=0.4 label="Pixel density"
 uniform float uDrift;     // @control min=0 max=3 default=0.6 label="Drift"
+uniform float uTexture;   // @control min=0 max=1 default=1 label="Paint texture"
 uniform float uGlow;      // @control min=0 max=3 default=1.2 label="Glow"
 uniform float uLife;      // @control min=0.1 max=3 default=1.2 label="Fade time"
 uniform float uIntensity; // @control min=0.2 max=3 default=1 label="Intensity"
 uniform bool uDemo;       // @control default=true label="Demo when idle"`,
     HASH,
+    NOISE,
     trailHelper(1 / 40, 1.4, true),
     SEGMENT,
     GLOW,
@@ -495,6 +498,11 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 n1 = vec2(1e9, 0.0);
   vec2 n2 = vec2(1e9, 0.0);
   float fadeP = 1.0;
+  // For the nearest point: which side of the stroke this pixel is on, and how far along the stroke (from the head) it is.
+  float sideP = 1.0;
+  float perpP = 0.0;
+  float arcP = 0.0;
+  float run = 0.0;
   float reach = uWidth * (1.6 + uScatter) + g2 + 2.0 * px;
   trailFrom(1, live);
   for (int k = 0; k < TRAIL_POINTS - 1; k++) {
@@ -510,6 +518,11 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
       vec2 s = segment(p, pa, pb);
       if (s.x < nP.x) {
         nP = vec2(s.x, u0 + s.y * du);
+        vec2 ab = pb - pa;
+        // Signed distance across the segment's line: smooth round the stroke's ends, where the side changes.
+        perpP = (ab.x * (p.y - pa.y) - ab.y * (p.x - pa.x)) / max(length(ab), 1e-6);
+        sideP = perpP >= 0.0 ? 1.0 : -1.0;
+        arcP = run + s.y * length(ab);
         // A trail left still fades with age (a painted stroke's points are never old enough to).
         fadeP = clamp(2.0 * (1.0 - (iTime - mix(a.z, b.z, s.y)) / uLife), 0.0, 1.0);
       }
@@ -520,6 +533,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
       s = segment(c2, pa, pb);
       if (s.x < n2.x) n2 = vec2(s.x, u0 + s.y * du);
     }
+    run += length(b.xy - a.xy) * px;
     a = b;
   }
   if (nP.x > reach) {
@@ -528,7 +542,11 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   }
   // The ribbon: smooth before the break-up, then made of its cells, fewer of them the more broken it is.
   float taper = mix(1.0, 0.7, nP.y);
-  float wr = uWidth * taper * fadeP;
+  // Along the stroke in widths, from where it began (which stays put while it grows), and its edges wavering a little,
+  // each side on its own.
+  float along = (run - arcP) / max(uWidth, 1e-5);
+  float edge = 1.0 + 0.16 * uTexture * (vnoise(vec2(along * 0.45, sideP * 7.0 + 11.0)) - 0.5) * 2.0;
+  float wr = uWidth * taper * fadeP * edge;
   float smoothCover = 1.0 - smoothstep(-px, px, nP.x - wr);
   float eS = brokenAt(nS.y);
   vec2 cq = abs(p - cs);
@@ -537,19 +555,40 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   float blockCover = step(nS.x, uWidth * mix(1.0, 0.7, nS.y) * fadeP) * inCell * kept;
   float eP = brokenAt(nP.y);
   float cover = mix(smoothCover, blockCover, smoothstep(0.0, 0.12, eP));
-  // The ribbon colour in the middle, shading to the pixel colour at its edges and towards its tail, a hot line along
-  // the middle.
+  // Across the stroke, -1 to 1. The paint: the ribbon colour on one side and the pixel colour on the other, their border
+  // twisting along the stroke; bristle strands along it, darker grooves between them; glossy streaks and a lit rim.
+  float v = clamp(perpP / max(wr, 1e-5), -1.0, 1.0);
   float mid = 1.0 - clamp(nP.x / max(wr, 1e-5), 0.0, 1.0);
   vec3 tint = mix(uColorA, uColorB, smoothstep(0.3, 1.0, nP.y));
-  vec3 body = mix(mix(uColorB, tint, 0.35), tint, smoothstep(0.0, 0.6, mid));
-  vec3 col = mix(body, vec3(1.0), 0.3 * pow(mid, 4.0)) * cover * 1.7;
-  float halo = exp(-max(nP.x - wr, 0.0) / (uWidth * 0.9 + px)) * fadeP * (1.0 - 0.6 * eP);
-  col += tint * halo * uGlow * 0.6;
+  float strands = vnoise(vec2(v * 4.0 + 3.0, along * 0.1));
+  float bristles = vnoise(vec2(v * 19.0 + 7.0, along * 0.3 + 0.5 * strands));
+  float fine = vnoise(vec2(v * 32.0 + 1.0, along * 0.5));
+  float twist = 0.5 * sin(along * 0.08 + 1.3) + 0.8 * (strands - 0.5);
+  // The paint as it is, not as light: mostly the ribbon colour, the pixel colour along one side, deeper in the grooves between strands and towards the edges.
+  vec3 paint = mix(uColorB, tint, smoothstep(-0.25, 0.25, v + 0.4 - twist * 0.6));
+  float groove = smoothstep(0.15, 0.75, bristles) * 0.75 + 0.25 * fine;
+  paint *= mix(0.62, 1.05, groove) * mix(0.85, 1.0, sqrt(max(mid, 0.0)));
+  // Wet gloss: a broad streak and a thin one, broken up by the bristles, and a rim lit in the paint's colour.
+  float shine = pow(max(0.0, 1.0 - abs(v - 0.35 - 0.3 * (strands - 0.5)) / 0.2), 2.0) * smoothstep(0.35, 0.9, bristles);
+  shine += 0.8 * pow(max(0.0, 1.0 - abs(v + 0.5 + 0.2 * (strands - 0.5)) / 0.09), 2.0) * smoothstep(0.4, 0.8, fine);
+  float rim = smoothstep(0.75, 1.0, abs(v));
+  paint = mix(paint, mix(tint, vec3(1.0), 0.35), rim * 0.55) + vec3(1.0, 0.92, 1.0) * shine * 0.8;
+  // The untextured ribbon is light, like the glow round it.
+  vec3 smoothBody = mix(mix(uColorB, tint, 0.35), tint, smoothstep(0.0, 0.6, mid));
+  vec3 lit = 1.0 - exp(-mix(smoothBody, vec3(1.0), 0.3 * pow(mid, 4.0)) * 1.7 * uIntensity);
+  float textured = uTexture * (1.0 - smoothstep(0.0, 0.5, eP));
+  vec3 ribbon = mix(lit / max(max(lit.r, max(lit.g, lit.b)), 1e-4), clamp(paint, 0.0, 1.0), textured);
+  float ribbonA = mix(max(lit.r, max(lit.g, lit.b)), 1.0, textured) * cover;
+  float halo = exp(-max(nP.x - wr, 0.0) / (uWidth * 0.9 + px)) * fadeP * (1.0 - 0.6 * eP) * (1.0 - cover);
+  vec3 col = tint * halo * uGlow * 0.6;
   // The squares it breaks into.
   col += pixelCell(p, c1, c1i, g1, n1.x, n1.y, wr, px) * fadeP;
   col += pixelCell(p, c2, c2i + 101.0, g2, n2.x, n2.y, wr, px) * fadeP;
-  fragColor = glow(col * uIntensity);
-  fragColor.a = max(fragColor.a, max(cover, gSolid * fadeP));
+  vec4 light = glow(col * uIntensity);
+  // The ribbon over its glow and the squares.
+  float alpha = ribbonA + light.a * (1.0 - ribbonA);
+  vec3 rgb = (ribbon * ribbonA + light.rgb * light.a * (1.0 - ribbonA)) / max(alpha, 1e-4);
+  fragColor = vec4(rgb, max(alpha, gSolid * fadeP));
 }`,
   ),
   presets: [
