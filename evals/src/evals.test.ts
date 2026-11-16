@@ -8,12 +8,13 @@ import { passRate, requirementChecks, validityChecks } from "./check.ts";
 import { encodePng, overChecker, pick } from "./frames.ts";
 import { judgeScore, parseJudge } from "./judge.ts";
 import { content, coverage, isAnimated, motion, similarity } from "./metrics.ts";
-import { answerFor, createModel } from "./models.ts";
+import { answerFor, commandResponse, createModel } from "./models.ts";
+import { compareRuns, type Run } from "./compare.ts";
 import { parseAnswer, systemPrompt, taskMessage } from "./prompt.ts";
 import { renderAvailable } from "./render.ts";
 import { overallScore, runSample } from "./run.ts";
 import { BUILTIN_TASKS, selectTasks, taskIssues } from "./tasks.ts";
-import { FatalModelError, type DraftEffect, type EvalTask, type Frames, type Model, type ModelRequest } from "./types.ts";
+import { FatalModelError, type DraftEffect, type EvalTask, type Frames, type Model, type ModelRequest, type SampleResult } from "./types.ts";
 
 const tmp = () => mkdtempSync(path.join(tmpdir(), "flair-evals-"));
 
@@ -197,9 +198,41 @@ describe("models", () => {
     expect(() => createModel("anthropic:claude-opus-5-5?effort=huge")).toThrow(/effort must be one of low, medium, high, xhigh, max/);
   });
 
+  it("read a command's answer, plain or in an envelope with tokens and the stop reason", () => {
+    expect(commandResponse("```json\n{}\n```")).toEqual({ text: "```json\n{}\n```" });
+    expect(commandResponse('#flair-eval-response\n{"text":"hi","stop":"max_tokens","usage":{"input":3,"output":4}}')).toEqual({ text: "hi", stop: "max_tokens", usage: { input: 3, output: 4 } });
+    expect(() => commandResponse('#flair-eval-response\n{"usage":{}}')).toThrow(/no "text" string/);
+  });
+
+  it("stop the run when a command says nothing would succeed (the Gemini adapter without a key)", async () => {
+    const model = createModel(`command:GEMINI_API_KEY= GOOGLE_API_KEY= node ${path.join(import.meta.dirname, "adapters/gemini.ts")} gemini-test`);
+    await expect(model.generate({ system: "", messages: [], key: "a/1/turn-1" })).rejects.toThrow(FatalModelError);
+  });
+
   it("replay saved answers by key", async () => {
     const model = createModel(`replay:${path.join(import.meta.dirname, "missing")}`);
     await expect(model.generate({ system: "", messages: [], key: "a/1/turn-1" })).rejects.toThrow(/no saved answer for a\/1\/turn-1/);
+  });
+});
+
+describe("comparing runs", () => {
+  const result = (task: string, overall: number, extra: Partial<SampleResult> = {}): SampleResult => ({
+    task, type: "background", kind: "shader", mode: "scratch", sample: 1, model: "m", turns: 1, firstTry: true, checks: [], scores: { validity: 1, requirements: 1, render: 1, judge: overall / 100 }, overall, usage: { input: 1, output: 1 }, ms: { generate: 0, render: 0 }, dir: "", ...extra,
+  });
+  const run = (model: string, judge: string, results: SampleResult[]): Run => ({ dir: model, meta: { model, judge, turns: 3 }, results });
+
+  it("puts two models side by side, by type and task, with wins and losses", () => {
+    const md = compareRuns([run("a", "j", [result("t1", 60), result("t2", 80)]), run("b", "j", [result("t1", 70), result("t2", 79), result("t3", 10)])]);
+    expect(md).toContain("# a vs b");
+    expect(md).toContain("| t1 | 60.0 ± 0.0 | 70.0 ± 0.0 | +10.0 |");
+    expect(md).toContain("Per task: b higher on 1, a higher on 0, within 2 points on 1 (of 2).");
+    expect(md).toContain("Only 2 of 3 tasks are in every run");
+  });
+
+  it("warns when a model judged its own drafts, or the judges differ", () => {
+    expect(compareRuns([run("a", "a", [result("t1", 60)]), run("b", "a", [result("t1", 70)])])).toContain("a judged its own drafts");
+    expect(compareRuns([run("a", "x", [result("t1", 60)]), run("b", "y", [result("t1", 70)])])).toContain("judged by different models (x, y)");
+    expect(() => compareRuns([run("a", "x", [])])).toThrow(/at least two runs/);
   });
 });
 

@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import Anthropic from "@anthropic-ai/sdk";
 import { getEffect } from "@pixerate/flair/catalog";
-import { FatalModelError, type EvalTask, type Model, type ModelRequest, type ModelResponse } from "./types.ts";
+import { FATAL_EXIT_CODE, FatalModelError, RESPONSE_MARKER, type EvalTask, type Model, type ModelRequest, type ModelResponse } from "./types.ts";
 
 /**
  * A model from its spec:
@@ -94,12 +94,30 @@ function commandModel(spec: string, command: string): Model {
         child.stderr.on("data", (d: Buffer) => err.push(d));
         child.on("error", reject);
         child.on("close", (code) => {
-          if (code === 0) resolve({ text: Buffer.concat(out).toString("utf8") });
-          else reject(new Error(`The model command exited with ${code}: ${Buffer.concat(err).toString("utf8").trim().slice(0, 2000)}`));
+          const stderr = Buffer.concat(err).toString("utf8").trim().slice(0, 2000);
+          if (code === FATAL_EXIT_CODE) return reject(new FatalModelError(`${spec}: ${stderr}`));
+          if (code !== 0) return reject(new Error(`The model command exited with ${code}: ${stderr}`));
+          try {
+            resolve(commandResponse(Buffer.concat(out).toString("utf8")));
+          } catch (e) {
+            reject(e as Error);
+          }
         });
         child.stdin.end(body);
       });
     },
+  };
+}
+
+/** A command's output: the plain answer, or a {@link RESPONSE_MARKER} envelope with tokens and the stop reason. */
+export function commandResponse(stdout: string): ModelResponse {
+  if (!stdout.startsWith(RESPONSE_MARKER)) return { text: stdout };
+  const envelope = JSON.parse(stdout.slice(RESPONSE_MARKER.length)) as { text?: unknown; stop?: unknown; usage?: { input?: unknown; output?: unknown } };
+  if (typeof envelope.text !== "string") throw new Error(`The model command's ${RESPONSE_MARKER} envelope has no "text" string.`);
+  return {
+    text: envelope.text,
+    ...(typeof envelope.stop === "string" && { stop: envelope.stop }),
+    ...(envelope.usage && { usage: { input: Number(envelope.usage.input) || 0, output: Number(envelope.usage.output) || 0 } }),
   };
 }
 

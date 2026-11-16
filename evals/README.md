@@ -6,7 +6,7 @@ It is a private workspace package, not part of `@pixerate/flair`: the library ke
 
 ## Running it
 
-Needs Node 23.6 or newer (it runs its TypeScript directly), `pnpm build` at the repo root first (it uses the built package), Chrome or Chromium for rendering (`npx playwright install chromium`, or `CHROME_PATH`) and ffmpeg.
+Needs Node 24.2 or newer (it runs its TypeScript directly), `pnpm build` at the repo root first (it uses the built package), Chrome or Chromium for rendering (`npx playwright install chromium`, or `CHROME_PATH`) and ffmpeg.
 
 ```bash
 cd evals
@@ -37,6 +37,24 @@ Model calls cost money: a full run is 29 tasks × samples × up to `--turns` dra
 | `command:<shell command>` | Any other model: the command reads the request as JSON on stdin (`{ key, system, messages, schema }`, images as base64 PNG) and prints the answer. Wrap another vendor's SDK or CLI this way. |
 | `replay:<folder>` | Answers saved by an earlier run. |
 | `oracle` | Answers each reference task with the catalog effect it holds out: what a perfect draft scores. Use it after changing a grader. |
+
+## Comparing models
+
+Run the same tasks, samples and judge for each model, then put the runs side by side:
+
+```bash
+node src/cli.ts --model anthropic:claude-opus-5-5 --judge anthropic:claude-opus-5-5 --samples 3 --out results/opus
+node src/cli.ts --model "command:node src/adapters/gemini.ts gemini-4-hydrogen" --judge anthropic:claude-opus-5-5 --samples 3 --out results/gemini
+node src/compare.ts results/opus results/gemini --out results/opus-vs-gemini.md
+```
+
+`src/adapters/gemini.ts` calls the Gemini API with `GEMINI_API_KEY` (or `GOOGLE_API_KEY`) over plain `fetch`, so no Google SDK is installed; it retries rate limits and stops the run on a bad key or unknown model. Write an adapter like it for any other vendor: read the request JSON on stdin, print the answer (or the `#flair-eval-response` envelope with tokens and the stop reason, see `RESPONSE_MARKER` in `src/types.ts`), and exit 3 when no request would succeed.
+
+The comparison shows the score and first-try rate overall, by mode, by type and by task, the change between the runs, and which tasks each model did better on. It warns when the judges differ, and when a model judged its own drafts: models tend to favour their own work, so re-judge both runs with another model before trusting a close result. Re-judging needs no new drafts:
+
+```bash
+node src/cli.ts --model replay:results/opus/answers --judge "command:node src/adapters/gemini.ts gemini-4-hydrogen" --samples 3 --out results/opus-gemini-judged
+```
 
 ## What it measures
 

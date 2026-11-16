@@ -176,3 +176,11 @@ export interface SampleResult {
 export class FatalModelError extends Error {
   override name = "FatalModelError";
 }
+
+/**
+ * A `command:` model may print this line, then a JSON object `{ text, usage?: { input, output }, stop? }`,
+ * to report tokens and why it stopped; otherwise everything it prints is the answer's text. Exiting
+ * with code 3 means no other request would succeed either (a bad key, an unknown model): the run stops.
+ */
+export const RESPONSE_MARKER = "#flair-eval-response";
+export const FATAL_EXIT_CODE = 3;

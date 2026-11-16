@@ -5,10 +5,11 @@
   "description": "Evals of how well a model drafts new Flair effects, from a brief or from reference frames.",
   "type": "module",
   "engines": {
-    "node": ">=23.6"
+    "node": ">=24.2"
   },
   "scripts": {
     "eval": "node src/cli.ts",
+    "compare": "node src/compare.ts",
     "typecheck": "tsc --noEmit -p ."
   },
   "dependencies": {
