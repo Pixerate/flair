@@ -4,7 +4,8 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_SKILLS_DIR, FLAIR_SKILLS, installSkills, skillsSource } from "./skills.js";
-import { EFFECTS, getEffect, SCENE_TEMPLATES } from "./catalog/index.js";
+import { EFFECT_CATEGORIES, EFFECTS, getEffect, SCENE_TEMPLATES } from "./catalog/index.js";
+import { EASES } from "./vector/index.js";
 import { PRIMITIVES } from "./motion/index.js";
 import { FLAIR_AGENT_TOOLS } from "./agent/index.js";
 
@@ -201,6 +202,17 @@ function cliCommands(): Map<string, Set<string>> {
 }
 
 describe("the skills", () => {
+  // Gaps models tripped on in the drafting evals (evals/): keep these in step with the code.
+  it("list every effect category in flair-author, and name only eases that exist", () => {
+    const author = readFileSync(join(SKILLS, "flair-author/SKILL.md"), "utf8");
+    const rule = author.split("\n").find((l) => l.includes("`category` is one of these"))!;
+    expect(rule, "flair-author/SKILL.md lists the categories").toBeDefined();
+    for (const c of EFFECT_CATEGORIES) expect(rule, c).toContain(`\`${c}\``);
+    const vector = readFileSync(join(SKILLS, "flair-author/references/vector.md"), "utf8");
+    const eases = /`ease` \(([^)]*?) the only named eases/.exec(vector)?.[1];
+    expect([...(eases ?? "").matchAll(/`([\w-]+)`/g)].map((m) => m[1]).sort()).toEqual(Object.keys(EASES).sort());
+  });
+
   it("are the skills FLAIR_SKILLS lists, each with a SKILL.md named for its folder", () => {
     expect(readdirSync(SKILLS).filter((f) => statSync(join(SKILLS, f)).isDirectory()).sort()).toEqual(FLAIR_SKILLS.map((s) => s.name).sort());
     for (const skill of FLAIR_SKILLS) {

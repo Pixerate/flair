@@ -24,7 +24,7 @@ A vector effect is an `SvgMotion`: one self-contained `<svg>` with a `viewBox`, 
 
 ## Changes: `animate`
 
-Each change names an element `id` (it must exist in the SVG) and when it plays: `delay` and `ms` (milliseconds), `ease` (`linear`, `in`, `out`, `in-out` and the other named eases, a `[x1, y1, x2, y2]` cubic-bezier, or `{ "spring": { … } }`), `repeat`, `alternate`, and `step` (for click-triggered pictures). What it changes:
+Each change names an element `id` (it must exist in the SVG) and when it plays: `delay` and `ms` (milliseconds), `ease` (`linear`, `out` or `in-out`, the only named eases; a `[x1, y1, x2, y2]` cubic-bezier for any other curve, such as `[0.4, 0, 1, 1]` to ease in; or `{ "spring": { … } }`), `repeat`, `alternate`, and `step` (for click-triggered pictures). What it changes:
 
 | Field | Does |
 | --- | --- |
@@ -32,7 +32,7 @@ Each change names an element `id` (it must exist in the SVG) and when it plays: 
 | `draw` | draws a stroke on along its length (`true`, or `[from, to]` fractions) |
 | `along`, `at`, `orient` | moves the element along a path by id (draw it round 0,0) |
 | `count`, `format`, `decimals` | counts the element's text from one number to another (`"{n}%"`) |
-| `write`, `scramble`, `caret` | types text in letter by letter |
+| `write`, `scramble`, `caret` | types text in letter by letter: `write` is the text itself (`"write": "{{title}}"`), not `true` |
 | `view` | zooms and pans the whole picture to a box or an element |
 | `behavior` | `pulse`, `oscillate`, `wriggle` or `overshoot` between `from` and `to` |
 
@@ -70,7 +70,7 @@ new SvgPlayer(el2, filled, { hold: headline.hold });           // or play it you
 const file = svgAnimatedMarkup(filled, { hold: headline.hold }); // a self-playing .svg, no script
 ```
 
-Every field but `presets`, `hold` and `trigger` is required; `category` is one of `EFFECT_CATEGORIES` (from `@pixerate/flair/catalog`). Keep the motion in a `.json` (or `.svg`) file to check it with `flair controls`, and import it into app code (`import motion from "./headline.json"` with `resolveJsonModule`) or inline it.
+Every field but `presets`, `hold` and `trigger` is required; `category` is one of `EFFECT_CATEGORIES` (from `@pixerate/flair/catalog`; the full list is in the skill's rules). Keep the motion in a `.json` (or `.svg`) file to check it with `flair controls`, and import it into app code (`import motion from "./headline.json"` with `resolveJsonModule`) or inline it.
 
 In React, `<FlairEffect effect={headline} values={{ title: "Launch day" }} />` (from `@pixerate/flair/react`).
 
