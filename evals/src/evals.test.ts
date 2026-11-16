@@ -204,8 +204,8 @@ describe("models", () => {
     expect(() => commandResponse('#flair-eval-response\n{"usage":{}}')).toThrow(/no "text" string/);
   });
 
-  it("stop the run when a command says nothing would succeed (the Gemini adapter without a key)", async () => {
-    const model = createModel(`command:GEMINI_API_KEY= GOOGLE_API_KEY= node ${path.join(import.meta.dirname, "adapters/gemini.ts")} gemini-test`);
+  it("stop the run when a command says nothing would succeed (the Gemini adapter with no key and no ADC)", async () => {
+    const model = createModel(`command:GEMINI_API_KEY= GOOGLE_API_KEY= CLOUDSDK_CONFIG=/nonexistent-flair-evals node ${path.join(import.meta.dirname, "adapters/gemini.ts")} gemini-test`);
     await expect(model.generate({ system: "", messages: [], key: "a/1/turn-1" })).rejects.toThrow(FatalModelError);
   });
 

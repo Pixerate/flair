@@ -48,7 +48,7 @@ node src/cli.ts --model "command:node src/adapters/gemini.ts gemini-4-hydrogen" 
 node src/compare.ts results/opus results/gemini --out results/opus-vs-gemini.md
 ```
 
-`src/adapters/gemini.ts` calls the Gemini API with `GEMINI_API_KEY` (or `GOOGLE_API_KEY`) over plain `fetch`, so no Google SDK is installed; it retries rate limits and stops the run on a bad key or unknown model. Write an adapter like it for any other vendor: read the request JSON on stdin, print the answer (or the `#flair-eval-response` envelope with tokens and the stop reason, see `RESPONSE_MARKER` in `src/types.ts`), and exit 3 when no request would succeed.
+`src/adapters/gemini.ts` calls the Gemini API with `GEMINI_API_KEY` (or `GOOGLE_API_KEY`), or without a key Vertex AI with Application Default Credentials (`gcloud auth application-default login`; `GOOGLE_CLOUD_PROJECT` defaults to gcloud's project, `GOOGLE_CLOUD_LOCATION` to `global`), over plain `fetch`, so no Google SDK is installed; it retries rate limits and stops the run on a bad key or unknown model. Write an adapter like it for any other vendor: read the request JSON on stdin, print the answer (or the `#flair-eval-response` envelope with tokens and the stop reason, see `RESPONSE_MARKER` in `src/types.ts`), and exit 3 when no request would succeed.
 
 The comparison shows the score and first-try rate overall, by mode, by type and by task, the change between the runs, and which tasks each model did better on. It warns when the judges differ, and when a model judged its own drafts: models tend to favour their own work, so re-judge both runs with another model before trusting a close result. Re-judging needs no new drafts:
 

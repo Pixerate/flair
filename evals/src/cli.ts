@@ -97,7 +97,8 @@ async function main() {
   const concurrency = int("concurrency", values.concurrency, 2, 1);
   const frames = int("frames", values.frames, 6, 2);
   const started = new Date();
-  const slug = values.model.replace(/^[a-z]+:/, "").replace(/[^\w.-]+/g, "_").slice(0, 60);
+  // A command model is named by its last word (the model id, for the adapters).
+  const slug = (values.model.startsWith("command:") ? values.model.trim().split(/\s+/).at(-1)! : values.model.replace(/^[a-z]+:/, "")).replace(/[^\w.-]+/g, "_").slice(0, 60);
   const out = path.resolve(values.out ?? path.join("results", `${started.toISOString().replace(/[:.]/g, "-").slice(0, 19)}-${slug}`));
   mkdirSync(out, { recursive: true });
 
