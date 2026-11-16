@@ -1,6 +1,7 @@
 packages:
   - "."
   - "apps/*"
+  - "evals"
 
 # Security fixes for transitive dependencies (Dependabot), each within the range its dependents ask for or a
 # patch release past it.
