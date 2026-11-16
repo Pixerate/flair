@@ -129,6 +129,16 @@ async function main() {
     results = await runAll(tasks, samples, concurrency, ctx);
   }
 
+  // A replayed run is named after the model that wrote the answers, and keeps its drafting tokens and time.
+  const source = values.model.startsWith("replay:") ? path.join(path.dirname(path.resolve(values.model.slice("replay:".length))), "results.json") : undefined;
+  if (source && existsSync(source)) {
+    const original = JSON.parse(readFileSync(source, "utf8")) as { meta: { model: string }; results: SampleResult[] };
+    meta = { ...meta, model: original.meta.model, replayOf: path.dirname(source) } as typeof meta;
+    results = results.map((r) => {
+      const was = original.results.find((o) => o.task === r.task && o.sample === r.sample);
+      return was ? { ...r, model: original.meta.model, usage: was.usage, ms: { ...r.ms, generate: was.ms.generate } } : r;
+    });
+  }
   meta.finished = new Date().toISOString();
   writeFileSync(path.join(out, "results.json"), JSON.stringify({ meta, summary: groups(results), results }, null, 2));
   const report = markdownReport(results, meta);

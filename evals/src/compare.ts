@@ -23,6 +23,9 @@ export function readRun(dir: string): Run {
   return { dir, meta: data.meta, results: data.results };
 }
 
+/** A model spec as a short name: a command model by its last word (the adapters' model id), others without their scheme. */
+export const label = (spec: string) => (spec.startsWith("command:") ? spec.trim().split(/\s+/).at(-1)! : spec.replace(/^[a-z]+:/, ""));
+
 const pct = (x: number | undefined) => (x === undefined ? "–" : `${Math.round(x * 100)}%`);
 const signed = (x: number) => `${x >= 0 ? "+" : "−"}${Math.abs(x).toFixed(1)}`;
 
@@ -38,7 +41,7 @@ export function caveats(runs: readonly Run[]): string[] {
   const all = new Set(taskSets.flatMap((s) => [...s]));
   if (shared.length < all.size) notes.push(`Only ${shared.length} of ${all.size} tasks are in every run; the tables use only those.`);
   for (const r of runs) {
-    if (r.meta.judge && runs.some((o) => o.meta.model === r.meta.judge)) notes.push(`${r.meta.judge} judged its own drafts: models tend to favour their own work, so re-judge both runs with another model (\`--model replay:<run>/answers --judge …\`) before trusting a close result.`);
+    if (r.meta.judge && runs.some((o) => o.meta.model === r.meta.judge)) notes.push(`${label(r.meta.judge)} judged its own drafts: models tend to favour their own work, so re-judge both runs with another model (\`--model replay:<run>/answers --judge …\`) before trusting a close result.`);
   }
   return [...new Set(notes)];
 }
@@ -49,7 +52,7 @@ export function compareRuns(runs: readonly Run[]): string {
   const taskSets = runs.map((r) => new Set(r.results.map((x) => x.task)));
   const shared = new Set([...taskSets[0]!].filter((t) => taskSets.every((s) => s.has(t))));
   const results = runs.map((r) => r.results.filter((x) => shared.has(x.task)));
-  const names = runs.map((r) => r.meta.model);
+  const names = runs.map((r) => label(r.meta.model));
 
   const rows = (key: (r: SampleResult) => string, label: string) => {
     const groups = [...new Set(results.flat().map(key))].sort();
@@ -91,7 +94,7 @@ export function compareRuns(runs: readonly Run[]): string {
   return [
     `# ${names.join(" vs ")}`,
     "",
-    `Runs: ${runs.map((r) => `\`${r.dir}\``).join(", ")}. Judge: ${[...new Set(runs.map((r) => r.meta.judge ?? "none"))].join(", ")}. Δ is ${names[1]} minus ${names[0]}.`,
+    `Runs: ${runs.map((r) => `\`${r.dir}\``).join(", ")}. Judge: ${[...new Set(runs.map((r) => (r.meta.judge ? label(r.meta.judge) : "none")))].join(", ")}. Δ is ${names[1]} minus ${names[0]}.`,
     "",
     ...(notes.length ? ["## Caveats", "", ...notes.map((n) => `- ${n}`), ""] : []),
     "## Overall",
