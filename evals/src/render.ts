@@ -1,8 +1,9 @@
+import { spawnSync } from "node:child_process";
 import { mkdirSync, rmSync } from "node:fs";
 import path from "node:path";
 import type { ControlValue } from "@pixerate/flair";
 import { effectControls, effectDefaults, getEffect, renderVectorEffect, SAMPLE_IMAGES, type EffectDefinition, type ShaderEffect } from "@pixerate/flair/catalog";
-import { exportEffect, findChrome, probeVideo, vectorTimeline, type NodeSubject } from "@pixerate/flair/node";
+import { exportEffect, ffmpegPath, findChrome, probeVideo, vectorTimeline, type NodeSubject } from "@pixerate/flair/node";
 import { decodeFolder, decodeImages, decodeVideo, pictureSize } from "./frames.ts";
 import { KIND_OF_TYPE, type EvalTask, type Frames, type RenderResult } from "./types.ts";
 
@@ -24,9 +25,14 @@ export interface RenderOptions {
   text?: string;
 }
 
+/** Whether ffmpeg runs here (it reads rendered frames, pictures and videos back). */
+export function ffmpegAvailable(): boolean {
+  return spawnSync(ffmpegPath(), ["-version"], { stdio: "ignore" }).status === 0;
+}
+
 /** Whether headless rendering can run here: Chrome for frames, ffmpeg to read them back. */
 export function renderAvailable(): boolean {
-  return findChrome() !== null;
+  return findChrome() !== null && ffmpegAvailable();
 }
 
 /** Seconds a render covers: a shader's loop when it loops within 6 s, else 3; a vector effect's play-through. */

@@ -87,7 +87,7 @@ async function main() {
   if (!tasks.length) throw new Error("No task matches those filters; --list shows them.");
 
   const noRender = values["no-render"];
-  if (!noRender && !renderAvailable()) throw new Error("Rendering needs Chrome or Chromium (set CHROME_PATH, or install one: npx playwright install chromium), or pass --no-render for the static checks only.");
+  if (!noRender && !renderAvailable()) throw new Error("Rendering needs Chrome or Chromium (set CHROME_PATH, or: npx playwright install chromium) and ffmpeg (brew install ffmpeg, apt install ffmpeg, or FFMPEG_PATH), or pass --no-render for the static checks only.");
   if (!noRender && !values.judge && tasks.some((t) => t.mode === "scratch")) console.warn("No --judge: the look of scratch drafts is not graded, only their checks and renders.");
 
   const model = createModel(values.model, tasks);

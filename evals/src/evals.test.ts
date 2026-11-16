@@ -270,8 +270,8 @@ describe.skipIf(!renderAvailable())("a rendered sample", () => {
   it("renders, measures and judges a background", async () => {
     const task: EvalTask = { id: "bg-test", type: "background", mode: "scratch", brief: "Moving stripes.", expect: { animated: true } };
     const judgeModel = scripted(['{"fidelity":4,"craft":4,"motion":4,"controls":4,"notes":"fine"}']);
-    const result = await runSample(task, 1, { model: scripted([answer(SHADER)]), judge: judgeModel, out: tmp(), render: { frames: 3, width: 96, height: 54 } });
-    expect(result).toMatchObject({ firstTry: true, scores: { render: 1, requirements: 1 }, judge: { fidelity: 4 } });
+    const result = await runSample(task, 1, { model: scripted([answer(SHADER)]), judge: judgeModel, out: tmp(), render: { frames: 3, width: 96, height: 54, software: true } });
+    expect(result, JSON.stringify(result.checks.filter((c) => !c.pass))).toMatchObject({ firstTry: true, scores: { render: 1, requirements: 1 }, judge: { fidelity: 4 } });
     expect(judgeModel.requests[0]!.messages[0]!.content.some((p) => p.type === "image")).toBe(true);
   });
 
@@ -283,7 +283,7 @@ uniform sampler2D uTo;   // @control label="To"
 uniform float uProgress; // @control min=0 max=1 default=0
 void mainImage(out vec4 c, in vec2 p) { c = vec4(oops); }`;
     const model = scripted([answer(broken), luma]);
-    const result = await runSample(task, 1, { model, out: tmp(), render: { frames: 3, width: 96, height: 54 } });
+    const result = await runSample(task, 1, { model, out: tmp(), render: { frames: 3, width: 96, height: 54, software: true } });
     const feedback = model.requests[1]!.messages.at(-1)!.content[0]!;
     expect(feedback.type === "text" && feedback.text).toMatch(/does not render: .*'oops' : undeclared identifier/);
     const names = Object.fromEntries(result.checks.map((c) => [c.name, c.pass]));
