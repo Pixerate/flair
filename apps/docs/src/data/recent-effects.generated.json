@@ -1,5 +1,130 @@
 [
   {
+    "id": "money-rain",
+    "name": "Money rain",
+    "kind": "shader",
+    "category": "debris",
+    "description": "Spinning metallic coins with moving glints and fluttering banknotes raining down, piling at the bottom and bursting wherever you click.",
+    "tags": [
+      "debris",
+      "money",
+      "coin",
+      "cash",
+      "rain",
+      "jackpot",
+      "overlay",
+      "interactive",
+      "click"
+    ],
+    "controls": [
+      {
+        "n": "uMode",
+        "t": "int",
+        "d": 2,
+        "l": "Mode (0 coins, 1 bills, 2 both)",
+        "max": 2,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "uMetal",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            245,
+            197,
+            66
+          ]
+        },
+        "l": "Metal colour",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uBill",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            78,
+            154,
+            81
+          ]
+        },
+        "l": "Bill colour",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uDensity",
+        "t": "float",
+        "d": 0.7,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 1,
+        "min": 0.5,
+        "max": 2,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uSpin",
+        "t": "float",
+        "d": 1,
+        "max": 3,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uGlint",
+        "t": "float",
+        "d": 1,
+        "max": 2,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uPile",
+        "t": "bool",
+        "d": true,
+        "l": "Pile at bottom",
+        "line": 9
+      },
+      {
+        "n": "uDemo",
+        "t": "bool",
+        "d": true,
+        "l": "Demo clicks when idle",
+        "line": 10
+      }
+    ],
+    "presets": [
+      "Jackpot",
+      "Cash",
+      "Silver",
+      "Burst only"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [
+        "click"
+      ],
+      "transparent": true
+    },
+    "swiftReady": true,
+    "transparent": true,
+    "animated": true,
+    "module": "shaders/debris",
+    "addedAt": "2026-11-16T18:52:39Z",
+    "commitHash": "e9631e33e1d66c66e77efbe300a9bca3daffeb86",
+    "order": 714
+  },
+  {
     "id": "pixerate-paint",
     "name": "Pixerate paint",
     "kind": "shader",
@@ -3682,228 +3807,5 @@
     "addedAt": "2026-11-13T16:05:00Z",
     "commitHash": "d568b16892772bdd64cfb524032685ba3b998b4e",
     "order": 695
-  },
-  {
-    "id": "transition-color-blocks",
-    "name": "Colour blocks",
-    "kind": "shader",
-    "category": "transition",
-    "description": "Bands of flat colour sweep across in staggered rows, covering one picture and uncovering the next behind them. Loops back and forth; or turn Animate off and set Progress.",
-    "tags": [
-      "transition",
-      "image",
-      "slideshow",
-      "blocks",
-      "band",
-      "wipe",
-      "flat",
-      "bold",
-      "recap",
-      "story"
-    ],
-    "controls": [
-      {
-        "n": "uFrom",
-        "t": "sampler2D",
-        "d": {
-          "sample": "landscape"
-        },
-        "l": "From image",
-        "line": 2,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uTo",
-        "t": "sampler2D",
-        "d": {
-          "sample": "city"
-        },
-        "l": "To image",
-        "line": 3,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uAnimate",
-        "t": "bool",
-        "d": true,
-        "line": 4
-      },
-      {
-        "n": "uProgress",
-        "t": "float",
-        "d": 0.5,
-        "l": "Progress (when still)",
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uColorA",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            240,
-            55,
-            165
-          ]
-        },
-        "l": "Colour A",
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "uColorB",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            205,
-            245,
-            100
-          ]
-        },
-        "l": "Colour B",
-        "c": 1,
-        "line": 7
-      },
-      {
-        "n": "uColorC",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            65,
-            0,
-            245
-          ]
-        },
-        "l": "Colour C",
-        "c": 1,
-        "line": 8
-      },
-      {
-        "n": "uColorD",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            70,
-            50
-          ]
-        },
-        "l": "Colour D",
-        "c": 1,
-        "line": 9
-      },
-      {
-        "n": "uBands",
-        "t": "int",
-        "d": 4,
-        "l": "Colour bands",
-        "min": 1,
-        "max": 4,
-        "b": 3,
-        "line": 10
-      },
-      {
-        "n": "uWidth",
-        "t": "float",
-        "d": 0.7,
-        "l": "Band train length",
-        "min": 0.1,
-        "max": 1.5,
-        "b": 3,
-        "line": 11
-      },
-      {
-        "n": "uRows",
-        "t": "int",
-        "d": 5,
-        "min": 1,
-        "max": 12,
-        "b": 3,
-        "line": 12
-      },
-      {
-        "n": "uStagger",
-        "t": "float",
-        "d": 0.45,
-        "b": 3,
-        "line": 13
-      },
-      {
-        "n": "uAngle",
-        "t": "float",
-        "d": 0,
-        "l": "Angle (°)",
-        "min": -180,
-        "max": 180,
-        "b": 3,
-        "line": 14
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 15
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "b": 3,
-        "line": 16
-      }
-    ],
-    "presets": [
-      "Clash",
-      "Single slab",
-      "Blinds",
-      "Diagonal",
-      "Ink and paper"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uFrom",
-          "label": "From image",
-          "wants": "picture"
-        },
-        {
-          "name": "uTo",
-          "label": "To image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "transition",
-      "interactions": [],
-      "transparent": false
-    },
-    "swiftReady": true,
-    "video": "transition",
-    "loop": 4,
-    "animated": true,
-    "duration": 4000,
-    "module": "shaders/recap",
-    "addedAt": "2026-11-13T15:35:59Z",
-    "commitHash": "d06df57664d2ac130bc3a2af9fef78a818b98d95",
-    "order": 694
   }
 ]

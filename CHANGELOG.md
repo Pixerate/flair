@@ -1,5 +1,11 @@
 # @pixerate/flair
 
+## 0.138.0
+
+### Minor Changes
+
+- e9631e3: Add the `money-rain` debris/overlay shader (spinning metallic coins, fluttering banknotes, optional bottom pile, and click bursts) and visually polish the catalog's overlay shaders (`rain-on-glass`, `snowfall`, `lens-flare`, `vignette-grain`, `scanline-sweep`, `spotlight`, `embers`, `shine-sweep`, and `frost-creep`).
+
 ## 0.137.2
 
 ### Patch Changes
