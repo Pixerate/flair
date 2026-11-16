@@ -6,6 +6,105 @@ import simd
 
 
 
+/// **Failing light** (`failing-light`, category: `horror`).
+/// A picture lit by a failing fluorescent tube overhead: humming, catching, stuttering off and back on and sometimes staying dark a while, the room falling into shadow each time. It switches at most three times a second.
+public struct FailingLight: FlairEffect, Codable, Sendable, Equatable {
+    public static let effectId = "failing-light"
+    public static let effectName = "Failing light"
+    public static let category = "horror"
+    public static let effectDescription = "A picture lit by a failing fluorescent tube overhead: humming, catching, stuttering off and back on and sometimes staying dark a while, the room falling into shadow each time. It switches at most three times a second."
+    public static let tags: [String] = ["horror", "shock", "fluorescent", "flicker", "light", "lamp", "hallway", "image"]
+    public static let phase: Int = 2
+    public static let functionName = "flair_failing_light_frag"
+    public static let uniformByteLength: Int = 1040
+    public static let isTransparent: Bool = false
+    public static let loopDuration: Double? = nil
+    public static let controls: [FlairControlDescriptor] = [
+        FlairControlDescriptor(name: "uImage", property: "image", type: .sampler2D, label: "Image", min: 0.0, max: 1.0, step: 0.005, filter: .linear, wrap: .clamp),
+        FlairControlDescriptor(name: "uLight", property: "light", type: .vec3, label: "Tube light", isColor: true, min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uFailing", property: "failing", type: .float, label: "How badly it fails", min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uDark", property: "dark", type: .float, label: "Light when off", min: 0.0, max: 0.8, step: 0.004),
+        FlairControlDescriptor(name: "uTube", property: "tube", type: .bool, label: "Show the tube", min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uBackdrop", property: "backdrop", type: .vec3, label: "Backdrop", isColor: true, min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uBackdropAlpha", property: "backdropAlpha", type: .float, label: "Backdrop opacity", min: 0.0, max: 1.0, step: 0.005),
+    ]
+    public static let samplerBindings: [FlairSamplerBinding] = [
+        FlairSamplerBinding(name: "uImage", property: "image", type: .sampler2D, binding: 1, filter: .linear, wrap: .clamp),
+    ]
+    public static let presets: [String: FailingLight] = {
+        var map: [String: FailingLight] = [:]
+        do { var p = FailingLight(); p.failing = 1.0; p.dark = 0.1; map["Dying"] = p }
+        do { var p = FailingLight(); p.failing = 0.2; map["Mostly fine"] = p }
+        do { var p = FailingLight(); p.light = flairVec3(1.0, 0.72, 0.38); map["Sodium"] = p }
+        do { var p = FailingLight(); p.tube = false; map["No fixture"] = p }
+        return map
+    }()
+
+    /// Image (`uImage`).
+    public var image: FlairTextureInput = .sample(.city)
+    /// Tube light (`uLight`).
+    public var light: SIMD3<Float> = flairVec3(0.894118, 0.945098, 1.0)
+    /// How badly it fails (`uFailing`).
+    public var failing: Float = 0.55
+    /// Light when off (`uDark`).
+    public var dark: Float = 0.22
+    /// Show the tube (`uTube`).
+    public var tube: Bool = true
+    /// Backdrop (`uBackdrop`).
+    public var backdrop: SIMD3<Float> = flairVec3(1.0, 1.0, 1.0)
+    /// Backdrop opacity (`uBackdropAlpha`).
+    public var backdropAlpha: Float = 1.0
+
+    public init() {}
+
+    public func encodeUniforms(into buffer: UnsafeMutableRawPointer, state: FlairFrameState) {
+        state.encodeBuiltins(into: buffer)
+        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(light, min: 0.0, max: 1.0), to: buffer, at: 992)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(failing, min: 0.0, max: 1.0), to: buffer, at: 1004)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(dark, min: 0.0, max: 0.8), to: buffer, at: 1008)
+        FlairUniformEncoder.writeBool(tube, to: buffer, at: 1012)
+        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(backdrop, min: 0.0, max: 1.0), to: buffer, at: 1024)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(backdropAlpha, min: 0.0, max: 1.0), to: buffer, at: 1036)
+    }
+
+    public func textureInput(for binding: Int) -> FlairTextureInput {
+        switch binding {
+        case 1: return self.image
+        default: return .none
+        }
+    }
+
+    public mutating func setTextureInput(_ input: FlairTextureInput, for binding: Int) {
+        switch binding {
+        case 1: self.image = input
+        default: break
+        }
+    }
+
+    public init(from decoder: Decoder) throws {
+        let bag = try FlairJSONBag(from: decoder)
+        self.image = bag.decodeTexture("uImage", "image", default: .sample(.city), fit: .contain, margin: 0.1)
+        self.light = bag.decodeVec3("uLight", "light", default: flairVec3(0.894118, 0.945098, 1.0), isColor: true)
+        self.failing = bag.decodeFloat("uFailing", "failing", default: 0.55, min: 0.0, max: 1.0)
+        self.dark = bag.decodeFloat("uDark", "dark", default: 0.22, min: 0.0, max: 0.8)
+        self.tube = bag.decodeBool("uTube", "tube", default: true)
+        self.backdrop = bag.decodeVec3("uBackdrop", "backdrop", default: flairVec3(1.0, 1.0, 1.0), isColor: true)
+        self.backdropAlpha = bag.decodeFloat("uBackdropAlpha", "backdropAlpha", default: 1.0, min: 0.0, max: 1.0)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var bag = FlairJSONBag()
+        bag.encodeTexture(self.image, for: "uImage")
+        bag.encodeVec3(self.light, for: "uLight")
+        bag.encodeFloat(self.failing, for: "uFailing")
+        bag.encodeFloat(self.dark, for: "uDark")
+        bag.encodeBool(self.tube, for: "uTube")
+        bag.encodeVec3(self.backdrop, for: "uBackdrop")
+        bag.encodeFloat(self.backdropAlpha, for: "uBackdropAlpha")
+        try bag.encode(to: encoder)
+    }
+}
+
 /// **Heartbeat vignette** (`heartbeat-vignette`, category: `horror`).
 /// A deep red edge round a picture pulsing like a heartbeat, quickening and closing in as the pointer gets nearer a target spot, from a resting pulse up to at most 120 beats a minute; while idle, it drifts nearer and away on its own.
 public struct HeartbeatVignette: FlairEffect, Codable, Sendable, Equatable {

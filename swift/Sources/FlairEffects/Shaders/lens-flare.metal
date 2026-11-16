@@ -1,4 +1,4 @@
-// flair-metal-hash: ec0e7bab
+// flair-metal-hash: 14e9868d
 #pragma clang diagnostic ignored "-Wunused-variable"
 #pragma clang diagnostic ignored "-Wunused-const-variable"
 #pragma clang diagnostic ignored "-Wmissing-prototypes"
@@ -68,11 +68,14 @@ void mainImage(thread float4& fragColor, thread const float2& fragCoord, constan
     float2 src = _126;
     float2 d = p - src;
     float r = length(d);
-    float3 col = float3(_101.uColor) * ((exp((-r) * 20.0) * 1.5) + ((0.014999999664723873138427734375 / (r + 0.014999999664723873138427734375)) * 0.300000011920928955078125));
+    float ang = precise::atan2(d.y, d.x);
+    float spikes = (powr(fast::max(0.0, cos(ang * 3.0)), 14.0) * exp((-r) * 10.0)) * 0.449999988079071044921875;
+    float3 col = float3(_101.uColor) * (((exp((-r) * 20.0) * 1.5) + ((0.014999999664723873138427734375 / (r + 0.014999999664723873138427734375)) * 0.300000011920928955078125)) + spikes);
     float3 streakColor = mix(float3(_101.uColor), float3(0.449999988079071044921875, 0.64999997615814208984375, 1.0), float3(0.60000002384185791015625));
     float len = _101.uStreak + 0.001000000047497451305389404296875;
     col += ((streakColor * exp((-abs(d.y)) * 220.0)) * exp((-abs(d.x)) / (0.5 * len)));
     col += (((streakColor * 0.4000000059604644775390625) * exp((-abs(d.y)) * 60.0)) * exp((-abs(d.x)) / (0.25 * len)));
+    float3 _363;
     for (int i = 0; i < 7; i++)
     {
         float fi = float(i);
@@ -83,30 +86,38 @@ void mainImage(thread float4& fragColor, thread const float2& fragCoord, constan
         float gd = length(p - (src * along));
         float2 param_2 = float2(fi, 8.30000019073486328125);
         float3 tint = mix(float3(_101.uColor), float3(0.4000000059604644775390625, 0.85000002384185791015625, 1.0), float3(hash12(param_2)));
-        float disc = (1.0 - smoothstep(gr * 0.60000002384185791015625, gr, gd)) * 0.119999997317790985107421875;
-        float ring = exp((-abs(gd - gr)) * 90.0) * 0.180000007152557373046875;
+        float disc = (1.0 - smoothstep(gr * 0.550000011920928955078125, gr, gd)) * (0.0900000035762786865234375 + (0.0500000007450580596923828125 * smoothstep(gr * 0.4000000059604644775390625, gr * 0.89999997615814208984375, gd)));
+        float3 chromRing = float3(exp((-abs(gd - (gr * 1.03999996185302734375))) * 95.0), exp((-abs(gd - gr)) * 95.0), exp((-abs(gd - (gr * 0.959999978542327880859375))) * 95.0)) * 0.20000000298023223876953125;
         float2 param_3 = float2(fi, 2.900000095367431640625);
-        col += (tint * ((hash12(param_3) > 0.60000002384185791015625) ? ring : disc));
+        if (hash12(param_3) > 0.550000011920928955078125)
+        {
+            _363 = mix(tint, float3(1.0), float3(0.25)) * chromRing;
+        }
+        else
+        {
+            _363 = tint * disc;
+        }
+        col += _363;
     }
     float3 param_4 = col * _101.uIntensity;
-    float4 _326 = glow(param_4);
-    fragColor = _326;
+    float4 _388 = glow(param_4);
+    fragColor = _388;
 }
 
 fragment flair_lens_flare_frag_out flair_lens_flare_frag(constant FlairUniforms& _101 [[buffer(0)]], float4 gl_FragCoord [[position]])
 {
     flair_lens_flare_frag_out out = {};
     float4 flair_color = float4(0.0, 0.0, 0.0, 1.0);
-    float _339;
+    float _401;
     if (_101.flair_flipY > 0.5)
     {
-        _339 = _101.iResolution[1u] - gl_FragCoord.y;
+        _401 = _101.iResolution[1u] - gl_FragCoord.y;
     }
     else
     {
-        _339 = gl_FragCoord.y;
+        _401 = gl_FragCoord.y;
     }
-    float2 flair_coord = float2(gl_FragCoord.x, _339);
+    float2 flair_coord = float2(gl_FragCoord.x, _401);
     float2 param_1 = flair_coord;
     float4 param;
     mainImage(param, param_1, _101);

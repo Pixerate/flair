@@ -1,4 +1,4 @@
-// flair-metal-hash: 5f6f86e8
+// flair-metal-hash: bafae23e
 #pragma clang diagnostic ignored "-Wunused-variable"
 #pragma clang diagnostic ignored "-Wunused-const-variable"
 #pragma clang diagnostic ignored "-Wmissing-prototypes"
@@ -33,47 +33,6 @@ struct flair_frost_creep_frag_out
 {
     float4 flair_FragColor [[color(0)]];
 };
-
-static inline __attribute__((always_inline))
-float2 hash22(thread const float2& p)
-{
-    float3 p3 = fract(p.xyx * float3(0.103100001811981201171875, 0.10300000011920928955078125, 0.097300000488758087158203125));
-    p3 += float3(dot(p3, p3.yzx + float3(33.3300018310546875)));
-    return fract((p3.xx + p3.yz) * p3.zy);
-}
-
-static inline __attribute__((always_inline))
-float4 voronoi(thread const float2& q)
-{
-    float2 id = floor(q);
-    float2 f = fract(q);
-    float f1 = 8.0;
-    float f2 = 8.0;
-    float2 nearest = id;
-    for (int j = -1; j <= 1; j++)
-    {
-        for (int i = -1; i <= 1; i++)
-        {
-            float2 o = float2(float(i), float(j));
-            float2 param = id + o;
-            float d = length((o + hash22(param)) - f);
-            if (d < f1)
-            {
-                f2 = f1;
-                f1 = d;
-                nearest = id + o;
-            }
-            else
-            {
-                if (d < f2)
-                {
-                    f2 = d;
-                }
-            }
-        }
-    }
-    return float4(f1, f2, nearest);
-}
 
 static inline __attribute__((always_inline))
 float hash12(thread const float2& p)
@@ -121,6 +80,47 @@ float fbm(thread float2& p, thread const int& octaves)
 }
 
 static inline __attribute__((always_inline))
+float2 hash22(thread const float2& p)
+{
+    float3 p3 = fract(p.xyx * float3(0.103100001811981201171875, 0.10300000011920928955078125, 0.097300000488758087158203125));
+    p3 += float3(dot(p3, p3.yzx + float3(33.3300018310546875)));
+    return fract((p3.xx + p3.yz) * p3.zy);
+}
+
+static inline __attribute__((always_inline))
+float4 voronoi(thread const float2& q)
+{
+    float2 id = floor(q);
+    float2 f = fract(q);
+    float f1 = 8.0;
+    float f2 = 8.0;
+    float2 nearest = id;
+    for (int j = -1; j <= 1; j++)
+    {
+        for (int i = -1; i <= 1; i++)
+        {
+            float2 o = float2(float(i), float(j));
+            float2 param = id + o;
+            float d = length((o + hash22(param)) - f);
+            if (d < f1)
+            {
+                f2 = f1;
+                f1 = d;
+                nearest = id + o;
+            }
+            else
+            {
+                if (d < f2)
+                {
+                    f2 = d;
+                }
+            }
+        }
+    }
+    return float4(f1, f2, nearest);
+}
+
+static inline __attribute__((always_inline))
 void mainImage(thread float4& fragColor, thread const float2& fragCoord, constant FlairUniforms& _292)
 {
     float2 p = fragCoord / float2(_292.iResolution[1u]);
@@ -135,49 +135,66 @@ void mainImage(thread float4& fragColor, thread const float2& fragCoord, constan
     }
     float coverage = _304;
     float edge = fast::min(fast::min(fragCoord.x, _292.iResolution[0u] - fragCoord.x), fast::min(fragCoord.y, _292.iResolution[1u] - fragCoord.y)) / _292.iResolution[1u];
-    float2 param = (p * _292.uScale) * 3.0;
-    float4 v = voronoi(param);
-    float2 param_1 = (p * _292.uScale) * 0.800000011920928955078125;
-    int param_2 = 5;
-    float _359 = fbm(param_1, param_2);
-    float n = _359;
-    float2 param_3 = v.zw;
-    float g = (edge + ((n - 0.5) * 0.300000011920928955078125)) + ((hash12(param_3) - 0.5) * 0.039999999105930328369140625);
-    float front = mix(-0.25, 0.75, coverage);
-    float frost = 1.0 - smoothstep(front - 0.0599999986588954925537109375, front, g);
-    if (frost <= 0.0)
+    float2 param = (p * _292.uScale) * 1.60000002384185791015625;
+    int param_1 = 3;
+    float _352 = fbm(param, param_1);
+    float2 param_2 = ((p * _292.uScale) * 1.60000002384185791015625) + float2(5.19999980926513671875);
+    int param_3 = 3;
+    float _363 = fbm(param_2, param_3);
+    float2 warp = float2(_352, _363) - float2(0.5);
+    float2 param_4 = ((p * _292.uScale) * 2.400000095367431640625) + (warp * 1.2000000476837158203125);
+    int param_5 = 5;
+    float _381 = fbm(param_4, param_5);
+    float plume = _381;
+    float2 param_6 = (p * _292.uScale) * 0.85000002384185791015625;
+    int param_7 = 4;
+    float _392 = fbm(param_6, param_7);
+    float n = _392;
+    float g = (edge + ((n - 0.5) * 0.2800000011920928955078125)) + ((plume - 0.5) * 0.14000000059604644775390625);
+    float front = mix(-0.2199999988079071044921875, 0.7200000286102294921875, coverage);
+    float frost = 1.0 - smoothstep(front - 0.119999997317790985107421875, front, g);
+    if (frost <= 0.001000000047497451305389404296875)
     {
         fragColor = float4(0.0);
         return;
     }
-    float2 param_4 = v.zw + float2(3.099999904632568359375);
-    float facet = hash12(param_4);
-    float ridges = 1.0 - smoothstep(0.0, 0.0599999986588954925537109375, v.y - v.x);
-    float2 param_5 = ((p * _292.uScale) * float2(6.0, 1.5)) + v.zw;
-    int param_6 = 3;
-    float _426 = fbm(param_5, param_6);
-    float needles = smoothstep(0.550000011920928955078125, 0.800000011920928955078125, _426);
-    float fresh = 1.0 - smoothstep(0.0, 0.3499999940395355224609375, front - g);
-    float rim = smoothstep(front - 0.0599999986588954925537109375, front - 0.014999999664723873138427734375, g);
-    float3 col = mix(_292.uColor * float3(0.800000011920928955078125, 0.89999997615814208984375, 1.0), float3(1.0), float3((((facet * 0.4000000059604644775390625) + (ridges * 0.60000002384185791015625)) + (rim * 0.5)) + (needles * 0.4000000059604644775390625)));
-    float alpha = frost * fast::clamp(((((0.3499999940395355224609375 + (0.25 * (1.0 - fresh))) + (0.20000000298023223876953125 * facet)) + (0.3499999940395355224609375 * ridges)) + (0.25 * needles)) + (0.300000011920928955078125 * rim), 0.0, 1.0);
-    fragColor = float4(fast::min(col, float3(1.0)), alpha);
+    float2 param_8 = ((p * _292.uScale) * 5.0) + (warp * 0.800000011920928955078125);
+    float4 v = voronoi(param_8);
+    float2 param_9 = v.zw + float2(3.099999904632568359375);
+    float facet = hash12(param_9);
+    float feather = smoothstep(0.319999992847442626953125, 0.7799999713897705078125, plume);
+    float2 param_10 = ((p * _292.uScale) * float2(7.0, 2.2000000476837158203125)) + (warp * 2.0);
+    int param_11 = 4;
+    float _464 = fbm(param_10, param_11);
+    float needles = powr(_464, 1.60000002384185791015625);
+    float2 param_12 = ((p * _292.uScale) * float2(2.2000000476837158203125, 7.0)) - (warp * 2.0);
+    int param_13 = 4;
+    float _478 = fbm(param_12, param_13);
+    float needles2 = powr(_478, 1.60000002384185791015625);
+    float crystal = fast::clamp((needles + needles2) * 0.85000002384185791015625, 0.0, 1.0);
+    float2 sp = (p * _292.uScale) * 42.0;
+    float2 param_14 = floor(sp);
+    float sparkle = (smoothstep(0.839999973773956298828125, 0.9900000095367431640625, hash12(param_14)) * (1.0 - smoothstep(0.0, 0.449999988079071044921875, length(fract(sp) - float2(0.5))))) * crystal;
+    float rim = smoothstep(front - 0.100000001490116119384765625, front - 0.0199999995529651641845703125, g) * feather;
+    float3 iceBase = mix(_292.uColor * float3(0.75, 0.87999999523162841796875, 1.0), float3(1.0), float3((((0.3499999940395355224609375 * facet) + (0.449999988079071044921875 * crystal)) + (0.3499999940395355224609375 * feather)) + (0.5 * sparkle)));
+    float alpha = frost * fast::clamp(((((0.180000007152557373046875 + (0.319999992847442626953125 * feather)) + (0.37999999523162841796875 * crystal)) + (0.14000000059604644775390625 * facet)) + (0.25 * rim)) + (0.20000000298023223876953125 * sparkle), 0.0, 0.959999978542327880859375);
+    fragColor = float4(fast::min(iceBase, float3(1.0)), alpha);
 }
 
 fragment flair_frost_creep_frag_out flair_frost_creep_frag(constant FlairUniforms& _292 [[buffer(0)]], float4 gl_FragCoord [[position]])
 {
     flair_frost_creep_frag_out out = {};
     float4 flair_color = float4(0.0, 0.0, 0.0, 1.0);
-    float _507;
+    float _590;
     if (_292.flair_flipY > 0.5)
     {
-        _507 = _292.iResolution[1u] - gl_FragCoord.y;
+        _590 = _292.iResolution[1u] - gl_FragCoord.y;
     }
     else
     {
-        _507 = gl_FragCoord.y;
+        _590 = gl_FragCoord.y;
     }
-    float2 flair_coord = float2(gl_FragCoord.x, _507);
+    float2 flair_coord = float2(gl_FragCoord.x, _590);
     float2 param_1 = flair_coord;
     float4 param;
     mainImage(param, param_1, _292);

@@ -1,4 +1,4 @@
-// flair-metal-hash: 5f1774c1
+// flair-metal-hash: dd1e092d
 #pragma clang diagnostic ignored "-Wunused-variable"
 #pragma clang diagnostic ignored "-Wunused-const-variable"
 #pragma clang diagnostic ignored "-Wmissing-prototypes"
@@ -54,23 +54,25 @@ void mainImage(thread float4& fragColor, thread const float2& fragCoord, constan
     float2 centre = _73;
     float r = length(p - centre);
     float dark = smoothstep((_30.uRadius * (1.0 - _30.uSoftness)) - px, _30.uRadius + px, r);
-    fragColor = float4(_30.uShade, dark * _30.uDarkness);
+    float rim = (exp(-powr((r - (_30.uRadius * 0.89999997615814208984375)) / fast::max(_30.uRadius * (0.180000007152557373046875 + (0.25 * _30.uSoftness)), 0.02500000037252902984619140625), 2.0)) * 0.07999999821186065673828125) * _30.uDarkness;
+    float3 col = mix(_30.uShade, float3(0.949999988079071044921875, 0.920000016689300537109375, 0.85000002384185791015625), float3(rim / fast::max((dark * _30.uDarkness) + rim, 9.9999997473787516355514526367188e-05)));
+    fragColor = float4(col, fast::clamp((dark * _30.uDarkness) + (rim * 0.60000002384185791015625), 0.0, 1.0));
 }
 
 fragment flair_spotlight_frag_out flair_spotlight_frag(constant FlairUniforms& _30 [[buffer(0)]], float4 gl_FragCoord [[position]])
 {
     flair_spotlight_frag_out out = {};
     float4 flair_color = float4(0.0, 0.0, 0.0, 1.0);
-    float _153;
+    float _204;
     if (_30.flair_flipY > 0.5)
     {
-        _153 = _30.iResolution[1u] - gl_FragCoord.y;
+        _204 = _30.iResolution[1u] - gl_FragCoord.y;
     }
     else
     {
-        _153 = gl_FragCoord.y;
+        _204 = gl_FragCoord.y;
     }
-    float2 flair_coord = float2(gl_FragCoord.x, _153);
+    float2 flair_coord = float2(gl_FragCoord.x, _204);
     float2 param_1 = flair_coord;
     float4 param;
     mainImage(param, param_1, _30);

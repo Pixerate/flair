@@ -1,4 +1,4 @@
-// flair-metal-hash: be4cf5c3
+// flair-metal-hash: d1303ef2
 #pragma clang diagnostic ignored "-Wunused-variable"
 #pragma clang diagnostic ignored "-Wunused-const-variable"
 #pragma clang diagnostic ignored "-Wmissing-prototypes"
@@ -76,30 +76,33 @@ void mainImage(thread float4& fragColor, thread const float2& fragCoord, constan
     float param_2 = dark;
     float4 acc = over(param, param_1, param_2);
     float frame = mod(floor(_114.iTime * 24.0), 64.0);
-    float2 param_3 = floor(fragCoord / float2(_114.uGrainSize)) + (float2(17.3099994659423828125, 31.729999542236328125) * frame);
-    float g = hash12(param_3) - 0.5;
-    float4 param_4 = acc;
-    float3 param_5 = float3(step(0.0, g));
-    float param_6 = (abs(g) * _114.uGrain) * 2.0;
-    acc = over(param_4, param_5, param_6);
-    float4 param_7 = acc;
-    fragColor = unpremultiply(param_7);
+    float2 gc = floor(fragCoord / float2(_114.uGrainSize)) + (float2(17.3099994659423828125, 31.729999542236328125) * frame);
+    float2 param_3 = gc;
+    float2 param_4 = gc + float2(41.700000762939453125);
+    float g = ((hash12(param_3) + hash12(param_4)) - 1.0) * 0.5;
+    float3 grainCol = select(float3(0.039999999105930328369140625, 0.039999999105930328369140625, 0.0599999986588954925537109375), float3(0.949999988079071044921875, 0.930000007152557373046875, 0.87999999523162841796875), bool3(g > 0.0));
+    float4 param_5 = acc;
+    float3 param_6 = grainCol;
+    float param_7 = (abs(g) * _114.uGrain) * 2.099999904632568359375;
+    acc = over(param_5, param_6, param_7);
+    float4 param_8 = acc;
+    fragColor = unpremultiply(param_8);
 }
 
 fragment flair_vignette_grain_frag_out flair_vignette_grain_frag(constant FlairUniforms& _114 [[buffer(0)]], float4 gl_FragCoord [[position]])
 {
     flair_vignette_grain_frag_out out = {};
     float4 flair_color = float4(0.0, 0.0, 0.0, 1.0);
-    float _244;
+    float _266;
     if (_114.flair_flipY > 0.5)
     {
-        _244 = _114.iResolution[1u] - gl_FragCoord.y;
+        _266 = _114.iResolution[1u] - gl_FragCoord.y;
     }
     else
     {
-        _244 = gl_FragCoord.y;
+        _266 = gl_FragCoord.y;
     }
-    float2 flair_coord = float2(gl_FragCoord.x, _244);
+    float2 flair_coord = float2(gl_FragCoord.x, _266);
     float2 param_1 = flair_coord;
     float4 param;
     mainImage(param, param_1, _114);
