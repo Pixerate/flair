@@ -1,0 +1,27 @@
+{
+  "tasks": [
+    {
+      "id": "custom-vertigo-from-clip",
+      "type": "background",
+      "mode": "reference",
+      "brief": "A hypnotic background for a music video.",
+      "reference": { "video": "../../examples/vertigo.gif", "frames": 6 },
+      "expect": { "animated": true, "minControls": 3 }
+    },
+    {
+      "id": "custom-pulse-from-stills",
+      "type": "background",
+      "mode": "reference",
+      "brief": "",
+      "reference": { "images": ["../../examples/motion-pulse.gif"] },
+      "expect": { "minColorControls": 1 }
+    },
+    {
+      "id": "custom-neon-sign",
+      "type": "title",
+      "mode": "scratch",
+      "brief": "A neon sign that flickers on letter by letter and then hums with a soft glow. The words and the tube colour are controls.",
+      "expect": { "animated": true, "minTextControls": 1, "minColorControls": 1 }
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "name": "@pixerate/flair-evals",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Evals of how well a model drafts new Flair effects, from a brief or from reference frames.",
+  "type": "module",
+  "engines": {
+    "node": ">=23.6"
+  },
+  "scripts": {
+    "eval": "node src/cli.ts",
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.8.0",
+    "@pixerate/flair": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "typescript": "^5.9",
+    "vitest": "^4.1.12"
+  }
+}
