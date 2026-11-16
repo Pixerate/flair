@@ -27,6 +27,8 @@ Each run writes `results/<time>-<model>/`:
 - `references/<task>/reference.png`: what the model was shown.
 - `answers/`: every model answer by key, so `--model replay:<run>/answers` (and `--judge replay:…`) re-grades a run without calling a model.
 
+A sample that ended in an error (a dropped connection, a rate limit that outlasted the retries) can be rerun on its own: `--out <run> --redo-errors` with the run's `--model` and `--judge` reruns only those samples and rewrites the run's results.
+
 Model calls cost money: a full run is 29 tasks × samples × up to `--turns` drafting calls, plus one judge call per rendered sample. Start with `--task` or `--type` and one sample.
 
 ### Models

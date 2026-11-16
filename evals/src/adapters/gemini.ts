@@ -94,11 +94,18 @@ async function main() {
       ...(request.schema && { responseMimeType: "application/json", responseJsonSchema: request.schema }),
     },
   };
-  // Rate limits and overloads are retried with backoff; other errors are reported at once. An
+  // Rate limits, overloads and dropped connections are retried with backoff; other errors are reported at once. An
   // endpoint that does not take a JSON Schema for the answer gets the request again without it.
   let response: Response | undefined;
   for (let attempt = 0; attempt < 6; attempt++) {
-    response = await fetch(target.url, { method: "POST", headers: { "content-type": "application/json", ...target.headers }, body: JSON.stringify(body) });
+    try {
+      response = await fetch(target.url, { method: "POST", headers: { "content-type": "application/json", ...target.headers }, body: JSON.stringify(body) });
+    } catch (e) {
+      // A dropped connection is retried like an overload; the last one is reported.
+      if (attempt === 5) throw e;
+      await new Promise((r) => setTimeout(r, 2000 * 2 ** attempt));
+      continue;
+    }
     if (response.status === 400 && "responseJsonSchema" in body.generationConfig) {
       const text = await response.clone().text();
       if (/responseJsonSchema|response_json_schema/i.test(text)) {
