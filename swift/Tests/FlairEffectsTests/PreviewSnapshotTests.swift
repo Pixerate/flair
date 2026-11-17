@@ -1,10 +1,15 @@
-import AppKit
+import CoreGraphics
 @testable import FlairEffects
+import ImageIO
 import Metal
-import SwiftUI
+import UniformTypeIdentifiers
 import XCTest
 
-@MainActor
+/// Renders the effects shown in `FlairEffectView` previews to PNGs for `docs/previews/`.
+///
+/// `FlairEffectView` draws through an `MTKView`, whose Metal layer `NSView.cacheDisplay(in:to:)` does not
+/// capture (it produced blank white images), so the snapshots go through the same `FlairRenderer` the view
+/// uses, offscreen, at a fixed time.
 final class PreviewSnapshotTests: XCTestCase {
     func testRenderSwiftUIPreviews() throws {
         try XCTSkipIf(MTLCreateSystemDefaultDevice() == nil, "Metal device unavailable in this environment")
@@ -16,13 +21,17 @@ final class PreviewSnapshotTests: XCTestCase {
             try FileManager.default.createDirectory(at: exportDir, withIntermediateDirectories: true)
         }
 
-        let cases: [(name: String, view: AnyView)] = [
-            ("Flair-MeshGradient-Sunset", AnyView(FlairEffectView(MeshGradient(preset: "Sunset"), isPaused: true, fixedTime: 0.5))),
-            ("Flair-Aurora-Northern", AnyView(FlairEffectView(Aurora(preset: "Northern"), isPaused: true, fixedTime: 0.5))),
+        let renderer = try FlairRenderer()
+        let cases: [(name: String, effect: AnyFlairEffect)] = [
+            ("Flair-MeshGradient-Sunset", AnyFlairEffect(MeshGradient(preset: "Sunset"))),
+            ("Flair-Aurora-Northern", AnyFlairEffect(Aurora(preset: "Northern"))),
         ]
 
         for entry in cases {
-            let png = try renderToPNG(view: entry.view, size: CGSize(width: 400, height: 260))
+            let image = try renderer.renderCGImage(anyEffect: entry.effect, width: 400, height: 260, time: 0.5)
+            XCTAssertFalse(isUniform(image), "\(entry.name) rendered a single flat colour")
+
+            let png = try pngData(image)
             XCTAssertGreaterThan(png.count, 0, "Empty PNG for \(entry.name)")
 
             if let exportDir {
@@ -31,32 +40,38 @@ final class PreviewSnapshotTests: XCTestCase {
         }
     }
 
-    private func renderToPNG<V: View>(
-        view: V,
-        size: CGSize
-    ) throws -> Data {
-        let hostingView = NSHostingView(rootView: view.frame(width: size.width, height: size.height))
-        let bounds = NSRect(origin: .zero, size: size)
-        hostingView.frame = bounds
-
-        let window = NSWindow(
-            contentRect: bounds,
-            styleMask: [.borderless],
-            backing: .buffered,
-            defer: false
-        )
-        window.contentView = hostingView
-        hostingView.layoutSubtreeIfNeeded()
-
-        guard let rep = hostingView.bitmapImageRepForCachingDisplay(in: bounds) else {
-            throw NSError(domain: "PreviewSnapshotTests", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to allocate bitmap rep"])
+    private func pngData(_ image: CGImage) throws -> Data {
+        let data = NSMutableData()
+        guard let destination = CGImageDestinationCreateWithData(data, UTType.png.identifier as CFString, 1, nil) else {
+            throw NSError(domain: "PreviewSnapshotTests", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to create PNG destination"])
         }
-        hostingView.cacheDisplay(in: bounds, to: rep)
-
-        guard let data = rep.representation(using: .png, properties: [:]) else {
+        CGImageDestinationAddImage(destination, image, nil)
+        guard CGImageDestinationFinalize(destination) else {
             throw NSError(domain: "PreviewSnapshotTests", code: 2, userInfo: [NSLocalizedDescriptionKey: "Failed to encode PNG"])
         }
-        window.orderOut(nil)
-        return data
+        return data as Data
+    }
+
+    /// True when every pixel matches the first one, as a blank or failed render would.
+    private func isUniform(_ image: CGImage) -> Bool {
+        let width = image.width
+        let height = image.height
+        var pixels = [UInt8](repeating: 0, count: width * height * 4)
+        let drawn = pixels.withUnsafeMutableBytes { buffer -> Bool in
+            guard let context = CGContext(
+                data: buffer.baseAddress,
+                width: width,
+                height: height,
+                bitsPerComponent: 8,
+                bytesPerRow: width * 4,
+                space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+            ) else { return false }
+            context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+            return true
+        }
+        guard drawn else { return true }
+        let first = pixels[0..<4]
+        return stride(from: 4, to: pixels.count, by: 4).allSatisfy { pixels[$0..<$0 + 4] == first }
     }
 }
