@@ -1,5 +1,11 @@
 # @pixerate/flair
 
+## 0.138.1
+
+### Patch Changes
+
+- 4052df0: Add conditional CI SwiftUI preview screenshot rendering (`PreviewSnapshotTests` + `.github/workflows/preview-screenshots.yml`).
+
 ## 0.138.0
 
 ### Minor Changes

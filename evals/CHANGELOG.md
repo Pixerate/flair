@@ -1,5 +1,12 @@
 # @pixerate/flair-evals
 
+## 0.0.4
+
+### Patch Changes
+
+- Updated dependencies [4052df0]
+  - @pixerate/flair@0.138.1
+
 ## 0.0.3
 
 ### Patch Changes
