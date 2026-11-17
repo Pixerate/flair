@@ -101,3 +101,9 @@ There is a strict architectural boundary between **Flair** and **`@pixerate/ai-c
 - **`@pixerate/ai-core` is the AI Orchestrator & Intelligence Layer**:
   - Owns LLM providers, model credentials, prompt engineering, agent loops, reasoning strategies, and memory.
   - Consumes Flair as a downstream rendering and directing library: it imports `FLAIR_AGENT_TOOLS` or calls `applySceneTool` and `simulateScene` to autonomously author, validate, and preview generative motion graphics.
+
+## SwiftUI Dynamic Previews
+When adding or modifying SwiftUI `View`s, include Xcode dynamic previews per [Previews in Xcode](https://developer.apple.com/documentation/swiftui/previews-in-xcode):
+- Use the `#Preview` macro (not legacy `PreviewProvider`).
+- Use `@Previewable` with `@State` / `@Bindable` for interactive bindings instead of `.constant(...)` or custom wrapper structs.
+- Use `PreviewModifier` for shared preview environments/dependencies, and `#Preview(traits:)` or `#Preview(arguments:)` to cover key states and layout variants.
