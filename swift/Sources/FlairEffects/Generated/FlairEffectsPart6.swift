@@ -1740,6 +1740,119 @@ public struct MoneyRain: FlairEffect, Codable, Sendable, Equatable {
     }
 }
 
+/// **Petal fall** (`petal-fall`, category: `debris`).
+/// Falling cherry blossom and rose petals drifting on a breeze with a swaying 3D flip, soft depth blur and click bursts.
+public struct PetalFall: FlairEffect, Codable, Sendable, Equatable {
+    public static let effectId = "petal-fall"
+    public static let effectName = "Petal fall"
+    public static let category = "debris"
+    public static let effectDescription = "Falling cherry blossom and rose petals drifting on a breeze with a swaying 3D flip, soft depth blur and click bursts."
+    public static let tags: [String] = ["debris", "petals", "sakura", "cherry-blossom", "rose", "spring", "wedding", "overlay", "interactive", "click"]
+    public static let phase: Int = 4
+    public static let functionName = "flair_petal_fall_frag"
+    public static let uniformByteLength: Int = 1072
+    public static let isTransparent: Bool = true
+    public static let loopDuration: Double? = nil
+    public static let controls: [FlairControlDescriptor] = [
+        FlairControlDescriptor(name: "uShape", property: "shape", type: .int, label: "Shape (0 sakura, 1 rose, 2 round)", min: 0.0, max: 2.0, step: 1.0),
+        FlairControlDescriptor(name: "uColor", property: "color", type: .vec3, label: "Petal", isColor: true, min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uTip", property: "tip", type: .vec3, label: "Tip", isColor: true, min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uDensity", property: "density", type: .float, label: "Density", min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uSize", property: "size", type: .float, label: "Size", min: 0.02, max: 0.12, step: 0.0005),
+        FlairControlDescriptor(name: "uLayers", property: "layers", type: .int, label: "Depth layers", min: 1.0, max: 5.0, step: 1.0),
+        FlairControlDescriptor(name: "uSway", property: "sway", type: .float, label: "Sway", min: 0.0, max: 2.0, step: 0.01),
+        FlairControlDescriptor(name: "uFlip", property: "flip", type: .float, label: "Flip", min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uBreeze", property: "breeze", type: .float, label: "Breeze", min: -2.0, max: 2.0, step: 0.02),
+        FlairControlDescriptor(name: "uSpeed", property: "speed", type: .float, label: "Fall speed", min: 0.1, max: 2.5, step: 0.012),
+        FlairControlDescriptor(name: "uGlow", property: "glow", type: .float, label: "Glow", min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uDemo", property: "demo", type: .bool, label: "Demo clicks when idle", min: 0.0, max: 1.0, step: 0.005),
+    ]
+    public static let presets: [String: PetalFall] = {
+        var map: [String: PetalFall] = [:]
+        do { var p = PetalFall(); p.shape = 0; p.color = flairVec3(0.98, 0.78, 0.84); p.tip = flairVec3(1.0, 0.95, 0.97); p.sway = 1.1; p.flip = 0.92; p.glow = 0.0; map["Sakura"] = p }
+        do { var p = PetalFall(); p.shape = 1; p.color = flairVec3(0.72, 0.08, 0.16); p.tip = flairVec3(0.92, 0.28, 0.34); p.density = 0.45; p.size = 0.08; p.sway = 0.75; p.speed = 0.45; p.glow = 0.0; map["Rose petals"] = p }
+        do { var p = PetalFall(); p.shape = 2; p.color = flairVec3(0.95, 0.94, 0.92); p.tip = flairVec3(1.0, 1.0, 1.0); p.sway = 0.9; p.speed = 0.5; p.glow = 0.08; map["White wedding"] = p }
+        do { var p = PetalFall(); p.shape = 0; p.color = flairVec3(0.92, 0.42, 0.62); p.tip = flairVec3(1.0, 0.76, 0.88); p.speed = 0.55; p.glow = 0.65; map["Night blossoms"] = p }
+        return map
+    }()
+
+    /// Shape (0 sakura, 1 rose, 2 round) (`uShape`).
+    public var shape: Int32 = 0
+    /// Petal (`uColor`).
+    public var color: SIMD3<Float> = flairVec3(0.976471, 0.776471, 0.843137)
+    /// Tip (`uTip`).
+    public var tip: SIMD3<Float> = flairVec3(1.0, 0.941176, 0.960784)
+    /// Density (`uDensity`).
+    public var density: Float = 0.55
+    /// Size (`uSize`).
+    public var size: Float = 0.055
+    /// Depth layers (`uLayers`).
+    public var layers: Int32 = 3
+    /// Sway (`uSway`).
+    public var sway: Float = 1.0
+    /// Flip (`uFlip`).
+    public var flip: Float = 0.92
+    /// Breeze (`uBreeze`).
+    public var breeze: Float = 0.35
+    /// Fall speed (`uSpeed`).
+    public var speed: Float = 0.7
+    /// Glow (`uGlow`).
+    public var glow: Float = 0.0
+    /// Demo clicks when idle (`uDemo`).
+    public var demo: Bool = true
+
+    public init() {}
+
+    public func encodeUniforms(into buffer: UnsafeMutableRawPointer, state: FlairFrameState) {
+        state.encodeBuiltins(into: buffer)
+        FlairUniformEncoder.writeInt(FlairUniformEncoder.clampInt(shape, min: 0, max: 2), to: buffer, at: 992)
+        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(color, min: 0.0, max: 1.0), to: buffer, at: 1008)
+        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(tip, min: 0.0, max: 1.0), to: buffer, at: 1024)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(density, min: 0.0, max: 1.0), to: buffer, at: 1036)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(size, min: 0.02, max: 0.12), to: buffer, at: 1040)
+        FlairUniformEncoder.writeInt(FlairUniformEncoder.clampInt(layers, min: 1, max: 5), to: buffer, at: 1044)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(sway, min: 0.0, max: 2.0), to: buffer, at: 1048)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(flip, min: 0.0, max: 1.0), to: buffer, at: 1052)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(breeze, min: -2.0, max: 2.0), to: buffer, at: 1056)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(speed, min: 0.1, max: 2.5), to: buffer, at: 1060)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(glow, min: 0.0, max: 1.0), to: buffer, at: 1064)
+        FlairUniformEncoder.writeBool(demo, to: buffer, at: 1068)
+    }
+
+    public init(from decoder: Decoder) throws {
+        let bag = try FlairJSONBag(from: decoder)
+        self.shape = bag.decodeInt("uShape", "shape", default: 0, min: 0, max: 2)
+        self.color = bag.decodeVec3("uColor", "color", default: flairVec3(0.976471, 0.776471, 0.843137), isColor: true)
+        self.tip = bag.decodeVec3("uTip", "tip", default: flairVec3(1.0, 0.941176, 0.960784), isColor: true)
+        self.density = bag.decodeFloat("uDensity", "density", default: 0.55, min: 0.0, max: 1.0)
+        self.size = bag.decodeFloat("uSize", "size", default: 0.055, min: 0.02, max: 0.12)
+        self.layers = bag.decodeInt("uLayers", "layers", default: 3, min: 1, max: 5)
+        self.sway = bag.decodeFloat("uSway", "sway", default: 1.0, min: 0.0, max: 2.0)
+        self.flip = bag.decodeFloat("uFlip", "flip", default: 0.92, min: 0.0, max: 1.0)
+        self.breeze = bag.decodeFloat("uBreeze", "breeze", default: 0.35, min: -2.0, max: 2.0)
+        self.speed = bag.decodeFloat("uSpeed", "speed", default: 0.7, min: 0.1, max: 2.5)
+        self.glow = bag.decodeFloat("uGlow", "glow", default: 0.0, min: 0.0, max: 1.0)
+        self.demo = bag.decodeBool("uDemo", "demo", default: true)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var bag = FlairJSONBag()
+        bag.encodeInt(self.shape, for: "uShape")
+        bag.encodeVec3(self.color, for: "uColor")
+        bag.encodeVec3(self.tip, for: "uTip")
+        bag.encodeFloat(self.density, for: "uDensity")
+        bag.encodeFloat(self.size, for: "uSize")
+        bag.encodeInt(self.layers, for: "uLayers")
+        bag.encodeFloat(self.sway, for: "uSway")
+        bag.encodeFloat(self.flip, for: "uFlip")
+        bag.encodeFloat(self.breeze, for: "uBreeze")
+        bag.encodeFloat(self.speed, for: "uSpeed")
+        bag.encodeFloat(self.glow, for: "uGlow")
+        bag.encodeBool(self.demo, for: "uDemo")
+        try bag.encode(to: encoder)
+    }
+}
+
 /// **Shockwave** (`shockwave`, category: `impact`).
 /// A picture hit by a shockwave from each click: a refracting ring bends it as it spreads, with a bright leading edge, a slight colour split and a flash where it struck.
 public struct Shockwave: FlairEffect, Codable, Sendable, Equatable {
@@ -5551,106 +5664,6 @@ public struct GameOverBanner: FlairEffect, Codable, Sendable, Equatable {
         bag.encodeFloat(self.size, for: "uSize")
         bag.encodeVec3(self.backdrop, for: "uBackdrop")
         bag.encodeFloat(self.backdropAlpha, for: "uBackdropAlpha")
-        try bag.encode(to: encoder)
-    }
-}
-
-/// **Volumetric clouds** (`volumetric-clouds`, category: `atmosphere`).
-/// A ray-marched layer of soft, self-shadowed clouds drifting overhead, rimmed with a silver lining toward the sun.
-public struct VolumetricClouds: FlairEffect, Codable, Sendable, Equatable {
-    public static let effectId = "volumetric-clouds"
-    public static let effectName = "Volumetric clouds"
-    public static let category = "atmosphere"
-    public static let effectDescription = "A ray-marched layer of soft, self-shadowed clouds drifting overhead, rimmed with a silver lining toward the sun."
-    public static let tags: [String] = ["atmosphere", "clouds", "sky", "background", "3d", "weather"]
-    public static let phase: Int = 1
-    public static let functionName = "flair_volumetric_clouds_frag"
-    public static let uniformByteLength: Int = 1088
-    public static let isTransparent: Bool = false
-    public static let loopDuration: Double? = nil
-    public static let controls: [FlairControlDescriptor] = [
-        FlairControlDescriptor(name: "uSkyTop", property: "skyTop", type: .vec3, label: "Sky (top)", isColor: true, min: 0.0, max: 1.0, step: 0.005),
-        FlairControlDescriptor(name: "uSkyHorizon", property: "skyHorizon", type: .vec3, label: "Sky (horizon)", isColor: true, min: 0.0, max: 1.0, step: 0.005),
-        FlairControlDescriptor(name: "uCloudColor", property: "cloudColor", type: .vec3, label: "Cloud colour", isColor: true, min: 0.0, max: 1.0, step: 0.005),
-        FlairControlDescriptor(name: "uShadowColor", property: "shadowColor", type: .vec3, label: "Shadow colour", isColor: true, min: 0.0, max: 1.0, step: 0.005),
-        FlairControlDescriptor(name: "uSunColor", property: "sunColor", type: .vec3, label: "Sun colour", isColor: true, min: 0.0, max: 1.0, step: 0.005),
-        FlairControlDescriptor(name: "uSunAzimuth", property: "sunAzimuth", type: .float, label: "Sun direction", min: -3.1416, max: 3.1416, step: 0.031416),
-        FlairControlDescriptor(name: "uSunHeight", property: "sunHeight", type: .float, label: "Sun height", min: 0.0, max: 1.5, step: 0.0075),
-        FlairControlDescriptor(name: "uCoverage", property: "coverage", type: .float, label: "Coverage", min: 0.0, max: 1.0, step: 0.005),
-        FlairControlDescriptor(name: "uDensity", property: "density", type: .float, label: "Density", min: 0.1, max: 3.0, step: 0.0145),
-        FlairControlDescriptor(name: "uSpeed", property: "speed", type: .float, label: "Drift speed", min: 0.0, max: 3.0, step: 0.015),
-    ]
-    public static let presets: [String: VolumetricClouds] = {
-        var map: [String: VolumetricClouds] = [:]
-        do { var p = VolumetricClouds(); p.sunHeight = 1.2; p.coverage = 0.45; p.density = 0.9; map["Midday"] = p }
-        do { var p = VolumetricClouds(); p.skyTop = flairVec3(0.24, 0.27, 0.52); p.skyHorizon = flairVec3(1.0, 0.62, 0.38); p.cloudColor = flairVec3(1.0, 0.78, 0.6); p.shadowColor = flairVec3(0.36, 0.25, 0.38); p.sunColor = flairVec3(1.0, 0.55, 0.25); p.sunAzimuth = 0.0; p.sunHeight = 0.08; p.coverage = 0.5; map["Sunset"] = p }
-        do { var p = VolumetricClouds(); p.skyTop = flairVec3(0.22, 0.25, 0.3); p.skyHorizon = flairVec3(0.45, 0.48, 0.52); p.cloudColor = flairVec3(0.62, 0.65, 0.7); p.shadowColor = flairVec3(0.12, 0.13, 0.17); p.sunColor = flairVec3(0.75, 0.8, 0.9); p.coverage = 0.85; p.density = 2.2; p.speed = 1.8; map["Storm"] = p }
-        return map
-    }()
-
-    /// Sky (top) (`uSkyTop`).
-    public var skyTop: SIMD3<Float> = flairVec3(0.227451, 0.470588, 0.788235)
-    /// Sky (horizon) (`uSkyHorizon`).
-    public var skyHorizon: SIMD3<Float> = flairVec3(0.721569, 0.847059, 0.94902)
-    /// Cloud colour (`uCloudColor`).
-    public var cloudColor: SIMD3<Float> = flairVec3(1.0, 1.0, 1.0)
-    /// Shadow colour (`uShadowColor`).
-    public var shadowColor: SIMD3<Float> = flairVec3(0.368627, 0.435294, 0.541176)
-    /// Sun colour (`uSunColor`).
-    public var sunColor: SIMD3<Float> = flairVec3(1.0, 0.952941, 0.862745)
-    /// Sun direction (`uSunAzimuth`).
-    public var sunAzimuth: Float = 0.4
-    /// Sun height (`uSunHeight`).
-    public var sunHeight: Float = 0.35
-    /// Coverage (`uCoverage`).
-    public var coverage: Float = 0.5
-    /// Density (`uDensity`).
-    public var density: Float = 1.0
-    /// Drift speed (`uSpeed`).
-    public var speed: Float = 0.6
-
-    public init() {}
-
-    public func encodeUniforms(into buffer: UnsafeMutableRawPointer, state: FlairFrameState) {
-        state.encodeBuiltins(into: buffer)
-        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(skyTop, min: 0.0, max: 1.0), to: buffer, at: 992)
-        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(skyHorizon, min: 0.0, max: 1.0), to: buffer, at: 1008)
-        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(cloudColor, min: 0.0, max: 1.0), to: buffer, at: 1024)
-        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(shadowColor, min: 0.0, max: 1.0), to: buffer, at: 1040)
-        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(sunColor, min: 0.0, max: 1.0), to: buffer, at: 1056)
-        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(sunAzimuth, min: -3.1416, max: 3.1416), to: buffer, at: 1068)
-        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(sunHeight, min: 0.0, max: 1.5), to: buffer, at: 1072)
-        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(coverage, min: 0.0, max: 1.0), to: buffer, at: 1076)
-        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(density, min: 0.1, max: 3.0), to: buffer, at: 1080)
-        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(speed, min: 0.0, max: 3.0), to: buffer, at: 1084)
-    }
-
-    public init(from decoder: Decoder) throws {
-        let bag = try FlairJSONBag(from: decoder)
-        self.skyTop = bag.decodeVec3("uSkyTop", "skyTop", default: flairVec3(0.227451, 0.470588, 0.788235), isColor: true)
-        self.skyHorizon = bag.decodeVec3("uSkyHorizon", "skyHorizon", default: flairVec3(0.721569, 0.847059, 0.94902), isColor: true)
-        self.cloudColor = bag.decodeVec3("uCloudColor", "cloudColor", default: flairVec3(1.0, 1.0, 1.0), isColor: true)
-        self.shadowColor = bag.decodeVec3("uShadowColor", "shadowColor", default: flairVec3(0.368627, 0.435294, 0.541176), isColor: true)
-        self.sunColor = bag.decodeVec3("uSunColor", "sunColor", default: flairVec3(1.0, 0.952941, 0.862745), isColor: true)
-        self.sunAzimuth = bag.decodeFloat("uSunAzimuth", "sunAzimuth", default: 0.4, min: -3.1416, max: 3.1416)
-        self.sunHeight = bag.decodeFloat("uSunHeight", "sunHeight", default: 0.35, min: 0.0, max: 1.5)
-        self.coverage = bag.decodeFloat("uCoverage", "coverage", default: 0.5, min: 0.0, max: 1.0)
-        self.density = bag.decodeFloat("uDensity", "density", default: 1.0, min: 0.1, max: 3.0)
-        self.speed = bag.decodeFloat("uSpeed", "speed", default: 0.6, min: 0.0, max: 3.0)
-    }
-
-    public func encode(to encoder: Encoder) throws {
-        var bag = FlairJSONBag()
-        bag.encodeVec3(self.skyTop, for: "uSkyTop")
-        bag.encodeVec3(self.skyHorizon, for: "uSkyHorizon")
-        bag.encodeVec3(self.cloudColor, for: "uCloudColor")
-        bag.encodeVec3(self.shadowColor, for: "uShadowColor")
-        bag.encodeVec3(self.sunColor, for: "uSunColor")
-        bag.encodeFloat(self.sunAzimuth, for: "uSunAzimuth")
-        bag.encodeFloat(self.sunHeight, for: "uSunHeight")
-        bag.encodeFloat(self.coverage, for: "uCoverage")
-        bag.encodeFloat(self.density, for: "uDensity")
-        bag.encodeFloat(self.speed, for: "uSpeed")
         try bag.encode(to: encoder)
     }
 }

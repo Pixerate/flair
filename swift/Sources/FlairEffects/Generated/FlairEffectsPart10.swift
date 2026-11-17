@@ -6,6 +6,113 @@ import simd
 
 
 
+/// **Subliminal flicker** (`subliminal-flicker`, category: `horror`).
+/// A picture that now and then shows something else for a single frame, a hidden picture laid over it so briefly you are not sure you saw it, never more than once every two seconds.
+public struct SubliminalFlicker: FlairEffect, Codable, Sendable, Equatable {
+    public static let effectId = "subliminal-flicker"
+    public static let effectName = "Subliminal flicker"
+    public static let category = "horror"
+    public static let effectDescription = "A picture that now and then shows something else for a single frame, a hidden picture laid over it so briefly you are not sure you saw it, never more than once every two seconds."
+    public static let tags: [String] = ["horror", "shock", "subliminal", "hidden", "flicker", "single-frame", "image"]
+    public static let phase: Int = 2
+    public static let functionName = "flair_subliminal_flicker_frag"
+    public static let uniformByteLength: Int = 1024
+    public static let isTransparent: Bool = false
+    public static let loopDuration: Double? = 5.0
+    public static let controls: [FlairControlDescriptor] = [
+        FlairControlDescriptor(name: "uImage", property: "image", type: .sampler2D, label: "Image", min: 0.0, max: 1.0, step: 0.005, filter: .linear, wrap: .clamp),
+        FlairControlDescriptor(name: "uHidden", property: "hidden", type: .sampler2D, label: "Hidden picture", min: 0.0, max: 1.0, step: 0.005, filter: .linear, wrap: .clamp),
+        FlairControlDescriptor(name: "uStrength", property: "strength", type: .float, label: "Strength", min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uEvery", property: "every", type: .float, label: "Every (s)", min: 2.0, max: 20.0, step: 0.09),
+        FlairControlDescriptor(name: "uLength", property: "length", type: .float, label: "Length (s)", min: 0.02, max: 0.12, step: 0.0005),
+        FlairControlDescriptor(name: "uGrain", property: "grain", type: .float, label: "Grain", min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uBackdrop", property: "backdrop", type: .vec3, label: "Backdrop", isColor: true, min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uBackdropAlpha", property: "backdropAlpha", type: .float, label: "Backdrop opacity", min: 0.0, max: 1.0, step: 0.005),
+    ]
+    public static let samplerBindings: [FlairSamplerBinding] = [
+        FlairSamplerBinding(name: "uImage", property: "image", type: .sampler2D, binding: 1, filter: .linear, wrap: .clamp),
+        FlairSamplerBinding(name: "uHidden", property: "hidden", type: .sampler2D, binding: 2, filter: .linear, wrap: .clamp),
+    ]
+    public static let presets: [String: SubliminalFlicker] = {
+        var map: [String: SubliminalFlicker] = [:]
+        do { var p = SubliminalFlicker(); p.strength = 0.3; p.length = 0.02; map["Barely there"] = p }
+        do { var p = SubliminalFlicker(); p.strength = 1.0; p.length = 0.1; map["Unmissable"] = p }
+        do { var p = SubliminalFlicker(); p.every = 15.0; map["Rarely"] = p }
+        do { var p = SubliminalFlicker(); p.grain = 0.0; map["Clean"] = p }
+        return map
+    }()
+
+    /// Image (`uImage`).
+    public var image: FlairTextureInput = .sample(.city)
+    /// Hidden picture (`uHidden`).
+    public var hidden: FlairTextureInput = .sample(.portrait)
+    /// Strength (`uStrength`).
+    public var strength: Float = 0.6
+    /// Every (s) (`uEvery`).
+    public var every: Float = 5.0
+    /// Length (s) (`uLength`).
+    public var length: Float = 0.045
+    /// Grain (`uGrain`).
+    public var grain: Float = 0.3
+    /// Backdrop (`uBackdrop`).
+    public var backdrop: SIMD3<Float> = flairVec3(1.0, 1.0, 1.0)
+    /// Backdrop opacity (`uBackdropAlpha`).
+    public var backdropAlpha: Float = 1.0
+
+    public init() {}
+
+    public func encodeUniforms(into buffer: UnsafeMutableRawPointer, state: FlairFrameState) {
+        state.encodeBuiltins(into: buffer)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(strength, min: 0.0, max: 1.0), to: buffer, at: 992)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(every, min: 2.0, max: 20.0), to: buffer, at: 996)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(length, min: 0.02, max: 0.12), to: buffer, at: 1000)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(grain, min: 0.0, max: 1.0), to: buffer, at: 1004)
+        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(backdrop, min: 0.0, max: 1.0), to: buffer, at: 1008)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(backdropAlpha, min: 0.0, max: 1.0), to: buffer, at: 1020)
+    }
+
+    public func textureInput(for binding: Int) -> FlairTextureInput {
+        switch binding {
+        case 1: return self.image
+        case 2: return self.hidden
+        default: return .none
+        }
+    }
+
+    public mutating func setTextureInput(_ input: FlairTextureInput, for binding: Int) {
+        switch binding {
+        case 1: self.image = input
+        case 2: self.hidden = input
+        default: break
+        }
+    }
+
+    public init(from decoder: Decoder) throws {
+        let bag = try FlairJSONBag(from: decoder)
+        self.image = bag.decodeTexture("uImage", "image", default: .sample(.city), fit: .contain, margin: 0.1)
+        self.hidden = bag.decodeTexture("uHidden", "hidden", default: .sample(.portrait), fit: .contain, margin: 0.1)
+        self.strength = bag.decodeFloat("uStrength", "strength", default: 0.6, min: 0.0, max: 1.0)
+        self.every = bag.decodeFloat("uEvery", "every", default: 5.0, min: 2.0, max: 20.0)
+        self.length = bag.decodeFloat("uLength", "length", default: 0.045, min: 0.02, max: 0.12)
+        self.grain = bag.decodeFloat("uGrain", "grain", default: 0.3, min: 0.0, max: 1.0)
+        self.backdrop = bag.decodeVec3("uBackdrop", "backdrop", default: flairVec3(1.0, 1.0, 1.0), isColor: true)
+        self.backdropAlpha = bag.decodeFloat("uBackdropAlpha", "backdropAlpha", default: 1.0, min: 0.0, max: 1.0)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var bag = FlairJSONBag()
+        bag.encodeTexture(self.image, for: "uImage")
+        bag.encodeTexture(self.hidden, for: "uHidden")
+        bag.encodeFloat(self.strength, for: "uStrength")
+        bag.encodeFloat(self.every, for: "uEvery")
+        bag.encodeFloat(self.length, for: "uLength")
+        bag.encodeFloat(self.grain, for: "uGrain")
+        bag.encodeVec3(self.backdrop, for: "uBackdrop")
+        bag.encodeFloat(self.backdropAlpha, for: "uBackdropAlpha")
+        try bag.encode(to: encoder)
+    }
+}
+
 /// **Failing light** (`failing-light`, category: `horror`).
 /// A picture lit by a failing fluorescent tube overhead: humming, catching, stuttering off and back on and sometimes staying dark a while, the room falling into shadow each time. It switches at most three times a second.
 public struct FailingLight: FlairEffect, Codable, Sendable, Equatable {

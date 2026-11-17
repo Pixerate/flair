@@ -1581,18 +1581,18 @@ describe("debris effects", () => {
     return effect.kind === "shader" ? effect.source : "";
   };
 
-  it("has rubble, glass, crumbling text, shreds, leaves, sand and money rain", () => {
+  it("has rubble, glass, crumbling text, shreds, leaves, sand, money rain and falling petals", () => {
     const ids = debris.map((e) => e.id);
-    for (const id of ["rubble-fall", "glass-shatter", "crumbling-text", "paper-shreds", "leaves-blowing", "sand-erosion", "money-rain"]) expect(ids).toContain(id);
+    for (const id of ["rubble-fall", "glass-shatter", "crumbling-text", "paper-shreds", "leaves-blowing", "sand-erosion", "money-rain", "petal-fall"]) expect(ids).toContain(id);
     for (const effect of debris) expect(effect.tags).toContain("debris");
   });
 
   it("draws the falling debris as transparent overlays, and says how pictures take video", () => {
-    for (const id of ["rubble-fall", "paper-shreds", "leaves-blowing", "crumbling-text", "sand-erosion", "money-rain"]) expect(getEffect(id), id).toMatchObject({ transparent: true });
+    for (const id of ["rubble-fall", "paper-shreds", "leaves-blowing", "crumbling-text", "sand-erosion", "money-rain", "petal-fall"]) expect(getEffect(id), id).toMatchObject({ transparent: true });
     expect(getEffect("glass-shatter")).toMatchObject({ video: "interactive" });
     expect(getEffect("crumbling-text")).toMatchObject({ video: "none", loop: 8 });
     expect(getEffect("sand-erosion")).toMatchObject({ video: "none", loop: 8 });
-    for (const id of ["rubble-fall", "paper-shreds", "leaves-blowing", "money-rain"]) expect(getEffect(id), id).not.toHaveProperty("video");
+    for (const id of ["rubble-fall", "paper-shreds", "leaves-blowing", "money-rain", "petal-fall"]) expect(getEffect(id), id).not.toHaveProperty("video");
   });
 
   it("shatters glass at clicks, with a demo while idle, and reads the built-in without declaring it", () => {
@@ -1620,6 +1620,16 @@ describe("debris effects", () => {
     expect(source("money-rain")).not.toMatch(/uniform\s+vec4\s+iClicks/);
     expect(effectControls(money).find((c) => c.name === "uDemo")).toMatchObject({ type: "bool", default: true });
     expect(money.presets?.map((p) => p.name)).toEqual(["Jackpot", "Cash", "Silver", "Burst only"]);
+  });
+
+  it("bursts falling petals on click with a signed breeze and expected presets", () => {
+    const petals = getEffect("petal-fall")!;
+    expect(source("petal-fall")).toMatch(/\biClicks\[/);
+    expect(source("petal-fall")).not.toMatch(/uniform\s+vec4\s+iClicks/);
+    const breeze = effectControls(petals).find((c) => c.name === "uBreeze")!;
+    expect(breeze.min).toBeLessThan(0);
+    expect(breeze.max).toBeGreaterThan(0);
+    expect(petals.presets?.map((p) => p.name)).toEqual(["Sakura", "Rose petals", "White wedding", "Night blossoms"]);
   });
 });
 
