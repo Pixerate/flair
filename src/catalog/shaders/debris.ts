@@ -1165,5 +1165,171 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   ],
 };
 
-/** Debris: rubble, shards, crumbling, shreds, leaves, dust and money rain. */
-export const debrisShaders: ShaderEffect[] = [rubbleFall, glassShatter, crumblingText, paperShreds, leavesBlowing, sandErosion, moneyRain];
+export const petalFall: ShaderEffect = {
+  kind: "shader",
+  id: "petal-fall",
+  name: "Petal fall",
+  description: "Falling cherry blossom and rose petals drifting on a breeze with a swaying 3D flip, soft depth blur and click bursts.",
+  category: "debris",
+  tags: ["debris", "petals", "sakura", "cherry-blossom", "rose", "spring", "wedding", "overlay", "interactive", "click"],
+  transparent: true,
+  source: glsl(
+    `// Petal fall: cherry blossom, rose and round petals drifting on a breeze with 3D flip and click bursts.
+uniform int uShape;      // @control min=0 max=2 default=0 label="Shape (0 sakura, 1 rose, 2 round)"
+uniform vec3 uColor;     // @control color default=#F9C6D7 label="Petal"
+uniform vec3 uTip;       // @control color default=#FFF0F5 label="Tip"
+uniform float uDensity;  // @control min=0 max=1 default=0.55 label="Density"
+uniform float uSize;     // @control min=0.02 max=0.12 default=0.055 label="Size"
+uniform int uLayers;     // @control min=1 max=5 default=3 label="Depth layers"
+uniform float uSway;     // @control min=0 max=2 default=1 label="Sway"
+uniform float uFlip;     // @control min=0 max=1 default=0.92 label="Flip"
+uniform float uBreeze;   // @control min=-2 max=2 default=0.35 label="Breeze"
+uniform float uSpeed;    // @control min=0.1 max=2.5 default=0.7 label="Fall speed"
+uniform float uGlow;     // @control min=0 max=1 default=0 label="Glow"
+uniform bool uDemo;      // @control default=true label="Demo clicks when idle"`,
+    HASH,
+    ROTATE,
+    OVER,
+    CLICKS,
+    `const float TAU = 6.2831853;
+
+// Signed distance inside a petal (positive inside), base at -y, tip at +y.
+float petalShape(vec2 q, int shape) {
+  if (shape == 0) {
+    // Sakura: tapered base, broad upper curve, distinct apical notch.
+    float y = q.y / 0.9;
+    float taper = 0.24 + 0.76 * smoothstep(-1.0, 0.45, y);
+    float notch = 0.36 * smoothstep(0.28, 0.88, y) * exp(-pow(q.x / 0.16, 2.0));
+    float r2 = (q.x * q.x) / (0.38 * taper * taper) + y * y + notch;
+    return (1.0 - sqrt(max(r2, 0.0))) * 0.65;
+  }
+  if (shape == 1) {
+    // Rose: broad, cupped petal with a softly ruffled upper edge.
+    float y = q.y / 0.88;
+    float taper = 0.38 + 0.62 * smoothstep(-1.0, 0.25, y);
+    float ruffle = 0.03 * sin(q.x * 9.0 + y * 3.0) * smoothstep(0.2, 0.9, y);
+    float r2 = (q.x * q.x) / (0.68 * taper * taper) + pow(y + ruffle, 2.0);
+    return (1.0 - sqrt(max(r2, 0.0))) * 0.65;
+  }
+  // Round: soft camellia / wedding petal.
+  float y = q.y / 0.85;
+  float taper = 0.55 + 0.45 * smoothstep(-1.0, 0.1, y);
+  float r2 = (q.x * q.x) / (0.52 * taper * taper) + y * y;
+  return (1.0 - sqrt(max(r2, 0.0))) * 0.65;
+}
+
+vec4 drawPetal(vec4 acc, vec2 rel, float r, float spin, float flip, float blur, float depthFade, float fade, vec2 seed, float px) {
+  float cf = cos(flip);
+  float ac = abs(cf);
+  float squash = mix(1.0, max(ac, 0.05), uFlip);
+  vec2 q = rot(-spin) * rel / r;
+  q.x /= (cf < 0.0 ? -1.0 : 1.0) * squash;
+
+  float inside = petalShape(q, uShape);
+  float aa = px / max(r, 1e-5) * 1.6 + blur;
+  float cover = smoothstep(-aa, aa, inside);
+  if (cover <= 0.001) return acc;
+
+  float grad = smoothstep(-0.75, 0.75, q.y);
+  vec3 col = mix(uColor, uTip, grad * 0.85);
+  // Subtle translucency toward the centre and a catchlight as the petal turns edge-on.
+  col *= 0.88 + 0.14 * smoothstep(0.0, 0.38, inside);
+  if (cf < 0.0) col = mix(col, mix(col, vec3(1.0), 0.2), 0.35);
+  col += uTip * (1.0 - ac) * 0.16 * uFlip;
+  col += mix(uColor, uTip, 0.5) * uGlow * 0.45;
+  col = mix(col, col * 0.78 + vec3(0.06), depthFade);
+
+  float alpha = cover * fade * clamp(0.86 + 0.12 * (1.0 - ac), 0.0, 1.0);
+  return over(acc, min(col, vec3(1.2)), alpha);
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  float px = 1.0 / iResolution.y;
+  vec2 p = (fragCoord - 0.5 * iResolution.xy) * px;
+  vec4 acc = vec4(0.0);
+
+  int layers = clamp(uLayers, 1, 5);
+  if (uDensity > 0.001) {
+    for (int l = 4; l >= 0; l--) {
+      if (l >= layers) continue;
+      float fl = float(l);
+      float depthNorm = layers > 1 ? fl / float(layers - 1) : 0.0;
+      float sc = 1.0 - 0.16 * fl;
+      float cs = uSize * 4.2;
+      float fallY = (0.16 + 0.06 * (1.0 - depthNorm)) * uSpeed * iTime;
+      float driftX = uBreeze * 0.25 * (0.65 + 0.35 * sc) * iTime;
+      vec2 pl = p / sc - vec2(driftX, -fallY) + fl * 5.7;
+      vec2 cell = floor(pl / cs);
+      float blur = (l == 0 && layers > 1) ? 0.1 : 0.0;
+      float depthFade = 0.35 * depthNorm;
+
+      for (int j = -1; j <= 1; j++) {
+        for (int i = -1; i <= 1; i++) {
+          vec2 c = cell + vec2(float(i), float(j));
+          vec4 h = vec4(hash22(c + 0.19 * fl), hash22(c + 4.3 + fl));
+          if (h.x > uDensity) continue;
+          float t = iTime * (0.7 + 0.6 * h.y) + h.z * 20.0;
+          vec2 swayOff = cs * vec2(
+            0.22 * uSway * sin(t * 1.15 + h.w * TAU),
+            0.12 * uSway * cos(t * 0.85 + h.z * TAU)
+          );
+          vec2 centre = (c + 0.5 + 0.38 * (h.zw - 0.5)) * cs + swayOff;
+          float r = uSize * (0.72 + 0.56 * h.w);
+          vec2 rel = pl - centre;
+          if (length(rel) > r * 1.45) continue;
+
+          float spinDir = h.z < 0.5 ? -1.0 : 1.0;
+          float spin = h.y * TAU + spinDir * (iTime * 0.7 * uSpeed + 0.6 * uSway * sin(t * 1.1));
+          float flip = h.w * TAU + iTime * (1.4 + 1.2 * h.y) * (0.4 + 0.6 * uSway) + uBreeze * 0.5 * iTime;
+          acc = drawPetal(acc, rel, r, spin, flip, blur, depthFade, 1.0, h.xy, px / sc);
+        }
+      }
+    }
+  }
+
+  // Click bursts (up to 4 active clicks, plus demo clicks when idle).
+  const float LIFE = 3.4;
+  const float DRAG = 2.0;
+  for (int i = 3; i >= 0; i--) {
+    vec4 c = clickAt(i, uDemo, 3.5);
+    if (c.w < 0.5) continue;
+    float age = iTime - c.z;
+    if (age < 0.0 || age > LIFE) continue;
+    vec2 origin = (c.xy - 0.5 * iResolution.xy) * px;
+    float e = (1.0 - exp(-DRAG * age)) / DRAG;
+    float drop = 0.22 * uSpeed * age;
+    float maxReach = 0.7 * e + drop + abs(uBreeze) * 0.25 * age + uSize * 2.0;
+    if (length(p - origin - vec2(uBreeze * 0.15 * age, -drop * 0.5)) > maxReach) continue;
+
+    float fade = 1.0 - smoothstep(LIFE - 0.9, LIFE, age);
+    for (int j = 0; j < 14; j++) {
+      float fj = float(j);
+      vec4 h = vec4(hash22(vec2(fj * 3.1 + 1.0, c.z)), hash22(vec2(c.z * 2.3, fj * 5.7)));
+      float ang = h.x * TAU;
+      float spd = 0.28 + 0.42 * h.y;
+      vec2 v0 = vec2(cos(ang), sin(ang) * 0.85 + 0.25) * spd;
+      vec2 sway = vec2(0.04 * uSway * sin(age * 2.2 + h.z * TAU), 0.0);
+      vec2 pos = origin + v0 * e + vec2(uBreeze * 0.2 * age, -0.22 * uSpeed * (0.7 + 0.5 * h.z) * age) + sway;
+      vec2 rel = p - pos;
+      float r = uSize * (0.75 + 0.45 * h.w);
+      if (length(rel) > r * 1.45) continue;
+
+      float spin = h.w * TAU + age * (1.8 + 1.4 * h.z) * (h.x < 0.5 ? 1.0 : -1.0);
+      float flip = h.z * TAU + age * (2.6 + 1.8 * h.y);
+      acc = drawPetal(acc, rel, r, spin, flip, 0.0, 0.0, fade, h.xy, px);
+    }
+  }
+
+  fragColor = unpremultiply(acc);
+}`,
+  ),
+  presets: [
+    { name: "Sakura", values: { uShape: 0, uColor: [0.98, 0.78, 0.84], uTip: [1, 0.95, 0.97], uSway: 1.1, uFlip: 0.92, uGlow: 0 } },
+    { name: "Rose petals", values: { uShape: 1, uColor: [0.72, 0.08, 0.16], uTip: [0.92, 0.28, 0.34], uSize: 0.08, uSpeed: 0.45, uSway: 0.75, uDensity: 0.45, uGlow: 0 } },
+    { name: "White wedding", values: { uShape: 2, uColor: [0.95, 0.94, 0.92], uTip: [1, 1, 1], uSway: 0.9, uSpeed: 0.5, uGlow: 0.08 } },
+    { name: "Night blossoms", values: { uShape: 0, uColor: [0.92, 0.42, 0.62], uTip: [1, 0.76, 0.88], uGlow: 0.65, uSpeed: 0.55 } },
+  ],
+};
+
+/** Debris: rubble, shards, crumbling, shreds, leaves, dust, money rain and falling petals. */
+export const debrisShaders: ShaderEffect[] = [rubbleFall, glassShatter, crumblingText, paperShreds, leavesBlowing, sandErosion, moneyRain, petalFall];

@@ -1,5 +1,166 @@
 [
   {
+    "id": "petal-fall",
+    "name": "Petal fall",
+    "kind": "shader",
+    "category": "debris",
+    "description": "Falling cherry blossom and rose petals drifting on a breeze with a swaying 3D flip, soft depth blur and click bursts.",
+    "tags": [
+      "debris",
+      "petals",
+      "sakura",
+      "cherry-blossom",
+      "rose",
+      "spring",
+      "wedding",
+      "overlay",
+      "interactive",
+      "click"
+    ],
+    "controls": [
+      {
+        "n": "uShape",
+        "t": "int",
+        "d": 0,
+        "l": "Shape (0 sakura, 1 rose, 2 round)",
+        "max": 2,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "uColor",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            249,
+            198,
+            215
+          ]
+        },
+        "l": "Petal",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uTip",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            240,
+            245
+          ]
+        },
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uDensity",
+        "t": "float",
+        "d": 0.55,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 0.055,
+        "min": 0.02,
+        "max": 0.12,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uLayers",
+        "t": "int",
+        "d": 3,
+        "l": "Depth layers",
+        "min": 1,
+        "max": 5,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uSway",
+        "t": "float",
+        "d": 1,
+        "max": 2,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uFlip",
+        "t": "float",
+        "d": 0.92,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uBreeze",
+        "t": "float",
+        "d": 0.35,
+        "min": -2,
+        "max": 2,
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uSpeed",
+        "t": "float",
+        "d": 0.7,
+        "l": "Fall speed",
+        "min": 0.1,
+        "max": 2.5,
+        "b": 3,
+        "line": 11
+      },
+      {
+        "n": "uGlow",
+        "t": "float",
+        "d": 0,
+        "b": 3,
+        "line": 12
+      },
+      {
+        "n": "uDemo",
+        "t": "bool",
+        "d": true,
+        "l": "Demo clicks when idle",
+        "line": 13
+      }
+    ],
+    "presets": [
+      "Sakura",
+      "Rose petals",
+      "White wedding",
+      "Night blossoms"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [
+        "click"
+      ],
+      "transparent": true
+    },
+    "swiftReady": true,
+    "transparent": true,
+    "animated": true,
+    "paint": {
+      "map": "canvas",
+      "colors": [
+        "uColor",
+        "uTip"
+      ],
+      "live": true
+    },
+    "module": "shaders/debris",
+    "addedAt": "2026-11-17T23:34:41.160Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
     "id": "money-rain",
     "name": "Money rain",
     "kind": "shader",
@@ -3633,179 +3794,5 @@
     "addedAt": "2026-11-13T16:39:21Z",
     "commitHash": "481d97e705ddd44ce8b306003ad79ac25fe28836",
     "order": 696
-  },
-  {
-    "id": "branch-menu",
-    "name": "Branch menu",
-    "kind": "vector",
-    "category": "data",
-    "description": "A glowing orb reaching out to a stack of category tiles: curves draw out one after another with a spark running along each, every tile flashing bright as its spark lands and settling as its count ticks up, then the chosen one lights up in gold with its curve.",
-    "tags": [
-      "menu",
-      "branch",
-      "node-graph",
-      "card",
-      "dashboard",
-      "counter",
-      "tech",
-      "explainer"
-    ],
-    "controls": [
-      {
-        "n": "values",
-        "t": "text",
-        "d": "18,3,24,32,12",
-        "l": "Values (comma-separated, up to 6; prefixes and suffixes kept)",
-        "line": 1
-      },
-      {
-        "n": "labels",
-        "t": "text",
-        "d": "Services,Entities,Related laws,KPIs,Regulations",
-        "l": "Labels (comma-separated)",
-        "line": 2
-      },
-      {
-        "n": "chosen",
-        "t": "int",
-        "d": 3,
-        "l": "Chosen tile (0: none)",
-        "max": 6,
-        "b": 3,
-        "line": 3
-      },
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            11,
-            26,
-            30
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "backdrop",
-        "t": "bool",
-        "d": true,
-        "l": "Background",
-        "line": 5
-      },
-      {
-        "n": "tile",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            19,
-            40,
-            46
-          ]
-        },
-        "l": "Tiles",
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "ink",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            227,
-            238,
-            240
-          ]
-        },
-        "l": "Text and curves",
-        "c": 1,
-        "line": 7
-      },
-      {
-        "n": "flash",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            63,
-            214,
-            224
-          ]
-        },
-        "c": 1,
-        "line": 8
-      },
-      {
-        "n": "chosenColor",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            232,
-            194,
-            122
-          ]
-        },
-        "l": "Chosen",
-        "c": 1,
-        "line": 9
-      },
-      {
-        "n": "orbColor",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            156,
-            124,
-            245
-          ]
-        },
-        "l": "Orb",
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "glow",
-        "t": "float",
-        "d": 2.5,
-        "max": 6,
-        "s": 0.5,
-        "b": 3,
-        "line": 11
-      }
-    ],
-    "presets": [
-      "Light",
-      "Three",
-      "None chosen"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "values",
-          "label": "Values (comma-separated, up to 6; prefixes and suffixes kept)",
-          "holds": "copy",
-          "default": "18,3,24,32,12"
-        },
-        {
-          "name": "labels",
-          "label": "Labels (comma-separated)",
-          "holds": "copy",
-          "default": "Services,Entities,Related laws,KPIs,Regulations"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 1600,
-    "animated": true,
-    "duration": 6350,
-    "module": "data",
-    "addedAt": "2026-11-13T16:05:00Z",
-    "commitHash": "d568b16892772bdd64cfb524032685ba3b998b4e",
-    "order": 695
   }
 ]

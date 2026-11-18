@@ -272,6 +272,7 @@ public enum FlairCatalog {
         AnyFlairEffect(LeavesBlowing()),
         AnyFlairEffect(SandErosion()),
         AnyFlairEffect(MoneyRain()),
+        AnyFlairEffect(PetalFall()),
         AnyFlairEffect(Shockwave()),
         AnyFlairEffect(GroundSlam()),
         AnyFlairEffect(ImpactFrame()),
