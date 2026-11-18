@@ -1,5 +1,11 @@
 # @pixerate/flair
 
+## 0.139.0
+
+### Minor Changes
+
+- 169ff2f: Add the `petal-fall` transparent overlay shader (`debris` category) with cherry blossom, rose, and round petal shapes, depth layers with near-layer blur, 3D edge-on flip, sway, signed breeze, click bursts (`iClicks`), and presets (`Sakura`, `Rose petals`, `White wedding`, `Night blossoms`).
+
 ## 0.138.1
 
 ### Patch Changes

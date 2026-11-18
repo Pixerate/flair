@@ -147,18 +147,10 @@
     "swiftReady": true,
     "transparent": true,
     "animated": true,
-    "paint": {
-      "map": "canvas",
-      "colors": [
-        "uColor",
-        "uTip"
-      ],
-      "live": true
-    },
     "module": "shaders/debris",
-    "addedAt": "2026-11-17T23:34:41.160Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-11-17T23:36:15Z",
+    "commitHash": "169ff2f459bb23eb71b90a46e7647f9f49cf6ebf",
+    "order": 715
   },
   {
     "id": "money-rain",
