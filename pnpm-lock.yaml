@@ -26,8 +26,8 @@ importers:
         specifier: ^2.27.12
         version: 2.31.1(@types/node@24.19.2)
       '@pixerate/editor':
-        specifier: ^0.330.0
-        version: 0.330.0(f6ebd0fad4c3f13ab19f4dbc48b0e402)
+        specifier: ^0.334.0
+        version: 0.334.0(f6ebd0fad4c3f13ab19f4dbc48b0e402)
       '@types/node':
         specifier: ^24.19.2
         version: 24.19.2
@@ -68,11 +68,11 @@ importers:
   apps/demo:
     dependencies:
       '@pixerate/editor':
-        specifier: ^0.330.0
-        version: 0.330.0(f6ebd0fad4c3f13ab19f4dbc48b0e402)
+        specifier: ^0.334.0
+        version: 0.334.0(f6ebd0fad4c3f13ab19f4dbc48b0e402)
       '@pixerate/editor-react':
-        specifier: ^0.193.0
-        version: 0.193.0(@pixerate/editor@0.330.0(f6ebd0fad4c3f13ab19f4dbc48b0e402))(@tiptap/core@2.27.3(@tiptap/pm@2.27.3))(@tiptap/extension-bubble-menu@2.27.3(@tiptap/core@2.27.3(@tiptap/pm@2.27.3))(@tiptap/pm@2.27.3))(@tiptap/extension-placeholder@2.27.3(@tiptap/core@2.27.3(@tiptap/pm@2.27.3))(@tiptap/pm@2.27.3))(@tiptap/pm@2.27.3)(@tiptap/react@2.27.3(@tiptap/core@2.27.3(@tiptap/pm@2.27.3))(@tiptap/pm@2.27.3)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@tiptap/starter-kit@2.27.3)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        specifier: ^0.209.1
+        version: 0.209.1(@pixerate/editor@0.334.0(f6ebd0fad4c3f13ab19f4dbc48b0e402))(@tiptap/core@2.27.3(@tiptap/pm@2.27.3))(@tiptap/extension-bubble-menu@2.27.3(@tiptap/core@2.27.3(@tiptap/pm@2.27.3))(@tiptap/pm@2.27.3))(@tiptap/extension-placeholder@2.27.3(@tiptap/core@2.27.3(@tiptap/pm@2.27.3))(@tiptap/pm@2.27.3))(@tiptap/pm@2.27.3)(@tiptap/react@2.27.3(@tiptap/core@2.27.3(@tiptap/pm@2.27.3))(@tiptap/pm@2.27.3)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@tiptap/starter-kit@2.27.3)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       react:
         specifier: ^19.0.0
         version: 19.3.1
@@ -1256,11 +1256,11 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@pixerate/editor-react@0.193.0':
-    resolution: {integrity: sha512-Ol5s54K7mAN7O8kZ/wkym0KTnvBrj7bcAryu2qCbEsVNEOkFOGz/tsmkV9ZPmaIXS/6kSc6ysfVvx1grM/LmCg==}
+  '@pixerate/editor-react@0.209.1':
+    resolution: {integrity: sha512-tciem2PYgwe/FLQqQXbsRIm5sqiXXvMT3SXnZNyXHxCKVQ0nem0t7QENTy8pFySzvZGtoAOFKvyCJdai3e/eGw==}
     peerDependencies:
       '@dagrejs/dagre': ^1.1.8
-      '@pixerate/editor': '>=0.279.0 <1.0.0-0'
+      '@pixerate/editor': '>=0.330.0 <1.0.0-0'
       '@tiptap/core': ^2.27.3
       '@tiptap/extension-bubble-menu': ^2.27.3
       '@tiptap/extension-placeholder': ^2.27.3
@@ -1288,8 +1288,8 @@ packages:
       '@xyflow/react':
         optional: true
 
-  '@pixerate/editor@0.330.0':
-    resolution: {integrity: sha512-UK/9jL+eJcbyp4Pe6HTPJJNMIsP/BM9mCJzY3/Es5s48kyovXQzF2gHq3JsRMD7W/USDREO8dmokjawuWB2h5w==}
+  '@pixerate/editor@0.334.0':
+    resolution: {integrity: sha512-199tmmWrN3lL6OKqhVq8HUyrp+g8/K8oUQGgYBGSWe1phbqU+nMxBSrMzVW3ZMBkuVT5xjKanI2TcvJcFpxdqg==}
     hasBin: true
     peerDependencies:
       '@dagrejs/dagre': ^1.1.8
@@ -3464,8 +3464,8 @@ packages:
   prosemirror-history@1.5.1:
     resolution: {integrity: sha512-onlwnqKvgtFg6srZOmDOAhlAy1FIHQpOExORybX0S+DvJepE5tPALrB9iGet/2sqqqrelSnB10OoiOJqAvu2DA==}
 
-  prosemirror-inputrules@1.5.1:
-    resolution: {integrity: sha512-7wj4uMjKaXWAQ1CDgxNzNtR9AlsuwzHfdFH1ygEHA2KHF2DOEaXl1CJfNPAKCg9qNEh4rum975QLaCiQPyY6Fw==}
+  prosemirror-inputrules@1.6.0:
+    resolution: {integrity: sha512-e/Ukf5qy6Pq49l7M7/ObOQThIyBR2Is5g2qJq4e6LXKuCGr66/Rr4MjghkL3kB5ty4MOG92P8LyqwC5ET7Qx7g==}
 
   prosemirror-keymap@1.2.3:
     resolution: {integrity: sha512-4HucRlpiLd1IPQQXNqeo81BGtkY8Ai5smHhKW9jjPKRc2wQIxksg7Hl1tTI2IfT2B/LgX6bfYvXxEpJl7aKYKw==}
@@ -5279,9 +5279,9 @@ snapshots:
   '@pagefind/windows-x64@1.6.0':
     optional: true
 
-  '@pixerate/editor-react@0.193.0(@pixerate/editor@0.330.0(f6ebd0fad4c3f13ab19f4dbc48b0e402))(@tiptap/core@2.27.3(@tiptap/pm@2.27.3))(@tiptap/extension-bubble-menu@2.27.3(@tiptap/core@2.27.3(@tiptap/pm@2.27.3))(@tiptap/pm@2.27.3))(@tiptap/extension-placeholder@2.27.3(@tiptap/core@2.27.3(@tiptap/pm@2.27.3))(@tiptap/pm@2.27.3))(@tiptap/pm@2.27.3)(@tiptap/react@2.27.3(@tiptap/core@2.27.3(@tiptap/pm@2.27.3))(@tiptap/pm@2.27.3)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@tiptap/starter-kit@2.27.3)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
+  '@pixerate/editor-react@0.209.1(@pixerate/editor@0.334.0(f6ebd0fad4c3f13ab19f4dbc48b0e402))(@tiptap/core@2.27.3(@tiptap/pm@2.27.3))(@tiptap/extension-bubble-menu@2.27.3(@tiptap/core@2.27.3(@tiptap/pm@2.27.3))(@tiptap/pm@2.27.3))(@tiptap/extension-placeholder@2.27.3(@tiptap/core@2.27.3(@tiptap/pm@2.27.3))(@tiptap/pm@2.27.3))(@tiptap/pm@2.27.3)(@tiptap/react@2.27.3(@tiptap/core@2.27.3(@tiptap/pm@2.27.3))(@tiptap/pm@2.27.3)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@tiptap/starter-kit@2.27.3)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
     dependencies:
-      '@pixerate/editor': 0.330.0(f6ebd0fad4c3f13ab19f4dbc48b0e402)
+      '@pixerate/editor': 0.334.0(f6ebd0fad4c3f13ab19f4dbc48b0e402)
       react: 19.3.1
       react-dom: 19.3.1(react@19.3.1)
     optionalDependencies:
@@ -5292,7 +5292,7 @@ snapshots:
       '@tiptap/react': 2.27.3(@tiptap/core@2.27.3(@tiptap/pm@2.27.3))(@tiptap/pm@2.27.3)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@tiptap/starter-kit': 2.27.3
 
-  '@pixerate/editor@0.330.0(f6ebd0fad4c3f13ab19f4dbc48b0e402)':
+  '@pixerate/editor@0.334.0(f6ebd0fad4c3f13ab19f4dbc48b0e402)':
     optionalDependencies:
       '@tiptap/core': 2.27.3(@tiptap/pm@2.27.3)
       '@tiptap/extension-character-count': 2.27.3(@tiptap/core@2.27.3(@tiptap/pm@2.27.3))(@tiptap/pm@2.27.3)
@@ -5809,7 +5809,7 @@ snapshots:
       prosemirror-dropcursor: 1.8.4
       prosemirror-gapcursor: 1.4.1
       prosemirror-history: 1.5.1
-      prosemirror-inputrules: 1.5.1
+      prosemirror-inputrules: 1.6.0
       prosemirror-keymap: 1.2.3
       prosemirror-markdown: 1.13.9
       prosemirror-menu: 1.3.2
@@ -7498,7 +7498,7 @@ snapshots:
       rope-sequence: 1.3.4
     optional: true
 
-  prosemirror-inputrules@1.5.1:
+  prosemirror-inputrules@1.6.0:
     dependencies:
       prosemirror-state: 1.4.4
       prosemirror-transform: 1.12.5
