@@ -1,5 +1,158 @@
 [
   {
+    "id": "daydream",
+    "name": "Daydream",
+    "kind": "shader",
+    "category": "cinematic",
+    "description": "A picture seen as a remembered or imagined scene: its highlights bleed into a softly breathing glow, thin luminous wisps drift across it, its edges dissolve into haze and a faint shimmer plays over it, while its shapes and colours still read, even as a small thumbnail.",
+    "tags": [
+      "cinematic",
+      "dreamy",
+      "ethereal",
+      "memory",
+      "flashback",
+      "reverie",
+      "dream",
+      "imagination",
+      "thought-bubble",
+      "soft-focus",
+      "haze",
+      "mist",
+      "glow",
+      "vignette",
+      "filter"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "landscape"
+        },
+        "line": 3,
+        "x": {
+          "filter": "mipmap",
+          "wrap": "mirror"
+        }
+      },
+      {
+        "n": "uGlow",
+        "t": "float",
+        "d": 0.5,
+        "l": "Diffusion glow",
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uBreathe",
+        "t": "float",
+        "d": 0.5,
+        "l": "Breathing",
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uWisps",
+        "t": "float",
+        "d": 0.4,
+        "l": "Drifting wisps",
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uTint",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            232,
+            223,
+            248
+          ]
+        },
+        "c": 1,
+        "line": 7
+      },
+      {
+        "n": "uFeather",
+        "t": "float",
+        "d": 0.16,
+        "l": "Dissolving edges (share of the short side)",
+        "max": 0.5,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uShimmer",
+        "t": "float",
+        "d": 0.15,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uFade",
+        "t": "float",
+        "d": 0.1,
+        "l": "Faded colour",
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 11
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 12
+      }
+    ],
+    "presets": [
+      "Daydream",
+      "Memory",
+      "Reverie",
+      "Floating"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "filter",
+      "interactions": [],
+      "transparent": false
+    },
+    "swiftReady": true,
+    "video": "filter",
+    "loop": 20,
+    "animated": true,
+    "duration": 20000,
+    "module": "shaders/cinematic",
+    "addedAt": "2026-11-20T11:49:47Z",
+    "commitHash": "0bff78d33805b1efb036b20cf2c5c811e0d1dbc4",
+    "order": 716
+  },
+  {
     "id": "petal-fall",
     "name": "Petal fall",
     "kind": "shader",
@@ -3620,171 +3773,5 @@
     "addedAt": "2026-11-13T16:44:56Z",
     "commitHash": "a3283333efceb4e1a34cb1b07a8994e3bd17db11",
     "order": 697
-  },
-  {
-    "id": "metric-strip",
-    "name": "Metric strip",
-    "kind": "vector",
-    "category": "data",
-    "description": "A dashboard strip of up to four labelled metrics that counts up and then keeps ticking from one set of values to the next, a small green or red arrow showing which way each number moved and a light sweeping along the strip at every change.",
-    "tags": [
-      "kpi",
-      "metric",
-      "dashboard",
-      "counter",
-      "ticker",
-      "live",
-      "tech",
-      "report"
-    ],
-    "controls": [
-      {
-        "n": "states",
-        "t": "text",
-        "d": "85,156,143,44; 91,160,150,49; 98,165,165,57",
-        "l": "Values, one set per change (sets separated by semicolons, up to 5 sets of 4)",
-        "line": 1
-      },
-      {
-        "n": "labels",
-        "t": "text",
-        "d": "Compliance rate,Total laws,Public engagement,Implementation rate",
-        "l": "Labels (comma-separated)",
-        "line": 2
-      },
-      {
-        "n": "units",
-        "t": "text",
-        "d": "%,K,K,%",
-        "l": "Units (comma-separated)",
-        "line": 3
-      },
-      {
-        "n": "background",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            11,
-            26,
-            30
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "backdrop",
-        "t": "bool",
-        "d": true,
-        "l": "Background",
-        "line": 5
-      },
-      {
-        "n": "strip",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            17,
-            37,
-            43
-          ]
-        },
-        "c": 1,
-        "line": 6
-      },
-      {
-        "n": "ink",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            227,
-            238,
-            240
-          ]
-        },
-        "l": "Text",
-        "c": 1,
-        "line": 7
-      },
-      {
-        "n": "accent",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            94,
-            200,
-            196
-          ]
-        },
-        "c": 1,
-        "line": 8
-      },
-      {
-        "n": "up",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            79,
-            208,
-            139
-          ]
-        },
-        "c": 1,
-        "line": 9
-      },
-      {
-        "n": "down",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            240,
-            96,
-            94
-          ]
-        },
-        "c": 1,
-        "line": 10
-      }
-    ],
-    "presets": [
-      "Light",
-      "Sales",
-      "Three"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "states",
-          "label": "Values, one set per change (sets separated by semicolons, up to 5 sets of 4)",
-          "holds": "copy",
-          "default": "85,156,143,44; 91,160,150,49; 98,165,165,57"
-        },
-        {
-          "name": "labels",
-          "label": "Labels (comma-separated)",
-          "holds": "copy",
-          "default": "Compliance rate,Total laws,Public engagement,Implementation rate"
-        },
-        {
-          "name": "units",
-          "label": "Units (comma-separated)",
-          "holds": "copy",
-          "default": "%,K,K,%"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 1500,
-    "animated": true,
-    "duration": 8250,
-    "module": "data",
-    "addedAt": "2026-11-13T16:39:21Z",
-    "commitHash": "481d97e705ddd44ce8b306003ad79ac25fe28836",
-    "order": 696
   }
 ]
