@@ -799,6 +799,150 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   ],
 };
 
+/** Seconds the daydream takes to come back round: its wisps cross one whole tile of their noise in that time. */
+const DAYDREAM_LOOP = 20;
+
+export const daydream: ShaderEffect = {
+  kind: "shader",
+  id: "daydream",
+  name: "Daydream",
+  description:
+    "A picture seen as a remembered or imagined scene: its highlights bleed into a softly breathing glow, thin luminous wisps drift across it, its edges dissolve into haze and a faint shimmer plays over it, while its shapes and colours still read, even as a small thumbnail.",
+  category: "cinematic",
+  video: "filter",
+  loop: DAYDREAM_LOOP,
+  tags: ["cinematic", "dreamy", "ethereal", "memory", "flashback", "reverie", "dream", "imagination", "thought-bubble", "soft-focus", "haze", "mist", "glow", "vignette", "filter"],
+  source: glsl(
+    `// Daydream: a soft-focus glow that breathes, luminous wisps drifting across, edges thinning into haze and a faint
+// shimmer. Everything moves on one ${DAYDREAM_LOOP} s cycle (the wisps' noise tiles across, the rest are whole sine turns), so it loops.
+uniform sampler2D uImage;  // @control filter=mipmap wrap=mirror default=${SAMPLE_IMAGES.landscape} label="Image"
+uniform float uGlow;       // @control min=0 max=1 default=0.5 label="Diffusion glow"
+uniform float uBreathe;    // @control min=0 max=1 default=0.5 label="Breathing"
+uniform float uWisps;      // @control min=0 max=1 default=0.4 label="Drifting wisps"
+uniform vec3 uTint;        // @control color default=#E8DFF8 label="Tint"
+uniform float uFeather;    // @control min=0 max=0.5 default=0.16 label="Dissolving edges (share of the short side)"
+uniform float uShimmer;    // @control min=0 max=1 default=0.15 label="Shimmer"
+uniform float uFade;       // @control min=0 max=1 default=0.1 label="Faded colour"
+${BACKDROP_CONTROLS}`,
+    HASH,
+    PICTURE,
+    `float dreamLuma(vec3 c) {
+  return dot(c, vec3(0.2126, 0.7152, 0.0722));
+}
+
+// Value noise that repeats every \`period\` cells along x, and fractal noise built from it (the period doubles with
+// each octave, so sliding a whole base period along x brings every octave back to where it started).
+float tiledNoise(vec2 p, float period) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  float x0 = mod(i.x, period);
+  float x1 = mod(i.x + 1.0, period);
+  float a = hash12(vec2(x0, i.y));
+  float b = hash12(vec2(x1, i.y));
+  float c = hash12(vec2(x0, i.y + 1.0));
+  float d = hash12(vec2(x1, i.y + 1.0));
+  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+}
+float tiledFbm(vec2 p, float period, int octaves) {
+  float sum = 0.0;
+  float amp = 0.5;
+  for (int i = 0; i < 4; i++) {
+    if (i >= octaves) break;
+    sum += amp * tiledNoise(p, period);
+    p = p * 2.0 + vec2(0.0, 7.31);
+    period *= 2.0;
+    amp *= 0.5;
+  }
+  return sum;
+}
+
+// The picture blurred over a disc \`r\` pixels across: 12 golden-angle taps from a mipmap level a quarter of the blur.
+vec3 dreamBlur(vec2 fragCoord, float r) {
+  vec2 ts = vec2(textureSize(uImage, 0));
+  float lod = max(0.0, log2(r * max(ts.x / iResolution.x, ts.y / iResolution.y) / 4.0));
+  float spin = hash12(fragCoord) * 6.28318;
+  vec3 sum = vec3(0.0);
+  for (int i = 0; i < 12; i++) {
+    float fi = float(i);
+    float rr = sqrt((fi + 0.5) / 12.0) * r;
+    float a = fi * 2.39996 + spin;
+    vec2 uv = (fragCoord + rr * vec2(cos(a), sin(a))) / iResolution.xy;
+    sum += textureSize(uImage, 0).x > 1 ? overBackdrop(textureLod(uImage, uv, lod)).rgb : testCard(fract(uv));
+  }
+  return sum / 12.0;
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  float side = min(iResolution.x, iResolution.y);
+  vec2 uv = fragCoord / iResolution.xy;
+  vec2 q = (fragCoord - 0.5 * iResolution.xy) / side;
+  float phase = mod(iTime, ${DAYDREAM_LOOP.toFixed(1)}) / ${DAYDREAM_LOOP.toFixed(1)};
+  float turn = phase * 6.28318;
+
+  // Shimmer: a slow refraction ripple, as if seen through warm air.
+  vec2 ripple = uShimmer * 0.006 * vec2(sin(q.y * 13.0 + turn * 3.0), sin(q.x * 11.0 - turn * 2.0 + 1.7));
+  vec2 at = fragCoord + ripple * side;
+  vec4 pic = pictureRGBA(uImage, at / iResolution.xy);
+
+  // Diffusion glow that breathes: blurred highlights screened over the picture, a little of the blur mixed in.
+  float breath = 1.0 + uBreathe * 0.45 * sin(turn * 2.0);
+  float glow = uGlow * breath;
+  vec3 blur = dreamBlur(at, 0.09 * side);
+  vec3 bloom = blur * smoothstep(0.3, 1.0, dreamLuma(blur)) * mix(vec3(1.0), uTint, 0.6);
+  vec3 col = pic.rgb + (1.0 - pic.rgb) * clamp(bloom * glow * 1.6, 0.0, 1.0);
+  col = mix(col, blur, glow * 0.18);
+  // Shadows lift into a pale haze, never so far that the picture's darks stop reading.
+  col = col * (1.0 - 0.12 * glow) + 0.12 * glow * uTint;
+
+  // Drifting luminous haze: two layers of thin wisps sliding across at different scales, one whole tile per cycle.
+  vec2 warp = vec2(tiledFbm(vec2(q.x * 1.5 + phase * 3.0, q.y * 1.5) + 4.0, 3.0, 2), tiledFbm(vec2(q.x * 1.5 - phase * 3.0, q.y * 1.5) + 9.0, 3.0, 2)) - 0.5;
+  float near = tiledFbm(vec2(q.x * 1.4 - phase * 4.0, q.y * 3.4) + warp * 1.2, 4.0, 4);
+  float far = tiledFbm(vec2(q.x * 2.6 + phase * 6.0, q.y * 5.0 + 3.0) + warp * 0.8, 6.0, 3);
+  float wisp = smoothstep(0.48, 0.78, near * 0.65 + far * 0.35);
+  float mist = uWisps * (0.06 + 0.6 * wisp);
+  // Light from the picture's bright parts scatters through the wisps.
+  vec3 haze = uTint + max(blur - 0.5, 0.0) * 1.4;
+  col = mix(col, haze, mist);
+
+  // Fading colour, as an old memory does: towards the picture's own lightness, tinted.
+  vec3 faded = dreamLuma(col) * uTint / max(dreamLuma(uTint), 0.05);
+  col = mix(col, clamp(faded, 0.0, 1.0), uFade * 0.75);
+
+  // Sparse twinkles, each on a whole number of pulses per cycle.
+  vec2 cell = floor(q * 7.0);
+  vec2 h = hash22(cell + 31.0);
+  if (uShimmer > 0.0 && h.x > 0.86) {
+    vec2 d = fract(q * 7.0) - 0.25 - 0.5 * hash22(cell + 7.0);
+    float star = exp(-dot(d, d) * 140.0) + 0.4 * exp(-abs(d.x) * 50.0 - d.y * d.y * 900.0) + 0.4 * exp(-abs(d.y) * 50.0 - d.x * d.x * 900.0);
+    float pulse = pow(max(0.0, sin(turn * (1.0 + floor(h.y * 3.0)) + h.y * 40.0)), 10.0);
+    col += star * pulse * uShimmer * 0.9 * mix(vec3(1.0), uTint, 0.4);
+  }
+  col = clamp(col, 0.0, 1.0);
+
+  // Dissolving edges: towards the frame the picture thins into slowly shifting wisps of haze, then the backdrop.
+  float edge = 1.0;
+  if (uFeather > 0.0) {
+    vec2 halfSize = 0.5 * iResolution.xy / side;
+    vec2 b = abs(q) - halfSize + uFeather;
+    float inside = uFeather - (length(max(b, 0.0)) + min(max(b.x, b.y), 0.0));
+    float n = tiledFbm(vec2(q.x * 3.0 + phase * 6.0, q.y * 3.0) + warp * 2.0, 6.0, 3);
+    edge = smoothstep(0.02, 1.0, inside / uFeather * (0.45 + 1.1 * n));
+    col = mix(mix(col, haze, 0.45), col, smoothstep(0.0, 0.7, edge));
+  }
+  float alpha = mix(uBackdropAlpha, pic.a, edge);
+  vec3 under = uBackdrop * uBackdropAlpha * (1.0 - edge);
+  fragColor = vec4((col * pic.a * edge + under) / max(alpha, 1e-4), alpha);
+}`,
+  ),
+  presets: [
+    { name: "Daydream", values: {} },
+    { name: "Memory", values: { uTint: [0.96, 0.86, 0.7], uFade: 0.55, uGlow: 0.6, uWisps: 0.25, uShimmer: 0.05 } },
+    { name: "Reverie", values: { uWisps: 0.7, uFeather: 0.26, uShimmer: 0.35, uGlow: 0.6, uBreathe: 0.8 } },
+    { name: "Floating", values: { uBackdropAlpha: 0 } },
+  ],
+};
+
 /** The cinematic shaders, and the transitions through a focus pull and a flare. */
 export const cinematicShaders: ShaderEffect[] = [
   anamorphicLens,
@@ -811,6 +955,7 @@ export const cinematicShaders: ShaderEffect[] = [
   cinemaProjector,
   trailerTitleSlam,
   dollyZoom,
+  daydream,
   transitionFocusPull,
   transitionFlareWipe,
 ];

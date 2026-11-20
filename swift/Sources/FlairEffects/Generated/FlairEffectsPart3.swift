@@ -6,6 +6,127 @@ import simd
 
 
 
+/// **Brighten eyes and teeth** (`beauty-brighten`, category: `beauty`).
+/// The whites of the eyes or a smile brightened and whitened in a region, the yellow taken out, while the skin round them is left alone.
+public struct BeautyBrighten: FlairEffect, Codable, Sendable, Equatable {
+    public static let effectId = "beauty-brighten"
+    public static let effectName = "Brighten eyes and teeth"
+    public static let category = "beauty"
+    public static let effectDescription = "The whites of the eyes or a smile brightened and whitened in a region, the yellow taken out, while the skin round them is left alone."
+    public static let tags: [String] = ["beauty", "retouch", "eyes", "teeth", "whiten", "brighten", "smile", "portrait", "filter"]
+    public static let phase: Int = 2
+    public static let functionName = "flair_beauty_brighten_frag"
+    public static let uniformByteLength: Int = 1056
+    public static let isTransparent: Bool = false
+    public static let loopDuration: Double? = nil
+    public static let controls: [FlairControlDescriptor] = [
+        FlairControlDescriptor(name: "uImage", property: "image", type: .sampler2D, label: "Image", min: 0.0, max: 1.0, step: 0.005, filter: .linear, wrap: .clamp),
+        FlairControlDescriptor(name: "uLift", property: "lift", type: .float, label: "Brighten", min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uWhiten", property: "whiten", type: .float, label: "Whiten (less yellow)", min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uSkinGuard", property: "skinGuard", type: .float, label: "Leave skin alone", min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uCentre", property: "centre", type: .vec2, label: "Region centre", min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uSize", property: "size", type: .vec2, label: "Region size", min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uShape", property: "shape", type: .int, label: "Region shape (0 box, 1 ellipse)", min: 0.0, max: 1.0, step: 1.0),
+        FlairControlDescriptor(name: "uFeather", property: "feather", type: .float, label: "Edge softness (px)", min: 0.0, max: 60.0, step: 0.3),
+        FlairControlDescriptor(name: "uInvert", property: "invert", type: .bool, label: "Brighten everything but the region", min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uBackdrop", property: "backdrop", type: .vec3, label: "Backdrop", isColor: true, min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uBackdropAlpha", property: "backdropAlpha", type: .float, label: "Backdrop opacity", min: 0.0, max: 1.0, step: 0.005),
+    ]
+    public static let samplerBindings: [FlairSamplerBinding] = [
+        FlairSamplerBinding(name: "uImage", property: "image", type: .sampler2D, binding: 1, filter: .linear, wrap: .clamp),
+    ]
+    public static let presets: [String: BeautyBrighten] = {
+        var map: [String: BeautyBrighten] = [:]
+        do { var p = BeautyBrighten(); p.lift = 0.4; p.whiten = 0.5; p.centre = flairVec2(0.5, 0.583); p.size = flairVec2(0.17, 0.09); map["Eyes"] = p }
+        do { var p = BeautyBrighten(); p.lift = 0.3; p.whiten = 0.8; p.centre = flairVec2(0.5, 0.475); p.size = flairVec2(0.1, 0.06); map["Smile"] = p }
+        return map
+    }()
+
+    /// Image (`uImage`).
+    public var image: FlairTextureInput = .sample(.portrait)
+    /// Brighten (`uLift`).
+    public var lift: Float = 0.35
+    /// Whiten (less yellow) (`uWhiten`).
+    public var whiten: Float = 0.6
+    /// Leave skin alone (`uSkinGuard`).
+    public var skinGuard: Float = 0.7
+    /// Region centre (`uCentre`).
+    public var centre: SIMD2<Float> = flairVec2(0.5, 0.583)
+    /// Region size (`uSize`).
+    public var size: SIMD2<Float> = flairVec2(0.17, 0.09)
+    /// Region shape (0 box, 1 ellipse) (`uShape`).
+    public var shape: Int32 = 1
+    /// Edge softness (px) (`uFeather`).
+    public var feather: Float = 10.0
+    /// Brighten everything but the region (`uInvert`).
+    public var invert: Bool = false
+    /// Backdrop (`uBackdrop`).
+    public var backdrop: SIMD3<Float> = flairVec3(1.0, 1.0, 1.0)
+    /// Backdrop opacity (`uBackdropAlpha`).
+    public var backdropAlpha: Float = 1.0
+
+    public init() {}
+
+    public func encodeUniforms(into buffer: UnsafeMutableRawPointer, state: FlairFrameState) {
+        state.encodeBuiltins(into: buffer)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(lift, min: 0.0, max: 1.0), to: buffer, at: 992)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(whiten, min: 0.0, max: 1.0), to: buffer, at: 996)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(skinGuard, min: 0.0, max: 1.0), to: buffer, at: 1000)
+        FlairUniformEncoder.writeVec2(FlairUniformEncoder.clampVec2(centre, min: 0.0, max: 1.0), to: buffer, at: 1008)
+        FlairUniformEncoder.writeVec2(FlairUniformEncoder.clampVec2(size, min: 0.0, max: 1.0), to: buffer, at: 1016)
+        FlairUniformEncoder.writeInt(FlairUniformEncoder.clampInt(shape, min: 0, max: 1), to: buffer, at: 1024)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(feather, min: 0.0, max: 60.0), to: buffer, at: 1028)
+        FlairUniformEncoder.writeBool(invert, to: buffer, at: 1032)
+        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(backdrop, min: 0.0, max: 1.0), to: buffer, at: 1040)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(backdropAlpha, min: 0.0, max: 1.0), to: buffer, at: 1052)
+    }
+
+    public func textureInput(for binding: Int) -> FlairTextureInput {
+        switch binding {
+        case 1: return self.image
+        default: return .none
+        }
+    }
+
+    public mutating func setTextureInput(_ input: FlairTextureInput, for binding: Int) {
+        switch binding {
+        case 1: self.image = input
+        default: break
+        }
+    }
+
+    public init(from decoder: Decoder) throws {
+        let bag = try FlairJSONBag(from: decoder)
+        self.image = bag.decodeTexture("uImage", "image", default: .sample(.portrait), fit: .contain, margin: 0.1)
+        self.lift = bag.decodeFloat("uLift", "lift", default: 0.35, min: 0.0, max: 1.0)
+        self.whiten = bag.decodeFloat("uWhiten", "whiten", default: 0.6, min: 0.0, max: 1.0)
+        self.skinGuard = bag.decodeFloat("uSkinGuard", "skinGuard", default: 0.7, min: 0.0, max: 1.0)
+        self.centre = bag.decodeVec2("uCentre", "centre", default: flairVec2(0.5, 0.583), min: 0.0, max: 1.0)
+        self.size = bag.decodeVec2("uSize", "size", default: flairVec2(0.17, 0.09), min: 0.0, max: 1.0)
+        self.shape = bag.decodeInt("uShape", "shape", default: 1, min: 0, max: 1)
+        self.feather = bag.decodeFloat("uFeather", "feather", default: 10.0, min: 0.0, max: 60.0)
+        self.invert = bag.decodeBool("uInvert", "invert", default: false)
+        self.backdrop = bag.decodeVec3("uBackdrop", "backdrop", default: flairVec3(1.0, 1.0, 1.0), isColor: true)
+        self.backdropAlpha = bag.decodeFloat("uBackdropAlpha", "backdropAlpha", default: 1.0, min: 0.0, max: 1.0)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var bag = FlairJSONBag()
+        bag.encodeTexture(self.image, for: "uImage")
+        bag.encodeFloat(self.lift, for: "uLift")
+        bag.encodeFloat(self.whiten, for: "uWhiten")
+        bag.encodeFloat(self.skinGuard, for: "uSkinGuard")
+        bag.encodeVec2(self.centre, for: "uCentre")
+        bag.encodeVec2(self.size, for: "uSize")
+        bag.encodeInt(self.shape, for: "uShape")
+        bag.encodeFloat(self.feather, for: "uFeather")
+        bag.encodeBool(self.invert, for: "uInvert")
+        bag.encodeVec3(self.backdrop, for: "uBackdrop")
+        bag.encodeFloat(self.backdropAlpha, for: "uBackdropAlpha")
+        try bag.encode(to: encoder)
+    }
+}
+
 /// **Lip tint** (`beauty-lip-tint`, category: `beauty`).
 /// Lipstick laid on lips in a region: any shade, as sheer or as deep as you like, with a wet gloss along the lower lip, the lips' texture showing through.
 public struct BeautyLipTint: FlairEffect, Codable, Sendable, Equatable {
@@ -5267,115 +5388,6 @@ public struct Magnifier: FlairEffect, Codable, Sendable, Equatable {
         bag.encodeFloat(self.radius, for: "uRadius")
         bag.encodeFloat(self.aberration, for: "uAberration")
         bag.encodeVec3(self.rim, for: "uRim")
-        bag.encodeBool(self.demo, for: "uDemo")
-        bag.encodeVec3(self.backdrop, for: "uBackdrop")
-        bag.encodeFloat(self.backdropAlpha, for: "uBackdropAlpha")
-        try bag.encode(to: encoder)
-    }
-}
-
-/// **Holo card** (`holo-card`, category: `interaction`).
-/// A holographic foil trading card whose rainbow sheen and glare shift as the pointer tilts it.
-public struct HoloCard: FlairEffect, Codable, Sendable, Equatable {
-    public static let effectId = "holo-card"
-    public static let effectName = "Holo card"
-    public static let category = "interaction"
-    public static let effectDescription = "A holographic foil trading card whose rainbow sheen and glare shift as the pointer tilts it."
-    public static let tags: [String] = ["interactive", "hover", "card", "holographic", "foil", "iridescent"]
-    public static let phase: Int = 4
-    public static let functionName = "flair_holo_card_frag"
-    public static let uniformByteLength: Int = 1040
-    public static let isTransparent: Bool = true
-    public static let loopDuration: Double? = nil
-    public static let controls: [FlairControlDescriptor] = [
-        FlairControlDescriptor(name: "uImage", property: "image", type: .sampler2D, label: "Image", min: 0.0, max: 1.0, step: 0.005, filter: .linear, wrap: .clamp),
-        FlairControlDescriptor(name: "uFoil", property: "foil", type: .float, label: "Foil", min: 0.0, max: 1.0, step: 0.005),
-        FlairControlDescriptor(name: "uGlare", property: "glare", type: .float, label: "Glare", min: 0.0, max: 1.0, step: 0.005),
-        FlairControlDescriptor(name: "uTilt", property: "tilt", type: .float, label: "Tilt", min: 0.0, max: 1.0, step: 0.005),
-        FlairControlDescriptor(name: "uCorner", property: "corner", type: .float, label: "Corner radius", min: 0.0, max: 0.25, step: 0.00125),
-        FlairControlDescriptor(name: "uBorder", property: "border", type: .vec3, label: "Border", isColor: true, min: 0.0, max: 1.0, step: 0.005),
-        FlairControlDescriptor(name: "uDemo", property: "demo", type: .bool, label: "Demo when idle", min: 0.0, max: 1.0, step: 0.005),
-        FlairControlDescriptor(name: "uBackdrop", property: "backdrop", type: .vec3, label: "Backdrop", isColor: true, min: 0.0, max: 1.0, step: 0.005),
-        FlairControlDescriptor(name: "uBackdropAlpha", property: "backdropAlpha", type: .float, label: "Backdrop opacity", min: 0.0, max: 1.0, step: 0.005),
-    ]
-    public static let samplerBindings: [FlairSamplerBinding] = [
-        FlairSamplerBinding(name: "uImage", property: "image", type: .sampler2D, binding: 1, filter: .linear, wrap: .clamp),
-    ]
-    public static let presets: [String: HoloCard] = {
-        var map: [String: HoloCard] = [:]
-        do { var p = HoloCard(); p.foil = 0.3; p.glare = 0.35; p.tilt = 0.4; map["Subtle"] = p }
-        do { var p = HoloCard(); p.foil = 1.0; p.glare = 0.8; p.tilt = 1.0; p.border = flairVec3(0.98, 0.82, 0.35); map["Full foil"] = p }
-        return map
-    }()
-
-    /// Image (`uImage`).
-    public var image: FlairTextureInput = .sample(.portrait)
-    /// Foil (`uFoil`).
-    public var foil: Float = 0.7
-    /// Glare (`uGlare`).
-    public var glare: Float = 0.6
-    /// Tilt (`uTilt`).
-    public var tilt: Float = 0.6
-    /// Corner radius (`uCorner`).
-    public var corner: Float = 0.06
-    /// Border (`uBorder`).
-    public var border: SIMD3<Float> = flairVec3(0.886275, 0.909804, 0.941176)
-    /// Demo when idle (`uDemo`).
-    public var demo: Bool = true
-    /// Backdrop (`uBackdrop`).
-    public var backdrop: SIMD3<Float> = flairVec3(1.0, 1.0, 1.0)
-    /// Backdrop opacity (`uBackdropAlpha`).
-    public var backdropAlpha: Float = 1.0
-
-    public init() {}
-
-    public func encodeUniforms(into buffer: UnsafeMutableRawPointer, state: FlairFrameState) {
-        state.encodeBuiltins(into: buffer)
-        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(foil, min: 0.0, max: 1.0), to: buffer, at: 992)
-        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(glare, min: 0.0, max: 1.0), to: buffer, at: 996)
-        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(tilt, min: 0.0, max: 1.0), to: buffer, at: 1000)
-        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(corner, min: 0.0, max: 0.25), to: buffer, at: 1004)
-        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(border, min: 0.0, max: 1.0), to: buffer, at: 1008)
-        FlairUniformEncoder.writeBool(demo, to: buffer, at: 1020)
-        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(backdrop, min: 0.0, max: 1.0), to: buffer, at: 1024)
-        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(backdropAlpha, min: 0.0, max: 1.0), to: buffer, at: 1036)
-    }
-
-    public func textureInput(for binding: Int) -> FlairTextureInput {
-        switch binding {
-        case 1: return self.image
-        default: return .none
-        }
-    }
-
-    public mutating func setTextureInput(_ input: FlairTextureInput, for binding: Int) {
-        switch binding {
-        case 1: self.image = input
-        default: break
-        }
-    }
-
-    public init(from decoder: Decoder) throws {
-        let bag = try FlairJSONBag(from: decoder)
-        self.image = bag.decodeTexture("uImage", "image", default: .sample(.portrait), fit: .contain, margin: 0.1)
-        self.foil = bag.decodeFloat("uFoil", "foil", default: 0.7, min: 0.0, max: 1.0)
-        self.glare = bag.decodeFloat("uGlare", "glare", default: 0.6, min: 0.0, max: 1.0)
-        self.tilt = bag.decodeFloat("uTilt", "tilt", default: 0.6, min: 0.0, max: 1.0)
-        self.corner = bag.decodeFloat("uCorner", "corner", default: 0.06, min: 0.0, max: 0.25)
-        self.border = bag.decodeVec3("uBorder", "border", default: flairVec3(0.886275, 0.909804, 0.941176), isColor: true)
-        self.demo = bag.decodeBool("uDemo", "demo", default: true)
-        self.backdrop = bag.decodeVec3("uBackdrop", "backdrop", default: flairVec3(1.0, 1.0, 1.0), isColor: true)
-        self.backdropAlpha = bag.decodeFloat("uBackdropAlpha", "backdropAlpha", default: 1.0, min: 0.0, max: 1.0)
-    }
-
-    public func encode(to encoder: Encoder) throws {
-        var bag = FlairJSONBag()
-        bag.encodeTexture(self.image, for: "uImage")
-        bag.encodeFloat(self.foil, for: "uFoil")
-        bag.encodeFloat(self.glare, for: "uGlare")
-        bag.encodeFloat(self.tilt, for: "uTilt")
-        bag.encodeFloat(self.corner, for: "uCorner")
-        bag.encodeVec3(self.border, for: "uBorder")
         bag.encodeBool(self.demo, for: "uDemo")
         bag.encodeVec3(self.backdrop, for: "uBackdrop")
         bag.encodeFloat(self.backdropAlpha, for: "uBackdropAlpha")

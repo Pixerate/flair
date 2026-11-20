@@ -6,6 +6,131 @@ import simd
 
 
 
+/// **Scare cut** (`scare-cut`, category: `horror`).
+/// A jump scare: a picture slowly closing in, then a sudden cut to a stark face for a split second, the frame punching in and shaking before it settles. Once a cycle, never faster than every three seconds. Loops; or turn Animate off and set Moment.
+public struct ScareCut: FlairEffect, Codable, Sendable, Equatable {
+    public static let effectId = "scare-cut"
+    public static let effectName = "Scare cut"
+    public static let category = "horror"
+    public static let effectDescription = "A jump scare: a picture slowly closing in, then a sudden cut to a stark face for a split second, the frame punching in and shaking before it settles. Once a cycle, never faster than every three seconds. Loops; or turn Animate off and set Moment."
+    public static let tags: [String] = ["horror", "shock", "jump-scare", "flash", "zoom", "shake", "image"]
+    public static let phase: Int = 2
+    public static let functionName = "flair_scare_cut_frag"
+    public static let uniformByteLength: Int = 1056
+    public static let isTransparent: Bool = false
+    public static let loopDuration: Double? = 6.0
+    public static let controls: [FlairControlDescriptor] = [
+        FlairControlDescriptor(name: "uImage", property: "image", type: .sampler2D, label: "Image", min: 0.0, max: 1.0, step: 0.005, filter: .linear, wrap: .clamp),
+        FlairControlDescriptor(name: "uScare", property: "scare", type: .sampler2D, label: "Scare picture", min: 0.0, max: 1.0, step: 0.005, filter: .linear, wrap: .clamp),
+        FlairControlDescriptor(name: "uTint", property: "tint", type: .vec3, label: "Scare tint", isColor: true, min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uFlash", property: "flash", type: .float, label: "Scare brightness", min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uPunch", property: "punch", type: .float, label: "Zoom punch", min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uShake", property: "shake", type: .float, label: "Shake", min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uCycle", property: "cycle", type: .float, label: "Cycle (s)", min: 3.0, max: 20.0, step: 0.085),
+        FlairControlDescriptor(name: "uAnimate", property: "animate", type: .bool, label: "Animate", min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uProgress", property: "progress", type: .float, label: "Moment (when still)", min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uBackdrop", property: "backdrop", type: .vec3, label: "Backdrop", isColor: true, min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uBackdropAlpha", property: "backdropAlpha", type: .float, label: "Backdrop opacity", min: 0.0, max: 1.0, step: 0.005),
+    ]
+    public static let samplerBindings: [FlairSamplerBinding] = [
+        FlairSamplerBinding(name: "uImage", property: "image", type: .sampler2D, binding: 1, filter: .linear, wrap: .clamp),
+        FlairSamplerBinding(name: "uScare", property: "scare", type: .sampler2D, binding: 2, filter: .linear, wrap: .clamp),
+    ]
+    public static let presets: [String: ScareCut] = {
+        var map: [String: ScareCut] = [:]
+        do { var p = ScareCut(); p.flash = 0.4; p.punch = 0.3; p.shake = 0.3; map["Subtle"] = p }
+        do { var p = ScareCut(); p.flash = 1.0; p.punch = 1.0; p.shake = 1.0; map["Brutal"] = p }
+        do { var p = ScareCut(); p.cycle = 12.0; map["Long dread"] = p }
+        do { var p = ScareCut(); p.animate = false; p.progress = 0.605; map["The face"] = p }
+        return map
+    }()
+
+    /// Image (`uImage`).
+    public var image: FlairTextureInput = .sample(.landscape)
+    /// Scare picture (`uScare`).
+    public var scare: FlairTextureInput = .sample(.portrait)
+    /// Scare tint (`uTint`).
+    public var tint: SIMD3<Float> = flairVec3(0.901961, 0.882353, 0.839216)
+    /// Scare brightness (`uFlash`).
+    public var flash: Float = 0.8
+    /// Zoom punch (`uPunch`).
+    public var punch: Float = 0.7
+    /// Shake (`uShake`).
+    public var shake: Float = 0.7
+    /// Cycle (s) (`uCycle`).
+    public var cycle: Float = 6.0
+    /// Animate (`uAnimate`).
+    public var animate: Bool = true
+    /// Moment (when still) (`uProgress`).
+    public var progress: Float = 0.62
+    /// Backdrop (`uBackdrop`).
+    public var backdrop: SIMD3<Float> = flairVec3(1.0, 1.0, 1.0)
+    /// Backdrop opacity (`uBackdropAlpha`).
+    public var backdropAlpha: Float = 1.0
+
+    public init() {}
+
+    public func encodeUniforms(into buffer: UnsafeMutableRawPointer, state: FlairFrameState) {
+        state.encodeBuiltins(into: buffer)
+        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(tint, min: 0.0, max: 1.0), to: buffer, at: 992)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(flash, min: 0.0, max: 1.0), to: buffer, at: 1004)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(punch, min: 0.0, max: 1.0), to: buffer, at: 1008)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(shake, min: 0.0, max: 1.0), to: buffer, at: 1012)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(cycle, min: 3.0, max: 20.0), to: buffer, at: 1016)
+        FlairUniformEncoder.writeBool(animate, to: buffer, at: 1020)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(progress, min: 0.0, max: 1.0), to: buffer, at: 1024)
+        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(backdrop, min: 0.0, max: 1.0), to: buffer, at: 1040)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(backdropAlpha, min: 0.0, max: 1.0), to: buffer, at: 1052)
+    }
+
+    public func textureInput(for binding: Int) -> FlairTextureInput {
+        switch binding {
+        case 1: return self.image
+        case 2: return self.scare
+        default: return .none
+        }
+    }
+
+    public mutating func setTextureInput(_ input: FlairTextureInput, for binding: Int) {
+        switch binding {
+        case 1: self.image = input
+        case 2: self.scare = input
+        default: break
+        }
+    }
+
+    public init(from decoder: Decoder) throws {
+        let bag = try FlairJSONBag(from: decoder)
+        self.image = bag.decodeTexture("uImage", "image", default: .sample(.landscape), fit: .contain, margin: 0.1)
+        self.scare = bag.decodeTexture("uScare", "scare", default: .sample(.portrait), fit: .contain, margin: 0.1)
+        self.tint = bag.decodeVec3("uTint", "tint", default: flairVec3(0.901961, 0.882353, 0.839216), isColor: true)
+        self.flash = bag.decodeFloat("uFlash", "flash", default: 0.8, min: 0.0, max: 1.0)
+        self.punch = bag.decodeFloat("uPunch", "punch", default: 0.7, min: 0.0, max: 1.0)
+        self.shake = bag.decodeFloat("uShake", "shake", default: 0.7, min: 0.0, max: 1.0)
+        self.cycle = bag.decodeFloat("uCycle", "cycle", default: 6.0, min: 3.0, max: 20.0)
+        self.animate = bag.decodeBool("uAnimate", "animate", default: true)
+        self.progress = bag.decodeFloat("uProgress", "progress", default: 0.62, min: 0.0, max: 1.0)
+        self.backdrop = bag.decodeVec3("uBackdrop", "backdrop", default: flairVec3(1.0, 1.0, 1.0), isColor: true)
+        self.backdropAlpha = bag.decodeFloat("uBackdropAlpha", "backdropAlpha", default: 1.0, min: 0.0, max: 1.0)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var bag = FlairJSONBag()
+        bag.encodeTexture(self.image, for: "uImage")
+        bag.encodeTexture(self.scare, for: "uScare")
+        bag.encodeVec3(self.tint, for: "uTint")
+        bag.encodeFloat(self.flash, for: "uFlash")
+        bag.encodeFloat(self.punch, for: "uPunch")
+        bag.encodeFloat(self.shake, for: "uShake")
+        bag.encodeFloat(self.cycle, for: "uCycle")
+        bag.encodeBool(self.animate, for: "uAnimate")
+        bag.encodeFloat(self.progress, for: "uProgress")
+        bag.encodeVec3(self.backdrop, for: "uBackdrop")
+        bag.encodeFloat(self.backdropAlpha, for: "uBackdropAlpha")
+        try bag.encode(to: encoder)
+    }
+}
+
 /// **Subliminal flicker** (`subliminal-flicker`, category: `horror`).
 /// A picture that now and then shows something else for a single frame, a hidden picture laid over it so briefly you are not sure you saw it, never more than once every two seconds.
 public struct SubliminalFlicker: FlairEffect, Codable, Sendable, Equatable {
