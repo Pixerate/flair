@@ -1769,6 +1769,7 @@ describe("cinematic effects", () => {
       "anamorphic-lens",
       "bleach-bypass",
       "day-for-night",
+      "daydream",
       "dolly-zoom",
       "end-credits-roll",
       "opening-credits",
@@ -1785,6 +1786,29 @@ describe("cinematic effects", () => {
       expect(effectInputs(getEffect(id)!).accepts, id).toContain("video");
     }
     for (const word of ["anamorphic", "focus", "bokeh", "letterbox", "credits", "grade", "countdown", "trailer", "moonlight", "projector", "vertigo", "handheld"]) expect(findEffects({ text: word, tags: ["cinematic"] }).length, word).toBeGreaterThan(0);
+  });
+
+  it("daydream filters a picture into a looping reverie that floats over a backdrop", () => {
+    const dream = getEffect("daydream") as ShaderEffect;
+    expect(dream).toMatchObject({ kind: "shader", category: "cinematic", video: "filter", loop: 20 });
+    expect(dream).not.toHaveProperty("transparent");
+    expect(dream.tags).toEqual(expect.arrayContaining(["dreamy", "ethereal", "memory", "flashback", "filter"]));
+    expect(effectInputs(dream).accepts).toContain("video");
+    for (const word of ["dream", "memory", "flashback", "reverie", "ethereal"]) expect(findEffects({ text: word }).map((e) => e.id), word).toContain("daydream");
+    const controls = effectControls(dream);
+    expect(controls.map((c) => c.name)).toEqual(["uImage", "uGlow", "uBreathe", "uWisps", "uTint", "uFeather", "uShimmer", "uFade", "uBackdrop", "uBackdropAlpha"]);
+    expect(controls.find((c) => c.name === "uImage")).toMatchObject({ texture: { filter: "mipmap" } });
+    // A pale lavender tint, a low shimmer and wisps light enough to keep a small picture legible.
+    const defaults = effectDefaults(dream);
+    expect(defaults.uTint).toEqual([expect.closeTo(0.91, 2), expect.closeTo(0.875, 2), expect.closeTo(0.973, 2)]);
+    expect(defaults.uShimmer).toBeLessThanOrEqual(0.2);
+    expect(defaults.uWisps).toBeLessThanOrEqual(0.5);
+    expect(dream.presets?.map((p) => p.name)).toEqual(["Daydream", "Memory", "Reverie", "Floating"]);
+    expect(dream.presets?.find((p) => p.name === "Floating")?.values).toEqual({ uBackdropAlpha: 0 });
+    // Every motion comes back round on the loop: the wisps' noise tiles across, the rest turn whole sines of one phase.
+    expect(dream.source).toContain("mod(iTime, 20.0) / 20.0");
+    expect(dream.source.match(/iTime/g)).toHaveLength(1);
+    expect(dream.source).not.toMatch(/\b(half|short)\b\s*[=;]/);
   });
 
   it("loop their focus pulls, bars, countdown, title and flare seamlessly", () => {

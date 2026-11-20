@@ -25,6 +25,8 @@ final class PreviewSnapshotTests: XCTestCase {
         let cases: [(name: String, effect: AnyFlairEffect)] = [
             ("Flair-MeshGradient-Sunset", AnyFlairEffect(MeshGradient(preset: "Sunset"))),
             ("Flair-Aurora-Northern", AnyFlairEffect(Aurora(preset: "Northern"))),
+            ("Flair-Daydream-Daydream", AnyFlairEffect(Daydream(preset: "Daydream"))),
+            ("Flair-Daydream-Memory", AnyFlairEffect(Daydream(preset: "Memory"))),
         ]
 
         for entry in cases {

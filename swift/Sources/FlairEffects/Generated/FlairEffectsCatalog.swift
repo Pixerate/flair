@@ -100,6 +100,7 @@ public enum FlairCatalog {
         AnyFlairEffect(CinemaProjector()),
         AnyFlairEffect(TrailerTitleSlam()),
         AnyFlairEffect(DollyZoom()),
+        AnyFlairEffect(Daydream()),
         AnyFlairEffect(TransitionFocusPull()),
         AnyFlairEffect(TransitionFlareWipe()),
         AnyFlairEffect(BeautySkinSmooth()),
