@@ -16,7 +16,7 @@
   "dependencies": {
     "@apphosting/astro-adapter": "^0.0.2",
     "@astrojs/node": "^11.1.9",
-    "@astrojs/starlight": "^0.42.8",
+    "@astrojs/starlight": "^0.43.1",
     "@astrojs/svelte": "^9.1.2",
     "@pixerate/flair": "workspace:*",
     "astro": "^7.4.4",
