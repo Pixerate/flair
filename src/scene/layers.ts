@@ -13,6 +13,13 @@ export type SceneSubject =
   | { svg: string }
   | { text: string; font?: string; weight?: number | string };
 
+/**
+ * One piece of media in a montage layer's `items`: a picture (a URL or
+ * `data:` URL) or SVG markup, with an optional `device` (`phone`, `tablet`,
+ * `laptop`, `desktop`, `watch`, `browser`) and `label`.
+ */
+export type SceneItem = ({ image: string } | { svg: string }) & { device?: string; label?: string };
+
 /** A subject the host fills in at play or record time, by name: `{ "slot": "productShot" }`. */
 export interface SubjectSlot {
   slot: string;
@@ -112,6 +119,12 @@ export interface SceneLayer {
   values?: Record<string, ControlValue>;
   /** What the effect is applied to, or the picture itself for a bare picture. */
   subject?: LayerSubject;
+  /**
+   * For a montage effect (category "montage"): its list of media, in place
+   * of a subject. A shader montage shows the first few (as many as it has
+   * slots); a vector montage draws them all.
+   */
+  items?: SceneItem[];
   /** A timing effect that retimes the subject's video (see {@link LayerTiming}): it needs a `{ "video": url }` or `{ "slot": name }` subject. */
   timing?: LayerTiming;
   /** Where it sits in the stack (default `subject` when placed with `rect` or `ids`, else `background`). */

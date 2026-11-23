@@ -197,6 +197,7 @@ export {
   type VideoUse,
 } from "./types.js";
 export { SAMPLE_IMAGES, svgDataUrl, svgMarkupUrl, textImage } from "./images.js";
+export { MONTAGE_ITEM_FIELDS, montageValues, type MontageItemData, type MontageSpec } from "./montage.js";
 export {
   CAMERA_PREVIEW_SOURCE,
   cameraEffects,

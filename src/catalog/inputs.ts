@@ -88,7 +88,7 @@ export interface EffectInputs {
    * at once (`repeat`, no slots), kept in its text control `list`.
    * `accepts` then includes `"items"`.
    */
-  items?: { min: number; max: number; slots: string[]; cycle: "swap" | "carousel" | "repeat"; list?: string };
+  items?: { min: number; max: number; slots: string[]; cycle: "swap" | "carousel" | "repeat"; list?: string; count?: string; devices?: string[]; progress?: string };
 }
 
 /** `textImage` output: a UTF-8 SVG `data:` URL holding a `<text>`. */
@@ -194,6 +194,6 @@ export function inputsOf(effect: EffectDefinition, controls: readonly ControlDef
     interactions,
     ...(effect.kind === "vector" && effect.trigger ? { trigger: effect.trigger } : {}),
     transparent: effect.kind === "shader" ? Boolean(effect.transparent) : false,
-    ...(effect.items && { items: { min: effect.items.min, max: effect.items.max, slots: [...effect.items.slots], cycle: effect.items.cycle, ...(effect.items.list && { list: effect.items.list }) } }),
+    ...(effect.items && { items: { min: effect.items.min, max: effect.items.max, slots: [...effect.items.slots], cycle: effect.items.cycle, ...(effect.items.list && { list: effect.items.list }), ...(effect.items.count && { count: effect.items.count }), ...(effect.items.devices && { devices: [...effect.items.devices] }), ...(effect.items.progress && { progress: effect.items.progress }) } }),
   };
 }

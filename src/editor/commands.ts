@@ -13,8 +13,8 @@ import { EFFECT_INPUTS, EFFECT_INTERACTIONS, effectInputs, effectTags, findEffec
 import { DEFAULT_FOOTAGE_FPS, timingEffects, timingLength, timingSample, timingValues } from "../catalog/timing.js";
 import { checkStage, TEXT_TREATMENT_STAGE_NOTES, TEXT_TREATMENT_STAGES, textTreatmentPlan, textTreatments, textTreatmentValues, type TextTreatmentTarget, type TreatmentPlanLayer } from "../catalog/treatment.js";
 import { rgbToHex } from "../shader/controls.js";
-import { DEVICE_KINDS, deviceIndex } from "../catalog/devices.js";
-import { svgMarkupUrl } from "../catalog/images.js";
+import { DEVICE_KINDS } from "../catalog/devices.js";
+import { montageValues } from "../catalog/montage.js";
 import type { EditResult, EffectEditor } from "./editor.js";
 import { editorControlSchema, holdsPath, isTextMask } from "./textmask.js";
 import { EASING_PRESETS, type Easing } from "./timeline.js";
@@ -662,37 +662,13 @@ export function effectCommands(): CommandSpec<EffectEditor>[] {
         const spec = doc.basedOn ? getEffect(doc.basedOn)?.items : undefined;
         const montages = findEffects({ category: "montage" }).map((e) => e.id).join(", ");
         if (!spec) throw new Error(`"${doc.name}" is not a montage, so it takes no items; montages are ${montages} (catalog.search with category "montage", then effect.load). Give a picture to an image control with values.set.`);
-        p.items.forEach((item, i) => {
-          if ((item.image === undefined) === (item.svg === undefined)) throw new Error(`Item ${i + 1} needs one picture: an image (a URL or data: URL) or svg (markup), not ${item.image === undefined ? "neither" : "both"}.`);
-        });
         const missing = [...(spec.list ? [spec.list] : []), ...spec.slots, ...(spec.devices ?? []), ...(spec.count ? [spec.count] : [])].filter((name) => !controls.some((c) => c.name === name));
         if (missing.length) throw new Error(`"${doc.name}" was edited and no longer has the controls its items go in (${missing.join(", ")}); load "${doc.basedOn}" again with effect.load, or set its image controls with values.set.`);
-        const items = p.items;
-        if (items.length < spec.min || items.length > spec.max) throw new Error(`"${doc.basedOn}" takes ${spec.min} to ${spec.max} items; ${items.length} were given.`);
-        const values: Record<string, unknown> = {};
-        const picture = (item: { image?: string; svg?: string }) => (item.svg !== undefined ? svgMarkupUrl(item.svg) : item.image!);
-        if (spec.cycle === "repeat") {
-          const list = items.map((item, i) => {
-            const href = picture(item);
-            if (!/^data:image\//i.test(href.trim())) throw new Error(`Item ${i + 1} is the picture ${JSON.stringify(href.slice(0, 80))}; "${doc.basedOn}" is a vector montage, drawn inside an SVG, which shows only SVG markup (svg) or data:image/… URLs. Give it one of those, or load a shader montage (catalog.search with category "montage" and kind "shader").`);
-            return { href, ...(item.label !== undefined && { label: item.label }) };
-          });
-          done(editor.setValues({ [spec.list!]: JSON.stringify(list) }));
-          return { ok: true, shown: items.length, of: items.length, issues: editor.getState().issues };
-        }
-        const put = (slot: string, item: { image?: string; svg?: string; device?: string }) => {
-          values[slot] = picture(item);
-          const control = spec.devices?.[spec.slots.indexOf(slot)];
-          if (control && item.device) values[control] = deviceIndex(item.device);
-        };
-        if (spec.cycle === "carousel") {
-          put(spec.slots[0]!, items[0]!);
-          put(spec.slots[1]!, items[1 % items.length]!);
-          if (spec.progress) values[spec.progress] = 0;
-        } else spec.slots.forEach((slot: string, i: number) => i < items.length && put(slot, items[i]!));
-        if (spec.count) values[spec.count] = Math.min(items.length, spec.slots.length);
-        done(editor.setValues(values));
-        return { ok: true, shown: Math.min(items.length, spec.cycle === "carousel" ? 1 : spec.slots.length), of: items.length, issues: editor.getState().issues };
+        // The same check and filling as a scene layer's items (set_layer_items).
+        const filled = montageValues(doc.basedOn!, spec, p.items);
+        if (!filled.ok) throw new Error(filled.issues.join(" "));
+        done(editor.setValues(filled.values));
+        return { ok: true, shown: filled.shown, of: p.items.length, issues: editor.getState().issues };
       },
     },
     {

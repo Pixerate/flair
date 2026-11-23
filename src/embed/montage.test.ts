@@ -50,7 +50,7 @@ describe("the montage category", () => {
   });
 
   it("effectInputs reports the items input with its counts", () => {
-    expect(effectInputs(getEffect("device-showcase")!).items).toEqual({ min: 1, max: 24, slots: ["uItem0", "uItem1", "uItem2", "uItem3", "uItem4"], cycle: "swap" });
+    expect(effectInputs(getEffect("device-showcase")!).items).toEqual({ min: 1, max: 24, slots: ["uItem0", "uItem1", "uItem2", "uItem3", "uItem4"], cycle: "swap", count: "uCount", devices: ["uDevice0", "uDevice1", "uDevice2", "uDevice3", "uDevice4"] });
     expect(effectInputs(getEffect("screenshot-carousel")!).items).toMatchObject({ cycle: "carousel", slots: ["uFrom", "uTo"] });
     expect(effectInputs(getEffect("device-showcase")!).accepts).toContain("items");
   });

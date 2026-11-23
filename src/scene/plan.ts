@@ -3,6 +3,7 @@ import { ManualClock } from '../time/clock.js';
 import { cameraSamples, sceneStage } from './cameratrack.js';
 import type { SceneElement } from './geometry.js';
 import { resolveSceneAssets } from './assets.js';
+import { montageValues } from '../catalog/montage.js';
 import { getTimingEffect, timingValues } from '../catalog/timing.js';
 import { isAsset, isSlot, layerTiming, subjectKind, TRANSITION_CONTROLS, type SceneSubject, type SubjectResolver, type SubjectSlot } from './layers.js';
 import { MemorySceneBoard, playScene, type ActiveLayer } from './player.js';
@@ -131,18 +132,30 @@ export async function scenePlan(given: Scene, options: ScenePlanOptions = {}): P
       const found = effects.get(layer.effect);
       if (!found) continue;
       const { meta, def } = found;
+      // A montage's items become values: its first items in its slots, or a vector montage's whole list.
+      const spec = meta.inputs.items;
+      let itemValues: Record<string, ControlValue> = {};
+      if (spec && Array.isArray(layer.items)) {
+        const filled = montageValues(def.id, spec, layer.items);
+        if (!filled.ok) notes.push(`Layer "${t.key}"'s items are left out: ${filled.issues.join(' ')}`);
+        else {
+          itemValues = filled.values;
+          if (layer.items.length > filled.shown && spec.cycle === 'swap') notes.push(`Layer "${t.key}" shows the first ${filled.shown} of its ${layer.items.length} items (a scene does not rotate them in); give later shots their own layers for the rest.`);
+          if (spec.cycle === 'carousel' && layer.items.length > 2) notes.push(`Layer "${t.key}" swaps between its first 2 of ${layer.items.length} items (a scene does not rotate them in); give later shots their own layers for the rest.`);
+        }
+      }
       if (def.kind === 'shader') {
         const subjectControl = subject ? imageControlFor(meta, kind ?? 'image') : undefined;
         draw = {
           kind: 'shader',
           effect: def.id,
           source: def.source,
-          values: resolved(meta.controls, presetOf(def, layer.preset), layer.values, subjectControl ? [subjectControl] : []),
+          values: resolved(meta.controls, presetOf(def, layer.preset), { ...layer.values, ...itemValues }, subjectControl ? [subjectControl] : []),
           transparent: !!def.transparent,
           ...(subjectControl ? { subjectControl } : {}),
         };
       } else if (def.kind === 'vector') {
-        const values = resolved(meta.controls, presetOf(def, layer.preset), layer.values, []);
+        const values = resolved(meta.controls, presetOf(def, layer.preset), { ...layer.values, ...itemValues }, []);
         if (kind === 'text') {
           const copy = meta.inputs.texts.find((x) => x.holds === 'copy');
           if (copy) values[copy.name] = (subject as { text: string }).text;
