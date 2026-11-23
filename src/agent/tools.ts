@@ -1,7 +1,8 @@
 import type { Scene, Shot } from '../scene/types.js';
 import { validateScene, type SceneIssue } from '../scene/validate.js';
 import { checkSceneLayers, timingIssues } from '../scene/layercheck.js';
-import { layerKey, layerRole, layerTiming, layerWhat, isAsset, isSlot, type LayerTime, type LayerTiming, type SceneLayer, type SubjectResolver } from '../scene/layers.js';
+import { layerKey, layerRole, layerTiming, layerWhat, isAsset, isSlot, type LayerTime, type LayerTiming, type SceneItem, type SceneLayer, type SubjectResolver } from '../scene/layers.js';
+import { montageValues } from '../catalog/montage.js';
 import { getTimingEffect, timingValues } from '../catalog/timing.js';
 import { resolveSceneAssets, sceneAssets } from '../scene/assets.js';
 import { simulateScene } from '../scene/player.js';
@@ -21,7 +22,7 @@ export interface AgentToolDefinition {
 
 /** How a shot arranges layers, a transition, copies and paths, for the tools' descriptions. */
 const SHOT_GUIDE =
-  'A shot\'s "layers" are catalog effects ({"effect": id, "preset"?, "values"?}), custom shaders ({"source": GLSL with void mainImage}) or bare pictures, each with an optional "subject" ({"image": url}, {"video": url}, {"svg": markup}, {"text": words}, {"slot": name} that the host fills when it plays or records, or {"asset": "provider:id"} for artwork from the host\'s asset library, when it has one), a "timing" that retimes a video subject ("retime-speed", or {"effect": "long-exposure", "preset"?, "values"?}; retime_layer sets it), a "role" ("background", "subject" or "overlay"), a place on the board ("rect" {x, y, width, height} or "ids" of elements; without either it fills the screen), "from"/"until" (ms after the shot starts, or {"shots": n}; by default it lasts until the next shot), "opacity" and "fade" (ms). find_layer_effects finds effects and what they take. A shot\'s "transition" is a catalog transition from the last shot ({"effect": "transition-wipe", "ms"?, "preset"?, "values"?}); without a camera "in" the camera cuts and the transition does the move. A run command {"type": "replicate", "element": {...}, "pattern": "grid"|"line"|"circle"|"spiral", "count"} draws copies <id>_0…, and a behavior {"type": "path", "target": id, "waypoints": [{"point": [x, y]}, ...], "orient"?} moves an element along a curve while the shot holds.';
+  'A shot\'s "layers" are catalog effects ({"effect": id, "preset"?, "values"?}), custom shaders ({"source": GLSL with void mainImage}) or bare pictures, each with an optional "subject" ({"image": url}, {"video": url}, {"svg": markup}, {"text": words}, {"slot": name} that the host fills when it plays or records, or {"asset": "provider:id"} for artwork from the host\'s asset library, when it has one), "items" for a montage effect in place of a subject (a list of {"image": url} or {"svg": markup}, each with an optional "device" and "label"; set_layer_items sets it), a "timing" that retimes a video subject ("retime-speed", or {"effect": "long-exposure", "preset"?, "values"?}; retime_layer sets it), a "role" ("background", "subject" or "overlay"), a place on the board ("rect" {x, y, width, height} or "ids" of elements; without either it fills the screen), "from"/"until" (ms after the shot starts, or {"shots": n}; by default it lasts until the next shot), "opacity" and "fade" (ms). find_layer_effects finds effects and what they take. A shot\'s "transition" is a catalog transition from the last shot ({"effect": "transition-wipe", "ms"?, "preset"?, "values"?}); without a camera "in" the camera cuts and the transition does the move. A run command {"type": "replicate", "element": {...}, "pattern": "grid"|"line"|"circle"|"spiral", "count"} draws copies <id>_0…, and a behavior {"type": "path", "target": id, "waypoints": [{"point": [x, y]}, ...], "orient"?} moves an element along a curve while the shot holds.';
 
 export const FLAIR_AGENT_TOOLS: AgentToolDefinition[] = [
   {
@@ -122,7 +123,7 @@ export const FLAIR_AGENT_TOOLS: AgentToolDefinition[] = [
       type: 'object',
       properties: {
         text: { type: 'string', description: 'Words to look for in the id, name, description, category and tags (all must match).' },
-        accepts: { type: 'array', items: { type: 'string', enum: ['image', 'video', 'svg', 'text'] }, description: 'Only effects that take all of these as a subject.' },
+        accepts: { type: 'array', items: { type: 'string', enum: ['image', 'video', 'svg', 'text', 'items'] }, description: 'Only effects that take all of these as a subject ("items": montages, which take a list of media; set_layer_items gives them one).' },
         kind: { type: 'string', enum: ['shader', 'vector', 'timing'], description: 'Only shaders (WebGL), only vector (animated SVG) effects, or only timing effects (for a layer\'s "timing").' },
         transition: { type: 'boolean', description: 'true: only transitions (for a shot\'s "transition"); false: only effects for "layers".' },
         transparent: { type: 'boolean', description: 'true: only shaders that draw over what is under them (overlays).' },
@@ -147,6 +148,34 @@ export const FLAIR_AGENT_TOOLS: AgentToolDefinition[] = [
         },
       },
       required: ['shot', 'layer', 'timing'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'set_layer_items',
+    description:
+      'Gives a montage layer (an effect find_layer_effects lists with "items", like "device-showcase", "bento-montage" or "logo-wall") its list of media, setting the layer\'s "items" (or removing them with null). Each item is {"image": url} (a URL or data: URL) or {"svg": markup}, with an optional "device" (phone, tablet, laptop, desktop, watch, browser) and "label". A shader montage shows its first few items (as many as it has slots; "shown" says how many); a vector montage draws every item, but takes only SVG markup and data:image/ URLs. A list out of the effect\'s range, a bad item or device, or a layer that is not a montage is refused and the scene is left as it was.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        shot: { type: 'integer', minimum: 1, description: '1-based index of the layer\'s shot.' },
+        layer: { type: ['integer', 'string'], description: 'The layer: its 1-based place in the shot\'s "layers", or its id (get_scene with view "outline" lists them).' },
+        items: {
+          type: ['array', 'null'],
+          items: {
+            type: 'object',
+            properties: {
+              image: { type: 'string', description: 'A picture: a URL or data: URL.' },
+              svg: { type: 'string', description: 'SVG markup, instead of image.' },
+              device: { type: 'string', enum: ['phone', 'tablet', 'laptop', 'desktop', 'watch', 'browser'] },
+              label: { type: 'string' },
+            },
+            additionalProperties: false,
+          },
+          description: 'The media in order; null removes the layer\'s items.',
+        },
+      },
+      required: ['shot', 'layer', 'items'],
       additionalProperties: false,
     },
   },
@@ -281,6 +310,8 @@ export interface SceneOutlineLayer {
   slot?: string;
   /** The asset its subject is, when the host's library resolves it. */
   asset?: string;
+  /** How many items a montage layer has. */
+  items?: number;
   /** The timing effect retiming its video, by id. */
   timing?: string;
   from?: LayerTime;
@@ -377,6 +408,7 @@ export function outlineScene(scene: Scene): SceneOutline {
               role: layerRole(l ?? {}),
               ...(isSlot(l?.subject) ? { slot: l.subject.slot } : {}),
               ...(isAsset(l?.subject) ? { asset: l.subject.asset } : {}),
+              ...(Array.isArray(l?.items) ? { items: l.items.length } : {}),
               ...(l?.timing !== undefined ? { timing: layerTiming(l)?.effect ?? String(l.timing) } : {}),
               ...(l?.from !== undefined ? { from: l.from } : {}),
               ...(l?.until !== undefined ? { until: l.until } : {}),
@@ -435,6 +467,25 @@ export async function applySceneTool(
   if (!fresh.length) return result;
   const all = [...result.issues, ...fresh];
   return { ...result, issues: all, output: { ...result.output, ...('issues' in result.output ? { issues: all } : {}) } };
+}
+
+/** A layer by shot (1-based) and place (1-based) or id, or a sentence saying what there is. `none` finishes "Shot n has no layers to …". */
+function findLayer(scene: Scene, shot: number, which: number | string, none: string): { idx: number; layers: SceneLayer[]; at: number; key: string } | { error: string } {
+  const idx = shot - 1;
+  const count = scene.shots.length;
+  if (idx >= count) return { error: `There is no shot ${shot}; the scene has ${shotsWord(count)} (1 to ${count}).` };
+  const layers: SceneLayer[] = Array.isArray(scene.shots[idx]!.layers) ? scene.shots[idx]!.layers! : [];
+  const keys = layers.map((l, j) => layerKey(l ?? {}, idx, j));
+  if (!layers.length) return { error: `Shot ${shot} has no layers to ${none}.` };
+  const at = typeof which === 'number' ? which - 1 : keys.indexOf(which);
+  if (at < 0 || at >= layers.length)
+    return {
+      error:
+        typeof which === 'number'
+          ? `There is no layer ${which} in shot ${shot}; it has ${layers.length} (1 to ${layers.length}): ${keys.map((k) => `"${k}"`).join(', ')}.`
+          : `Shot ${shot} has no layer "${which}"; its layers are ${keys.map((k) => `"${k}"`).join(', ')} (or 1 to ${layers.length} by place).`,
+    };
+  return { idx, layers, at, key: keys[at]! };
 }
 
 async function runSceneTool(scene: Scene, toolName: string, input: Record<string, any>, options: SceneToolOptions): Promise<SceneToolResult> {
@@ -525,10 +576,11 @@ async function runSceneTool(scene: Scene, toolName: string, input: Record<string
           kind: m.kind,
           goesIn: transition ? 'transition' : m.kind === 'timing' ? 'timing' : 'layers',
           description: m.description,
-          accepts: m.inputs.accepts.filter((a) => ['image', 'video', 'svg', 'text', 'mask'].includes(a)),
+          accepts: m.inputs.accepts.filter((a) => ['image', 'video', 'svg', 'text', 'mask', 'items'].includes(a)),
+          ...(m.inputs.items && { items: { min: m.inputs.items.min, max: m.inputs.items.max, ...(m.inputs.items.cycle === 'repeat' ? { drawsAll: true } : { shows: m.inputs.items.cycle === 'carousel' ? 1 : m.inputs.items.slots.length }) } }),
           ...(m.transparent ? { transparent: true } : {}),
           controls: m.controls
-            .filter((c) => !(transition && player.includes(c.name)) && !m.inputs.images.some((x) => x.name === c.name))
+            .filter((c) => !(transition && player.includes(c.name)) && !m.inputs.images.some((x) => x.name === c.name) && c.name !== m.inputs.items?.list)
             .map((c) => ({ name: c.name, type: c.type, ...(c.type === 'float' || c.type === 'int' ? { min: c.min, max: c.max } : {}), default: c.default })),
           presets: m.presets,
         };
@@ -539,21 +591,51 @@ async function runSceneTool(scene: Scene, toolName: string, input: Record<string
       return { ok: true, scene, issues: [], output };
     }
 
+    case 'set_layer_items': {
+      const found = findLayer(scene, input.shot, input.layer, 'give media to; add a montage with update_shot, like { "set": { "layers": [{ "effect": "bento-montage", "items": [{ "image": url }, …] }] } }');
+      if ('error' in found) return fail(found.error);
+      const { idx, layers, at, key } = found;
+      const { items: _old, ...rest } = layers[at]!;
+      let layer: SceneLayer = rest;
+      let shown = 0;
+      if (input.items === null) {
+        if (layers[at]!.items === undefined) return fail(`Layer "${key}" in shot ${input.shot} has no items to remove; nothing was changed.`);
+      } else {
+        const id = rest.effect;
+        const { getEffectMeta } = await import('../catalog/lazy.js');
+        const spec = typeof id === 'string' ? getEffectMeta(id)?.inputs.items : undefined;
+        if (!spec) {
+          const { EFFECT_META } = await import('../catalog/lazy.js');
+          const montages = EFFECT_META.filter((m) => m.inputs.items).map((m) => m.id);
+          return fail(`Layer "${key}" in shot ${input.shot} ${typeof id === 'string' ? `is "${id}", which is not a montage` : 'has no catalog effect'}, so it takes no items; montages are ${montages.join(', ')}. Set its "effect" to one with update_shot first. Nothing was changed.`);
+        }
+        const filled = montageValues(id!, spec, input.items);
+        if (!filled.ok) return fail(`${filled.issues.join(' ')} Nothing was changed.`);
+        shown = filled.shown;
+        const { subject: _subject, ...noSubject } = rest;
+        layer = { ...noSubject, items: input.items as SceneItem[] };
+      }
+      const shots = [...scene.shots];
+      shots[idx] = { ...scene.shots[idx]!, layers: layers.map((l, j) => (j === at ? layer : l)) };
+      const result = await edited({ ...scene, shots }, '');
+      if (!result.ok) return result;
+      if (input.items === null) return { ...result, output: { ...result.output, summary: `Removed the items from layer "${key}" in shot ${input.shot}; it shows its sample pictures.` } };
+      const count = (input.items as unknown[]).length;
+      return {
+        ...result,
+        output: {
+          ...result.output,
+          summary: `Layer "${key}" in shot ${input.shot} now has ${count} item${count === 1 ? '' : 's'} and shows ${shown === count ? 'them all' : `the first ${shown}`}${shown < count ? '; a scene does not rotate the rest in, so give later shots their own layers for them' : ''}.`,
+          shown,
+          of: count,
+        },
+      };
+    }
+
     case 'retime_layer': {
-      const idx = input.shot - 1;
-      if (idx >= shotCount) return fail(`There is no shot ${input.shot}; ${shotRange}.`);
-      const layers: SceneLayer[] = Array.isArray(scene.shots[idx]!.layers) ? scene.shots[idx]!.layers! : [];
-      const keys = layers.map((l, j) => layerKey(l ?? {}, idx, j));
-      if (!layers.length)
-        return fail(`Shot ${input.shot} has no layers to retime; add one with update_shot, like { "set": { "layers": [{ "subject": { "video": url }, "timing": "retime-speed" }] } }.`);
-      const at = typeof input.layer === 'number' ? input.layer - 1 : keys.indexOf(input.layer);
-      if (at < 0 || at >= layers.length)
-        return fail(
-          typeof input.layer === 'number'
-            ? `There is no layer ${input.layer} in shot ${input.shot}; it has ${layers.length} (1 to ${layers.length}): ${keys.map((k) => `"${k}"`).join(', ')}.`
-            : `Shot ${input.shot} has no layer "${input.layer}"; its layers are ${keys.map((k) => `"${k}"`).join(', ')} (or 1 to ${layers.length} by place).`,
-        );
-      const key = keys[at]!;
+      const found = findLayer(scene, input.shot, input.layer, 'retime; add one with update_shot, like { "set": { "layers": [{ "subject": { "video": url }, "timing": "retime-speed" }] } }');
+      if ('error' in found) return fail(found.error);
+      const { idx, layers, at, key } = found;
       const { timing: _old, ...rest } = layers[at]!;
       let layer: SceneLayer = rest;
       if (input.timing === null) {

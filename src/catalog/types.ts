@@ -8,7 +8,7 @@ import {
   type ControlValue,
 } from "../shader/controls.js";
 import type { Stage, View } from "../scene/camera.js";
-import type { SvgMotion } from "../vector/motion.js";
+import type { SvgAnimation, SvgMotion } from "../vector/motion.js";
 import type { SvgTrigger } from "../vector/svg.js";
 
 /** What an effect is for, used to group the catalog. */
@@ -189,6 +189,12 @@ export interface EffectPreset {
  * - `carousel`: two slots, the item shown and the next, with `progress`
  *   running 0 → 1 to change from one to the other (a frame cycling through
  *   screenshots).
+ * - `repeat`: a vector effect that draws every item at once. Its items are
+ *   kept, as JSON, in the text control `list` (see {@link VectorItem}), and
+ *   its picture repeats each `{{#items}}…{{/items}}` block, and each
+ *   animation whose id names `{{item.…}}`, once per item (see
+ *   {@link renderVectorEffect}), so its markup follows the item count. It
+ *   has no `slots`.
  */
 export interface EffectItems {
   /** The fewest and most items it takes. */
@@ -196,7 +202,11 @@ export interface EffectItems {
   max: number;
   /** The image controls items are shown in, in order. */
   slots: readonly string[];
-  cycle: "swap" | "carousel";
+  cycle: "swap" | "carousel" | "repeat";
+  /** With `repeat`: the text control holding the items, a JSON list of {@link VectorItem}s. */
+  list?: string;
+  /** With `repeat`: ms each item's animations start after the item before's. */
+  stagger?: number;
   /** An int control told how many items it is showing (at most the slots'). */
   count?: string;
   /** Int controls, one per slot, told each item's `device` (see `DEVICE_KINDS`). */
@@ -255,6 +265,16 @@ export interface ShaderEffect extends EffectBase {
 }
 
 /**
+ * An item of a vector montage (see {@link EffectItems}), as its `list`
+ * control keeps it: a picture as a `data:image/…` URL (an SVG becomes one;
+ * pictures elsewhere cannot be shown inside an SVG) and/or a label.
+ */
+export interface VectorItem {
+  href?: string;
+  label?: string;
+}
+
+/**
  * A control of a vector effect, declared in a list rather than in the
  * picture (see {@link VectorEffect.controls}). The same shape as a shader's
  * controls (see `ControlDef`) less what only sources have; `vec3` colours
@@ -284,6 +304,12 @@ export interface VectorEffect extends EffectBase {
    * from its value, say), filled in after the controls.
    */
   derived?: (values: Record<string, ControlValue>) => Record<string, string | number>;
+  /**
+   * For a montage (`items` with `cycle: "repeat"`): more placeholders for
+   * item `index` of `count`, written `{{item.name}}` in its repeat blocks
+   * (where it sits, how big), worked out from the control values.
+   */
+  itemDerived?: (index: number, count: number, values: Record<string, ControlValue>) => Record<string, string | number>;
   /** Ms to rest on the last frame before it loops (default 600). */
   hold?: number;
   /**
@@ -740,7 +766,7 @@ export function isCurrentColor(value: unknown): value is string {
  * value fills stay put.
  */
 export function renderVectorEffect(
-  effect: Pick<VectorEffect, "motion" | "controls" | "derived">,
+  effect: Pick<VectorEffect, "motion" | "controls" | "derived" | "items" | "itemDerived">,
   values: Record<string, ControlValue> = {},
 ): SvgMotion {
   const filled: Record<string, ControlValue> = {};
@@ -757,6 +783,7 @@ export function renderVectorEffect(
     placeholders.set(control.name, written(control, filled[control.name]!));
   }
   for (const [name, value] of Object.entries(effect.derived?.(filled) ?? {})) placeholders.set(name, value);
+  const motion = effect.items?.cycle === "repeat" ? repeatItems(effect, filled, placeholders) : effect.motion;
   const fill = (text: string, markup: boolean): string | number | boolean => {
     const whole = /^\{\{\s*([A-Za-z_]\w*)\s*(?::[^}]*)?\}\}$/.exec(text);
     if (!markup && whole && placeholders.has(whole[1]!)) return placeholders.get(whole[1]!)!;
@@ -772,9 +799,92 @@ export function renderVectorEffect(
     if (v && typeof v === "object") return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, walk(x)]));
     return v;
   };
-  const { svg, ...rest } = effect.motion;
+  const { svg, ...rest } = motion;
   // Comments hold declarations, not picture, and a value with "--" in one would break the markup.
   return { svg: fill(svg.replace(/<!--[\s\S]*?-->/g, ""), true) as string, ...(walk(rest) as Omit<SvgMotion, "svg">) };
+}
+
+/** A repeat block in a vector montage's markup. */
+const REPEAT_BLOCK = /\{\{#items\}\}([\s\S]*?)\{\{\/items\}\}/g;
+/** An item's placeholder inside a repeat block, or in an animation repeated per item. */
+const ITEM_PLACEHOLDER = /\{\{\s*item\.([A-Za-z_]\w*)\s*\}\}/g;
+
+/**
+ * A vector montage's items, read from its `list` control's JSON: those
+ * that are objects with a `data:image/` href and/or a label, at most `max`.
+ */
+export function vectorItems(effect: Pick<VectorEffect, "items">, value: ControlValue | undefined): VectorItem[] {
+  if (typeof value !== "string" || !value.trim()) return [];
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(value);
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(parsed)) return [];
+  const out: VectorItem[] = [];
+  for (const v of parsed) {
+    if (!v || typeof v !== "object") continue;
+    const { href, label } = v as Record<string, unknown>;
+    const item: VectorItem = {};
+    if (typeof href === "string" && /^data:image\//i.test(href.trim())) item.href = href.trim();
+    if (typeof label === "string") item.label = label;
+    if (item.href !== undefined || item.label !== undefined) out.push(item);
+  }
+  return out.slice(0, effect.items?.max ?? out.length);
+}
+
+/**
+ * The motion with each repeat block (`{{#items}}…{{/items}}`) written once
+ * per item and each animation that names `{{item.…}}` repeated per item,
+ * its `delay` growing by the items' `stagger`. In them, `{{item.i}}` is the
+ * index from 0, `{{item.n}}` from 1, `{{item.count}}` how many, `{{item.href}}`
+ * the picture (empty for none), `{{item.label}}` the label, and the effect's
+ * `itemDerived` names the rest. `{{itemCount}}` is the count anywhere.
+ */
+function repeatItems(
+  effect: Pick<VectorEffect, "motion" | "items" | "itemDerived">,
+  filled: Record<string, ControlValue>,
+  placeholders: Map<string, string | number | boolean>,
+): SvgMotion {
+  const spec = effect.items!;
+  const items = vectorItems(effect, spec.list ? filled[spec.list] : undefined);
+  const count = items.length;
+  placeholders.set("itemCount", count);
+  const perItem = items.map((item, i) => ({
+    i,
+    n: i + 1,
+    count,
+    href: item.href ?? "",
+    label: item.label ?? "",
+    ...effect.itemDerived?.(i, count, filled),
+  }));
+  const fillItem = (text: string, i: number, markup: boolean): string | number => {
+    const values = perItem[i] as Record<string, string | number>;
+    const whole = /^\{\{\s*item\.([A-Za-z_]\w*)\s*\}\}$/.exec(text);
+    if (!markup && whole && whole[1]! in values) return values[whole[1]!]!;
+    return text.replace(ITEM_PLACEHOLDER, (match, name: string) => {
+      if (!(name in values)) return match;
+      const value = String(values[name]);
+      // Escaped, braces too, so an item's label is never read as a placeholder.
+      return markup ? escapeMarkup(value).replace(/\{/g, "&#123;").replace(/\}/g, "&#125;") : value;
+    });
+  };
+  const walk = (v: unknown, i: number): unknown => {
+    if (typeof v === "string") return fillItem(v, i, false);
+    if (Array.isArray(v)) return v.map((x) => walk(x, i));
+    if (v && typeof v === "object") return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, walk(x, i)]));
+    return v;
+  };
+  const svg = effect.motion.svg.replace(REPEAT_BLOCK, (_, block: string) => perItem.map((__, i) => fillItem(block, i, true)).join(""));
+  const animate = effect.motion.animate?.flatMap((a) => {
+    if (!motionStrings({ svg: "", animate: [a] }).some((t) => /\{\{\s*item\./.test(t))) return [a];
+    return perItem.map((_, i) => {
+      const out = walk(a, i) as SvgAnimation;
+      return spec.stagger ? { ...out, delay: (out.delay ?? 0) + i * spec.stagger } : out;
+    });
+  });
+  return { ...effect.motion, svg, ...(animate && { animate }) };
 }
 
 /** A colour control for vector effects. */

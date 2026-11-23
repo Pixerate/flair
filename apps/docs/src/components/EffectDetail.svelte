@@ -26,6 +26,12 @@
   let showing = "";
 
   $: isOverlay = showsOverPicture(meta);
+  // A montage takes a list of pictures: drop several on the preview, or choose them.
+  $: items = meta.inputs.items;
+  let dragging = false;
+  let picker: HTMLInputElement;
+  /** How many of the reader's own pictures it is showing, or 0 for its samples. */
+  let own = 0;
   $: lightGround = meta.kind === "vector" && !isOverlay;
   // A text treatment plays over a paragraph: on paper, or on a dark page for a preset made for dark themes.
   $: treatment = meta.kind === "text-treatment";
@@ -37,6 +43,7 @@
   async function load(id: string) {
     showing = id;
     preset = "";
+    own = 0;
     failure = null;
     mounted?.dispose();
     mounted = null;
@@ -54,6 +61,39 @@
       console.warn(`Flair: could not show ${id}`, err);
     }
     panel?.focus();
+  }
+
+  const readAsDataUrl = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+
+  /** Shows the reader's pictures in the montage (as data: URLs, which vector montages need too). */
+  async function useFiles(list: FileList | null | undefined) {
+    if (!items || !mounted || !list) return;
+    const files = [...list].filter((f) => f.type.startsWith("image/")).slice(0, items.max);
+    if (files.length < items.min) {
+      failure = `Drop ${items.min === 1 ? "a picture" : `at least ${items.min} pictures`} (it takes ${items.min} to ${items.max}).`;
+      return;
+    }
+    try {
+      const urls = await Promise.all(files.map(readAsDataUrl));
+      mounted.setSubject(urls.map((image, i) => ({ image, label: files[i]!.name.replace(/\.[^.]+$/, "") })));
+      own = files.length;
+      failure = null;
+    } catch (err) {
+      failure = err instanceof Error ? err.message : "Those pictures could not be read.";
+    }
+  }
+
+  function onDrop(e: DragEvent) {
+    dragging = false;
+    if (!items) return;
+    e.preventDefault();
+    void useFiles(e.dataTransfer?.files);
   }
 
   function choose(name: string) {
@@ -99,7 +139,17 @@
     aria-label={meta.name}
     class="glass-strong relative max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-t-3xl p-3 shadow-2xl outline-none md:rounded-3xl"
   >
-    <div class="relative aspect-video overflow-hidden rounded-2xl transition-colors {treatment ? (darkPage ? 'bg-[#111827] text-[#e5e7eb]' : 'bg-[#fbfaf7] text-[#1f2937]') : lightGround ? 'bg-[#f1f1f5]' : 'bg-[#0d0d14]'}">
+    <!-- Dropping pictures is a shortcut; the montage's "choose" button does the same from the keyboard. -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div
+      on:dragover={(e) => {
+        if (!items) return;
+        e.preventDefault();
+        dragging = true;
+      }}
+      on:dragleave={() => (dragging = false)}
+      on:drop={onDrop}
+      class="relative aspect-video overflow-hidden rounded-2xl transition-colors {dragging ? 'ring-2 ring-[var(--flair-ink)]' : ''} {treatment ? (darkPage ? 'bg-[#111827] text-[#e5e7eb]' : 'bg-[#fbfaf7] text-[#1f2937]') : lightGround ? 'bg-[#f1f1f5]' : 'bg-[#0d0d14]'}">
       {#if isOverlay}
         <img src={SAMPLE_IMAGES.city} alt="" class="absolute inset-0 h-full w-full object-cover" />
       {/if}
@@ -112,6 +162,12 @@
         <button class="glass-on-dark grid h-8 w-8 place-items-center rounded-full" aria-label="Next effect" on:click={() => dispatch("step", 1)}>›</button>
         <button class="glass-on-dark grid h-8 w-8 place-items-center rounded-full" aria-label="Close" on:click={() => dispatch("close")}>✕</button>
       </div>
+      {#if items}
+        <div class="absolute bottom-3 left-3 flex items-center gap-2">
+          <button class="glass-on-dark rounded-full px-2.5 py-1 text-[11px]" on:click={() => picker.click()}>{own ? `Your ${own} pictures · change` : `Drop ${items.min > 1 ? `${items.min}–${items.max}` : `up to ${items.max}`} pictures, or choose`}</button>
+          <input bind:this={picker} type="file" accept="image/*" multiple class="hidden" on:change={(e) => useFiles(e.currentTarget.files)} />
+        </div>
+      {/if}
       {#if meta.trigger}
         <span class="glass-on-dark absolute bottom-3 left-3 rounded-full px-2.5 py-1 text-[11px]">{meta.trigger} to play</span>
       {/if}

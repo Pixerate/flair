@@ -64,4 +64,4 @@ In code: `validateScene(scene)` returns issues (`[{ shot, message }]`; none mean
 
 ## Agents directing scenes at runtime
 
-If the app itself lets a model edit scenes, give the model `FLAIR_AGENT_TOOLS` and apply each call with `applySceneTool(scene, name, input)` (from `@pixerate/flair`); its tools include `find_layer_effects`, `retime_layer`, `find_camera_moves`, `use_template`, `preview_scene` and `export_scene`. That is the app's agent surface, separate from this skill.
+If the app itself lets a model edit scenes, give the model `FLAIR_AGENT_TOOLS` and apply each call with `applySceneTool(scene, name, input)` (from `@pixerate/flair`); its tools include `find_layer_effects`, `retime_layer`, `set_layer_items`, `find_camera_moves`, `use_template`, `preview_scene` and `export_scene`. That is the app's agent surface, separate from this skill.

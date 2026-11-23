@@ -130,7 +130,9 @@ export function motionAt(doc: EffectDocument, time: number): SvgMotion | undefin
   // Derived placeholders are code, so they come from the catalog effect the document started from.
   const base = doc.basedOn ? getEffect(doc.basedOn) : undefined;
   const derived = base?.kind === "vector" ? base.derived : undefined;
-  return renderVectorEffect({ motion: doc.effect.motion, controls: doc.effect.controls, derived }, valuesAt(doc, time));
+  // A montage's item layout comes from the catalog effect it started from.
+  const montage = base?.kind === "vector" && base.items ? { items: base.items, ...(base.itemDerived && { itemDerived: base.itemDerived }) } : {};
+  return renderVectorEffect({ motion: doc.effect.motion, controls: doc.effect.controls, derived, ...montage }, valuesAt(doc, time));
 }
 
 /**

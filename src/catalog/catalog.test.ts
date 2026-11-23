@@ -93,7 +93,8 @@ describe("catalog", () => {
     "vector %s declares its controls in its picture",
     (_, effect) => {
       if (effect.kind !== "vector") return;
-      expect(effect.controls).toBeUndefined();
+      // A montage's item list (JSON, which a {{…}} declaration cannot hold) is the one control that may be listed.
+      expect(effect.controls?.filter((c) => c.name !== effect.items?.list) ?? []).toEqual([]);
       expect(vectorControlIssues(effect.motion)).toEqual([]);
       expect(vectorControls(effect.motion).length).toBeGreaterThan(0);
     },

@@ -87,6 +87,8 @@ Effects in the `montage` category (`findEffects({ accepts: ["items"] })`) take a
 mountEffect(el, "device-showcase", { subject: [{ image: "/laptop.png", device: "laptop" }, { image: "/phone.png", device: "phone" }], itemDuration: 3000, onItem: (i) => showCaption(i) });
 ```
 
+Pick by what the page shows: `device-showcase` and `device-morph` put screenshots on devices, `screenshot-carousel` cycles one frame, `bento-montage`, `split-grid-reveal` and `photo-scatter` lay a set out together, `filmstrip-montage`, `orbit-gallery` and `wall-zoom` step through a gallery, `before-after-series` takes items in before/after pairs, and `logo-wall` (vector) is a grid of logos that fits any count. `logo-wall` draws inside an SVG, so its items are `{ svg }` markup or `data:image/` URLs, each with a `label`.
+
 `itemDuration`, `overlap`, `loop`, `shuffle` and `onItem` work the same on `<FlairEffect>` and `use:flairEffect`; the mounted effect's `setSubject` swaps the list. A list outside the effect's `effectInputs(effect).items` range (`min` to `max`), an item that is not media, or an unknown device is refused with a sentence.
 
 ## Loaders with real progress

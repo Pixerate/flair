@@ -2,6 +2,7 @@ import { getCameraMove } from '../catalog/camera.js';
 import { getTimingEffect, timingEffects, timingValues } from '../catalog/timing.js';
 import { getTextTreatment } from '../catalog/treatment.js';
 import { layerEffect, layerEffectIds } from '../catalog/layer-index.js';
+import { montageValues } from '../catalog/montage.js';
 import { didYouMean } from '../motion/params.js';
 import { checkControlValue, parseControls, type ControlDef } from '../shader/controls.js';
 import { ASSET_REF, DEFAULT_TRANSITION_MS, isAsset, isSlot, LAYER_ROLES, LAYER_TIMING_FIELDS, subjectKind, SUBJECT_KINDS, type SceneLayer } from './layers.js';
@@ -9,7 +10,7 @@ import type { Scene } from './types.js';
 
 const list = (names: readonly string[]) => names.map((n) => `"${n}"`).join(', ');
 
-export const LAYER_FIELDS = ['id', 'effect', 'source', 'preset', 'values', 'subject', 'timing', 'role', 'rect', 'ids', 'padding', 'from', 'until', 'opacity', 'fade'];
+export const LAYER_FIELDS = ['id', 'effect', 'source', 'preset', 'values', 'subject', 'items', 'timing', 'role', 'rect', 'ids', 'padding', 'from', 'until', 'opacity', 'fade'];
 export const TRANSITION_FIELDS = ['effect', 'ms', 'preset', 'values'];
 
 /** The longest transition, in ms. */
@@ -206,6 +207,14 @@ export function checkLayer(layer: unknown, ctx: LayerContext): string[] {
     }
   }
 
+  // Its items, for a montage (checked against the effect's counts by checkSceneLayers)
+  if (layer.items !== undefined) {
+    if (!Array.isArray(layer.items)) issues.push(`${named} "items" is a list of { "image": url } or { "svg": markup } items, each with an optional "device" and "label".`);
+    else if (layer.effect === undefined) issues.push(`${named} has "items", which only a montage effect takes; give it one ("effect": "device-showcase", or find_layer_effects with { "accepts": ["items"] }).`);
+    else if (accepts && !accepts.includes('items')) issues.push(`"${layer.effect}" is not a montage, so it takes no "items"; give it a "subject", or pick a montage (find_layer_effects with { "accepts": ["items"] }).`);
+    if (layer.subject !== undefined) issues.push(`${named} has both "subject" and "items"; a montage takes its media as "items", so leave "subject" out.`);
+  }
+
   // Where it goes
   if (layer.role !== undefined && !LAYER_ROLES.includes(layer.role as never)) issues.push(`${named} "role" is one of ${list(LAYER_ROLES)}.`);
   if (layer.rect !== undefined && layer.ids !== undefined) issues.push(`${named} has both "rect" and "ids"; place it by a box or by elements, not both.`);
@@ -311,7 +320,14 @@ export async function checkSceneLayers(scene: Scene): Promise<{ shot: number; me
   };
   scene.shots.forEach((shot, s) => {
     (Array.isArray(shot?.layers) ? shot.layers : []).forEach((layer: SceneLayer, i) => {
-      if (layer && typeof layer.effect === 'string') check(s + 1, layer.effect, layer.preset, layer.values, `Layer ${i + 1}`);
+      if (layer && typeof layer.effect === 'string') {
+        check(s + 1, layer.effect, layer.preset, layer.values, `Layer ${i + 1}`);
+        const spec = getEffectMeta(layer.effect)?.inputs.items;
+        if (spec && Array.isArray(layer.items)) {
+          const filled = montageValues(layer.effect, spec, layer.items);
+          if (!filled.ok) for (const message of filled.issues) issues.push({ shot: s + 1, message: `Layer ${i + 1}: ${message}` });
+        }
+      }
     });
     const t = shot?.transition;
     if (t && typeof t.effect === 'string') check(s + 1, t.effect, t.preset, t.values, 'The transition', ['uFrom', 'uTo', 'uProgress', 'uAnimate']);

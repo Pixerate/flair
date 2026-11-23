@@ -535,3 +535,86 @@ describe('retiming a layer\'s video through the scene tools', () => {
     if (res.ok) expect(res.issues).toEqual([]);
   });
 });
+
+describe('montage layers: set_layer_items', () => {
+  const LOGO = '<svg viewBox="0 0 10 10"><circle cx="5" cy="5" r="4"/></svg>';
+  const shots = (n: number) => Array.from({ length: n }, (_, i) => ({ image: `https://example.com/shot-${i + 1}.png` }));
+  const scene: Scene = {
+    name: 'tour',
+    shots: [{ hold: 2000, layers: [{ id: 'grid', effect: 'bento-montage' }, { id: 'sky', effect: 'aurora' }, { id: 'logos', effect: 'logo-wall' }] }, { hold: 800 }],
+  };
+
+  it('finds montages, with how many items each takes and shows', async () => {
+    const res = await applySceneTool(scene, 'find_layer_effects', { accepts: ['items'], limit: 50 });
+    const found = res.output.effects as { id: string; accepts: string[]; items: { min: number; max: number; shows?: number; drawsAll?: boolean }; controls: { name: string }[] }[];
+    expect(found.map((e) => e.id)).toEqual(expect.arrayContaining(['device-showcase', 'bento-montage', 'logo-wall']));
+    expect(found.find((e) => e.id === 'bento-montage')).toMatchObject({ accepts: expect.arrayContaining(['items']), items: { min: 1, max: 24, shows: 6 } });
+    const wall = found.find((e) => e.id === 'logo-wall')!;
+    expect(wall.items).toEqual({ min: 1, max: 24, drawsAll: true });
+    expect(wall.controls.map((c) => c.name)).not.toContain('items');
+  });
+
+  it('gives a layer its items, says how many show, and plans them into the layer', async () => {
+    const res = await applySceneTool(scene, 'set_layer_items', { shot: 1, layer: 'grid', items: [{ image: 'https://example.com/a.png', label: 'Search' }, ...shots(7)] });
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.issues).toEqual([]);
+    expect(res.scene.shots[0]!.layers![0]!.items).toHaveLength(8);
+    expect(res.output).toMatchObject({ shown: 6, of: 8, summary: expect.stringMatching(/8 items and shows the first 6; a scene does not rotate the rest in/) });
+    expect(JSON.stringify(res.output)).not.toContain('example.com');
+    const outline = await applySceneTool(res.scene, 'get_scene', { view: 'outline' });
+    expect((outline.output.outline as { shots: { layers?: { layer: string; items?: number }[] }[] }).shots[0]!.layers![0]).toMatchObject({ layer: 'grid', items: 8 });
+
+    const { scenePlan } = await import('../scene/plan.js');
+    const plan = await scenePlan(res.scene);
+    const grid = plan.layers.find((l) => l.key === 'grid')!;
+    expect(grid.draw).toMatchObject({ kind: 'shader', values: { uItem0: 'https://example.com/a.png', uItem5: 'https://example.com/shot-5.png', uCount: 6 } });
+    expect(plan.notes.join(' ')).toMatch(/"grid" shows the first 6 of its 8 items/);
+  });
+
+  it('draws every item of a vector montage, so its picture follows the count', async () => {
+    const res = await applySceneTool(scene, 'set_layer_items', { shot: 1, layer: 3, items: [{ svg: LOGO, label: 'Acme' }, { svg: LOGO }, { image: 'data:image/png;base64,AA' }] });
+    expect(res.ok && res.output).toMatchObject({ shown: 3, of: 3 });
+    if (!res.ok) return;
+    const { scenePlan } = await import('../scene/plan.js');
+    const plan = await scenePlan(res.scene);
+    const logos = plan.layers.find((l) => l.key === 'logos')!;
+    expect(logos.draw.kind).toBe('vector');
+    if (logos.draw.kind === 'vector') expect(logos.draw.motion.svg.match(/<rect id="logoWallCard\d+"/g)).toHaveLength(3);
+
+    const removed = await applySceneTool(res.scene, 'set_layer_items', { shot: 1, layer: 'logos', items: null });
+    expect(removed.ok && removed.scene.shots[0]!.layers![2]).toEqual({ id: 'logos', effect: 'logo-wall' });
+  });
+
+  it('refuses what a montage cannot take, saying what to give, and leaves the scene alone', async () => {
+    const refused = async (input: Record<string, unknown>) => {
+      const res = await applySceneTool(scene, 'set_layer_items', input);
+      expect(res.ok).toBe(false);
+      return res.ok ? '' : res.error;
+    };
+    expect(await refused({ shot: 1, layer: 'grid' })).toMatch(/arguments\.items is required/);
+    expect(await refused({ shot: 3, layer: 1, items: shots(2) })).toMatch(/There is no shot 3; the scene has 2 shots \(1 to 2\)/);
+    expect(await refused({ shot: 2, layer: 1, items: shots(2) })).toMatch(/Shot 2 has no layers to give media to; add a montage with update_shot/);
+    expect(await refused({ shot: 1, layer: 'sky', items: shots(2) })).toMatch(/"aurora", which is not a montage.*montages are .*device-showcase/);
+    expect(await refused({ shot: 1, layer: 'grid', items: shots(25) })).toMatch(/"bento-montage" takes 1 to 24 items; 25 were given\. Nothing was changed/);
+    expect(await refused({ shot: 1, layer: 'grid', items: [{ image: 'a.png', device: 'fridge' }] })).toMatch(/arguments\.items\[0\]\.device must be one of/);
+    expect(await refused({ shot: 1, layer: 'grid', items: [{ label: 'nothing' }] })).toMatch(/Item 1 needs one picture.*not neither/);
+    expect(await refused({ shot: 1, layer: 'logos', items: [{ image: 'https://example.com/logo.png' }] })).toMatch(/vector montage, drawn inside an SVG/);
+    expect(await refused({ shot: 1, layer: 'grid', items: null })).toMatch(/has no items to remove/);
+  });
+
+  it('checks items written straight into a scene', async () => {
+    const written = async (layer: Record<string, unknown>) => {
+      const res = await applySceneTool(scene, 'write_scene', { scene: { ...scene, shots: [{ hold: 1000, layers: [layer] }] } });
+      return { issues: res.ok ? res.issues : [{ message: res.error }] };
+    };
+    const notMontage = await written({ effect: 'aurora', items: shots(2) });
+    expect(notMontage.issues.map((i) => i.message).join(' ')).toMatch(/"aurora" is not a montage, so it takes no "items"/);
+    const both = await written({ effect: 'bento-montage', items: shots(2), subject: { image: 'a.png' } });
+    expect(both.issues.map((i) => i.message).join(' ')).toMatch(/both "subject" and "items"/);
+    const tooMany = await written({ effect: 'before-after-series', items: shots(7) });
+    expect(tooMany.issues.map((i) => i.message).join(' ')).toMatch(/"before-after-series" takes 2 to 6 items; 7 were given/);
+    const fine = await written({ effect: 'device-showcase', items: [{ image: 'a.png', device: 'laptop' }, { image: 'b.png', device: 'phone' }] });
+    expect(fine.issues).toEqual([]);
+  });
+});
