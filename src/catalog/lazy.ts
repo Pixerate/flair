@@ -11,12 +11,9 @@
  * @packageDocumentation
  */
 
-import { didYouMean } from "../motion/params.js";
 import { unpackMeta, type EffectMeta, type PackedMeta } from "./meta.js";
 import PACKED from "./meta.generated.json" with { type: "json" };
-import { EFFECT_MODULES } from "./modules.generated.js";
 import { countTags, matchesQuery, queryWords, type EffectQuery, type EffectTag } from "./query.js";
-import type { EffectDefinition } from "./types.js";
 
 export type { EffectMeta } from "./meta.js";
 export { normaliseTag, TAG_FORMAT, type EffectQuery, type EffectTag } from "./query.js";
@@ -46,7 +43,6 @@ export {
 export { EFFECT_INPUTS, EFFECT_INTERACTIONS, type EffectInput, type EffectInputs, type EffectInteraction } from "./inputs.js";
 
 const entries = (PACKED as unknown as PackedMeta[]).map(unpackMeta);
-const byId = new Map(entries.map((e) => [e.id, e]));
 
 /** Every effect's metadata, in catalog order (as `EFFECTS`). */
 export const EFFECT_META: readonly EffectMeta[] = entries.map(({ module: _, ...meta }) => meta);
@@ -68,51 +64,4 @@ export function effectTags(query: EffectQuery = {}): EffectTag[] {
   return countTags(findEffectMeta(query));
 }
 
-const loaded = new Map<string, EffectDefinition>();
-const loadingModules = new Map<string, Promise<void>>();
-
-/** Every effect a module exports, alone or in lists. */
-function effectsIn(module: Record<string, unknown>): EffectDefinition[] {
-  const isEffect = (v: unknown): v is EffectDefinition => !!v && typeof v === "object" && "id" in v && "kind" in v && ["shader", "vector", "camera", "timing", "text-treatment"].includes((v as { kind: string }).kind);
-  return Object.values(module).flatMap((v) => (Array.isArray(v) ? v.filter(isEffect) : isEffect(v) ? [v] : []));
-}
-
-/**
- * The effect with this id, with its source (or picture) and presets, loaded
- * on first use (the same object every time after). Rejects for an id the
- * catalog does not have, naming the nearest ones.
- */
-export function loadEffect(id: string): Promise<EffectDefinition> {
-  const done = loaded.get(id);
-  if (done) return Promise.resolve(done);
-  const entry = byId.get(id);
-  if (!entry) {
-    return Promise.reject(new Error(`There is no effect ${JSON.stringify(id)} in the catalog.${didYouMean(id, [...byId.keys()])} findEffectMeta lists them.`));
-  }
-  let moduleLoad = loadingModules.get(entry.module);
-  if (!moduleLoad) {
-    moduleLoad = EFFECT_MODULES[entry.module]!().then((module) => {
-      for (const effect of effectsIn(module)) if (byId.has(effect.id) && !loaded.has(effect.id)) loaded.set(effect.id, effect);
-    });
-    loadingModules.set(entry.module, moduleLoad);
-    moduleLoad.then(
-      () => loadingModules.delete(entry.module),
-      () => loadingModules.delete(entry.module),
-    );
-  }
-  return moduleLoad.then(() => {
-    const effect = loaded.get(id);
-    if (!effect) throw new Error(`The catalog module "${entry.module}" does not have the effect "${id}".`);
-    return effect;
-  });
-}
-
-/** Loads several effects at once (in the order given). */
-export function loadEffects(ids: readonly string[]): Promise<EffectDefinition[]> {
-  return Promise.all(ids.map(loadEffect));
-}
-
-/** The effect with this id if it has been loaded already, else undefined (see {@link loadEffect}). */
-export function getLoadedEffect(id: string): EffectDefinition | undefined {
-  return loaded.get(id);
-}
+export { getLoadedEffect, loadEffect, loadEffects } from "./load.js";

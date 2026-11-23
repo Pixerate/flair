@@ -59,12 +59,18 @@ export default defineConfig([
       await writeFile("dist/schemas/scene-plan.json", `${JSON.stringify(SCENE_PLAN_SCHEMA, null, 2)}\n`);
     },
   },
-  // The lazy catalog (and the integrations, which use it) are built on their own, with a chunk per
+  // The lazy catalog (and the integrations and lazy entries, which use it) are built on their own, with a chunk per
   // catalog module: built with the rest, its on-demand modules would split the full catalog into dozens
   // of chunks too, making it larger to load. Their effects are separate copies of the full catalog's
   // (equal, not the same objects).
   {
     ...shared,
-    entry: { "catalog/lazy": "src/catalog/lazy.ts", "integrations/index": "src/integrations/index.ts" },
+    entry: {
+      "catalog/lazy": "src/catalog/lazy.ts",
+      "integrations/index": "src/integrations/index.ts",
+      "embed/lazy": "src/embed/lazy.ts",
+      "react/lazy": "src/react/lazy.tsx",
+      "svelte/lazy": "src/svelte/lazy.ts",
+    },
   },
 ]);

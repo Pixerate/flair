@@ -204,6 +204,13 @@ export interface ShaderEffect extends EffectBase {
    */
   build?: number;
   /**
+   * Seconds of `iTime` to show, still, under reduced motion (see
+   * `ShaderRendererOptions.reducedMotion`): a frame that reads as the effect
+   * at rest. Defaults to `build` (once it has settled), else 1 second. A
+   * one-shot driven by `uProgress` rests at `uProgress` 1 instead.
+   */
+  rest?: number;
+  /**
    * Draws over other content: `fragColor.a` is coverage (0 where there is
    * nothing to draw), so render it on a transparent canvas
    * (`ShaderRenderer`'s `alpha` option) to layer it over a page or picture.

@@ -417,6 +417,10 @@ export function effectDuration(effect: EffectDefinition): number | undefined {
   return Math.round(svgDuration(renderVectorEffect(effect, effectDefaults(effect))) + (effect.hold ?? 600));
 }
 
+import { drawsAlpha, effectControls, effectDefaults, effectInputs } from "./core.js";
+
+export { drawsAlpha, effectControls, effectDefaults, effectInputs, shaderRestTime } from "./core.js";
+
 export {
   EFFECT_INPUTS,
   EFFECT_INTERACTIONS,
@@ -426,46 +430,6 @@ export {
   type ImageSlot,
   type TextSlot,
 } from "./inputs.js";
-
-const inputsCache = new WeakMap<EffectDefinition, EffectInputs>();
-
-/**
- * What an effect takes and how it answers the pointer: what you can give it
- * (`accepts`: image, video, svg, text, mask, path), its image controls and
- * whether each wants a picture, a mask or text, its text controls (copy,
- * font, path, glyphs), how it suits video, how it answers the pointer
- * (`interactions`: hover, press, click, trail, pointer, scroll) and whether it draws
- * over other content. Worked out from the effect itself, so it always agrees
- * with its controls and source.
- */
-export function effectInputs(effect: EffectDefinition): EffectInputs {
-  let inputs = inputsCache.get(effect);
-  if (!inputs) inputsCache.set(effect, (inputs = inputsOf(effect, effectControls(effect))));
-  return inputs;
-}
-
-/**
- * Whether a shader effect draws alpha to keep, so it needs a transparent
- * canvas (`alpha: true`). With `values`: an effect with a background opacity
- * control (`uBackgroundAlpha`, which covers the whole frame) when it is below
- * 1, else an overlay (`transparent`), or a picture effect whose backdrop
- * (`uBackdropAlpha`) is below 1. Without `values`, whether it could, for a
- * live canvas whose values change later: an overlay, or an effect with
- * either control (an opaque frame looks the same on a transparent canvas).
- * False for vector effects.
- */
-export function drawsAlpha(effect: EffectDefinition, values?: Readonly<Record<string, ControlValue>>): boolean {
-  if (effect.kind !== "shader") return false;
-  const controls = effectControls(effect);
-  const below1 = (name: string) => {
-    const control = controls.find((c) => c.name === name);
-    if (!control) return undefined;
-    const value = values?.[name] ?? control.default;
-    return typeof value === "number" && value < 1;
-  };
-  if (!values) return Boolean(effect.transparent) || below1("uBackgroundAlpha") !== undefined || below1("uBackdropAlpha") !== undefined;
-  return below1("uBackgroundAlpha") ?? (Boolean(effect.transparent) || below1("uBackdropAlpha") === true);
-}
 
 export { normaliseTag, TAG_FORMAT, type EffectQuery, type EffectTag } from "./query.js";
 export type { EffectMeta } from "./meta.js";
@@ -600,12 +564,6 @@ export function effectStack(layers: readonly StackLayer[], options: { source?: L
   });
 }
 
-/** An effect's controls: a shader's `@control` uniforms, or a vector effect's, camera move's, timing effect's or text treatment's declared controls. */
-export function effectControls(effect: EffectDefinition): ControlDef[] {
-  if (effect.kind === "camera" || effect.kind === "timing" || effect.kind === "text-treatment") return effect.controls.map((c, i) => vectorControlDef(c, i + 1));
-  return effect.kind === "shader" ? parseControls(effect.source) : vectorEffectControls(effect);
-}
-
 /**
  * The JSON Schema (draft 2020-12) of an effect's control values, by id or
  * definition; undefined for an id the catalog does not have. Strict: an
@@ -624,18 +582,6 @@ export function effectControlSchema(effect: string | EffectDefinition): JsonSche
     description: def.description,
     currentColor: def.kind === "vector",
   });
-}
-
-/** An effect's values: each control's default, overridden by `values` (and a preset by name, when given). */
-export function effectDefaults(
-  effect: EffectDefinition,
-  options: { preset?: string; values?: Record<string, ControlValue> } = {},
-): Record<string, ControlValue> {
-  const preset = options.preset ? effect.presets?.find((p) => p.name === options.preset)?.values : undefined;
-  const merged = { ...preset, ...options.values };
-  // A vector effect's colours may also follow the text around it.
-  const keep = (c: ControlDef) => effect.kind === "vector" && c.color && isCurrentColor(merged[c.name]);
-  return Object.fromEntries(effectControls(effect).map((c) => [c.name, keep(c) ? CURRENT_COLOR : controlValue(c, merged)]));
 }
 
 /**

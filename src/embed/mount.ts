@@ -1,0 +1,822 @@
+/**
+ * The embed core: everything `@pixerate/flair/embed` does with an effect it
+ * has been handed, without the catalog's list of effects, so the lazy entry
+ * (`@pixerate/flair/embed/lazy`) can share it while loading effects one by
+ * one. Effects by id are looked up by the entries.
+ *
+ * @internal
+ */
+
+import { CAMERA_PREVIEW_SOURCE, cameraPreviewLength, cameraPreviewValues } from "../catalog/camera.js";
+import { drawsAlpha, effectDefaults, effectInputs, shaderRestTime } from "../catalog/core.js";
+import { SAMPLE_IMAGES, textImage } from "../catalog/images.js";
+import type { ImageSlot, TextSlot } from "../catalog/inputs.js";
+import { renderVectorEffect, type CameraEffect, type EffectDefinition, type VectorEffect } from "../catalog/types.js";
+import { effectUi, uiValues, type EffectUiHint, type JsonValue } from "../catalog/ui-hints.js";
+import { resolveAsset as resolveOne } from "../scene/assets.js";
+import type { SubjectResolver } from "../scene/layers.js";
+import type { AudioSource } from "../shader/audio.js";
+import type { ControlValue } from "../shader/controls.js";
+import { holdsStill, ShaderRenderer } from "../shader/renderer.js";
+import { preloadImages, type LiveSource } from "../shader/textures.js";
+import { SvgPlayer, svgDuration } from "../vector/svg.js";
+import type { mountTiming } from "./timing.js";
+import type { previewTextTreatment } from "./treatment.js";
+
+/**
+ * How the core mounts the kinds most pages never draw (a timing effect's
+ * retimed footage, a text treatment's preview), handed in by the entry: the
+ * full entry imports them, the lazy one loads them when one is mounted.
+ */
+export interface KindMounters {
+  mountTiming: typeof mountTiming;
+  previewTextTreatment: typeof previewTextTreatment;
+}
+
+/**
+ * What an effect is applied to:
+ * - `{ image }`: a picture's URL (or `data:` URL).
+ * - `{ video }`: a playing `<video>` (or a canvas), shown live.
+ * - `{ svg }`: an SVG, as markup (`"<svg …>"`) or a URL; drawn as a picture, keeping its transparency.
+ * - `{ text }`: words, for a vector effect's text, or drawn with `textImage` for a shader's text or mask.
+ * - `{ path }`: SVG path data (`d`), for a shape control.
+ * - `{ asset }`: artwork from the host's library by reference
+ *   (`"pixerate:cat-heart"`), which `MountOptions.resolveAsset` turns into
+ *   an `{ svg }` or `{ image }`.
+ * - `{ audio }`: sound for an audio-reactive shader (`iAudio`, `iSpectrum`,
+ *   `iBeat`): a playing `<audio>` or `<video>` (still heard), a microphone's
+ *   `MediaStream` (not played back) or a Web Audio node. See
+ *   `ShaderRenderer.setAudioSource`; to record, pass `audio` to `recordEffect`.
+ */
+export type EffectSubject =
+  | { image: string }
+  | { video: LiveSource }
+  | { svg: string }
+  | { text: string; font?: string; weight?: number | string }
+  | { path: string }
+  | { asset: string }
+  | { audio: AudioSource };
+
+/** What a subject becomes for an effect: control values, live sources by image control, and the sound it hears. */
+export interface SubjectValues {
+  values: Record<string, ControlValue>;
+  live: Record<string, LiveSource>;
+  /** The sound, from an `{ audio }` subject. */
+  audio?: AudioSource;
+}
+
+const kindOf = (subject: EffectSubject) => Object.keys(subject).find((k) => k !== "font" && k !== "weight") as "image" | "video" | "svg" | "text" | "path" | "asset" | "audio";
+
+/** An SVG as a URL: markup becomes a UTF-8 `data:` URL; a URL stays as it is. */
+function svgUrl(svg: string): string {
+  const markup = svg.trim();
+  if (!markup.startsWith("<")) return svg;
+  const withNs = /\sxmlns\s*=/.test(markup.slice(0, markup.indexOf(">") + 1)) ? markup : markup.replace(/^<svg/i, '<svg xmlns="http://www.w3.org/2000/svg"');
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(withNs)}`;
+}
+
+function pick<T extends { name: string }>(slots: T[], wanted: (s: T) => boolean, name: string | undefined, effect: EffectDefinition, what: string): T {
+  const slot = name ? slots.find((s) => s.name === name) : slots.find(wanted);
+  if (!slot) {
+    const names = slots.map((s) => s.name).join(", ");
+    throw new Error(
+      name
+        ? `"${effect.id}" has no control "${name}" for ${what}${names ? `; it has ${names}` : ""}.`
+        : `"${effect.id}" takes no ${what}; see effectInputs(effect).accepts, or findEffects({ accepts: [...] }) for effects that do.`,
+    );
+  }
+  return slot;
+}
+
+/**
+ * The control values (and live sources) that put `subject` in `effect`,
+ * into the control named `slot` or the first that suits it: a picture or
+ * SVG into an image control, a video into a picture control as a live
+ * source, words into a vector effect's text or (drawn by `textImage`) a
+ * shader's text or mask control, path data into a shape control. Several
+ * subjects fill several controls in order (a transition's from and to).
+ * Throws a sentence when the effect takes no such thing.
+ */
+export function subjectValues(effect: EffectDefinition, subject: EffectSubject | readonly EffectSubject[], slot?: string): SubjectValues {
+  const out: SubjectValues = { values: {}, live: {} };
+  const inputs = effectInputs(effect);
+  const used = new Set<string>();
+  if (effect.kind === "text-treatment")
+    throw new Error(`"${effect.id}" is a text treatment: it draws over a host's own text, so it takes no subject. Put it over your text with mountTextTreatment(container, "${effect.id}") and play stages over rangeRects(range, container); mountEffect plays its scripted preview on a paragraph of its own.`);
+  for (const s of Array.isArray(subject) ? subject : [subject as EffectSubject]) {
+    const kind = kindOf(s);
+    if (kind === "asset")
+      throw new Error(`The subject is the asset "${(s as { asset: string }).asset}", which only the host's library can turn into artwork; pass resolveAsset to mountEffect, or resolve it first with resolveSubject().`);
+    const free = <T extends { name: string }>(slots: T[]) => slots.filter((x) => !used.has(x.name));
+    if (kind === "audio") {
+      if (!inputs.accepts.includes("audio"))
+        throw new Error(`"${effect.id}" does not react to sound; findEffects({ accepts: ["audio"] }) lists the effects that do.`);
+      out.audio = (s as { audio: AudioSource }).audio;
+      continue;
+    }
+    if (kind === "path" || (kind === "text" && effect.kind === "vector")) {
+      const holds = kind === "path" ? "path" : "copy";
+      const text = pick<TextSlot>(free(inputs.texts), (t) => t.holds === holds, slot, effect, kind === "path" ? "path data" : "text");
+      out.values[text.name] = kind === "path" ? (s as { path: string }).path : (s as { text: string }).text;
+      used.add(text.name);
+      continue;
+    }
+    if (effect.kind === "timing" && kind !== "video")
+      throw new Error(`"${effect.id}" is a timing effect: it retimes video footage, so give it { video: videoElement }, not ${{ svg: "an SVG", image: "an image", text: "words" }[kind as "svg" | "image" | "text"]}.`);
+    if (effect.kind === "vector")
+      throw new Error(`"${effect.id}" is a vector effect: it draws its own picture and takes words or path data (${inputs.accepts.join(", ") || "nothing"}), not ${{ svg: "an SVG", image: "an image", video: "a video" }[kind as "svg" | "image" | "video"]}.`);
+    const wanted = (x: ImageSlot) =>
+      kind === "text" ? x.wants !== "picture" : kind === "video" ? x.wants === "picture" : true;
+    const image = pick<ImageSlot>(free(inputs.images), wanted, slot, effect, kind === "text" ? "text" : `${kind === "svg" ? "SVG" : kind}`);
+    used.add(image.name);
+    if (kind === "video") {
+      if (!inputs.accepts.includes("video")) throw new Error(`"${effect.id}" is not made for video (video: "${inputs.video}"); give it a picture.`);
+      out.live[image.name] = (s as { video: LiveSource }).video;
+    } else if (kind === "text") {
+      const t = s as { text: string; font?: string; weight?: number | string };
+      out.values[image.name] = textImage(t.text, { ...(t.font ? { font: t.font } : {}), ...(t.weight !== undefined ? { weight: t.weight } : {}) });
+    } else out.values[image.name] = kind === "svg" ? svgUrl((s as { svg: string }).svg) : (s as { image: string }).image;
+  }
+  return out;
+}
+
+export interface MountOptions {
+  /** What to apply the effect to (see {@link EffectSubject}); several fill several controls in order. */
+  subject?: EffectSubject | readonly EffectSubject[];
+  /**
+   * The host's asset library, for `{ asset }` subjects: each is resolved
+   * (asynchronously; `ready()` waits for it) and applied as the `{ svg }` or
+   * `{ image }` it gives. `ready()` rejects with a sentence when one cannot be resolved.
+   */
+  resolveAsset?: SubjectResolver;
+  /** A preset by name, then these values, over the effect's defaults. */
+  preset?: string;
+  values?: Record<string, ControlValue>;
+  /** Start playing at once (default true). */
+  autoplay?: boolean;
+  /** Class for the canvas (shaders) or the player's element (vector effects). */
+  className?: string;
+  /** Pause while scrolled out of view (default true). */
+  pauseWhenHidden?: boolean;
+  /** Start again at the end (default true). For shaders with `uProgress`, false plays 0 → 1 once. */
+  loop?: boolean;
+  /** Wait to start playing until the element enters the viewport (default false). */
+  playOnEnter?: boolean;
+  /** Duration in ms for one-shot playback. */
+  duration?: number;
+  /**
+   * For an effect offered as a UI component (one with `ui`, see `UI_HINTS`):
+   * its typed data, by the props its `ui.contract.props` names
+   * (`{ value: 72, max: 100, unit: "%", label: "CPU" }` for `gauge`), filling
+   * the controls its bindings name over `preset` and `values`. Refused with
+   * a sentence when a prop is unknown or does not fit.
+   */
+  data?: Readonly<Record<string, unknown>>;
+  /**
+   * For a UI component with controlled state (`toggle-switch`'s `checked`):
+   * the state to show. Given, the host owns it: a click or key fires
+   * `onEvent("change", { checked })` and changes nothing until the host
+   * passes the new state (`setState`). Left out, the effect keeps its own
+   * state, still firing `change` as it flips.
+   */
+  state?: Readonly<Record<string, JsonValue>>;
+  /** For a UI component: called with each event its contract names (`"change"`, `{ checked: true }`). */
+  onEvent?: (event: string, detail: Record<string, JsonValue>) => void;
+  /** For a UI component whose name comes from `aria-label` (`ui.contract.a11y.labelFrom`): its accessible name. */
+  label?: string;
+  /**
+   * When to show the effect at rest, still, instead of animating: `"user"`
+   * (default) when the visitor prefers reduced motion; `"always"` always;
+   * `"never"` never. A shader holds one rest frame (its `rest` time, or
+   * `uProgress` 1 for a one-shot), a vector effect its last frame (one with
+   * a pointer trigger still answers it), a UI component its rest state.
+   */
+  reducedMotion?: "user" | "always" | "never";
+}
+
+/** A running effect, from {@link mountEffect}. */
+export interface MountedEffect {
+  readonly effect: EffectDefinition;
+  /** What it draws into: the shader's canvas, or the vector player's element. */
+  readonly element: HTMLElement;
+  /** The shader renderer, for a shader effect. */
+  readonly renderer?: ShaderRenderer;
+  /** The vector player, for a vector effect (replaced when values change). */
+  readonly player?: SvgPlayer;
+  /** Applies it to something else. */
+  setSubject(subject: EffectSubject | readonly EffectSubject[]): void;
+  /** Changes control values (merged over the current ones). */
+  setValues(values: Record<string, ControlValue>): void;
+  play(): void;
+  pause(): void;
+  /** For a UI component: new typed data (see `MountOptions.data`), merged over the last. */
+  setData?(data: Readonly<Record<string, unknown>>): void;
+  /** For a UI component with controlled state: the state to show, animating to it (see `MountOptions.state`). */
+  setState?(state: Readonly<Record<string, JsonValue>>): void;
+  /** For a UI component with state: the state it shows now. */
+  readonly state?: Readonly<Record<string, JsonValue>>;
+  /** Stops it and removes what it drew. */
+  dispose(): void;
+  /** Settles once all textures/images and live sources are decoded and uploaded to the GPU. */
+  ready(): Promise<void>;
+  /**
+   * For slideshows and transitions: smoothly transitions to the next subject,
+   * preloading its images first to prevent black flickers.
+   */
+  transitionTo?(nextSubject: EffectSubject, options?: { duration?: number; easing?: (t: number) => number }): Promise<void>;
+}
+
+const asList = (subject: EffectSubject | readonly EffectSubject[]) => (Array.isArray(subject) ? subject : [subject as EffectSubject]);
+const hasAsset = (subject: EffectSubject | readonly EffectSubject[] | undefined) => !!subject && asList(subject).some((s) => "asset" in s);
+
+/**
+ * `subject` with every `{ asset }` in it turned into the `{ svg }` or
+ * `{ image }` that `resolve` gives. Rejects with a sentence naming an asset
+ * the library does not have.
+ */
+export async function resolveSubject<S extends EffectSubject | readonly EffectSubject[]>(subject: S, resolve: SubjectResolver): Promise<S> {
+  const out: EffectSubject[] = [];
+  for (const s of asList(subject)) {
+    if (!("asset" in s)) {
+      out.push(s);
+      continue;
+    }
+    const found = await resolveOne(s.asset, resolve);
+    if (typeof found === "string") throw new Error(found);
+    out.push(found);
+  }
+  return (Array.isArray(subject) ? out : out[0]) as S;
+}
+
+/** A mounted effect that resolves `{ asset }` subjects through `resolve` before applying them. */
+function resolvingAssets(mounted: MountedEffect, resolve: SubjectResolver, first: EffectSubject | readonly EffectSubject[] | undefined): MountedEffect {
+  const set = mounted.setSubject.bind(mounted);
+  const ready = mounted.ready.bind(mounted);
+  const transition = mounted.transitionTo?.bind(mounted);
+  let pending: Promise<void> = Promise.resolve();
+  const take = (subject: EffectSubject | readonly EffectSubject[]) => {
+    pending = resolveSubject(subject, resolve).then(set);
+    // Seen through ready(); kept from being an unhandled rejection meanwhile.
+    pending.catch(() => undefined);
+  };
+  if (first) take(first);
+  mounted.setSubject = (subject) => (hasAsset(subject) ? take(subject) : set(subject));
+  mounted.ready = async () => {
+    await pending;
+    await ready();
+  };
+  if (transition) mounted.transitionTo = async (next, options) => transition("asset" in next ? await resolveSubject(next, resolve) : next, options);
+  return mounted;
+}
+
+/** `mountEffect` for an effect in hand (see `mountEffect` in `@pixerate/flair/embed`). */
+export function mountDefinition(host: HTMLElement, def: EffectDefinition, options: MountOptions = {}, kinds?: KindMounters): MountedEffect {
+  if (options.resolveAsset) {
+    const { resolveAsset, subject, ...rest } = options;
+    // Mounted without the assets; they arrive as they resolve.
+    const first = hasAsset(subject) ? subject : undefined;
+    const mounted = mountDefinition(host, def, first ? rest : { ...rest, ...(subject ? { subject } : {}) }, kinds);
+    return resolvingAssets(mounted, resolveAsset, first);
+  }
+  let values: Record<string, ControlValue> = { ...effectDefaults(def, { ...(options.preset ? { preset: options.preset } : {}), ...(options.values ? { values: options.values } : {}) }) };
+  let live: Record<string, LiveSource> = {};
+  let audio: AudioSource | undefined;
+  const apply = (subject: EffectSubject | readonly EffectSubject[] | undefined) => {
+    if (!subject) return;
+    const s = subjectValues(def, subject);
+    values = { ...values, ...s.values };
+    live = s.live;
+    audio = s.audio;
+  };
+  apply(options.subject);
+
+  if (def.kind === "camera") return mountCameraMove(host, def, values, live, options);
+  if (def.kind === "text-treatment") {
+    if (!kinds) throw new Error(`"${def.id}" is a text treatment, which this entry does not preview; use @pixerate/flair/embed.`);
+    const preview = kinds.previewTextTreatment(host, def, {
+      values,
+      ...(options.loop !== undefined && { loop: options.loop }),
+      ...(options.autoplay !== undefined && { autoplay: options.autoplay }),
+      ...(options.reducedMotion && { reducedMotion: options.reducedMotion }),
+    });
+    if (options.className) preview.element.className += ` ${options.className}`;
+    return {
+      effect: def,
+      element: preview.element,
+      setSubject: (subject) => void subjectValues(def, subject),
+      setValues: (next) => preview.setValues(next),
+      play: () => preview.play(),
+      pause: () => preview.pause(),
+      dispose: () => preview.dispose(),
+      ready: () => Promise.resolve(),
+    };
+  }
+  if (def.kind === "timing") {
+    if (!kinds) throw new Error(`"${def.id}" is a timing effect, which this entry does not mount; use @pixerate/flair/embed.`);
+    const timing = kinds.mountTiming(host, def, values, live, options);
+    return {
+      effect: def,
+      element: timing.element,
+      setSubject(subject) {
+        timing.setLive(subjectValues(def, subject).live);
+      },
+      setValues: (next) => timing.setValues(next),
+      play: () => timing.play(),
+      pause: () => timing.pause(),
+      dispose: () => timing.dispose(),
+      ready: () => timing.ready(),
+    };
+  }
+
+  if (def.kind === "shader") {
+    const still = holdsStill(options.reducedMotion);
+    // A shader offered as a UI component (a loader): its typed data fills its bound controls.
+    const ui = effectUi(def);
+    if (!ui && (options.data || options.state)) throw new Error(`"${def.id}" is not offered as a UI component, so it takes no data or state; give it values instead (UI_HINTS lists the effects that are).`);
+    if (ui && options.state) throw new Error(`"${def.id}" (${ui.ui.implements}) has no controlled state; give it data instead.`);
+    let base = values;
+    let data: Record<string, unknown> = {};
+    const fill = (next: Record<string, unknown>) => {
+      const input = uiValues(def, next);
+      data = next;
+      values = { ...base, ...input.values };
+    };
+    if (ui) fill(options.data ?? {});
+    const isOneShot = options.loop === false && ("uProgress" in values || "uAnimate" in values);
+    if (isOneShot) {
+      if ("uAnimate" in values) values.uAnimate = false;
+      // Under reduced motion a one-shot shows where it ends, still.
+      if ("uProgress" in values) values.uProgress = still ? 1 : 0.0;
+    }
+
+    const renderer = new ShaderRenderer(host, {
+      alpha: drawsAlpha(def),
+      autoplay: isOneShot ? false : (options.autoplay ?? true),
+      pauseWhenHidden: options.pauseWhenHidden ?? true,
+      reducedMotion: still ? "always" : "never",
+      restTime: shaderRestTime(def) ?? 0,
+      ...(options.playOnEnter !== undefined ? { playOnEnter: options.playOnEnter } : {}),
+      ...(options.className ? { className: options.className } : {}),
+    });
+    renderer.setSource(def.source);
+    renderer.setValues(values);
+    const describe = () => {
+      if (ui) describeUi(renderer.canvas, ui, values, data, options.label);
+    };
+    describe();
+    const setLive = (previous: Record<string, LiveSource>) => {
+      for (const name of Object.keys(previous)) if (!(name in live)) renderer.setLiveSource(name, null);
+      for (const [name, source] of Object.entries(live)) renderer.setLiveSource(name, source);
+    };
+    setLive({});
+    if (audio) renderer.setAudioSource(audio);
+
+    let tweenRaf = 0;
+    const cancelTween = () => {
+      if (tweenRaf) {
+        cancelAnimationFrame(tweenRaf);
+        tweenRaf = 0;
+      }
+    };
+
+    let observer: IntersectionObserver | undefined;
+
+    const playOneShot = () => {
+      cancelTween();
+      if (still) return;
+      const defDuration = "duration" in def && typeof (def as { duration?: number }).duration === "number"
+        ? (def as { duration?: number }).duration
+        : undefined;
+      const dur = options.duration ?? (defDuration ?? 2500);
+      const startTime = performance.now();
+      renderer.play();
+      const frame = (now: number) => {
+        const elapsed = now - startTime;
+        const t = Math.min(1, elapsed / dur);
+        values = { ...values, uProgress: t };
+        renderer.setValues(values);
+        if (t < 1) {
+          tweenRaf = requestAnimationFrame(frame);
+        } else {
+          tweenRaf = 0;
+          renderer.pause();
+        }
+      };
+      tweenRaf = requestAnimationFrame(frame);
+    };
+
+    if (isOneShot && (options.autoplay ?? true)) {
+      if (options.playOnEnter && typeof IntersectionObserver !== "undefined") {
+        observer = new IntersectionObserver(([entry]) => {
+          if (entry?.isIntersecting) {
+            observer?.disconnect();
+            observer = undefined;
+            playOneShot();
+          }
+        });
+        observer.observe(renderer.canvas);
+      } else {
+        playOneShot();
+      }
+    }
+
+    const transitionTo = async (
+      nextSubject: EffectSubject,
+      transitionOptions?: { duration?: number; easing?: (t: number) => number }
+    ): Promise<void> => {
+      cancelTween();
+      const currentTo = values.uTo;
+      const nextUrl = "image" in nextSubject ? nextSubject.image : "";
+      if (nextUrl) {
+        await preloadImages([nextUrl]);
+      }
+      values = {
+        ...values,
+        ...(currentTo ? { uFrom: currentTo } : {}),
+        ...(nextUrl ? { uTo: nextUrl } : {}),
+        uAnimate: false,
+        uProgress: 0,
+      };
+      renderer.setValues(values);
+      await renderer.ready();
+
+      if (still) {
+        // Under reduced motion it cuts to the next subject.
+        values = { ...values, uProgress: 1 };
+        renderer.setValues(values);
+        return;
+      }
+      const dur = transitionOptions?.duration ?? options.duration ?? 1000;
+      const easing = transitionOptions?.easing ?? ((t: number) => t);
+      const startTime = performance.now();
+      renderer.play();
+
+      return new Promise<void>((resolve) => {
+        const step = (now: number) => {
+          const elapsed = now - startTime;
+          const p = Math.min(1, elapsed / dur);
+          values = { ...values, uProgress: easing(p) };
+          renderer.setValues(values);
+          if (p < 1) {
+            tweenRaf = requestAnimationFrame(step);
+          } else {
+            tweenRaf = 0;
+            resolve();
+          }
+        };
+        tweenRaf = requestAnimationFrame(step);
+      });
+    };
+
+    return {
+      effect: def,
+      element: renderer.canvas,
+      renderer,
+      setSubject(subject) {
+        const before = live;
+        const heard = audio;
+        apply(subject);
+        renderer.setValues(values);
+        setLive(before);
+        if (audio !== heard) renderer.setAudioSource(audio ?? null);
+      },
+      setValues(next) {
+        base = { ...base, ...next };
+        values = { ...values, ...next };
+        renderer.setValues(values);
+        describe();
+      },
+      ...(ui && {
+        setData(next: Readonly<Record<string, unknown>>) {
+          fill({ ...data, ...next });
+          renderer.setValues(values);
+          describe();
+        },
+      }),
+      play() {
+        if (isOneShot) playOneShot();
+        else renderer.play();
+      },
+      pause() {
+        cancelTween();
+        renderer.pause();
+      },
+      dispose() {
+        cancelTween();
+        observer?.disconnect();
+        renderer.dispose();
+      },
+      ready: () => renderer.ready(),
+      transitionTo,
+    };
+  }
+
+  const ui = effectUi(def);
+  if (ui) return mountComponent(host, def, ui, values, options);
+  if (options.data || options.state) throw new Error(`"${def.id}" is not offered as a UI component, so it takes no data or state; give it values instead (UI_HINTS lists the effects that are).`);
+
+  let player: SvgPlayer;
+  const still = holdsStill(options.reducedMotion);
+  const build = () => {
+    player?.dispose();
+    player = new SvgPlayer(host, renderVectorEffect(def, values), {
+      hold: def.hold,
+      ...(options.loop !== undefined ? { loop: options.loop } : {}),
+      ...(options.playOnEnter !== undefined ? { playOnEnter: options.playOnEnter } : {}),
+      ...(options.duration !== undefined ? { duration: options.duration } : {}),
+      ...(def.trigger ? { trigger: def.trigger } : {}),
+      autoplay: !still && (options.autoplay ?? true),
+      pauseWhenHidden: options.pauseWhenHidden ?? true,
+    });
+    if (options.className) player.view.element.className = options.className;
+    // Under reduced motion it shows its last frame, still; one that answers the pointer waits for it.
+    if (still && !def.trigger) player.settle();
+  };
+  build();
+  return {
+    effect: def,
+    get element() {
+      return player.view.element;
+    },
+    get player() {
+      return player;
+    },
+    setSubject(subject) {
+      apply(subject);
+      build();
+    },
+    setValues(next) {
+      values = { ...values, ...next };
+      build();
+    },
+    play: () => {
+      if (!still) player.play();
+    },
+    pause: () => player.pause(),
+    dispose: () => player.dispose(),
+    ready: async () => {},
+  };
+}
+
+const KEYS: Record<string, string> = { " ": "Space", Spacebar: "Space", Enter: "Enter" };
+
+/** Sets an element's role, name and value from a UI component's contract (a loader's `value` as 0–100%, absent while it cannot tell). */
+function describeUi(el: HTMLElement, hint: EffectUiHint, values: Record<string, ControlValue>, data: Record<string, unknown>, label: string | undefined) {
+  const contract = hint.ui.contract ?? {};
+  const a11y = contract.a11y;
+  if (a11y?.role) el.setAttribute("role", a11y.role);
+  if (a11y && Object.keys(a11y.keyboard ?? {}).length) el.tabIndex = 0;
+  const name = a11y?.labelFrom === "prop" ? values[hint.bindings.props.label ?? ""] : a11y?.labelFrom === "aria-label" ? label : undefined;
+  if (typeof name === "string" && name) el.setAttribute("aria-label", name);
+  if (hint.bindings.progress) {
+    const value = data.value;
+    el.setAttribute("aria-valuemin", "0");
+    el.setAttribute("aria-valuemax", "100");
+    if (typeof value === "number") el.setAttribute("aria-valuenow", String(Math.round(value * 100)));
+    else el.removeAttribute("aria-valuenow");
+    return;
+  }
+  const valueControl = hint.bindings.props.value;
+  if (valueControl !== undefined && typeof values[valueControl] === "number") {
+    const maxControl = hint.bindings.props.max;
+    const schemaMax = (contract.props?.properties as Record<string, { maximum?: number }> | undefined)?.value?.maximum;
+    const max = maxControl !== undefined && typeof values[maxControl] === "number" ? values[maxControl] : (schemaMax ?? 100);
+    const unit = hint.bindings.props.unit !== undefined ? values[hint.bindings.props.unit] : undefined;
+    el.setAttribute("aria-valuemin", "0");
+    el.setAttribute("aria-valuemax", String(max));
+    el.setAttribute("aria-valuenow", String(values[valueControl]));
+    if (typeof unit === "string" && unit) el.setAttribute("aria-valuetext", `${values[valueControl]}${unit}`);
+  }
+}
+
+/**
+ * A vector effect run as a UI component: typed data fills its bound
+ * controls, a click-bound boolean state (a switch's `checked`) is shown,
+ * flipped and reported through `onEvent`, its ARIA role, state and keys
+ * are set from its contract, it plays once to its rest point
+ * (`a11y.reducedMotionAt` of its play) and, under reduced motion, shows
+ * that rest point still.
+ */
+function mountComponent(host: HTMLElement, def: VectorEffect, hint: EffectUiHint, initial: Record<string, ControlValue>, options: MountOptions): MountedEffect {
+  const contract = hint.ui.contract ?? {};
+  const a11y = contract.a11y;
+  const still = holdsStill(options.reducedMotion);
+  // The boolean state the effect's click steps flip, if it has one.
+  const [flag] = Object.entries(hint.bindings.state ?? {}).find(([, b]) => b.interaction === "click") ?? [];
+  const event = contract.state?.find((s) => s.name === flag)?.event;
+  let base = initial;
+  let data: Record<string, unknown> = {};
+  let values = initial;
+  const fill = (next: Record<string, unknown>) => {
+    const input = uiValues(def, next);
+    data = next;
+    values = { ...base, ...input.values };
+    return input.state;
+  };
+  const given = fill(options.data ?? {});
+  const controlled = !!flag && options.state !== undefined && flag in options.state;
+  let on = flag ? Boolean((controlled ? options.state![flag] : given[flag]) ?? false) : false;
+  const emit = (name: string, detail: Record<string, JsonValue>) => options.onEvent?.(name, detail);
+
+  let player: SvgPlayer;
+  /** Plays the next click step (or jumps to its end, still). */
+  const step = () => {
+    player.advance();
+    if (still) player.settle();
+  };
+  const toggle = () => {
+    if (!flag) return;
+    const next = !on;
+    if (!controlled) {
+      on = next;
+      step();
+      describe();
+    }
+    if (event) emit(event, { [flag]: next });
+  };
+  const onKey = (e: KeyboardEvent) => {
+    const action = a11y?.keyboard?.[KEYS[e.key] ?? e.key];
+    if (action !== "toggle") return;
+    e.preventDefault();
+    toggle();
+  };
+  /** The element's role, name, state and value, from the contract. */
+  const describe = () => {
+    const el = player.view.element;
+    describeUi(el, hint, values, data, options.label);
+    if (flag) el.setAttribute("aria-checked", String(on));
+  };
+  const build = () => {
+    player?.dispose();
+    const motion = renderVectorEffect(def, values);
+    // Components play once to their rest point and stay there.
+    const rest = Math.max(1, Math.round((a11y?.reducedMotionAt ?? 1) * (svgDuration(motion) + (def.hold ?? 600))));
+    player = new SvgPlayer(host, motion, {
+      hold: def.hold,
+      loop: options.loop ?? false,
+      duration: options.duration ?? rest,
+      ...(options.playOnEnter !== undefined ? { playOnEnter: options.playOnEnter } : {}),
+      ...(def.trigger ? { trigger: def.trigger } : {}),
+      // A component's clicks go through its state, so a controlled one changes only when the host says.
+      ...(flag
+        ? {
+            onTrigger: () => {
+              toggle();
+              return false;
+            },
+          }
+        : {}),
+      autoplay: !still && (options.autoplay ?? true),
+      pauseWhenHidden: options.pauseWhenHidden ?? true,
+    });
+    if (options.className) player.view.element.className = options.className;
+    player.view.element.addEventListener("keydown", onKey);
+    if (flag && on) {
+      // Shown on from the start: the end of its first step, without playing it.
+      player.advance();
+      player.settle();
+    } else if (still && !def.trigger) player.settle();
+    describe();
+  };
+  build();
+  return {
+    effect: def,
+    get element() {
+      return player.view.element;
+    },
+    get player() {
+      return player;
+    },
+    get state() {
+      return flag ? { [flag]: on } : {};
+    },
+    setSubject(subject) {
+      const taken = subjectValues(def, subject).values;
+      base = { ...base, ...taken };
+      values = { ...values, ...taken };
+      build();
+    },
+    setValues(next) {
+      base = { ...base, ...next };
+      values = { ...values, ...next };
+      build();
+    },
+    setData(next) {
+      fill({ ...data, ...next });
+      build();
+    },
+    setState(next) {
+      if (!flag || !(flag in next)) return;
+      const want = Boolean(next[flag]);
+      if (want === on) return;
+      on = want;
+      step();
+      describe();
+    },
+    play: () => player.play(),
+    pause: () => player.pause(),
+    dispose: () => player.dispose(),
+    ready: async () => {},
+  };
+}
+
+/**
+ * A camera move previewed on its subject: the preview shader, with the
+ * move's view worked out in TypeScript for each frame. `options.duration`
+ * sets the move's length; `loop: false` plays it once.
+ */
+function mountCameraMove(
+  host: HTMLElement,
+  def: CameraEffect,
+  initial: Record<string, ControlValue>,
+  initialLive: Record<string, LiveSource>,
+  options: MountOptions,
+): MountedEffect {
+  let values = initial;
+  let live = initialLive;
+  const renderer = new ShaderRenderer(host, {
+    autoplay: false,
+    pauseWhenHidden: options.pauseWhenHidden ?? true,
+    ...(options.className ? { className: options.className } : {}),
+  });
+  renderer.setSource(CAMERA_PREVIEW_SOURCE);
+  const picture = () => ({ uImage: typeof values.uImage === "string" && values.uImage ? values.uImage : SAMPLE_IMAGES.landscape });
+  const setLive = (previous: Record<string, LiveSource>) => {
+    for (const name of Object.keys(previous)) if (!(name in live)) renderer.setLiveSource(name, null);
+    for (const [name, source] of Object.entries(live)) renderer.setLiveSource(name, source);
+  };
+  setLive({});
+  const length = cameraPreviewLength(def, options.duration);
+  const aspect = () => {
+    const c = renderer.canvas;
+    const w = c.clientWidth || c.width;
+    const h = c.clientHeight || c.height;
+    return w > 0 && h > 0 ? w / h : 16 / 9;
+  };
+  const draw = (ms: number) => renderer.setValues({ ...picture(), ...cameraPreviewValues(def, values, ms, aspect(), options.duration) });
+  let raf = 0;
+  let started = 0;
+  let at = 0;
+  const frame = (now: number) => {
+    at = now - started;
+    if (options.loop === false && at >= length) {
+      draw(length - 1);
+      raf = 0;
+      renderer.pause();
+      return;
+    }
+    draw(at);
+    raf = requestAnimationFrame(frame);
+  };
+  const play = () => {
+    if (raf) return;
+    if (options.loop === false && at >= length) at = 0;
+    started = performance.now() - at;
+    renderer.play();
+    raf = requestAnimationFrame(frame);
+  };
+  const pause = () => {
+    if (raf) cancelAnimationFrame(raf);
+    raf = 0;
+    renderer.pause();
+  };
+  draw(0);
+  let observer: IntersectionObserver | undefined;
+  if (options.autoplay ?? true) {
+    if (options.playOnEnter && typeof IntersectionObserver !== "undefined") {
+      observer = new IntersectionObserver(([entry]) => {
+        if (!entry?.isIntersecting) return;
+        observer?.disconnect();
+        observer = undefined;
+        play();
+      });
+      observer.observe(renderer.canvas);
+    } else play();
+  }
+  return {
+    effect: def,
+    element: renderer.canvas,
+    renderer,
+    setSubject(subject) {
+      const before = live;
+      const next = subjectValues(def, subject);
+      values = { ...values, ...next.values };
+      if (!("uImage" in next.values)) delete values.uImage;
+      live = next.live;
+      setLive(before);
+      draw(at);
+    },
+    setValues(next) {
+      values = { ...values, ...next };
+      draw(at);
+    },
+    play,
+    pause,
+    dispose() {
+      pause();
+      observer?.disconnect();
+      renderer.dispose();
+    },
+    ready: () => renderer.ready(),
+  };
+}

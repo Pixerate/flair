@@ -53,13 +53,25 @@
       "types": "./dist/embed/index.d.ts",
       "import": "./dist/embed/index.js"
     },
+    "./embed/lazy": {
+      "types": "./dist/embed/lazy.d.ts",
+      "import": "./dist/embed/lazy.js"
+    },
     "./react": {
       "types": "./dist/react/index.d.ts",
       "import": "./dist/react/index.js"
     },
+    "./react/lazy": {
+      "types": "./dist/react/lazy.d.ts",
+      "import": "./dist/react/lazy.js"
+    },
     "./svelte": {
       "types": "./dist/svelte/index.d.ts",
       "import": "./dist/svelte/index.js"
+    },
+    "./svelte/lazy": {
+      "types": "./dist/svelte/lazy.d.ts",
+      "import": "./dist/svelte/lazy.js"
     },
     "./integrations": {
       "types": "./dist/integrations/index.d.ts",

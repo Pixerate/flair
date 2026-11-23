@@ -50,9 +50,10 @@ Flair gives products a library of good-looking, configurable visual effects (her
 | `@pixerate/flair/catalog/lazy` | The catalog loaded on demand: `EFFECT_META` (every effect's id, name, category, description, tags, controls, presets' names, inputs and video use), `findEffectMeta`, `effectTags`, `getEffectMeta`, and `loadEffect(id)` for an effect's shader or picture | None |
 | `@pixerate/flair/vector` | `SvgMotion`, `svgFrame`, `svgView`, `SvgPlayer`, `svgFrameMarkup`, `svgViewBox`, `animateCount`, `formatCount`, `morphPaths`, `morphSequence`, `svgAnimatedMarkup` (an animated `.svg` file), `svgMotionIssues` | None |
 | `@pixerate/flair/motion` | Motion primitives: `PRIMITIVES` (entrances, exits, emphasis and path motions as JSON descriptors), `applyPrimitive`, `removePrimitive`, `primitiveTags` | None |
-| `@pixerate/flair/embed` | `mountEffect`, `subjectValues`: any catalog effect on a page, applied to a picture, video, SVG, words or a path; `recordEffect`: MP4, WebM, GIF or PNG frames in the browser; `mountScene`, `recordScene`, `SceneCompositor`: scenes with their layers and transitions | None |
-| `@pixerate/flair/react` | `<FlairEffect>`: any catalog effect applied to a subject; `<VectorEffect>`, `<SvgPlayerView>`: vector effects as React components, server-rendered as a still | `react` ≥ 18 (optional peer) |
-| `@pixerate/flair/svelte` | `flairEffect` action: any catalog effect applied to a subject; `vectorEffect` action, `vectorEffectStill`: vector effects in Svelte, server-rendered as a still | `svelte` ≥ 5 (optional peer; types only) |
+| `@pixerate/flair/embed` | `mountEffect`, `subjectValues`: any catalog effect on a page, applied to a picture, video, SVG, words or a path; `playMoment`: an effect played once over an element; `recordEffect`: MP4, WebM, GIF or PNG frames in the browser; `mountScene`, `recordScene`, `SceneCompositor`: scenes with their layers and transitions | None |
+| `@pixerate/flair/react` | `<FlairEffect>`: any catalog effect applied to a subject; `<VectorEffect>`, `<SvgPlayerView>`: vector effects as React components, server-rendered as a still; `useFlairMoment()` | `react` ≥ 18 (optional peer) |
+| `@pixerate/flair/svelte` | `flairEffect` action: any catalog effect applied to a subject; `vectorEffect` action, `vectorEffectStill`: vector effects in Svelte, server-rendered as a still; `flairMoment` action | `svelte` ≥ 5 (optional peer; types only) |
+| `@pixerate/flair/embed/lazy`, `/react/lazy`, `/svelte/lazy` | The same `mountEffect` (async), `playMoment`, components and actions, loading each effect by id when first used instead of the whole catalog (see [Loading the catalog on demand](#loading-the-catalog-on-demand)) | As their full entries |
 | `@pixerate/flair/editor` | `EffectEditor`, effect documents, keyframe tracks, renderer bindings, parameter-panel binding, agent tools and instructions, and `effectDocumentFromAnimation` / `loadAnimation` for scenes from `@pixerate/editor`'s animation editor | `@pixerate/editor` ≥ 0.55 (optional peer; only its dependency-free `/history`, `/commands`, `/tools`, `/animation`, `/animation-editor` and `/parameters` subpaths) |
 | `@pixerate/flair/integrations` | `flairEffects()`: Flair's catalog, camera moves and motion primitives as an effects provider for `@pixerate/editor`'s editors (its `@pixerate/editor/effects` contract) | `@pixerate/editor` ≥ 0.254 (optional peer, the first version with timing effects; ≥ 0.224 with `kinds` that leave out `timing`, ≥ 0.148 leaving out `camera` too): `/effects`, plus the subpaths `/editor` uses once an authoring session opens |
 | `@pixerate/flair/testing` | `installFakeWebGl`, `FakeGl`: a fake WebGL2 context, so code that renders with Flair runs in jsdom, Node or CI with the same pixels every time (any test runner) | None |
@@ -234,6 +235,18 @@ m.dispose();
 `subjectValues(effect, subject)` gives the control values (and live sources) without mounting anything, for `ShaderRenderer`, `ShaderFrames` or `renderVectorEffect`.
 
 In React, `<FlairEffect effect="image-duotone" subject={{ image: "/team.jpg" }} style={{ aspectRatio: "16 / 9" }} />` (from `@pixerate/flair/react`) does the same. In Svelte, use `<div use:flairEffect={{ effect, subject }}></div>` (from `@pixerate/flair/svelte`). Either way the effect fills its element, so size it with CSS.
+
+**Reduced motion.** Every effect respects `prefers-reduced-motion` by default (`reducedMotion: "user"` on `mountEffect`, `<FlairEffect>` and `use:flairEffect`): a shader renders one rest frame and stops (its `rest` time in seconds, else its `build`, else 1; a one-shot driven by `uProgress` shows its end), a vector effect shows its last frame, a UI component its rest state. `"always"` forces the still; `"never"` always animates (editors and previews). The engine takes the same option: `new ShaderRenderer(el, { reducedMotion: "user", restTime: 2 })`, whose `play()` does nothing while it holds the still.
+
+**Moments.** `playMoment(anchor, effect, options)` plays a shader or vector effect once over an element (or `"viewport"`): a transparent overlay that lets the pointer through, sized to the element (grown by `outset` for effects that spill), following it as the page scrolls, and removed with its canvas and GL context once it has played (`duration`, else the effect's own length). It settles `true` when it played, and `false` when it played nothing: under reduced motion, without WebGL2 for a shader, for an element off the page, or when `signal` aborts. Keep a CSS fallback for those.
+
+```ts
+import { playMoment } from "@pixerate/flair/embed";
+
+await playMoment(card, "success-check", { outset: 16 });
+```
+
+In React, `useFlairMoment()` returns a function that plays one over a ref or element, and stops any still playing on unmount; in Svelte, `use:flairMoment={{ effect, key }}` plays each time `key` changes (once on mount without a `key`).
 
 Effects that show a picture (image, transition, morph, time-warp and the like) take transparent pictures too, such as SVG icons (Lucide and similar sets draw black `currentColor` strokes on a clear background). They lay the picture over a backdrop: `uBackdrop` (white by default) shows through its clear parts. Set `uBackdropAlpha` to 0 to keep the picture's alpha instead, and render with `{ alpha: true }` to lay the result over the page (`mountEffect`, `recordEffect`, `exportEffect` and `effectStack` do this for you). `SAMPLE_IMAGES.icon` is a Lucide-style sample icon. SVGs are rasterised at 2048 px on the long edge, so icons stay sharp.
 
@@ -551,7 +564,13 @@ Without React or Svelte, `svgFrameMarkup(motion, { at: "last" })` (from `@pixera
 
 ### Effects as UI components
 
-Some vector effects are UI components in all but name, and say so: their metadata (`effectMeta(effect).ui`, `getEffectMeta(id).ui` from `/catalog/lazy`) and `flairEffects()`' summaries and descriptions carry a `ui` field, `@pixerate/schemas`' `UiDescriptor` (what component type it `implements`, its `contract`: props as JSON Schema, controlled `state` and `events`, `a11y`, `colorRoles`, `sizing`; the `platforms` it renders on; an `example`; and a `contentHash` that changes whenever its output does, so a sync can tell). Next to it, `uiBindings` says which controls the contract drives: `props` (prop → control), `colors` (colour role → colour control, e.g. `{ "track-on": "on", "track-off": "off", surface: "background" }`, so a theme restyles it by role) and `state` (`{ checked: { interaction: "click" } }`: a boolean the click steps flip). Effects without `ui` are not meant as UI. The hints are `UI_HINTS` in `@pixerate/flair/catalog` (and `/catalog/lazy`); so far `toggle-switch` (`switch`), `progress-bar` (`progress`) and `gauge` (`gauge`, a `data-visual`).
+Some effects are UI components in all but name, and say so: their metadata (`effectMeta(effect).ui`, `getEffectMeta(id).ui` from `/catalog/lazy`) and `flairEffects()`' summaries and descriptions carry a `ui` field, `@pixerate/schemas`' `UiDescriptor` (what component type it `implements`, its `contract`: props as JSON Schema, controlled `state` and `events`, `a11y`, `colorRoles`, `sizing`; the `platforms` it renders on; an `example`; and a `contentHash` that changes whenever its output does, so a sync can tell). Next to it, `uiBindings` says which controls the contract drives: `props` (prop → control), `colors` (colour role → colour control, e.g. `{ "track-on": "on", "track-off": "off", surface: "background" }`, so a theme restyles it by role) and `state` (`{ checked: { interaction: "click" } }`: a boolean the click steps flip). Effects without `ui` are not meant as UI. The hints are `UI_HINTS` in `@pixerate/flair/catalog` (and `/catalog/lazy`); so far `toggle-switch` (`switch`), `progress-bar` (`progress`), `gauge` (`gauge`, a `data-visual`), and the shader loaders `liquid-loader` and `flame-loader` (`loader`).
+
+**Loaders with real progress.** A `loader` takes one prop, `value`: how far along a job is, 0–1, or `null` while the job cannot tell (the loader plays its own loop). `uiBindings.progress` says how: `value` fills its `control` (scaled into its range) and turns off its `animate` control, and `null` turns `animate` back on. To assistive tech it is a progress bar (`aria-valuenow` 0–100, left out while it cannot tell), named by the `label` option:
+
+```tsx
+<FlairEffect effect="liquid-loader" data={{ value: job.progress ?? null }} label="Generating image" style={{ height: 120 }} />
+```
 
 Hosts give them typed data and, for a switch, own its state:
 
@@ -1026,6 +1045,12 @@ import { findEffectMeta, loadEffect } from "@pixerate/flair/catalog/lazy";
 
 const filters = findEffectMeta({ video: ["filter"] }); // same queries as findEffects
 const crt = await loadEffect("crt"); // a ShaderEffect, with its source and presets
+```
+
+For a page that only draws a few effects (a loader, a moment on a hot path), the lazy entries go further: `@pixerate/flair/embed/lazy`, `/react/lazy` and `/svelte/lazy` have the same API as their full entries but load an effect by id only when it is first used, from a compact index of which module holds each effect, without the metadata. Up front they cost the engine (the WebGL renderer and the SVG player: about 26–30 KB gzipped), then each effect's own module. There `mountEffect` returns a promise of the mounted effect; `<FlairEffect>` and `use:flairEffect` mount once it has loaded (an error goes to `onError`); `<VectorEffect>` and `vectorEffectStill`, which render on the server, take an effect already loaded (`await loadEffect(id)`, which each lazy entry exports). A test (`src/entries.test.ts`) fails if a lazy entry ever imports the full catalog.
+
+```tsx
+import { FlairEffect, useFlairMoment } from "@pixerate/flair/react/lazy";
 ```
 
 The full catalog has `loadEffect` and `effectMeta` too, so code can be written once for either catalog. The lazy catalog's effects are equal to the full catalog's, but they are not the same objects. After changing the catalog, `pnpm catalog:meta` regenerates the lazy catalog's metadata; a test fails until it is up to date.

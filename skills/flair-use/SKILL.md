@@ -27,6 +27,8 @@ What an effect takes matters: `effectInputs(effect)` (or the index line) says wh
 | React | `<FlairEffect effect="…" subject={…} />` from `@pixerate/flair/react` | [entry-points.md](references/entry-points.md) |
 | Svelte | `use:flairEffect` from `@pixerate/flair/svelte` | [entry-points.md](references/entry-points.md) |
 | Plain DOM, any framework | `mountEffect(el, id, { subject })` from `@pixerate/flair/embed` | [entry-points.md](references/entry-points.md) |
+| A loader or moment on a hot path (bundle size) | `@pixerate/flair/react/lazy`, `/svelte/lazy`, `/embed/lazy` | [entry-points.md](references/entry-points.md) |
+| An effect played once over an element (a result arriving, a change, success) | `playMoment(el, id)`, `useFlairMoment()`, `use:flairMoment` | [entry-points.md](references/entry-points.md) |
 | Only list or search effects, load few (bundle size) | `@pixerate/flair/catalog/lazy` | [entry-points.md](references/entry-points.md) |
 | A video, GIF or PNG frames | `recordEffect` (browser) or `npx flair render` / `exportEffect` (Node) | [entry-points.md](references/entry-points.md) |
 | Several shots with layers, transitions and camera moves | a scene | [scenes.md](references/scenes.md) |
@@ -34,7 +36,7 @@ What an effect takes matters: `effectInputs(effect)` (or the index line) says wh
 
 The effect fills its element: size the element with CSS (an `aspect-ratio`, a height).
 
-**As a UI component.** Effects whose metadata has `ui` (`getEffectMeta(id).ui`, `UI_HINTS`) are components: `toggle-switch` (a switch), `progress-bar` (progress) and `gauge`. Give them typed `data` by the props in `ui.contract.props`, not text controls: `mountEffect(el, "gauge", { data: { value: 72, max: 100, unit: "%", label: "CPU" } })`, or `data={…}` on `<FlairEffect>`. Own a switch's state with `state: { checked }` and `onEvent` (it fires `"change"` with the asked-for `checked`, and moves only when you pass it back); give it a `label`. They set their ARIA role and keys, and show their rest state under reduced motion. Bad data is refused with a sentence. See the README's "Effects as UI components".
+**As a UI component.** Effects whose metadata has `ui` (`getEffectMeta(id).ui`, `UI_HINTS`) are components: `toggle-switch` (a switch), `progress-bar` (progress), `gauge`, and loaders that show a job's real progress (`liquid-loader`, `flame-loader`: `data: { value: 0.4 }`, or `{ value: null }` while it cannot tell). Give them typed `data` by the props in `ui.contract.props`, not text controls: `mountEffect(el, "gauge", { data: { value: 72, max: 100, unit: "%", label: "CPU" } })`, or `data={…}` on `<FlairEffect>`. Own a switch's state with `state: { checked }` and `onEvent` (it fires `"change"` with the asked-for `checked`, and moves only when you pass it back); give it a `label`. They set their ARIA role and keys, and show their rest state under reduced motion (every effect does: `reducedMotion`, default `"user"`). Bad data is refused with a sentence. See the README's "Effects as UI components".
 
 ## 3. Set controls and presets
 

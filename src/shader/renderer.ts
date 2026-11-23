@@ -41,6 +41,24 @@ export interface ShaderRendererOptions {
   autoplay?: boolean;
   /** Wait to start playing until the canvas enters the viewport via IntersectionObserver (default false). When true, autoplay is deferred until first visible. */
   playOnEnter?: boolean;
+  /**
+   * When to hold one still frame instead of animating: `"user"` (default)
+   * when the visitor prefers reduced motion (`prefers-reduced-motion:
+   * reduce`), `"always"` always, `"never"` never (editors and previews that
+   * must show the motion). Held, it draws `iTime` = `restTime` once and stays
+   * there: `play()` does nothing, while live video, sound and scroll still
+   * redraw it. See `reducedMotion` on the renderer to tell which it is.
+   */
+  reducedMotion?: "user" | "always" | "never";
+  /** Seconds of `iTime` the still frame shows under reduced motion (default 0). */
+  restTime?: number;
+}
+
+/** Whether `reducedMotion` holds a still: always, never, or (`"user"`, the default) when the visitor prefers reduced motion. */
+export function holdsStill(reducedMotion: "user" | "always" | "never" | undefined): boolean {
+  if (reducedMotion === "always") return true;
+  if (reducedMotion === "never") return false;
+  return typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
 /**
@@ -97,6 +115,9 @@ export class ShaderRenderer {
   /** Device pixels per CSS pixel; lower renders faster. Use `setPixelRatio` to change it. */
   pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
   playing = true;
+  /** True when it holds one still frame (see `ShaderRendererOptions.reducedMotion`): `play()` does nothing. */
+  readonly reducedMotion: boolean;
+  private readonly restTime: number;
   fps = 0;
   onStats?: (stats: RendererStats) => void;
   /** Called with `true` when the GL context is lost and `false` once it is restored and recompiled. */
@@ -154,8 +175,11 @@ export class ShaderRenderer {
       this.intersectionObserver.observe(canvas);
     }
 
-    const shouldAutoplay = (opts.autoplay ?? true) && !opts.playOnEnter;
+    this.reducedMotion = holdsStill(opts.reducedMotion);
+    const shouldAutoplay = (opts.autoplay ?? true) && !opts.playOnEnter && !this.reducedMotion;
     this.playing = shouldAutoplay;
+    this.restTime = Math.max(0, opts.restTime ?? 0);
+    if (this.reducedMotion) this.time = this.restTime;
 
     canvas.addEventListener("webglcontextlost", this.onLost);
     canvas.addEventListener("webglcontextrestored", this.onRestored);
@@ -281,7 +305,9 @@ export class ShaderRenderer {
     ]);
   }
 
+  /** Starts the clock; does nothing while it holds a still under reduced motion. */
   play() {
+    if (this.reducedMotion) return;
     this.playing = true;
     this.emit();
   }
@@ -291,9 +317,9 @@ export class ShaderRenderer {
     this.emit();
   }
 
-  /** Back to `iTime` 0 and frame 0. */
+  /** Back to `iTime` 0 (the rest time, while it holds a still) and frame 0. */
   restart() {
-    this.time = 0;
+    this.time = this.reducedMotion ? this.restTime : 0;
     this.pointer.clear();
     this.frame = 0;
     this.render();
