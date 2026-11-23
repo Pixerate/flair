@@ -1,5 +1,31 @@
 # @pixerate/flair
 
+## 0.141.0
+
+### Minor Changes
+
+- 950805d: New effects for AI product moments, and neubrutalist style controls (#229):
+
+  - Shaders: `denoise-reveal` (a generated picture resolving out of diffusion noise), `generating-field` (an ambient loader over a card, with Image/Video/Audio/Text/Vector presets and a bound `value`), `agent-working-border` (a calm beam per agent round a region), `change-pulse` (a one-shot highlight by tone: create, update, remove), `card-complete-burst` (a small burst on a card's edge) and `dragover-attract` (a drop zone pulled toward the pointer, rippling where the item lands).
+  - Vector: `slop-vat` (a stroked vat filling to a bound `value`), `goo-drop-reveal` (a flat blob that drops, splats and wipes away) and `memphis-burst` (Memphis shapes springing out with hard shadows).
+  - Shared style controls (`shadowStyle`, `shadowOffset`, `inkWidth`, `inkColor`, `sheen`) on the still stickers, `press-button` and the new vector effects; `styleControls`, `styleDerived` and `neubrutalValues` are exported from `/catalog`.
+  - A "Neubrutal" preset across the sticker, comic, splatter, icon and loader effects (ink `#09090b`, pink, cyan, yellow, purple, 8 px zero-blur shadow).
+
+- 6a316e5: In-product prerequisites (#228):
+
+  - Shaders respect `prefers-reduced-motion`: `ShaderRenderer`, `mountEffect`, `<FlairEffect>` and `use:flairEffect` take `reducedMotion: "user" | "always" | "never"` (default `"user"`) and render one rest frame, then stop (a shader effect's new `rest` time, else its `build`, else 1 s; a `uProgress` one-shot shows its end). Vector effects mounted with `mountEffect` now respect it too. Editors that must animate pass `"never"`.
+  - Lazy entry points: `@pixerate/flair/embed/lazy`, `/react/lazy` and `/svelte/lazy` have the same API but load effects by id one by one from a compact index, never pulling in the full catalog (about 26–30 KB gzipped up front instead of ~425 KB).
+  - One-shot moments: `playMoment(anchor | "viewport", effect, options)` in `/embed`, `useFlairMoment()` in React and the `flairMoment` action in Svelte play an effect once on a pointer-transparent overlay and dispose it (DOM and GL context); they play nothing under reduced motion or without WebGL2.
+  - Loader progress binding: UI hints now cover shader effects, and the new `loader` contract binds a `value` (0–1, or `null` while a job cannot tell) through `uiBindings.progress`; `liquid-loader` and `flame-loader` take it as `data: { value }` and report it as a progress bar.
+
+- 22418be: A new `montage` category for effects that take a list of media (#230):
+
+  - `EffectItems` on a definition declares a montage's `min`/`max` items, the image controls (`slots`) they fill, and how longer lists cycle (`swap` or `carousel`). `effectInputs(effect).items` reports it, and `findEffects({ accepts: ["items"] })` finds montages.
+  - Subjects carry optional `device`, `label`, `focus` and `duration` metadata. `mountEffect` fills the slots and rotates longer lists through them as it plays, with `itemDuration`, `overlap`, `loop`, `shuffle` and `onItem` (also on `<FlairEffect>` and `use:flairEffect`). It holds while paused or scrolled out of view, plays only the video items a slot shows, and stays still under reduced motion.
+  - A shared library of generic device frames: `DEVICE_KINDS`, `DEVICE_FRAMES` (size and screen rectangle) and `DEVICE_GLSL`.
+  - Starter effects: `device-showcase` (two to five devices in a staggered 3D layout that swap screens in sequence; presets "Phone + laptop", "Device family", "Floating stack") and `screenshot-carousel` (one frame cycling through screenshots with a slide, fade, zoom or wipe).
+  - An `items.set` editor command, so agents can set a montage's list.
+
 ## 0.140.0
 
 ### Minor Changes

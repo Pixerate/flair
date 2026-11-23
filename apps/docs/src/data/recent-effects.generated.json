@@ -1,5 +1,211 @@
 [
   {
+    "id": "screenshot-carousel",
+    "name": "Screenshot carousel",
+    "kind": "shader",
+    "category": "montage",
+    "description": "One device or browser frame cycling through screenshots, each swapped for the next with a slide, a fade, a zoom or a wipe, the frame floating gently.",
+    "tags": [
+      "montage",
+      "devices",
+      "screenshots",
+      "carousel",
+      "slideshow",
+      "product",
+      "marketing",
+      "browser",
+      "items"
+    ],
+    "controls": [
+      {
+        "n": "uFrom",
+        "t": "sampler2D",
+        "d": {
+          "sample": "city"
+        },
+        "l": "Screenshot shown",
+        "line": 2,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uTo",
+        "t": "sampler2D",
+        "d": {
+          "sample": "landscape"
+        },
+        "l": "Next screenshot",
+        "line": 3,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uDevice",
+        "t": "int",
+        "d": 5,
+        "l": "Frame (0 phone, 1 tablet, 2 laptop, 3 desktop, 4 watch, 5 browser)",
+        "max": 5,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uTransition",
+        "t": "int",
+        "d": 0,
+        "l": "Swap (0 slide, 1 fade, 2 zoom, 3 wipe)",
+        "max": 3,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uAnimate",
+        "t": "bool",
+        "d": true,
+        "l": "Animate (preview)",
+        "line": 6
+      },
+      {
+        "n": "uProgress",
+        "t": "float",
+        "d": 0,
+        "l": "Change to the next (0–1)",
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 0.8,
+        "min": 0.3,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uFloat",
+        "t": "float",
+        "d": 0.4,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uBezel",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            31,
+            41,
+            55
+          ]
+        },
+        "l": "Frame",
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "uShadow",
+        "t": "float",
+        "d": 0.35,
+        "b": 3,
+        "line": 11
+      },
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            238,
+            242,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 12
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 0,
+        "l": "Background opacity",
+        "b": 3,
+        "line": 13
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 14
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 15
+      }
+    ],
+    "presets": [
+      "Phone",
+      "Laptop fade",
+      "Tablet zoom",
+      "Browser wipe"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg",
+        "items"
+      ],
+      "images": [
+        {
+          "name": "uFrom",
+          "label": "Screenshot shown",
+          "wants": "picture"
+        },
+        {
+          "name": "uTo",
+          "label": "Next screenshot",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "stills",
+      "interactions": [],
+      "transparent": true,
+      "items": {
+        "min": 1,
+        "max": 24,
+        "slots": [
+          "uFrom",
+          "uTo"
+        ],
+        "cycle": "carousel"
+      }
+    },
+    "swiftReady": true,
+    "video": "stills",
+    "transparent": true,
+    "loop": 6,
+    "animated": true,
+    "duration": 6000,
+    "module": "shaders/montage",
+    "addedAt": "2026-11-23T13:24:41Z",
+    "commitHash": "22418be29d29bccc48d69231a539aeb35181a78d",
+    "order": 727
+  },
+  {
     "id": "device-showcase",
     "name": "Device showcase",
     "kind": "shader",
@@ -296,215 +502,9 @@
     "transparent": true,
     "animated": true,
     "module": "shaders/montage",
-    "addedAt": "2026-11-23T13:22:09.778Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "screenshot-carousel",
-    "name": "Screenshot carousel",
-    "kind": "shader",
-    "category": "montage",
-    "description": "One device or browser frame cycling through screenshots, each swapped for the next with a slide, a fade, a zoom or a wipe, the frame floating gently.",
-    "tags": [
-      "montage",
-      "devices",
-      "screenshots",
-      "carousel",
-      "slideshow",
-      "product",
-      "marketing",
-      "browser",
-      "items"
-    ],
-    "controls": [
-      {
-        "n": "uFrom",
-        "t": "sampler2D",
-        "d": {
-          "sample": "city"
-        },
-        "l": "Screenshot shown",
-        "line": 2,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uTo",
-        "t": "sampler2D",
-        "d": {
-          "sample": "landscape"
-        },
-        "l": "Next screenshot",
-        "line": 3,
-        "x": {
-          "filter": "linear",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uDevice",
-        "t": "int",
-        "d": 5,
-        "l": "Frame (0 phone, 1 tablet, 2 laptop, 3 desktop, 4 watch, 5 browser)",
-        "max": 5,
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "uTransition",
-        "t": "int",
-        "d": 0,
-        "l": "Swap (0 slide, 1 fade, 2 zoom, 3 wipe)",
-        "max": 3,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uAnimate",
-        "t": "bool",
-        "d": true,
-        "l": "Animate (preview)",
-        "line": 6
-      },
-      {
-        "n": "uProgress",
-        "t": "float",
-        "d": 0,
-        "l": "Change to the next (0–1)",
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uSize",
-        "t": "float",
-        "d": 0.8,
-        "min": 0.3,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uFloat",
-        "t": "float",
-        "d": 0.4,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uBezel",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            31,
-            41,
-            55
-          ]
-        },
-        "l": "Frame",
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "uShadow",
-        "t": "float",
-        "d": 0.35,
-        "b": 3,
-        "line": 11
-      },
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            238,
-            242,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 12
-      },
-      {
-        "n": "uBackgroundAlpha",
-        "t": "float",
-        "d": 0,
-        "l": "Background opacity",
-        "b": 3,
-        "line": 13
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 14
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "b": 3,
-        "line": 15
-      }
-    ],
-    "presets": [
-      "Phone",
-      "Laptop fade",
-      "Tablet zoom",
-      "Browser wipe"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg",
-        "items"
-      ],
-      "images": [
-        {
-          "name": "uFrom",
-          "label": "Screenshot shown",
-          "wants": "picture"
-        },
-        {
-          "name": "uTo",
-          "label": "Next screenshot",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "stills",
-      "interactions": [],
-      "transparent": true,
-      "items": {
-        "min": 1,
-        "max": 24,
-        "slots": [
-          "uFrom",
-          "uTo"
-        ],
-        "cycle": "carousel"
-      }
-    },
-    "swiftReady": true,
-    "video": "stills",
-    "transparent": true,
-    "loop": 6,
-    "animated": true,
-    "duration": 6000,
-    "module": "shaders/montage",
-    "addedAt": "2026-11-23T13:22:09.778Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-11-23T13:24:41Z",
+    "commitHash": "22418be29d29bccc48d69231a539aeb35181a78d",
+    "order": 726
   },
   {
     "id": "memphis-burst",
