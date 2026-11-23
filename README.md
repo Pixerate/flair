@@ -1041,14 +1041,26 @@ mountEffect(el, "device-showcase", {
 
 - `device-showcase`: screenshots on two to five stylised devices in a staggered layout with depth, drifting in a slow parallax orbit. When there are more items than devices, the devices swap screens one after another. Presets: "Phone + laptop", "Device family", "Floating stack".
 - `screenshot-carousel`: one device or browser frame cycling through screenshots, each swapped for the next with a slide, fade, zoom or wipe.
+- `device-morph`: one screen whose frame morphs phone → tablet → laptop (each item's `device`), its screenshot changing to that breakpoint's layout.
+- `bento-montage`: tiles that fly into a bento grid, then take the spotlight one at a time (pairs well with `card-spotlight`).
+- `photo-scatter`: prints dealt onto a table at scattered angles, then picked up and shown in turn.
+- `filmstrip-montage`: a film strip stepping along, the frame in the middle punching in.
+- `split-grid-reveal`: a comic-panel or editorial split screen, each panel wiping its picture in a beat after the last.
+- `orbit-gallery`: cards on a ring (or helix) in 3D that turns to bring each to the front.
+- `before-after-series`: items taken in pairs, a divider sweeping each pair from before to after.
+- `wall-zoom`: a picture breaks into a mosaic wall of the items and zooms into the next one, which becomes the next wall.
+- `logo-wall` (vector): a card per item (SVG logos or `data:` pictures, with labels) in a grid that fits however many there are.
+
+The shader montages show six items at a time (`device-morph` four), spotlight them one at a time on their `uHold` beat, and each has presets and a still `rest` frame with the items laid out. All bench at about 0.5 to 2.3 ms a frame at 1080p with six items.
 
 How it works: the effect declares `items` (`EffectItems`): its `min` and `max` counts and the image controls (`slots`) items are shown in, plus optional `count`, per-slot `devices` and, for a carousel, a `progress` control. `effectInputs(effect).items` reports the counts, and `findEffects({ accepts: ["items"] })` or `{ category: "montage" }` finds montages. `subjectValues` fills the slots with the first items. On a page, `mountEffect` brings the rest in as it plays:
 - `swap`: each step, the next slot in turn takes the next item.
 - `carousel`: the effect's `progress` runs 0 → 1 to change to the next item.
+- `repeat` (vector effects): every item is drawn at once, so the markup follows the item count. The items live, as JSON (`[{ "href": "data:image/…", "label": "…" }]`), in the text control the spec names as `list`; the picture's `{{#items}}…{{/items}}` blocks are written once per item, with `{{item.i}}`, `{{item.n}}`, `{{item.count}}`, `{{item.href}}`, `{{item.label}}` and whatever the effect's `itemDerived` (index, count, values) works out (where each sits), and each animation whose `id` names `{{item.…}}` runs once per item, `stagger` ms apart (`renderVectorEffect`; `vectorItems` reads a list). An SVG cannot load outside pictures, so a vector montage takes `{ svg }` items and `data:image/` URLs, and refuses others with a sentence pointing at the shader montages.
 
 Playback options are `itemDuration`, `overlap`, `loop`, `shuffle` and `onItem(index)`; the same props and params exist on `<FlairEffect>` and `use:flairEffect`, and `setSubject(items)` swaps the list. Time only passes while the effect plays, so `pauseWhenHidden` holds a montage where it is. Video items play only while a slot shows them (`pauseOffscreenVideo`), which keeps the decode budget down. Under reduced motion the first items are laid out still. A shader shows at most a handful of items at once (one texture unit per slot); a long list rotates through those slots, so a montage stays within WebGL2's texture-unit limits at any length.
 
-The device frames are a small shared library: `DEVICE_FRAMES` (each frame's size and its screen rectangle) and `DEVICE_GLSL` (the same shapes for shaders) in `@pixerate/flair/catalog`. They are generic shapes, not likenesses of real hardware. Agents set a montage's list with the `items.set` editor command.
+The device frames are a small shared library: `DEVICE_FRAMES` (each frame's size and its screen rectangle) and `DEVICE_GLSL` (the same shapes for shaders) in `@pixerate/flair/catalog`. They are generic shapes, not likenesses of real hardware. Agents set a montage's list with the `items.set` editor command (pictures by URL or as SVG markup, with a device and label; a vector montage keeps every item, so its picture follows the count), or with `values.set` on a vector montage's list control.
 
 #### Effects for product moments
 

@@ -14,6 +14,7 @@ import { DEFAULT_FOOTAGE_FPS, timingEffects, timingLength, timingSample, timingV
 import { checkStage, TEXT_TREATMENT_STAGE_NOTES, TEXT_TREATMENT_STAGES, textTreatmentPlan, textTreatments, textTreatmentValues, type TextTreatmentTarget, type TreatmentPlanLayer } from "../catalog/treatment.js";
 import { rgbToHex } from "../shader/controls.js";
 import { DEVICE_KINDS, deviceIndex } from "../catalog/devices.js";
+import { svgMarkupUrl } from "../catalog/images.js";
 import type { EditResult, EffectEditor } from "./editor.js";
 import { editorControlSchema, holdsPath, isTextMask } from "./textmask.js";
 import { EASING_PRESETS, type Easing } from "./timeline.js";
@@ -634,7 +635,7 @@ export function effectCommands(): CommandSpec<EffectEditor>[] {
       label: "Set montage items",
       group: "Values",
       keywords: ["montage", "screenshots", "gallery", "devices", "media", "list"],
-      description: `For a montage (an effect with items, catalog.search category "montage"): its list of pictures in order, each a URL with an optional device (${DEVICE_KINDS.join(", ")}). Fills its slots with the first items, how many it shows, and each item's device. All or nothing. The rest of a long list comes in as it plays on a page (mountEffect with the same list); here the document keeps the first items.`,
+      description: `For a montage (an effect with items, catalog.search category "montage"): its list of pictures in order, each an image URL (or data: URL) or SVG markup, with an optional device (${DEVICE_KINDS.join(", ")}) and label. A shader montage fills its slots with the first items, how many it shows, and each item's device; the rest of a long list comes in as it plays on a page (mountEffect with the same list), and here the document keeps the first items. A vector montage (kind "vector") draws every item, so its picture follows the count; it shows SVG markup and data:image/… URLs only. All or nothing.`,
       params: {
         type: "object",
         properties: {
@@ -643,8 +644,12 @@ export function effectCommands(): CommandSpec<EffectEditor>[] {
             minItems: 1,
             items: {
               type: "object",
-              properties: { image: { type: "string", description: "The picture's URL (or data: URL)." }, device: { type: "string", enum: [...DEVICE_KINDS] } },
-              required: ["image"],
+              properties: {
+                image: { type: "string", description: "The picture's URL (or data: URL)." },
+                svg: { type: "string", description: "SVG markup, instead of image (a logo, an icon)." },
+                label: { type: "string", description: "A caption; vector montages show it." },
+                device: { type: "string", enum: [...DEVICE_KINDS] },
+              },
               additionalProperties: false,
             },
           },
@@ -652,18 +657,31 @@ export function effectCommands(): CommandSpec<EffectEditor>[] {
         required: ["items"],
         additionalProperties: false,
       },
-      run: (editor, p: { items: { image: string; device?: string }[] }) => {
+      run: (editor, p: { items: { image?: string; svg?: string; label?: string; device?: string }[] }) => {
         const { document: doc, controls } = editor.getState();
         const spec = doc.basedOn ? getEffect(doc.basedOn)?.items : undefined;
         const montages = findEffects({ category: "montage" }).map((e) => e.id).join(", ");
         if (!spec) throw new Error(`"${doc.name}" is not a montage, so it takes no items; montages are ${montages} (catalog.search with category "montage", then effect.load). Give a picture to an image control with values.set.`);
-        const missing = [...spec.slots, ...(spec.devices ?? []), ...(spec.count ? [spec.count] : [])].filter((name) => !controls.some((c) => c.name === name));
+        p.items.forEach((item, i) => {
+          if ((item.image === undefined) === (item.svg === undefined)) throw new Error(`Item ${i + 1} needs one picture: an image (a URL or data: URL) or svg (markup), not ${item.image === undefined ? "neither" : "both"}.`);
+        });
+        const missing = [...(spec.list ? [spec.list] : []), ...spec.slots, ...(spec.devices ?? []), ...(spec.count ? [spec.count] : [])].filter((name) => !controls.some((c) => c.name === name));
         if (missing.length) throw new Error(`"${doc.name}" was edited and no longer has the controls its items go in (${missing.join(", ")}); load "${doc.basedOn}" again with effect.load, or set its image controls with values.set.`);
         const items = p.items;
         if (items.length < spec.min || items.length > spec.max) throw new Error(`"${doc.basedOn}" takes ${spec.min} to ${spec.max} items; ${items.length} were given.`);
         const values: Record<string, unknown> = {};
-        const put = (slot: string, item: { image: string; device?: string }) => {
-          values[slot] = item.image;
+        const picture = (item: { image?: string; svg?: string }) => (item.svg !== undefined ? svgMarkupUrl(item.svg) : item.image!);
+        if (spec.cycle === "repeat") {
+          const list = items.map((item, i) => {
+            const href = picture(item);
+            if (!/^data:image\//i.test(href.trim())) throw new Error(`Item ${i + 1} is the picture ${JSON.stringify(href.slice(0, 80))}; "${doc.basedOn}" is a vector montage, drawn inside an SVG, which shows only SVG markup (svg) or data:image/… URLs. Give it one of those, or load a shader montage (catalog.search with category "montage" and kind "shader").`);
+            return { href, ...(item.label !== undefined && { label: item.label }) };
+          });
+          done(editor.setValues({ [spec.list!]: JSON.stringify(list) }));
+          return { ok: true, shown: items.length, of: items.length, issues: editor.getState().issues };
+        }
+        const put = (slot: string, item: { image?: string; svg?: string; device?: string }) => {
+          values[slot] = picture(item);
           const control = spec.devices?.[spec.slots.indexOf(slot)];
           if (control && item.device) values[control] = deviceIndex(item.device);
         };

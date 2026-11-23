@@ -1,5 +1,2518 @@
 [
   {
+    "id": "bento-montage",
+    "name": "Bento montage",
+    "kind": "shader",
+    "category": "montage",
+    "description": "Pictures that fly into a bento grid of rounded tiles, big and small, then step into the spotlight one at a time, lifting with an accent ring while the rest dim.",
+    "tags": [
+      "montage",
+      "bento",
+      "grid",
+      "tiles",
+      "screenshots",
+      "features",
+      "gallery",
+      "product",
+      "items"
+    ],
+    "controls": [
+      {
+        "n": "uItem0",
+        "t": "sampler2D",
+        "d": {
+          "sample": "city"
+        },
+        "l": "Item 1",
+        "line": 2,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uItem1",
+        "t": "sampler2D",
+        "d": {
+          "sample": "landscape"
+        },
+        "l": "Item 2",
+        "line": 3,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uItem2",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "l": "Item 3",
+        "line": 4,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uItem3",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait2"
+        },
+        "l": "Item 4",
+        "line": 5,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uItem4",
+        "t": "sampler2D",
+        "d": {
+          "sample": "landscape"
+        },
+        "l": "Item 5",
+        "line": 6,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uItem5",
+        "t": "sampler2D",
+        "d": {
+          "sample": "city"
+        },
+        "l": "Item 6",
+        "line": 7,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uCount",
+        "t": "int",
+        "d": 6,
+        "l": "Items shown",
+        "min": 1,
+        "max": 6,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uGap",
+        "t": "float",
+        "d": 0.018,
+        "max": 0.06,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uRadius",
+        "t": "float",
+        "d": 0.025,
+        "l": "Corner radius",
+        "max": 0.08,
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uMargin",
+        "t": "float",
+        "d": 0.06,
+        "max": 0.25,
+        "b": 3,
+        "line": 11
+      },
+      {
+        "n": "uHold",
+        "t": "float",
+        "d": 2.5,
+        "l": "Seconds per item",
+        "min": 0.8,
+        "max": 10,
+        "b": 3,
+        "line": 12
+      },
+      {
+        "n": "uSpotlight",
+        "t": "float",
+        "d": 0.55,
+        "l": "Dim the others",
+        "b": 3,
+        "line": 13
+      },
+      {
+        "n": "uLift",
+        "t": "float",
+        "d": 0.04,
+        "max": 0.12,
+        "b": 3,
+        "line": 14
+      },
+      {
+        "n": "uAccent",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            99,
+            102,
+            241
+          ]
+        },
+        "c": 1,
+        "line": 15
+      },
+      {
+        "n": "uRing",
+        "t": "float",
+        "d": 1,
+        "b": 3,
+        "line": 16
+      },
+      {
+        "n": "uShadow",
+        "t": "float",
+        "d": 0.35,
+        "b": 3,
+        "line": 17
+      },
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            238,
+            242,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 18
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 0,
+        "l": "Background opacity",
+        "b": 3,
+        "line": 19
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 20
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 21
+      }
+    ],
+    "presets": [
+      "Feature grid",
+      "Calm",
+      "Four up",
+      "On a panel"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg",
+        "items"
+      ],
+      "images": [
+        {
+          "name": "uItem0",
+          "label": "Item 1",
+          "wants": "picture"
+        },
+        {
+          "name": "uItem1",
+          "label": "Item 2",
+          "wants": "picture"
+        },
+        {
+          "name": "uItem2",
+          "label": "Item 3",
+          "wants": "picture"
+        },
+        {
+          "name": "uItem3",
+          "label": "Item 4",
+          "wants": "picture"
+        },
+        {
+          "name": "uItem4",
+          "label": "Item 5",
+          "wants": "picture"
+        },
+        {
+          "name": "uItem5",
+          "label": "Item 6",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "stills",
+      "interactions": [],
+      "transparent": true,
+      "items": {
+        "min": 1,
+        "max": 24,
+        "slots": [
+          "uItem0",
+          "uItem1",
+          "uItem2",
+          "uItem3",
+          "uItem4",
+          "uItem5"
+        ],
+        "cycle": "swap"
+      }
+    },
+    "swiftReady": true,
+    "video": "stills",
+    "transparent": true,
+    "animated": true,
+    "module": "shaders/montage-gallery",
+    "addedAt": "2026-11-23T14:25:45.048Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "photo-scatter",
+    "name": "Photo scatter",
+    "kind": "shader",
+    "category": "montage",
+    "description": "Pictures as white-bordered prints dealt one by one onto a table, landing at scattered angles, then picked up and straightened in the middle one at a time.",
+    "tags": [
+      "montage",
+      "photo",
+      "polaroid",
+      "print",
+      "scatter",
+      "gallery",
+      "memories",
+      "items"
+    ],
+    "controls": [
+      {
+        "n": "uItem0",
+        "t": "sampler2D",
+        "d": {
+          "sample": "city"
+        },
+        "l": "Item 1",
+        "line": 2,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uItem1",
+        "t": "sampler2D",
+        "d": {
+          "sample": "landscape"
+        },
+        "l": "Item 2",
+        "line": 3,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uItem2",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "l": "Item 3",
+        "line": 4,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uItem3",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait2"
+        },
+        "l": "Item 4",
+        "line": 5,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uItem4",
+        "t": "sampler2D",
+        "d": {
+          "sample": "landscape"
+        },
+        "l": "Item 5",
+        "line": 6,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uItem5",
+        "t": "sampler2D",
+        "d": {
+          "sample": "city"
+        },
+        "l": "Item 6",
+        "line": 7,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uCount",
+        "t": "int",
+        "d": 6,
+        "l": "Items shown",
+        "min": 1,
+        "max": 6,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uPrint",
+        "t": "float",
+        "d": 0.42,
+        "l": "Print size",
+        "min": 0.15,
+        "max": 0.8,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uAspect",
+        "t": "float",
+        "d": 1,
+        "l": "Photo shape (width / height)",
+        "min": 0.6,
+        "max": 1.8,
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uSpread",
+        "t": "float",
+        "d": 0.75,
+        "b": 3,
+        "line": 11
+      },
+      {
+        "n": "uTilt",
+        "t": "float",
+        "d": 14,
+        "l": "Tilt (degrees)",
+        "max": 45,
+        "b": 3,
+        "line": 12
+      },
+      {
+        "n": "uDeal",
+        "t": "float",
+        "d": 0.35,
+        "l": "Seconds between prints",
+        "min": 0.1,
+        "b": 3,
+        "line": 13
+      },
+      {
+        "n": "uHold",
+        "t": "float",
+        "d": 2.5,
+        "l": "Seconds per item",
+        "min": 0.8,
+        "max": 10,
+        "b": 3,
+        "line": 14
+      },
+      {
+        "n": "uFocusScale",
+        "t": "float",
+        "d": 1.6,
+        "l": "Picked-up size",
+        "min": 1,
+        "max": 2.5,
+        "b": 3,
+        "line": 15
+      },
+      {
+        "n": "uSeed",
+        "t": "float",
+        "d": 3,
+        "l": "Layout seed",
+        "max": 100,
+        "b": 3,
+        "line": 16
+      },
+      {
+        "n": "uBorder",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            250,
+            250,
+            247
+          ]
+        },
+        "c": 1,
+        "line": 17
+      },
+      {
+        "n": "uShadow",
+        "t": "float",
+        "d": 0.4,
+        "b": 3,
+        "line": 18
+      },
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            238,
+            242,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 19
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 0,
+        "l": "Background opacity",
+        "b": 3,
+        "line": 20
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 21
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 22
+      }
+    ],
+    "presets": [
+      "Table",
+      "Neat pile",
+      "Wide prints",
+      "Quick deal"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg",
+        "items"
+      ],
+      "images": [
+        {
+          "name": "uItem0",
+          "label": "Item 1",
+          "wants": "picture"
+        },
+        {
+          "name": "uItem1",
+          "label": "Item 2",
+          "wants": "picture"
+        },
+        {
+          "name": "uItem2",
+          "label": "Item 3",
+          "wants": "picture"
+        },
+        {
+          "name": "uItem3",
+          "label": "Item 4",
+          "wants": "picture"
+        },
+        {
+          "name": "uItem4",
+          "label": "Item 5",
+          "wants": "picture"
+        },
+        {
+          "name": "uItem5",
+          "label": "Item 6",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "stills",
+      "interactions": [],
+      "transparent": true,
+      "items": {
+        "min": 1,
+        "max": 24,
+        "slots": [
+          "uItem0",
+          "uItem1",
+          "uItem2",
+          "uItem3",
+          "uItem4",
+          "uItem5"
+        ],
+        "cycle": "swap"
+      }
+    },
+    "swiftReady": true,
+    "video": "stills",
+    "transparent": true,
+    "animated": true,
+    "module": "shaders/montage-gallery",
+    "addedAt": "2026-11-23T14:25:45.048Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "filmstrip-montage",
+    "name": "Filmstrip montage",
+    "kind": "shader",
+    "category": "montage",
+    "description": "Pictures as frames on a strip of film with sprocket holes, stepping along one frame at a time, each frame in the middle punching in, large, before it moves on.",
+    "tags": [
+      "montage",
+      "film",
+      "filmstrip",
+      "contact-sheet",
+      "frame",
+      "gallery",
+      "retro",
+      "items"
+    ],
+    "controls": [
+      {
+        "n": "uItem0",
+        "t": "sampler2D",
+        "d": {
+          "sample": "city"
+        },
+        "l": "Item 1",
+        "line": 2,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uItem1",
+        "t": "sampler2D",
+        "d": {
+          "sample": "landscape"
+        },
+        "l": "Item 2",
+        "line": 3,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uItem2",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "l": "Item 3",
+        "line": 4,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uItem3",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait2"
+        },
+        "l": "Item 4",
+        "line": 5,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uItem4",
+        "t": "sampler2D",
+        "d": {
+          "sample": "landscape"
+        },
+        "l": "Item 5",
+        "line": 6,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uItem5",
+        "t": "sampler2D",
+        "d": {
+          "sample": "city"
+        },
+        "l": "Item 6",
+        "line": 7,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uCount",
+        "t": "int",
+        "d": 6,
+        "l": "Items shown",
+        "min": 1,
+        "max": 6,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uFrame",
+        "t": "float",
+        "d": 0.3,
+        "l": "Frame height",
+        "min": 0.12,
+        "max": 0.5,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uAspect",
+        "t": "float",
+        "d": 1.5,
+        "l": "Frame shape (width / height)",
+        "min": 0.6,
+        "max": 2,
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uHold",
+        "t": "float",
+        "d": 2.5,
+        "l": "Seconds per item",
+        "min": 0.8,
+        "max": 10,
+        "b": 3,
+        "line": 11
+      },
+      {
+        "n": "uPunch",
+        "t": "float",
+        "d": 2,
+        "l": "Punch-in size",
+        "min": 1,
+        "max": 3,
+        "b": 3,
+        "line": 12
+      },
+      {
+        "n": "uAngle",
+        "t": "float",
+        "d": 0,
+        "l": "Strip angle (degrees)",
+        "min": -25,
+        "max": 25,
+        "b": 3,
+        "line": 13
+      },
+      {
+        "n": "uFilm",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            21,
+            21,
+            21
+          ]
+        },
+        "c": 1,
+        "line": 14
+      },
+      {
+        "n": "uShadow",
+        "t": "float",
+        "d": 0.4,
+        "b": 3,
+        "line": 15
+      },
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            238,
+            242,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 16
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 0,
+        "l": "Background opacity",
+        "b": 3,
+        "line": 17
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 18
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 19
+      }
+    ],
+    "presets": [
+      "Strip",
+      "Diagonal",
+      "Big punch",
+      "Light box"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg",
+        "items"
+      ],
+      "images": [
+        {
+          "name": "uItem0",
+          "label": "Item 1",
+          "wants": "picture"
+        },
+        {
+          "name": "uItem1",
+          "label": "Item 2",
+          "wants": "picture"
+        },
+        {
+          "name": "uItem2",
+          "label": "Item 3",
+          "wants": "picture"
+        },
+        {
+          "name": "uItem3",
+          "label": "Item 4",
+          "wants": "picture"
+        },
+        {
+          "name": "uItem4",
+          "label": "Item 5",
+          "wants": "picture"
+        },
+        {
+          "name": "uItem5",
+          "label": "Item 6",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "stills",
+      "interactions": [],
+      "transparent": true,
+      "items": {
+        "min": 1,
+        "max": 24,
+        "slots": [
+          "uItem0",
+          "uItem1",
+          "uItem2",
+          "uItem3",
+          "uItem4",
+          "uItem5"
+        ],
+        "cycle": "swap"
+      }
+    },
+    "swiftReady": true,
+    "video": "stills",
+    "transparent": true,
+    "animated": true,
+    "module": "shaders/montage-gallery",
+    "addedAt": "2026-11-23T14:25:45.048Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "split-grid-reveal",
+    "name": "Split grid reveal",
+    "kind": "shader",
+    "category": "montage",
+    "description": "A split screen of panels, slanted like a comic page or straight like an editorial grid, each wiping its picture in a beat after the last, then drifting slowly while one panel at a time can take the spotlight.",
+    "tags": [
+      "montage",
+      "split-screen",
+      "grid",
+      "panel",
+      "comic",
+      "editorial",
+      "wipe",
+      "reveal",
+      "items"
+    ],
+    "controls": [
+      {
+        "n": "uItem0",
+        "t": "sampler2D",
+        "d": {
+          "sample": "city"
+        },
+        "l": "Item 1",
+        "line": 2,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uItem1",
+        "t": "sampler2D",
+        "d": {
+          "sample": "landscape"
+        },
+        "l": "Item 2",
+        "line": 3,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uItem2",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "l": "Item 3",
+        "line": 4,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uItem3",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait2"
+        },
+        "l": "Item 4",
+        "line": 5,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uItem4",
+        "t": "sampler2D",
+        "d": {
+          "sample": "landscape"
+        },
+        "l": "Item 5",
+        "line": 6,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uItem5",
+        "t": "sampler2D",
+        "d": {
+          "sample": "city"
+        },
+        "l": "Item 6",
+        "line": 7,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uCount",
+        "t": "int",
+        "d": 6,
+        "l": "Items shown",
+        "min": 1,
+        "max": 6,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uLayout",
+        "t": "int",
+        "d": 0,
+        "l": "Layout (0 columns, 1 two rows, 2 stacked rows)",
+        "max": 2,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uSlant",
+        "t": "float",
+        "d": 0.18,
+        "min": -0.5,
+        "max": 0.5,
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uGap",
+        "t": "float",
+        "d": 0.012,
+        "max": 0.05,
+        "b": 3,
+        "line": 11
+      },
+      {
+        "n": "uBorder",
+        "t": "float",
+        "d": 0,
+        "l": "Ink outline",
+        "max": 0.02,
+        "b": 3,
+        "line": 12
+      },
+      {
+        "n": "uInk",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            17,
+            17,
+            17
+          ]
+        },
+        "c": 1,
+        "line": 13
+      },
+      {
+        "n": "uMargin",
+        "t": "float",
+        "d": 0,
+        "max": 0.2,
+        "b": 3,
+        "line": 14
+      },
+      {
+        "n": "uStagger",
+        "t": "float",
+        "d": 0.18,
+        "l": "Seconds between panels",
+        "min": 0.05,
+        "max": 0.6,
+        "b": 3,
+        "line": 15
+      },
+      {
+        "n": "uWipe",
+        "t": "float",
+        "d": 0.7,
+        "l": "Wipe seconds",
+        "min": 0.2,
+        "max": 2,
+        "b": 3,
+        "line": 16
+      },
+      {
+        "n": "uPan",
+        "t": "float",
+        "d": 0.4,
+        "l": "Drift",
+        "b": 3,
+        "line": 17
+      },
+      {
+        "n": "uHold",
+        "t": "float",
+        "d": 2.5,
+        "l": "Seconds per item",
+        "min": 0.8,
+        "max": 10,
+        "b": 3,
+        "line": 18
+      },
+      {
+        "n": "uSpotlight",
+        "t": "float",
+        "d": 0,
+        "l": "Spotlight one at a time",
+        "b": 3,
+        "line": 19
+      },
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            238,
+            242,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 20
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 0,
+        "l": "Background opacity",
+        "b": 3,
+        "line": 21
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 22
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 23
+      }
+    ],
+    "presets": [
+      "Comic page",
+      "Editorial grid",
+      "Stacked rows",
+      "Spotlight"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg",
+        "items"
+      ],
+      "images": [
+        {
+          "name": "uItem0",
+          "label": "Item 1",
+          "wants": "picture"
+        },
+        {
+          "name": "uItem1",
+          "label": "Item 2",
+          "wants": "picture"
+        },
+        {
+          "name": "uItem2",
+          "label": "Item 3",
+          "wants": "picture"
+        },
+        {
+          "name": "uItem3",
+          "label": "Item 4",
+          "wants": "picture"
+        },
+        {
+          "name": "uItem4",
+          "label": "Item 5",
+          "wants": "picture"
+        },
+        {
+          "name": "uItem5",
+          "label": "Item 6",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "stills",
+      "interactions": [],
+      "transparent": true,
+      "items": {
+        "min": 1,
+        "max": 24,
+        "slots": [
+          "uItem0",
+          "uItem1",
+          "uItem2",
+          "uItem3",
+          "uItem4",
+          "uItem5"
+        ],
+        "cycle": "swap"
+      }
+    },
+    "swiftReady": true,
+    "video": "stills",
+    "transparent": true,
+    "animated": true,
+    "module": "shaders/montage-gallery",
+    "addedAt": "2026-11-23T14:25:45.048Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "orbit-gallery",
+    "name": "Orbit gallery",
+    "kind": "shader",
+    "category": "montage",
+    "description": "Pictures as cards on a ring in 3D (or a rising helix) that turns a step at a time to bring each to the front, the rest curving away behind it over a faint floor reflection.",
+    "tags": [
+      "montage",
+      "carousel",
+      "ring",
+      "3d",
+      "gallery",
+      "cover-flow",
+      "helix",
+      "items"
+    ],
+    "controls": [
+      {
+        "n": "uItem0",
+        "t": "sampler2D",
+        "d": {
+          "sample": "city"
+        },
+        "l": "Item 1",
+        "line": 2,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uItem1",
+        "t": "sampler2D",
+        "d": {
+          "sample": "landscape"
+        },
+        "l": "Item 2",
+        "line": 3,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uItem2",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "l": "Item 3",
+        "line": 4,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uItem3",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait2"
+        },
+        "l": "Item 4",
+        "line": 5,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uItem4",
+        "t": "sampler2D",
+        "d": {
+          "sample": "landscape"
+        },
+        "l": "Item 5",
+        "line": 6,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uItem5",
+        "t": "sampler2D",
+        "d": {
+          "sample": "city"
+        },
+        "l": "Item 6",
+        "line": 7,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uCount",
+        "t": "int",
+        "d": 6,
+        "l": "Items shown",
+        "min": 1,
+        "max": 6,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uCard",
+        "t": "float",
+        "d": 0.42,
+        "l": "Card size",
+        "min": 0.2,
+        "max": 0.8,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uAspect",
+        "t": "float",
+        "d": 1.33,
+        "l": "Card shape (width / height)",
+        "min": 0.5,
+        "max": 2,
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uSpread",
+        "t": "float",
+        "d": 1.25,
+        "l": "Ring size",
+        "min": 0.7,
+        "max": 1.8,
+        "b": 3,
+        "line": 11
+      },
+      {
+        "n": "uTilt",
+        "t": "float",
+        "d": 0.22,
+        "l": "View from above",
+        "min": -0.4,
+        "max": 0.5,
+        "b": 3,
+        "line": 12
+      },
+      {
+        "n": "uHelix",
+        "t": "float",
+        "d": 0,
+        "l": "Helix rise",
+        "max": 0.5,
+        "b": 3,
+        "line": 13
+      },
+      {
+        "n": "uHold",
+        "t": "float",
+        "d": 2.5,
+        "l": "Seconds per item",
+        "min": 0.8,
+        "max": 10,
+        "b": 3,
+        "line": 14
+      },
+      {
+        "n": "uFade",
+        "t": "float",
+        "d": 0.55,
+        "l": "Fade the back",
+        "b": 3,
+        "line": 15
+      },
+      {
+        "n": "uReflect",
+        "t": "float",
+        "d": 0.25,
+        "l": "Floor reflection",
+        "b": 3,
+        "line": 16
+      },
+      {
+        "n": "uRadius",
+        "t": "float",
+        "d": 0.03,
+        "l": "Corner radius",
+        "max": 0.1,
+        "b": 3,
+        "line": 17
+      },
+      {
+        "n": "uBack",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            31,
+            41,
+            55
+          ]
+        },
+        "l": "Card backs (tint)",
+        "c": 1,
+        "line": 18
+      },
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            238,
+            242,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 19
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 0,
+        "l": "Background opacity",
+        "b": 3,
+        "line": 20
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 21
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 22
+      }
+    ],
+    "presets": [
+      "Ring",
+      "Helix",
+      "Portrait cards",
+      "Stage"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg",
+        "items"
+      ],
+      "images": [
+        {
+          "name": "uItem0",
+          "label": "Item 1",
+          "wants": "picture"
+        },
+        {
+          "name": "uItem1",
+          "label": "Item 2",
+          "wants": "picture"
+        },
+        {
+          "name": "uItem2",
+          "label": "Item 3",
+          "wants": "picture"
+        },
+        {
+          "name": "uItem3",
+          "label": "Item 4",
+          "wants": "picture"
+        },
+        {
+          "name": "uItem4",
+          "label": "Item 5",
+          "wants": "picture"
+        },
+        {
+          "name": "uItem5",
+          "label": "Item 6",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "stills",
+      "interactions": [],
+      "transparent": true,
+      "items": {
+        "min": 1,
+        "max": 24,
+        "slots": [
+          "uItem0",
+          "uItem1",
+          "uItem2",
+          "uItem3",
+          "uItem4",
+          "uItem5"
+        ],
+        "cycle": "swap"
+      }
+    },
+    "swiftReady": true,
+    "video": "stills",
+    "transparent": true,
+    "animated": true,
+    "module": "shaders/montage-gallery",
+    "addedAt": "2026-11-23T14:25:45.048Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "before-after-series",
+    "name": "Before / after series",
+    "kind": "shader",
+    "category": "montage",
+    "description": "A series of before-and-after pairs, items taken two at a time: a divider sweeps each pair from before to after, then the next pair slides or fades in, with a dot for each pair below.",
+    "tags": [
+      "montage",
+      "before-after",
+      "comparison",
+      "edit",
+      "generations",
+      "slider",
+      "series",
+      "items"
+    ],
+    "controls": [
+      {
+        "n": "uItem0",
+        "t": "sampler2D",
+        "d": {
+          "sample": "city"
+        },
+        "l": "Item 1",
+        "line": 2,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uItem1",
+        "t": "sampler2D",
+        "d": {
+          "sample": "landscape"
+        },
+        "l": "Item 2",
+        "line": 3,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uItem2",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "l": "Item 3",
+        "line": 4,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uItem3",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait2"
+        },
+        "l": "Item 4",
+        "line": 5,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uItem4",
+        "t": "sampler2D",
+        "d": {
+          "sample": "landscape"
+        },
+        "l": "Item 5",
+        "line": 6,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uItem5",
+        "t": "sampler2D",
+        "d": {
+          "sample": "city"
+        },
+        "l": "Item 6",
+        "line": 7,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uCount",
+        "t": "int",
+        "d": 6,
+        "l": "Items shown",
+        "min": 2,
+        "max": 6,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uAspect",
+        "t": "float",
+        "d": 1.6,
+        "l": "Frame shape (width / height)",
+        "min": 0.5,
+        "max": 2.5,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 0.8,
+        "min": 0.4,
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uRadius",
+        "t": "float",
+        "d": 0.02,
+        "l": "Corner radius",
+        "max": 0.08,
+        "b": 3,
+        "line": 11
+      },
+      {
+        "n": "uHold",
+        "t": "float",
+        "d": 4,
+        "l": "Seconds per item",
+        "min": 0.8,
+        "max": 10,
+        "b": 3,
+        "line": 12
+      },
+      {
+        "n": "uChange",
+        "t": "int",
+        "d": 0,
+        "l": "Next pair (0 slide, 1 fade)",
+        "max": 1,
+        "b": 3,
+        "line": 13
+      },
+      {
+        "n": "uLine",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "l": "Divider",
+        "c": 1,
+        "line": 14
+      },
+      {
+        "n": "uHandle",
+        "t": "bool",
+        "d": true,
+        "line": 15
+      },
+      {
+        "n": "uDots",
+        "t": "bool",
+        "d": true,
+        "l": "Pair dots",
+        "line": 16
+      },
+      {
+        "n": "uShadow",
+        "t": "float",
+        "d": 0.3,
+        "b": 3,
+        "line": 17
+      },
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            238,
+            242,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 18
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 0,
+        "l": "Background opacity",
+        "b": 3,
+        "line": 19
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 20
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 21
+      }
+    ],
+    "presets": [
+      "Slide",
+      "Fade",
+      "Square",
+      "Clean"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg",
+        "items"
+      ],
+      "images": [
+        {
+          "name": "uItem0",
+          "label": "Item 1",
+          "wants": "picture"
+        },
+        {
+          "name": "uItem1",
+          "label": "Item 2",
+          "wants": "picture"
+        },
+        {
+          "name": "uItem2",
+          "label": "Item 3",
+          "wants": "picture"
+        },
+        {
+          "name": "uItem3",
+          "label": "Item 4",
+          "wants": "picture"
+        },
+        {
+          "name": "uItem4",
+          "label": "Item 5",
+          "wants": "picture"
+        },
+        {
+          "name": "uItem5",
+          "label": "Item 6",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "stills",
+      "interactions": [],
+      "transparent": true,
+      "items": {
+        "min": 2,
+        "max": 6,
+        "slots": [
+          "uItem0",
+          "uItem1",
+          "uItem2",
+          "uItem3",
+          "uItem4",
+          "uItem5"
+        ],
+        "cycle": "swap"
+      }
+    },
+    "swiftReady": true,
+    "video": "stills",
+    "transparent": true,
+    "animated": true,
+    "module": "shaders/montage-gallery",
+    "addedAt": "2026-11-23T14:25:45.048Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "wall-zoom",
+    "name": "Wall zoom",
+    "kind": "shader",
+    "category": "montage",
+    "description": "A picture full frame breaks into a mosaic wall of all the items, tinted to its colours, then the view zooms into one tile until that picture fills the frame and becomes the next wall: a never-ending gallery.",
+    "tags": [
+      "montage",
+      "mosaic",
+      "wall",
+      "zoom",
+      "droste",
+      "infinite",
+      "gallery",
+      "photomosaic",
+      "items"
+    ],
+    "controls": [
+      {
+        "n": "uItem0",
+        "t": "sampler2D",
+        "d": {
+          "sample": "city"
+        },
+        "l": "Item 1",
+        "line": 2,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uItem1",
+        "t": "sampler2D",
+        "d": {
+          "sample": "landscape"
+        },
+        "l": "Item 2",
+        "line": 3,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uItem2",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "l": "Item 3",
+        "line": 4,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uItem3",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait2"
+        },
+        "l": "Item 4",
+        "line": 5,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uItem4",
+        "t": "sampler2D",
+        "d": {
+          "sample": "landscape"
+        },
+        "l": "Item 5",
+        "line": 6,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uItem5",
+        "t": "sampler2D",
+        "d": {
+          "sample": "city"
+        },
+        "l": "Item 6",
+        "line": 7,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uCount",
+        "t": "int",
+        "d": 6,
+        "l": "Items shown",
+        "min": 1,
+        "max": 6,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uGrid",
+        "t": "int",
+        "d": 5,
+        "l": "Tiles across (odd)",
+        "min": 3,
+        "max": 9,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uHold",
+        "t": "float",
+        "d": 4,
+        "l": "Seconds per item",
+        "min": 0.8,
+        "max": 10,
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uGap",
+        "t": "float",
+        "d": 0.006,
+        "max": 0.03,
+        "b": 3,
+        "line": 11
+      },
+      {
+        "n": "uTint",
+        "t": "float",
+        "d": 0.55,
+        "l": "Mosaic tint",
+        "b": 3,
+        "line": 12
+      },
+      {
+        "n": "uRadius",
+        "t": "float",
+        "d": 0.006,
+        "l": "Corner radius",
+        "max": 0.05,
+        "b": 3,
+        "line": 13
+      },
+      {
+        "n": "uGapColor",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            11,
+            11,
+            15
+          ]
+        },
+        "l": "Gaps",
+        "c": 1,
+        "line": 14
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 15
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 16
+      }
+    ],
+    "presets": [
+      "Mosaic",
+      "Fine mosaic",
+      "Clean tiles",
+      "Slow"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg",
+        "items"
+      ],
+      "images": [
+        {
+          "name": "uItem0",
+          "label": "Item 1",
+          "wants": "picture"
+        },
+        {
+          "name": "uItem1",
+          "label": "Item 2",
+          "wants": "picture"
+        },
+        {
+          "name": "uItem2",
+          "label": "Item 3",
+          "wants": "picture"
+        },
+        {
+          "name": "uItem3",
+          "label": "Item 4",
+          "wants": "picture"
+        },
+        {
+          "name": "uItem4",
+          "label": "Item 5",
+          "wants": "picture"
+        },
+        {
+          "name": "uItem5",
+          "label": "Item 6",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "stills",
+      "interactions": [],
+      "transparent": false,
+      "items": {
+        "min": 1,
+        "max": 24,
+        "slots": [
+          "uItem0",
+          "uItem1",
+          "uItem2",
+          "uItem3",
+          "uItem4",
+          "uItem5"
+        ],
+        "cycle": "swap"
+      }
+    },
+    "swiftReady": true,
+    "video": "stills",
+    "animated": true,
+    "module": "shaders/montage-gallery",
+    "addedAt": "2026-11-23T14:25:45.048Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "logo-wall",
+    "name": "Logo wall",
+    "kind": "vector",
+    "category": "montage",
+    "description": "A wall of cards, one per item (logos, icons, small pictures, each with its label), laid out in a grid that fits however many there are, popping in one after another and then rippling once in the accent colour.",
+    "tags": [
+      "montage",
+      "logo",
+      "customers",
+      "partners",
+      "grid",
+      "wall",
+      "icon",
+      "social-proof",
+      "items"
+    ],
+    "controls": [
+      {
+        "n": "card",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 1
+      },
+      {
+        "n": "ink",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            51,
+            65,
+            85
+          ]
+        },
+        "l": "Labels",
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "accent",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            99,
+            102,
+            241
+          ]
+        },
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "edge",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            226,
+            232,
+            240
+          ]
+        },
+        "l": "Card edge",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "gap",
+        "t": "float",
+        "d": 14,
+        "max": 40,
+        "s": 1,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "radius",
+        "t": "float",
+        "d": 12,
+        "l": "Corner radius",
+        "max": 40,
+        "s": 1,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "labels",
+        "t": "bool",
+        "d": true,
+        "l": "Show labels",
+        "line": 7
+      },
+      {
+        "n": "items",
+        "t": "text",
+        "d": "[{\"href\":\"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIiB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiI+CjxwYXRoIGZpbGw9IiM2MzY2ZjEiIGZpbGwtcnVsZT0iZXZlbm9kZCIgZD0iTTI1NiA1NmEyMDAgMjAwIDAgMSAxIDAgNDAwYTIwMCAyMDAgMCAxIDEgMC00MDB6bTAgOTJhMTA4IDEwOCAwIDEgMCAwIDIxNmExMDggMTA4IDAgMSAwIDAtMjE2eiIvPgo8Y2lyY2xlIGN4PSIyNTYiIGN5PSIyNTYiIHI9IjUyIiBmaWxsPSIjNjM2NmYxIi8+Cjwvc3ZnPg==\",\"label\":\"Ringlet\"},{\"href\":\"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIiB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiI+CjxwYXRoIGZpbGw9IiNmNDNmNWUiIGQ9Ik0yNTYgNDUyQzEyMCAzNTIgNDAgMjcyIDQwIDE3MkM0MCAxMDIgOTUgNTggMTYwIDU4QzIwNSA1OCAyMzggODQgMjU2IDExOEMyNzQgODQgMzA3IDU4IDM1MiA1OEM0MTcgNTggNDcyIDEwMiA0NzIgMTcyQzQ3MiAyNzIgMzkyIDM1MiAyNTYgNDUyWiIvPgo8L3N2Zz4=\",\"label\":\"Kindly\"},{\"href\":\"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxwYXRoIGQ9Ik0xMiAyMEM1IDE1LjUgMyAxMiAzIDguNWE0LjUgNC41IDAgMCAxIDkgMGE0LjUgNC41IDAgMCAxIDkgMGMwIDMuNS0yIDctOSAxMS41WiIvPjwvc3ZnPg==\",\"label\":\"Outline\"},{\"href\":\"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIiB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiI+CjxwYXRoIGZpbGw9IiM2MzY2ZjEiIGZpbGwtcnVsZT0iZXZlbm9kZCIgZD0iTTI1NiA1NmEyMDAgMjAwIDAgMSAxIDAgNDAwYTIwMCAyMDAgMCAxIDEgMC00MDB6bTAgOTJhMTA4IDEwOCAwIDEgMCAwIDIxNmExMDggMTA4IDAgMSAwIDAtMjE2eiIvPgo8Y2lyY2xlIGN4PSIyNTYiIGN5PSIyNTYiIHI9IjUyIiBmaWxsPSIjNjM2NmYxIi8+Cjwvc3ZnPg==\",\"label\":\"Orbit\"},{\"href\":\"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIiB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiI+CjxwYXRoIGZpbGw9IiNmNDNmNWUiIGQ9Ik0yNTYgNDUyQzEyMCAzNTIgNDAgMjcyIDQwIDE3MkM0MCAxMDIgOTUgNTggMTYwIDU4QzIwNSA1OCAyMzggODQgMjU2IDExOEMyNzQgODQgMzA3IDU4IDM1MiA1OEM0MTcgNTggNDcyIDEwMiA0NzIgMTcyQzQ3MiAyNzIgMzkyIDM1MiAyNTYgNDUyWiIvPgo8L3N2Zz4=\",\"label\":\"Bloom\"},{\"href\":\"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxwYXRoIGQ9Ik0xMiAyMEM1IDE1LjUgMyAxMiAzIDguNWE0LjUgNC41IDAgMCAxIDkgMGE0LjUgNC41IDAgMCAxIDkgMGMwIDMuNS0yIDctOSAxMS41WiIvPjwvc3ZnPg==\",\"label\":\"Sketch\"}]",
+        "l": "Items (JSON list of { href, label })",
+        "s": 0.01,
+        "line": 8
+      }
+    ],
+    "presets": [
+      "Light",
+      "Dark",
+      "Tight",
+      "Logos only"
+    ],
+    "inputs": {
+      "accepts": [
+        "items"
+      ],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": false,
+      "items": {
+        "min": 1,
+        "max": 24,
+        "slots": [],
+        "cycle": "repeat",
+        "list": "items"
+      }
+    },
+    "hold": 1200,
+    "animated": true,
+    "duration": 3390,
+    "module": "montage-vector",
+    "addedAt": "2026-11-23T14:25:45.048Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "device-morph",
+    "name": "Device morph",
+    "kind": "shader",
+    "category": "montage",
+    "description": "One screen whose frame morphs from phone to tablet to laptop (or any devices you give it), its screenshot changing to each breakpoint's layout as it grows: a responsive design at a glance.",
+    "tags": [
+      "montage",
+      "devices",
+      "responsive",
+      "breakpoints",
+      "screenshots",
+      "morph",
+      "mockup",
+      "product",
+      "items"
+    ],
+    "controls": [
+      {
+        "n": "uItem0",
+        "t": "sampler2D",
+        "d": {
+          "sample": "city"
+        },
+        "l": "Item 1",
+        "line": 2,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uItem1",
+        "t": "sampler2D",
+        "d": {
+          "sample": "landscape"
+        },
+        "l": "Item 2",
+        "line": 3,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uItem2",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "l": "Item 3",
+        "line": 4,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uItem3",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait2"
+        },
+        "l": "Item 4",
+        "line": 5,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uDevice0",
+        "t": "int",
+        "d": 0,
+        "l": "Device 1 (0 phone, 1 tablet, 2 laptop, 3 desktop, 4 watch, 5 browser)",
+        "max": 5,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uDevice1",
+        "t": "int",
+        "d": 1,
+        "l": "Device 2 (0 phone, 1 tablet, 2 laptop, 3 desktop, 4 watch, 5 browser)",
+        "max": 5,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uDevice2",
+        "t": "int",
+        "d": 2,
+        "l": "Device 3 (0 phone, 1 tablet, 2 laptop, 3 desktop, 4 watch, 5 browser)",
+        "max": 5,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uDevice3",
+        "t": "int",
+        "d": 3,
+        "l": "Device 4 (0 phone, 1 tablet, 2 laptop, 3 desktop, 4 watch, 5 browser)",
+        "max": 5,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uCount",
+        "t": "int",
+        "d": 3,
+        "l": "Items shown",
+        "min": 1,
+        "max": 4,
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uHold",
+        "t": "float",
+        "d": 2.5,
+        "l": "Seconds per item",
+        "min": 0.8,
+        "max": 10,
+        "b": 3,
+        "line": 11
+      },
+      {
+        "n": "uMorph",
+        "t": "float",
+        "d": 0.4,
+        "l": "Share of each hold spent changing",
+        "min": 0.15,
+        "max": 0.9,
+        "b": 3,
+        "line": 12
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 0.78,
+        "min": 0.3,
+        "b": 3,
+        "line": 13
+      },
+      {
+        "n": "uFloat",
+        "t": "float",
+        "d": 0.3,
+        "b": 3,
+        "line": 14
+      },
+      {
+        "n": "uBezel",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            17,
+            24,
+            39
+          ]
+        },
+        "c": 1,
+        "line": 15
+      },
+      {
+        "n": "uShadow",
+        "t": "float",
+        "d": 0.35,
+        "b": 3,
+        "line": 16
+      },
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            238,
+            242,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 17
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 0,
+        "l": "Background opacity",
+        "b": 3,
+        "line": 18
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 19
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 20
+      }
+    ],
+    "presets": [
+      "Phone to laptop",
+      "Phone to desktop",
+      "Browser widths",
+      "On a panel"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg",
+        "items"
+      ],
+      "images": [
+        {
+          "name": "uItem0",
+          "label": "Item 1",
+          "wants": "picture"
+        },
+        {
+          "name": "uItem1",
+          "label": "Item 2",
+          "wants": "picture"
+        },
+        {
+          "name": "uItem2",
+          "label": "Item 3",
+          "wants": "picture"
+        },
+        {
+          "name": "uItem3",
+          "label": "Item 4",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "stills",
+      "interactions": [],
+      "transparent": true,
+      "items": {
+        "min": 1,
+        "max": 24,
+        "slots": [
+          "uItem0",
+          "uItem1",
+          "uItem2",
+          "uItem3"
+        ],
+        "cycle": "swap"
+      }
+    },
+    "swiftReady": true,
+    "video": "stills",
+    "transparent": true,
+    "animated": true,
+    "module": "shaders/montage-gallery",
+    "addedAt": "2026-11-23T14:25:45.047Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
     "id": "screenshot-carousel",
     "name": "Screenshot carousel",
     "kind": "shader",
@@ -1879,1473 +4392,5 @@
     "addedAt": "2026-11-23T13:08:48Z",
     "commitHash": "950805d1f769c269815aa74fbf2cd0e8d9c0479d",
     "order": 717
-  },
-  {
-    "id": "daydream",
-    "name": "Daydream",
-    "kind": "shader",
-    "category": "cinematic",
-    "description": "A picture seen as a remembered or imagined scene: its highlights bleed into a softly breathing glow, thin luminous wisps drift across it, its edges dissolve into haze and a faint shimmer plays over it, while its shapes and colours still read, even as a small thumbnail.",
-    "tags": [
-      "cinematic",
-      "dreamy",
-      "ethereal",
-      "memory",
-      "flashback",
-      "reverie",
-      "dream",
-      "imagination",
-      "thought-bubble",
-      "soft-focus",
-      "haze",
-      "mist",
-      "glow",
-      "vignette",
-      "filter"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
-        "t": "sampler2D",
-        "d": {
-          "sample": "landscape"
-        },
-        "line": 3,
-        "x": {
-          "filter": "mipmap",
-          "wrap": "mirror"
-        }
-      },
-      {
-        "n": "uGlow",
-        "t": "float",
-        "d": 0.5,
-        "l": "Diffusion glow",
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "uBreathe",
-        "t": "float",
-        "d": 0.5,
-        "l": "Breathing",
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uWisps",
-        "t": "float",
-        "d": 0.4,
-        "l": "Drifting wisps",
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uTint",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            232,
-            223,
-            248
-          ]
-        },
-        "c": 1,
-        "line": 7
-      },
-      {
-        "n": "uFeather",
-        "t": "float",
-        "d": 0.16,
-        "l": "Dissolving edges (share of the short side)",
-        "max": 0.5,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uShimmer",
-        "t": "float",
-        "d": 0.15,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uFade",
-        "t": "float",
-        "d": 0.1,
-        "l": "Faded colour",
-        "b": 3,
-        "line": 10
-      },
-      {
-        "n": "uBackdrop",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 11
-      },
-      {
-        "n": "uBackdropAlpha",
-        "t": "float",
-        "d": 1,
-        "l": "Backdrop opacity",
-        "b": 3,
-        "line": 12
-      }
-    ],
-    "presets": [
-      "Daydream",
-      "Memory",
-      "Reverie",
-      "Floating"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "video",
-        "svg"
-      ],
-      "images": [
-        {
-          "name": "uImage",
-          "label": "Image",
-          "wants": "picture"
-        }
-      ],
-      "texts": [],
-      "video": "filter",
-      "interactions": [],
-      "transparent": false
-    },
-    "swiftReady": true,
-    "video": "filter",
-    "loop": 20,
-    "animated": true,
-    "duration": 20000,
-    "module": "shaders/cinematic",
-    "addedAt": "2026-11-20T11:49:47Z",
-    "commitHash": "0bff78d33805b1efb036b20cf2c5c811e0d1dbc4",
-    "order": 716
-  },
-  {
-    "id": "petal-fall",
-    "name": "Petal fall",
-    "kind": "shader",
-    "category": "debris",
-    "description": "Falling cherry blossom and rose petals drifting on a breeze with a swaying 3D flip, soft depth blur and click bursts.",
-    "tags": [
-      "debris",
-      "petals",
-      "sakura",
-      "cherry-blossom",
-      "rose",
-      "spring",
-      "wedding",
-      "overlay",
-      "interactive",
-      "click"
-    ],
-    "controls": [
-      {
-        "n": "uShape",
-        "t": "int",
-        "d": 0,
-        "l": "Shape (0 sakura, 1 rose, 2 round)",
-        "max": 2,
-        "b": 3,
-        "line": 2
-      },
-      {
-        "n": "uColor",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            249,
-            198,
-            215
-          ]
-        },
-        "l": "Petal",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uTip",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            240,
-            245
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uDensity",
-        "t": "float",
-        "d": 0.55,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uSize",
-        "t": "float",
-        "d": 0.055,
-        "min": 0.02,
-        "max": 0.12,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uLayers",
-        "t": "int",
-        "d": 3,
-        "l": "Depth layers",
-        "min": 1,
-        "max": 5,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uSway",
-        "t": "float",
-        "d": 1,
-        "max": 2,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uFlip",
-        "t": "float",
-        "d": 0.92,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uBreeze",
-        "t": "float",
-        "d": 0.35,
-        "min": -2,
-        "max": 2,
-        "b": 3,
-        "line": 10
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 0.7,
-        "l": "Fall speed",
-        "min": 0.1,
-        "max": 2.5,
-        "b": 3,
-        "line": 11
-      },
-      {
-        "n": "uGlow",
-        "t": "float",
-        "d": 0,
-        "b": 3,
-        "line": 12
-      },
-      {
-        "n": "uDemo",
-        "t": "bool",
-        "d": true,
-        "l": "Demo clicks when idle",
-        "line": 13
-      }
-    ],
-    "presets": [
-      "Sakura",
-      "Rose petals",
-      "White wedding",
-      "Night blossoms"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [
-        "click"
-      ],
-      "transparent": true
-    },
-    "swiftReady": true,
-    "transparent": true,
-    "animated": true,
-    "module": "shaders/debris",
-    "addedAt": "2026-11-17T23:36:15Z",
-    "commitHash": "169ff2f459bb23eb71b90a46e7647f9f49cf6ebf",
-    "order": 715
-  },
-  {
-    "id": "money-rain",
-    "name": "Money rain",
-    "kind": "shader",
-    "category": "debris",
-    "description": "Spinning metallic coins with moving glints and fluttering banknotes raining down, piling at the bottom and bursting wherever you click.",
-    "tags": [
-      "debris",
-      "money",
-      "coin",
-      "cash",
-      "rain",
-      "jackpot",
-      "overlay",
-      "interactive",
-      "click"
-    ],
-    "controls": [
-      {
-        "n": "uMode",
-        "t": "int",
-        "d": 2,
-        "l": "Mode (0 coins, 1 bills, 2 both)",
-        "max": 2,
-        "b": 3,
-        "line": 2
-      },
-      {
-        "n": "uMetal",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            245,
-            197,
-            66
-          ]
-        },
-        "l": "Metal colour",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uBill",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            78,
-            154,
-            81
-          ]
-        },
-        "l": "Bill colour",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uDensity",
-        "t": "float",
-        "d": 0.7,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uSize",
-        "t": "float",
-        "d": 1,
-        "min": 0.5,
-        "max": 2,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uSpin",
-        "t": "float",
-        "d": 1,
-        "max": 3,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uGlint",
-        "t": "float",
-        "d": 1,
-        "max": 2,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uPile",
-        "t": "bool",
-        "d": true,
-        "l": "Pile at bottom",
-        "line": 9
-      },
-      {
-        "n": "uDemo",
-        "t": "bool",
-        "d": true,
-        "l": "Demo clicks when idle",
-        "line": 10
-      }
-    ],
-    "presets": [
-      "Jackpot",
-      "Cash",
-      "Silver",
-      "Burst only"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [
-        "click"
-      ],
-      "transparent": true
-    },
-    "swiftReady": true,
-    "transparent": true,
-    "animated": true,
-    "module": "shaders/debris",
-    "addedAt": "2026-11-16T18:52:39Z",
-    "commitHash": "e9631e33e1d66c66e77efbe300a9bca3daffeb86",
-    "order": 714
-  },
-  {
-    "id": "pixerate-paint",
-    "name": "Pixerate paint",
-    "kind": "shader",
-    "category": "path",
-    "description": "A glossy, bristle-streaked neon paint stroke along the pointer's path, two-toned and twisting, solid at its head and breaking apart towards its tail into glowing square pixels that scatter, drift and twinkle.",
-    "tags": [
-      "trail",
-      "interactive",
-      "hover",
-      "cursor",
-      "overlay",
-      "glow",
-      "neon",
-      "paint",
-      "brush",
-      "pixel",
-      "particles",
-      "path"
-    ],
-    "controls": [
-      {
-        "n": "uColorA",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            43,
-            199
-          ]
-        },
-        "l": "Ribbon colour",
-        "c": 1,
-        "line": 7
-      },
-      {
-        "n": "uColorB",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            128,
-            64,
-            255
-          ]
-        },
-        "l": "Pixel colour",
-        "c": 1,
-        "line": 8
-      },
-      {
-        "n": "uWidth",
-        "t": "float",
-        "d": 0.03,
-        "min": 0.004,
-        "max": 0.3,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uPixel",
-        "t": "float",
-        "d": 0.85,
-        "l": "Pixel size (x width)",
-        "min": 0.2,
-        "max": 2,
-        "b": 3,
-        "line": 10
-      },
-      {
-        "n": "uBreak",
-        "t": "float",
-        "d": 0.55,
-        "l": "Break-up",
-        "b": 3,
-        "line": 11
-      },
-      {
-        "n": "uScatter",
-        "t": "float",
-        "d": 3.5,
-        "l": "Scatter (x width)",
-        "max": 8,
-        "b": 3,
-        "line": 12
-      },
-      {
-        "n": "uDensity",
-        "t": "float",
-        "d": 0.4,
-        "l": "Pixel density",
-        "b": 3,
-        "line": 13
-      },
-      {
-        "n": "uDrift",
-        "t": "float",
-        "d": 0.6,
-        "max": 3,
-        "b": 3,
-        "line": 14
-      },
-      {
-        "n": "uTexture",
-        "t": "float",
-        "d": 1,
-        "l": "Paint texture",
-        "b": 3,
-        "line": 15
-      },
-      {
-        "n": "uGlow",
-        "t": "float",
-        "d": 1.2,
-        "max": 3,
-        "b": 3,
-        "line": 16
-      },
-      {
-        "n": "uLife",
-        "t": "float",
-        "d": 1.2,
-        "l": "Fade time",
-        "min": 0.1,
-        "max": 3,
-        "b": 3,
-        "line": 17
-      },
-      {
-        "n": "uIntensity",
-        "t": "float",
-        "d": 1,
-        "min": 0.2,
-        "max": 3,
-        "b": 3,
-        "line": 18
-      },
-      {
-        "n": "uDemo",
-        "t": "bool",
-        "d": true,
-        "l": "Demo when idle",
-        "line": 19
-      },
-      {
-        "n": "uPath",
-        "t": "path",
-        "d": "",
-        "path": {
-          "fit": "contain",
-          "margin": 0.1
-        },
-        "l": "Path when idle",
-        "line": 43
-      },
-      {
-        "n": "uUnit",
-        "t": "float",
-        "d": 0,
-        "l": "Size unit (px, 0 = frame height)",
-        "max": 16384,
-        "b": 3,
-        "line": 44
-      }
-    ],
-    "presets": [
-      "Cyber",
-      "Ember",
-      "Glitch"
-    ],
-    "inputs": {
-      "accepts": [
-        "path"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "uPath",
-          "label": "Path when idle",
-          "holds": "path",
-          "default": ""
-        }
-      ],
-      "interactions": [
-        "hover",
-        "trail"
-      ],
-      "transparent": true
-    },
-    "swiftReady": true,
-    "transparent": true,
-    "animated": true,
-    "paint": {
-      "map": "path",
-      "colors": [
-        "uColorA",
-        "uColorB"
-      ],
-      "live": true
-    },
-    "module": "shaders/trail",
-    "addedAt": "2026-11-15T18:37:09Z",
-    "commitHash": "3b00a0ab56af4ad828d39325106025649ab7fef6",
-    "order": 713
-  },
-  {
-    "id": "swash-text",
-    "name": "Swash text",
-    "kind": "shader",
-    "category": "text",
-    "description": "A title with a glossy gradient ribbon swashing through it: in under the letters along the baseline, a loop over them, then an arc hooking over the end, rounded and twisting, shedding star sparkles, then eroding into frost.",
-    "tags": [
-      "text",
-      "title",
-      "swash",
-      "ribbon",
-      "flourish",
-      "curl",
-      "gradient",
-      "sparkle",
-      "frost",
-      "calligraphy",
-      "overlay"
-    ],
-    "controls": [
-      {
-        "n": "uText",
-        "t": "sampler2D",
-        "d": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201024%20256%22%20width%3D%221024%22%20height%3D%22256%22%3E%3Ctext%20x%3D%22512%22%20y%3D%22128%22%20dy%3D%220.35em%22%20text-anchor%3D%22middle%22%20textLength%3D%22826.7%22%20lengthAdjust%3D%22spacingAndGlyphs%22%20font-family%3D%22%26%2339%3BArial%20Black%26%2339%3B%2C%20%26%2339%3BHelvetica%20Neue%26%2339%3B%2C%20Helvetica%2C%20Arial%2C%20system-ui%2C%20sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%22199.7%22%20fill%3D%22%23fff%22%3EFlourish%3C%2Ftext%3E%3C%2Fsvg%3E",
-        "line": 2,
-        "x": {
-          "filter": "mipmap",
-          "wrap": "clamp"
-        }
-      },
-      {
-        "n": "uInk",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            244,
-            241,
-            234
-          ]
-        },
-        "l": "Text colour",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uBackground",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            16,
-            16,
-            24
-          ]
-        },
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uBackgroundAlpha",
-        "t": "float",
-        "d": 0,
-        "l": "Background opacity",
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uSize",
-        "t": "float",
-        "d": 0.6,
-        "l": "Text size",
-        "min": 0.3,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uLength",
-        "t": "float",
-        "d": 0.84,
-        "l": "Swash length",
-        "min": 0.3,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uTail",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            179,
-            138
-          ]
-        },
-        "l": "Tail colour",
-        "c": 1,
-        "line": 8
-      },
-      {
-        "n": "uMid",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            244,
-            114,
-            182
-          ]
-        },
-        "l": "Middle colour",
-        "c": 1,
-        "line": 9
-      },
-      {
-        "n": "uHead",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            139,
-            92,
-            246
-          ]
-        },
-        "l": "Head colour",
-        "c": 1,
-        "line": 10
-      },
-      {
-        "n": "uWidth",
-        "t": "float",
-        "d": 0.085,
-        "l": "Ribbon width",
-        "min": 0.01,
-        "max": 0.15,
-        "b": 3,
-        "line": 11
-      },
-      {
-        "n": "uOpacity",
-        "t": "float",
-        "d": 0.85,
-        "l": "Ribbon opacity",
-        "min": 0.2,
-        "b": 3,
-        "line": 12
-      },
-      {
-        "n": "uTwist",
-        "t": "float",
-        "d": 1.5,
-        "l": "Twists",
-        "max": 4,
-        "b": 3,
-        "line": 13
-      },
-      {
-        "n": "uGlow",
-        "t": "float",
-        "d": 0.5,
-        "b": 3,
-        "line": 14
-      },
-      {
-        "n": "uSparkle",
-        "t": "float",
-        "d": 0.8,
-        "l": "Sparkles",
-        "b": 3,
-        "line": 15
-      },
-      {
-        "n": "uWeave",
-        "t": "bool",
-        "d": true,
-        "l": "Weave through the letters",
-        "line": 16
-      },
-      {
-        "n": "uFrost",
-        "t": "float",
-        "d": 0.8,
-        "l": "Frost dissolve",
-        "b": 3,
-        "line": 17
-      },
-      {
-        "n": "uFrostColor",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            220,
-            228,
-            255
-          ]
-        },
-        "l": "Frost colour",
-        "c": 1,
-        "line": 18
-      },
-      {
-        "n": "uCycle",
-        "t": "float",
-        "d": 4,
-        "l": "Seconds per swash",
-        "min": 2,
-        "max": 12,
-        "b": 3,
-        "line": 19
-      },
-      {
-        "n": "uAnimate",
-        "t": "bool",
-        "d": true,
-        "line": 20
-      },
-      {
-        "n": "uProgress",
-        "t": "float",
-        "d": 0.45,
-        "l": "Progress (when still)",
-        "b": 3,
-        "line": 21
-      }
-    ],
-    "presets": [
-      "Light page",
-      "Dark page",
-      "Ocean",
-      "Gold leaf",
-      "Flat ribbon"
-    ],
-    "inputs": {
-      "accepts": [
-        "image",
-        "svg",
-        "text",
-        "mask"
-      ],
-      "images": [
-        {
-          "name": "uText",
-          "label": "Text",
-          "wants": "text"
-        }
-      ],
-      "texts": [],
-      "video": "none",
-      "interactions": [],
-      "transparent": true
-    },
-    "swiftReady": true,
-    "video": "none",
-    "transparent": true,
-    "loop": 4,
-    "animated": true,
-    "duration": 4000,
-    "module": "shaders/text",
-    "addedAt": "2026-11-15T13:53:58Z",
-    "commitHash": "16b78c9f873022cd0f69a3eb8ff5e28f9a3510e4",
-    "order": 712
-  },
-  {
-    "id": "ribbon-curl",
-    "name": "Ribbon curl",
-    "kind": "text-treatment",
-    "category": "treatment",
-    "description": "A translucent gradient swash woven through what changed: a thin tail runs under the letters, loops over them and swells into an arc that hooks over the end of the word, shedding sparkles, then dissolves into frost. It is drawn only once the edit has landed; while the word is typed there is just a tint.",
-    "tags": [
-      "agent",
-      "writing",
-      "edit",
-      "ribbon",
-      "swoosh",
-      "curl",
-      "flourish",
-      "gradient",
-      "sparkle",
-      "frost",
-      "caret"
-    ],
-    "controls": [
-      {
-        "n": "color",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            139,
-            92,
-            246
-          ]
-        },
-        "l": "Agent colour",
-        "c": 1,
-        "s": 0.01,
-        "line": 1
-      },
-      {
-        "n": "caretWidth",
-        "t": "float",
-        "d": 2,
-        "min": 1,
-        "max": 6,
-        "s": 0.5,
-        "b": 3,
-        "line": 2
-      },
-      {
-        "n": "nameTag",
-        "t": "bool",
-        "d": true,
-        "s": 0.01,
-        "line": 3
-      },
-      {
-        "n": "blink",
-        "t": "bool",
-        "d": false,
-        "l": "Blink caret",
-        "s": 0.01,
-        "line": 4
-      },
-      {
-        "n": "checkMs",
-        "t": "float",
-        "d": 320,
-        "l": "Check (ms)",
-        "min": 80,
-        "max": 2000,
-        "s": 10,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "selectMs",
-        "t": "float",
-        "d": 180,
-        "l": "Select (ms)",
-        "max": 1000,
-        "s": 10,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "landMs",
-        "t": "float",
-        "d": 1900,
-        "l": "Land (ms)",
-        "min": 100,
-        "max": 4000,
-        "s": 10,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "tail",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            179,
-            138
-          ]
-        },
-        "l": "Tail colour",
-        "c": 1,
-        "s": 0.01,
-        "line": 8
-      },
-      {
-        "n": "mid",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            244,
-            114,
-            182
-          ]
-        },
-        "l": "Middle colour",
-        "c": 1,
-        "s": 0.01,
-        "line": 9
-      },
-      {
-        "n": "ribbonWidth",
-        "t": "float",
-        "d": 0.17,
-        "min": 0.05,
-        "max": 0.5,
-        "s": 0.01,
-        "b": 3,
-        "line": 10
-      },
-      {
-        "n": "ribbonAlpha",
-        "t": "float",
-        "d": 0.7,
-        "l": "Ribbon opacity",
-        "min": 0.2,
-        "s": 0.01,
-        "b": 3,
-        "line": 11
-      },
-      {
-        "n": "sparkles",
-        "t": "float",
-        "d": 12,
-        "max": 40,
-        "s": 1,
-        "b": 3,
-        "line": 12
-      },
-      {
-        "n": "darkTheme",
-        "t": "bool",
-        "d": false,
-        "s": 0.01,
-        "line": 13
-      },
-      {
-        "n": "frost",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            220,
-            228,
-            255
-          ]
-        },
-        "l": "Frost (light)",
-        "c": 1,
-        "s": 0.01,
-        "line": 14
-      },
-      {
-        "n": "frostDark",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            185,
-            166,
-            255
-          ]
-        },
-        "l": "Frost (dark)",
-        "c": 1,
-        "s": 0.01,
-        "line": 15
-      }
-    ],
-    "presets": [
-      "Sunset",
-      "Ocean",
-      "Dark theme",
-      "Dark ocean"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "treatment",
-    "addedAt": "2026-11-15T10:53:57Z",
-    "commitHash": "8617942a1d2cbe230eab8ec856e6039d24ed383e",
-    "order": 711
-  },
-  {
-    "id": "design-frame",
-    "name": "Design frame",
-    "kind": "text-treatment",
-    "category": "treatment",
-    "description": "A design tool's selection: a thin box with square corner handles tracing round what is checked and selected, and the box lingering round what changed before it fades.",
-    "tags": [
-      "agent",
-      "writing",
-      "edit",
-      "design-tool",
-      "selection",
-      "frame",
-      "handles",
-      "outline",
-      "caret"
-    ],
-    "controls": [
-      {
-        "n": "color",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            13,
-            153,
-            255
-          ]
-        },
-        "l": "Agent colour",
-        "c": 1,
-        "s": 0.01,
-        "line": 1
-      },
-      {
-        "n": "caretWidth",
-        "t": "float",
-        "d": 2,
-        "min": 1,
-        "max": 6,
-        "s": 0.5,
-        "b": 3,
-        "line": 2
-      },
-      {
-        "n": "nameTag",
-        "t": "bool",
-        "d": true,
-        "s": 0.01,
-        "line": 3
-      },
-      {
-        "n": "blink",
-        "t": "bool",
-        "d": false,
-        "l": "Blink caret",
-        "s": 0.01,
-        "line": 4
-      },
-      {
-        "n": "checkMs",
-        "t": "float",
-        "d": 520,
-        "l": "Check (ms)",
-        "min": 80,
-        "max": 2000,
-        "s": 10,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "selectMs",
-        "t": "float",
-        "d": 180,
-        "l": "Select (ms)",
-        "max": 1000,
-        "s": 10,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "landMs",
-        "t": "float",
-        "d": 900,
-        "l": "Land (ms)",
-        "min": 100,
-        "max": 4000,
-        "s": 10,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "handle",
-        "t": "float",
-        "d": 6,
-        "l": "Handle (px)",
-        "min": 3,
-        "max": 12,
-        "s": 0.5,
-        "b": 3,
-        "line": 8
-      }
-    ],
-    "presets": [
-      "Blue",
-      "Magenta",
-      "Large handles"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "treatment",
-    "addedAt": "2026-11-15T10:39:44Z",
-    "commitHash": "e68f0b7f39b452e540b245f6bab92c9a33ac5b74",
-    "order": 710
-  },
-  {
-    "id": "presence",
-    "name": "Presence",
-    "kind": "text-treatment",
-    "category": "treatment",
-    "description": "A collaborator's presence, as in a shared document: a caret with a coloured name tag, an outline pulsing round what is being checked, and a selection and change tint in the collaborator's colour.",
-    "tags": [
-      "agent",
-      "writing",
-      "edit",
-      "collaboration",
-      "multiplayer",
-      "cursor",
-      "name-tag",
-      "caret",
-      "selection"
-    ],
-    "controls": [
-      {
-        "n": "color",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            242,
-            85,
-            90
-          ]
-        },
-        "l": "Agent colour",
-        "c": 1,
-        "s": 0.01,
-        "line": 1
-      },
-      {
-        "n": "caretWidth",
-        "t": "float",
-        "d": 2,
-        "min": 1,
-        "max": 6,
-        "s": 0.5,
-        "b": 3,
-        "line": 2
-      },
-      {
-        "n": "nameTag",
-        "t": "bool",
-        "d": true,
-        "s": 0.01,
-        "line": 3
-      },
-      {
-        "n": "blink",
-        "t": "bool",
-        "d": true,
-        "l": "Blink caret",
-        "s": 0.01,
-        "line": 4
-      },
-      {
-        "n": "checkMs",
-        "t": "float",
-        "d": 900,
-        "l": "Check (ms)",
-        "min": 80,
-        "max": 2000,
-        "s": 10,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "selectMs",
-        "t": "float",
-        "d": 180,
-        "l": "Select (ms)",
-        "max": 1000,
-        "s": 10,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "landMs",
-        "t": "float",
-        "d": 900,
-        "l": "Land (ms)",
-        "min": 100,
-        "max": 4000,
-        "s": 10,
-        "b": 3,
-        "line": 7
-      }
-    ],
-    "presets": [
-      "Coral",
-      "Indigo",
-      "Green",
-      "Steady"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "treatment",
-    "addedAt": "2026-11-15T10:39:44Z",
-    "commitHash": "e68f0b7f39b452e540b245f6bab92c9a33ac5b74",
-    "order": 709
-  },
-  {
-    "id": "scan-line",
-    "name": "Scan line",
-    "kind": "text-treatment",
-    "category": "treatment",
-    "description": "A bright scanning line with a fading trail passing over the words being checked, a scanned selection, and a final pass over what changed.",
-    "tags": [
-      "agent",
-      "writing",
-      "edit",
-      "scan",
-      "scanner",
-      "line",
-      "trail",
-      "tech",
-      "caret",
-      "selection"
-    ],
-    "controls": [
-      {
-        "n": "color",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            34,
-            211,
-            166
-          ]
-        },
-        "l": "Agent colour",
-        "c": 1,
-        "s": 0.01,
-        "line": 1
-      },
-      {
-        "n": "caretWidth",
-        "t": "float",
-        "d": 2,
-        "min": 1,
-        "max": 6,
-        "s": 0.5,
-        "b": 3,
-        "line": 2
-      },
-      {
-        "n": "nameTag",
-        "t": "bool",
-        "d": true,
-        "s": 0.01,
-        "line": 3
-      },
-      {
-        "n": "blink",
-        "t": "bool",
-        "d": false,
-        "l": "Blink caret",
-        "s": 0.01,
-        "line": 4
-      },
-      {
-        "n": "checkMs",
-        "t": "float",
-        "d": 460,
-        "l": "Check (ms)",
-        "min": 80,
-        "max": 2000,
-        "s": 10,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "selectMs",
-        "t": "float",
-        "d": 180,
-        "l": "Select (ms)",
-        "max": 1000,
-        "s": 10,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "landMs",
-        "t": "float",
-        "d": 900,
-        "l": "Land (ms)",
-        "min": 100,
-        "max": 4000,
-        "s": 10,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "trail",
-        "t": "float",
-        "d": 0.35,
-        "s": 0.01,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "glow",
-        "t": "float",
-        "d": 4,
-        "l": "Glow (px)",
-        "max": 12,
-        "s": 0.5,
-        "b": 3,
-        "line": 9
-      }
-    ],
-    "presets": [
-      "Mint",
-      "Hologram",
-      "Barcode red"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "treatment",
-    "addedAt": "2026-11-15T10:39:44Z",
-    "commitHash": "e68f0b7f39b452e540b245f6bab92c9a33ac5b74",
-    "order": 708
   }
 ]

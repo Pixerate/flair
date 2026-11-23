@@ -10,9 +10,9 @@
 import { CAMERA_PREVIEW_SOURCE, cameraPreviewLength, cameraPreviewValues } from "../catalog/camera.js";
 import { drawsAlpha, effectControls, effectDefaults, effectInputs, shaderRestTime } from "../catalog/core.js";
 import { DEVICE_KINDS, deviceIndex, type DeviceKind } from "../catalog/devices.js";
-import { SAMPLE_IMAGES, textImage } from "../catalog/images.js";
+import { SAMPLE_IMAGES, svgMarkupUrl, textImage } from "../catalog/images.js";
 import type { ImageSlot, TextSlot } from "../catalog/inputs.js";
-import { renderVectorEffect, type CameraEffect, type EffectDefinition, type EffectItems, type ShaderEffect, type VectorEffect } from "../catalog/types.js";
+import { renderVectorEffect, type CameraEffect, type EffectDefinition, type EffectItems, type ShaderEffect, type VectorEffect, type VectorItem } from "../catalog/types.js";
 import { effectUi, uiValues, type EffectUiHint, type JsonValue } from "../catalog/ui-hints.js";
 import { resolveAsset as resolveOne } from "../scene/assets.js";
 import type { SubjectResolver } from "../scene/layers.js";
@@ -85,13 +85,7 @@ export interface SubjectValues {
 const META_KEYS = new Set(["font", "weight", "device", "label", "focus", "duration"]);
 const kindOf = (subject: EffectSubject) => Object.keys(subject).find((k) => !META_KEYS.has(k)) as "image" | "video" | "svg" | "text" | "path" | "asset" | "audio";
 
-/** An SVG as a URL: markup becomes a UTF-8 `data:` URL; a URL stays as it is. */
-function svgUrl(svg: string): string {
-  const markup = svg.trim();
-  if (!markup.startsWith("<")) return svg;
-  const withNs = /\sxmlns\s*=/.test(markup.slice(0, markup.indexOf(">") + 1)) ? markup : markup.replace(/^<svg/i, '<svg xmlns="http://www.w3.org/2000/svg"');
-  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(withNs)}`;
-}
+const svgUrl = svgMarkupUrl;
 
 function pick<T extends { name: string }>(slots: T[], wanted: (s: T) => boolean, name: string | undefined, effect: EffectDefinition, what: string): T {
   const slot = name ? slots.find((s) => s.name === name) : slots.find(wanted);
@@ -179,6 +173,11 @@ function itemValues(effect: EffectDefinition & { items: EffectItems }, items: re
     if (device !== undefined && deviceIndex(device) === undefined)
       throw new Error(`Item ${i + 1} names the device ${JSON.stringify(device)}; devices are ${DEVICE_KINDS.join(", ")}.`);
   });
+  if (spec.cycle === "repeat") {
+    // A vector montage draws them all: its list control keeps them, pictures as data: URLs.
+    out.values[spec.list!] = JSON.stringify(items.map((item, i) => vectorItem(effect, item, i)));
+    return out;
+  }
   const fill = (slot: string, item: EffectSubject) => {
     const one = subjectValues(plain, item, slot);
     Object.assign(out.values, one.values);
@@ -201,6 +200,19 @@ function itemValues(effect: EffectDefinition & { items: EffectItems }, items: re
   }
   if (spec.count) out.values[spec.count] = Math.min(items.length, spec.slots.length);
   return out;
+}
+
+/** A vector montage's item: an SVG or a `data:image/` picture, and its label. Throws a sentence for anything else. */
+function vectorItem(effect: EffectDefinition, item: EffectSubject, i: number): VectorItem {
+  const label = (item as MontageItemMeta).label;
+  const out: VectorItem = label !== undefined ? { label } : {};
+  if ("svg" in item) return { href: svgUrl(item.svg), ...out };
+  if ("image" in item) {
+    if (/^data:image\//i.test(item.image.trim())) return { href: item.image.trim(), ...out };
+    throw new Error(`Item ${i + 1} of "${effect.id}" is the picture ${JSON.stringify(item.image.slice(0, 80))}; "${effect.id}" is a vector montage, drawn inside an SVG, which shows only pictures given as data:image/… URLs. Give it the SVG markup ({ svg }) or a data: URL, or use a shader montage for pictures by URL (findEffects({ category: "montage", kind: "shader" })).`);
+  }
+  if ("asset" in item) throw new Error(`Item ${i + 1} is the asset "${item.asset}", which only the host's library can turn into artwork; pass resolveAsset to mountEffect, or resolve it first with resolveSubject().`);
+  throw new Error(`Item ${i + 1} of "${effect.id}" is a video; "${effect.id}" is a vector montage, which shows SVGs and data:image/… pictures, not video.`);
 }
 
 export interface MountOptions extends MontageOptions {

@@ -38,6 +38,10 @@ Each change names an element `id` (it must exist in the SVG) and when it plays: 
 
 For ready-made entrances, exits and emphasis on your own elements, apply motion primitives instead of writing changes by hand: `applyPrimitive(motion, { primitive: "entrance.pop", target: "title" })` from `@pixerate/flair/motion` (see the flair-use skill's controls reference).
 
+## A list of items: repeat blocks
+
+For a montage whose markup follows how many items it is given (a logo wall, a grid of cards), give the definition `items: { min, max, slots: [], cycle: "repeat", list: "items", stagger: 90 }` and list one text control, `items`, in `controls` (its default a JSON list of `{ "href": "data:image/…", "label": "…" }`; a `{{…}}` declaration cannot hold JSON). Write the per-item markup once between `{{#items}}` and `{{/items}}`: it is written once per item, with `{{item.i}}` (from 0), `{{item.n}}` (from 1), `{{item.count}}`, `{{item.href}}`, `{{item.label}}` and whatever the definition's `itemDerived` function returns (given the index, the count and the values) (lay each item out there: `cx`, `cy`, `w`, `h`). Give per-item elements ids like `card{{item.i}}`; an `animate` change whose `id` names `{{item.i}}` runs once per item, its `delay` growing by `stagger` ms each. `{{itemCount}}` is the count anywhere. People pass items as `{ svg }` or `data:image/` pictures with a `label`; see `logo-wall` in the catalog.
+
 ## A flat or soft look
 
 To let people switch an effect between soft and glossy and flat with hard shadows (neubrutalism), declare the shared style controls with `styleControls()` from `@pixerate/flair/catalog`: `shadowStyle` (0 soft, 1 hard), `shadowOffset`, `inkWidth`, `inkColor`, `sheen`. Spread `styleDerived(values)` into your `derived` and use its `shDx`, `shDy`, `shBlur`, `shAlpha` in a `feDropShadow` (flood colour `{{inkColor}}`), `inkOn` for an ink outline's opacity and `sheenA` for a highlight's opacity. Hand-written `"Neubrutal"` presets use ink `#09090b`, pink `#ff2a85`, cyan `#06b6d4`, yellow `#facc15` and purple `#c084fc`, with an 8 px offset.

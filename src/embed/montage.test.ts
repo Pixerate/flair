@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { DEVICE_FRAMES, DEVICE_KINDS, effectInputs, findEffects, getEffect } from "../catalog/index.js";
+import { DEVICE_FRAMES, DEVICE_KINDS, effectControls, effectDefaults, effectInputs, findEffects, getEffect, renderVectorEffect, vectorItems, type VectorEffect } from "../catalog/index.js";
 import { findEffectMeta } from "../catalog/lazy.js";
 import { callTool, createEffectToolProvider } from "../editor/agent.js";
 import { createEffectEditor } from "../editor/editor.js";
@@ -7,6 +7,8 @@ import { installFakeWebGl } from "../shader/test-utils.js";
 import { mountEffect, subjectValues } from "./index.js";
 import * as lazy from "./lazy.js";
 
+const MONTAGES = ["device-showcase", "screenshot-carousel", "device-morph", "bento-montage", "photo-scatter", "filmstrip-montage", "split-grid-reveal", "orbit-gallery", "before-after-series", "wall-zoom", "logo-wall"];
+const LOGO = `<svg viewBox="0 0 10 10"><circle cx="5" cy="5" r="4"/></svg>`;
 const shots = (n: number) => Array.from({ length: n }, (_, i) => ({ image: `/shot-${i + 1}.png` }));
 const values = (m: ReturnType<typeof mountEffect>) => (m.renderer as unknown as { values: Record<string, unknown> }).values;
 
@@ -28,9 +30,23 @@ afterEach(() => {
 
 describe("the montage category", () => {
   it("is browsed under Pictures, and found by category and by what it accepts", () => {
-    expect(findEffects({ category: "montage" }).map((e) => e.id)).toEqual(["device-showcase", "screenshot-carousel"]);
-    expect(findEffects({ accepts: ["items"] }).map((e) => e.id)).toEqual(["device-showcase", "screenshot-carousel"]);
-    expect(findEffectMeta({ accepts: ["items"] }).map((m) => m.id)).toEqual(["device-showcase", "screenshot-carousel"]);
+    expect(findEffects({ category: "montage" }).map((e) => e.id)).toEqual(MONTAGES);
+    expect(findEffects({ accepts: ["items"] }).map((e) => e.id)).toEqual(MONTAGES);
+    expect(findEffectMeta({ accepts: ["items"] }).map((m) => m.id)).toEqual(MONTAGES);
+  });
+
+  it.each(MONTAGES)("%s has items, presets and a rest frame, and its slots are image controls", (id) => {
+    const effect = getEffect(id)!;
+    expect(effect.items, id).toBeDefined();
+    expect(effect.presets?.length, id).toBeGreaterThanOrEqual(3);
+    const names = new Set(effectControls(effect).map((c) => c.name));
+    for (const slot of effect.items!.slots) expect(effectControls(effect).find((c) => c.name === slot)?.type, slot).toBe("sampler2D");
+    for (const name of [effect.items!.count, effect.items!.list, ...(effect.items!.devices ?? [])].filter(Boolean)) expect(names.has(name!), name).toBe(true);
+    if (effect.kind === "shader") {
+      expect(effect.rest, id).toBeDefined();
+      // Six items fill six slots (the bench's case), short of the device ones.
+      expect(effect.items!.slots.length, id).toBeGreaterThanOrEqual(effect.items!.devices ? 2 : 6);
+    }
   });
 
   it("effectInputs reports the items input with its counts", () => {
@@ -170,5 +186,90 @@ describe("items.set, for agents", () => {
     expect(many).toMatchObject({ error: true, text: expect.stringContaining("takes 1 to 24 items") });
     expect(many.editor.getState().document.values.uFrom).toBeUndefined();
     expect(await run("device-showcase", { items: [] })).toMatchObject({ error: true });
+  });
+});
+
+describe("vector montages: markup that follows the item count", () => {
+  const wall = getEffect("logo-wall") as VectorEffect;
+  const list = (n: number, label = (i: number) => `Brand ${i + 1}`) => JSON.stringify(Array.from({ length: n }, (_, i) => ({ href: "data:image/svg+xml,x", label: label(i) })));
+
+  it("reports its items as a list control, not as words to fill", () => {
+    const inputs = effectInputs(wall);
+    expect(inputs.items).toEqual({ min: 1, max: 24, slots: [], cycle: "repeat", list: "items" });
+    expect(inputs.accepts).toEqual(["items"]);
+    expect(inputs.texts).toEqual([]);
+  });
+
+  it("writes each repeat block, and each item animation, once per item, staggered", () => {
+    for (const n of [1, 3, 11]) {
+      const motion = renderVectorEffect(wall, { ...effectDefaults(wall), items: list(n) });
+      expect(motion.svg.match(/<rect id="logoWallCard\d+"/g), String(n)).toHaveLength(n);
+      expect(motion.svg).not.toMatch(/\{\{/);
+      const pops = motion.animate!.filter((a) => /^logoWallItem\d+$/.test(a.id!) && a.attrs?.opacity);
+      expect(pops.map((a) => a.id)).toEqual(Array.from({ length: n }, (_, i) => `logoWallItem${i}`));
+      expect(pops.map((a) => a.delay ?? 0)).toEqual(Array.from({ length: n }, (_, i) => i * 90));
+      expect(JSON.stringify(motion.animate)).not.toMatch(/\{\{/);
+    }
+  });
+
+  it("lays any count out inside the frame, each card in its own cell", () => {
+    for (const n of [1, 2, 5, 6, 7, 24]) {
+      const boxes = Array.from({ length: n }, (_, i) => wall.itemDerived!(i, n, effectDefaults(wall)) as Record<string, number>);
+      for (const b of boxes) {
+        expect(b.cx - b.w / 2, String(n)).toBeGreaterThanOrEqual(0);
+        expect(b.cx + b.w / 2, String(n)).toBeLessThanOrEqual(640);
+        expect(b.cy - b.h / 2, String(n)).toBeGreaterThanOrEqual(0);
+        expect(b.cy + b.h / 2, String(n)).toBeLessThanOrEqual(360);
+      }
+      expect(new Set(boxes.map((b) => `${b.cx},${b.cy}`)).size, String(n)).toBe(n);
+    }
+  });
+
+  it("escapes labels, braces too, and leaves out items it cannot show", () => {
+    const motion = renderVectorEffect(wall, { items: list(1, () => `<b>{{accent}}</b>`) });
+    expect(motion.svg).toContain("&lt;b&gt;&#123;&#123;accent&#125;&#125;&lt;/b&gt;");
+    expect(vectorItems(wall, JSON.stringify([{ href: "https://example.com/a.png" }, { href: "data:image/png;base64,AA", label: 3 }, "x", { label: "Only words" }]))).toEqual([{ href: "data:image/png;base64,AA" }, { label: "Only words" }]);
+    expect(vectorItems(wall, "not json")).toEqual([]);
+    expect(renderVectorEffect(wall, { items: "not json" }).svg).not.toContain("logoWallCard");
+  });
+
+  it("takes SVGs and data: pictures as subjects, and refuses pictures by URL and video, saying what to do", () => {
+    const v = subjectValues(wall, [{ svg: LOGO, label: "Acme" }, { image: "data:image/png;base64,AA" }]).values;
+    expect(JSON.parse(v.items as string)).toEqual([{ href: expect.stringMatching(/^data:image\/svg\+xml/), label: "Acme" }, { href: "data:image/png;base64,AA" }]);
+    expect(() => subjectValues(wall, [{ image: "/a.png" }])).toThrow(/data:image.*shader montage/);
+    expect(() => subjectValues(wall, [{ video: document.createElement("video") }])).toThrow(/not video/);
+  });
+
+  it("mounts with its items, and setSubject redraws for a new count", () => {
+    const host = document.createElement("div");
+    const m = mountEffect(host, "logo-wall", { subject: [{ svg: LOGO }, { svg: LOGO }], autoplay: false });
+    expect(host.querySelectorAll("rect[data-flair-id^='logoWallCard'], rect[id^='logoWallCard']")).toHaveLength(2);
+    m.setSubject([{ svg: LOGO }, { svg: LOGO }, { svg: LOGO }, { svg: LOGO }]);
+    expect(host.querySelectorAll("rect[data-flair-id^='logoWallCard'], rect[id^='logoWallCard']")).toHaveLength(4);
+    m.dispose();
+  });
+});
+
+describe("items.set on a vector montage", () => {
+  const run = async (params: Record<string, unknown>) => {
+    const editor = createEffectEditor({ from: "logo-wall" });
+    const result = await callTool(createEffectToolProvider(editor), "run_command", { id: "items.set", params });
+    const text = result.content?.map((c) => ("text" in c ? c.text : "")).join("") ?? "";
+    return { editor, error: Boolean(result.isError), text, result: (result.structuredContent as { result?: Record<string, unknown> } | undefined)?.result };
+  };
+
+  it("keeps every item in the list control, so the picture follows the count", async () => {
+    const { editor, error, result } = await run({ items: [{ svg: LOGO, label: "Acme" }, { image: "data:image/png;base64,AA" }, { svg: LOGO }] });
+    expect(error).toBe(false);
+    expect(result).toMatchObject({ ok: true, shown: 3, of: 3 });
+    expect(JSON.parse(editor.getState().document.values.items as string)).toHaveLength(3);
+  });
+
+  it("refuses pictures by URL, and items with no picture or two, leaving the document alone", async () => {
+    const remote = await run({ items: [{ image: "https://example.com/a.png" }] });
+    expect(remote).toMatchObject({ error: true, text: expect.stringContaining("vector montage") });
+    expect(remote.editor.getState().document.values.items).toBeUndefined();
+    expect(await run({ items: [{ label: "No picture" }] })).toMatchObject({ error: true, text: expect.stringContaining("neither") });
+    expect(await run({ items: [{ image: "data:image/png;base64,AA", svg: LOGO }] })).toMatchObject({ error: true, text: expect.stringContaining("both") });
   });
 });

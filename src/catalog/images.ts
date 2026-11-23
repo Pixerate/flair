@@ -10,6 +10,17 @@ export function svgDataUrl(svg: string): string {
   return `data:image/svg+xml;base64,${base64}`;
 }
 
+/**
+ * Any SVG markup as a UTF-8 `data:image/svg+xml` URL (given the `xmlns` it
+ * needs to load as a picture); a URL stays as it is.
+ */
+export function svgMarkupUrl(svg: string): string {
+  const markup = svg.trim();
+  if (!markup.startsWith("<")) return svg;
+  const withNs = /\sxmlns\s*=/.test(markup.slice(0, markup.indexOf(">") + 1)) ? markup : markup.replace(/^<svg/i, '<svg xmlns="http://www.w3.org/2000/svg"');
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(withNs)}`;
+}
+
 const LANDSCAPE = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360">
 <defs><linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b4cb8"/><stop offset="1" stop-color="#ffa36b"/></linearGradient></defs>
 <rect width="640" height="360" fill="url(#s)"/>

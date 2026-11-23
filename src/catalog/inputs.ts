@@ -84,9 +84,11 @@ export interface EffectInputs {
   /**
    * For a montage: the list of media it takes, from `min` to `max` items
    * (pictures, videos or SVGs), shown in its `slots` and cycled `swap` or
-   * `carousel` (see `EffectItems`). `accepts` then includes `"items"`.
+   * `carousel` (see `EffectItems`), or, for a vector montage, all drawn
+   * at once (`repeat`, no slots), kept in its text control `list`.
+   * `accepts` then includes `"items"`.
    */
-  items?: { min: number; max: number; slots: string[]; cycle: "swap" | "carousel" };
+  items?: { min: number; max: number; slots: string[]; cycle: "swap" | "carousel" | "repeat"; list?: string };
 }
 
 /** `textImage` output: a UTF-8 SVG `data:` URL holding a `<text>`. */
@@ -170,6 +172,8 @@ export function inputsOf(effect: EffectDefinition, controls: readonly ControlDef
         accepts.add("mask").add("svg").add("text").add("image");
       }
     } else if (control.type === "text") {
+      // A vector montage's item list is filled by its items, not by words.
+      if (control.name === effect.items?.list) continue;
       const slot = textSlot(control);
       texts.push(slot);
       if (slot.holds === "copy") accepts.add("text");
@@ -190,6 +194,6 @@ export function inputsOf(effect: EffectDefinition, controls: readonly ControlDef
     interactions,
     ...(effect.kind === "vector" && effect.trigger ? { trigger: effect.trigger } : {}),
     transparent: effect.kind === "shader" ? Boolean(effect.transparent) : false,
-    ...(effect.items && { items: { min: effect.items.min, max: effect.items.max, slots: [...effect.items.slots], cycle: effect.items.cycle } }),
+    ...(effect.items && { items: { min: effect.items.min, max: effect.items.max, slots: [...effect.items.slots], cycle: effect.items.cycle, ...(effect.items.list && { list: effect.items.list }) } }),
   };
 }

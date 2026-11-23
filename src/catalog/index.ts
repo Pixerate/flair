@@ -28,6 +28,7 @@ import { uiShaders } from "./shaders/ui.js";
 import { uiEffects } from "./ui.js";
 import { loaderEffects } from "./loaders.js";
 import { momentEffects } from "./moments.js";
+import { montageVectors } from "./montage-vector.js";
 import { withNeubrutal } from "./neubrutal.js";
 import {
   crt,
@@ -75,6 +76,7 @@ import { fireShaders } from "./shaders/fire.js";
 import { loaderShaders } from "./shaders/loaders.js";
 import { momentShaders } from "./shaders/moments.js";
 import { montageShaders } from "./shaders/montage.js";
+import { montageGalleryShaders } from "./shaders/montage-gallery.js";
 import { hologramShaders } from "./shaders/hologram.js";
 import { meltShaders } from "./shaders/melt.js";
 import { phyllotaxisShaders } from "./shaders/phyllotaxis.js";
@@ -153,6 +155,7 @@ export {
   isCurrentColor,
   numberControl,
   renderVectorEffect,
+  vectorItems,
   VECTOR_CONTROL_TYPES,
   vectorControlDef,
   vectorControlIssues,
@@ -167,6 +170,7 @@ export {
   type EffectCategoryGroup,
   type EffectDefinition,
   type EffectItems,
+  type VectorItem,
   type EffectPreset,
   type ShaderEffect,
   type TextTreatmentEffect,
@@ -192,7 +196,7 @@ export {
   type VectorEffect,
   type VideoUse,
 } from "./types.js";
-export { SAMPLE_IMAGES, svgDataUrl, textImage } from "./images.js";
+export { SAMPLE_IMAGES, svgDataUrl, svgMarkupUrl, textImage } from "./images.js";
 export {
   CAMERA_PREVIEW_SOURCE,
   cameraEffects,
@@ -336,6 +340,7 @@ export const SHADER_EFFECTS: readonly ShaderEffect[] = [
   ...loaderShaders,
   ...momentShaders,
   ...montageShaders,
+  ...montageGalleryShaders,
   ...hologramShaders,
   ...pixelShaders,
   ...phyllotaxisShaders,
@@ -382,7 +387,7 @@ export const SHADER_EFFECTS: readonly ShaderEffect[] = [
 ];
 
 /** Every effect in the catalog, shaders first, grouped by category. */
-export const EFFECTS: readonly EffectDefinition[] = [...SHADER_EFFECTS, ...vectorEffects, ...textEffects, ...morphEffects, ...interactionEffects, ...pyroEffects, ...timewarpEffects, ...meltEffects, ...electricEffects, ...fireEffects, ...hologramEffects, ...pixelEffects, ...splatterEffects, ...bubbleEffects, ...stickerEffects, ...trailEffects, ...impactEffects, ...comicEffects, ...animeEffects, ...emergencyEffects, ...filmEffects, ...crtEffects, ...glowEffects, ...shadowEffects, ...lightingEffects, ...scrollEffects, ...broadcastEffects, ...annotationEffects, ...uiEffects, ...loaderEffects, ...momentEffects, ...dataEffects, ...iconEffects, ...webEffects, ...promoEffects, ...horrorEffects, ...beautyEffects, ...memeEffects, ...cinematicEffects, ...cameraEffects, ...timingEffects, ...textTreatments]
+export const EFFECTS: readonly EffectDefinition[] = [...SHADER_EFFECTS, ...vectorEffects, ...textEffects, ...morphEffects, ...interactionEffects, ...pyroEffects, ...timewarpEffects, ...meltEffects, ...electricEffects, ...fireEffects, ...hologramEffects, ...pixelEffects, ...splatterEffects, ...bubbleEffects, ...stickerEffects, ...trailEffects, ...impactEffects, ...comicEffects, ...animeEffects, ...emergencyEffects, ...filmEffects, ...crtEffects, ...glowEffects, ...shadowEffects, ...lightingEffects, ...scrollEffects, ...broadcastEffects, ...annotationEffects, ...uiEffects, ...loaderEffects, ...momentEffects, ...montageVectors, ...dataEffects, ...iconEffects, ...webEffects, ...promoEffects, ...horrorEffects, ...beautyEffects, ...memeEffects, ...cinematicEffects, ...cameraEffects, ...timingEffects, ...textTreatments]
   .map(withNeubrutal)
   .sort((a, b) => EFFECT_CATEGORIES.indexOf(a.category) - EFFECT_CATEGORIES.indexOf(b.category));
 
