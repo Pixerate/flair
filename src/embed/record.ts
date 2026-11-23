@@ -15,7 +15,7 @@ import { parseColor, type ControlValue } from "../shader/controls.js";
 import { ShaderFrames, type RenderOptions } from "../shader/frames.js";
 import { seekVideo, type LiveSource } from "../shader/textures.js";
 import { svgDuration, svgView } from "../vector/svg.js";
-import { subjectValues, type EffectSubject } from "./index.js";
+import { subjectValues, type EffectSubject } from "./mount.js";
 import { footageVideo, timingFootage, timingPlayLength } from "./timing.js";
 import { TimingRenderer } from "../catalog/timing.js";
 

@@ -16,16 +16,16 @@ const ids = Object.keys(UI_HINTS);
 const vector = (id: string) => getEffect(id) as VectorEffect;
 
 describe("UI hints", () => {
-  it("are the pilot's three effects", () => {
-    expect(ids.sort()).toEqual(["gauge", "progress-bar", "toggle-switch"]);
+  it("are the pilot's three effects and the loaders that show progress", () => {
+    expect(ids.sort()).toEqual(["flame-loader", "gauge", "liquid-loader", "progress-bar", "toggle-switch"]);
     expect(uiHint("aurora")).toBeUndefined();
     expect(uiHint("constructor")).toBeUndefined();
   });
 
   it.each(ids)("%s: its descriptor is a UiDescriptor and its bindings name real controls", (id) => {
-    const effect = vector(id);
+    const effect = getEffect(id)!;
     const meta = effectMeta(effect);
-    expect(effect.kind).toBe("vector");
+    expect(["vector", "shader"]).toContain(effect.kind);
     expect(validDescriptor(meta.ui), JSON.stringify(validDescriptor.errors)).toBe(true);
     const { ui, bindings } = UI_HINTS[id]!;
     const contract = ui.contract!;
@@ -39,7 +39,12 @@ describe("UI hints", () => {
     expect(contract.colorRoles!.filter((r) => !(UI_COLOR_ROLES as readonly string[]).includes(r))).toEqual([]);
     // Every prop fills a control, and every control a prop names exists.
     const props = (contract.props?.properties ?? {}) as Record<string, unknown>;
-    expect(Object.keys(bindings.props).sort()).toEqual(Object.keys(props).sort());
+    const viaProgress = bindings.progress ? ["value"] : [];
+    expect([...Object.keys(bindings.props), ...viaProgress].sort()).toEqual(Object.keys(props).sort());
+    if (bindings.progress) {
+      expect(["float", "int"]).toContain(controls.get(bindings.progress.control)?.type);
+      if (bindings.progress.animate) expect(controls.get(bindings.progress.animate)?.type).toBe("bool");
+    }
     for (const control of Object.values(bindings.props)) expect(controls.has(control), `${id}: ${control}`).toBe(true);
     // Props are a JSON Schema the example's props meet; state is bound to an interaction the effect answers.
     const stateNames = (contract.state ?? []).map((s) => s.name);
@@ -47,7 +52,7 @@ describe("UI hints", () => {
     const validProps = ajv.compile(contract.props!);
     expect(validProps(exampleProps), JSON.stringify(validProps.errors)).toBe(true);
     for (const name of stateNames) {
-      expect(bindings.state?.[name]?.interaction).toBe(effect.trigger);
+      expect(bindings.state?.[name]?.interaction).toBe(effect.kind === "vector" ? effect.trigger : undefined);
       const field = contract.state!.find((s) => s.name === name)!;
       expect(contract.events?.map((e) => e.name)).toContain(field.event);
     }
@@ -67,7 +72,7 @@ describe("UI hints", () => {
 
   it("render from their examples", () => {
     const words: Record<string, string[]> = { "toggle-switch": [], "progress-bar": ["Uploading"], gauge: ["Performance", "100"] };
-    for (const id of ids) {
+    for (const id of ids.filter((i) => getEffect(i)!.kind === "vector")) {
       const effect = vector(id);
       const { values } = uiValues(effect, UI_HINTS[id]!.ui.example ?? {});
       const motion = renderVectorEffect(effect, values);
@@ -137,5 +142,31 @@ describe("flairEffects()", () => {
       expect(summary.ui!.contentHash).toBe(getEffectMeta(summary.id)!.ui!.contentHash);
     }
     expect((await provider.describe("aurora")).ui).toBeUndefined();
+  });
+});
+
+describe("loader progress", () => {
+  const liquid = getEffect("liquid-loader")!;
+
+  it("shows a value 0–1 in the loader's level, stopping its own loop", () => {
+    expect(uiValues(liquid, { value: 0.25 }).values).toEqual({ uProgress: 0.25, uAnimate: false });
+    expect(uiValues(liquid, { value: 1 }).values).toEqual({ uProgress: 1, uAnimate: false });
+  });
+
+  it("plays the loader's own loop while the job cannot tell (null)", () => {
+    expect(uiValues(liquid, { value: null }).values).toEqual({ uAnimate: true });
+  });
+
+  it("refuses a value out of range or of the wrong type, saying what it takes", () => {
+    expect(() => uiValues(liquid, { value: 1.5 })).toThrow(/"value" must be at most 1, not 1.5/);
+    expect(() => uiValues(liquid, { value: "half" })).toThrow(/"value" must be a number or null, not "half"/);
+    expect(() => uiValues(liquid, { percent: 50 })).toThrow(/has no prop "percent"; it takes "value"/);
+  });
+
+  it("is a loader contract, a progress bar to assistive tech", () => {
+    const { ui } = UI_HINTS["flame-loader"]!;
+    expect(ui.implements).toBe("loader");
+    expect(ui.contract?.a11y?.role).toBe("progressbar");
+    expect(effectMeta(getEffect("flame-loader")!).ui?.contentHash).toMatch(/^[0-9a-f]{16}$/);
   });
 });

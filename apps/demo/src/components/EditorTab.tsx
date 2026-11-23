@@ -174,7 +174,7 @@ function Preview({
         if (trigger === "scroll") drive.current(progressRef.current);
       });
     }
-    const renderer = new ShaderRenderer(host.current!, { className: "absolute inset-0 h-full w-full", alpha: transparent });
+    const renderer = new ShaderRenderer(host.current!, { className: "absolute inset-0 h-full w-full", alpha: transparent, reducedMotion: "never" });
     const unbind = bindShaderRenderer(editor, renderer);
     drive.current = (p) => renderer.setScrollProgress(p);
     if (scroll) drive.current(progressRef.current);

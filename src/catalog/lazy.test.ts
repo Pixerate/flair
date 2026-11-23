@@ -24,7 +24,7 @@ declare global {
 }
 
 // Every catalog module, eagerly, to find which one holds each effect.
-const MODULES = import.meta.glob<Record<string, unknown>>(["./*.ts", "./shaders/*.ts", "!./*.test.ts", "!./index.ts", "!./lazy.ts", "!./meta.ts", "!./query.ts", "!./modules.generated.ts"], { eager: true });
+const MODULES = import.meta.glob<Record<string, unknown>>(["./*.ts", "./shaders/*.ts", "!./*.test.ts", "!./index.ts", "!./lazy.ts", "!./meta.ts", "!./query.ts", "!./modules.generated.ts", "!./load.ts", "!./core.ts"], { eager: true });
 
 function effectsIn(module: Record<string, unknown>): EffectDefinition[] {
   const isEffect = (v: unknown): v is EffectDefinition => !!v && typeof v === "object" && "id" in v && "kind" in v;
@@ -95,6 +95,11 @@ function generate() {
     "",
     "export const EFFECT_MODULES: Record<string, () => Promise<Record<string, unknown>>> = {",
     ...keys.map((k) => `  ${JSON.stringify(k)}: () => import("./${k}.js"),`),
+    "};",
+    "",
+    "// The ids of the effects each module holds, space-separated, so one effect loads by id without the metadata.",
+    "export const EFFECT_IDS: Record<string, string> = {",
+    ...keys.map((k) => `  ${JSON.stringify(k)}: ${JSON.stringify(EFFECTS.filter((e) => modules.get(e.id) === k).map((e) => e.id).join(" "))},`),
     "};",
     "",
   ].join("\n");
@@ -193,7 +198,7 @@ describe("@pixerate/flair/catalog/lazy", async () => {
   });
 
   it("refuses an unknown id, naming the nearest", async () => {
-    await expect(lazy.loadEffect("auroa")).rejects.toThrow(/no effect "auroa".*Did you mean "aurora"/);
+    await expect(lazy.loadEffect("auroa")).rejects.toThrow(/no effect "auroa".*Did you mean .*"aurora"/);
   });
 });
 

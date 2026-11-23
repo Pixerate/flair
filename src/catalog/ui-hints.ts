@@ -18,7 +18,7 @@
  * so a sync can tell when a component's output changed.
  */
 
-import type { ControlDef, ControlValue } from "../shader/controls.js";
+import { parseControls, type ControlDef, type ControlValue } from "../shader/controls.js";
 import { renderVectorEffect, vectorEffectControls, type EffectDefinition } from "./types.js";
 
 // ---------------------------------------------------------------------------
@@ -139,11 +139,26 @@ export interface UiDescriptor {
  *   contract's `colorRoles`, so a theme's tokens restyle the effect by role.
  * - `state`: controlled value → the interaction that changes it. `{ interaction: "click" }` is
  *   a boolean the effect's click steps flip: step 1 turns it on, step 2 off.
+ * - `progress`: for a loader, how its `value` prop shows real progress
+ *   (see {@link UiProgressBinding}). Its `value` is not in `props`.
  */
 export interface UiBindings {
   props: Readonly<Record<string, string>>;
   colors: Readonly<Record<string, string>>;
   state?: Readonly<Record<string, { interaction: "click" }>>;
+  progress?: UiProgressBinding;
+}
+
+/**
+ * How a loader shows a job's progress: its `value` prop, 0–1, fills
+ * `control` (scaled into the control's range), and `null` (or no value)
+ * means the job cannot tell how far along it is, so the loader plays its own
+ * loop. `animate`, a bool control, is what runs that loop: on while the
+ * value is `null`, off once one is given.
+ */
+export interface UiProgressBinding {
+  control: string;
+  animate?: string;
 }
 
 /** A catalog effect's UI hint: its descriptor (without `contentHash`) and its bindings. */
@@ -154,6 +169,40 @@ export interface EffectUiHint {
 
 /** Where Flair renders vector components: its React and Svelte wrappers, and any page with `mountEffect`. */
 const WEB: UiPlatformTarget[] = ["react", "svelte", "html-page"];
+
+/**
+ * A loader's contract: a `value` prop of how far along the job is, 0–1, or
+ * `null` while it cannot tell (the loader then plays its own loop), shown as
+ * a progress bar to assistive tech and named by `aria-label`.
+ */
+function loaderUi(colorRoles: string[], example: number | null, platforms: UiPlatformTarget[] = WEB): Omit<UiDescriptor, "contentHash"> {
+  return {
+    implements: "loader",
+    group: "paradigm",
+    contract: {
+      props: {
+        type: "object",
+        properties: {
+          value: {
+            type: ["number", "null"],
+            minimum: 0,
+            maximum: 1,
+            description: "How far along the job is, 0–1; null (or left out) while it cannot tell, so the loader plays its own loop.",
+          },
+        },
+        additionalProperties: false,
+      },
+      state: [],
+      events: [],
+      a11y: { role: "progressbar", keyboard: {}, labelFrom: "aria-label", reducedMotionAt: 1 },
+      colorRoles,
+      motion: true,
+      sizing: { mode: "fill" },
+    },
+    platforms,
+    example: { value: example },
+  };
+}
 
 /** Every catalog effect offered as a UI component, by id. */
 export const UI_HINTS: Readonly<Record<string, EffectUiHint>> = {
@@ -241,6 +290,14 @@ export const UI_HINTS: Readonly<Record<string, EffectUiHint>> = {
       colors: { success: "low", warning: "mid", danger: "high", accent: "needleColor", surface: "hub", ink: "ink" },
     },
   },
+  "liquid-loader": {
+    ui: loaderUi(["accent", "track-off", "border"], 0.6),
+    bindings: { props: {}, colors: { accent: "uLiquid", "track-off": "uBack", border: "uGlass" }, progress: { control: "uProgress", animate: "uAnimate" } },
+  },
+  "flame-loader": {
+    ui: loaderUi(["track-off"], 0.65),
+    bindings: { props: {}, colors: { "track-off": "uTrack" }, progress: { control: "uProgress", animate: "uAnimate" } },
+  },
 };
 
 /** The UI hint for a catalog effect id, if it has one. */
@@ -254,15 +311,30 @@ export function uiHint(id: string): EffectUiHint | undefined {
  * have lost some). Undefined otherwise.
  */
 export function effectUi(effect: EffectDefinition, controls?: readonly ControlDef[]): EffectUiHint | undefined {
-  if (effect.kind !== "vector") return undefined;
+  if (effect.kind !== "vector" && effect.kind !== "shader") return undefined;
   const hint = uiHint(effect.id);
   if (!hint) return undefined;
-  const byName = new Map((controls ?? vectorEffectControls(effect)).map((c) => [c.name, c]));
-  const { props, colors, state } = hint.bindings;
+  const byName = new Map((controls ?? (effect.kind === "shader" ? parseControls(effect.source) : vectorEffectControls(effect))).map((c) => [c.name, c]));
+  const { props, colors, state, progress } = hint.bindings;
   if (!Object.values(props).every((name) => byName.has(name))) return undefined;
   if (!Object.values(colors).every((name) => byName.get(name)?.color)) return undefined;
-  if (state && Object.values(state).some((s) => s.interaction === "click") && effect.trigger !== "click") return undefined;
+  if (state && Object.values(state).some((s) => s.interaction === "click") && (effect.kind !== "vector" || effect.trigger !== "click")) return undefined;
+  if (progress) {
+    const level = byName.get(progress.control);
+    if (!level || (level.type !== "float" && level.type !== "int")) return undefined;
+    if (progress.animate !== undefined && byName.get(progress.animate)?.type !== "bool") return undefined;
+  }
   return hint;
+}
+
+/** The value a loader's progress binding shows, as control values: `null` runs its own loop. */
+function progressValues(effect: EffectDefinition, binding: UiProgressBinding, value: number | null): Record<string, ControlValue> {
+  const controls = effect.kind === "shader" ? parseControls(effect.source) : effect.kind === "vector" ? vectorEffectControls(effect) : [];
+  const level = controls.find((c) => c.name === binding.control);
+  if (value === null) return binding.animate ? { [binding.animate]: true } : {};
+  const min = level?.min ?? 0;
+  const max = level?.max ?? 1;
+  return { [binding.control]: min + (max - min) * value, ...(binding.animate && { [binding.animate]: false }) };
 }
 
 /** A component's typed input, split: control values from its props, and its controlled state. */
@@ -277,6 +349,12 @@ const typeOf = (v: unknown) => (Array.isArray(v) ? "array" : v === null ? "null"
 function misfit(value: unknown, schema: JsonSchemaDocument | undefined): string | undefined {
   if (!schema) return undefined;
   const type = schema.type;
+  if (Array.isArray(type)) {
+    const fits = type.some((t) => misfit(value, { ...schema, type: t }) === undefined);
+    if (fits) return undefined;
+    if (!type.some((t) => (t === "integer" || t === "number" ? typeof value === "number" : typeOf(value) === t))) return `must be ${type.map((t) => (t === "null" ? "null" : t === "integer" ? "an integer" : `a ${String(t)}`)).join(" or ")}, not ${JSON.stringify(value)}`;
+    return misfit(value, { ...schema, type: typeOf(value) === "number" ? (type.includes("integer") ? "integer" : "number") : typeOf(value) });
+  }
   const wrong =
     type === "integer" ? !Number.isInteger(value) : type === "number" ? typeof value !== "number" || !Number.isFinite(value) : typeof type === "string" && typeOf(value) !== type;
   if (wrong) return `must be ${type === "integer" ? "an integer" : `a ${String(type)}`}, not ${JSON.stringify(value)}`;
@@ -290,7 +368,8 @@ function misfit(value: unknown, schema: JsonSchemaDocument | undefined): string 
 
 /**
  * A component's typed input as control values: each prop fills the control
- * its binding names, and controlled state (`checked`) comes back apart.
+ * its binding names (a loader's `value`, 0–1 or `null`, through its
+ * progress binding), and controlled state (`checked`) comes back apart.
  * Props left out keep the effect's own values. Throws a sentence naming what
  * does not fit (an unknown prop, a wrong type, a value out of range) and
  * what the effect takes.
@@ -317,6 +396,7 @@ export function uiValues(effect: EffectDefinition, input: Readonly<Record<string
     const why = misfit(value, field ? field.schema : props[name]);
     if (why) throw new Error(`"${effect.id}"'s "${name}" ${why}.`);
     if (field) out.state[name] = value as JsonValue;
+    else if (name === "value" && hint.bindings.progress) Object.assign(out.values, progressValues(effect, hint.bindings.progress, value as number | null));
     else out.values[hint.bindings.props[name]!] = value as ControlValue;
   }
   return out;
@@ -367,7 +447,7 @@ function canonical(value: unknown): string {
  * changes when any of those do, and is the same in every build.
  */
 export function uiContentHash(effect: EffectDefinition, hint: EffectUiHint, controls: readonly ControlDef[]): string {
-  const drawn = effect.kind === "vector" ? [renderVectorEffect(effect, {}), renderVectorEffect(effect, uiValues(effect, hint.ui.example ?? {}).values)] : [];
+  const drawn = effect.kind === "vector" ? [renderVectorEffect(effect, {}), renderVectorEffect(effect, uiValues(effect, hint.ui.example ?? {}).values)] : effect.kind === "shader" ? [effect.source, uiValues(effect, hint.ui.example ?? {}).values] : [];
   return fnv1a64(
     canonical({
       id: effect.id,

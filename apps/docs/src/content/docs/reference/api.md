@@ -21,4 +21,7 @@ description: Complete public API reference for @pixerate/flair.
 ## Embed (`@pixerate/flair/embed`)
 
 - `mountEffect(element, effect, options)`: High-level DOM mount function returning an active `EffectInstance`.
-- For UI components (`toggle-switch`, `progress-bar`, `gauge`): `options.data` (typed data), `options.state` with `options.onEvent` (a controlled switch: `"change"` fires, nothing moves until `setState`), `options.label` and `options.reducedMotion`; the instance has `setData`, `setState` and `state`.
+- `options.reducedMotion` (`"user"` by default): under `prefers-reduced-motion` a shader holds one rest frame, a vector effect its last frame.
+- `playMoment(anchor, effect, options)`: plays a shader or vector effect once over an element (or `"viewport"`) on a pointer-transparent overlay, then removes it; settles `false` without playing under reduced motion or without WebGL2.
+- `@pixerate/flair/embed/lazy` (and `/react/lazy`, `/svelte/lazy`): the same API, loading effects by id one by one instead of the whole catalog; there `mountEffect` returns a promise.
+- For UI components (`toggle-switch`, `progress-bar`, `gauge`, and the loaders `liquid-loader` and `flame-loader`, whose `data.value` is 0–1 or `null` while a job cannot tell): `options.data` (typed data), `options.state` with `options.onEvent` (a controlled switch: `"change"` fires, nothing moves until `setState`), `options.label` and `options.reducedMotion`; the instance has `setData`, `setState` and `state`.

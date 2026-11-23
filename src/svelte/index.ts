@@ -19,6 +19,11 @@
  * after mount and is disposed on destroy. Under `prefers-reduced-motion:
  * reduce` the still stays.
  *
+ * `flairMoment` plays an effect once over its element (a change, a result
+ * arriving). For a page that should not load the whole catalog, use
+ * `@pixerate/flair/svelte/lazy`: the same actions, loading effects by id one
+ * by one.
+ *
  * Needs Svelte 5 (an optional peer dependency of the package); only its types
  * are imported.
  *
@@ -26,174 +31,23 @@
  */
 
 import type { ActionReturn } from "svelte/action";
-import { getEffect, effectDefaults, type EffectDefinition } from "../catalog/index.js";
-import { mountEffect, type EffectSubject } from "../embed/index.js";
-import { renderVectorEffect, type VectorEffect as VectorEffectDefinition } from "../catalog/types.js";
-import type { ControlValue } from "../shader/controls.js";
-import type { JsonValue } from "../catalog/ui-hints.js";
-import type { Clock } from "../time/clock.js";
-import type { SvgMotion } from "../vector/motion.js";
-import { svgFrameMarkup, svgInlineLayout, svgViewBox } from "../vector/static.js";
-import { SvgPlayer, type SvgTrigger } from "../vector/svg.js";
+import { getEffect } from "../catalog/index.js";
+import { mountEffect, playMoment } from "../embed/index.js";
+import { flairEffectWith, flairMomentWith, vectorEffectStillWith, vectorEffectWith, type FlairEffectParams, type FlairMomentParams, type VectorEffectParams, type VectorEffectStill } from "./core.js";
 
-/** Cap height of a heavy sans, as a share of its font size: what an inline word is framed to. */
-const CAP_HEIGHT = "0.72em";
-
-/** Marks the still's layer, so the action can find it (and hide it while the player runs). */
-const STILL_ATTR = "data-flair-still";
-
-const LAYER = "position:absolute;inset:0;display:block";
-
-/** When to leave the still in place of the animation. */
-export type ReducedMotion = "user" | "always" | "never";
-
-/** Options shared by an effect by id and a motion of your own. */
-export interface SvgPlayerParams {
-  /** Start again at the end (default `true`); `false` plays once and stays on the last frame. */
-  loop?: boolean;
-  /** Start playing at once (default `true`). */
-  autoplay?: boolean;
-  /** Playback speed (default 1); changed without remaking the player. */
-  speed?: number;
-  /** Ms to rest on the last frame before looping (default 600, or the effect's). */
-  hold?: number;
-  /** Loop length in ms (default: the picture's own, plus `hold`). */
-  duration?: number;
-  /** Step start times in ms, for pictures that change on steps. */
-  steps?: readonly number[];
-  /** Plays in answer to the pointer (see `SvgTrigger`; default the effect's). */
-  trigger?: SvgTrigger;
-  /** Pause while scrolled out of view. */
-  pauseWhenHidden?: boolean;
-  /**
-   * Wait to start until scrolled into view. Default `true` when it plays once
-   * (`loop: false`, no trigger), so a one-shot further down the page does not
-   * finish before anyone sees it; `false` plays at mount.
-   */
-  playOnEnter?: boolean;
-  /** Hide the picture while paused or reset. */
-  hideWhenPaused?: boolean;
-  /** Time source (default animation frames); a `ManualClock` steps frames yourself. */
-  clock?: Clock;
-  /** Called with the id of the innermost element with an id that is clicked. */
-  onPick?: (id: string) => void;
-  /** Called with the player once it is made, and `undefined` when it is disposed. */
-  onPlayer?: (player: SvgPlayer | undefined) => void;
-  /**
-   * The still shown before the player starts and instead of it under reduced
-   * motion: `"last"` (default; the rest frame, `"first"` for a hover or press
-   * trigger), `"first"` or a time in ms.
-   */
-  poster?: "first" | "last" | number;
-  /**
-   * `"user"` (default) shows the still when the visitor prefers reduced
-   * motion, `"always"` always does, `"never"` always plays.
-   */
-  reducedMotion?: ReducedMotion;
-  /**
-   * Size it as a word in a line of text: `display: inline-block` with the
-   * viewBox's aspect ratio and `height` 0.72em (the cap height of a heavy
-   * sans; pass a CSS length for another). Default: the effect's `inline`
-   * control. Otherwise it is a block as wide as its container with the
-   * viewBox's aspect ratio.
-   */
-  inline?: boolean | string;
-  /**
-   * With `inline`, keep room for what spills past the word (descenders,
-   * outlines, glows, drips): a margin of the picture's `data-overhang` (see
-   * `svgInlineLayout`), so the lines around it make space instead of being
-   * painted over. Default `false`.
-   */
-  contain?: boolean;
-}
-
-/** A catalog vector effect by id (or the effect itself), with its values. */
-export interface VectorEffectByIdParams extends SvgPlayerParams {
-  /** A vector effect's catalog id (`"drip-text"`), or the effect itself. */
-  id: string | VectorEffectDefinition;
-  /** Control values; missing ones take the preset's, then the defaults. Compared by content. */
-  values?: Record<string, ControlValue>;
-  /** A preset's name to start from. */
-  preset?: string;
-  motion?: never;
-}
-
-/** Any {@link SvgMotion}; a new object restarts the player. */
-export interface SvgMotionParams extends SvgPlayerParams {
-  /** The picture and its animations. */
-  motion: SvgMotion;
-  id?: never;
-  values?: never;
-  preset?: never;
-}
-
-/** What `vectorEffect` and `vectorEffectStill` take: an effect by `id`, or a `motion`. */
-export type VectorEffectParams = VectorEffectByIdParams | SvgMotionParams;
-
-/** A still of the picture, for `{@html markup}` inside an element with `style`. */
-export interface VectorEffectStill {
-  /** The still's layer: safe `<svg>` markup (see `svgFrameMarkup`) in an absolutely placed `<span>`. */
-  markup: string;
-  /** The host's inline style: its position and size from the viewBox. */
-  style: string;
-}
-
-interface Resolved {
-  motion: SvgMotion;
-  hold?: number;
-  trigger?: SvgTrigger;
-  inline?: boolean | string;
-  contain?: boolean;
-}
-
-/** Remembers the last motion made from an effect, so values compared by content do not remake it. */
-type MotionCache = { key: string; effect: VectorEffectDefinition; motion: SvgMotion };
-
-function resolve(params: VectorEffectParams, cache?: { current?: MotionCache }): Resolved {
-  if (params.motion) return { motion: params.motion, hold: params.hold, trigger: params.trigger, inline: params.inline, contain: params.contain };
-  const { id, values, preset } = params as VectorEffectByIdParams;
-  const effect = typeof id === "string" ? getEffect(id) : id;
-  if (!effect || effect.kind !== "vector")
-    throw new Error(
-      `"${typeof id === "string" ? id : (effect?.id ?? id)}" is not a vector effect; pick one from findEffects({ kind: "vector" }), or pass a motion`,
-    );
-  const key = JSON.stringify([preset ?? null, values ?? {}]);
-  let motion: SvgMotion;
-  if (cache?.current && cache.current.effect === effect && cache.current.key === key) motion = cache.current.motion;
-  else {
-    motion = renderVectorEffect(effect, effectDefaults(effect, { preset, values }));
-    if (cache) cache.current = { key, effect, motion };
-  }
-  return {
-    motion,
-    hold: params.hold ?? effect.hold,
-    trigger: params.trigger ?? effect.trigger,
-    inline: params.inline ?? values?.inline === true,
-    contain: params.contain,
-  };
-}
-
-/** The host's sizing from the picture's viewBox, so the still and the player take the same room. */
-function hostStyle(svg: string, inline: boolean | string | undefined, contain?: boolean): [string, string][] {
-  const box = svgViewBox(svg);
-  const style: [string, string][] = [
-    ["position", "relative"],
-    ["display", inline ? "inline-block" : "block"],
-  ];
-  if (inline) style.push(["height", typeof inline === "string" ? inline : CAP_HEIGHT]);
-  if (box) style.push(["aspect-ratio", `${box[2]} / ${box[3]}`]);
-  const spill = inline && contain ? svgInlineLayout(svg)?.overhang : undefined;
-  if (spill) style.push(["margin", `${spill.top}em ${spill.right}em ${spill.bottom}em ${spill.left}em`]);
-  return style;
-}
-
-/** Whether to wait until scrolled into view: as asked, else when it plays once. */
-const enters = (r: Resolved, p: SvgPlayerParams) => p.playOnEnter ?? (p.loop === false && !r.trigger);
-
-function stillMarkup(r: Resolved, params: SvgPlayerParams): string {
-  const at = params.poster ?? (r.trigger === "hover" || r.trigger === "press" || r.trigger === "scroll" ? "first" : "last");
-  return svgFrameMarkup(r.motion, { at, steps: params.steps }) ?? "";
-}
+export type {
+  FlairEffectParams,
+  FlairMomentParams,
+  ReducedMotion,
+  SvgMotion,
+  SvgMotionParams,
+  SvgPlayer,
+  SvgPlayerParams,
+  SvgTrigger,
+  VectorEffectByIdParams,
+  VectorEffectParams,
+  VectorEffectStill,
+} from "./core.js";
 
 /**
  * The still of an effect or motion, for server rendering: put `markup` in the
@@ -203,35 +57,7 @@ function stillMarkup(r: Resolved, params: SvgPlayerParams): string {
  * Throws when `id` is not a vector effect.
  */
 export function vectorEffectStill(params: VectorEffectParams): VectorEffectStill {
-  const r = resolve(params);
-  return {
-    markup: `<span ${STILL_ATTR} aria-hidden="true" style="${LAYER}">${stillMarkup(r, params)}</span>`,
-    style: hostStyle(r.motion.svg, r.inline, r.contain)
-      .map(([k, v]) => `${k}: ${v}`)
-      .join("; "),
-  };
-}
-
-function prefersReducedMotion(): boolean {
-  return typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
-
-/** The options whose change remakes the player (`speed` is set on it instead). */
-function playerKey(r: Resolved, p: SvgPlayerParams): unknown[] {
-  return [
-    r.motion,
-    p.loop,
-    p.autoplay,
-    r.hold,
-    p.duration,
-    p.steps?.join(","),
-    r.trigger,
-    p.pauseWhenHidden,
-    enters(r, p),
-    p.hideWhenPaused,
-    p.clock,
-    p.reducedMotion ?? "user",
-  ];
+  return vectorEffectStillWith(getEffect, params);
 }
 
 /**
@@ -251,156 +77,7 @@ function playerKey(r: Resolved, p: SvgPlayerParams): unknown[] {
  * vector effect.
  */
 export function vectorEffect(node: HTMLElement, initial: VectorEffectParams): ActionReturn<VectorEffectParams> {
-  const cache: { current?: MotionCache } = {};
-  const doc = node.ownerDocument;
-  const mount = doc.createElement("span");
-  mount.style.cssText = LAYER;
-  node.appendChild(mount);
-
-  let params = initial;
-  let resolved = resolve(params, cache);
-  let player: SvgPlayer | undefined;
-  let key: unknown[] = [];
-  /** The still the action made itself, when the element had none. */
-  let ownStill: HTMLElement | undefined;
-  /** Sizing properties the action set (the element's own style had them empty). */
-  const sized = new Set<string>();
-
-  const stills = () => node.querySelectorAll<HTMLElement>(`:scope > [${STILL_ATTR}]`);
-  const showStills = (show: boolean) => {
-    for (const s of stills()) s.style.display = show ? "block" : "none";
-  };
-  // When the params change Svelte replaces a server still (`{@html}`), and when
-  // it is the element's only child, by setting `innerHTML`, which takes the
-  // player's layer out too: put the layer back, and keep a new still hidden.
-  const reattach = () => {
-    if (mount.parentNode !== node) node.appendChild(mount);
-    if (player) showStills(false);
-  };
-  const observer = typeof MutationObserver === "function" ? new MutationObserver(reattach) : undefined;
-  observer?.observe(node, { childList: true });
-
-  const size = () => {
-    const style = hostStyle(resolved.motion.svg, resolved.inline, resolved.contain);
-    for (const [prop, value] of style) {
-      if (!sized.has(prop) && node.style.getPropertyValue(prop)) continue;
-      node.style.setProperty(prop, value);
-      sized.add(prop);
-    }
-    // A property the new sizing drops (`height` when no longer inline) is cleared.
-    for (const prop of sized)
-      if (!style.some(([p]) => p === prop)) {
-        node.style.removeProperty(prop);
-        sized.delete(prop);
-      }
-  };
-
-  if (stills().length === 0) {
-    ownStill = doc.createElement("span");
-    ownStill.setAttribute(STILL_ATTR, "");
-    ownStill.setAttribute("aria-hidden", "true");
-    ownStill.style.cssText = LAYER;
-    node.insertBefore(ownStill, mount);
-    size();
-  }
-
-  const stop = () => {
-    if (!player) return;
-    player.dispose();
-    player = undefined;
-    showStills(true);
-    params.onPlayer?.(undefined);
-  };
-
-  const start = () => {
-    const reduced = params.reducedMotion ?? "user";
-    if (reduced === "always" || (reduced === "user" && prefersReducedMotion())) return;
-    player = new SvgPlayer(mount, resolved.motion, {
-      loop: params.loop,
-      autoplay: params.autoplay,
-      speed: params.speed,
-      hold: resolved.hold,
-      duration: params.duration,
-      steps: params.steps,
-      trigger: resolved.trigger,
-      pauseWhenHidden: params.pauseWhenHidden,
-      playOnEnter: enters(resolved, params),
-      hideWhenPaused: params.hideWhenPaused,
-      clock: params.clock,
-      // The latest params' callback, without remaking the player.
-      onPick: (id) => params.onPick?.(id),
-    });
-    showStills(false);
-    params.onPlayer?.(player);
-  };
-
-  const apply = () => {
-    reattach();
-    if (ownStill) {
-      ownStill.innerHTML = stillMarkup(resolved, params);
-      size();
-    }
-    const next = playerKey(resolved, params);
-    if (player && next.every((v, i) => v === key[i])) {
-      player.setSpeed(params.speed ?? 1);
-      return;
-    }
-    key = next;
-    stop();
-    start();
-  };
-
-  apply();
-
-  return {
-    update(next) {
-      params = next;
-      resolved = resolve(params, cache);
-      apply();
-    },
-    destroy() {
-      observer?.disconnect();
-      stop();
-      mount.remove();
-      ownStill?.remove();
-      for (const prop of sized) node.style.removeProperty(prop);
-    },
-  };
-}
-
-export type { SvgPlayer, SvgMotion, SvgTrigger };
-
-/** What the `flairEffect` action runs: any catalog effect, applied to a subject. */
-export interface FlairEffectParams {
-  /** A catalog effect, by id or definition: shader or vector. */
-  effect: string | EffectDefinition;
-  /** What to apply it to: a picture, a video, an SVG, words or a path (see `EffectSubject`). */
-  subject?: EffectSubject | readonly EffectSubject[];
-  preset?: string;
-  values?: Record<string, ControlValue>;
-  /** Start playing at once (default `true`). */
-  autoplay?: boolean;
-  /** Pause while scrolled out of view (default `true`). */
-  pauseWhenHidden?: boolean;
-  /** Start again at the end (default `true`). For shaders with `uProgress`, false plays 0 → 1 once. */
-  loop?: boolean;
-  /** Wait to start playing until the element enters the viewport (default `false`). */
-  playOnEnter?: boolean;
-  /** Duration in ms for one-shot playback. */
-  duration?: number;
-  /** For an effect offered as a UI component (one with `ui`): its typed data, by its contract's props. */
-  data?: Record<string, unknown>;
-  /**
-   * For a UI component with controlled state: the state to show (`{ checked }`).
-   * Given, the host owns it: clicks and keys only fire `onEvent`.
-   */
-  state?: Record<string, JsonValue>;
-  /** For a UI component: each event its contract names (`"change"`, `{ checked }`). */
-  onEvent?: (event: string, detail: Record<string, JsonValue>) => void;
-  /** For a UI component named by `aria-label` (the switch): its accessible name. */
-  label?: string;
-  /** For a UI component: when to show its rest state still (default `"user"`: under reduced motion). */
-  reducedMotion?: "user" | "always" | "never";
+  return vectorEffectWith(getEffect, node, initial);
 }
 
 /**
@@ -411,69 +88,24 @@ export interface FlairEffectParams {
  *
  * ```svelte
  * <div use:flairEffect={{ effect: "image-duotone", subject: { image: "/team.jpg" } }} style="aspect-ratio: 16 / 9"></div>
+ * <div use:flairEffect={{ effect: "liquid-loader", data: { value: progress }, label: "Generating" }}></div>
  * <div use:flairEffect={{ effect: "toggle-switch", state: { checked }, onEvent: (_, d) => (checked = d.checked), label: "Wi-Fi" }}></div>
  * ```
  */
 export function flairEffect(node: HTMLElement, initial: FlairEffectParams): ActionReturn<FlairEffectParams> {
-  let params = initial;
-  const win = node.ownerDocument?.defaultView ?? (typeof window !== "undefined" ? window : null);
-  const computedPos = win && typeof win.getComputedStyle === "function" ? win.getComputedStyle(node).position : "";
-  const setPosition = !node.style.position && (!computedPos || computedPos === "static");
-  if (setPosition) node.style.position = "relative";
+  return flairEffectWith(mountEffect, node, initial);
+}
 
-  const start = () => {
-    const m = mountEffect(node, params.effect, {
-      ...(params.subject ? { subject: params.subject } : {}),
-      ...(params.preset ? { preset: params.preset } : {}),
-      ...(params.values ? { values: params.values } : {}),
-      autoplay: params.autoplay ?? true,
-      pauseWhenHidden: params.pauseWhenHidden ?? true,
-      ...(params.loop !== undefined ? { loop: params.loop } : {}),
-      ...(params.playOnEnter !== undefined ? { playOnEnter: params.playOnEnter } : {}),
-      ...(params.duration !== undefined ? { duration: params.duration } : {}),
-      ...(params.data ? { data: params.data } : {}),
-      ...(params.state ? { state: params.state } : {}),
-      ...(params.label !== undefined ? { label: params.label } : {}),
-      ...(params.reducedMotion ? { reducedMotion: params.reducedMotion } : {}),
-      onEvent: (name, detail) => params.onEvent?.(name, detail),
-    });
-    m.element.style.display = "block";
-    m.element.style.width = "100%";
-    m.element.style.height = "100%";
-    return m;
-  };
-  let mounted = start();
-  return {
-    update(next) {
-      const restart =
-        next.effect !== params.effect ||
-        next.preset !== params.preset ||
-        next.autoplay !== params.autoplay ||
-        next.pauseWhenHidden !== params.pauseWhenHidden ||
-        next.loop !== params.loop ||
-        next.playOnEnter !== params.playOnEnter ||
-        next.duration !== params.duration ||
-        (next.state === undefined) !== (params.state === undefined) ||
-        next.label !== params.label ||
-        next.reducedMotion !== params.reducedMotion;
-      const dataChanged = JSON.stringify(next.data ?? {}) !== JSON.stringify(params.data ?? {});
-      const stateChanged = JSON.stringify(next.state ?? {}) !== JSON.stringify(params.state ?? {});
-      const subjectChanged = next.subject !== params.subject;
-      const valuesChanged = JSON.stringify(next.values ?? {}) !== JSON.stringify(params.values ?? {});
-      params = next;
-      if (restart) {
-        mounted.dispose();
-        mounted = start();
-        return;
-      }
-      if (subjectChanged && next.subject) mounted.setSubject(next.subject);
-      if (valuesChanged && next.values) mounted.setValues(next.values);
-      if (dataChanged && next.data) mounted.setData?.(next.data);
-      if (stateChanged && next.state) mounted.setState?.(next.state);
-    },
-    destroy() {
-      if (setPosition) node.style.position = "";
-      mounted.dispose();
-    },
-  };
+/**
+ * A Svelte action that plays an effect once over its element (see
+ * `playMoment` in `@pixerate/flair/embed`): on mount, or each time `key`
+ * changes. It plays nothing under reduced motion or without WebGL2 for a
+ * shader, so keep a CSS fallback; destroying the element stops it.
+ *
+ * ```svelte
+ * <div use:flairMoment={{ effect: "change-pulse", key: item.updatedAt }}>…</div>
+ * ```
+ */
+export function flairMoment(node: HTMLElement, initial: FlairMomentParams): ActionReturn<FlairMomentParams> {
+  return flairMomentWith(playMoment, node, initial);
 }
