@@ -2263,7 +2263,7 @@ describe("scroll effects", () => {
 
 describe("ui effects", () => {
   const ui = findEffects({ category: "ui" });
-  const shaders = ["border-beam", "gradient-border", "meteors", "background-beams", "grid-spotlight", "dot-grid", "glass-card", "liquid-glass", "noise-grain-bg", "dichroic-glass", "metal-card", "card-spotlight"];
+  const shaders = ["border-beam", "gradient-border", "meteors", "background-beams", "grid-spotlight", "dot-grid", "glass-card", "liquid-glass", "noise-grain-bg", "dichroic-glass", "metal-card", "card-spotlight", "agent-working-border", "change-pulse"];
   const vectors = ["marquee", "number-ticker", "animated-badge", "app-window", "swipe-stack", "pack-opening", "ai-prompt-bar", "insight-cards", "detail-panel", "logo-cloud"];
   const render = (id: string, values: Record<string, unknown> = {}) => {
     const effect = getEffect(id)!;

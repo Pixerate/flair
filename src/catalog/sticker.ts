@@ -1,6 +1,7 @@
 import type { SvgAnimation } from "../vector/motion.js";
 import { pathBounds } from "../vector/morph.js";
 import { textWidthEm } from "./images.js";
+import { styleControls, styleDerived, styleShadow } from "./neubrutal.js";
 import type { VectorEffect } from "./types.js";
 
 /*
@@ -556,8 +557,17 @@ const ALL_SHAPES = `{{shape: int min=0 max=5 default=0 label='Shape (0 burst, 1 
 const TILT = `{{tilt: float min=-30 max=30 default=-6 step=1 label='Tilt (degrees)'}}`;
 const SHADOW = `{{shadow: float min=0 max=0.6 default=0.3 step=0.05 label='Shadow'}}`;
 
-/** The drop shadow the still stickers share. */
-const softDrop = (id: string) => `<filter id="${id}" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#000000" flood-opacity="{{shadow}}"/></filter>`;
+/**
+ * The shared style controls (see `neubrutal.ts`): soft and glossy by
+ * default; a hard shadow, no sheen and an ink outline make it flat.
+ */
+const STYLE = styleControls();
+
+/** The still stickers' shadow and ink outline, worked out from the shared style controls; `border` is the die-cut border's stroke width. */
+const stillStyle = (v: Record<string, unknown>, border: number) => ({
+  ...styleDerived(v as never, { dy: 5, blur: 4, alpha: Number(v.shadow) }),
+  inkStroke: r1(border + 2 * Number(v.inkWidth)),
+});
 
 export const dieCutSticker: VectorEffect = {
   kind: "vector",
@@ -574,10 +584,10 @@ export const dieCutSticker: VectorEffect = {
   derived: (v) => {
     const { d, labelY, labelW } = stickerShape(v.shape, 120, 120, 80);
     const { size, length } = fit(String(v.label).trim() || " ", labelW, 42);
-    return { d, size, length, base: r1(labelY + size * 0.36), turn: `rotate(${r1(Number(v.tilt))} 120 120)` };
+    return { d, size, length, base: r1(labelY + size * 0.36), turn: `rotate(${r1(Number(v.tilt))} 120 120)`, ...stillStyle(v, 16) };
   },
   motion: {
-    svg: `<svg viewBox="0 0 240 240"><!-- {{label: text default='NEW!' label='Label'}} ${ALL_SHAPES} {{background: color default=#EDE8DF label='Background'}} {{sticker: color default=#FF5A36 label='Sticker'}} {{ink: color default=#FFFFFF label='Label colour'}} {{border: color default=#FFFFFF label='Border'}} ${TILT} ${SHADOW} ${FONT} --><defs>${softDrop("dieCutDrop")}${gloss("dieCutGloss")}</defs><rect width="240" height="240" fill="{{background}}"/><g transform="{{turn}}"><path d="{{d}}" fill="{{border}}" stroke="{{border}}" stroke-width="16" stroke-linejoin="round" filter="url(#dieCutDrop)"/><path d="{{d}}" fill="{{sticker}}"/><text x="120" y="{{base}}" text-anchor="middle" textLength="{{length}}" lengthAdjust="spacingAndGlyphs" font-family="{{font}}" font-size="{{size}}" font-weight="900" fill="{{ink}}">{{label}}</text><path d="{{d}}" fill="url(#dieCutGloss)" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="16" stroke-linejoin="round"/></g></svg>`,
+    svg: `<svg viewBox="0 0 240 240"><!-- {{label: text default='NEW!' label='Label'}} ${ALL_SHAPES} {{background: color default=#EDE8DF label='Background'}} {{sticker: color default=#FF5A36 label='Sticker'}} {{ink: color default=#FFFFFF label='Label colour'}} {{border: color default=#FFFFFF label='Border'}} ${TILT} ${SHADOW} ${STYLE} ${FONT} --><defs>${styleShadow("dieCutDrop")}${gloss("dieCutGloss")}</defs><rect width="240" height="240" fill="{{background}}"/><g transform="{{turn}}"><g filter="url(#dieCutDrop)"><path d="{{d}}" fill="{{inkColor}}" stroke="{{inkColor}}" stroke-width="{{inkStroke}}" stroke-linejoin="round" opacity="{{inkOn}}"/><path d="{{d}}" fill="{{border}}" stroke="{{border}}" stroke-width="16" stroke-linejoin="round"/></g><path d="{{d}}" fill="{{sticker}}"/><text x="120" y="{{base}}" text-anchor="middle" textLength="{{length}}" lengthAdjust="spacingAndGlyphs" font-family="{{font}}" font-size="{{size}}" font-weight="900" fill="{{ink}}">{{label}}</text><path d="{{d}}" fill="url(#dieCutGloss)" opacity="{{sheenA}}" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="16" stroke-linejoin="round"/></g></svg>`,
   },
 };
 
@@ -610,10 +620,11 @@ export const stickerLabel: VectorEffect = {
       subBase: r1(titleMid + title.size / 2 + gap + sub.size * 0.8),
       radius,
       turn: `rotate(${r1(Number(v.tilt))} 160 110)`,
+      ...stillStyle(v, 16),
     };
   },
   motion: {
-    svg: `<svg viewBox="0 0 320 220"><!-- {{title: text default='SHIP IT' label='Title'}} {{sub: text default='FLAIR STUDIO' label='Small line (may be empty)'}} {{round: float min=0 max=1 default=0.3 step=0.05 label='Roundness'}} {{background: color default=#E7E5E4 label='Background'}} {{sticker: color default=#6366F1 label='Sticker'}} {{ink: color default=#FFFFFF label='Text colour'}} {{border: color default=#FFFFFF label='Border'}} {{tilt: float min=-30 max=30 default=-4 step=1 label='Tilt (degrees)'}} ${SHADOW} ${FONT} --><defs>${softDrop("labelDrop")}${gloss("labelGloss")}</defs><rect width="320" height="220" fill="{{background}}"/><g transform="{{turn}}"><rect x="52" y="56" width="216" height="108" rx="{{radius}}" fill="{{border}}" stroke="{{border}}" stroke-width="16" stroke-linejoin="round" filter="url(#labelDrop)"/><rect x="52" y="56" width="216" height="108" rx="{{radius}}" fill="{{sticker}}"/><g font-family="{{font}}" font-weight="900" fill="{{ink}}" text-anchor="middle"><text x="160" y="{{titleBase}}" textLength="{{titleLength}}" lengthAdjust="spacingAndGlyphs" font-size="{{titleSize}}">{{title}}</text><text x="160" y="{{subBase}}" textLength="{{subLength}}" lengthAdjust="spacingAndGlyphs" font-size="{{subSize}}" opacity="0.8">{{sub}}</text></g><rect x="52" y="56" width="216" height="108" rx="{{radius}}" fill="url(#labelGloss)"/></g></svg>`,
+    svg: `<svg viewBox="0 0 320 220"><!-- {{title: text default='SHIP IT' label='Title'}} {{sub: text default='FLAIR STUDIO' label='Small line (may be empty)'}} {{round: float min=0 max=1 default=0.3 step=0.05 label='Roundness'}} {{background: color default=#E7E5E4 label='Background'}} {{sticker: color default=#6366F1 label='Sticker'}} {{ink: color default=#FFFFFF label='Text colour'}} {{border: color default=#FFFFFF label='Border'}} {{tilt: float min=-30 max=30 default=-4 step=1 label='Tilt (degrees)'}} ${SHADOW} ${STYLE} ${FONT} --><defs>${styleShadow("labelDrop")}${gloss("labelGloss")}</defs><rect width="320" height="220" fill="{{background}}"/><g transform="{{turn}}"><g filter="url(#labelDrop)"><rect x="52" y="56" width="216" height="108" rx="{{radius}}" fill="{{inkColor}}" stroke="{{inkColor}}" stroke-width="{{inkStroke}}" stroke-linejoin="round" opacity="{{inkOn}}"/><rect x="52" y="56" width="216" height="108" rx="{{radius}}" fill="{{border}}" stroke="{{border}}" stroke-width="16" stroke-linejoin="round"/></g><rect x="52" y="56" width="216" height="108" rx="{{radius}}" fill="{{sticker}}"/><g font-family="{{font}}" font-weight="900" fill="{{ink}}" text-anchor="middle"><text x="160" y="{{titleBase}}" textLength="{{titleLength}}" lengthAdjust="spacingAndGlyphs" font-size="{{titleSize}}">{{title}}</text><text x="160" y="{{subBase}}" textLength="{{subLength}}" lengthAdjust="spacingAndGlyphs" font-size="{{subSize}}" opacity="0.8">{{sub}}</text></g><rect x="52" y="56" width="216" height="108" rx="{{radius}}" fill="url(#labelGloss)" opacity="{{sheenA}}"/></g></svg>`,
   },
 };
 
@@ -639,10 +650,10 @@ export const speechSticker: VectorEffect = {
   ],
   derived: (v) => {
     const { size, length } = fit(v.words, 168, 48);
-    return { d: bubble(150, 96, 212, 116), size, length, base: r1(96 + size * 0.36), turn: `rotate(${r1(Number(v.tilt))} 150 110)` };
+    return { d: bubble(150, 96, 212, 116), size, length, base: r1(96 + size * 0.36), turn: `rotate(${r1(Number(v.tilt))} 150 110)`, ...stillStyle(v, 18) };
   },
   motion: {
-    svg: `<svg viewBox="0 0 300 220"><!-- {{words: text default='HELLO!' label='Words'}} {{background: color default=#EDE8DF label='Background'}} {{sticker: color default=#FFFFFF label='Bubble'}} {{ink: color default=#111827 label='Words colour'}} {{border: color default=#FFFFFF label='Border'}} {{outline: color default=#111827 label='Bubble outline'}} {{tilt: float min=-30 max=30 default=-5 step=1 label='Tilt (degrees)'}} ${SHADOW} ${FONT} --><defs>${softDrop("speechDrop")}${gloss("speechGloss")}</defs><rect width="300" height="220" fill="{{background}}"/><g transform="{{turn}}"><path d="{{d}}" fill="{{border}}" stroke="{{border}}" stroke-width="18" stroke-linejoin="round" filter="url(#speechDrop)"/><path d="{{d}}" fill="{{sticker}}" stroke="{{outline}}" stroke-width="4" stroke-linejoin="round"/><text x="150" y="{{base}}" text-anchor="middle" textLength="{{length}}" lengthAdjust="spacingAndGlyphs" font-family="{{font}}" font-size="{{size}}" font-weight="900" fill="{{ink}}">{{words}}</text><path d="{{d}}" fill="url(#speechGloss)"/></g></svg>`,
+    svg: `<svg viewBox="0 0 300 220"><!-- {{words: text default='HELLO!' label='Words'}} {{background: color default=#EDE8DF label='Background'}} {{sticker: color default=#FFFFFF label='Bubble'}} {{ink: color default=#111827 label='Words colour'}} {{border: color default=#FFFFFF label='Border'}} {{outline: color default=#111827 label='Bubble outline'}} {{tilt: float min=-30 max=30 default=-5 step=1 label='Tilt (degrees)'}} ${SHADOW} ${STYLE} ${FONT} --><defs>${styleShadow("speechDrop")}${gloss("speechGloss")}</defs><rect width="300" height="220" fill="{{background}}"/><g transform="{{turn}}"><g filter="url(#speechDrop)"><path d="{{d}}" fill="{{inkColor}}" stroke="{{inkColor}}" stroke-width="{{inkStroke}}" stroke-linejoin="round" opacity="{{inkOn}}"/><path d="{{d}}" fill="{{border}}" stroke="{{border}}" stroke-width="18" stroke-linejoin="round"/></g><path d="{{d}}" fill="{{sticker}}" stroke="{{outline}}" stroke-width="4" stroke-linejoin="round"/><text x="150" y="{{base}}" text-anchor="middle" textLength="{{length}}" lengthAdjust="spacingAndGlyphs" font-family="{{font}}" font-size="{{size}}" font-weight="900" fill="{{ink}}">{{words}}</text><path d="{{d}}" fill="url(#speechGloss)" opacity="{{sheenA}}"/></g></svg>`,
   },
 };
 
@@ -669,10 +680,17 @@ export const stickerWrap: VectorEffect = {
     const [x, y, w, h] = pathBounds(String(v.silhouette)) ?? [0, 0, 24, 24];
     const k = 156 / Math.max(w, h, 1e-6);
     const place = `translate(${r1(120 - (x + w / 2) * k)} ${r1(120 - (y + h / 2) * k)}) scale(${Math.round(k * 10000) / 10000})`;
-    return { place, stroke: Math.round((Number(v.cut) * 2 * 10000) / k) / 10000, turn: `rotate(${r1(Number(v.tilt))} 120 120)` };
+    const stroke = Math.round((Number(v.cut) * 2 * 10000) / k) / 10000;
+    return {
+      place,
+      stroke,
+      turn: `rotate(${r1(Number(v.tilt))} 120 120)`,
+      ...styleDerived(v, { dy: 5, blur: 4, alpha: Number(v.shadow) }),
+      inkStroke: Math.round(((Number(v.cut) * 2 + 2 * Number(v.inkWidth)) * 10000) / k) / 10000,
+    };
   },
   motion: {
-    svg: `<svg viewBox="0 0 240 240"><!-- {{silhouette: text default='${WRAP_DEFAULT}' label='Silhouette (SVG path data)'}} {{background: color default=#EDE8DF label='Background'}} {{sticker: color default=#FF5A36 label='Face'}} {{border: color default=#FFFFFF label='Border'}} {{cut: float min=2 max=20 default=10 step=1 label='Border width'}} ${TILT} ${SHADOW} --><defs>${softDrop("wrapDrop")}${gloss("wrapGloss")}</defs><rect width="240" height="240" fill="{{background}}"/><g transform="{{turn}}"><g filter="url(#wrapDrop)"><path d="{{silhouette}}" transform="{{place}}" fill="{{border}}" stroke="{{border}}" stroke-width="{{stroke}}" stroke-linejoin="round"/></g><g transform="{{place}}"><path d="{{silhouette}}" fill="{{sticker}}"/><path d="{{silhouette}}" fill="url(#wrapGloss)"/></g></g></svg>`,
+    svg: `<svg viewBox="0 0 240 240"><!-- {{silhouette: text default='${WRAP_DEFAULT}' label='Silhouette (SVG path data)'}} {{background: color default=#EDE8DF label='Background'}} {{sticker: color default=#FF5A36 label='Face'}} {{border: color default=#FFFFFF label='Border'}} {{cut: float min=2 max=20 default=10 step=1 label='Border width'}} ${TILT} ${SHADOW} ${STYLE} --><defs>${styleShadow("wrapDrop")}${gloss("wrapGloss")}</defs><rect width="240" height="240" fill="{{background}}"/><g transform="{{turn}}"><g filter="url(#wrapDrop)"><path d="{{silhouette}}" transform="{{place}}" fill="{{inkColor}}" stroke="{{inkColor}}" stroke-width="{{inkStroke}}" stroke-linejoin="round" opacity="{{inkOn}}"/><path d="{{silhouette}}" transform="{{place}}" fill="{{border}}" stroke="{{border}}" stroke-width="{{stroke}}" stroke-linejoin="round"/></g><g transform="{{place}}"><path d="{{silhouette}}" fill="{{sticker}}"/><path d="{{silhouette}}" fill="url(#wrapGloss)" opacity="{{sheenA}}"/></g></g></svg>`,
   },
 };
 

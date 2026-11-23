@@ -92,7 +92,7 @@ if (!status.ok) console.error(status.errors);
 renderer.setValues({ uSpeed: 2 });
 ```
 
-Every field but `presets` is required (`transparent`, `loop`, `build` and `video` are optional extras; `build` is the seconds a shader takes to build up once before it settles, such as a path drawing on, so previews replay it). `id` is your own kebab-case id; `category` is one of `EFFECT_CATEGORIES` (from `@pixerate/flair/catalog`; the full list is in the skill's rules), such as `gradient`, `image`, `overlay` or `text`, and only sorts it.
+Every field but `presets` is required (`transparent`, `loop`, `build`, `rest` and `video` are optional extras; `build` is the seconds a shader takes to build up once before it settles, such as a path drawing on, so previews replay it; `rest` is the `iTime` shown, still, under `prefers-reduced-motion`, defaulting to `build`, else 1 s, so pick a frame that reads as the effect at rest). A one-shot (a reveal, a burst) runs on a `uProgress` control (0 → 1) with a `uAnimate` bool that loops it for previews: `mountEffect(el, effect, { loop: false })` and `playMoment` play it once, and reduced motion shows `uProgress` 1. `id` is your own kebab-case id; `category` is one of `EFFECT_CATEGORIES` (from `@pixerate/flair/catalog`; the full list is in the skill's rules), such as `gradient`, `image`, `overlay` or `text`, and only sorts it.
 
 ### Getting the source into app code
 

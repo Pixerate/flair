@@ -27,6 +27,8 @@ import { moreGradientShaders } from "./shaders/gradients-more.js";
 import { uiShaders } from "./shaders/ui.js";
 import { uiEffects } from "./ui.js";
 import { loaderEffects } from "./loaders.js";
+import { momentEffects } from "./moments.js";
+import { withNeubrutal } from "./neubrutal.js";
 import {
   crt,
   filmGrain,
@@ -71,6 +73,7 @@ import { stickerShaders } from "./shaders/sticker.js";
 import { electricShaders } from "./shaders/electric.js";
 import { fireShaders } from "./shaders/fire.js";
 import { loaderShaders } from "./shaders/loaders.js";
+import { momentShaders } from "./shaders/moments.js";
 import { hologramShaders } from "./shaders/hologram.js";
 import { meltShaders } from "./shaders/melt.js";
 import { phyllotaxisShaders } from "./shaders/phyllotaxis.js";
@@ -329,6 +332,7 @@ export const SHADER_EFFECTS: readonly ShaderEffect[] = [
   ...electricShaders,
   ...fireShaders,
   ...loaderShaders,
+  ...momentShaders,
   ...hologramShaders,
   ...pixelShaders,
   ...phyllotaxisShaders,
@@ -375,9 +379,9 @@ export const SHADER_EFFECTS: readonly ShaderEffect[] = [
 ];
 
 /** Every effect in the catalog, shaders first, grouped by category. */
-export const EFFECTS: readonly EffectDefinition[] = [...SHADER_EFFECTS, ...vectorEffects, ...textEffects, ...morphEffects, ...interactionEffects, ...pyroEffects, ...timewarpEffects, ...meltEffects, ...electricEffects, ...fireEffects, ...hologramEffects, ...pixelEffects, ...splatterEffects, ...bubbleEffects, ...stickerEffects, ...trailEffects, ...impactEffects, ...comicEffects, ...animeEffects, ...emergencyEffects, ...filmEffects, ...crtEffects, ...glowEffects, ...shadowEffects, ...lightingEffects, ...scrollEffects, ...broadcastEffects, ...annotationEffects, ...uiEffects, ...loaderEffects, ...dataEffects, ...iconEffects, ...webEffects, ...promoEffects, ...horrorEffects, ...beautyEffects, ...memeEffects, ...cinematicEffects, ...cameraEffects, ...timingEffects, ...textTreatments].sort(
-  (a, b) => EFFECT_CATEGORIES.indexOf(a.category) - EFFECT_CATEGORIES.indexOf(b.category),
-);
+export const EFFECTS: readonly EffectDefinition[] = [...SHADER_EFFECTS, ...vectorEffects, ...textEffects, ...morphEffects, ...interactionEffects, ...pyroEffects, ...timewarpEffects, ...meltEffects, ...electricEffects, ...fireEffects, ...hologramEffects, ...pixelEffects, ...splatterEffects, ...bubbleEffects, ...stickerEffects, ...trailEffects, ...impactEffects, ...comicEffects, ...animeEffects, ...emergencyEffects, ...filmEffects, ...crtEffects, ...glowEffects, ...shadowEffects, ...lightingEffects, ...scrollEffects, ...broadcastEffects, ...annotationEffects, ...uiEffects, ...loaderEffects, ...momentEffects, ...dataEffects, ...iconEffects, ...webEffects, ...promoEffects, ...horrorEffects, ...beautyEffects, ...memeEffects, ...cinematicEffects, ...cameraEffects, ...timingEffects, ...textTreatments]
+  .map(withNeubrutal)
+  .sort((a, b) => EFFECT_CATEGORIES.indexOf(a.category) - EFFECT_CATEGORIES.indexOf(b.category));
 
 const byId = new Map(EFFECTS.map((e) => [e.id, e]));
 
@@ -420,6 +424,7 @@ export function effectDuration(effect: EffectDefinition): number | undefined {
 import { drawsAlpha, effectControls, effectDefaults, effectInputs } from "./core.js";
 
 export { drawsAlpha, effectControls, effectDefaults, effectInputs, shaderRestTime } from "./core.js";
+export { NEUBRUTAL, NEUBRUTAL_CATEGORIES, neubrutalValues, styleControls, styleDerived } from "./neubrutal.js";
 
 export {
   EFFECT_INPUTS,

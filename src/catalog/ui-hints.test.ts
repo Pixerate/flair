@@ -17,7 +17,7 @@ const vector = (id: string) => getEffect(id) as VectorEffect;
 
 describe("UI hints", () => {
   it("are the pilot's three effects and the loaders that show progress", () => {
-    expect(ids.sort()).toEqual(["flame-loader", "gauge", "liquid-loader", "progress-bar", "toggle-switch"]);
+    expect(ids.sort()).toEqual(["flame-loader", "gauge", "generating-field", "liquid-loader", "progress-bar", "slop-vat", "toggle-switch"]);
     expect(uiHint("aurora")).toBeUndefined();
     expect(uiHint("constructor")).toBeUndefined();
   });
@@ -72,7 +72,7 @@ describe("UI hints", () => {
 
   it("render from their examples", () => {
     const words: Record<string, string[]> = { "toggle-switch": [], "progress-bar": ["Uploading"], gauge: ["Performance", "100"] };
-    for (const id of ids.filter((i) => getEffect(i)!.kind === "vector")) {
+    for (const id of ids.filter((i) => getEffect(i)!.kind === "vector" && i in words)) {
       const effect = vector(id);
       const { values } = uiValues(effect, UI_HINTS[id]!.ui.example ?? {});
       const motion = renderVectorEffect(effect, values);

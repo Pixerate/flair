@@ -11,6 +11,7 @@
 
 import { didYouMean } from "../motion/params.js";
 import { EFFECT_IDS, EFFECT_MODULES } from "./modules.generated.js";
+import { withNeubrutal } from "./neubrutal.js";
 import type { EffectDefinition } from "./types.js";
 
 const moduleById = new Map<string, string>();
@@ -43,7 +44,7 @@ export function loadEffect(id: string): Promise<EffectDefinition> {
   let moduleLoad = loadingModules.get(module);
   if (!moduleLoad) {
     moduleLoad = EFFECT_MODULES[module]!().then((exports) => {
-      for (const effect of effectsIn(exports)) if (moduleById.get(effect.id) === module && !loaded.has(effect.id)) loaded.set(effect.id, effect);
+      for (const effect of effectsIn(exports)) if (moduleById.get(effect.id) === module && !loaded.has(effect.id)) loaded.set(effect.id, withNeubrutal(effect));
     });
     loadingModules.set(module, moduleLoad);
     moduleLoad.then(

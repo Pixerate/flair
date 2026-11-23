@@ -2,6 +2,7 @@ import { rgbToHex } from "../shader/controls.js";
 import { morphPaths } from "../vector/morph.js";
 import type { SvgAnimation, SvgMotion } from "../vector/motion.js";
 import { textWidthEm } from "./images.js";
+import { styleControls, styleDerived } from "./neubrutal.js";
 import type { VectorEffect } from "./types.js";
 
 /*
@@ -572,18 +573,39 @@ export const pressButton: VectorEffect = {
   presets: [
     { name: "Arcade red", values: { face: [0.94, 0.27, 0.27], background: [0.1, 0.09, 0.12] } },
     { name: "Mint", values: { face: [0.3, 0.85, 0.6], ink: [0.05, 0.25, 0.15], label: "Let's go" } },
+    { name: "Neubrutal", values: { face: [0.98, 0.8, 0.08], ink: [0.035, 0.035, 0.043], background: [1, 1, 1], shadowStyle: 1, shadowOffset: 8, inkWidth: 3, inkColor: [0.035, 0.035, 0.043], sheen: 0 } },
   ],
   derived: (v) => {
     const { size, length } = fit(v.label, 170, 22);
-    return { size, length, base: r1(67 + size * 0.35), side: mixHex(v.face, [0, 0, 0], 0.35), pressed: mixHex(v.face, [0, 0, 0], 0.08) };
+    const style = styleDerived(v);
+    const hard = Math.round(Number(v.shadowStyle)) === 1;
+    const offset = Number(v.shadowOffset);
+    return {
+      size,
+      length,
+      base: r1(67 + size * 0.35),
+      side: mixHex(v.face, [0, 0, 0], 0.35),
+      pressed: mixHex(v.face, [0, 0, 0], 0.08),
+      ...style,
+      // Soft: a 3D base and a blurred floor shadow, the face pushing down. Hard: a flat ink block offset behind, the face pushing onto it.
+      softOn: hard ? 0 : 1,
+      hardOn: hard ? 1 : 0,
+      sh0: hard ? 0 : 0.3,
+      sh1: hard ? 0 : 0.18,
+      pressX: hard ? r1(offset) : 0,
+      pressY: hard ? r1(offset) : 9,
+      hardX: r1(60 + offset),
+      hardY: r1(38 + offset),
+      shine: r1(0.35 * style.sheenA),
+    };
   },
   // Played backwards on release, the brief lift at the start of the press becomes a spring past rest at the end.
   motion: {
-    svg: `<svg viewBox="0 0 320 140"><!-- {{label: text default='Press me' label='Label'}} {{background: color default=#F1F5F9 label='Background'}} {{face: color default=#6366F1 label='Button'}} {{ink: color default=#FFFFFF label='Label colour'}} {{shadow: color default=#0F172A label='Shadow'}} --><rect width="320" height="140" fill="{{background}}"/><ellipse id="shadow" cx="160" cy="114" rx="108" ry="9" fill="{{shadow}}" opacity="0.3"/><rect x="60" y="50" width="200" height="58" rx="16" fill="{{side}}"/><g id="faceG" transform="translate(0 0)"><rect id="faceRect" x="60" y="38" width="200" height="58" rx="16" fill="{{face}}"/><text x="160" y="{{base}}" text-anchor="middle" textLength="{{length}}" lengthAdjust="spacingAndGlyphs" font-family="${SANS}" font-size="{{size}}" font-weight="800" fill="{{ink}}">{{label}}</text></g></svg>`,
+    svg: `<svg viewBox="0 0 320 140"><!-- {{label: text default='Press me' label='Label'}} {{background: color default=#F1F5F9 label='Background'}} {{face: color default=#6366F1 label='Button'}} {{ink: color default=#FFFFFF label='Label colour'}} {{shadow: color default=#0F172A label='Shadow'}} ${styleControls({ sheen: 0 })} --><rect width="320" height="140" fill="{{background}}"/><ellipse id="shadow" cx="160" cy="114" rx="108" ry="9" fill="{{shadow}}" opacity="{{sh0}}"/><rect x="{{hardX}}" y="{{hardY}}" width="200" height="58" rx="16" fill="{{inkColor}}" opacity="{{hardOn}}"/><rect x="60" y="50" width="200" height="58" rx="16" fill="{{side}}" stroke="{{inkColor}}" stroke-width="{{inkWidth}}" opacity="{{softOn}}"/><g id="faceG" transform="translate(0 0)"><rect id="faceRect" x="60" y="38" width="200" height="58" rx="16" fill="{{face}}" stroke="{{inkColor}}" stroke-width="{{inkWidth}}"/><rect x="74" y="43" width="172" height="9" rx="4.5" fill="#FFFFFF" opacity="{{shine}}"/><text x="160" y="{{base}}" text-anchor="middle" textLength="{{length}}" lengthAdjust="spacingAndGlyphs" font-family="${SANS}" font-size="{{size}}" font-weight="800" fill="{{ink}}">{{label}}</text></g></svg>`,
     animate: [
       { id: "faceG", attrs: { transform: ["translate(0 0)", "translate(0 -1.5)"] }, ms: 40, ease: "out" },
-      { id: "faceG", attrs: { transform: ["translate(0 -1.5)", "translate(0 9)"] }, delay: 40, ms: 90, ease: "out" },
-      { id: "shadow", attrs: { rx: [108, 96], ry: [9, 5], opacity: [0.3, 0.18] }, delay: 40, ms: 90, ease: "out" },
+      { id: "faceG", attrs: { transform: ["translate(0 -1.5)", "translate({{pressX}} {{pressY}})"] }, delay: 40, ms: 90, ease: "out" },
+      { id: "shadow", attrs: { rx: [108, 96], ry: [9, 5], opacity: ["{{sh0}}", "{{sh1}}"] }, delay: 40, ms: 90, ease: "out" },
       { id: "faceRect", attrs: { fill: ["{{face}}", "{{pressed}}"] }, delay: 40, ms: 90 },
     ],
   },

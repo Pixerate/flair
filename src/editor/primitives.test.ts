@@ -11,7 +11,8 @@ const SVG =
   '<text id="title" x="10" y="90">{{title}}</text></svg>';
 
 function setup() {
-  const editor = createEffectEditor({ from: "spinner" });
+  // An effect with no presets, so replacing its picture leaves none behind naming old controls.
+  const editor = createEffectEditor({ from: "route" });
   expect(editor.setMotion({ svg: SVG })).toEqual({ ok: true });
   const tools = createEffectToolProvider(editor);
   const run = async (id: string, params?: Record<string, unknown>) => {
