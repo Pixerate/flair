@@ -38,6 +38,10 @@ Each change names an element `id` (it must exist in the SVG) and when it plays: 
 
 For ready-made entrances, exits and emphasis on your own elements, apply motion primitives instead of writing changes by hand: `applyPrimitive(motion, { primitive: "entrance.pop", target: "title" })` from `@pixerate/flair/motion` (see the flair-use skill's controls reference).
 
+## A flat or soft look
+
+To let people switch an effect between soft and glossy and flat with hard shadows (neubrutalism), declare the shared style controls with `styleControls()` from `@pixerate/flair/catalog`: `shadowStyle` (0 soft, 1 hard), `shadowOffset`, `inkWidth`, `inkColor`, `sheen`. Spread `styleDerived(values)` into your `derived` and use its `shDx`, `shDy`, `shBlur`, `shAlpha` in a `feDropShadow` (flood colour `{{inkColor}}`), `inkOn` for an ink outline's opacity and `sheenA` for a highlight's opacity. Hand-written `"Neubrutal"` presets use ink `#09090b`, pink `#ff2a85`, cyan `#06b6d4`, yellow `#facc15` and purple `#c084fc`, with an 8 px offset.
+
 ## Not allowed
 
 No `<script>`, event handlers, `<foreignObject>`, links outside the file (only `#id` and `data:image/` URLs), and no `<animate>`, `<animateTransform>`, `<animateMotion>` or `<set>` in the markup: changes go in `animate`. `svgMotionIssues(motion)` (from `@pixerate/flair/vector`) lists every problem as a sentence; `flair controls` prints them.

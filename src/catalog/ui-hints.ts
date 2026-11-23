@@ -298,6 +298,14 @@ export const UI_HINTS: Readonly<Record<string, EffectUiHint>> = {
     ui: loaderUi(["track-off"], 0.65),
     bindings: { props: {}, colors: { "track-off": "uTrack" }, progress: { control: "uProgress", animate: "uAnimate" } },
   },
+  "generating-field": {
+    ui: loaderUi(["accent", "accent-ink", "focus"], null),
+    bindings: { props: {}, colors: { accent: "uColorA", "accent-ink": "uColorB", focus: "uColorC" }, progress: { control: "uProgress", animate: "uAnimate" } },
+  },
+  "slop-vat": {
+    ui: loaderUi(["accent", "surface", "ink"], 0.4),
+    bindings: { props: {}, colors: { accent: "slop", surface: "vat", ink: "inkColor" }, progress: { control: "level", animate: "animate" } },
+  },
 };
 
 /** The UI hint for a catalog effect id, if it has one. */

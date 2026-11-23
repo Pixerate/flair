@@ -987,8 +987,8 @@ frames.render(t, { audio: track.at(t), scroll: [0.5, 0.5, 0, 0] });
 | overlay | rain on glass, snowfall, lens flare, vignette & grain, scanline sweep, spotlight, embers, shine sweep, glare sweep, frost creep, viewfinder |
 | text | shader text, drip text, typewriter, scramble text, kinetic stagger, word bounce, karaoke sweep, word pop, neon sign, stroke draw text, split reveal, highlighter, word cycle, liquid fill, glitch text, extruded text, circle text, zalgo text, fogged mirror writing, scratched text, ransom note, carved pumpkin text |
 | morph | feature morph, silhouette morph, shape morph, icon toggle, morph sequence, gooey morph, particle morph, digit morph |
-| interaction | click ripple, click burst, cursor glow, hover liquid, X-ray reveal, magnifier, holo card, press charge, hover swap, like button, toggle switch, checkbox, menu toggle, bookmark, copy button, send button, download button, link hover, button hover fill, tooltip pop, press button, toast notification, slider scrub, cursor-follow eyes, mirror mismatch, haunted hover |
-| pyrotechnics | fireworks, sparkler, explosion, spark fountain, roman candle, fuse burn, smoke bomb, light show, firework burst |
+| interaction | dragover attract, click ripple, click burst, cursor glow, hover liquid, X-ray reveal, magnifier, holo card, press charge, hover swap, like button, toggle switch, checkbox, menu toggle, bookmark, copy button, send button, download button, link hover, button hover fill, tooltip pop, press button, toast notification, slider scrub, cursor-follow eyes, mirror mismatch, haunted hover |
+| pyrotechnics | fireworks, sparkler, explosion, spark fountain, roman candle, fuse burn, smoke bomb, light show, firework burst, card complete burst |
 | timewarp | time echo, chrono split, time slice, VHS rewind, bullet time, time tunnel, speed ramp, stutter freeze, time-lapse clock |
 | timing | retimes of real footage: speed change, speed ramp, reverse, boomerang, freeze frame, stutter, step frames, frame echo, long exposure |
 | melt | drip melt, heat haze, wax melt, melting text, liquify, melting clock, lava flow, ice cube melt, candle |
@@ -1025,6 +1025,21 @@ frames.render(t, { audio: track.at(t), scroll: [0.5, 0.5, 0, 0] });
 | transition | liquid morph, displacement, luma fade, particle swap, ink bleed, pixel dissolve, comic panels, wipe, iris, block dissolve, grid wipe, glass wipe, twister, light leak, cross zoom, whip pan, claw tear, blood wipe, shadow swallow, static cut, burn through, pixel bloom |
 | loader | spinner, bouncing dots, pulse ping, equalizer, skeleton shimmer, progress bar, indeterminate bar, step progress, circle dots loader, wave bars, upload card, progress ring, chomp loader, bubble pop loader, battery charge, hourglass, infinity loader, orbit loader, shape morph loader, liquid loader, glow ring spinner, metaball loader, flame loader, coffin loader, candle burndown, ghost loader, skeleton hand loader, pixel bloom reveal |
 | icon / data | bar chart, line chart, stat counter, timeline track, success check, error cross, heartbeat, confetti, flow network, donut chart, pie chart, gauge, bar race, sparkline, leaderboard, area chart, KPI tile, weather icons, notification bell, animated arrows, emoji reactions, star rating, trash delete, lock and unlock, Wi-Fi signal, wish star, jack-o'-lantern, bat flap, skull chatter |
+
+#### Effects for product moments
+
+For the moments in an AI product's UI rather than full frames, sized for cards and list items and drawn on clear, so they lay over the page (`playMoment`, or a canvas over the element):
+
+- `denoise-reveal` (transition): a generated picture resolving out of diffusion noise, coarse to fine, on `uProgress`.
+- `generating-field` (loader): an ambient field over a card while a job runs, with presets per kind of job (Image, Video, Audio, Text, Vector) and `data: { value }` for real progress.
+- `slop-vat` (loader): a stroked vat filling with bubbling slop to the job's `value`, dripping into a puddle.
+- `agent-working-border` (ui): a calm beam round a region while an agent works on it; `uAgents` gives several agents a hue each.
+- `change-pulse` (ui): a one-shot highlight on what just changed, by `uTone` (create, update, remove).
+- `card-complete-burst` (pyrotechnics): a small burst on a card's edge when a task is done.
+- `dragover-attract` (interaction): a drop zone pulled toward the pointer while something is dragged over it, rippling where it lands. Drag events don't move the pointer, so feed it `uHover`, `uTarget` and `uLanded` from `dragover` and `drop`.
+- `goo-drop-reveal` (transition) and `memphis-burst` (icon): flat, ink-stroked counterparts to `slime-curtain-wipe` and `confetti`.
+
+**Neubrutalist style.** The still stickers (`die-cut-sticker`, `sticker-label`, `speech-sticker`, `sticker-wrap`), `press-button` and the new vector effects take shared style controls: `shadowStyle` (0 soft, 1 hard), `shadowOffset`, `inkWidth`, `inkColor` and `sheen`. A hard shadow is offset by `shadowOffset` with no blur. Every sticker, comic, splatter, icon and loader effect with colours to set has a "Neubrutal" preset: ink `#09090b` on its outlines and text, pink `#ff2a85`, cyan `#06b6d4`, yellow `#facc15` and purple `#c084fc` on the rest, and an 8 px zero-blur shadow where it has the controls. `neubrutalValues(effect)` and `styleControls()` (from `@pixerate/flair/catalog`) give the same to your own effects.
 
 #### Broadcast graphics and annotations
 
