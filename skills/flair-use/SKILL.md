@@ -28,6 +28,7 @@ What an effect takes matters: `effectInputs(effect)` (or the index line) says wh
 | Svelte | `use:flairEffect` from `@pixerate/flair/svelte` | [entry-points.md](references/entry-points.md) |
 | Plain DOM, any framework | `mountEffect(el, id, { subject })` from `@pixerate/flair/embed` | [entry-points.md](references/entry-points.md) |
 | A loader or moment on a hot path (bundle size) | `@pixerate/flair/react/lazy`, `/svelte/lazy`, `/embed/lazy` | [entry-points.md](references/entry-points.md) |
+| Several screenshots or photos in one scene (devices, a carousel) | a montage: `mountEffect(el, "device-showcase", { subject: [{ image, device: "phone" }, …] })` | [entry-points.md](references/entry-points.md) |
 | An effect played once over an element (a result arriving, a change, success) | `playMoment(el, id)`, `useFlairMoment()`, `use:flairMoment` | [entry-points.md](references/entry-points.md) |
 | Only list or search effects, load few (bundle size) | `@pixerate/flair/catalog/lazy` | [entry-points.md](references/entry-points.md) |
 | A video, GIF or PNG frames | `recordEffect` (browser) or `npx flair render` / `exportEffect` (Node) | [entry-points.md](references/entry-points.md) |

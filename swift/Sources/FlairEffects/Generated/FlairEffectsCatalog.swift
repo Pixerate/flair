@@ -209,6 +209,8 @@ public enum FlairCatalog {
         AnyFlairEffect(ChangePulse()),
         AnyFlairEffect(CardCompleteBurst()),
         AnyFlairEffect(DragoverAttract()),
+        AnyFlairEffect(DeviceShowcase()),
+        AnyFlairEffect(ScreenshotCarousel()),
         AnyFlairEffect(Hologram()),
         AnyFlairEffect(HologramText()),
         AnyFlairEffect(HologramProjector()),

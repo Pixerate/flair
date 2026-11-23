@@ -371,6 +371,14 @@ export interface FlairEffectParams {
   reducedMotion?: "user" | "always" | "never";
   /** Called when the effect cannot be mounted; without it, the error is logged (or thrown, for an effect in hand). */
   onError?: (error: Error) => void;
+  /** For a montage: ms each item is shown before the next comes in (default 2500). */
+  itemDuration?: number;
+  /** For a montage carousel: ms its change to the next item takes (default 700). */
+  overlap?: number;
+  /** For a montage: show the items in a random order. */
+  shuffle?: boolean;
+  /** For a montage: called with each item's index as it comes in. */
+  onItem?: (index: number) => void;
 }
 
 /** The `flairEffect` action over a way to mount effects: `@pixerate/flair/embed`'s `mountEffect`, or the lazy one. */
@@ -429,6 +437,10 @@ export function flairEffectWith(
       ...(params.label !== undefined ? { label: params.label } : {}),
       ...(params.reducedMotion ? { reducedMotion: params.reducedMotion } : {}),
       onEvent: (name, detail) => params.onEvent?.(name, detail),
+      onItem: (index) => params.onItem?.(index),
+      ...(params.itemDuration !== undefined ? { itemDuration: params.itemDuration } : {}),
+      ...(params.overlap !== undefined ? { overlap: params.overlap } : {}),
+      ...(params.shuffle !== undefined ? { shuffle: params.shuffle } : {}),
     });
     if (m instanceof Promise) m.then(take, fail);
     else take(m);
@@ -446,7 +458,10 @@ export function flairEffectWith(
         next.duration !== params.duration ||
         (next.state === undefined) !== (params.state === undefined) ||
         next.label !== params.label ||
-        next.reducedMotion !== params.reducedMotion;
+        next.reducedMotion !== params.reducedMotion ||
+        next.itemDuration !== params.itemDuration ||
+        next.overlap !== params.overlap ||
+        next.shuffle !== params.shuffle;
       params = next;
       if (restart) {
         mounted?.dispose();

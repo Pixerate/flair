@@ -6,6 +6,240 @@ import simd
 
 
 
+/// **Aged photo** (`aged-photo`, category: `horror`).
+/// A picture as an old print: faded to sepia, foxed with brown spots, silvered with a bluish sheen in its shadows that shifts with the light, cracked along creases and worn white at the edges.
+public struct AgedPhoto: FlairEffect, Codable, Sendable, Equatable {
+    public static let effectId = "aged-photo"
+    public static let effectName = "Aged photo"
+    public static let category = "horror"
+    public static let effectDescription = "A picture as an old print: faded to sepia, foxed with brown spots, silvered with a bluish sheen in its shadows that shifts with the light, cracked along creases and worn white at the edges."
+    public static let tags: [String] = ["horror", "decay", "vintage", "sepia", "old", "photo", "foxing", "creases", "image"]
+    public static let phase: Int = 2
+    public static let functionName = "flair_aged_photo_frag"
+    public static let uniformByteLength: Int = 1040
+    public static let isTransparent: Bool = false
+    public static let loopDuration: Double? = nil
+    public static let controls: [FlairControlDescriptor] = [
+        FlairControlDescriptor(name: "uImage", property: "image", type: .sampler2D, label: "Image", min: 0.0, max: 1.0, step: 0.005, filter: .linear, wrap: .clamp),
+        FlairControlDescriptor(name: "uSepia", property: "sepia", type: .float, label: "Sepia", min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uFade", property: "fade", type: .float, label: "Fade", min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uFoxing", property: "foxing", type: .float, label: "Foxing", min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uSilver", property: "silver", type: .float, label: "Silvering", min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uCreases", property: "creases", type: .float, label: "Creases", min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uWear", property: "wear", type: .float, label: "Worn edges", min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uSeed", property: "seed", type: .float, label: "Variation", min: 0.0, max: 100.0, step: 1.0),
+        FlairControlDescriptor(name: "uBackdrop", property: "backdrop", type: .vec3, label: "Backdrop", isColor: true, min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uBackdropAlpha", property: "backdropAlpha", type: .float, label: "Backdrop opacity", min: 0.0, max: 1.0, step: 0.005),
+    ]
+    public static let samplerBindings: [FlairSamplerBinding] = [
+        FlairSamplerBinding(name: "uImage", property: "image", type: .sampler2D, binding: 1, filter: .linear, wrap: .clamp),
+    ]
+    public static let presets: [String: AgedPhoto] = {
+        var map: [String: AgedPhoto] = [:]
+        do { var p = AgedPhoto(); p.sepia = 0.3; p.fade = 0.3; p.silver = 1.0; map["Daguerreotype"] = p }
+        do { var p = AgedPhoto(); p.foxing = 1.0; p.creases = 1.0; p.wear = 0.9; map["Attic find"] = p }
+        do { var p = AgedPhoto(); p.foxing = 0.2; p.silver = 0.1; p.creases = 0.0; p.wear = 0.2; map["Gently aged"] = p }
+        do { var p = AgedPhoto(); p.seed = 42.0; map["Another print"] = p }
+        return map
+    }()
+
+    /// Image (`uImage`).
+    public var image: FlairTextureInput = .sample(.portrait)
+    /// Sepia (`uSepia`).
+    public var sepia: Float = 0.75
+    /// Fade (`uFade`).
+    public var fade: Float = 0.5
+    /// Foxing (`uFoxing`).
+    public var foxing: Float = 0.6
+    /// Silvering (`uSilver`).
+    public var silver: Float = 0.5
+    /// Creases (`uCreases`).
+    public var creases: Float = 0.6
+    /// Worn edges (`uWear`).
+    public var wear: Float = 0.5
+    /// Variation (`uSeed`).
+    public var seed: Float = 7.0
+    /// Backdrop (`uBackdrop`).
+    public var backdrop: SIMD3<Float> = flairVec3(1.0, 1.0, 1.0)
+    /// Backdrop opacity (`uBackdropAlpha`).
+    public var backdropAlpha: Float = 1.0
+
+    public init() {}
+
+    public func encodeUniforms(into buffer: UnsafeMutableRawPointer, state: FlairFrameState) {
+        state.encodeBuiltins(into: buffer)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(sepia, min: 0.0, max: 1.0), to: buffer, at: 992)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(fade, min: 0.0, max: 1.0), to: buffer, at: 996)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(foxing, min: 0.0, max: 1.0), to: buffer, at: 1000)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(silver, min: 0.0, max: 1.0), to: buffer, at: 1004)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(creases, min: 0.0, max: 1.0), to: buffer, at: 1008)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(wear, min: 0.0, max: 1.0), to: buffer, at: 1012)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(seed, min: 0.0, max: 100.0), to: buffer, at: 1016)
+        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(backdrop, min: 0.0, max: 1.0), to: buffer, at: 1024)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(backdropAlpha, min: 0.0, max: 1.0), to: buffer, at: 1036)
+    }
+
+    public func textureInput(for binding: Int) -> FlairTextureInput {
+        switch binding {
+        case 1: return self.image
+        default: return .none
+        }
+    }
+
+    public mutating func setTextureInput(_ input: FlairTextureInput, for binding: Int) {
+        switch binding {
+        case 1: self.image = input
+        default: break
+        }
+    }
+
+    public init(from decoder: Decoder) throws {
+        let bag = try FlairJSONBag(from: decoder)
+        self.image = bag.decodeTexture("uImage", "image", default: .sample(.portrait), fit: .contain, margin: 0.1)
+        self.sepia = bag.decodeFloat("uSepia", "sepia", default: 0.75, min: 0.0, max: 1.0)
+        self.fade = bag.decodeFloat("uFade", "fade", default: 0.5, min: 0.0, max: 1.0)
+        self.foxing = bag.decodeFloat("uFoxing", "foxing", default: 0.6, min: 0.0, max: 1.0)
+        self.silver = bag.decodeFloat("uSilver", "silver", default: 0.5, min: 0.0, max: 1.0)
+        self.creases = bag.decodeFloat("uCreases", "creases", default: 0.6, min: 0.0, max: 1.0)
+        self.wear = bag.decodeFloat("uWear", "wear", default: 0.5, min: 0.0, max: 1.0)
+        self.seed = bag.decodeFloat("uSeed", "seed", default: 7.0, min: 0.0, max: 100.0)
+        self.backdrop = bag.decodeVec3("uBackdrop", "backdrop", default: flairVec3(1.0, 1.0, 1.0), isColor: true)
+        self.backdropAlpha = bag.decodeFloat("uBackdropAlpha", "backdropAlpha", default: 1.0, min: 0.0, max: 1.0)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var bag = FlairJSONBag()
+        bag.encodeTexture(self.image, for: "uImage")
+        bag.encodeFloat(self.sepia, for: "uSepia")
+        bag.encodeFloat(self.fade, for: "uFade")
+        bag.encodeFloat(self.foxing, for: "uFoxing")
+        bag.encodeFloat(self.silver, for: "uSilver")
+        bag.encodeFloat(self.creases, for: "uCreases")
+        bag.encodeFloat(self.wear, for: "uWear")
+        bag.encodeFloat(self.seed, for: "uSeed")
+        bag.encodeVec3(self.backdrop, for: "uBackdrop")
+        bag.encodeFloat(self.backdropAlpha, for: "uBackdropAlpha")
+        try bag.encode(to: encoder)
+    }
+}
+
+/// **Film burn** (`film-burn`, category: `horror`).
+/// A picture as projected film that stutters and stalls in the gate, then blisters and melts open from a hot spot, a glowing charred edge spreading out to the bare projector light, before the next reel starts. Loops; or turn Animate off and set Moment.
+public struct FilmBurn: FlairEffect, Codable, Sendable, Equatable {
+    public static let effectId = "film-burn"
+    public static let effectName = "Film burn"
+    public static let category = "horror"
+    public static let effectDescription = "A picture as projected film that stutters and stalls in the gate, then blisters and melts open from a hot spot, a glowing charred edge spreading out to the bare projector light, before the next reel starts. Loops; or turn Animate off and set Moment."
+    public static let tags: [String] = ["horror", "decay", "film", "burn", "melt", "projector", "stall", "vintage", "image"]
+    public static let phase: Int = 2
+    public static let functionName = "flair_film_burn_frag"
+    public static let uniformByteLength: Int = 1056
+    public static let isTransparent: Bool = false
+    public static let loopDuration: Double? = 6.0
+    public static let controls: [FlairControlDescriptor] = [
+        FlairControlDescriptor(name: "uImage", property: "image", type: .sampler2D, label: "Image", min: 0.0, max: 1.0, step: 0.005, filter: .linear, wrap: .clamp),
+        FlairControlDescriptor(name: "uHot", property: "hot", type: .vec3, label: "Burning edge", isColor: true, min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uLamp", property: "lamp", type: .vec3, label: "Projector light", isColor: true, min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uWeave", property: "weave", type: .float, label: "Gate weave", min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uMelt", property: "melt", type: .float, label: "Melt", min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uCycle", property: "cycle", type: .float, label: "Cycle (s)", min: 3.0, max: 30.0, step: 0.135),
+        FlairControlDescriptor(name: "uAnimate", property: "animate", type: .bool, label: "Animate", min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uProgress", property: "progress", type: .float, label: "Moment (when still)", min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uBackdrop", property: "backdrop", type: .vec3, label: "Backdrop", isColor: true, min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uBackdropAlpha", property: "backdropAlpha", type: .float, label: "Backdrop opacity", min: 0.0, max: 1.0, step: 0.005),
+    ]
+    public static let samplerBindings: [FlairSamplerBinding] = [
+        FlairSamplerBinding(name: "uImage", property: "image", type: .sampler2D, binding: 1, filter: .linear, wrap: .clamp),
+    ]
+    public static let presets: [String: FilmBurn] = {
+        var map: [String: FilmBurn] = [:]
+        do { var p = FilmBurn(); p.hot = flairVec3(0.45, 0.7, 1.0); map["Blue flame"] = p }
+        do { var p = FilmBurn(); p.melt = 0.0; map["No melt"] = p }
+        do { var p = FilmBurn(); p.cycle = 12.0; map["Slow burn"] = p }
+        do { var p = FilmBurn(); p.animate = false; p.progress = 0.72; map["Burning open"] = p }
+        return map
+    }()
+
+    /// Image (`uImage`).
+    public var image: FlairTextureInput = .sample(.landscape)
+    /// Burning edge (`uHot`).
+    public var hot: SIMD3<Float> = flairVec3(1.0, 0.603922, 0.235294)
+    /// Projector light (`uLamp`).
+    public var lamp: SIMD3<Float> = flairVec3(1.0, 0.956863, 0.862745)
+    /// Gate weave (`uWeave`).
+    public var weave: Float = 0.5
+    /// Melt (`uMelt`).
+    public var melt: Float = 0.6
+    /// Cycle (s) (`uCycle`).
+    public var cycle: Float = 6.0
+    /// Animate (`uAnimate`).
+    public var animate: Bool = true
+    /// Moment (when still) (`uProgress`).
+    public var progress: Float = 0.62
+    /// Backdrop (`uBackdrop`).
+    public var backdrop: SIMD3<Float> = flairVec3(1.0, 1.0, 1.0)
+    /// Backdrop opacity (`uBackdropAlpha`).
+    public var backdropAlpha: Float = 1.0
+
+    public init() {}
+
+    public func encodeUniforms(into buffer: UnsafeMutableRawPointer, state: FlairFrameState) {
+        state.encodeBuiltins(into: buffer)
+        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(hot, min: 0.0, max: 1.0), to: buffer, at: 992)
+        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(lamp, min: 0.0, max: 1.0), to: buffer, at: 1008)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(weave, min: 0.0, max: 1.0), to: buffer, at: 1020)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(melt, min: 0.0, max: 1.0), to: buffer, at: 1024)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(cycle, min: 3.0, max: 30.0), to: buffer, at: 1028)
+        FlairUniformEncoder.writeBool(animate, to: buffer, at: 1032)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(progress, min: 0.0, max: 1.0), to: buffer, at: 1036)
+        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(backdrop, min: 0.0, max: 1.0), to: buffer, at: 1040)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(backdropAlpha, min: 0.0, max: 1.0), to: buffer, at: 1052)
+    }
+
+    public func textureInput(for binding: Int) -> FlairTextureInput {
+        switch binding {
+        case 1: return self.image
+        default: return .none
+        }
+    }
+
+    public mutating func setTextureInput(_ input: FlairTextureInput, for binding: Int) {
+        switch binding {
+        case 1: self.image = input
+        default: break
+        }
+    }
+
+    public init(from decoder: Decoder) throws {
+        let bag = try FlairJSONBag(from: decoder)
+        self.image = bag.decodeTexture("uImage", "image", default: .sample(.landscape), fit: .contain, margin: 0.1)
+        self.hot = bag.decodeVec3("uHot", "hot", default: flairVec3(1.0, 0.603922, 0.235294), isColor: true)
+        self.lamp = bag.decodeVec3("uLamp", "lamp", default: flairVec3(1.0, 0.956863, 0.862745), isColor: true)
+        self.weave = bag.decodeFloat("uWeave", "weave", default: 0.5, min: 0.0, max: 1.0)
+        self.melt = bag.decodeFloat("uMelt", "melt", default: 0.6, min: 0.0, max: 1.0)
+        self.cycle = bag.decodeFloat("uCycle", "cycle", default: 6.0, min: 3.0, max: 30.0)
+        self.animate = bag.decodeBool("uAnimate", "animate", default: true)
+        self.progress = bag.decodeFloat("uProgress", "progress", default: 0.62, min: 0.0, max: 1.0)
+        self.backdrop = bag.decodeVec3("uBackdrop", "backdrop", default: flairVec3(1.0, 1.0, 1.0), isColor: true)
+        self.backdropAlpha = bag.decodeFloat("uBackdropAlpha", "backdropAlpha", default: 1.0, min: 0.0, max: 1.0)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var bag = FlairJSONBag()
+        bag.encodeTexture(self.image, for: "uImage")
+        bag.encodeVec3(self.hot, for: "uHot")
+        bag.encodeVec3(self.lamp, for: "uLamp")
+        bag.encodeFloat(self.weave, for: "uWeave")
+        bag.encodeFloat(self.melt, for: "uMelt")
+        bag.encodeFloat(self.cycle, for: "uCycle")
+        bag.encodeBool(self.animate, for: "uAnimate")
+        bag.encodeFloat(self.progress, for: "uProgress")
+        bag.encodeVec3(self.backdrop, for: "uBackdrop")
+        bag.encodeFloat(self.backdropAlpha, for: "uBackdropAlpha")
+        try bag.encode(to: encoder)
+    }
+}
+
 /// **Tentacles** (`tentacles`, category: `horror`).
 /// Tentacles curling up out of the dark from the bottom of the frame, swaying and coiling at their tips, rows of pale suckers on their undersides, and reaching for the pointer while it hovers.
 public struct Tentacles: FlairEffect, Codable, Sendable, Equatable {

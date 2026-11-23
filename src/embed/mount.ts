@@ -8,10 +8,11 @@
  */
 
 import { CAMERA_PREVIEW_SOURCE, cameraPreviewLength, cameraPreviewValues } from "../catalog/camera.js";
-import { drawsAlpha, effectDefaults, effectInputs, shaderRestTime } from "../catalog/core.js";
+import { drawsAlpha, effectControls, effectDefaults, effectInputs, shaderRestTime } from "../catalog/core.js";
+import { DEVICE_KINDS, deviceIndex, type DeviceKind } from "../catalog/devices.js";
 import { SAMPLE_IMAGES, textImage } from "../catalog/images.js";
 import type { ImageSlot, TextSlot } from "../catalog/inputs.js";
-import { renderVectorEffect, type CameraEffect, type EffectDefinition, type VectorEffect } from "../catalog/types.js";
+import { renderVectorEffect, type CameraEffect, type EffectDefinition, type EffectItems, type ShaderEffect, type VectorEffect } from "../catalog/types.js";
 import { effectUi, uiValues, type EffectUiHint, type JsonValue } from "../catalog/ui-hints.js";
 import { resolveAsset as resolveOne } from "../scene/assets.js";
 import type { SubjectResolver } from "../scene/layers.js";
@@ -20,6 +21,7 @@ import type { ControlValue } from "../shader/controls.js";
 import { holdsStill, ShaderRenderer } from "../shader/renderer.js";
 import { preloadImages, type LiveSource } from "../shader/textures.js";
 import { SvgPlayer, svgDuration } from "../vector/svg.js";
+import { startMontage, type MontageItem, type MontageOptions } from "./montage.js";
 import type { mountTiming } from "./timing.js";
 import type { previewTextTreatment } from "./treatment.js";
 
@@ -49,13 +51,28 @@ export interface KindMounters {
  *   `ShaderRenderer.setAudioSource`; to record, pass `audio` to `recordEffect`.
  */
 export type EffectSubject =
-  | { image: string }
-  | { video: LiveSource }
-  | { svg: string }
+  | ({ image: string } & MontageItemMeta)
+  | ({ video: LiveSource } & MontageItemMeta)
+  | ({ svg: string } & MontageItemMeta)
   | { text: string; font?: string; weight?: number | string }
   | { path: string }
   | { asset: string }
   | { audio: AudioSource };
+
+/**
+ * What a piece of media in a montage's list can say about itself (see
+ * `EffectItems`); effects that take one subject ignore it.
+ */
+export interface MontageItemMeta {
+  /** The device it is a screenshot of, for montages with device frames: `phone`, `tablet`, `laptop`, `desktop`, `watch` or `browser`. */
+  device?: DeviceKind;
+  /** A caption or label for it (for the host page's own copy; see `MountOptions.onItem`). */
+  label?: string;
+  /** The point to keep in view when it is cropped, 0–1 from the top left (reserved for montages that crop to it). */
+  focus?: readonly [number, number];
+  /** Ms it stays before the next item comes in (overrides `itemDuration`). */
+  duration?: number;
+}
 
 /** What a subject becomes for an effect: control values, live sources by image control, and the sound it hears. */
 export interface SubjectValues {
@@ -65,7 +82,8 @@ export interface SubjectValues {
   audio?: AudioSource;
 }
 
-const kindOf = (subject: EffectSubject) => Object.keys(subject).find((k) => k !== "font" && k !== "weight") as "image" | "video" | "svg" | "text" | "path" | "asset" | "audio";
+const META_KEYS = new Set(["font", "weight", "device", "label", "focus", "duration"]);
+const kindOf = (subject: EffectSubject) => Object.keys(subject).find((k) => !META_KEYS.has(k)) as "image" | "video" | "svg" | "text" | "path" | "asset" | "audio";
 
 /** An SVG as a URL: markup becomes a UTF-8 `data:` URL; a URL stays as it is. */
 function svgUrl(svg: string): string {
@@ -98,6 +116,7 @@ function pick<T extends { name: string }>(slots: T[], wanted: (s: T) => boolean,
  * Throws a sentence when the effect takes no such thing.
  */
 export function subjectValues(effect: EffectDefinition, subject: EffectSubject | readonly EffectSubject[], slot?: string): SubjectValues {
+  if (effect.items && slot === undefined) return itemValues(effect as EffectDefinition & { items: EffectItems }, Array.isArray(subject) ? subject : [subject as EffectSubject]);
   const out: SubjectValues = { values: {}, live: {} };
   const inputs = effectInputs(effect);
   const used = new Set<string>();
@@ -140,8 +159,58 @@ export function subjectValues(effect: EffectDefinition, subject: EffectSubject |
   return out;
 }
 
-export interface MountOptions {
-  /** What to apply the effect to (see {@link EffectSubject}); several fill several controls in order. */
+/**
+ * A montage's items as control values: the first items in its slots (a
+ * carousel's shown and next), how many it shows, and each item's device.
+ * Throws a sentence for a list too short or long, an item that is not a
+ * picture, video or SVG, or a device that is not one of `DEVICE_KINDS`.
+ */
+function itemValues(effect: EffectDefinition & { items: EffectItems }, items: readonly EffectSubject[]): SubjectValues {
+  const spec = effect.items;
+  if (items.length < spec.min || items.length > spec.max)
+    throw new Error(`"${effect.id}" is a montage that takes ${spec.min} to ${spec.max} items (pictures, videos or SVGs); it was given ${items.length}.`);
+  const plain = { ...effect, items: undefined } as EffectDefinition;
+  const out: SubjectValues = { values: {}, live: {} };
+  items.forEach((item, i) => {
+    const kind = kindOf(item);
+    if (kind !== "image" && kind !== "video" && kind !== "svg" && kind !== "asset")
+      throw new Error(`"${effect.id}" is a montage: its items are pictures, videos or SVGs ({ image }, { video }, { svg }), but item ${i + 1} is ${kind === "text" ? "words" : `a ${kind}`}.`);
+    const device = (item as MontageItemMeta).device;
+    if (device !== undefined && deviceIndex(device) === undefined)
+      throw new Error(`Item ${i + 1} names the device ${JSON.stringify(device)}; devices are ${DEVICE_KINDS.join(", ")}.`);
+  });
+  const fill = (slot: string, item: EffectSubject) => {
+    const one = subjectValues(plain, item, slot);
+    Object.assign(out.values, one.values);
+    Object.assign(out.live, one.live);
+    const device = (item as MontageItemMeta).device;
+    const at = spec.slots.indexOf(slot);
+    const control = spec.devices?.[at];
+    if (control && device) out.values[control] = deviceIndex(device)!;
+  };
+  if (spec.cycle === "carousel") {
+    fill(spec.slots[0]!, items[0]!);
+    fill(spec.slots[1]!, items[1 % items.length]!);
+    if (spec.progress) out.values[spec.progress] = 0;
+    // Given items, the effect follows them rather than its own preview loop.
+    if (effectControls(effect).some((c) => c.name === "uAnimate")) out.values.uAnimate = false;
+  } else {
+    spec.slots.forEach((slot, i) => {
+      if (i < items.length) fill(slot, items[i]!);
+    });
+  }
+  if (spec.count) out.values[spec.count] = Math.min(items.length, spec.slots.length);
+  return out;
+}
+
+export interface MountOptions extends MontageOptions {
+  /**
+   * What to apply the effect to (see {@link EffectSubject}); several fill
+   * several controls in order. For a montage (an effect with `items`): its
+   * list of media, each with an optional `device`, `label` and `duration`;
+   * more than it has slots come in as it plays (see `itemDuration`,
+   * `overlap`, `shuffle`, `onItem`), and `setSubject` swaps the list.
+   */
   subject?: EffectSubject | readonly EffectSubject[];
   /**
    * The host's asset library, for `{ asset }` subjects: each is resolved
@@ -342,7 +411,8 @@ export function mountDefinition(host: HTMLElement, def: EffectDefinition, option
       values = { ...base, ...input.values };
     };
     if (ui) fill(options.data ?? {});
-    const isOneShot = options.loop === false && ("uProgress" in values || "uAnimate" in values);
+    // A montage's progress control belongs to its cycle, not to a one-shot.
+    const isOneShot = !def.items && options.loop === false && ("uProgress" in values || "uAnimate" in values);
     if (isOneShot) {
       if ("uAnimate" in values) values.uAnimate = false;
       // Under reduced motion a one-shot shows where it ends, still.
@@ -364,6 +434,45 @@ export function mountDefinition(host: HTMLElement, def: EffectDefinition, option
       if (ui) describeUi(renderer.canvas, ui, values, data, options.label);
     };
     describe();
+
+    // A montage brings in its items beyond its slots as it plays (not under reduced motion: the first items stay).
+    let stopMontage = () => {};
+    const runMontage = (subject: EffectSubject | readonly EffectSubject[] | undefined) => {
+      stopMontage();
+      stopMontage = () => {};
+      if (!def.items || still || !subject) return;
+      const list = asList(subject);
+      const plain = { ...def, items: undefined } as ShaderEffect;
+      const spec = def.items;
+      const items: MontageItem[] = list.map((item) => ({
+        ...("image" in item ? { url: item.image } : {}),
+        ...("video" in item ? { video: item.video } : {}),
+        ...((item as MontageItemMeta).duration !== undefined ? { duration: (item as MontageItemMeta).duration } : {}),
+      }));
+      stopMontage = startMontage(
+        def as ShaderEffect & { items: EffectItems },
+        {
+          items,
+          fill(slot, index) {
+            if (index < 0) return;
+            const item = list[index]!;
+            const one = subjectValues(plain, item, slot);
+            const device = (item as MontageItemMeta).device;
+            const control = spec.devices?.[spec.slots.indexOf(slot)];
+            values = { ...values, ...one.values, ...(control && device ? { [control]: deviceIndex(device)! } : {}) };
+            renderer.setLiveSource(slot, one.live[slot] ?? null);
+            renderer.setValues(values);
+          },
+          set(next) {
+            values = { ...values, ...next };
+            renderer.setValues(values);
+          },
+          playing: () => renderer.playing,
+        },
+        options,
+      );
+    };
+    runMontage(options.subject);
     const setLive = (previous: Record<string, LiveSource>) => {
       for (const name of Object.keys(previous)) if (!(name in live)) renderer.setLiveSource(name, null);
       for (const [name, source] of Object.entries(live)) renderer.setLiveSource(name, source);
@@ -479,6 +588,7 @@ export function mountDefinition(host: HTMLElement, def: EffectDefinition, option
         renderer.setValues(values);
         setLive(before);
         if (audio !== heard) renderer.setAudioSource(audio ?? null);
+        runMontage(subject);
       },
       setValues(next) {
         base = { ...base, ...next };
@@ -503,6 +613,7 @@ export function mountDefinition(host: HTMLElement, def: EffectDefinition, option
       },
       dispose() {
         cancelTween();
+        stopMontage();
         observer?.disconnect();
         renderer.dispose();
       },

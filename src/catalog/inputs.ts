@@ -22,10 +22,10 @@ import type { EffectDefinition, VideoUse } from "./types.js";
  *   Audio node, or an `AudioBuffer` for recordings) that it reacts to
  *   through `iAudio`, `iSpectrum` or `iBeat`.
  */
-export type EffectInput = "image" | "video" | "svg" | "text" | "mask" | "path" | "audio";
+export type EffectInput = "image" | "video" | "svg" | "text" | "mask" | "path" | "audio" | "items";
 
 /** Every {@link EffectInput}. */
-export const EFFECT_INPUTS: readonly EffectInput[] = ["image", "video", "svg", "text", "mask", "path", "audio"];
+export const EFFECT_INPUTS: readonly EffectInput[] = ["image", "video", "svg", "text", "mask", "path", "audio", "items"];
 
 /**
  * How an effect answers the pointer:
@@ -81,6 +81,12 @@ export interface EffectInputs {
   trigger?: SvgTrigger;
   /** Draws over other content (render it with `alpha: true`, over a page or picture). */
   transparent: boolean;
+  /**
+   * For a montage: the list of media it takes, from `min` to `max` items
+   * (pictures, videos or SVGs), shown in its `slots` and cycled `swap` or
+   * `carousel` (see `EffectItems`). `accepts` then includes `"items"`.
+   */
+  items?: { min: number; max: number; slots: string[]; cycle: "swap" | "carousel" };
 }
 
 /** `textImage` output: a UTF-8 SVG `data:` URL holding a `<text>`. */
@@ -174,6 +180,7 @@ export function inputsOf(effect: EffectDefinition, controls: readonly ControlDef
     }
   }
   if (effect.kind === "shader" && /\bi(Audio|Spectrum|Beat)\b/.test(codeOf(effect.source))) accepts.add("audio");
+  if (effect.items) accepts.add("items");
   const interactions = effect.kind === "vector" ? (effect.trigger ? [effect.trigger] : []) : shaderInteractions(effect.source);
   return {
     accepts: EFFECT_INPUTS.filter((i) => accepts.has(i)),
@@ -183,5 +190,6 @@ export function inputsOf(effect: EffectDefinition, controls: readonly ControlDef
     interactions,
     ...(effect.kind === "vector" && effect.trigger ? { trigger: effect.trigger } : {}),
     transparent: effect.kind === "shader" ? Boolean(effect.transparent) : false,
+    ...(effect.items && { items: { min: effect.items.min, max: effect.items.max, slots: [...effect.items.slots], cycle: effect.items.cycle } }),
   };
 }

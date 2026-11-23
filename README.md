@@ -1026,6 +1026,30 @@ frames.render(t, { audio: track.at(t), scroll: [0.5, 0.5, 0, 0] });
 | loader | spinner, bouncing dots, pulse ping, equalizer, skeleton shimmer, progress bar, indeterminate bar, step progress, circle dots loader, wave bars, upload card, progress ring, chomp loader, bubble pop loader, battery charge, hourglass, infinity loader, orbit loader, shape morph loader, liquid loader, glow ring spinner, metaball loader, flame loader, coffin loader, candle burndown, ghost loader, skeleton hand loader, pixel bloom reveal |
 | icon / data | bar chart, line chart, stat counter, timeline track, success check, error cross, heartbeat, confetti, flow network, donut chart, pie chart, gauge, bar race, sparkline, leaderboard, area chart, KPI tile, weather icons, notification bell, animated arrows, emoji reactions, star rating, trash delete, lock and unlock, Wi-Fi signal, wish star, jack-o'-lantern, bat flap, skull chatter |
 
+#### Montages: several pieces of media in one scene
+
+A `montage` effect (browsed under Pictures) takes a list of media instead of one subject: screenshots of several features, the same app on phone, tablet and laptop, a gallery of generated outputs. Each item is `{ image }`, `{ video }` or `{ svg }` (or an `{ asset }` resolved through `resolveAsset`), and can carry a `device` hint (`phone`, `tablet`, `laptop`, `desktop`, `watch`, `browser`), a `label` and its own `duration`.
+
+```ts
+mountEffect(el, "device-showcase", {
+  subject: [{ image: "/app-laptop.png", device: "laptop" }, { image: "/app-phone.png", device: "phone" }, { image: "/app-tablet.png", device: "tablet" }],
+  itemDuration: 3000,
+  onItem: (i) => (headline.textContent = features[i]),
+});
+<FlairEffect effect="screenshot-carousel" subject={shots} preset="Browser wipe" itemDuration={2500} />
+```
+
+- `device-showcase`: screenshots on two to five stylised devices in a staggered layout with depth, drifting in a slow parallax orbit. When there are more items than devices, the devices swap screens one after another. Presets: "Phone + laptop", "Device family", "Floating stack".
+- `screenshot-carousel`: one device or browser frame cycling through screenshots, each swapped for the next with a slide, fade, zoom or wipe.
+
+How it works: the effect declares `items` (`EffectItems`): its `min` and `max` counts and the image controls (`slots`) items are shown in, plus optional `count`, per-slot `devices` and, for a carousel, a `progress` control. `effectInputs(effect).items` reports the counts, and `findEffects({ accepts: ["items"] })` or `{ category: "montage" }` finds montages. `subjectValues` fills the slots with the first items. On a page, `mountEffect` brings the rest in as it plays:
+- `swap`: each step, the next slot in turn takes the next item.
+- `carousel`: the effect's `progress` runs 0 → 1 to change to the next item.
+
+Playback options are `itemDuration`, `overlap`, `loop`, `shuffle` and `onItem(index)`; the same props and params exist on `<FlairEffect>` and `use:flairEffect`, and `setSubject(items)` swaps the list. Time only passes while the effect plays, so `pauseWhenHidden` holds a montage where it is. Video items play only while a slot shows them (`pauseOffscreenVideo`), which keeps the decode budget down. Under reduced motion the first items are laid out still. A shader shows at most a handful of items at once (one texture unit per slot); a long list rotates through those slots, so a montage stays within WebGL2's texture-unit limits at any length.
+
+The device frames are a small shared library: `DEVICE_FRAMES` (each frame's size and its screen rectangle) and `DEVICE_GLSL` (the same shapes for shaders) in `@pixerate/flair/catalog`. They are generic shapes, not likenesses of real hardware. Agents set a montage's list with the `items.set` editor command.
+
 #### Effects for product moments
 
 For the moments in an AI product's UI rather than full frames, sized for cards and list items and drawn on clear, so they lay over the page (`playMoment`, or a canvas over the element):

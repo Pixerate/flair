@@ -74,6 +74,7 @@ import { electricShaders } from "./shaders/electric.js";
 import { fireShaders } from "./shaders/fire.js";
 import { loaderShaders } from "./shaders/loaders.js";
 import { momentShaders } from "./shaders/moments.js";
+import { montageShaders } from "./shaders/montage.js";
 import { hologramShaders } from "./shaders/hologram.js";
 import { meltShaders } from "./shaders/melt.js";
 import { phyllotaxisShaders } from "./shaders/phyllotaxis.js";
@@ -165,6 +166,7 @@ export {
   type EffectCategory,
   type EffectCategoryGroup,
   type EffectDefinition,
+  type EffectItems,
   type EffectPreset,
   type ShaderEffect,
   type TextTreatmentEffect,
@@ -333,6 +335,7 @@ export const SHADER_EFFECTS: readonly ShaderEffect[] = [
   ...fireShaders,
   ...loaderShaders,
   ...momentShaders,
+  ...montageShaders,
   ...hologramShaders,
   ...pixelShaders,
   ...phyllotaxisShaders,
@@ -424,6 +427,7 @@ export function effectDuration(effect: EffectDefinition): number | undefined {
 import { drawsAlpha, effectControls, effectDefaults, effectInputs } from "./core.js";
 
 export { drawsAlpha, effectControls, effectDefaults, effectInputs, shaderRestTime } from "./core.js";
+export { DEVICE_FRAMES, DEVICE_GLSL, DEVICE_KINDS, deviceIndex, type DeviceFrame, type DeviceKind } from "./devices.js";
 export { NEUBRUTAL, NEUBRUTAL_CATEGORIES, neubrutalValues, styleControls, styleDerived } from "./neubrutal.js";
 
 export {
