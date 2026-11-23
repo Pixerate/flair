@@ -13,6 +13,7 @@ import type { SvgTrigger } from "../vector/svg.js";
 
 /** What an effect is for, used to group the catalog. */
 export type EffectCategory =
+  | "montage"
   | "gradient"
   | "organic"
   | "pattern"
@@ -92,6 +93,7 @@ export const EFFECT_CATEGORIES: readonly EffectCategory[] = [
   "timewarp",
   "timing",
   "melt",
+  "montage",
   "electric",
   "fire",
   "hologram",
@@ -138,7 +140,7 @@ export interface EffectCategoryGroup {
 export const EFFECT_CATEGORY_GROUPS: readonly EffectCategoryGroup[] = [
   { name: "Backgrounds", categories: ["gradient", "organic", "pattern", "relief", "space", "3d", "weather", "water", "atmosphere"] },
   { name: "Light", categories: ["light", "lighting", "glow", "shadow", "electric", "fire", "hologram"] },
-  { name: "Pictures", categories: ["image", "cinematic", "film", "beauty", "distortion", "retro", "crt", "comic", "anime", "horror", "emergency", "meme", "timewarp", "timing", "melt"] },
+  { name: "Pictures", categories: ["image", "cinematic", "film", "beauty", "distortion", "retro", "crt", "comic", "anime", "horror", "emergency", "meme", "timewarp", "timing", "melt", "montage"] },
   { name: "Particles & FX", categories: ["overlay", "splatter", "bubble", "particles", "trail", "debris", "impact", "pyrotechnics"] },
   { name: "Type & titles", categories: ["text", "treatment", "morph", "broadcast", "annotation", "sticker"] },
   { name: "Paths", categories: ["path"] },
@@ -176,6 +178,33 @@ export interface EffectPreset {
   values: Record<string, ControlValue>;
 }
 
+/**
+ * How a montage effect takes a list of media (2 to many pieces: screenshots,
+ * photos, clips) rather than one subject. The items fill `slots`, image
+ * controls, in order; more items than slots come in over time, one step per
+ * item duration:
+ *
+ * - `swap`: each step, the next slot in turn takes the next item (a showcase
+ *   of devices whose screens change one after another).
+ * - `carousel`: two slots, the item shown and the next, with `progress`
+ *   running 0 → 1 to change from one to the other (a frame cycling through
+ *   screenshots).
+ */
+export interface EffectItems {
+  /** The fewest and most items it takes. */
+  min: number;
+  max: number;
+  /** The image controls items are shown in, in order. */
+  slots: readonly string[];
+  cycle: "swap" | "carousel";
+  /** An int control told how many items it is showing (at most the slots'). */
+  count?: string;
+  /** Int controls, one per slot, told each item's `device` (see `DEVICE_KINDS`). */
+  devices?: readonly string[];
+  /** With `carousel`: the float control run 0 → 1 to change to the next item. */
+  progress?: string;
+}
+
 interface EffectBase {
   /** Stable id, kebab-case: `aurora`, `image-glitch`. */
   id: string;
@@ -185,6 +214,8 @@ interface EffectBase {
   category: EffectCategory;
   tags: readonly string[];
   presets?: readonly EffectPreset[];
+  /** A montage effect's list of media (see {@link EffectItems}). */
+  items?: EffectItems;
 }
 
 /**

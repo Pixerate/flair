@@ -13,6 +13,7 @@ import { EFFECT_INPUTS, EFFECT_INTERACTIONS, effectInputs, effectTags, findEffec
 import { DEFAULT_FOOTAGE_FPS, timingEffects, timingLength, timingSample, timingValues } from "../catalog/timing.js";
 import { checkStage, TEXT_TREATMENT_STAGE_NOTES, TEXT_TREATMENT_STAGES, textTreatmentPlan, textTreatments, textTreatmentValues, type TextTreatmentTarget, type TreatmentPlanLayer } from "../catalog/treatment.js";
 import { rgbToHex } from "../shader/controls.js";
+import { DEVICE_KINDS, deviceIndex } from "../catalog/devices.js";
 import type { EditResult, EffectEditor } from "./editor.js";
 import { editorControlSchema, holdsPath, isTextMask } from "./textmask.js";
 import { EASING_PRESETS, type Easing } from "./timeline.js";
@@ -627,6 +628,54 @@ export function effectCommands(): CommandSpec<EffectEditor>[] {
         additionalProperties: false,
       },
       run: (editor, p: { values: Record<string, unknown> }) => done(editor.setValues(p.values)),
+    },
+    {
+      id: "items.set",
+      label: "Set montage items",
+      group: "Values",
+      keywords: ["montage", "screenshots", "gallery", "devices", "media", "list"],
+      description: `For a montage (an effect with items, catalog.search category "montage"): its list of pictures in order, each a URL with an optional device (${DEVICE_KINDS.join(", ")}). Fills its slots with the first items, how many it shows, and each item's device. All or nothing. The rest of a long list comes in as it plays on a page (mountEffect with the same list); here the document keeps the first items.`,
+      params: {
+        type: "object",
+        properties: {
+          items: {
+            type: "array",
+            minItems: 1,
+            items: {
+              type: "object",
+              properties: { image: { type: "string", description: "The picture's URL (or data: URL)." }, device: { type: "string", enum: [...DEVICE_KINDS] } },
+              required: ["image"],
+              additionalProperties: false,
+            },
+          },
+        },
+        required: ["items"],
+        additionalProperties: false,
+      },
+      run: (editor, p: { items: { image: string; device?: string }[] }) => {
+        const { document: doc, controls } = editor.getState();
+        const spec = doc.basedOn ? getEffect(doc.basedOn)?.items : undefined;
+        const montages = findEffects({ category: "montage" }).map((e) => e.id).join(", ");
+        if (!spec) throw new Error(`"${doc.name}" is not a montage, so it takes no items; montages are ${montages} (catalog.search with category "montage", then effect.load). Give a picture to an image control with values.set.`);
+        const missing = [...spec.slots, ...(spec.devices ?? []), ...(spec.count ? [spec.count] : [])].filter((name) => !controls.some((c) => c.name === name));
+        if (missing.length) throw new Error(`"${doc.name}" was edited and no longer has the controls its items go in (${missing.join(", ")}); load "${doc.basedOn}" again with effect.load, or set its image controls with values.set.`);
+        const items = p.items;
+        if (items.length < spec.min || items.length > spec.max) throw new Error(`"${doc.basedOn}" takes ${spec.min} to ${spec.max} items; ${items.length} were given.`);
+        const values: Record<string, unknown> = {};
+        const put = (slot: string, item: { image: string; device?: string }) => {
+          values[slot] = item.image;
+          const control = spec.devices?.[spec.slots.indexOf(slot)];
+          if (control && item.device) values[control] = deviceIndex(item.device);
+        };
+        if (spec.cycle === "carousel") {
+          put(spec.slots[0]!, items[0]!);
+          put(spec.slots[1]!, items[1 % items.length]!);
+          if (spec.progress) values[spec.progress] = 0;
+        } else spec.slots.forEach((slot: string, i: number) => i < items.length && put(slot, items[i]!));
+        if (spec.count) values[spec.count] = Math.min(items.length, spec.slots.length);
+        done(editor.setValues(values));
+        return { ok: true, shown: Math.min(items.length, spec.cycle === "carousel" ? 1 : spec.slots.length), of: items.length, issues: editor.getState().issues };
+      },
     },
     {
       id: "values.reset",

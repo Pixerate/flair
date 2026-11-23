@@ -20,7 +20,7 @@ export interface LayerIndexEntry {
 }
 
 /** The letters the index writes each input as. */
-export const INPUT_LETTERS: Record<EffectInput, string> = { image: "i", video: "v", svg: "g", text: "t", mask: "m", path: "p", audio: "a" };
+export const INPUT_LETTERS: Record<EffectInput, string> = { image: "i", video: "v", svg: "g", text: "t", mask: "m", path: "p", audio: "a", items: "n" };
 
 /** One effect as the index writes it: `id:kind:inputs:flags`. */
 export function packLayerEntry(e: LayerIndexEntry): string {

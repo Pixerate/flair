@@ -1,456 +1,29 @@
 [
   {
-    "id": "card-complete-burst",
-    "name": "Card complete burst",
+    "id": "device-showcase",
+    "name": "Device showcase",
     "kind": "shader",
-    "category": "pyrotechnics",
-    "description": "A small burst of sparks and a ring popping from a point on a card's edge when a task is done, sized for a list item rather than a whole screen.",
+    "category": "montage",
+    "description": "Screenshots on two to five stylised devices (phone, tablet, laptop, monitor, watch, browser) in a staggered layout with depth, drifting in a slow parallax orbit while the devices swap screens one after another.",
     "tags": [
-      "pyro",
-      "celebration",
-      "success",
-      "burst",
-      "sparks",
-      "ui",
-      "overlay",
-      "one-shot"
+      "montage",
+      "devices",
+      "screenshots",
+      "mockup",
+      "product",
+      "marketing",
+      "responsive",
+      "app",
+      "items"
     ],
     "controls": [
       {
-        "n": "uOrigin",
-        "t": "vec2",
-        "d": [
-          0.9,
-          0.5
-        ],
-        "l": "Origin (0–1)",
-        "b": 3,
-        "line": 2
-      },
-      {
-        "n": "uColor1",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            34,
-            197,
-            94
-          ]
-        },
-        "l": "Colour 1",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uColor2",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            250,
-            204,
-            21
-          ]
-        },
-        "l": "Colour 2",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uColor3",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            56,
-            189,
-            248
-          ]
-        },
-        "l": "Colour 3",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uSize",
-        "t": "float",
-        "d": 0.7,
-        "min": 0.2,
-        "max": 1.5,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uSparks",
-        "t": "int",
-        "d": 16,
-        "min": 6,
-        "max": 24,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uAnimate",
-        "t": "bool",
-        "d": true,
-        "line": 8
-      },
-      {
-        "n": "uProgress",
-        "t": "float",
-        "d": 0.35,
-        "l": "Progress (when still)",
-        "b": 3,
-        "line": 9
-      }
-    ],
-    "presets": [
-      "Centre",
-      "Left edge",
-      "Gold",
-      "Neubrutal"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": true
-    },
-    "swiftReady": true,
-    "transparent": true,
-    "loop": 1.6,
-    "animated": true,
-    "duration": 1600,
-    "module": "shaders/moments",
-    "addedAt": "2026-11-23T13:07:37.131Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "agent-working-border",
-    "name": "Agent working border",
-    "kind": "shader",
-    "category": "ui",
-    "description": "A calm beam of colour gliding round a region's border while an agent works on it, one hue per agent when several work at once.",
-    "tags": [
-      "ai",
-      "agent",
-      "border",
-      "beam",
-      "working",
-      "ui",
-      "overlay",
-      "glow"
-    ],
-    "controls": [
-      {
-        "n": "uColor1",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            129,
-            140,
-            248
-          ]
-        },
-        "l": "Agent 1",
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "uColor2",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            244,
-            114,
-            182
-          ]
-        },
-        "l": "Agent 2",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uColor3",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            52,
-            211,
-            153
-          ]
-        },
-        "l": "Agent 3",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uColor4",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            251,
-            191,
-            36
-          ]
-        },
-        "l": "Agent 4",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uAgents",
-        "t": "int",
-        "d": 1,
-        "min": 1,
-        "max": 4,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 0.08,
-        "l": "Laps per second",
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uLength",
-        "t": "float",
-        "d": 0.28,
-        "l": "Beam length",
-        "min": 0.05,
-        "max": 0.6,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uWidth",
-        "t": "float",
-        "d": 1.5,
-        "l": "Line width (px)",
-        "min": 0.5,
-        "max": 8,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uGlow",
-        "t": "float",
-        "d": 0.5,
-        "b": 3,
-        "line": 10
-      },
-      {
-        "n": "uTrack",
-        "t": "float",
-        "d": 0.15,
-        "l": "Border opacity",
-        "b": 3,
-        "line": 11
-      },
-      {
-        "n": "uRadius",
-        "t": "float",
-        "d": 14,
-        "l": "Corner radius (px)",
-        "max": 64,
-        "b": 3,
-        "line": 12
-      },
-      {
-        "n": "uInset",
-        "t": "float",
-        "d": 6,
-        "l": "Inset (px)",
-        "max": 40,
-        "b": 3,
-        "line": 13
-      }
-    ],
-    "presets": [
-      "Three agents",
-      "Single violet",
-      "Hairline",
-      "Neubrutal"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": true
-    },
-    "swiftReady": true,
-    "transparent": true,
-    "animated": true,
-    "module": "shaders/moments",
-    "addedAt": "2026-11-23T13:07:37.131Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "change-pulse",
-    "name": "Change pulse",
-    "kind": "shader",
-    "category": "ui",
-    "description": "A one-shot highlight on an element that just changed: a ring that blooms out from a new one, a sweep across an edited one, a flash that closes in on a removed one.",
-    "tags": [
-      "ui",
-      "highlight",
-      "change",
-      "collaboration",
-      "notification",
-      "overlay",
-      "one-shot"
-    ],
-    "controls": [
-      {
-        "n": "uTone",
-        "t": "int",
-        "d": 1,
-        "l": "Tone (0 create, 1 update, 2 remove)",
-        "max": 2,
-        "b": 3,
-        "line": 2
-      },
-      {
-        "n": "uCreate",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            34,
-            197,
-            94
-          ]
-        },
-        "l": "Created",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uUpdate",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            59,
-            130,
-            246
-          ]
-        },
-        "l": "Updated",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uRemove",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            239,
-            68,
-            68
-          ]
-        },
-        "l": "Removed",
-        "c": 1,
-        "line": 5
-      },
-      {
-        "n": "uRadius",
-        "t": "float",
-        "d": 12,
-        "l": "Corner radius (px)",
-        "max": 64,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uInset",
-        "t": "float",
-        "d": 16,
-        "l": "Element inset (px)",
-        "max": 64,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uSpread",
-        "t": "float",
-        "d": 14,
-        "l": "Ring spread (px)",
-        "max": 64,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uStrength",
-        "t": "float",
-        "d": 0.8,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uAnimate",
-        "t": "bool",
-        "d": true,
-        "line": 10
-      },
-      {
-        "n": "uProgress",
-        "t": "float",
-        "d": 1,
-        "l": "Progress (when still)",
-        "b": 3,
-        "line": 11
-      }
-    ],
-    "presets": [
-      "Created",
-      "Updated",
-      "Removed",
-      "Collaborator"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": true
-    },
-    "swiftReady": true,
-    "transparent": true,
-    "loop": 2,
-    "animated": true,
-    "duration": 2000,
-    "module": "shaders/moments",
-    "addedAt": "2026-11-23T13:07:37.131Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "denoise-reveal",
-    "name": "Denoise reveal",
-    "kind": "shader",
-    "category": "transition",
-    "description": "A picture resolving out of noise the way a diffusion model makes it: coarse blotches of colour settle into shapes, then detail, as the grain clears.",
-    "tags": [
-      "ai",
-      "generated",
-      "reveal",
-      "noise",
-      "diffusion",
-      "image",
-      "loader"
-    ],
-    "controls": [
-      {
-        "n": "uImage",
+        "n": "uItem0",
         "t": "sampler2D",
         "d": {
-          "sample": "landscape"
+          "sample": "city"
         },
+        "l": "Item 1",
         "line": 2,
         "x": {
           "filter": "linear",
@@ -458,68 +31,186 @@
         }
       },
       {
-        "n": "uNoise",
-        "t": "float",
-        "d": 0.6,
-        "l": "Noise that lingers",
-        "b": 3,
-        "line": 3
-      },
-      {
-        "n": "uGrain",
-        "t": "float",
-        "d": 3,
-        "l": "Grain size (px)",
-        "min": 1,
-        "max": 16,
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "uBlocks",
-        "t": "float",
-        "d": 40,
-        "l": "Coarsest blotch (px)",
-        "min": 4,
-        "max": 96,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uTint",
-        "t": "vec3",
+        "n": "uItem1",
+        "t": "sampler2D",
         "d": {
-          "c255": [
-            139,
-            147,
-            255
-          ]
+          "sample": "landscape"
         },
-        "l": "Noise tint",
-        "c": 1,
-        "line": 6
+        "l": "Item 2",
+        "line": 3,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
       },
       {
-        "n": "uTintAmount",
-        "t": "float",
-        "d": 0.3,
-        "l": "Noise tint amount",
+        "n": "uItem2",
+        "t": "sampler2D",
+        "d": {
+          "sample": "portrait"
+        },
+        "l": "Item 3",
+        "line": 4,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uItem3",
+        "t": "sampler2D",
+        "d": {
+          "sample": "city"
+        },
+        "l": "Item 4",
+        "line": 5,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uItem4",
+        "t": "sampler2D",
+        "d": {
+          "sample": "landscape"
+        },
+        "l": "Item 5",
+        "line": 6,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uDevice0",
+        "t": "int",
+        "d": 2,
+        "l": "Device 1 (0 phone, 1 tablet, 2 laptop, 3 desktop, 4 watch, 5 browser)",
+        "max": 5,
         "b": 3,
         "line": 7
       },
       {
-        "n": "uAnimate",
-        "t": "bool",
-        "d": true,
+        "n": "uDevice1",
+        "t": "int",
+        "d": 0,
+        "l": "Device 2 (0 phone, 1 tablet, 2 laptop, 3 desktop, 4 watch, 5 browser)",
+        "max": 5,
+        "b": 3,
         "line": 8
       },
       {
-        "n": "uProgress",
-        "t": "float",
+        "n": "uDevice2",
+        "t": "int",
         "d": 1,
-        "l": "Progress (when still)",
+        "l": "Device 3 (0 phone, 1 tablet, 2 laptop, 3 desktop, 4 watch, 5 browser)",
+        "max": 5,
         "b": 3,
         "line": 9
+      },
+      {
+        "n": "uDevice3",
+        "t": "int",
+        "d": 0,
+        "l": "Device 4 (0 phone, 1 tablet, 2 laptop, 3 desktop, 4 watch, 5 browser)",
+        "max": 5,
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uDevice4",
+        "t": "int",
+        "d": 4,
+        "l": "Device 5 (0 phone, 1 tablet, 2 laptop, 3 desktop, 4 watch, 5 browser)",
+        "max": 5,
+        "b": 3,
+        "line": 11
+      },
+      {
+        "n": "uCount",
+        "t": "int",
+        "d": 3,
+        "l": "Devices",
+        "min": 1,
+        "max": 5,
+        "b": 3,
+        "line": 12
+      },
+      {
+        "n": "uLayout",
+        "t": "int",
+        "d": 0,
+        "l": "Layout (0 staggered row, 1 family, 2 floating stack)",
+        "max": 2,
+        "b": 3,
+        "line": 13
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 0.72,
+        "min": 0.3,
+        "max": 1.2,
+        "b": 3,
+        "line": 14
+      },
+      {
+        "n": "uOrbit",
+        "t": "float",
+        "d": 0.35,
+        "b": 3,
+        "line": 15
+      },
+      {
+        "n": "uSpeed",
+        "t": "float",
+        "d": 0.5,
+        "l": "Orbit speed",
+        "max": 2,
+        "b": 3,
+        "line": 16
+      },
+      {
+        "n": "uBezel",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            17,
+            24,
+            39
+          ]
+        },
+        "c": 1,
+        "line": 17
+      },
+      {
+        "n": "uShadow",
+        "t": "float",
+        "d": 0.35,
+        "b": 3,
+        "line": 18
+      },
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            238,
+            242,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 19
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 0,
+        "l": "Background opacity",
+        "b": 3,
+        "line": 20
       },
       {
         "n": "uBackdrop",
@@ -532,7 +223,7 @@
           ]
         },
         "c": 1,
-        "line": 10
+        "line": 21
       },
       {
         "n": "uBackdropAlpha",
@@ -540,92 +231,353 @@
         "d": 1,
         "l": "Backdrop opacity",
         "b": 3,
-        "line": 11
+        "line": 22
       }
     ],
     "presets": [
-      "Clean and quick",
-      "Chunky",
-      "Violet static",
-      "Half resolved"
+      "Phone + laptop",
+      "Device family",
+      "Floating stack",
+      "With background"
     ],
     "inputs": {
       "accepts": [
         "image",
         "video",
-        "svg"
+        "svg",
+        "items"
       ],
       "images": [
         {
-          "name": "uImage",
-          "label": "Image",
+          "name": "uItem0",
+          "label": "Item 1",
+          "wants": "picture"
+        },
+        {
+          "name": "uItem1",
+          "label": "Item 2",
+          "wants": "picture"
+        },
+        {
+          "name": "uItem2",
+          "label": "Item 3",
+          "wants": "picture"
+        },
+        {
+          "name": "uItem3",
+          "label": "Item 4",
+          "wants": "picture"
+        },
+        {
+          "name": "uItem4",
+          "label": "Item 5",
           "wants": "picture"
         }
       ],
       "texts": [],
       "video": "stills",
       "interactions": [],
-      "transparent": false
+      "transparent": true,
+      "items": {
+        "min": 1,
+        "max": 24,
+        "slots": [
+          "uItem0",
+          "uItem1",
+          "uItem2",
+          "uItem3",
+          "uItem4"
+        ],
+        "cycle": "swap"
+      }
     },
     "swiftReady": true,
     "video": "stills",
-    "loop": 4,
+    "transparent": true,
     "animated": true,
-    "duration": 4000,
-    "module": "shaders/moments",
-    "addedAt": "2026-11-23T13:07:37.131Z",
+    "module": "shaders/montage",
+    "addedAt": "2026-11-23T13:22:09.778Z",
     "commitHash": "",
     "order": 0
   },
   {
-    "id": "goo-drop-reveal",
-    "name": "Goo drop reveal",
-    "kind": "vector",
-    "category": "transition",
-    "description": "A flat, ink-stroked blob drops in, splats across the frame and wipes away to the side, leaving its slot revealed with a word in it.",
+    "id": "screenshot-carousel",
+    "name": "Screenshot carousel",
+    "kind": "shader",
+    "category": "montage",
+    "description": "One device or browser frame cycling through screenshots, each swapped for the next with a slide, a fade, a zoom or a wipe, the frame floating gently.",
     "tags": [
-      "transition",
-      "reveal",
-      "goo",
-      "slime",
-      "wipe",
-      "neubrutal",
-      "flat"
+      "montage",
+      "devices",
+      "screenshots",
+      "carousel",
+      "slideshow",
+      "product",
+      "marketing",
+      "browser",
+      "items"
     ],
     "controls": [
       {
-        "n": "label",
-        "t": "text",
-        "d": "Ready",
-        "l": "Revealed word (may be empty)",
-        "line": 1
+        "n": "uFrom",
+        "t": "sampler2D",
+        "d": {
+          "sample": "city"
+        },
+        "l": "Screenshot shown",
+        "line": 2,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
       },
       {
-        "n": "goo",
+        "n": "uTo",
+        "t": "sampler2D",
+        "d": {
+          "sample": "landscape"
+        },
+        "l": "Next screenshot",
+        "line": 3,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uDevice",
+        "t": "int",
+        "d": 5,
+        "l": "Frame (0 phone, 1 tablet, 2 laptop, 3 desktop, 4 watch, 5 browser)",
+        "max": 5,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uTransition",
+        "t": "int",
+        "d": 0,
+        "l": "Swap (0 slide, 1 fade, 2 zoom, 3 wipe)",
+        "max": 3,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uAnimate",
+        "t": "bool",
+        "d": true,
+        "l": "Animate (preview)",
+        "line": 6
+      },
+      {
+        "n": "uProgress",
+        "t": "float",
+        "d": 0,
+        "l": "Change to the next (0–1)",
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 0.8,
+        "min": 0.3,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uFloat",
+        "t": "float",
+        "d": 0.4,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uBezel",
         "t": "vec3",
         "d": {
           "c255": [
-            163,
-            230,
-            53
+            31,
+            41,
+            55
           ]
         },
+        "l": "Frame",
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "uShadow",
+        "t": "float",
+        "d": 0.35,
+        "b": 3,
+        "line": 11
+      },
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            238,
+            242,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 12
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 0,
+        "l": "Background opacity",
+        "b": 3,
+        "line": 13
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 14
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 15
+      }
+    ],
+    "presets": [
+      "Phone",
+      "Laptop fade",
+      "Tablet zoom",
+      "Browser wipe"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg",
+        "items"
+      ],
+      "images": [
+        {
+          "name": "uFrom",
+          "label": "Screenshot shown",
+          "wants": "picture"
+        },
+        {
+          "name": "uTo",
+          "label": "Next screenshot",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "stills",
+      "interactions": [],
+      "transparent": true,
+      "items": {
+        "min": 1,
+        "max": 24,
+        "slots": [
+          "uFrom",
+          "uTo"
+        ],
+        "cycle": "carousel"
+      }
+    },
+    "swiftReady": true,
+    "video": "stills",
+    "transparent": true,
+    "loop": 6,
+    "animated": true,
+    "duration": 6000,
+    "module": "shaders/montage",
+    "addedAt": "2026-11-23T13:22:09.778Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
+    "id": "memphis-burst",
+    "name": "Memphis burst",
+    "kind": "vector",
+    "category": "icon",
+    "description": "Memphis pop-art shapes spring out from the centre with hard shadows: four-point sparkles, a squiggle, a ring, a triangle and dots, then settle and fade. A flat alternative to confetti.",
+    "tags": [
+      "celebration",
+      "success",
+      "burst",
+      "memphis",
+      "pop-art",
+      "neubrutal",
+      "flat",
+      "overlay"
+    ],
+    "controls": [
+      {
+        "n": "c1",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            42,
+            133
+          ]
+        },
+        "l": "Pink",
+        "c": 1,
+        "line": 1
+      },
+      {
+        "n": "c2",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            6,
+            182,
+            212
+          ]
+        },
+        "l": "Cyan",
         "c": 1,
         "line": 2
       },
       {
-        "n": "wordColor",
+        "n": "c3",
         "t": "vec3",
         "d": {
           "c255": [
-            9,
-            9,
-            11
+            250,
+            204,
+            21
           ]
         },
-        "l": "Word",
+        "l": "Yellow",
         "c": 1,
         "line": 3
+      },
+      {
+        "n": "c4",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            192,
+            132,
+            252
+          ]
+        },
+        "l": "Purple",
+        "c": 1,
+        "line": 4
       },
       {
         "n": "shadowStyle",
@@ -634,27 +586,27 @@
         "l": "Shadow (0 soft, 1 hard)",
         "max": 1,
         "b": 3,
-        "line": 4
+        "line": 5
       },
       {
         "n": "shadowOffset",
         "t": "float",
-        "d": 8,
+        "d": 4,
         "l": "Hard shadow offset",
         "max": 16,
         "s": 1,
         "b": 3,
-        "line": 5
+        "line": 6
       },
       {
         "n": "inkWidth",
         "t": "float",
-        "d": 3,
+        "d": 2.5,
         "l": "Ink outline width",
         "max": 8,
         "s": 0.5,
         "b": 3,
-        "line": 6
+        "line": 7
       },
       {
         "n": "inkColor",
@@ -668,7 +620,7 @@
         },
         "l": "Ink",
         "c": 1,
-        "line": 7
+        "line": 8
       },
       {
         "n": "sheen",
@@ -676,151 +628,13 @@
         "d": 0,
         "s": 0.05,
         "b": 3,
-        "line": 8
-      }
-    ],
-    "presets": [
-      "Pink",
-      "Cyan",
-      "Soft",
-      "No word"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [
-        {
-          "name": "label",
-          "label": "Revealed word (may be empty)",
-          "holds": "copy",
-          "default": "Ready"
-        }
-      ],
-      "interactions": [],
-      "transparent": false
-    },
-    "hold": 800,
-    "animated": true,
-    "duration": 2470,
-    "module": "moments",
-    "addedAt": "2026-11-23T13:07:37.131Z",
-    "commitHash": "",
-    "order": 0
-  },
-  {
-    "id": "generating-field",
-    "name": "Generating field",
-    "kind": "shader",
-    "category": "loader",
-    "description": "A soft field brewing over a card while a job runs, its motion set by what is being made, with a glowing front that sweeps across as the job gets further along.",
-    "tags": [
-      "loader",
-      "ai",
-      "generating",
-      "progress",
-      "ambient",
-      "overlay",
-      "ui"
-    ],
-    "controls": [
-      {
-        "n": "uColorA",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            129,
-            140,
-            248
-          ]
-        },
-        "l": "Colour A",
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "uColorB",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            192,
-            132,
-            252
-          ]
-        },
-        "l": "Colour B",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uColorC",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            34,
-            211,
-            238
-          ]
-        },
-        "l": "Colour C",
-        "c": 1,
-        "line": 4
-      },
-      {
-        "n": "uMotion",
-        "t": "int",
-        "d": 0,
-        "l": "Motion (0 image, 1 video, 2 audio, 3 text, 4 vector)",
-        "max": 4,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uIntensity",
-        "t": "float",
-        "d": 0.55,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uSpeed",
-        "t": "float",
-        "d": 1,
-        "max": 3,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uRadius",
-        "t": "float",
-        "d": 16,
-        "l": "Corner radius (px)",
-        "max": 64,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uAnimate",
-        "t": "bool",
-        "d": true,
         "line": 9
-      },
-      {
-        "n": "uProgress",
-        "t": "float",
-        "d": 0.45,
-        "l": "Progress (when still)",
-        "b": 3,
-        "line": 10
       }
     ],
     "presets": [
-      "Image",
-      "Video",
-      "Audio",
-      "Text",
-      "Vector",
+      "Soft",
+      "Mono ink",
+      "Pastel",
       "Neubrutal"
     ],
     "inputs": {
@@ -828,74 +642,15 @@
       "images": [],
       "texts": [],
       "interactions": [],
-      "transparent": true
+      "transparent": false
     },
-    "swiftReady": true,
-    "transparent": true,
+    "hold": 300,
     "animated": true,
-    "ui": {
-      "implements": "loader",
-      "group": "paradigm",
-      "contract": {
-        "props": {
-          "type": "object",
-          "properties": {
-            "value": {
-              "type": [
-                "number",
-                "null"
-              ],
-              "minimum": 0,
-              "maximum": 1,
-              "description": "How far along the job is, 0–1; null (or left out) while it cannot tell, so the loader plays its own loop."
-            }
-          },
-          "additionalProperties": false
-        },
-        "state": [],
-        "events": [],
-        "a11y": {
-          "role": "progressbar",
-          "keyboard": {},
-          "labelFrom": "aria-label",
-          "reducedMotionAt": 1
-        },
-        "colorRoles": [
-          "accent",
-          "accent-ink",
-          "focus"
-        ],
-        "motion": true,
-        "sizing": {
-          "mode": "fill"
-        }
-      },
-      "platforms": [
-        "react",
-        "svelte",
-        "html-page"
-      ],
-      "example": {
-        "value": null
-      },
-      "contentHash": "90c87ab269fb21ca"
-    },
-    "uiBindings": {
-      "props": {},
-      "colors": {
-        "accent": "uColorA",
-        "accent-ink": "uColorB",
-        "focus": "uColorC"
-      },
-      "progress": {
-        "control": "uProgress",
-        "animate": "uAnimate"
-      }
-    },
-    "module": "shaders/moments",
-    "addedAt": "2026-11-23T13:07:37.131Z",
-    "commitHash": "",
-    "order": 0
+    "duration": 2110,
+    "module": "moments",
+    "addedAt": "2026-11-23T13:08:48Z",
+    "commitHash": "950805d1f769c269815aa74fbf2cd0e8d9c0479d",
+    "order": 725
   },
   {
     "id": "slop-vat",
@@ -1082,71 +837,42 @@
       }
     },
     "module": "moments",
-    "addedAt": "2026-11-23T13:07:37.131Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-11-23T13:08:48Z",
+    "commitHash": "950805d1f769c269815aa74fbf2cd0e8d9c0479d",
+    "order": 724
   },
   {
-    "id": "memphis-burst",
-    "name": "Memphis burst",
-    "kind": "vector",
-    "category": "icon",
-    "description": "Memphis pop-art shapes spring out from the centre with hard shadows: four-point sparkles, a squiggle, a ring, a triangle and dots, then settle and fade. A flat alternative to confetti.",
+    "id": "generating-field",
+    "name": "Generating field",
+    "kind": "shader",
+    "category": "loader",
+    "description": "A soft field brewing over a card while a job runs, its motion set by what is being made, with a glowing front that sweeps across as the job gets further along.",
     "tags": [
-      "celebration",
-      "success",
-      "burst",
-      "memphis",
-      "pop-art",
-      "neubrutal",
-      "flat",
-      "overlay"
+      "loader",
+      "ai",
+      "generating",
+      "progress",
+      "ambient",
+      "overlay",
+      "ui"
     ],
     "controls": [
       {
-        "n": "c1",
+        "n": "uColorA",
         "t": "vec3",
         "d": {
           "c255": [
-            255,
-            42,
-            133
+            129,
+            140,
+            248
           ]
         },
-        "l": "Pink",
-        "c": 1,
-        "line": 1
-      },
-      {
-        "n": "c2",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            6,
-            182,
-            212
-          ]
-        },
-        "l": "Cyan",
+        "l": "Colour A",
         "c": 1,
         "line": 2
       },
       {
-        "n": "c3",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            250,
-            204,
-            21
-          ]
-        },
-        "l": "Yellow",
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "c4",
+        "n": "uColorB",
         "t": "vec3",
         "d": {
           "c255": [
@@ -1155,9 +881,203 @@
             252
           ]
         },
-        "l": "Purple",
+        "l": "Colour B",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uColorC",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            34,
+            211,
+            238
+          ]
+        },
+        "l": "Colour C",
         "c": 1,
         "line": 4
+      },
+      {
+        "n": "uMotion",
+        "t": "int",
+        "d": 0,
+        "l": "Motion (0 image, 1 video, 2 audio, 3 text, 4 vector)",
+        "max": 4,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uIntensity",
+        "t": "float",
+        "d": 0.55,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uSpeed",
+        "t": "float",
+        "d": 1,
+        "max": 3,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uRadius",
+        "t": "float",
+        "d": 16,
+        "l": "Corner radius (px)",
+        "max": 64,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uAnimate",
+        "t": "bool",
+        "d": true,
+        "line": 9
+      },
+      {
+        "n": "uProgress",
+        "t": "float",
+        "d": 0.45,
+        "l": "Progress (when still)",
+        "b": 3,
+        "line": 10
+      }
+    ],
+    "presets": [
+      "Image",
+      "Video",
+      "Audio",
+      "Text",
+      "Vector",
+      "Neubrutal"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": true
+    },
+    "swiftReady": true,
+    "transparent": true,
+    "animated": true,
+    "ui": {
+      "implements": "loader",
+      "group": "paradigm",
+      "contract": {
+        "props": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 1,
+              "description": "How far along the job is, 0–1; null (or left out) while it cannot tell, so the loader plays its own loop."
+            }
+          },
+          "additionalProperties": false
+        },
+        "state": [],
+        "events": [],
+        "a11y": {
+          "role": "progressbar",
+          "keyboard": {},
+          "labelFrom": "aria-label",
+          "reducedMotionAt": 1
+        },
+        "colorRoles": [
+          "accent",
+          "accent-ink",
+          "focus"
+        ],
+        "motion": true,
+        "sizing": {
+          "mode": "fill"
+        }
+      },
+      "platforms": [
+        "react",
+        "svelte",
+        "html-page"
+      ],
+      "example": {
+        "value": null
+      },
+      "contentHash": "90c87ab269fb21ca"
+    },
+    "uiBindings": {
+      "props": {},
+      "colors": {
+        "accent": "uColorA",
+        "accent-ink": "uColorB",
+        "focus": "uColorC"
+      },
+      "progress": {
+        "control": "uProgress",
+        "animate": "uAnimate"
+      }
+    },
+    "module": "shaders/moments",
+    "addedAt": "2026-11-23T13:08:48Z",
+    "commitHash": "950805d1f769c269815aa74fbf2cd0e8d9c0479d",
+    "order": 723
+  },
+  {
+    "id": "goo-drop-reveal",
+    "name": "Goo drop reveal",
+    "kind": "vector",
+    "category": "transition",
+    "description": "A flat, ink-stroked blob drops in, splats across the frame and wipes away to the side, leaving its slot revealed with a word in it.",
+    "tags": [
+      "transition",
+      "reveal",
+      "goo",
+      "slime",
+      "wipe",
+      "neubrutal",
+      "flat"
+    ],
+    "controls": [
+      {
+        "n": "label",
+        "t": "text",
+        "d": "Ready",
+        "l": "Revealed word (may be empty)",
+        "line": 1
+      },
+      {
+        "n": "goo",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            163,
+            230,
+            53
+          ]
+        },
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "wordColor",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            9,
+            9,
+            11
+          ]
+        },
+        "l": "Word",
+        "c": 1,
+        "line": 3
       },
       {
         "n": "shadowStyle",
@@ -1166,27 +1086,27 @@
         "l": "Shadow (0 soft, 1 hard)",
         "max": 1,
         "b": 3,
-        "line": 5
+        "line": 4
       },
       {
         "n": "shadowOffset",
         "t": "float",
-        "d": 4,
+        "d": 8,
         "l": "Hard shadow offset",
         "max": 16,
         "s": 1,
         "b": 3,
-        "line": 6
+        "line": 5
       },
       {
         "n": "inkWidth",
         "t": "float",
-        "d": 2.5,
+        "d": 3,
         "l": "Ink outline width",
         "max": 8,
         "s": 0.5,
         "b": 3,
-        "line": 7
+        "line": 6
       },
       {
         "n": "inkColor",
@@ -1200,7 +1120,7 @@
         },
         "l": "Ink",
         "c": 1,
-        "line": 8
+        "line": 7
       },
       {
         "n": "sheen",
@@ -1208,13 +1128,474 @@
         "d": 0,
         "s": 0.05,
         "b": 3,
-        "line": 9
+        "line": 8
       }
     ],
     "presets": [
+      "Pink",
+      "Cyan",
       "Soft",
-      "Mono ink",
-      "Pastel",
+      "No word"
+    ],
+    "inputs": {
+      "accepts": [
+        "text"
+      ],
+      "images": [],
+      "texts": [
+        {
+          "name": "label",
+          "label": "Revealed word (may be empty)",
+          "holds": "copy",
+          "default": "Ready"
+        }
+      ],
+      "interactions": [],
+      "transparent": false
+    },
+    "hold": 800,
+    "animated": true,
+    "duration": 2470,
+    "module": "moments",
+    "addedAt": "2026-11-23T13:08:48Z",
+    "commitHash": "950805d1f769c269815aa74fbf2cd0e8d9c0479d",
+    "order": 722
+  },
+  {
+    "id": "denoise-reveal",
+    "name": "Denoise reveal",
+    "kind": "shader",
+    "category": "transition",
+    "description": "A picture resolving out of noise the way a diffusion model makes it: coarse blotches of colour settle into shapes, then detail, as the grain clears.",
+    "tags": [
+      "ai",
+      "generated",
+      "reveal",
+      "noise",
+      "diffusion",
+      "image",
+      "loader"
+    ],
+    "controls": [
+      {
+        "n": "uImage",
+        "t": "sampler2D",
+        "d": {
+          "sample": "landscape"
+        },
+        "line": 2,
+        "x": {
+          "filter": "linear",
+          "wrap": "clamp"
+        }
+      },
+      {
+        "n": "uNoise",
+        "t": "float",
+        "d": 0.6,
+        "l": "Noise that lingers",
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "uGrain",
+        "t": "float",
+        "d": 3,
+        "l": "Grain size (px)",
+        "min": 1,
+        "max": 16,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uBlocks",
+        "t": "float",
+        "d": 40,
+        "l": "Coarsest blotch (px)",
+        "min": 4,
+        "max": 96,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uTint",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            139,
+            147,
+            255
+          ]
+        },
+        "l": "Noise tint",
+        "c": 1,
+        "line": 6
+      },
+      {
+        "n": "uTintAmount",
+        "t": "float",
+        "d": 0.3,
+        "l": "Noise tint amount",
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uAnimate",
+        "t": "bool",
+        "d": true,
+        "line": 8
+      },
+      {
+        "n": "uProgress",
+        "t": "float",
+        "d": 1,
+        "l": "Progress (when still)",
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uBackdrop",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            255,
+            255,
+            255
+          ]
+        },
+        "c": 1,
+        "line": 10
+      },
+      {
+        "n": "uBackdropAlpha",
+        "t": "float",
+        "d": 1,
+        "l": "Backdrop opacity",
+        "b": 3,
+        "line": 11
+      }
+    ],
+    "presets": [
+      "Clean and quick",
+      "Chunky",
+      "Violet static",
+      "Half resolved"
+    ],
+    "inputs": {
+      "accepts": [
+        "image",
+        "video",
+        "svg"
+      ],
+      "images": [
+        {
+          "name": "uImage",
+          "label": "Image",
+          "wants": "picture"
+        }
+      ],
+      "texts": [],
+      "video": "stills",
+      "interactions": [],
+      "transparent": false
+    },
+    "swiftReady": true,
+    "video": "stills",
+    "loop": 4,
+    "animated": true,
+    "duration": 4000,
+    "module": "shaders/moments",
+    "addedAt": "2026-11-23T13:08:48Z",
+    "commitHash": "950805d1f769c269815aa74fbf2cd0e8d9c0479d",
+    "order": 721
+  },
+  {
+    "id": "change-pulse",
+    "name": "Change pulse",
+    "kind": "shader",
+    "category": "ui",
+    "description": "A one-shot highlight on an element that just changed: a ring that blooms out from a new one, a sweep across an edited one, a flash that closes in on a removed one.",
+    "tags": [
+      "ui",
+      "highlight",
+      "change",
+      "collaboration",
+      "notification",
+      "overlay",
+      "one-shot"
+    ],
+    "controls": [
+      {
+        "n": "uTone",
+        "t": "int",
+        "d": 1,
+        "l": "Tone (0 create, 1 update, 2 remove)",
+        "max": 2,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "uCreate",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            34,
+            197,
+            94
+          ]
+        },
+        "l": "Created",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uUpdate",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            59,
+            130,
+            246
+          ]
+        },
+        "l": "Updated",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uRemove",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            239,
+            68,
+            68
+          ]
+        },
+        "l": "Removed",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uRadius",
+        "t": "float",
+        "d": 12,
+        "l": "Corner radius (px)",
+        "max": 64,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uInset",
+        "t": "float",
+        "d": 16,
+        "l": "Element inset (px)",
+        "max": 64,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uSpread",
+        "t": "float",
+        "d": 14,
+        "l": "Ring spread (px)",
+        "max": 64,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uStrength",
+        "t": "float",
+        "d": 0.8,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uAnimate",
+        "t": "bool",
+        "d": true,
+        "line": 10
+      },
+      {
+        "n": "uProgress",
+        "t": "float",
+        "d": 1,
+        "l": "Progress (when still)",
+        "b": 3,
+        "line": 11
+      }
+    ],
+    "presets": [
+      "Created",
+      "Updated",
+      "Removed",
+      "Collaborator"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": true
+    },
+    "swiftReady": true,
+    "transparent": true,
+    "loop": 2,
+    "animated": true,
+    "duration": 2000,
+    "module": "shaders/moments",
+    "addedAt": "2026-11-23T13:08:48Z",
+    "commitHash": "950805d1f769c269815aa74fbf2cd0e8d9c0479d",
+    "order": 720
+  },
+  {
+    "id": "agent-working-border",
+    "name": "Agent working border",
+    "kind": "shader",
+    "category": "ui",
+    "description": "A calm beam of colour gliding round a region's border while an agent works on it, one hue per agent when several work at once.",
+    "tags": [
+      "ai",
+      "agent",
+      "border",
+      "beam",
+      "working",
+      "ui",
+      "overlay",
+      "glow"
+    ],
+    "controls": [
+      {
+        "n": "uColor1",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            129,
+            140,
+            248
+          ]
+        },
+        "l": "Agent 1",
+        "c": 1,
+        "line": 2
+      },
+      {
+        "n": "uColor2",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            244,
+            114,
+            182
+          ]
+        },
+        "l": "Agent 2",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uColor3",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            52,
+            211,
+            153
+          ]
+        },
+        "l": "Agent 3",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uColor4",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            251,
+            191,
+            36
+          ]
+        },
+        "l": "Agent 4",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uAgents",
+        "t": "int",
+        "d": 1,
+        "min": 1,
+        "max": 4,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uSpeed",
+        "t": "float",
+        "d": 0.08,
+        "l": "Laps per second",
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uLength",
+        "t": "float",
+        "d": 0.28,
+        "l": "Beam length",
+        "min": 0.05,
+        "max": 0.6,
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uWidth",
+        "t": "float",
+        "d": 1.5,
+        "l": "Line width (px)",
+        "min": 0.5,
+        "max": 8,
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uGlow",
+        "t": "float",
+        "d": 0.5,
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uTrack",
+        "t": "float",
+        "d": 0.15,
+        "l": "Border opacity",
+        "b": 3,
+        "line": 11
+      },
+      {
+        "n": "uRadius",
+        "t": "float",
+        "d": 14,
+        "l": "Corner radius (px)",
+        "max": 64,
+        "b": 3,
+        "line": 12
+      },
+      {
+        "n": "uInset",
+        "t": "float",
+        "d": 6,
+        "l": "Inset (px)",
+        "max": 40,
+        "b": 3,
+        "line": 13
+      }
+    ],
+    "presets": [
+      "Three agents",
+      "Single violet",
+      "Hairline",
       "Neubrutal"
     ],
     "inputs": {
@@ -1222,15 +1603,141 @@
       "images": [],
       "texts": [],
       "interactions": [],
-      "transparent": false
+      "transparent": true
     },
-    "hold": 300,
+    "swiftReady": true,
+    "transparent": true,
     "animated": true,
-    "duration": 2110,
-    "module": "moments",
-    "addedAt": "2026-11-23T13:07:37.131Z",
-    "commitHash": "",
-    "order": 0
+    "module": "shaders/moments",
+    "addedAt": "2026-11-23T13:08:48Z",
+    "commitHash": "950805d1f769c269815aa74fbf2cd0e8d9c0479d",
+    "order": 719
+  },
+  {
+    "id": "card-complete-burst",
+    "name": "Card complete burst",
+    "kind": "shader",
+    "category": "pyrotechnics",
+    "description": "A small burst of sparks and a ring popping from a point on a card's edge when a task is done, sized for a list item rather than a whole screen.",
+    "tags": [
+      "pyro",
+      "celebration",
+      "success",
+      "burst",
+      "sparks",
+      "ui",
+      "overlay",
+      "one-shot"
+    ],
+    "controls": [
+      {
+        "n": "uOrigin",
+        "t": "vec2",
+        "d": [
+          0.9,
+          0.5
+        ],
+        "l": "Origin (0–1)",
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "uColor1",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            34,
+            197,
+            94
+          ]
+        },
+        "l": "Colour 1",
+        "c": 1,
+        "line": 3
+      },
+      {
+        "n": "uColor2",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            250,
+            204,
+            21
+          ]
+        },
+        "l": "Colour 2",
+        "c": 1,
+        "line": 4
+      },
+      {
+        "n": "uColor3",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            56,
+            189,
+            248
+          ]
+        },
+        "l": "Colour 3",
+        "c": 1,
+        "line": 5
+      },
+      {
+        "n": "uSize",
+        "t": "float",
+        "d": 0.7,
+        "min": 0.2,
+        "max": 1.5,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uSparks",
+        "t": "int",
+        "d": 16,
+        "min": 6,
+        "max": 24,
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uAnimate",
+        "t": "bool",
+        "d": true,
+        "line": 8
+      },
+      {
+        "n": "uProgress",
+        "t": "float",
+        "d": 0.35,
+        "l": "Progress (when still)",
+        "b": 3,
+        "line": 9
+      }
+    ],
+    "presets": [
+      "Centre",
+      "Left edge",
+      "Gold",
+      "Neubrutal"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": true
+    },
+    "swiftReady": true,
+    "transparent": true,
+    "loop": 1.6,
+    "animated": true,
+    "duration": 1600,
+    "module": "shaders/moments",
+    "addedAt": "2026-11-23T13:08:48Z",
+    "commitHash": "950805d1f769c269815aa74fbf2cd0e8d9c0479d",
+    "order": 718
   },
   {
     "id": "dragover-attract",
@@ -1369,9 +1876,9 @@
     "transparent": true,
     "animated": true,
     "module": "shaders/moments",
-    "addedAt": "2026-11-23T13:07:37.130Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-11-23T13:08:48Z",
+    "commitHash": "950805d1f769c269815aa74fbf2cd0e8d9c0479d",
+    "order": 717
   },
   {
     "id": "daydream",
@@ -2840,282 +3347,5 @@
     "addedAt": "2026-11-15T10:39:44Z",
     "commitHash": "e68f0b7f39b452e540b245f6bab92c9a33ac5b74",
     "order": 708
-  },
-  {
-    "id": "shimmer",
-    "name": "Shimmer",
-    "kind": "text-treatment",
-    "category": "treatment",
-    "description": "A loading skeleton: the words sit on rounded pills while a bright glint streaks across them twice as they are checked, a pill selection, and a last glint across what changed.",
-    "tags": [
-      "agent",
-      "writing",
-      "edit",
-      "shimmer",
-      "skeleton",
-      "shine",
-      "loading",
-      "pill",
-      "caret",
-      "selection"
-    ],
-    "controls": [
-      {
-        "n": "color",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            100,
-            116,
-            139
-          ]
-        },
-        "l": "Agent colour",
-        "c": 1,
-        "s": 0.01,
-        "line": 1
-      },
-      {
-        "n": "caretWidth",
-        "t": "float",
-        "d": 2,
-        "min": 1,
-        "max": 6,
-        "s": 0.5,
-        "b": 3,
-        "line": 2
-      },
-      {
-        "n": "nameTag",
-        "t": "bool",
-        "d": true,
-        "s": 0.01,
-        "line": 3
-      },
-      {
-        "n": "blink",
-        "t": "bool",
-        "d": false,
-        "l": "Blink caret",
-        "s": 0.01,
-        "line": 4
-      },
-      {
-        "n": "checkMs",
-        "t": "float",
-        "d": 1100,
-        "l": "Check (ms)",
-        "min": 80,
-        "max": 2000,
-        "s": 10,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "selectMs",
-        "t": "float",
-        "d": 180,
-        "l": "Select (ms)",
-        "max": 1000,
-        "s": 10,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "landMs",
-        "t": "float",
-        "d": 900,
-        "l": "Land (ms)",
-        "min": 100,
-        "max": 4000,
-        "s": 10,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "base",
-        "t": "float",
-        "d": 0.2,
-        "l": "Pill tint",
-        "max": 0.6,
-        "s": 0.01,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "shine",
-        "t": "float",
-        "d": 0.9,
-        "l": "Glint",
-        "s": 0.01,
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "light",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            255,
-            255,
-            255
-          ]
-        },
-        "l": "Glint colour",
-        "c": 1,
-        "s": 0.01,
-        "line": 10
-      }
-    ],
-    "presets": [
-      "Slate",
-      "Violet",
-      "Dark theme"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "treatment",
-    "addedAt": "2026-11-15T10:39:44Z",
-    "commitHash": "e68f0b7f39b452e540b245f6bab92c9a33ac5b74",
-    "order": 707
-  },
-  {
-    "id": "glow-underline",
-    "name": "Glow underline",
-    "kind": "text-treatment",
-    "category": "treatment",
-    "description": "A glowing underline sweeping on beneath the words being checked and wiping away from its tail, a lit underline under the selection, and a glowing caret.",
-    "tags": [
-      "agent",
-      "writing",
-      "edit",
-      "underline",
-      "glow",
-      "neon",
-      "caret",
-      "selection"
-    ],
-    "controls": [
-      {
-        "n": "color",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            91,
-            140,
-            255
-          ]
-        },
-        "l": "Agent colour",
-        "c": 1,
-        "s": 0.01,
-        "line": 1
-      },
-      {
-        "n": "caretWidth",
-        "t": "float",
-        "d": 2,
-        "min": 1,
-        "max": 6,
-        "s": 0.5,
-        "b": 3,
-        "line": 2
-      },
-      {
-        "n": "nameTag",
-        "t": "bool",
-        "d": true,
-        "s": 0.01,
-        "line": 3
-      },
-      {
-        "n": "blink",
-        "t": "bool",
-        "d": false,
-        "l": "Blink caret",
-        "s": 0.01,
-        "line": 4
-      },
-      {
-        "n": "checkMs",
-        "t": "float",
-        "d": 520,
-        "l": "Check (ms)",
-        "min": 80,
-        "max": 2000,
-        "s": 10,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "selectMs",
-        "t": "float",
-        "d": 180,
-        "l": "Select (ms)",
-        "max": 1000,
-        "s": 10,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "landMs",
-        "t": "float",
-        "d": 900,
-        "l": "Land (ms)",
-        "min": 100,
-        "max": 4000,
-        "s": 10,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "glow",
-        "t": "float",
-        "d": 6,
-        "l": "Glow (px)",
-        "max": 16,
-        "s": 0.5,
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "thickness",
-        "t": "float",
-        "d": 0.1,
-        "min": 0.04,
-        "max": 0.3,
-        "s": 0.01,
-        "b": 3,
-        "line": 9
-      }
-    ],
-    "presets": [
-      "Blue",
-      "Hot pink",
-      "Gold",
-      "No glow"
-    ],
-    "inputs": {
-      "accepts": [
-        "text"
-      ],
-      "images": [],
-      "texts": [],
-      "interactions": [],
-      "transparent": false
-    },
-    "animated": true,
-    "module": "treatment",
-    "addedAt": "2026-11-15T10:39:44Z",
-    "commitHash": "e68f0b7f39b452e540b245f6bab92c9a33ac5b74",
-    "order": 706
   }
 ]

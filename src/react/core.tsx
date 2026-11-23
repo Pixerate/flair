@@ -286,12 +286,20 @@ export interface FlairEffectProps extends Omit<HTMLAttributes<HTMLDivElement>, "
    * throws during the commit, and one that loads logs the error.
    */
   onError?: (error: Error) => void;
+  /** For a montage: ms each item is shown before the next comes in (default 2500). */
+  itemDuration?: number;
+  /** For a montage carousel: ms its change to the next item takes (default 700). */
+  overlap?: number;
+  /** For a montage: show the items in a random order. */
+  shuffle?: boolean;
+  /** For a montage: called with each item's index as it comes in, to keep the page's copy in step. */
+  onItem?: (index: number) => void;
 }
 
 /** `FlairEffect` over a way to mount effects: `@pixerate/flair/embed`'s `mountEffect`, or the lazy one. */
 export function createFlairEffect(mount: (host: HTMLElement, effect: string | EffectDefinition, options: MountOptions) => MountedEffect | Promise<MountedEffect>) {
   return function FlairEffect(props: FlairEffectProps) {
-    const { effect, subject, preset, values, autoplay, pauseWhenHidden, data, state, onEvent, label, reducedMotion, onError, style, ...rest } = props;
+    const { effect, subject, preset, values, autoplay, pauseWhenHidden, data, state, onEvent, label, reducedMotion, onError, itemDuration, overlap, shuffle, onItem, style, ...rest } = props;
     const host = useRef<HTMLDivElement>(null);
     const mounted = useRef<MountedEffect | undefined>(undefined);
     const valuesKey = JSON.stringify(values ?? {});
@@ -301,8 +309,8 @@ export function createFlairEffect(mount: (host: HTMLElement, effect: string | Ef
     const controlled = state !== undefined;
     // What the running effect last took, so a re-render with the same subject or values changes nothing.
     const applied = useRef<{ subject?: FlairEffectProps["subject"]; valuesKey: string; dataKey: string; stateKey: string }>({ valuesKey: "", dataKey: "", stateKey: "" });
-    const latest = useRef({ subject, values, valuesKey, data, dataKey, state, stateKey, onEvent, onError, controlled });
-    latest.current = { subject, values, valuesKey, data, dataKey, state, stateKey, onEvent, onError, controlled };
+    const latest = useRef({ subject, values, valuesKey, data, dataKey, state, stateKey, onEvent, onError, onItem, controlled });
+    latest.current = { subject, values, valuesKey, data, dataKey, state, stateKey, onEvent, onError, onItem, controlled };
     /** Brings the running effect up to the latest props (after an effect that loads, they may have moved on). */
     const sync = () => {
       const m = mounted.current;
@@ -354,6 +362,10 @@ export function createFlairEffect(mount: (host: HTMLElement, effect: string | Ef
           ...(label !== undefined ? { label } : {}),
           ...(reducedMotion ? { reducedMotion } : {}),
           onEvent: (name, detail) => latest.current.onEvent?.(name, detail),
+          onItem: (index) => latest.current.onItem?.(index),
+          ...(itemDuration !== undefined ? { itemDuration } : {}),
+          ...(overlap !== undefined ? { overlap } : {}),
+          ...(shuffle !== undefined ? { shuffle } : {}),
           autoplay: autoplay ?? true,
           pauseWhenHidden: pauseWhenHidden ?? true,
         });
@@ -369,7 +381,7 @@ export function createFlairEffect(mount: (host: HTMLElement, effect: string | Ef
         running?.dispose();
         mounted.current = undefined;
       };
-    }, [effect, preset, autoplay, pauseWhenHidden, controlled, label, reducedMotion]);
+    }, [effect, preset, autoplay, pauseWhenHidden, controlled, label, reducedMotion, itemDuration, overlap, shuffle]);
     useEffect(sync, [dataKey, stateKey, controlled, subject, valuesKey]);
     return <div ref={host} style={{ position: "relative", ...style }} {...rest} />;
   };

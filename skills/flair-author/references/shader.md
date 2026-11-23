@@ -94,6 +94,10 @@ renderer.setValues({ uSpeed: 2 });
 
 Every field but `presets` is required (`transparent`, `loop`, `build`, `rest` and `video` are optional extras; `build` is the seconds a shader takes to build up once before it settles, such as a path drawing on, so previews replay it; `rest` is the `iTime` shown, still, under `prefers-reduced-motion`, defaulting to `build`, else 1 s, so pick a frame that reads as the effect at rest). A one-shot (a reveal, a burst) runs on a `uProgress` control (0 → 1) with a `uAnimate` bool that loops it for previews: `mountEffect(el, effect, { loop: false })` and `playMoment` play it once, and reduced motion shows `uProgress` 1. `id` is your own kebab-case id; `category` is one of `EFFECT_CATEGORIES` (from `@pixerate/flair/catalog`; the full list is in the skill's rules), such as `gradient`, `image`, `overlay` or `text`, and only sorts it.
 
+### A montage: an effect that takes N items
+
+Declare one image control per item it shows at once (a handful, since each takes a texture unit), then describe them with `items` on the definition: `{ min, max, slots: ["uItem0", …], cycle: "swap" | "carousel", count?: "uCount", devices?: ["uDevice0", …], progress?: "uProgress" }`. `count` is an int control told how many items it shows, `devices` are int controls told each item's device (0 phone … 5 browser, `DEVICE_KINDS`), and a carousel has two slots (shown and next) and a `progress` control that runs 0 → 1 to change between them. `mountEffect` then fills the slots and rotates longer lists through them, and `effectInputs(effect).items` reports it. Draw devices with `DEVICE_GLSL` (paste it in; its `deviceFrame` function gives a frame's colour and coverage and its screen's coverage and position), and fit each screenshot to its screen's aspect yourself, since a screen is not the canvas. Use category `montage`.
+
 ### Getting the source into app code
 
 The `.frag` file is for checking; the app needs the GLSL as a string:

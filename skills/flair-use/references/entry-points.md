@@ -79,6 +79,16 @@ const played = await playMoment(card, "success-check", { outset: 24 }); // or "v
 
 It plays nothing and settles `false` under reduced motion, without WebGL2 for a shader, when the element is off the page or `signal` aborts, so keep a CSS fallback. React: `useFlairMoment()` returns a function that plays a moment over a ref (and stops on unmount). Svelte: `use:flairMoment={{ effect: id, key: item.updatedAt }}` plays each time `key` changes (on mount without a `key`).
 
+## Montages: a list of media
+
+Effects in the `montage` category (`findEffects({ accepts: ["items"] })`) take a list rather than one subject: `{ image }`, `{ video }` or `{ svg }` items, each with an optional `device` (`phone`, `tablet`, `laptop`, `desktop`, `watch`, `browser`), `label` and `duration`. They show the first few at once and bring the rest in as they play:
+
+```ts
+mountEffect(el, "device-showcase", { subject: [{ image: "/laptop.png", device: "laptop" }, { image: "/phone.png", device: "phone" }], itemDuration: 3000, onItem: (i) => showCaption(i) });
+```
+
+`itemDuration`, `overlap`, `loop`, `shuffle` and `onItem` work the same on `<FlairEffect>` and `use:flairEffect`; the mounted effect's `setSubject` swaps the list. A list outside the effect's `effectInputs(effect).items` range (`min` to `max`), an item that is not media, or an unknown device is refused with a sentence.
+
 ## Loaders with real progress
 
 Loaders whose metadata has `ui.implements: "loader"` (`liquid-loader`, `flame-loader`) take `data: { value }`: 0–1 shows the job's progress, `null` plays the loader's own loop while the job cannot tell. They are progress bars to assistive tech (name them with `label`):
