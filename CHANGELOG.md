@@ -1,5 +1,11 @@
 # @pixerate/flair
 
+## 0.144.0
+
+### Minor Changes
+
+- a5db28c: Add `canOutputImage`, `canOutputVector`, `isTransitionEffect`, and `isAudioReactiveEffect` catalog helpers and widen `EffectQuery.output` to support `"image"` and `"vector"`.
+
 ## 0.143.1
 
 ### Patch Changes
