@@ -172,6 +172,8 @@ describe("@pixerate/flair/catalog/lazy", async () => {
     ["what ignores the pointer", { interaction: [] }],
     ["overlays", { transparent: true }],
     ["single pictures", { singlePicture: true }],
+    ["image output", { output: "image" }],
+    ["static vector output", { output: "vector" }],
     ["vector output", { output: "animation" }],
     ["video output", { output: "video", kind: "shader" }],
   ])("finds what findEffects finds: %s", (_, query) => {

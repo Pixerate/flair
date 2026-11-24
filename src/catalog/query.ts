@@ -28,8 +28,8 @@ export interface EffectQuery {
   transparent?: boolean;
   /** Effects designed to modify a single picture (exactly one image slot wanting a picture). */
   singlePicture?: boolean;
-  /** Target output format: "animation" for animated SVGs, "video" for video shaders. */
-  output?: "animation" | "video";
+  /** Target output format: "image" for still-capable shaders, "video" for video shaders, "vector" for SVGs, "animation" for animated SVGs. */
+  output?: "image" | "video" | "vector" | "animation";
   /** Effects available in the `FlairEffects` Swift/Metal package (`true`), or not (`false`). */
   swiftReady?: boolean;
 }
@@ -73,6 +73,26 @@ export function singlePicture(inputs: EffectInputs): boolean {
   return inputs.accepts.includes("image") && inputs.images.length === 1 && inputs.images[0]?.wants === "picture";
 }
 
+/** Whether a query target is a transition between two pieces of visual content. */
+export function isTransitionTarget(e: Pick<QueryTarget, "category" | "video">, inputs?: Pick<EffectInputs, "video">): boolean {
+  return e.category === "transition" || e.video === "transition" || inputs?.video === "transition";
+}
+
+/** Whether a query target reacts to or generates visuals from audio (in the audio category, or reads sound). */
+export function isAudioReactiveTarget(e: Pick<QueryTarget, "category">, inputs?: Pick<EffectInputs, "accepts">): boolean {
+  return e.category === "audio" || Boolean(inputs?.accepts.includes("audio"));
+}
+
+/** Whether a query target can render a still image output (shader effects excluding transitions, audio visualizers, and video-only filters). */
+export function canOutputImageTarget(e: QueryTarget, inputsOf: () => EffectInputs): boolean {
+  if (e.kind !== "shader") return false;
+  const inputs = inputsOf();
+  if (isTransitionTarget(e, inputs)) return false;
+  if (isAudioReactiveTarget(e, inputs)) return false;
+  if (inputs.accepts.length === 1 && inputs.accepts[0] === "video") return false;
+  return true;
+}
+
 /** A query's words to look for, lower case. */
 export function queryWords(query: EffectQuery): string[] {
   return (query.text ?? "").toLowerCase().split(/\s+/).filter(Boolean);
@@ -88,7 +108,9 @@ export function matchesQuery(target: QueryTarget, inputsOf: () => EffectInputs, 
   if (query.tags && !query.tags.every((t) => e.tags.includes(normaliseTag(t)))) return false;
   if (query.video && !(e.kind === "shader" && e.video && query.video.includes(e.video))) return false;
   if (query.output === "animation" && e.kind !== "vector") return false;
+  if (query.output === "vector" && e.kind !== "vector") return false;
   if (query.output === "video" && !(e.kind === "shader" && e.video !== "none")) return false;
+  if (query.output === "image" && !canOutputImageTarget(e, inputsOf)) return false;
   if (query.swiftReady !== undefined) {
     const ready = e.swiftReady !== undefined ? Boolean(e.swiftReady) : e.kind === "shader";
     if (ready !== query.swiftReady) return false;

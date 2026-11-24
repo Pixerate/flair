@@ -203,7 +203,7 @@ findEffects({ transparent: true }); // overlays to lay over a page, picture or v
 - `interactions`: `hover`, `press`, `click`, `trail` (follows where the pointer has been), `pointer` (follows where it is) or `scroll` (follows the page's scrolling), from the pointer and scroll built-ins a shader reads or a vector effect's `trigger`.
 - `transparent`, `video` and `trigger`, as on the effect.
 
-`findEffects` filters on `accepts` (all of them), `interaction` (any of them; `[]` for effects that don't answer the pointer) and `transparent`, and the `catalog.search` command takes the same filters and lists each effect's `accepts` and `interactions`. The `interactive` tag is kept in step with `interactions`.
+`findEffects` filters on `accepts` (all of them), `interaction` (any of them; `[]` for effects that don't answer the pointer), `transparent` and `output` (`image`: shaders that make a still, leaving out transitions and sound-driven effects; `video`: shaders that run on or make video; `vector` or `animation`: SVG effects), and the `catalog.search` command takes the same filters and lists each effect's `accepts` and `interactions`. The `interactive` tag is kept in step with `interactions`. `canOutputImage`, `canOutputVideo`, `canOutputVector`, `isTransitionEffect` and `isAudioReactiveEffect` answer the same questions for one effect.
 
 #### Put an effect on a page
 

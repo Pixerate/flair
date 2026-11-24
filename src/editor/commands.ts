@@ -96,9 +96,14 @@ const catalogFilters = {
   },
   transparent: { type: "boolean", description: "Only overlays (true), drawn over other content, or only effects that fill their frame (false)." },
   swiftReady: { type: "boolean", description: "Only effects available in the FlairEffects Swift/Metal package (true), or not (false)." },
+  output: {
+    type: "string",
+    enum: ["image", "video", "vector", "animation"],
+    description: "Only effects that can make this: image (a still from a shader; no transitions or sound-driven effects), video (a shader that runs on or makes video), vector or animation (an SVG effect).",
+  },
 } as const;
 
-type CatalogFilters = Pick<EffectQuery, "text" | "category" | "group" | "kind" | "tags" | "video" | "accepts" | "interaction" | "transparent" | "swiftReady">;
+type CatalogFilters = Pick<EffectQuery, "text" | "category" | "group" | "kind" | "tags" | "video" | "accepts" | "interaction" | "transparent" | "swiftReady" | "output">;
 
 /** The catalog's tags, worked out on first use. */
 let knownTags: Set<string> | undefined;

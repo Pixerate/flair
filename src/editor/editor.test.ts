@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { getEffect, textImage } from "../catalog/index.js";
+import { findEffects, getEffect, textImage } from "../catalog/index.js";
 import { ManualClock } from "../time/clock.js";
 import { svgDuration } from "../vector/svg.js";
 import { callTool, createEffectToolProvider, EFFECT_AGENT_INSTRUCTIONS, toolDefinitions } from "./agent.js";
@@ -178,6 +178,24 @@ describe("commands and agent tools", () => {
     expect(next.ok && next.result.effects[0]!.id).not.toBe(first.result.effects[0]!.id);
     const narrow = editor.commands.execute<Search>("catalog.search", { text: "fire", limit: 200 });
     expect(narrow.ok && narrow.result.more).toBeUndefined();
+  });
+
+  it("lets agents find effects by what they output, and refuses an unknown output", async () => {
+    const editor = createEffectEditor({ from: "aurora" });
+    const provider = createEffectToolProvider(editor);
+    type Search = { total: number; effects: { id: string; kind: string; category: string }[] };
+    const images = await callTool(provider, "run_command", { id: "catalog.search", params: { output: "image", limit: 1000 } });
+    const found = (images.structuredContent as { result: Search }).result;
+    expect(found.total).toBe(findEffects({ output: "image" }).length);
+    const ids = found.effects.map((e) => e.id);
+    expect(ids).toContain("aurora");
+    expect(ids).not.toContain("transition-claw-slash");
+    expect(found.effects.every((e) => e.kind === "shader" && e.category !== "audio" && e.category !== "transition")).toBe(true);
+    const vectors = editor.commands.execute<Search>("catalog.search", { output: "vector", limit: 5 });
+    expect(vectors.ok && vectors.result.effects.every((e) => e.kind === "vector")).toBe(true);
+    const bad = await callTool(provider, "run_command", { id: "catalog.search", params: { output: "gif" } });
+    expect(bad.isError).toBe(true);
+    expect(JSON.stringify(bad)).toMatch(/output/);
   });
 
   it("lets agents find effects by tag, and list the tags there are", async () => {
