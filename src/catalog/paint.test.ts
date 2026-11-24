@@ -76,4 +76,27 @@ describe("paint hints", () => {
     const edited = { ...lava, source: lava.source.replace(/uniform vec3 uLava;[^\n]*\n/, "") };
     expect(effectMeta(edited).paint).toBeUndefined();
   });
+
+  it("maps bokeh, plexus-web and relief-hex-tiles along the stroke at brush scale", () => {
+    expect(paintHint("bokeh")).toEqual({
+      map: "stroke",
+      colors: ["uWarm", "uCool"],
+      values: { uCount: 45, uSize: 0.15 },
+      live: true,
+      size: 72,
+    });
+    expect(paintHint("plexus-web")).toEqual({
+      map: "stroke",
+      colors: ["uColorA", "uColorB"],
+      values: { uBackgroundAlpha: 0, uDensity: 3, uWidth: 3, uPoints: 2, uGlow: 0.75, uReach: 1.5 },
+      live: true,
+      size: 90,
+    });
+    expect(paintHint("relief-hex-tiles")).toEqual({
+      map: "stroke",
+      colors: ["uSurface", "uShade"],
+      values: { uCoverage: 1, uScatter: 0.2, uCells: 4, uHeight: 0.045, uGap: 0.05, uTilt: 0, uElevation: 45, uSoftness: 0.22, uVariation: 0.35 },
+      size: 90,
+    });
+  });
 });

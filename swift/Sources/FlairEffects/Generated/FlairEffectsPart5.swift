@@ -1002,7 +1002,7 @@ public struct PhotoScatter: FlairEffect, Codable, Sendable, Equatable {
     public static let effectName = "Photo scatter"
     public static let category = "montage"
     public static let effectDescription = "Pictures as white-bordered prints dealt one by one onto a table, landing at scattered angles, then picked up and straightened in the middle one at a time."
-    public static let tags: [String] = ["montage", "photos", "polaroid", "prints", "scatter", "gallery", "memories", "items"]
+    public static let tags: [String] = ["montage", "photo", "polaroid", "print", "scatter", "gallery", "memories", "items"]
     public static let phase: Int = 2
     public static let functionName = "flair_photo_scatter_frag"
     public static let uniformByteLength: Int = 1088
@@ -1195,7 +1195,7 @@ public struct FilmstripMontage: FlairEffect, Codable, Sendable, Equatable {
     public static let effectName = "Filmstrip montage"
     public static let category = "montage"
     public static let effectDescription = "Pictures as frames on a strip of film with sprocket holes, stepping along one frame at a time, each frame in the middle punching in, large, before it moves on."
-    public static let tags: [String] = ["montage", "film", "filmstrip", "contact-sheet", "frames", "gallery", "retro", "items"]
+    public static let tags: [String] = ["montage", "film", "filmstrip", "contact-sheet", "frame", "gallery", "retro", "items"]
     public static let phase: Int = 2
     public static let functionName = "flair_filmstrip_montage_frag"
     public static let uniformByteLength: Int = 1072
@@ -1370,7 +1370,7 @@ public struct SplitGridReveal: FlairEffect, Codable, Sendable, Equatable {
     public static let effectName = "Split grid reveal"
     public static let category = "montage"
     public static let effectDescription = "A split screen of panels, slanted like a comic page or straight like an editorial grid, each wiping its picture in a beat after the last, then drifting slowly while one panel at a time can take the spotlight."
-    public static let tags: [String] = ["montage", "split-screen", "grid", "panels", "comic", "editorial", "wipe", "reveal", "items"]
+    public static let tags: [String] = ["montage", "split-screen", "grid", "panel", "comic", "editorial", "wipe", "reveal", "items"]
     public static let phase: Int = 2
     public static let functionName = "flair_split_grid_reveal_frag"
     public static let uniformByteLength: Int = 1104
@@ -1762,7 +1762,7 @@ public struct BeforeAfterSeries: FlairEffect, Codable, Sendable, Equatable {
     public static let effectName = "Before / after series"
     public static let category = "montage"
     public static let effectDescription = "A series of before-and-after pairs, items taken two at a time: a divider sweeps each pair from before to after, then the next pair slides or fades in, with a dot for each pair below."
-    public static let tags: [String] = ["montage", "before-after", "comparison", "edits", "generations", "slider", "series", "items"]
+    public static let tags: [String] = ["montage", "before-after", "comparison", "edit", "generations", "slider", "series", "items"]
     public static let phase: Int = 2
     public static let functionName = "flair_before_after_series_frag"
     public static let uniformByteLength: Int = 1088
