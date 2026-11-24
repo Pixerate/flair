@@ -1,5 +1,6 @@
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { readdirSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
+import { pathToFileURL } from "node:url";
 
 const ROOT = process.cwd();
 const TARGET_DIR = join(ROOT, "swift/Sources");
@@ -113,14 +114,46 @@ export function lintSwiftSource(source, relPath) {
     if (/:\s*PreviewProvider\b/.test(lines[i])) {
       errors.push(`${relPath}:${i + 1}: Use #Preview instead of legacy PreviewProvider.`);
     }
-    if (/(\bBinding)?\.constant\s*\(/.test(lines[i])) {
-      errors.push(`${relPath}:${i + 1}: Use @Previewable with @State/@Bindable instead of .constant(...).`);
+  }
+
+  // .constant(...) is only banned inside #Preview blocks; track the block's braces.
+  let inPreviewHeader = false;
+  let parenDepth = 0;
+  let inPreviewBody = false;
+  let braceDepth = 0;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    let previewOnLine = inPreviewBody;
+    for (let j = 0; j < line.length; j++) {
+      const ch = line[j];
+      if (!inPreviewBody && !inPreviewHeader) {
+        if (line.startsWith("#Preview", j) && !/\w/.test(line[j + 8] ?? "")) {
+          inPreviewHeader = true;
+          parenDepth = 0;
+          j += 7;
+        }
+      } else if (inPreviewHeader) {
+        if (ch === "(") parenDepth++;
+        else if (ch === ")" && parenDepth > 0) parenDepth--;
+        else if (ch === "{" && parenDepth === 0) {
+          inPreviewHeader = false;
+          inPreviewBody = true;
+          previewOnLine = true;
+          braceDepth = 1;
+        }
+      } else if (ch === "{") braceDepth++;
+      else if (ch === "}" && --braceDepth === 0) inPreviewBody = false;
+    }
+    if (previewOnLine && /(\bBinding)?\.constant\s*\(/.test(line)) {
+      errors.push(`${relPath}:${i + 1}: Use @Previewable with @State/@Bindable instead of .constant(...) inside #Preview.`);
     }
   }
   return errors;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+const isMain = process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href;
+
+if (isMain) {
   const files = collectSwiftFiles(TARGET_DIR);
   const allErrors = [];
   for (const file of files) {
@@ -131,4 +164,5 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     for (const err of allErrors) console.error(err);
     process.exit(1);
   }
+  console.log(`lint-swift: ${files.length} Swift files checked, no issues.`);
 }
