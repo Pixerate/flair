@@ -1,5 +1,5 @@
 {
-  "$comment": "Copied from @pixerate/schemas json-schema/genui/UiDescriptor.json (Pixerate/schemas#80), generated there from UiDescriptorSchema in src/genui.ts. Flair mirrors the type in src/catalog/ui-hints.ts; keep both in step.",
+  "$comment": "Copied from @pixerate/schemas json-schema/genui/UiDescriptor.json (Pixerate/schemas#80, fallback from #96, 2.6.0), generated there from UiDescriptorSchema in src/genui.ts. Flair mirrors the type in src/catalog/ui-hints.ts; keep both in step.",
   "$ref": "#/definitions/UiDescriptor",
   "definitions": {
     "JsonSchemaDocument": {
@@ -169,6 +169,11 @@
             "$ref": "#/definitions/JsonValue"
           },
           "description": "Example props or data, for previews and checks"
+        },
+        "fallback": {
+          "type": "string",
+          "minLength": 1,
+          "description": "For a data visual or paradigm: the baseline type its runtime's fallback(data) renders as (UiFallbackSchema)"
         },
         "contentHash": {
           "type": "string",

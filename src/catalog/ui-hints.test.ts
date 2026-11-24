@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { flairEffects } from "../integrations/effects.js";
-import { effectControls, effectMeta, getEffect, renderVectorEffect, UI_COLOR_ROLES, UI_HINTS, uiContentHash, uiHint, uiValues, type VectorEffect } from "./index.js";
+import { effectControls, effectMeta, getEffect, renderVectorEffect, UI_COLOR_ROLES, UI_HINTS, uiContentHash, uiFallback, uiHint, uiValues, type VectorEffect } from "./index.js";
 import { getEffectMeta } from "./lazy.js";
 import { effectUi } from "./ui-hints.js";
 
@@ -11,6 +11,7 @@ import { effectUi } from "./ui-hints.js";
 const descriptorSchema = JSON.parse(readFileSync(resolve(__dirname, "../../tests/fixtures/ui-descriptor.schema.json"), "utf8"));
 const ajv = new Ajv({ strict: false, allErrors: true });
 const validDescriptor = ajv.compile(descriptorSchema);
+const validFallback = ajv.compile(JSON.parse(readFileSync(resolve(__dirname, "../../tests/fixtures/ui-fallback.schema.json"), "utf8")));
 
 const ids = Object.keys(UI_HINTS);
 const vector = (id: string) => getEffect(id) as VectorEffect;
@@ -102,6 +103,49 @@ describe("uiValues", () => {
   });
 });
 
+describe("uiFallback", () => {
+  it("names progress as the gauge's fallback and makes its props from the gauge's data", () => {
+    expect(UI_HINTS.gauge!.ui.fallback).toBe("progress");
+    expect(effectMeta(vector("gauge")).ui!.fallback).toBe("progress");
+    expect(uiFallback(vector("gauge"), { value: 72, max: 100, unit: "%", label: "Performance" })).toEqual({ implements: "progress", props: { value: 72, label: "Performance: 72%" } });
+    expect(uiFallback(vector("gauge"), { value: 88, max: 160, unit: " km/h", label: "Speed" })).toEqual({ implements: "progress", props: { value: 55, label: "Speed: 88 km/h" } });
+    // No max means 100; a reading past the scale fills it; no label leaves the reading alone.
+    expect(uiFallback(vector("gauge"), { value: 1 / 3 })).toEqual({ implements: "progress", props: { value: 0.33, label: "0.33" } });
+    expect(uiFallback(vector("gauge"), { value: 250, max: 200 })!.props.value).toBe(100);
+  });
+
+  it("gives props the baseline progress takes, in the shape @pixerate/schemas gives UiFallback", () => {
+    const out = uiFallback(vector("gauge"), UI_HINTS.gauge!.ui.example!)!;
+    expect(validFallback(out), JSON.stringify(validFallback.errors)).toBe(true);
+    const progress = UI_HINTS["progress-bar"]!.ui.contract!.props!;
+    expect(Object.keys(out.props).every((k) => Object.hasOwn(progress.properties as object, k))).toBe(true);
+    expect(() => uiValues(vector("progress-bar"), out.props)).not.toThrow();
+  });
+
+  it("shows a loader as progress, or as a spinner while the job cannot tell how far along it is", () => {
+    for (const id of ["liquid-loader", "flame-loader", "generating-field", "slop-vat"]) {
+      const loader = getEffect(id)!;
+      expect(UI_HINTS[id]!.ui.fallback).toBe("progress");
+      expect(uiFallback(loader, { value: 0.6 })).toEqual({ implements: "progress", props: { value: 60 } });
+      expect(uiFallback(loader, { value: null })).toEqual({ implements: "spinner", props: {} });
+      expect(uiFallback(loader, {})).toEqual({ implements: "spinner", props: {} });
+      for (const value of [0.6, null]) {
+        const out = uiFallback(loader, { value })!;
+        expect(validFallback(out), JSON.stringify(validFallback.errors)).toBe(true);
+      }
+    }
+    expect(uiFallback(getEffect("slop-vat")!, { value: 0.12345 })!.props.value).toBe(12.35);
+    expect(() => uiFallback(getEffect("slop-vat")!, { value: 2 })).toThrow(/must be at most 1/);
+  });
+
+  it("is undefined for effects without one, and refuses data that does not fit", () => {
+    expect(uiFallback(vector("progress-bar"), { value: 40 })).toBeUndefined();
+    expect(uiFallback(vector("toggle-switch"), { checked: true })).toBeUndefined();
+    expect(() => uiFallback(vector("gauge"), { value: "72" })).toThrow(/"gauge"'s "value" must be a number/);
+    expect(() => uiFallback(getEffect("aurora")!, {})).toThrow(/not offered as a UI component/);
+  });
+});
+
 describe("content hashes", () => {
   it("are 16 hex digits, one per effect, the same each time and the same in the lazy catalog", () => {
     const hashes = ids.map((id) => effectMeta(vector(id)).ui!.contentHash!);
@@ -126,6 +170,9 @@ describe("content hashes", () => {
     const slower: VectorEffect = { ...toggle, hold: 1200 };
     expect(uiContentHash(slower, hint, effectControls(slower))).not.toBe(before);
     expect(uiContentHash(toggle, { ...hint, ui: { ...hint.ui, implements: "toggle" } }, effectControls(toggle))).not.toBe(before);
+    const gauge = vector("gauge");
+    const gaugeHint = UI_HINTS.gauge!;
+    expect(uiContentHash(gauge, { ...gaugeHint, fallback: () => ({ implements: "progress", props: { value: 0 } }) }, effectControls(gauge))).not.toBe(uiContentHash(gauge, gaugeHint, effectControls(gauge)));
   });
 });
 

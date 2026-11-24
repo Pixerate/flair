@@ -123,8 +123,18 @@ export interface UiDescriptor {
   swiftReady?: boolean;
   /** Example props (and state), for previews and checks. */
   example?: { [key: string]: JsonValue };
+  /** The baseline type {@link uiFallback} renders it as where it can't run, e.g. `progress` (schemas 2.6.0). */
+  fallback?: string;
   /** Changes whenever the item's output changes, so a sync can tell. */
   contentHash?: string;
+}
+
+/** What a provider makes from an item's data for its fallback type (`UiFallback` in `@pixerate/schemas`). */
+export interface UiFallback {
+  /** The baseline type it renders as, e.g. `progress`. */
+  implements: string;
+  /** That type's props, made from the item's data. */
+  props: { [key: string]: JsonValue };
 }
 
 // ---------------------------------------------------------------------------
@@ -165,6 +175,40 @@ export interface UiProgressBinding {
 export interface EffectUiHint {
   ui: Omit<UiDescriptor, "contentHash">;
   bindings: UiBindings;
+  /**
+   * With `ui.fallback`: the baseline type and its props from the component's
+   * typed data (already checked against its contract). Flair's, like
+   * `bindings`. Usually `ui.fallback` itself; a loader that can't tell how far
+   * along it is gives `spinner` instead.
+   */
+  fallback?: (props: Readonly<Record<string, JsonValue>>) => UiFallback;
+}
+
+/** A number written for people: up to two decimals, no trailing zeros. */
+const reading = (n: number) => String(Math.round(n * 100) / 100);
+
+/**
+ * A gauge as the baseline `progress`: how far its reading is along the scale,
+ * as a percent, with the reading itself in the label ("Performance: 72%").
+ */
+function gaugeAsProgress(props: Readonly<Record<string, JsonValue>>): UiFallback {
+  const value = props.value as number;
+  const max = typeof props.max === "number" ? props.max : 100;
+  const unit = typeof props.unit === "string" ? props.unit : "";
+  const label = typeof props.label === "string" && props.label.trim() ? props.label.trim() : "";
+  const percent = Math.max(0, Math.min(100, (value / max) * 100));
+  return { implements: "progress", props: { value: Math.round(percent * 100) / 100, label: label ? `${label}: ${reading(value)}${unit}` : `${reading(value)}${unit}` } };
+}
+
+/**
+ * A loader as the baseline `progress`, its `value` (0–1) as a percent; while
+ * the job cannot tell how far along it is (`null` or no value), the baseline
+ * `spinner` instead.
+ */
+function loaderAsProgress(props: Readonly<Record<string, JsonValue>>): UiFallback {
+  const value = props.value;
+  if (typeof value !== "number") return { implements: "spinner", props: {} };
+  return { implements: "progress", props: { value: Math.round(value * 10000) / 100 } };
 }
 
 /** Where Flair renders vector components: its React and Svelte wrappers, and any page with `mountEffect`. */
@@ -201,6 +245,7 @@ function loaderUi(colorRoles: string[], example: number | null, platforms: UiPla
     },
     platforms,
     example: { value: example },
+    fallback: "progress",
   };
 }
 
@@ -284,27 +329,33 @@ export const UI_HINTS: Readonly<Record<string, EffectUiHint>> = {
       },
       platforms: WEB,
       example: { value: 72, max: 100, unit: "%", label: "Performance" },
+      fallback: "progress",
     },
     bindings: {
       props: { value: "value", max: "max", unit: "unit", label: "label" },
       colors: { success: "low", warning: "mid", danger: "high", accent: "needleColor", surface: "hub", ink: "ink" },
     },
+    fallback: gaugeAsProgress,
   },
   "liquid-loader": {
     ui: loaderUi(["accent", "track-off", "border"], 0.6),
     bindings: { props: {}, colors: { accent: "uLiquid", "track-off": "uBack", border: "uGlass" }, progress: { control: "uProgress", animate: "uAnimate" } },
+    fallback: loaderAsProgress,
   },
   "flame-loader": {
     ui: loaderUi(["track-off"], 0.65),
     bindings: { props: {}, colors: { "track-off": "uTrack" }, progress: { control: "uProgress", animate: "uAnimate" } },
+    fallback: loaderAsProgress,
   },
   "generating-field": {
     ui: loaderUi(["accent", "accent-ink", "focus"], null),
     bindings: { props: {}, colors: { accent: "uColorA", "accent-ink": "uColorB", focus: "uColorC" }, progress: { control: "uProgress", animate: "uAnimate" } },
+    fallback: loaderAsProgress,
   },
   "slop-vat": {
     ui: loaderUi(["accent", "surface", "ink"], 0.4),
     bindings: { props: {}, colors: { accent: "slop", surface: "vat", ink: "inkColor" }, progress: { control: "level", animate: "animate" } },
+    fallback: loaderAsProgress,
   },
 };
 
@@ -410,6 +461,27 @@ export function uiValues(effect: EffectDefinition, input: Readonly<Record<string
   return out;
 }
 
+/**
+ * A component's typed data as its fallback type (`ui.fallback`), for where
+ * the effect can't run: no script, WebGL or motion, or a host without Flair.
+ * A loader whose `value` is `null` (it cannot tell how far along the job is)
+ * gives the baseline `spinner` rather than `progress`.
+ * Undefined when the effect has no fallback. Throws, as {@link uiValues}
+ * does, when the data does not fit the contract.
+ *
+ * ```ts
+ * uiFallback(getEffect("gauge")!, { value: 88, max: 160, unit: " km/h", label: "Speed" });
+ * // { implements: "progress", props: { value: 55, label: "Speed: 88 km/h" } }
+ * ```
+ */
+export function uiFallback(effect: EffectDefinition, input: Readonly<Record<string, unknown>>): UiFallback | undefined {
+  uiValues(effect, input);
+  const hint = effectUi(effect);
+  if (!hint?.ui.fallback || !hint.fallback) return undefined;
+  const props = Object.fromEntries(Object.entries(input).filter(([, v]) => v !== undefined)) as Record<string, JsonValue>;
+  return hint.fallback(props);
+}
+
 // ---------------------------------------------------------------------------
 // Content hashes
 // ---------------------------------------------------------------------------
@@ -451,7 +523,8 @@ function canonical(value: unknown): string {
 /**
  * A described effect's content hash (`ui.contentHash`): FNV-1a 64 (16 hex
  * digits) of its descriptor and bindings, its controls, presets and timing,
- * and what it draws at its defaults and at its descriptor's example. It
+ * what it draws at its defaults and at its descriptor's example, and that
+ * example's fallback. It
  * changes when any of those do, and is the same in every build.
  */
 export function uiContentHash(effect: EffectDefinition, hint: EffectUiHint, controls: readonly ControlDef[]): string {
@@ -465,6 +538,7 @@ export function uiContentHash(effect: EffectDefinition, hint: EffectUiHint, cont
       presets: effect.presets ?? [],
       ...(effect.kind === "vector" && { hold: effect.hold ?? null, trigger: effect.trigger ?? null }),
       drawn,
+      ...(hint.fallback && { fallback: hint.fallback(hint.ui.example ?? {}) }),
     }),
   );
 }
