@@ -3361,7 +3361,8 @@
       "example": {
         "value": 0.4
       },
-      "contentHash": "89127c72f7d29b71"
+      "fallback": "progress",
+      "contentHash": "c074bdecf6bfa40a"
     },
     "uiBindings": {
       "props": {},
@@ -3549,7 +3550,8 @@
       "example": {
         "value": null
       },
-      "contentHash": "90c87ab269fb21ca"
+      "fallback": "progress",
+      "contentHash": "6f127621885bbaf6"
     },
     "uiBindings": {
       "props": {},
