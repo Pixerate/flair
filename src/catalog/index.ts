@@ -15,7 +15,16 @@
 
 import { controlValue, parseControls, type ControlDef, type ControlType, type ControlValue } from "../shader/controls.js";
 import { controlsSchema, type JsonSchema } from "../shader/schema.js";
-import { countTags, matchesQuery, queryWords, type EffectQuery, type EffectTag } from "./query.js";
+import {
+  canOutputImageTarget,
+  countTags,
+  isAudioReactiveTarget,
+  isTransitionTarget,
+  matchesQuery,
+  queryWords,
+  type EffectQuery,
+  type EffectTag,
+} from "./query.js";
 import { didYouMean } from "../motion/params.js";
 import { metaOf, type EffectMeta } from "./meta.js";
 import { svgDuration } from "../vector/svg.js";
@@ -466,12 +475,54 @@ export function isSinglePictureEffect(effect: EffectDefinition): boolean {
 }
 
 /**
+ * Returns whether an effect is a transition between two pieces of visual content.
+ */
+export function isTransitionEffect(effect: EffectDefinition | undefined): boolean {
+  if (!effect) return false;
+  const inputs = effectInputs(effect);
+  return isTransitionTarget(
+    { id: effect.id, category: effect.category, video: effect.kind === "shader" ? effect.video : undefined },
+    inputs,
+  );
+}
+
+/**
+ * Returns whether an effect reacts to or generates visuals from audio.
+ */
+export function isAudioReactiveEffect(effect: EffectDefinition | undefined): boolean {
+  if (!effect) return false;
+  const inputs = effectInputs(effect);
+  return isAudioReactiveTarget(effect, inputs);
+}
+
+/**
+ * Returns whether an effect outputs SVG vector graphics.
+ */
+export function canOutputVector(effect: EffectDefinition | undefined): boolean {
+  if (!effect) return false;
+  return effect.kind === "vector";
+}
+
+/**
  * Returns whether an effect outputs animated SVG flair.
  * All vector effects in Flair have motion definitions with SVG animations.
  */
 export function canOutputAnimatedSvg(effect: EffectDefinition): boolean {
   if (!effect) return false;
   return effect.kind === "vector";
+}
+
+/**
+ * Returns whether an effect can render a still image output.
+ * Includes generative, still, lighting, and image-filter shaders; excludes transitions,
+ * audio-reactive visualizers, and video-only input effects.
+ */
+export function canOutputImage(effect: EffectDefinition | undefined): boolean {
+  if (!effect) return false;
+  return canOutputImageTarget(
+    { ...effect, video: effect.kind === "shader" ? effect.video : undefined },
+    () => effectInputs(effect),
+  );
 }
 
 /**

@@ -32,7 +32,11 @@ import {
   nonImageEffectControls,
   sanitizeEffectValues,
   canOutputAnimatedSvg,
+  canOutputImage,
+  canOutputVector,
   canOutputVideo,
+  isAudioReactiveEffect,
+  isTransitionEffect,
   isHumanReadableControl,
   getPromptVariables,
   getEffectReferenceSvg,
@@ -2733,15 +2737,37 @@ describe("single picture effects", () => {
 });
 
 describe("capabilities and prompt helpers", () => {
-  it("determines output capability for animated SVG vs video", () => {
+  it("determines output capability for animated SVG vs video vs image vs vector", () => {
     const vectorEffect = EFFECTS.find((e) => e.kind === "vector")!;
     const shaderEffect = EFFECTS.find((e) => e.kind === "shader" && e.video !== "none")!;
+    const stillShader = getEffect("deep-fried")!;
+    const transitionEffect = getEffect("transition-claw-slash")!;
+    const audioEffect = getEffect("spectrum-bars")!;
 
     expect(canOutputAnimatedSvg(vectorEffect)).toBe(true);
     expect(canOutputAnimatedSvg(shaderEffect)).toBe(false);
 
+    expect(canOutputVector(vectorEffect)).toBe(true);
+    expect(canOutputVector(shaderEffect)).toBe(false);
+    expect(canOutputVector(undefined)).toBe(false);
+
     expect(canOutputVideo(vectorEffect)).toBe(false);
     expect(canOutputVideo(shaderEffect)).toBe(true);
+
+    expect(canOutputImage(shaderEffect)).toBe(true);
+    expect(canOutputImage(stillShader)).toBe(true);
+    expect(canOutputImage(vectorEffect)).toBe(false);
+    expect(canOutputImage(transitionEffect)).toBe(false);
+    expect(canOutputImage(audioEffect)).toBe(false);
+    expect(canOutputImage(undefined)).toBe(false);
+
+    expect(isTransitionEffect(transitionEffect)).toBe(true);
+    expect(isTransitionEffect(shaderEffect)).toBe(false);
+    expect(isTransitionEffect(undefined)).toBe(false);
+
+    expect(isAudioReactiveEffect(audioEffect)).toBe(true);
+    expect(isAudioReactiveEffect(shaderEffect)).toBe(false);
+    expect(isAudioReactiveEffect(undefined)).toBe(false);
   });
 
   it("filters catalog effects by output query", () => {
@@ -2749,9 +2775,22 @@ describe("capabilities and prompt helpers", () => {
     expect(animations.length).toBeGreaterThan(0);
     expect(animations.every((e) => canOutputAnimatedSvg(e))).toBe(true);
 
+    const vectors = findEffects({ output: "vector" });
+    expect(vectors.length).toBe(animations.length);
+    expect(vectors.every((e) => canOutputVector(e))).toBe(true);
+
     const videos = findEffects({ output: "video" });
     expect(videos.length).toBeGreaterThan(0);
     expect(videos.every((e) => canOutputVideo(e))).toBe(true);
+
+    const images = findEffects({ output: "image" });
+    expect(images.length).toBeGreaterThan(0);
+    expect(images.every((e) => canOutputImage(e))).toBe(true);
+    expect(images.some((e) => e.id === "aurora")).toBe(true);
+    expect(images.some((e) => e.id === "deep-fried")).toBe(true);
+    expect(images.some((e) => e.id === "chrome-text")).toBe(true);
+    expect(images.some((e) => e.id === "transition-claw-slash")).toBe(false);
+    expect(images.some((e) => e.id === "spectrum-bars")).toBe(false);
   });
 
   it("identifies human-readable controls and filters internal engine uniforms", () => {
