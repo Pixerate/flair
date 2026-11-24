@@ -176,10 +176,12 @@ export interface EffectUiHint {
   ui: Omit<UiDescriptor, "contentHash">;
   bindings: UiBindings;
   /**
-   * With `ui.fallback`: the props of that baseline type from the component's
-   * typed data (already checked against its contract). Flair's, like `bindings`.
+   * With `ui.fallback`: the baseline type and its props from the component's
+   * typed data (already checked against its contract). Flair's, like
+   * `bindings`. Usually `ui.fallback` itself; a loader that can't tell how far
+   * along it is gives `spinner` instead.
    */
-  fallback?: (props: Readonly<Record<string, JsonValue>>) => UiFallback["props"];
+  fallback?: (props: Readonly<Record<string, JsonValue>>) => UiFallback;
 }
 
 /** A number written for people: up to two decimals, no trailing zeros. */
@@ -189,13 +191,24 @@ const reading = (n: number) => String(Math.round(n * 100) / 100);
  * A gauge as the baseline `progress`: how far its reading is along the scale,
  * as a percent, with the reading itself in the label ("Performance: 72%").
  */
-function gaugeAsProgress(props: Readonly<Record<string, JsonValue>>): UiFallback["props"] {
+function gaugeAsProgress(props: Readonly<Record<string, JsonValue>>): UiFallback {
   const value = props.value as number;
   const max = typeof props.max === "number" ? props.max : 100;
   const unit = typeof props.unit === "string" ? props.unit : "";
   const label = typeof props.label === "string" && props.label.trim() ? props.label.trim() : "";
   const percent = Math.max(0, Math.min(100, (value / max) * 100));
-  return { value: Math.round(percent * 100) / 100, label: label ? `${label}: ${reading(value)}${unit}` : `${reading(value)}${unit}` };
+  return { implements: "progress", props: { value: Math.round(percent * 100) / 100, label: label ? `${label}: ${reading(value)}${unit}` : `${reading(value)}${unit}` } };
+}
+
+/**
+ * A loader as the baseline `progress`, its `value` (0–1) as a percent; while
+ * the job cannot tell how far along it is (`null` or no value), the baseline
+ * `spinner` instead.
+ */
+function loaderAsProgress(props: Readonly<Record<string, JsonValue>>): UiFallback {
+  const value = props.value;
+  if (typeof value !== "number") return { implements: "spinner", props: {} };
+  return { implements: "progress", props: { value: Math.round(value * 10000) / 100 } };
 }
 
 /** Where Flair renders vector components: its React and Svelte wrappers, and any page with `mountEffect`. */
@@ -232,6 +245,7 @@ function loaderUi(colorRoles: string[], example: number | null, platforms: UiPla
     },
     platforms,
     example: { value: example },
+    fallback: "progress",
   };
 }
 
@@ -326,18 +340,22 @@ export const UI_HINTS: Readonly<Record<string, EffectUiHint>> = {
   "liquid-loader": {
     ui: loaderUi(["accent", "track-off", "border"], 0.6),
     bindings: { props: {}, colors: { accent: "uLiquid", "track-off": "uBack", border: "uGlass" }, progress: { control: "uProgress", animate: "uAnimate" } },
+    fallback: loaderAsProgress,
   },
   "flame-loader": {
     ui: loaderUi(["track-off"], 0.65),
     bindings: { props: {}, colors: { "track-off": "uTrack" }, progress: { control: "uProgress", animate: "uAnimate" } },
+    fallback: loaderAsProgress,
   },
   "generating-field": {
     ui: loaderUi(["accent", "accent-ink", "focus"], null),
     bindings: { props: {}, colors: { accent: "uColorA", "accent-ink": "uColorB", focus: "uColorC" }, progress: { control: "uProgress", animate: "uAnimate" } },
+    fallback: loaderAsProgress,
   },
   "slop-vat": {
     ui: loaderUi(["accent", "surface", "ink"], 0.4),
     bindings: { props: {}, colors: { accent: "slop", surface: "vat", ink: "inkColor" }, progress: { control: "level", animate: "animate" } },
+    fallback: loaderAsProgress,
   },
 };
 
@@ -446,6 +464,8 @@ export function uiValues(effect: EffectDefinition, input: Readonly<Record<string
 /**
  * A component's typed data as its fallback type (`ui.fallback`), for where
  * the effect can't run: no script, WebGL or motion, or a host without Flair.
+ * A loader whose `value` is `null` (it cannot tell how far along the job is)
+ * gives the baseline `spinner` rather than `progress`.
  * Undefined when the effect has no fallback. Throws, as {@link uiValues}
  * does, when the data does not fit the contract.
  *
@@ -459,7 +479,7 @@ export function uiFallback(effect: EffectDefinition, input: Readonly<Record<stri
   const hint = effectUi(effect);
   if (!hint?.ui.fallback || !hint.fallback) return undefined;
   const props = Object.fromEntries(Object.entries(input).filter(([, v]) => v !== undefined)) as Record<string, JsonValue>;
-  return { implements: hint.ui.fallback, props: hint.fallback(props) };
+  return hint.fallback(props);
 }
 
 // ---------------------------------------------------------------------------

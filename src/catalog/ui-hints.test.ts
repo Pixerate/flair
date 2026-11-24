@@ -122,6 +122,22 @@ describe("uiFallback", () => {
     expect(() => uiValues(vector("progress-bar"), out.props)).not.toThrow();
   });
 
+  it("shows a loader as progress, or as a spinner while the job cannot tell how far along it is", () => {
+    for (const id of ["liquid-loader", "flame-loader", "generating-field", "slop-vat"]) {
+      const loader = getEffect(id)!;
+      expect(UI_HINTS[id]!.ui.fallback).toBe("progress");
+      expect(uiFallback(loader, { value: 0.6 })).toEqual({ implements: "progress", props: { value: 60 } });
+      expect(uiFallback(loader, { value: null })).toEqual({ implements: "spinner", props: {} });
+      expect(uiFallback(loader, {})).toEqual({ implements: "spinner", props: {} });
+      for (const value of [0.6, null]) {
+        const out = uiFallback(loader, { value })!;
+        expect(validFallback(out), JSON.stringify(validFallback.errors)).toBe(true);
+      }
+    }
+    expect(uiFallback(getEffect("slop-vat")!, { value: 0.12345 })!.props.value).toBe(12.35);
+    expect(() => uiFallback(getEffect("slop-vat")!, { value: 2 })).toThrow(/must be at most 1/);
+  });
+
   it("is undefined for effects without one, and refuses data that does not fit", () => {
     expect(uiFallback(vector("progress-bar"), { value: 40 })).toBeUndefined();
     expect(uiFallback(vector("toggle-switch"), { checked: true })).toBeUndefined();
@@ -156,7 +172,7 @@ describe("content hashes", () => {
     expect(uiContentHash(toggle, { ...hint, ui: { ...hint.ui, implements: "toggle" } }, effectControls(toggle))).not.toBe(before);
     const gauge = vector("gauge");
     const gaugeHint = UI_HINTS.gauge!;
-    expect(uiContentHash(gauge, { ...gaugeHint, fallback: () => ({ value: 0 }) }, effectControls(gauge))).not.toBe(uiContentHash(gauge, gaugeHint, effectControls(gauge)));
+    expect(uiContentHash(gauge, { ...gaugeHint, fallback: () => ({ implements: "progress", props: { value: 0 } }) }, effectControls(gauge))).not.toBe(uiContentHash(gauge, gaugeHint, effectControls(gauge)));
   });
 });
 
