@@ -112,4 +112,23 @@ final class FlairPaintHintTests: XCTestCase {
         }
         XCTAssertGreaterThan(checked, 40)
     }
+
+    func testBokehDrawsStraightAlphaLightWithoutPremultipliedDarkening() async throws {
+        try XCTSkipIf(MTLCreateSystemDefaultDevice() == nil, "No Metal device.")
+        let provider = FlairEffectProvider()
+        let r = try provider.createRenderer("bokeh", width: 64, height: 64)
+        defer { r.dispose() }
+        let frame = try await r.render(EffectRenderRequest(time: 1500, values: [
+            "uBackgroundAlpha": 0,
+            "uWarm": "#ff0000",
+            "uCool": "#ff0000",
+            "uCount": 45,
+            "uSize": 0.15,
+        ]))
+        var maxRed: UInt8 = 0
+        for i in stride(from: 0, to: frame.data.count, by: 4) where frame.data[i + 3] > 32 {
+            maxRed = max(maxRed, frame.data[i])
+        }
+        XCTAssertGreaterThan(maxRed, 240, "Clear-backdrop bokeh discs keep their full straight-alpha colour rather than premultiplied dark RGB")
+    }
 }

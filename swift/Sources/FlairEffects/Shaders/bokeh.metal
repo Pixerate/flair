@@ -1,4 +1,4 @@
-// flair-metal-hash: b4c76be6
+// flair-metal-hash: 8314caf8
 #pragma clang diagnostic ignored "-Wunused-variable"
 #pragma clang diagnostic ignored "-Wunused-const-variable"
 #pragma clang diagnostic ignored "-Wmissing-prototypes"
@@ -83,23 +83,23 @@ void mainImage(thread float4& fragColor, thread const float2& fragCoord, constan
         lightAlpha += weight;
     }
     float a = fast::clamp(_97.uBackgroundAlpha + (lightAlpha * (1.0 - _97.uBackgroundAlpha)), 0.0, 1.0);
-    fragColor = float4(col, a);
+    fragColor = float4(col / float3(fast::max(a, 9.9999997473787516355514526367188e-05)), a);
 }
 
 fragment flair_bokeh_frag_out flair_bokeh_frag(constant FlairUniforms& _97 [[buffer(0)]], float4 gl_FragCoord [[position]])
 {
     flair_bokeh_frag_out out = {};
     float4 flair_color = float4(0.0, 0.0, 0.0, 1.0);
-    float _296;
+    float _301;
     if (_97.flair_flipY > 0.5)
     {
-        _296 = _97.iResolution[1u] - gl_FragCoord.y;
+        _301 = _97.iResolution[1u] - gl_FragCoord.y;
     }
     else
     {
-        _296 = gl_FragCoord.y;
+        _301 = gl_FragCoord.y;
     }
-    float2 flair_coord = float2(gl_FragCoord.x, _296);
+    float2 flair_coord = float2(gl_FragCoord.x, _301);
     float2 param_1 = flair_coord;
     float4 param;
     mainImage(param, param_1, _97);

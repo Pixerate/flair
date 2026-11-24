@@ -42,7 +42,7 @@ uniform float uSpeed;           // @control min=0 max=1 default=0.15 label="Drif
     lightAlpha += weight;
   }
   float a = clamp(uBackgroundAlpha + lightAlpha * (1.0 - uBackgroundAlpha), 0.0, 1.0);
-  fragColor = vec4(col, a);
+  fragColor = vec4(col / max(a, 1e-4), a);
 }`,
   ),
   presets: [
