@@ -479,10 +479,9 @@ export function isSinglePictureEffect(effect: EffectDefinition): boolean {
  */
 export function isTransitionEffect(effect: EffectDefinition | undefined): boolean {
   if (!effect) return false;
-  const inputs = effectInputs(effect);
   return isTransitionTarget(
-    { id: effect.id, category: effect.category, video: effect.kind === "shader" ? effect.video : undefined },
-    inputs,
+    { category: effect.category, video: effect.kind === "shader" ? effect.video : undefined },
+    effectInputs(effect),
   );
 }
 
@@ -491,8 +490,7 @@ export function isTransitionEffect(effect: EffectDefinition | undefined): boolea
  */
 export function isAudioReactiveEffect(effect: EffectDefinition | undefined): boolean {
   if (!effect) return false;
-  const inputs = effectInputs(effect);
-  return isAudioReactiveTarget(effect, inputs);
+  return isAudioReactiveTarget(effect, effectInputs(effect));
 }
 
 /**

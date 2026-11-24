@@ -2791,6 +2791,9 @@ describe("capabilities and prompt helpers", () => {
     expect(images.some((e) => e.id === "chrome-text")).toBe(true);
     expect(images.some((e) => e.id === "transition-claw-slash")).toBe(false);
     expect(images.some((e) => e.id === "spectrum-bars")).toBe(false);
+    // Tags alone don't make an effect sound-driven: these don't read audio and make stills.
+    for (const id of ["kaleidoscope", "neon-ripple", "synthwave"]) expect(isAudioReactiveEffect(getEffect(id))).toBe(false);
+    expect(images.every((e) => !isTransitionEffect(e) && !isAudioReactiveEffect(e))).toBe(true);
   });
 
   it("identifies human-readable controls and filters internal engine uniforms", () => {

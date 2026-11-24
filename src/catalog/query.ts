@@ -74,33 +74,13 @@ export function singlePicture(inputs: EffectInputs): boolean {
 }
 
 /** Whether a query target is a transition between two pieces of visual content. */
-export function isTransitionTarget(
-  e: Pick<QueryTarget, "id" | "category" | "video">,
-  inputs?: Pick<EffectInputs, "video">,
-): boolean {
-  return (
-    e.category === "transition" ||
-    e.video === "transition" ||
-    inputs?.video === "transition" ||
-    e.id.startsWith("transition-") ||
-    e.id === "paint-roller" ||
-    e.id === "slime-curtain-wipe" ||
-    e.id === "sticker-peel-reveal"
-  );
+export function isTransitionTarget(e: Pick<QueryTarget, "category" | "video">, inputs?: Pick<EffectInputs, "video">): boolean {
+  return e.category === "transition" || e.video === "transition" || inputs?.video === "transition";
 }
 
-/** Whether a query target reacts to or generates visuals from audio. */
-export function isAudioReactiveTarget(
-  e: Pick<QueryTarget, "id" | "category" | "tags">,
-  inputs?: Pick<EffectInputs, "accepts">,
-): boolean {
-  return (
-    e.category === "audio" ||
-    Boolean(inputs?.accepts.includes("audio")) ||
-    e.tags.some((t) => t === "audio" || t === "music" || t === "equalizer" || t === "visualizer") ||
-    e.id === "circular-spectrum" ||
-    e.id === "spectrum-bars"
-  );
+/** Whether a query target reacts to or generates visuals from audio (in the audio category, or reads sound). */
+export function isAudioReactiveTarget(e: Pick<QueryTarget, "category">, inputs?: Pick<EffectInputs, "accepts">): boolean {
+  return e.category === "audio" || Boolean(inputs?.accepts.includes("audio"));
 }
 
 /** Whether a query target can render a still image output (shader effects excluding transitions, audio visualizers, and video-only filters). */
