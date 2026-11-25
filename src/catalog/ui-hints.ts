@@ -203,13 +203,18 @@ function gaugeAsProgress(props: Readonly<Record<string, JsonValue>>): UiFallback
 /**
  * A loader as the baseline `progress`, its `value` (0–1) as a percent; while
  * the job cannot tell how far along it is (`null` or no value), the baseline
- * `spinner` instead.
+ * `spinner` instead. Both are labelled "Loading": a loader is named by its
+ * host's `aria-label`, which is not in its data, and the baseline types take
+ * their accessible name from `label`, so without one they would have none.
  */
 function loaderAsProgress(props: Readonly<Record<string, JsonValue>>): UiFallback {
   const value = props.value;
-  if (typeof value !== "number") return { implements: "spinner", props: {} };
-  return { implements: "progress", props: { value: Math.round(value * 10000) / 100 } };
+  if (typeof value !== "number") return { implements: "spinner", props: { label: LOADING } };
+  return { implements: "progress", props: { value: Math.round(value * 10000) / 100, label: LOADING } };
 }
+
+/** A loader fallback's accessible name. */
+const LOADING = "Loading";
 
 /** Where Flair renders vector components: its React and Svelte wrappers, and any page with `mountEffect`. */
 const WEB: UiPlatformTarget[] = ["react", "svelte", "html-page"];
