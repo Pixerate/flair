@@ -1,6 +1,6 @@
 {
   "name": "@pixerate/flair-evals",
-  "version": "0.0.11",
+  "version": "0.0.12",
   "private": true,
   "description": "Evals of how well a model drafts new Flair effects, from a brief or from reference frames.",
   "type": "module",

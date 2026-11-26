@@ -257,9 +257,9 @@
     "animated": true,
     "duration": 30000,
     "module": "shaders/overlay",
-    "addedAt": "2026-11-26T12:12:15.384Z",
-    "commitHash": "",
-    "order": 0
+    "addedAt": "2026-11-26T12:13:12Z",
+    "commitHash": "df2450a3f1253e2e8dbbe72e6888d545fb799931",
+    "order": 737
   },
   {
     "id": "logo-wall",
