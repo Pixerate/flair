@@ -131,6 +131,7 @@ public enum FlairCatalog {
         AnyFlairEffect(ShineSweep()),
         AnyFlairEffect(GlareSweep()),
         AnyFlairEffect(FrostCreep()),
+        AnyFlairEffect(PixelSpeckles()),
         AnyFlairEffect(ShaderText()),
         AnyFlairEffect(SwashText()),
         AnyFlairEffect(RibbonBands()),

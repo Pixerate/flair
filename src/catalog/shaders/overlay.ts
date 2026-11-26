@@ -569,6 +569,135 @@ uniform vec3 uColor;      // @control color default=#FFFFFF label="Colour"`,
   ],
 };
 
+/**
+ * Faint pixel squares around a title, from Swash's brand: rounded squares
+ * (corners 28% of their side) tinted along a four-stop accent gradient. They
+ * sit on a jittered grid, one place per cell of `uSpacing`, each filled or not
+ * by `uDensity`, so every pixel looks at one cell and the layout is the same
+ * for the same seed; speckles are never closer than half a cell. Keep-clear
+ * rectangles (normalised to the frame, from its top left, as a view lays out
+ * a title and a button) leave the speckles that would touch them out. Each
+ * twinkles at a whole number of cycles in 30 s, so it loops; under reduced
+ * motion it rests at 0 s, each speckle still at its own point in its twinkle.
+ *
+ * Sizes and spacing are in frame heights, so a host that lays speckles out in
+ * points divides by its view's height (Swash's 3–9 pt in a 360 pt view are
+ * the defaults). Unused keep-clear rectangles are zero-sized. The output is
+ * straight colour and coverage, transparent by default: on the web render it
+ * with `alpha` (as every `transparent` effect), and in Swift draw it with
+ * `FlairRenderer.render(…, blendOver: true)` so it is blended over what is
+ * already in the layer.
+ */
+export const pixelSpeckles: ShaderEffect = {
+  kind: "shader",
+  id: "pixel-speckles",
+  name: "Pixel speckles",
+  description:
+    "Faint pixel squares scattered over a transparent background, tinted along a gradient and twinkling slowly, kept clear of up to four rectangles: decoration for the empty space around a title.",
+  category: "overlay",
+  tags: ["overlay", "pixel", "speckle", "sparkle", "twinkle", "decoration", "empty-state", "background", "brand", "gradient", "ui"],
+  transparent: true,
+  loop: 30,
+  // At 0 s every speckle shows at its own point in its twinkle: a calm still.
+  rest: 0,
+  source: glsl(
+    `// Pixel speckles: rounded pixel squares on a jittered grid, twinkling, kept clear of up to four rectangles.
+uniform float uSpacing;         // @control min=0.04 max=0.4 default=0.155 label="Spacing (frame heights)"
+uniform float uDensity;         // @control min=0 max=1 default=0.55 label="Density (share of places filled)"
+uniform float uMinSize;         // @control min=0.002 max=0.08 default=0.0085 label="Smallest size (frame heights)"
+uniform float uMaxSize;         // @control min=0.002 max=0.08 default=0.025 label="Largest size (frame heights)"
+uniform float uRoundness;       // @control min=0 max=0.5 default=0.28 label="Corner roundness"
+uniform float uMinOpacity;      // @control min=0 max=1 default=0.22 label="Faintest opacity"
+uniform float uMaxOpacity;      // @control min=0 max=1 default=0.6 label="Strongest opacity"
+uniform float uTwinkle;         // @control min=0 max=1 default=0.45 label="Twinkle depth"
+uniform float uSpeed;           // @control min=0 max=3 default=1 label="Twinkle speed"
+uniform int uSeed;              // @control min=0 max=999 default=42 label="Seed"
+uniform vec3 uColor1;           // @control color default=#EC4899 label="Gradient start"
+uniform vec3 uColor2;           // @control color default=#E12AFB label="Gradient second"
+uniform vec3 uColor3;           // @control color default=#8E51FF label="Gradient third"
+uniform vec3 uColor4;           // @control color default=#6D63F0 label="Gradient end"
+uniform vec4 uClear1;           // @control min=0 max=1 default=0.27,0.33,0.46,0.2 label="Keep clear 1 (x, y, width, height from the top left)"
+uniform vec4 uClear2;           // @control min=0 max=1 default=0,0,0,0 label="Keep clear 2 (x, y, width, height from the top left)"
+uniform vec4 uClear3;           // @control min=0 max=1 default=0,0,0,0 label="Keep clear 3 (x, y, width, height from the top left)"
+uniform vec4 uClear4;           // @control min=0 max=1 default=0,0,0,0 label="Keep clear 4 (x, y, width, height from the top left)"
+uniform vec3 uBackground;       // @control color default=#0B0B12 label="Background"
+uniform float uBackgroundAlpha; // @control min=0 max=1 default=0 label="Background opacity"`,
+    HASH,
+    `// The gradient's colour t (0 to 1) of the way along its four stops.
+vec3 speckleTint(float t) {
+  float s = clamp(t, 0.0, 1.0) * 3.0;
+  if (s < 1.0) return mix(uColor1, uColor2, s);
+  if (s < 2.0) return mix(uColor2, uColor3, s - 1.0);
+  return mix(uColor3, uColor4, s - 2.0);
+}
+
+// Whether the box lo–hi (normalised, from the top left) touches keep-clear rectangle r; a zero-sized one is unused.
+bool touches(vec4 r, vec2 lo, vec2 hi) {
+  if (r.z <= 0.0 || r.w <= 0.0) return false;
+  return lo.x < r.x + r.z && hi.x > r.x && lo.y < r.y + r.w && hi.y > r.y;
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  // Frame-height units from the top left, so the layout reads like a view's.
+  float px = 1.0 / iResolution.y;
+  float aspect = iResolution.x / iResolution.y;
+  vec2 p = vec2(fragCoord.x, iResolution.y - fragCoord.y) * px;
+  float cell = max(uSpacing, 0.01);
+  vec2 id = floor(p / cell);
+  vec2 seed = id + vec2(float(uSeed) * 7.31, float(uSeed) * 3.17);
+  float a = 0.0;
+  vec3 col = uColor1;
+  if (hash12(seed + 0.5) < uDensity) {
+    vec2 r1 = hash22(seed + 11.3);
+    vec2 r2 = hash22(seed + 23.9);
+    vec2 r3 = hash22(seed + 37.1);
+    // Kept within the middle half of its cell, so speckles stay at least half a cell apart.
+    float side = min(mix(uMinSize, max(uMaxSize, uMinSize), r2.x), 0.5 * cell);
+    vec2 centre = (id + 0.25 + 0.5 * r1) * cell;
+    // Left out where its box (twice its side) would leave the frame or touch a keep-clear rectangle.
+    vec2 lo = (centre - side) / vec2(aspect, 1.0);
+    vec2 hi = (centre + side) / vec2(aspect, 1.0);
+    bool clear = lo.x >= 0.0 && lo.y >= 0.0 && hi.x <= 1.0 && hi.y <= 1.0
+      && !touches(uClear1, lo, hi) && !touches(uClear2, lo, hi) && !touches(uClear3, lo, hi) && !touches(uClear4, lo, hi);
+    if (clear) {
+      // The pixel square: a rounded square, its corner radius uRoundness of its side.
+      float radius = clamp(uRoundness, 0.0, 0.5) * side;
+      vec2 d = abs(p - centre) - (0.5 * side - radius);
+      float dist = length(max(d, 0.0)) + min(max(d.x, d.y), 0.0) - radius;
+      float cover = clamp(0.5 - dist / px, 0.0, 1.0);
+      // Twinkling a whole number of times (2 to 6) in 30 s, about 0.4 to 1.3 radians a second.
+      float cycles = 2.0 + floor(r3.x * 5.0);
+      float twinkle = (1.0 - uTwinkle) + uTwinkle * sin(iTime * uSpeed * cycles * 6.2831853 / 30.0 + r3.y * 6.2831853);
+      a = cover * mix(uMinOpacity, uMaxOpacity, r2.y) * clamp(twinkle, 0.0, 1.0);
+      col = speckleTint(hash12(seed + 51.7));
+    }
+  }
+  // Over the background (transparent by default): straight colour and coverage.
+  float bgA = uBackgroundAlpha;
+  float outA = a + bgA * (1.0 - a);
+  vec3 outC = outA > 0.0 ? (col * a + uBackground * bgA * (1.0 - a)) / outA : col;
+  fragColor = vec4(outC, outA);
+}`,
+  ),
+  presets: [
+    {
+      name: "Light page",
+      values: {
+        uDensity: 0.4,
+        uMinOpacity: 0.12,
+        uMaxOpacity: 0.34,
+        uTwinkle: 0.35,
+        uColor4: [0.263, 0.22, 0.792],
+        uBackground: [0.98, 0.98, 0.99],
+      },
+    },
+    { name: "Dark page", values: {} },
+    { name: "Dense", values: { uSpacing: 0.1, uDensity: 0.7, uMaxSize: 0.02 } },
+    { name: "Square pixels", values: { uRoundness: 0 } },
+    { name: "Still", values: { uSpeed: 0 } },
+  ],
+};
+
 export const overlayEffects: ShaderEffect[] = [
   rainOnGlass,
   snowfall,
@@ -580,4 +709,5 @@ export const overlayEffects: ShaderEffect[] = [
   shineSweep,
   glareSweep,
   frostCreep,
+  pixelSpeckles,
 ];

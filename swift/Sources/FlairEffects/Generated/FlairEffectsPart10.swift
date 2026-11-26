@@ -6,6 +6,95 @@ import simd
 
 
 
+/// **Ectoplasm wisps** (`ectoplasm-wisps`, category: `horror`).
+/// Glowing green trails of ectoplasm spiralling in out of the dark towards the pointer while it hovers, or a point wandering the frame, each fading as it arrives and another rising in its place.
+public struct EctoplasmWisps: FlairEffect, Codable, Sendable, Equatable {
+    public static let effectId = "ectoplasm-wisps"
+    public static let effectName = "Ectoplasm wisps"
+    public static let category = "horror"
+    public static let effectDescription = "Glowing green trails of ectoplasm spiralling in out of the dark towards the pointer while it hovers, or a point wandering the frame, each fading as it arrives and another rising in its place."
+    public static let tags: [String] = ["horror", "spectral", "ectoplasm", "wisps", "glow", "interactive", "hover", "cursor", "background"]
+    public static let phase: Int = 4
+    public static let functionName = "flair_ectoplasm_wisps_frag"
+    public static let uniformByteLength: Int = 1056
+    public static let isTransparent: Bool = false
+    public static let loopDuration: Double? = nil
+    public static let controls: [FlairControlDescriptor] = [
+        FlairControlDescriptor(name: "uBackground", property: "background", type: .vec3, label: "Background", isColor: true, min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uColor", property: "color", type: .vec3, label: "Ectoplasm", isColor: true, min: 0.0, max: 1.0, step: 0.005),
+        FlairControlDescriptor(name: "uWisps", property: "wisps", type: .float, label: "Wisps", min: 1.0, max: 8.0, step: 1.0),
+        FlairControlDescriptor(name: "uLength", property: "length", type: .float, label: "Tail length", min: 0.1, max: 1.0, step: 0.0045),
+        FlairControlDescriptor(name: "uWidth", property: "width", type: .float, label: "Width", min: 2.0, max: 30.0, step: 0.14),
+        FlairControlDescriptor(name: "uGlow", property: "glow", type: .float, label: "Glow", min: 0.0, max: 2.0, step: 0.01),
+        FlairControlDescriptor(name: "uSpeed", property: "speed", type: .float, label: "Speed", min: 0.2, max: 2.0, step: 0.009),
+        FlairControlDescriptor(name: "uBackgroundAlpha", property: "backgroundAlpha", type: .float, label: "Background opacity", min: 0.0, max: 1.0, step: 0.005),
+    ]
+    public static let presets: [String: EctoplasmWisps] = {
+        var map: [String: EctoplasmWisps] = [:]
+        do { var p = EctoplasmWisps(); p.color = flairVec3(0.55, 0.75, 1.0); p.wisps = 8.0; p.speed = 1.2; map["Poltergeist"] = p }
+        do { var p = EctoplasmWisps(); p.color = flairVec3(0.8, 1.0, 0.25); p.width = 14.0; map["Bile"] = p }
+        do { var p = EctoplasmWisps(); p.wisps = 1.0; p.length = 1.0; p.width = 14.0; map["Single spirit"] = p }
+        do { var p = EctoplasmWisps(); p.backgroundAlpha = 0.0; map["Transparent"] = p }
+        return map
+    }()
+
+    /// Background (`uBackground`).
+    public var background: SIMD3<Float> = flairVec3(0.011765, 0.023529, 0.039216)
+    /// Ectoplasm (`uColor`).
+    public var color: SIMD3<Float> = flairVec3(0.490196, 1.0, 0.698039)
+    /// Wisps (`uWisps`).
+    public var wisps: Float = 6.0
+    /// Tail length (`uLength`).
+    public var length: Float = 0.5
+    /// Width (`uWidth`).
+    public var width: Float = 8.0
+    /// Glow (`uGlow`).
+    public var glow: Float = 1.0
+    /// Speed (`uSpeed`).
+    public var speed: Float = 0.7
+    /// Background opacity (`uBackgroundAlpha`).
+    public var backgroundAlpha: Float = 1.0
+
+    public init() {}
+
+    public func encodeUniforms(into buffer: UnsafeMutableRawPointer, state: FlairFrameState) {
+        state.encodeBuiltins(into: buffer)
+        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(background, min: 0.0, max: 1.0), to: buffer, at: 992)
+        FlairUniformEncoder.writeVec3(FlairUniformEncoder.clampVec3(color, min: 0.0, max: 1.0), to: buffer, at: 1008)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(wisps, min: 1.0, max: 8.0), to: buffer, at: 1020)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(length, min: 0.1, max: 1.0), to: buffer, at: 1024)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(width, min: 2.0, max: 30.0), to: buffer, at: 1028)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(glow, min: 0.0, max: 2.0), to: buffer, at: 1032)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(speed, min: 0.2, max: 2.0), to: buffer, at: 1036)
+        FlairUniformEncoder.writeFloat(FlairUniformEncoder.clampFloat(backgroundAlpha, min: 0.0, max: 1.0), to: buffer, at: 1040)
+    }
+
+    public init(from decoder: Decoder) throws {
+        let bag = try FlairJSONBag(from: decoder)
+        self.background = bag.decodeVec3("uBackground", "background", default: flairVec3(0.011765, 0.023529, 0.039216), isColor: true)
+        self.color = bag.decodeVec3("uColor", "color", default: flairVec3(0.490196, 1.0, 0.698039), isColor: true)
+        self.wisps = bag.decodeFloat("uWisps", "wisps", default: 6.0, min: 1.0, max: 8.0)
+        self.length = bag.decodeFloat("uLength", "length", default: 0.5, min: 0.1, max: 1.0)
+        self.width = bag.decodeFloat("uWidth", "width", default: 8.0, min: 2.0, max: 30.0)
+        self.glow = bag.decodeFloat("uGlow", "glow", default: 1.0, min: 0.0, max: 2.0)
+        self.speed = bag.decodeFloat("uSpeed", "speed", default: 0.7, min: 0.2, max: 2.0)
+        self.backgroundAlpha = bag.decodeFloat("uBackgroundAlpha", "backgroundAlpha", default: 1.0, min: 0.0, max: 1.0)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var bag = FlairJSONBag()
+        bag.encodeVec3(self.background, for: "uBackground")
+        bag.encodeVec3(self.color, for: "uColor")
+        bag.encodeFloat(self.wisps, for: "uWisps")
+        bag.encodeFloat(self.length, for: "uLength")
+        bag.encodeFloat(self.width, for: "uWidth")
+        bag.encodeFloat(self.glow, for: "uGlow")
+        bag.encodeFloat(self.speed, for: "uSpeed")
+        bag.encodeFloat(self.backgroundAlpha, for: "uBackgroundAlpha")
+        try bag.encode(to: encoder)
+    }
+}
+
 /// **Spirit orbs** (`spirit-orbs`, category: `horror`).
 /// Pale translucent orbs over a picture, like the ones that turn up in flash photos of haunted houses, drifting like dust and every so often darting off in a streak before drifting on.
 public struct SpiritOrbs: FlairEffect, Codable, Sendable, Equatable {

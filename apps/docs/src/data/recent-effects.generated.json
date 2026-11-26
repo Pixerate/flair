@@ -1,5 +1,267 @@
 [
   {
+    "id": "pixel-speckles",
+    "name": "Pixel speckles",
+    "kind": "shader",
+    "category": "overlay",
+    "description": "Faint pixel squares scattered over a transparent background, tinted along a gradient and twinkling slowly, kept clear of up to four rectangles: decoration for the empty space around a title.",
+    "tags": [
+      "overlay",
+      "pixel",
+      "speckle",
+      "sparkle",
+      "twinkle",
+      "decoration",
+      "empty-state",
+      "background",
+      "brand",
+      "gradient",
+      "ui"
+    ],
+    "controls": [
+      {
+        "n": "uSpacing",
+        "t": "float",
+        "d": 0.155,
+        "l": "Spacing (frame heights)",
+        "min": 0.04,
+        "max": 0.4,
+        "b": 3,
+        "line": 2
+      },
+      {
+        "n": "uDensity",
+        "t": "float",
+        "d": 0.55,
+        "l": "Density (share of places filled)",
+        "b": 3,
+        "line": 3
+      },
+      {
+        "n": "uMinSize",
+        "t": "float",
+        "d": 0.0085,
+        "l": "Smallest size (frame heights)",
+        "min": 0.002,
+        "max": 0.08,
+        "b": 3,
+        "line": 4
+      },
+      {
+        "n": "uMaxSize",
+        "t": "float",
+        "d": 0.025,
+        "l": "Largest size (frame heights)",
+        "min": 0.002,
+        "max": 0.08,
+        "b": 3,
+        "line": 5
+      },
+      {
+        "n": "uRoundness",
+        "t": "float",
+        "d": 0.28,
+        "l": "Corner roundness",
+        "max": 0.5,
+        "b": 3,
+        "line": 6
+      },
+      {
+        "n": "uMinOpacity",
+        "t": "float",
+        "d": 0.22,
+        "l": "Faintest opacity",
+        "b": 3,
+        "line": 7
+      },
+      {
+        "n": "uMaxOpacity",
+        "t": "float",
+        "d": 0.6,
+        "l": "Strongest opacity",
+        "b": 3,
+        "line": 8
+      },
+      {
+        "n": "uTwinkle",
+        "t": "float",
+        "d": 0.45,
+        "l": "Twinkle depth",
+        "b": 3,
+        "line": 9
+      },
+      {
+        "n": "uSpeed",
+        "t": "float",
+        "d": 1,
+        "l": "Twinkle speed",
+        "max": 3,
+        "b": 3,
+        "line": 10
+      },
+      {
+        "n": "uSeed",
+        "t": "int",
+        "d": 42,
+        "max": 999,
+        "b": 3,
+        "line": 11
+      },
+      {
+        "n": "uColor1",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            236,
+            72,
+            153
+          ]
+        },
+        "l": "Gradient start",
+        "c": 1,
+        "line": 12
+      },
+      {
+        "n": "uColor2",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            225,
+            42,
+            251
+          ]
+        },
+        "l": "Gradient second",
+        "c": 1,
+        "line": 13
+      },
+      {
+        "n": "uColor3",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            142,
+            81,
+            255
+          ]
+        },
+        "l": "Gradient third",
+        "c": 1,
+        "line": 14
+      },
+      {
+        "n": "uColor4",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            109,
+            99,
+            240
+          ]
+        },
+        "l": "Gradient end",
+        "c": 1,
+        "line": 15
+      },
+      {
+        "n": "uClear1",
+        "t": "vec4",
+        "d": [
+          0.27,
+          0.33,
+          0.46,
+          0.2
+        ],
+        "l": "Keep clear 1 (x, y, width, height from the top left)",
+        "b": 3,
+        "line": 16
+      },
+      {
+        "n": "uClear2",
+        "t": "vec4",
+        "d": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "l": "Keep clear 2 (x, y, width, height from the top left)",
+        "b": 3,
+        "line": 17
+      },
+      {
+        "n": "uClear3",
+        "t": "vec4",
+        "d": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "l": "Keep clear 3 (x, y, width, height from the top left)",
+        "b": 3,
+        "line": 18
+      },
+      {
+        "n": "uClear4",
+        "t": "vec4",
+        "d": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "l": "Keep clear 4 (x, y, width, height from the top left)",
+        "b": 3,
+        "line": 19
+      },
+      {
+        "n": "uBackground",
+        "t": "vec3",
+        "d": {
+          "c255": [
+            11,
+            11,
+            18
+          ]
+        },
+        "c": 1,
+        "line": 20
+      },
+      {
+        "n": "uBackgroundAlpha",
+        "t": "float",
+        "d": 0,
+        "l": "Background opacity",
+        "b": 3,
+        "line": 21
+      }
+    ],
+    "presets": [
+      "Light page",
+      "Dark page",
+      "Dense",
+      "Square pixels",
+      "Still"
+    ],
+    "inputs": {
+      "accepts": [],
+      "images": [],
+      "texts": [],
+      "interactions": [],
+      "transparent": true
+    },
+    "swiftReady": true,
+    "transparent": true,
+    "loop": 30,
+    "animated": true,
+    "duration": 30000,
+    "module": "shaders/overlay",
+    "addedAt": "2026-11-26T12:12:15.384Z",
+    "commitHash": "",
+    "order": 0
+  },
+  {
     "id": "logo-wall",
     "name": "Logo wall",
     "kind": "vector",
@@ -4279,146 +4541,5 @@
     "addedAt": "2026-11-23T13:08:48Z",
     "commitHash": "950805d1f769c269815aa74fbf2cd0e8d9c0479d",
     "order": 718
-  },
-  {
-    "id": "dragover-attract",
-    "name": "Dragover attract",
-    "kind": "shader",
-    "category": "interaction",
-    "description": "A dashed drop zone whose border bulges toward the pointer while something is dragged over it, and ripples out from where the item lands.",
-    "tags": [
-      "interactive",
-      "hover",
-      "click",
-      "drop-zone",
-      "upload",
-      "ui",
-      "overlay"
-    ],
-    "controls": [
-      {
-        "n": "uColor",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            99,
-            102,
-            241
-          ]
-        },
-        "l": "Colour",
-        "c": 1,
-        "line": 2
-      },
-      {
-        "n": "uFill",
-        "t": "vec3",
-        "d": {
-          "c255": [
-            238,
-            242,
-            255
-          ]
-        },
-        "c": 1,
-        "line": 3
-      },
-      {
-        "n": "uRadius",
-        "t": "float",
-        "d": 16,
-        "l": "Corner radius (px)",
-        "max": 64,
-        "b": 3,
-        "line": 4
-      },
-      {
-        "n": "uInset",
-        "t": "float",
-        "d": 14,
-        "l": "Inset (px)",
-        "min": 4,
-        "max": 48,
-        "b": 3,
-        "line": 5
-      },
-      {
-        "n": "uPull",
-        "t": "float",
-        "d": 14,
-        "l": "Pull (px)",
-        "max": 40,
-        "b": 3,
-        "line": 6
-      },
-      {
-        "n": "uDash",
-        "t": "float",
-        "d": 12,
-        "l": "Dash (px)",
-        "min": 4,
-        "max": 40,
-        "b": 3,
-        "line": 7
-      },
-      {
-        "n": "uHover",
-        "t": "float",
-        "d": 0,
-        "l": "Dragged over (for drag events)",
-        "b": 3,
-        "line": 8
-      },
-      {
-        "n": "uTarget",
-        "t": "vec2",
-        "d": [
-          0.5,
-          0.5
-        ],
-        "l": "Drag point (0–1, for drag events)",
-        "b": 3,
-        "line": 9
-      },
-      {
-        "n": "uLanded",
-        "t": "float",
-        "d": 0,
-        "l": "Landing ripple (0–1, for drop events)",
-        "b": 3,
-        "line": 10
-      },
-      {
-        "n": "uDemo",
-        "t": "bool",
-        "d": true,
-        "l": "Demo when idle",
-        "line": 11
-      }
-    ],
-    "presets": [
-      "Mint",
-      "Strong pull",
-      "Dark",
-      "Neubrutal"
-    ],
-    "inputs": {
-      "accepts": [],
-      "images": [],
-      "texts": [],
-      "interactions": [
-        "hover",
-        "click",
-        "pointer"
-      ],
-      "transparent": true
-    },
-    "swiftReady": true,
-    "transparent": true,
-    "animated": true,
-    "module": "shaders/moments",
-    "addedAt": "2026-11-23T13:08:48Z",
-    "commitHash": "950805d1f769c269815aa74fbf2cd0e8d9c0479d",
-    "order": 717
   }
 ]
