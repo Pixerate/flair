@@ -1,0 +1,53 @@
+{
+  "domains": [
+    {
+      "id": "new-effects",
+      "name": "New Effects in Existing Categories",
+      "paths": ["src/catalog", "skills/flair-use/references/effects"],
+      "docs": ["skills/flair-author/SKILL.md", "AGENTS.md"],
+      "labels": ["effects", "new-effects"]
+    },
+    {
+      "id": "shader-engine",
+      "name": "Shader Engine",
+      "paths": ["src/shader", "src/time"],
+      "docs": ["README.md", "skills/flair-author/references/shader.md"],
+      "labels": ["framework", "shader-engine"]
+    },
+    {
+      "id": "new-effect-categories",
+      "name": "New Effect Categories",
+      "paths": ["src/catalog/types.ts", "src/catalog/meta.ts", "src/catalog/shaders", "skills/flair-use/references/effects"],
+      "docs": ["README.md", "skills/flair-author/SKILL.md"],
+      "labels": ["effects", "new-effect-categories"]
+    },
+    {
+      "id": "vector-motion",
+      "name": "Vector Motion",
+      "paths": ["src/vector", "src/motion"],
+      "docs": ["README.md", "skills/flair-author/references/vector.md"],
+      "labels": ["framework", "vector-motion"]
+    },
+    {
+      "id": "editor-and-agent-tools",
+      "name": "Effect Editor & Agent Tools",
+      "paths": ["src/editor", "src/agent", "skills"],
+      "docs": ["README.md", "AGENTS.md"],
+      "labels": ["framework", "editor", "agents"]
+    },
+    {
+      "id": "scenes-and-export",
+      "name": "Scenes & Export",
+      "paths": ["src/scene", "src/export", "src/embed/scene.ts", "src/embed/record.ts"],
+      "docs": ["README.md", "skills/flair-use/references/scenes.md"],
+      "labels": ["framework", "scenes", "export"]
+    },
+    {
+      "id": "embedding-and-integrations",
+      "name": "Embedding & Integrations",
+      "paths": ["src/embed", "src/react", "src/svelte", "src/integrations", "src/catalog/lazy.ts"],
+      "docs": ["README.md", "skills/flair-use/references/entry-points.md"],
+      "labels": ["framework", "embedding"]
+    }
+  ]
+}
