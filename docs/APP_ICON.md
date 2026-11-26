@@ -1,6 +1,6 @@
 # App Icon Prompt & Generation Guide
 
-This document records the brand palette, prompts, and rendering pipeline used to create the Flair icon (`apps/docs/src/assets/icon-1024.png`, `apps/docs/src/assets/logo.png`, `apps/docs/public/favicon.png`, `apps/docs/public/apple-touch-icon.png`, and `apps/demo/public/favicon.png`), aligned with the Pixerate family visual identity (`JazzPaint/docs/APP_ICON.md`, `Swash/docs/APP_ICON.md`, and `SlopStats/docs/APP_ICON.md`).
+This document records the brand palette, prompts, and rendering pipeline used to create the Flair icon (`brand/flair-icon-1024.png`, `apps/docs/src/assets/logo.png`, `apps/docs/public/favicon.png`, `apps/docs/public/apple-touch-icon.png`, and `apps/demo/public/favicon.png`) and social media avatar (`brand/flair-avatar-1024.png`), aligned with the Pixerate family visual identity (`JazzPaint/docs/APP_ICON.md`, `Swash/docs/APP_ICON.md`, and `SlopStats/docs/APP_ICON.md`).
 
 ## 1. Pixerate Brand Palette
 
@@ -32,7 +32,7 @@ Minimalist modern macOS app icon for Flair. In the center, a bold, solid 3D four
 
 ## 4. Generating the Site Header Logo, Favicon & Touch Icon
 
-- **Source (`apps/docs/src/assets/icon-1024.png`)**: 1024×1024 full-bleed opaque RGB PNG.
+- **Source (`brand/flair-icon-1024.png`)**: 1024×1024 full-bleed opaque RGB PNG.
 - **Squircle Icons (`apps/docs/src/assets/logo.png`, `apps/docs/public/favicon.png`, `apps/demo/public/favicon.png`)**: Framed to the Apple HIG macOS squircle grid (`824/1024` body, continuous corner radius `22.37%` of the body, specular inner border, and downward drop shadow `dy = +10`, `radius = 16`, `opacity = 28%`).
 - **Touch Icon (`apps/docs/public/apple-touch-icon.png`)**: 180×180 full-bleed PNG.
 
@@ -114,7 +114,7 @@ func renderFullBleed(nsImage: NSImage, px: Int) -> Data {
 }
 
 MainActor.assumeIsolated {
-    let srcPath = "apps/docs/src/assets/icon-1024.png"
+    let srcPath = "brand/flair-icon-1024.png"
     guard let nsImage = NSImage(contentsOfFile: srcPath) else {
         fatalError("Could not load \(srcPath)")
     }
@@ -128,6 +128,70 @@ MainActor.assumeIsolated {
 
     try! renderFullBleed(nsImage: nsImage, px: 180)
         .write(to: URL(fileURLWithPath: "apps/docs/public/apple-touch-icon.png"))
+}
+'
+```
+
+## 5. Social Media Avatar (`brand/flair-avatar-1024.png`)
+
+- **Purpose**: 1024×1024 full-bleed opaque RGB PNG (`hasAlpha: no`) for social media profile avatars (X/Twitter, Discord, Instagram, GitHub, YouTube, TikTok). The artwork from `brand/flair-icon-1024.png` is inset with extra background padding so the optical flare star, orbital ribbon, and glowing pixel blocks stay comfortably inside circular avatar crops.
+- **Generation**:
+
+```bash
+swift -e '
+import AppKit
+import CoreImage
+import ImageIO
+
+let srcPath = "brand/flair-icon-1024.png"
+let outPath = "brand/flair-avatar-1024.png"
+guard let input = CIImage(contentsOf: URL(fileURLWithPath: srcPath)) else {
+    fatalError("Could not load \(srcPath)")
+}
+
+let pad: CGFloat = 84
+let trim: CGFloat = 16
+let feather: CGFloat = 32
+let extent = input.extent
+let trimmed = input.cropped(to: extent.insetBy(dx: trim, dy: trim))
+let padded = extent.insetBy(dx: -pad, dy: -pad)
+
+let background = trimmed.clampedToExtent().applyingGaussianBlur(sigma: 24).cropped(to: padded)
+let mask = CIFilter(name: "CIRoundedRectangleGenerator", parameters: [
+    "inputExtent": CIVector(cgRect: trimmed.extent.insetBy(dx: feather, dy: feather)),
+    "inputRadius": 24.0,
+    "inputColor": CIColor.white,
+])!.outputImage!
+    .applyingGaussianBlur(sigma: feather * 0.5)
+    .cropped(to: padded)
+
+let blended = CIFilter(name: "CIBlendWithMask", parameters: [
+    kCIInputImageKey: trimmed,
+    kCIInputBackgroundImageKey: background,
+    kCIInputMaskImageKey: mask,
+])!.outputImage!
+    .cropped(to: padded)
+    .transformed(by: CGAffineTransform(translationX: pad - extent.origin.x, y: pad - extent.origin.y))
+
+let scale = 1024.0 / padded.width
+let scaled = blended.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
+
+let context = CIContext()
+guard let rendered = context.createCGImage(scaled, from: CGRect(x: 0, y: 0, width: 1024, height: 1024)) else {
+    fatalError("Failed to render \(outPath)")
+}
+
+let srgb = CGColorSpace(name: CGColorSpace.sRGB)!
+let opaqueCtx = CGContext(
+    data: nil, width: 1024, height: 1024, bitsPerComponent: 8, bytesPerRow: 0,
+    space: srgb, bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue
+)!
+opaqueCtx.draw(rendered, in: CGRect(x: 0, y: 0, width: 1024, height: 1024))
+let url = URL(fileURLWithPath: outPath) as CFURL
+let dest = CGImageDestinationCreateWithURL(url, "public.png" as CFString, 1, nil)!
+CGImageDestinationAddImage(dest, opaqueCtx.makeImage()!, nil)
+guard CGImageDestinationFinalize(dest) else {
+    fatalError("Failed to write \(outPath)")
 }
 '
 ```
