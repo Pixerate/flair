@@ -126,9 +126,9 @@ describe("uiFallback", () => {
     for (const id of ["liquid-loader", "flame-loader", "generating-field", "slop-vat"]) {
       const loader = getEffect(id)!;
       expect(UI_HINTS[id]!.ui.fallback).toBe("progress");
-      expect(uiFallback(loader, { value: 0.6 })).toEqual({ implements: "progress", props: { value: 60 } });
-      expect(uiFallback(loader, { value: null })).toEqual({ implements: "spinner", props: {} });
-      expect(uiFallback(loader, {})).toEqual({ implements: "spinner", props: {} });
+      expect(uiFallback(loader, { value: 0.6 })).toEqual({ implements: "progress", props: { value: 60, label: "Loading" } });
+      expect(uiFallback(loader, { value: null })).toEqual({ implements: "spinner", props: { label: "Loading" } });
+      expect(uiFallback(loader, {})).toEqual({ implements: "spinner", props: { label: "Loading" } });
       for (const value of [0.6, null]) {
         const out = uiFallback(loader, { value })!;
         expect(validFallback(out), JSON.stringify(validFallback.errors)).toBe(true);
