@@ -192,7 +192,7 @@ export const EFFECT_IDS: Record<string, string> = {
   "shaders/morph": "feature-morph silhouette-morph transition-liquid-morph transition-displacement transition-luma transition-particle-swap transition-ink-bleed transition-whip-pan",
   "shaders/occult": "summoning-circle cauldron candle-ring",
   "shaders/organic": "marble smoke lava-lamp plasma caustics flames",
-  "shaders/overlay": "rain-on-glass snowfall lens-flare vignette-grain scanline-sweep spotlight embers shine-sweep glare-sweep frost-creep",
+  "shaders/overlay": "rain-on-glass snowfall lens-flare vignette-grain scanline-sweep spotlight embers shine-sweep glare-sweep frost-creep pixel-speckles",
   "shaders/particles": "flow-particles magnetic-swarm dust-in-light boids particle-text confetti-cannon fireflies",
   "shaders/paths": "glass-tube glass-writing",
   "shaders/patterns": "dot-wave truchet hex-pulse voronoi moire kaleidoscope stripes memphis-pattern chevron-tunnel neon-circuit",
